@@ -1,0 +1,586 @@
+use std::fs;
+use std::io::Write;
+use std::sync::Arc;
+
+use actix_multipart::Multipart;
+use actix_web::{Either, Error, HttpResponse};
+use actix_web::http::header::ContentType;
+use actix_web::web::{self, Data, Form, Path, Redirect};
+use futures_util::TryStreamExt as _;
+use indoc::formatdoc;
+use serde_derive::Deserialize;
+
+use crate::{
+    Context,
+    ContextPath,
+    Field,
+    FileMeta,
+    Playlist,
+    PosterFile
+};
+use crate::editor::endpoints;
+use crate::editor::widgets::{
+    form_checkbox,
+    form_field,
+    form_field_pattern,
+    form_textarea,
+    layout,
+    not_found,
+    upload_widget
+};
+use crate::util::{nanoid, validate_slug};
+
+pub enum PlaylistFormFeedback<'a> {
+    Move {
+        slug: Field
+    },
+    Site(endpoints::site::SiteFormFeedback),
+    Update {
+        description: &'a str,
+        title: Field,
+        unlisted: bool
+    }
+}
+
+#[derive(Deserialize)]
+pub struct PlaylistCreateForm {
+    title: String
+}
+
+#[derive(Deserialize)]
+pub struct PlaylistMoveForm {
+    slug: String
+}
+
+#[derive(Deserialize)]
+pub struct PlaylistUpdateForm {
+    description: String,
+    title: String,
+    unlisted: Option<String>
+}
+
+#[derive(Deserialize)]
+pub struct VideoForm {
+    slug: String
+}
+
+pub async fn delete(
+    context: Data<Arc<Context>>,
+    path: Path<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    if !context.delete_playlist(&path.path) {
+        return Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path)))
+    };
+
+    let redirect_url = if &path.path == "" {
+        "/".to_string()
+    } else {
+        std::path::Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
+    };
+
+    Either::Left(Redirect::to(redirect_url).see_other())
+}
+
+pub fn edit_page(
+    context: &Context,
+    form_feedback: Option<PlaylistFormFeedback>,
+    playlist: &Playlist
+) -> HttpResponse {
+    let errors = if playlist.errors.is_empty() {
+        String::new()
+    } else {
+        playlist.errors
+            .iter()
+            .map(|error| {
+                formatdoc!(r#"
+                    <pre class="error">{error}</pre>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("")
+    };
+
+    let path = &playlist.path;
+
+    // let videos = context.collection.all_videos();
+    // let video_form_rendered = videos_form(playlist, &videos);
+
+    let poster = playlist.poster
+        .as_ref()
+        .map(|poster| {
+            // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
+            let file_name = &poster.file_name;
+            let src = if path == "" {
+                format!("/poster/{file_name}")
+            } else {
+                format!("/poster/{path}/{file_name}")
+            };
+            format!(r#"<img class="thumbnail" src="{src}">"#)
+        })
+        .unwrap_or(String::new());
+
+    let poster_upload_button = upload_widget(&format!("/upload-playlist-poster/{path}"), "Upload Poster");
+
+    let (
+        feedback_update,
+        input_description,
+        input_title,
+        input_unlisted,
+    ) = if let Some(PlaylistFormFeedback::Update { description, title, unlisted }) = &form_feedback {
+        (
+            r#"<span class="feedback">Not Saved</span>"#,
+            form_textarea("description", "Description", "Description", Some(description)),
+            form_field(title, "title", "Title", "Title"),
+            form_checkbox(*unlisted, "unlisted", "Unlisted")
+        )
+    } else {
+        (
+            "",
+            form_textarea("description", "Description", "Description", playlist.description.as_deref()),
+            form_field(&Field::valid(playlist.title.as_deref().unwrap_or("")), "title", "Title", "Title"),
+            form_checkbox(playlist.unlisted, "unlisted", "Unlisted")
+        )
+    };
+
+    let slug_form = if path == "" {
+        String::new()
+    } else {
+        let (input, feedback) = if let Some(PlaylistFormFeedback::Move { slug }) = &form_feedback {
+            (
+                // TODO: Double-check this pattern (and elsewhere checks from start to end ($^?))
+                form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                r#"<span class="feedback">Not Saved</span>"#
+            )
+        } else {
+            (
+                form_field_pattern(&Field::valid(playlist.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                ""
+            )
+        };
+
+        formatdoc!(r#"
+            <p>
+                Be aware that changing the slug/permalink of a playlist changes
+                the url under which the playlist is publicly available on the web,
+                or in other words, if there are links pointing to your playlist
+                right now, they will not work anymore when you change the slug.
+            </p>
+
+            <form action="/move-playlist/{path}" method="post">
+                {input}
+
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Update Permalink</button> {feedback}
+                </div>
+            </form>
+        "#)
+    };
+
+    let upload_url = format!("/upload-video/{path}");
+    let video_upload_button = upload_widget(&upload_url, "Upload New Video");
+
+    let site_form_feedback = match &form_feedback {
+        Some(PlaylistFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
+        _ => None
+    };
+    let site_edit = endpoints::site::edit(&context, site_form_feedback, path);
+
+    let body = formatdoc!(r#"
+        {errors}
+
+        <h2>New Video</h2>
+
+        {video_upload_button}
+
+        <h2>Playlist</h2>
+
+        <form action="/playlist/{path}" method="post">
+            {input_title}
+            {input_description}
+            {input_unlisted}
+
+            <div style="align-items: center; column-gap: .5rem; display: flex;">
+                <button>Update Playlist</button> {feedback_update}
+            </div>
+        </form>
+
+        <h2>Poster Image</h2>
+        
+        {poster}<br>
+        {poster_upload_button}
+
+        {site_edit}
+
+        <h2>Danger Zone</h2>
+
+        {slug_form}
+
+       <p>
+            Deleting the playlist removes the playlist manifest, poster image,
+            and all videos contained in the playlist. If the playlist lies at the
+            site root it does not remove the site manifest and the site itself,
+            so the site can afterwards be reinitialized again as a collection,
+            playlist or video.
+        </p>
+
+        <form action="/delete-playlist/{path}" method="post">
+            <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Playlist</button>
+        </form>
+    "#);
+
+    let site = &context.site.read().unwrap();
+    let head_title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
+    let html = layout(context, path, &site, &body, head_title);
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
+}
+
+// fn videos_form(playlist: &Playlist, videos: &[Video]) -> String {
+//     let id = &playlist.id;
+
+//     let videos_rendered = playlist.videos
+//         .iter()
+//         .filter_map(|slug| videos.iter().find(|video| &video.slug == slug))
+//         .map(|video| {
+//             let video_id = &video.id;
+//             let video_slug = &video.slug;
+//             let title = &video.title();
+
+//             let unlisted = match video.unlisted {
+//                 true => r#" <span class="badge">Unlisted</span>"#,
+//                 false => ""
+//             };
+
+//             formatdoc!(r#"
+//                 <div style="column-gap: .5rem; display: flex;">
+//                     <a href="/video/{video_id}">{title}</a>{unlisted}<br>
+//                     <form action="/playlist/{id}/remove" method="post">
+//                         <input name="slug" type="hidden" value="{video_slug}">
+//                         <button>Delete</button>
+//                     </form>
+//                 </div>
+//             "#)
+//         })
+//         .collect::<Vec<String>>()
+//         .join("\n");
+
+//     let options_add = videos
+//         .iter()
+//         .filter(|video| !playlist.videos.contains(&video.slug))
+//         .map(|video| {
+//             let slug = &video.slug;
+//             let title = &video.title();
+
+//             formatdoc!(r#"
+//                 <option value="{slug}">{title}</option>
+//             "#)
+//         })
+//         .collect::<Vec<String>>()
+//         .join("\n");
+
+//     let select_add = formatdoc!(r#"
+//         <div>
+//             <label for="add_slug">Video to add</label>
+//             <select id="add_slug" name="slug">
+//                 {options_add}
+//             </select>
+//         </div>
+//     "#);
+
+//     let button_add = formatdoc!(r#"<button>Add</button>"#);
+
+//     formatdoc!(r#"
+//         {videos_rendered}
+//         <form action="/playlist/{id}/add" method="post">
+//             {select_add}
+//             {button_add}
+//         </form>
+//     "#)
+// }
+
+// pub async fn add_video(
+//     context: Data<Arc<Context>>,
+//     form: Form<VideoForm>,
+//     path: Path<ContextPath>
+// ) -> Either<Redirect, HttpResponse> {
+//     if !form.slug.is_empty() {
+//         let playlist = {
+//             let mut playlist_mut = match context.get_playlist(&path.path) {
+//                 Some(playlist) => playlist,
+//                 None => return Either::Right(
+//                     not_found(&context, &format!("Playlist {} not found.", &path.path))
+//                 )
+//             };
+
+//             playlist_mut.videos.push(form.slug.clone());
+
+//             playlist_mut.clone()
+//         };
+
+//         playlist.persist_in_site(&context.site_dir);
+
+//         let redirect_url = format!("/playlist/{}", path.path);
+
+//         Either::Left(
+//             Redirect::to(redirect_url).see_other()
+//         )
+//     } else {
+//         // TODO: Implement the entire thing properly
+//         panic!()
+//     }
+// }
+
+// pub async fn create(
+//     context: Data<Arc<Context>>,
+//     form: Form<PlaylistCreateForm>
+// ) -> Either<Redirect, HttpResponse> {
+//     // TODO: Show errors when re-rendering edit/create form
+//     if !form.title.trim().is_empty() {
+//         let mut playlist = Playlist::new(&form.title);
+
+//         let (playlist, playlists) = {
+//             let mut playlists_mut = context.collection.playlists.lock().unwrap();
+
+//             while playlists_mut.iter().any(|iterated| iterated.slug == playlist.slug) {
+//                 // Create a modified, unique slug
+//                 playlist.slug = format!("{}_{}", &playlist.slug, nanoid());
+//             }
+
+//             playlists_mut.push(playlist.clone());
+            
+//             (playlist, playlists_mut.clone())
+//         };
+
+//         playlist.persist_in_cache(&context.cache_dir);
+
+//         // This persists them in the collection
+//         persist_playlists(&playlists, &context.site_dir);
+
+//         let redirect_url = format!("/playlist/{}", playlist.id);
+//         Either::Left(
+//             Redirect::to(redirect_url).see_other()
+//         )
+//     } else {
+//         // TODO: Handle empty title - how do we respond? (note that this is an edge edge edge case)
+//         panic!();
+
+//         // let settings = context.collection.get_settings();
+//         // let html = layout(&settings, &body, "New Playlist");
+
+//         // Either::Right(
+//         //     HttpResponse::Ok()
+//         //         .content_type(ContentType::html())
+//         //         .body(html)
+//         // )
+//     }
+// }
+
+pub async fn edit(
+    context: Data<Arc<Context>>,
+    path: Path<ContextPath>
+) -> HttpResponse {
+    // TODO: Should be cloned because the returned one is mut and locking?
+    let playlist = match context.get_playlist(&path.path) {
+        Some(playlist) => playlist,
+        None => return not_found(&context, &format!("Playlist {} not found.", &path.path))
+    };
+
+    edit_page(&context, None, &playlist)
+}
+
+pub async fn remove_video(
+    context: Data<Arc<Context>>,
+    form: Form<VideoForm>,
+    path: Path<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    if !form.slug.is_empty() {
+        let mutation = |playlist: &mut Playlist| {
+            if let Some(index) = playlist.videos_virtual
+                .iter()
+                .position(|slug| slug == &form.slug) {
+                playlist.videos_virtual.remove(index);
+            }
+        };
+
+        let playlist = match context.update_playlist(mutation, &path.path) {
+            Ok(playlist) => playlist,
+            Err(()) => return Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path)))
+        };
+
+        playlist.persist_in_site(&context.site_dir);
+
+        let redirect_url = format!("/playlist/{}", path.path);
+
+        Either::Left(
+            Redirect::to(redirect_url).see_other()
+        )
+    } else {
+        // TODO: Implement the entire thing properly
+        panic!()
+    }
+}
+
+pub async fn r#move(
+    context: Data<Arc<Context>>,
+    form: Form<PlaylistMoveForm>,
+    path: Path<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let slug_trimmed = form.slug.trim();
+
+    let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
+        Some(message)
+    // TODO: Must be performed on parent, not on context
+    // } else if let Some(owner) = context.slug_collision(slug_trimmed, &path.path) {
+    //     Some(format!("Already used by another playlist or video: {owner}"))
+    } else {
+        None
+    };
+
+    if slug_error.is_none() {
+        let mutation = |playlist: &mut Playlist| {
+            // TODO: Not anymore like that, this is a very complex operation, involves moving/renaming the folder
+            // playlist.slug = slug_trimmed.to_owned();
+        };
+
+        let playlist = match context.update_playlist(mutation, &path.path) {
+            Ok(playlist) => playlist,
+            Err(()) => return Either::Right(
+                not_found(&context, &format!("Playlist {} not found.", &path.path))
+            )
+        };
+
+        playlist.persist_in_site(&context.site_dir);
+
+        let redirect_url = format!("/playlist/{}", playlist.path);
+        Either::Left(Redirect::to(redirect_url).see_other())
+    } else {
+        let playlist = match context.get_playlist(&path.path) {
+            Some(playlist) => playlist,
+            None => return Either::Right(
+                not_found(&context, &format!("Playlist {} not found.", &path.path))
+            )
+        };
+
+        let form_feedback = PlaylistFormFeedback::Move {
+            slug: Field::validated(slug_trimmed, slug_error)
+        };
+
+        Either::Right(
+            edit_page(&context, Some(form_feedback), &playlist)
+        )
+    }
+}
+
+pub async fn update(
+    context: Data<Arc<Context>>,
+    form: Form<PlaylistUpdateForm>,
+    path: Path<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let description_trimmed = form.description.trim();
+    let title_trimmed = form.title.trim();
+    let unlisted = form.unlisted.is_some();
+
+    // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
+    if true {
+        let mutation = |playlist: &mut Playlist| {
+            playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
+            playlist.unlisted = unlisted;
+        };
+
+        let playlist = match context.update_playlist(mutation, &path.path) {
+            Ok(playlist) => playlist,
+            Err(()) => return Either::Right(
+                not_found(&context, &format!("Playlist {} not found.", &path.path))
+            )
+        };
+
+        playlist.persist_in_site(&context.site_dir);
+
+        let redirect_url = format!("/playlist/{}", playlist.path);
+        Either::Left(Redirect::to(redirect_url).see_other())
+    } else {
+        let playlist = match context.get_playlist(&path.path) {
+            Some(playlist) => playlist,
+            None => return Either::Right(
+                not_found(&context, &format!("Playlist {} not found.", &path.path))
+            )
+        };
+
+        let form_feedback = PlaylistFormFeedback::Update {
+            description: description_trimmed,
+            title: Field::valid(title_trimmed),
+            unlisted
+        };
+
+        Either::Right(
+            edit_page(&context, Some(form_feedback), &playlist)
+        )
+    }
+}
+
+pub async fn upload_poster(
+    context: Data<Arc<Context>>,
+    mut payload: Multipart,
+    path: Path<ContextPath>
+) -> Result<Either<Redirect, HttpResponse>, Error> {
+    while let Some(mut field) = payload.try_next().await? {
+        let content_disposition = field.content_disposition();
+
+        if let Some(filename) = content_disposition.get_filename() {
+            let filename_lowercase = filename.to_lowercase();
+            // TODO: DRY up with other places where this is done (+expand formats)
+            if !(filename_lowercase.ends_with(".jpg") ||
+                filename_lowercase.ends_with(".jpeg") ||
+                filename_lowercase.ends_with(".png") ||
+                filename_lowercase.ends_with(".webp")) {
+
+                // TODO: Implement without panicking - return something instead
+                panic!("Unsupported file extension in {filename}");
+            }
+
+            let original_filename = filename.to_string();
+            // TODO: Generate a prettier filename - this goes into the site_dir!
+            //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
+            let storage_filename = format!("{}_{original_filename}", nanoid());
+            let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
+            let storage_path_moving = storage_path.clone();
+
+            // File::create is blocking operation, use threadpool
+            let mut f = web::block(|| std::fs::File::create(storage_path_moving)).await??;
+
+            while let Some(chunk) = field.try_next().await? {
+                f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
+            }
+
+            let file_meta = FileMeta::new(&storage_path);
+            let poster_file = PosterFile::new(None, file_meta, storage_filename);
+
+            let mutation = |playlist: &mut Playlist| {
+                playlist.poster = Some(poster_file);
+            };
+
+            let playlist = match context.update_playlist(mutation, &path.path) {
+                Ok(playlist) => playlist,
+                Err(()) => {
+                    fs::remove_file(&storage_path).unwrap();
+                    let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
+                    return Ok(Either::Right(http_response));
+                }
+            };
+
+            playlist.persist_in_site(&context.site_dir);
+
+            // TODO: Would need some architectural changes.
+            //       Maybe implement together with new job model? (which maybe does not use a job queue at all?)
+            // let job = Job::new(JobKind::Poster, playlist.clone());
+            // context.job_queue.lock().unwrap().push(job);
+        }
+    }
+
+    let redirect_url = format!("/playlist/{}", path.path);
+
+    Ok(Either::Left(Redirect::to(redirect_url).see_other()))
+}

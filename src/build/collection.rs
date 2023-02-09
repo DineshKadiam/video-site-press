@@ -1,0 +1,137 @@
+use std::fs;
+
+use indoc::formatdoc;
+
+use crate::{Collection, Context, Site};
+use crate::build::render::{layout, thumbnail};
+
+pub fn collection_html(
+    context: &Context,
+    collection: &Collection,
+    site: &Site
+) {
+    let mut body = String::new();
+    let index_suffix = context.index_suffix();
+
+    let title = if collection.path == "" {
+        collection.title.as_deref().unwrap_or("Hyper 8")
+    } else {
+        collection.title.as_deref().unwrap_or_else(|| collection.slug())
+    };
+
+    body.push_str(&format!("<h1>{title}</h1>\n\n"));
+
+    if let Some(description) = &collection.description {
+        body.push_str(&format!("<p>{description}</p>\n\n"));
+    }
+
+    if !collection.videos.is_empty() {
+        let videos = collection.videos
+            .iter()
+            .map(|video| {
+                let slug = &video.slug();
+                let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+                let video_prefix = format!("{slug}/");
+                let video_thumbnail = thumbnail(video, &video_prefix);
+
+                formatdoc!(r#"
+                    <a href="{slug}{index_suffix}">
+                        {video_thumbnail}
+                        <div>{title}</div>
+                    </a>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let videos_rendered = formatdoc!(r#"
+            <h2>Videos</h2>
+
+            <div>
+                {videos}
+            </div>
+        "#);
+
+        body.push_str(&videos_rendered);
+    }
+
+    if !collection.playlists.is_empty() {
+        let playlists = collection.playlists
+            .iter()
+            .map(|playlist| {
+                let slug = playlist.slug();
+                let title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
+
+                formatdoc!(r#"
+                    <a href="{slug}{index_suffix}">{title}</a>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let playlists_rendered = formatdoc!(r#"
+            <h2>Playlists</h2>
+
+            <div>
+                {playlists}
+            </div>
+        "#);
+
+        body.push_str(&playlists_rendered);
+    }
+
+    for subcollection in &collection.subcollections {
+        let subcollection_slug = subcollection.slug();
+        let title = &subcollection.title.as_deref().unwrap_or_else(|| subcollection.slug());
+
+        let videos = if !subcollection.videos.is_empty() {
+            let videos = subcollection.videos
+                .iter()
+                .map(|video| {
+                    let slug = &video.slug();
+                    let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+                    let video_prefix = format!("{subcollection_slug}/{slug}/");
+                    let video_thumbnail = thumbnail(video, &video_prefix);
+
+                    formatdoc!(r#"
+                        <a href="{slug}{index_suffix}">
+                            {video_thumbnail}
+                            <div>{title}</div>
+                        </a>
+                    "#)
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            formatdoc!(r#"
+                <div>
+                    {videos}
+                </div>
+            "#)
+        } else {
+            String::new()
+        };
+
+        let subcollection_rendered = formatdoc!(r#"
+            <h2>{title}</h2>
+
+            {videos}
+
+            TODO: Some selection of the collection's content.<br>
+            - If it's only a few items present them all<br>
+            - Otherwise: What's the algorithm/approach then?<br><br>
+
+            <a href="{subcollection_slug}{index_suffix}">More from this collection</a>
+        "#);
+
+        body.push_str(&subcollection_rendered);
+    }
+
+    let root_prefix = if collection.path == "" { "".to_string() } else { "../".repeat(collection.path.split('/').count()) };
+    let html = layout(&root_prefix, site, &body, title);
+
+    let collection_dir = context.build_dir.join(&collection.path);
+    fs::create_dir_all(&collection_dir).unwrap();
+    let index_path = collection_dir.join("index.html");
+    fs::write(index_path, html).unwrap();
+}
