@@ -64,8 +64,7 @@ pub fn main() {
 	let docs = read_docs();
 
 	let out_dir = env::var_os("OUT_DIR").unwrap();
-    let docs_out_dir = Path::new("../docs");
-    // let docs_out_dir = Path::new(&out_dir).join("docs");
+    let docs_out_dir = Path::new(&out_dir).join("docs");
 
 	if docs_out_dir.exists() {
 		fs::remove_dir_all(&docs_out_dir).unwrap();
