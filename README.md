@@ -54,3 +54,6 @@ Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes
 
 ![BMKÖS Logo](https://simonrepp.com/hyper8/bmkoes_logo.jpg)
 
+## License
+
+Hyper 8 is licensed under the [AGPL-3.0-or-later](https://spdx.org/licenses/AGPL-3.0-or-later.html).
