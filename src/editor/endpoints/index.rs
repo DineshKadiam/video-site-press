@@ -6,8 +6,7 @@ use actix_web::web::Data;
 use indoc::formatdoc;
 
 use crate::{Context, SiteContent};
-use crate::editor::widgets::{layout, upload_widget};
-use crate::util::precise_duration;
+use crate::editor::widgets::layout;
 
 // pub async fn playlists(context: Data<Arc<Context>>) -> HttpResponse {
 //     let playlists = context.collection.all_playlists();
@@ -143,9 +142,11 @@ use crate::util::precise_duration;
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     let site = &context.site.read().unwrap();
 
-    let extra = match &site.content {
-        SiteContent::Collection(collection) => {
-            "What here? (TODO)".to_string()
+    let body = match &site.content {
+        SiteContent::Collection(_) => {
+            formatdoc!(r#"
+                This site is operating as a collection
+            "#)
         }
         SiteContent::Empty => {
             formatdoc!(r#"
@@ -165,132 +166,17 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         SiteContent::Invalid => {
             "Site is invalid - site folder content needs to be manually fixed.".to_string()
         }
-        SiteContent::Playlist(playlist) => {
-            let videos_rendered = playlist.videos_physical
-                .iter()
-                .map(|video| {
-                    let mut info = String::new();
-                    for version in &video.versions {
-                        let compiled = match &version.video_meta {
-                            Some(video_meta) => format!(
-                                "{}×{} {}<br>",
-                                video_meta.width,
-                                video_meta.height,
-                                precise_duration(video_meta.duration)
-                            ),
-                            None => String::from("No source or metadata yet.")
-                        };
-
-                        info.push_str(&compiled);
-                    };
-                    let path = &video.path;
-                    let title = video.title.as_deref().unwrap_or(video.slug());
-
-                    let poster = if let Some(poster) = &video.poster {
-                        if let Some(assets) = &poster.assets {
-                            // TODO: Build img with srcset etc.
-                            let width = assets.all().first().unwrap().width;
-                            format!(r#"<img class="thumbnail" src="cover_{width}.jpg">"#)
-                        } else {
-                            String::new()
-                        }
-                    } else {
-                        String::new()
-                    };
-
-                    let unlisted = match video.unlisted {
-                        true => r#" <span class="badge">Unlisted</span>"#,
-                        false => ""
-                    };
-
-                    // TODO: Escape data-search, add more in there (description etc.), consider better implementation too of course
-                    formatdoc!(r#"
-                        <div class="video" data-path="{path}" data-search="{title}">
-                            {poster}
-                            <div>
-                                <a href="/video/{path}">{title}</a>{unlisted}<br>
-                                {info}
-                            </div>
-                        </div>
-                    "#)
-                })
-                .collect::<Vec<String>>()
-                .join("");
-
-            let video_upload_button = upload_widget("/video", "Upload Video");
-            let videos_js = include_str!("../assets/videos.js");
-
+        SiteContent::Playlist(_) => {
             formatdoc!(r#"
-                <h2>Videos</h2>
-
-                {video_upload_button}
-
-                <input class="filter" placeholder="Filter videos" type="search">
-
-                <script>
-                    {videos_js}
-                </script>
-
-                <div class="videos">
-                    {videos_rendered}
-                </div>
+                This site is operating as a playlist
             "#)
         }
-        SiteContent::Video(video) => {
-            let mut info = String::new();
-            for version in &video.versions {
-                let compiled = match &version.video_meta {
-                    Some(video_meta) => format!(
-                        "{}×{} {}<br>",
-                        video_meta.width,
-                        video_meta.height,
-                        precise_duration(video_meta.duration)
-                    ),
-                    None => String::from("No source or metadata yet.")
-                };
-
-                info.push_str(&compiled);
-            };
-            let title = video.title.as_deref().unwrap_or(video.slug());
-
-            let poster = if let Some(poster) = &video.poster {
-                if let Some(assets) = &poster.assets {
-                    // TODO: Build img with srcset etc.
-                    let width = assets.all().first().unwrap().width;
-                    format!(r#"<img class="thumbnail" src="cover_{width}.jpg">"#)
-                } else {
-                    String::new()
-                }
-            } else {
-                String::new()
-            };
-
-            let unlisted = match video.unlisted {
-                true => r#" <span class="badge">Unlisted</span>"#,
-                false => ""
-            };
-
+        SiteContent::Video(_) => {
             formatdoc!(r#"
-                <h2>Site:Video</h2>
-
-                <div class="videos">
-                    <div class="video">
-                        {poster}
-                        <div>
-                            <span>{title}</span>{unlisted}<br>
-                            {info}
-                        </div>
-                    </div>
-                </div>
+                This site is operating as a video
             "#)
         }
     };
-
-    let body = formatdoc!(r#"
-        <div class="updates"></div>
-
-        {extra}
-    "#);
 
     let html = layout(&context, "", site, &body, site.title());
 
