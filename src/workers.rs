@@ -18,8 +18,10 @@ use crate::{
 };
 use crate::transcode;
 
-fn compute_metadata(context: &Context, video: &Video) {
+fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
     let mut versions_mut = video.versions.clone();
+
+    let mut made_changes = false;
 
     for version in versions_mut.iter_mut() {
         if version.video_meta.is_some() { continue }
@@ -35,37 +37,49 @@ fn compute_metadata(context: &Context, video: &Video) {
             context.cache.write().unwrap().video_meta.push(video_meta_cached);
 
             version.video_meta = Some(video_meta);
+
+            made_changes = true;
         }
     }
 
-    let mutation = |video: &mut Video| {
-        video.versions = versions_mut;
-    };
+    if made_changes {
+        let mutation = |video_mut: &mut Video| {
+            video_mut.versions = versions_mut;
+        };
 
-    if let Ok(video) = context.update_video(mutation, &video.path) {
-        video.persist_in_cache(&context.cache_dir);
+        if let Ok(video_updated) = context.update_video(mutation, &video.path) {
+            video_updated.persist_in_cache(&context.cache_dir);
 
-        // TODO: Reactivate
-        // context.create_version_jobs(&video);
+            // TODO: Reactivate
+            // context.create_version_jobs(&video);
+
+            return video_updated;
+        }
     }
+
+    video
 }
 
-fn compute_poster(context: &Context, video: &Video) {
-    if let Ok(file_name) = transcode::compute_poster(&context, video) {
-        let mutation = |video: &mut Video| {
-            let file_path = context.site_dir.join(&video.path).join(&file_name);
+fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
+    if let Ok(file_name) = transcode::compute_poster(&context, &video) {
+        let mutation = |video_mut: &mut Video| {
+            let file_path = context.site_dir.join(&video_mut.path).join(&file_name);
             let file_meta = FileMeta::new(&file_path);
 
             let poster_file = PosterFile::new(None, file_meta, file_name);
 
-            video.poster = Some(poster_file)
+            video_mut.poster = Some(poster_file)
         };
 
-        if let Ok(video) = context.update_video(mutation, &video.path) {
-            video.persist_in_cache(&context.cache_dir);
-            video.persist_in_site(&context);
+        if let Ok(video_updated) = context.update_video(mutation, &video.path) {
+            video_updated.persist_in_cache(&context.cache_dir);
+            video_updated.persist_in_site(&context);
+
+            return video_updated;
         }
-    } 
+    }
+
+    video
 }
 
 fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, width: u32) -> PosterAsset {
@@ -84,7 +98,7 @@ fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, width:
     }
 }
 
-fn compute_poster_assets(context: &Context, video: &Video) {
+fn compute_poster_assets(context: &Context, video: Arc<Video>) {
     if let Some(poster) = &video.poster {
         let source_path = context.site_dir.join(&video.path).join(&poster.file_name);
 
@@ -161,28 +175,21 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                 let job = job.unwrap();
 
                 match job.kind {
-                    JobKind::Metadata => {
-                        let label = format!("[Worker {worker_number}] Probing metadata for versions of {}", job.video.path);
-                        let process_id = context.processing.lock().unwrap().push(&job.video.path, label);
+                    JobKind::FastTasks => {
+                        let video: Arc<Video> = job.video;
 
-                        compute_metadata(&context, &job.video);
+                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.path);
+                        let process_id = context.processing.lock().unwrap().push(&video.path, label);
 
-                        let job = Job::new(JobKind::Poster, Arc::clone(&job.video));
-                        context.job_queue.lock().unwrap().push(job);
+                        let video_with_metadata = compute_metadata(&context, video);
 
-                        context.processing.lock().unwrap().remove(process_id);
-                    }
-                    JobKind::Poster => {
-                        let label = format!("[Worker {worker_number}] Computing poster for {}", job.video.path);
-                        let process_id = context.processing.lock().unwrap().push(&job.video.path, label);
-
-                        if let Some(poster) = &job.video.poster {
+                        if let Some(poster) = &video_with_metadata.poster {
                             if poster.assets.is_none() {
-                                compute_poster_assets(&context, &job.video);
+                                compute_poster_assets(&context, video_with_metadata);
                             }
                         } else {
-                            compute_poster(&context, &job.video);
-                            compute_poster_assets(&context, &job.video);
+                            let video_with_poster = compute_poster(&context, video_with_metadata);
+                            compute_poster_assets(&context, video_with_poster);
                         }
 
                         context.processing.lock().unwrap().remove(process_id);

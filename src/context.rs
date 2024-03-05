@@ -125,20 +125,11 @@ impl Context {
     }
 
     fn queue_video(&self, video: &Arc<Video>) {
-        if video.versions.iter().any(|version| version.video_meta.is_none()) {
-            let job = Job::new(JobKind::Metadata, Arc::clone(video));
+        if video.versions.iter().any(|version| version.video_meta.is_none()) ||
+           (video.poster.is_none() && !video.versions.is_empty()) ||
+           video.poster.as_ref().is_some_and(|poster| poster.assets.is_none()) {
+            let job = Job::new(JobKind::FastTasks, Arc::clone(video));
             self.job_queue.lock().unwrap().push(job);
-        } else {
-            match &video.poster {
-                Some(poster) => if poster.assets.is_none() {
-                    let job = Job::new(JobKind::Poster, Arc::clone(video));
-                    self.job_queue.lock().unwrap().push(job);
-                }
-                None => if !video.versions.is_empty() {
-                    let job = Job::new(JobKind::Poster, Arc::clone(video));
-                    self.job_queue.lock().unwrap().push(job);
-                }
-            }
         }
 
         // if video.assets.metadata.is_some() {

@@ -17,9 +17,8 @@ pub struct Job {
 
 #[derive(Clone, Debug)]
 pub enum JobKind {
-    Format(VideoFormat),
-    Metadata,
-    Poster
+    FastTasks,
+    Format(VideoFormat)
 }
 
 #[derive(Clone, Serialize)]
@@ -49,26 +48,19 @@ impl Job {
     }
 
     /// Determine the priority-based ordering between this and another job.
-    /// Metadata computation is most prioritized, followed by poster generation,
+    /// Metadata and poster computation (FastTasks) is most prioritized,
     /// followed by transcoding to different formats. For prioritization between
     /// different formats see cmp_priority() implementation on VideoFormat. If
     /// two jobs have the same priority based on their kind (and format, where
     /// relevant), the one that exists longer is prioritized.
     pub fn cmp_priority(&self, other: &Job) -> Ordering {
         match &self.kind {
-            JobKind::Metadata => match other.kind {
-                JobKind::Metadata => (),
-                JobKind::Poster |
-                JobKind::Format(_) => return Ordering::Greater
-            }
-            JobKind::Poster => match other.kind {
-                JobKind::Metadata => return Ordering::Less,
-                JobKind::Poster => (),
+            JobKind::FastTasks => match other.kind {
+                JobKind::FastTasks => (),
                 JobKind::Format(_) => return Ordering::Greater
             }
             JobKind::Format(format) => match &other.kind {
-                JobKind::Metadata |
-                JobKind::Poster => return Ordering::Less,
+                JobKind::FastTasks => return Ordering::Less,
                 JobKind::Format(other_format) => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
                     ordering => return ordering

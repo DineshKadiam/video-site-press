@@ -478,7 +478,7 @@ pub async fn upload_poster(
 
             video.persist_in_site(&context);
 
-            let job = Job::new(JobKind::Poster, Arc::clone(&video));
+            let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
             context.job_queue.lock().unwrap().push(job);
 
             let redirect_url = format!("/video/{}", path.path);
@@ -567,14 +567,8 @@ pub async fn upload_video(
                             return Ok(Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path))));
                         }
 
-                        let metadata_job = Job::new(JobKind::Metadata, Arc::clone(&video));
-                        let poster_job = Job::new(JobKind::Poster, Arc::clone(&video));
-
-                        {
-                            let mut job_queue = context.job_queue.lock().unwrap();
-                            job_queue.push(metadata_job);
-                            job_queue.push(poster_job);
-                        }
+                        let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
+                        context.job_queue.lock().unwrap().push(job);
 
                         // TODO: Do we really need to persist anything here? Video is implicitly video anyway through the video file ...
                         // collection.persist_in_site(&context.site_dir);
@@ -599,14 +593,8 @@ pub async fn upload_video(
                         // TODO: Do we really need to persist anything here? Video is implicitly video anyway through the video file ...
                         // playlist.persist_in_site(&context.site_dir);
 
-                        let metadata_job = Job::new(JobKind::Metadata, Arc::clone(&video));
-                        let poster_job = Job::new(JobKind::Poster, Arc::clone(&video));
-
-                        {
-                            let mut job_queue = context.job_queue.lock().unwrap();
-                            job_queue.push(metadata_job);
-                            job_queue.push(poster_job);
-                        }
+                        let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
+                        context.job_queue.lock().unwrap().push(job);
 
                         let redirect_url = format!("/video/{}", &video.path);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
@@ -625,17 +613,8 @@ pub async fn upload_video(
                             Err(()) => return Ok(Either::Right(not_found(&context, &format!("Video {} not found.", &path.path))))
                         };
 
-                        let metadata_job = Job::new(JobKind::Metadata, Arc::clone(&video));
-
-                        {
-                            let mut job_queue = context.job_queue.lock().unwrap();
-                            job_queue.push(metadata_job);
-
-                            if video.poster.is_none() {
-                                let poster_job = Job::new(JobKind::Poster, Arc::clone(&video));
-                                job_queue.push(poster_job);
-                            }
-                        }
+                        let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
+                        context.job_queue.lock().unwrap().push(job);
 
                         let redirect_url = format!("/video/{}", &video.path);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
