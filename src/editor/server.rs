@@ -61,13 +61,6 @@ pub async fn start(context: Arc<Context>) {
             .route("/poster/{path:.*}", get().to(video::poster))
             .service(
                 // Static file serving of built site
-
-                // TODO: There is very likely an issue here -> 
-                //       If build_dir does not exist at the time this is initialized,
-                //       the preview server just doesn't work the rest of the lifetime
-                //       of hyper8's invocation, only the next time, when the folder
-                //       already exists, it will correctly initialize ...
-
                 Files::new("/preview/", &data.build_dir)
                     .index_file("index.html")
                     .show_files_listing()

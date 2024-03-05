@@ -56,12 +56,19 @@ fn main() {
         .map(|path| path.to_path_buf())
         .unwrap_or_else(|| site_dir.join(".hyper8_build"));
 
+    // We would/could theoretically create this later (on build), but
+    // as actix-files does not successfully register the /preview/
+    // static file hosting route if the directory does not exist on
+    // startup, we create it here already.
+    util::ensure_dir(&build_dir);
+
     let cache_dir = args.cache_dir
         .as_ref()
         .map(|path| path.to_path_buf())
         .unwrap_or_else(|| site_dir.join(".hyper8_cache"));
 
     util::ensure_dir(&cache_dir);
+
     let cache = RwLock::new(Cache::retrieve(&cache_dir));
 
     let context = Context::new(
@@ -85,7 +92,7 @@ fn main() {
         if args.deploy {
             deploy::perform_deploy(&context);
         }
-    } else {        
+    } else {
         context.compute_job_queue();
 
         println!("Using site directory: {}", context.site_dir.display());
