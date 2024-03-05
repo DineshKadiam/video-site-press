@@ -61,11 +61,17 @@ pub fn compute_poster(context: &Context, video: &Video) -> Result<String, ()> {
         let output_filename = format!("{}.jpg", nanoid());
         let output_path = context.site_dir.join(&video.path).join(&output_filename);
 
+        // If we know the duration (which conceptually speaking we should be guaranteed to know),
+        // we take the poster snapshot at halftime, otherwise at the start
+        let snapshot_seek_offset_seconds = version.video_meta
+            .as_ref()
+            .map(|video_meta| format!("{}", &video_meta.duration / 2.0))
+            .unwrap_or("0".to_string());
+
         command
             .arg("-y")
             .arg("-ss")
-            // TODO: What if there are less than 3 seconds available? Handle this too.
-            .arg("3") // seconds
+            .arg(snapshot_seek_offset_seconds)
             .arg("-i")
             .arg(&input_path)
             .arg("-frames")

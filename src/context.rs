@@ -128,16 +128,16 @@ impl Context {
         if video.versions.iter().any(|version| version.video_meta.is_none()) {
             let job = Job::new(JobKind::Metadata, Arc::clone(video));
             self.job_queue.lock().unwrap().push(job);
-        }
-
-        match &video.poster {
-            Some(poster) => if poster.assets.is_none() {
-                let job = Job::new(JobKind::Poster, Arc::clone(video));
-                self.job_queue.lock().unwrap().push(job);
-            }
-            None => if !video.versions.is_empty() {
-                let job = Job::new(JobKind::Poster, Arc::clone(video));
-                self.job_queue.lock().unwrap().push(job);
+        } else {
+            match &video.poster {
+                Some(poster) => if poster.assets.is_none() {
+                    let job = Job::new(JobKind::Poster, Arc::clone(video));
+                    self.job_queue.lock().unwrap().push(job);
+                }
+                None => if !video.versions.is_empty() {
+                    let job = Job::new(JobKind::Poster, Arc::clone(video));
+                    self.job_queue.lock().unwrap().push(job);
+                }
             }
         }
 

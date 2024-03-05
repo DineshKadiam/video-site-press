@@ -7,6 +7,7 @@ use crate::{
     Context,
     FileMeta,
     ImageProcessor,
+    Job,
     JobKind,
     PosterAsset,
     PosterAssets,
@@ -16,6 +17,38 @@ use crate::{
     VideoMetaCached
 };
 use crate::transcode;
+
+fn compute_metadata(context: &Context, video: &Video) {
+    let mut versions_mut = video.versions.clone();
+
+    for version in versions_mut.iter_mut() {
+        if version.video_meta.is_some() { continue }
+
+        if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(&video.path).join(&version.file_name)) {
+            let version_path = format!("{}/{}", &video.path, version.file_name);
+            let video_meta_cached = VideoMetaCached {
+                file_meta: version.file_meta.clone(),
+                path: version_path,
+                video_meta: video_meta.clone()
+            };
+
+            context.cache.write().unwrap().video_meta.push(video_meta_cached);
+
+            version.video_meta = Some(video_meta);
+        }
+    }
+
+    let mutation = |video: &mut Video| {
+        video.versions = versions_mut;
+    };
+
+    if let Ok(video) = context.update_video(mutation, &video.path) {
+        video.persist_in_cache(&context.cache_dir);
+
+        // TODO: Reactivate
+        // context.create_version_jobs(&video);
+    }
+}
 
 fn compute_poster(context: &Context, video: &Video) {
     if let Ok(file_name) = transcode::compute_poster(&context, video) {
@@ -130,38 +163,12 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                 match job.kind {
                     JobKind::Metadata => {
                         let label = format!("[Worker {worker_number}] Probing metadata for versions of {}", job.video.path);
-
                         let process_id = context.processing.lock().unwrap().push(&job.video.path, label);
 
-                        let mut versions_mut = job.video.versions.clone();
+                        compute_metadata(&context, &job.video);
 
-                        for version in versions_mut.iter_mut() {
-                            if version.video_meta.is_some() { continue }
-
-                            if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(&job.video.path).join(&version.file_name)) {
-                                let version_path = format!("{}/{}", &job.video.path, version.file_name);
-                                let video_meta_cached = VideoMetaCached {
-                                    file_meta: version.file_meta.clone(),
-                                    path: version_path,
-                                    video_meta: video_meta.clone()
-                                };
-
-                                context.cache.write().unwrap().video_meta.push(video_meta_cached);
-
-                                version.video_meta = Some(video_meta);
-                            }
-                        }
-
-                        let mutation = |video: &mut Video| {
-                            video.versions = versions_mut;
-                        };
-
-                        if let Ok(video) = context.update_video(mutation, &job.video.path) {
-                            video.persist_in_cache(&context.cache_dir);
-
-                            // TODO: Reactivate
-                            // context.create_version_jobs(&video);
-                        }
+                        let job = Job::new(JobKind::Poster, Arc::clone(&job.video));
+                        context.job_queue.lock().unwrap().push(job);
 
                         context.processing.lock().unwrap().remove(process_id);
                     }

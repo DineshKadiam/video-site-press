@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::{Playlist, PosterAsset, Site, Video, VideoFile};
+use crate::{Playlist, Site, Video, VideoFile};
 use crate::util::{casual_duration, human_size};
 
 
