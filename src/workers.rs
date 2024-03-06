@@ -201,14 +201,17 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                         if let Ok(version) = transcode::encode(&context, format, &job.video) {
                             let mutation = |video: &mut Video| {
-                                // TODO: Reactivate
-                                // video.assets.versions.push(version);
+                                video.versions.push(version);
                             };
 
                             if let Ok(video) = context.update_video(mutation, &job.video.path) {
                                 video.persist_in_cache(&context.cache_dir);
                             }
                         }
+                        // TODO: Temporary hack - for now we don't set video_metadata in transcode::encode (although we totally could, see TODO in there)
+                        //       Instead of appending a FastTasks job, fill video metadata in transcode::encode and remove this job creation here.
+                        let follow_up_job = Job::new(JobKind::FastTasks, Arc::clone(&job.video));
+                        context.job_queue.lock().unwrap().push(follow_up_job);
 
                         context.processing.lock().unwrap().remove(process_id);
                     }

@@ -115,7 +115,12 @@ pub fn encode(
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");
 
-    let input_path = context.site_dir.join(&video.path).join(&video.versions.first().unwrap().file_name);
+    let input_path = if let Some(version) = video.highest_resolution_version() {
+        context.site_dir.join(&video.path).join(&version.file_name)
+    } else {
+        return Err(());
+    };
+
     command.arg("-i").arg(&input_path);
 
     let (output_file, output_path) = match &format {
@@ -125,8 +130,9 @@ pub fn encode(
                 .arg("-codec:a").arg("libopus")
                 .arg("-b:a").arg("96k");
 
-            let output_file = format!("{}.mp4", nanoid());
-            let output_path = context.cache_dir.join(&output_file);
+            // TODO: We rather want mp3+opus (?)
+            let output_file = format!("{}.mp4", nanoid()); // TODO: mp4? Is there a merit to using a video-less mp4 over a pure audio format?
+            let output_path = context.site_dir.join(&video.path).join(&output_file);
 
             (output_file, output_path)
         }
@@ -210,7 +216,10 @@ pub fn encode(
             };
 
             let output_file = format!("{}.{extension}", nanoid());
-            let output_path = context.cache_dir.join(&output_file);
+            // TODO: Eventually we should probably render to a temp dir and only move the finished file to the site_dir
+            //       if the video and video dir at that later point in time stil exist. (and the job has not been cancelled,
+            //       suppose we implement something like that too)
+            let output_path = context.site_dir.join(&video.path).join(&output_file);
 
             (output_file, output_path)
         }

@@ -45,6 +45,7 @@ pub async fn start(context: Arc<Context>) {
             .route("/delete-playlist-video/{path:.*}", post().to(playlist::remove_video))
             .route("/delete-video/{path:.*}", post().to(video::delete))
             .route("/deploy", post().to(deploy))
+            .route("/downsize/{path:.*}", post().to(video::downsize))
             .route("/favicon.png", get().to(favicon))
             // .route("/formats", post().to(settings::formats))
             .route("/move-collection/{path:.*}", post().to(collection::r#move))

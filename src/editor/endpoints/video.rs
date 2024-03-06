@@ -25,7 +25,9 @@ use crate::{
     Playlist,
     PosterFile,
     Video,
-    VideoFile
+    VideoFile,
+    VideoFormat,
+    VideoMeta
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::{
@@ -38,6 +40,11 @@ use crate::editor::widgets::{
     upload_widget
 };
 use crate::util::{precise_duration, human_size, nanoid, validate_slug};
+
+#[derive(Deserialize)]
+pub struct DownsizeForm {
+    width: String
+}
 
 pub enum VideoFormFeedback<'a> {
     Move {
@@ -81,6 +88,65 @@ pub async fn delete(
     };
 
     Either::Left(Redirect::to(redirect_url).see_other())
+}
+
+pub async fn downsize(
+    context: Data<Arc<Context>>,
+    form: Form<DownsizeForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let video = match context.get_video(&path.path) {
+        Some(video) => video,
+        None => return Either::Right(not_found(&context, &format!("Video {} not found.", &path.path)))
+    };
+
+    // TODO: Build programmatically in code instead of parsing from format string
+    let video_format_string = format!("video:h264:mp4:speed:1.0:{}", form.width);
+    let video_format = VideoFormat::parse(&video_format_string).unwrap();
+
+    let job = Job::new(JobKind::Format(video_format), Arc::clone(&video));
+    context.job_queue.lock().unwrap().push(job);
+
+    let redirect_url = format!("/video/{}", &path.path);
+    Either::Left(Redirect::to(redirect_url).see_other())
+}
+
+fn downsize_form(video: &Video) -> String {
+    let widest_width = if let Some(version) = video.highest_resolution_version() {
+        version.video_meta.as_ref().unwrap().width
+    } else {
+        return String::new();
+    };
+
+    let mut options = Vec::new();
+    let candidate_widths = [240, 480, 720, 1280, 1920];
+    for width in candidate_widths {
+        if width < widest_width {
+            let option = formatdoc!(r#"
+                <option value="{width}">{width} pixels wide</option>
+            "#);
+            options.push(option);
+        }
+    }
+
+    if options.is_empty() {
+        return String::new();
+    }
+
+    let options = options.join("\n");
+    let path = &video.path;
+
+    formatdoc!(r#"
+        <form action="/downsize/{path}" method="post">
+            <select name="width">
+                {options}
+            </select>
+
+            <div style="align-items: center; column-gap: .5rem; display: flex;">
+                <button>Request downsized version</button>
+            </div>
+        </form>
+    "#)
 }
 
 pub fn edit_page(
@@ -139,12 +205,16 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("\n");
 
+        let downsize_form_rendered = downsize_form(video);
+
         formatdoc!(r#"
             <h2>Video/Audio Versions</h2>
 
             <ul>
                 {versions}
             </ul>
+
+            {downsize_form_rendered}
         "#)
     };
 
@@ -269,6 +339,8 @@ pub fn edit_page(
         </form>
         
         {versions}
+
+        <br><br>
 
         {video_upload_button}
 
