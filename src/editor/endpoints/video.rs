@@ -111,13 +111,20 @@ pub fn edit_page(
             .iter()
             .map(|version| {
                 let video_meta = match &version.video_meta {
-                    Some(video_meta) => format!(
-                        "{}×{} {} {}",
-                        video_meta.width,
-                        video_meta.height,
-                        precise_duration(video_meta.duration),
-                        human_size(version.file_meta.size)
-                    ),
+                    Some(video_meta) => {
+                        let duration = precise_duration(video_meta.duration);
+                        let height = video_meta.height;
+                        let size = human_size(version.file_meta.size);
+                        let width = video_meta.width;
+
+                        let browser_support = match video_meta.browser_support.analysis() {
+                            Some(Ok(message)) => format!("[Very likely playable in browsers: {message}]"),
+                            Some(Err(message)) => format!("[Unfit for browser playback: {message}]"),
+                            None => format!("[Might be incompatible with and not play in people's browsers]"),
+                        };
+
+                        format!("{width}×{height} {duration} {size} {browser_support}")
+                    }
                     None => String::from("Metadata pending")
                 };
 

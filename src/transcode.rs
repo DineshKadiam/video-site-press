@@ -5,6 +5,7 @@ use std::time::Instant;
 use serde_derive::Deserialize;
 
 use crate::{
+    BrowserSupport,
     Codec,
     Container,
     Context,
@@ -262,6 +263,7 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
             if output.status.success() {
                 match serde_json::from_slice::<FFprobeResult>(&output.stdout) {
                     Ok(result) => {
+                        let mut browser_support = BrowserSupport::new();
                         let mut duration = 0.0;
                         let mut has_audio = false;
                         let mut height = None;
@@ -280,9 +282,12 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
 
                             match stream.codec_type.as_str() {
                                 "audio" => {
+                                    browser_support.consider_audio_codec_name(&stream.codec_name);
                                     has_audio = true;
                                 }
                                 "video" => {
+                                    browser_support.consider_video_codec_name(&stream.codec_name);
+
                                     if height.is_none() { height = stream.height; }
                                     if width.is_none() { width = stream.width; }
                                 }
@@ -294,6 +299,7 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                         }
 
                         let metadata = VideoMeta::new(
+                            browser_support,
                             duration,
                             has_audio,
                             height.unwrap(),

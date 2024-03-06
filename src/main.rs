@@ -3,6 +3,7 @@ use std::sync::{Arc, RwLock};
 use clap::Parser;
 
 mod args;
+mod browser_support;
 mod build;
 mod cache;
 mod collection;
@@ -24,6 +25,7 @@ mod watcher;
 mod workers;
 
 use args::Args;
+use browser_support::BrowserSupport;
 use cache::{Cache, CacheItem, FileMeta, PlaylistInternals, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{Context, ContextPath, GetAnyResult};
