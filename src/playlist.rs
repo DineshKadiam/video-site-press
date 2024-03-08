@@ -8,11 +8,9 @@ use enolib::SectionElement;
 
 use crate::{
     Context,
-    CacheItem,
     FileMeta,
     GetAnyResult,
     HyperDir,
-    PlaylistInternals,
     PosterFile,
     Video
 };
@@ -168,20 +166,6 @@ impl Playlist {
         }
 	}
 
-	pub fn persist_in_cache(&self, cache_dir: &Path) {
-        let cache_item = CacheItem::Playlist(PlaylistInternals {
-            path: self.path.clone()
-        });
-
-        let serialized = bincode::serialize(&cache_item).unwrap();
-
-        let base_name = self.path.replace("/", "-");
-        let filename = format!("{base_name}.bincode");
-        let path = cache_dir.join(filename);
-        
-        fs::write(path, serialized).unwrap();
-    }
-
     pub fn persist_in_site(&self, site_dir: &Path) {
         let mut eno = String::new();
 
@@ -266,16 +250,6 @@ impl Playlist {
 
     pub fn slug(&self) -> &str {
         self.path.split('/').last().unwrap()
-    }
-
-   	pub fn unpersist_in_cache(&self, cache_dir: &Path) {
-        let base_name = self.path.replace("/", "-");
-        let filename = format!("{base_name}.bincode");
-        let path = cache_dir.join(filename);
-        
-        // TODO: Arm when path is sufficiently safe and verified
-        println!("Would fs:remove_file({})", path.display());
-        // fs::remove_file(path).ok();
     }
 
     pub fn unpersist_in_site(&self, context: &Context) {

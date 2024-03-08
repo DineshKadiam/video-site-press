@@ -28,7 +28,6 @@ pub struct SiteFormFeedback {
 }
 
 fn edit_page(
-    context: &Context,
     form_feedback: Option<&SiteFormFeedback>,
     site: &Site
 ) -> String {
@@ -175,7 +174,7 @@ pub fn edit(context: &Context, form_feedback: Option<&SiteFormFeedback>, path: &
     if path == "" {
         let site = context.site.read().unwrap();
 
-        edit_page(&context, form_feedback, &site)
+        edit_page(form_feedback, &site)
     } else {
         String::new()
     }

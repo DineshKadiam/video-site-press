@@ -26,8 +26,7 @@ use crate::{
     PosterFile,
     Video,
     VideoFile,
-    VideoFormat,
-    VideoMeta
+    VideoFormat
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::{
