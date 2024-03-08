@@ -256,7 +256,7 @@ pub fn edit_page(
         })
         .unwrap_or(String::new());
 
-    let poster_upload_button = upload_widget(&format!("/video-poster/{path}"), "Upload Poster");
+    let poster_upload_button = upload_widget(&format!("/upload-video-poster/{path}"), "Upload Poster");
 
     let (
         feedback_update,
