@@ -60,7 +60,13 @@ pub fn compute_poster(context: &Context, video: &Video) -> Result<String, ()> {
         let mut command = Command::new(FFMPEG);
 
         let input_path = context.site_dir.join(&video.path).join(&version.file_name);
-        let output_filename = format!("{}.jpg", nanoid());
+
+        let output_filename = if !context.site_dir.join(&video.path).join("poster.jpg").exists() {
+            "poster.jpg".to_string()
+        } else {
+            format!("poster_{}.jpg", nanoid())
+        };
+
         let output_path = context.site_dir.join(&video.path).join(&output_filename);
 
         // If we know the duration (which conceptually speaking we should be guaranteed to know),

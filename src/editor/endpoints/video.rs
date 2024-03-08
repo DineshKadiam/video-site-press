@@ -523,9 +523,13 @@ pub async fn upload_poster(
             }
 
             let original_filename = filename.to_string();
-            // TODO: Generate a prettier filename - this goes into the site_dir!
-            //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
-            let storage_filename = format!("{}_{original_filename}", nanoid());
+
+            let storage_filename = if !context.site_dir.join(&path.path).join(&original_filename).exists() {
+                original_filename
+            } else {
+                format!("{}_{original_filename}", nanoid())
+            };
+
             let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
             let storage_path_moving = storage_path.clone();
 
