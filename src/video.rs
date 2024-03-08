@@ -15,6 +15,7 @@ use crate::{
     PosterFile,
     VideoMetaCached
 };
+use crate::util::hash;
 
 #[derive(Clone, Debug)]
 pub struct Video {
@@ -198,9 +199,9 @@ impl Video {
 
                 let serialized = bincode::serialize(&cache_item).unwrap();
 
-                let base_name = self.path.replace("/", "-");
-                let filename = format!("{base_name}.poster_assets.bincode");
-                let path = cache_dir.join(filename);
+                let poster_path = format!("{}/{}", self.path, poster.file_name);
+                let file_name = format!("{}.bincode", hash(&poster_path));
+                let path = cache_dir.join(file_name);
                 
                 fs::write(path, serialized).unwrap();
             }
@@ -216,9 +217,9 @@ impl Video {
 
                 let serialized = bincode::serialize(&cache_item).unwrap();
 
-                let base_name = self.path.replace("/", "-");
-                let filename = format!("{base_name}.video_meta.bincode");
-                let path = cache_dir.join(filename);
+                let version_path = format!("{}/{}", self.path, version.file_name);
+                let file_name = format!("{}.bincode", hash(&version_path));
+                let path = cache_dir.join(file_name);
                 
                 fs::write(path, serialized).unwrap();
             }

@@ -1,8 +1,11 @@
 use std::fs;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::ErrorKind;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use nanoid::nanoid;
 use slug::slugify;
 use url::Url;
@@ -60,6 +63,12 @@ pub fn hard_link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) {
         .unwrap_or_else(|_| {
             fs::copy(&from, &to).unwrap();
         });
+}
+
+pub fn hash(input: &str) -> String {
+    let mut hasher = DefaultHasher::new();
+    input.hash(&mut hasher);
+    URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
 /// Takes seconds, formats it like "0:13", "3:15", "2:06:48"
