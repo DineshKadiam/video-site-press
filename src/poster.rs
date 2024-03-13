@@ -1,6 +1,9 @@
+use std::fs;
+
 use serde_derive::{Deserialize, Serialize};
 
-use crate::FileMeta;
+use crate::{CacheItem, Context, FileMeta, PosterAssetsCached};
+use crate::util::hash;
 
 pub struct ImgAttributes {
     pub src: String,
@@ -32,6 +35,25 @@ pub struct PosterFile {
     pub assets: Option<PosterAssets>,
     pub file_meta: FileMeta,
     pub file_name: String
+}
+
+impl PosterAssets {
+    pub fn write_manifest(&self, context: &Context, path: &str, poster: &PosterFile) {
+        let poster_path = format!("{}/{}", path, poster.file_name);
+
+        let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
+            assets: self.clone(),
+            file_meta: poster.file_meta.clone(),
+            path: poster_path.clone()
+        });
+
+        let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
+
+        let cache_item_file_name = format!("{}.bincode", hash(&poster_path));
+        let cache_item_path = context.cache_dir.join(cache_item_file_name);
+        
+        fs::write(cache_item_path, cache_item_serialized).unwrap();
+    }
 }
 
 impl ImgAttributes {

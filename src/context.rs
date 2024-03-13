@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
 
 use serde_derive::Deserialize;
 
@@ -19,7 +19,7 @@ use crate::{
 
 pub struct Context {
     pub build_dir: PathBuf,
-    pub cache: RwLock<Cache>,
+    pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
     // TODO: This is currently statically set to true
     //       Make this configurable, and possibly at runtime.
@@ -28,8 +28,8 @@ pub struct Context {
     pub clean_urls: bool,
     pub job_queue: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
-    pub site: RwLock<Arc<Site>>,
-    pub site_dir: PathBuf
+    pub site: Mutex<Arc<Site>>,
+    pub site_dir: PathBuf,
 }
 
 #[derive(Deserialize)]
@@ -139,9 +139,9 @@ impl Context {
     }
 
     pub fn compute_job_queue(&self) {
-        let site_content = &self.site.read().unwrap().content;
+        let site = self.get_site();
 
-        match site_content {
+        match &site.content {
             SiteContent::Collection(collection) => self.queue_collection(collection),
             SiteContent::Playlist(playlist) => self.queue_playlist(playlist),
             SiteContent::Video(video) => self.queue_video(video),
@@ -159,14 +159,14 @@ impl Context {
     }
 
     pub fn convert_to_collection(&self) {
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let collection = Collection::read_dir(self, &hyper_dir);
             collection.persist_in_site(&self.site_dir);
             site_mut.content = SiteContent::Collection(collection);
-            *self.site.write().unwrap() = Arc::new(site_mut);
+            self.replace_site(site_mut);
         } else if let SiteContent::Playlist(_playlist) = &mut site_mut.content {
             todo!();
         } else if let SiteContent::Video(_video) = &site_mut.content {
@@ -175,14 +175,14 @@ impl Context {
     }
 
     pub fn convert_to_playlist(&self) {
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let playlist = Playlist::read_dir(self, &hyper_dir);
             playlist.persist_in_site(&self.site_dir);
             site_mut.content = SiteContent::Playlist(playlist);
-            *self.site.write().unwrap() = Arc::new(site_mut);
+            self.replace_site(site_mut);
         } else if let SiteContent::Collection(_playlist) = &mut site_mut.content {
             todo!();
         } else if let SiteContent::Video(_video) = &site_mut.content {
@@ -191,14 +191,14 @@ impl Context {
     }
 
     pub fn convert_to_video(&self) {
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let video = Video::read_dir(self, &hyper_dir);
-            video.persist_in_site(self);
+            video.write_manifest(self);
             site_mut.content = SiteContent::Video(video);
-            *self.site.write().unwrap() = Arc::new(site_mut);
+            self.replace_site(site_mut);
         } else if let SiteContent::Collection(_collection) = &mut site_mut.content {
             todo!();
         } else if let SiteContent::Playlist(_playlist) = &mut site_mut.content {
@@ -250,14 +250,14 @@ impl Context {
     ) -> bool {
         let mut path_parts = path.split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         if let Some(&"") = path_parts.peek() {
             if path_parts.count() == 1 {
                 if let SiteContent::Collection(collection) = &site_mut.content {
                     collection.unpersist(self);
                     site_mut.content = SiteContent::Empty;
-                    *self.site.write().unwrap() = Arc::new(site_mut);
+                    self.replace_site(site_mut);
                     return true;
                 }
             }
@@ -266,7 +266,7 @@ impl Context {
 
             if collection_mut.delete_collection(self, path_parts) {
                 *collection = Arc::new(collection_mut);
-                *self.site.write().unwrap() = Arc::new(site_mut);
+                self.replace_site(site_mut);
                 return true;
             }
         }
@@ -280,14 +280,14 @@ impl Context {
     ) -> bool {
         let mut path_parts = path.split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         if let Some(&"") = path_parts.peek() {
             if path_parts.count() == 1 {
                 if let SiteContent::Playlist(playlist) = &site_mut.content {
                     playlist.unpersist_in_site(self);
                     site_mut.content = SiteContent::Empty;
-                    *self.site.write().unwrap() = Arc::new(site_mut);
+                    self.replace_site(site_mut);
                     return true;
                 }
             }
@@ -296,7 +296,7 @@ impl Context {
 
             if collection_mut.delete_playlist(self, path_parts) {
                 *collection = Arc::new(collection_mut);
-                *self.site.write().unwrap() = Arc::new(site_mut);
+                self.replace_site(site_mut);
                 return true;
             }
         }
@@ -310,14 +310,14 @@ impl Context {
     ) -> bool {
         let mut path_parts = path.split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         if let Some(&"") = path_parts.peek() {
             if path_parts.count() == 1 {
                 if let SiteContent::Video(video) = &site_mut.content {
                     video.unpersist(self);
                     site_mut.content = SiteContent::Empty;
-                    *self.site.write().unwrap() = Arc::new(site_mut);
+                    self.replace_site(site_mut);
                     return true;
                 }
             }
@@ -326,7 +326,7 @@ impl Context {
 
             if playlist_mut.delete_video(self, path_parts) {
                 *playlist = Arc::new(playlist_mut);
-                *self.site.write().unwrap() = Arc::new(site_mut);
+                self.replace_site(site_mut);
                 return true;
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
@@ -334,7 +334,7 @@ impl Context {
 
             if collection_mut.delete_video(self, path_parts) {
                 *collection = Arc::new(collection_mut);
-                *self.site.write().unwrap() = Arc::new(site_mut);
+                self.replace_site(site_mut);
                 return true;
             }
         }
@@ -342,33 +342,43 @@ impl Context {
         false
     }
 
-    /// Returns the collection at the given path.
+    /// Returns the collection, playlist or video at the given path.
     pub fn get_any(&self, path: &str) -> GetAnyResult {
-        let site = self.site.read().unwrap();
-        site.get_any(path)
+        self.site.lock().unwrap().get_any(path)
     }
 
     /// Returns the collection at the given path.
     pub fn get_collection(&self, path: &str) -> Option<Arc<Collection>> {
-        let site = self.site.read().unwrap();
-        site.get_collection(path)
+        self.site.lock().unwrap().get_collection(path)
     }
 
     /// Returns the playlist at the given path.
     pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
-        let site = self.site.read().unwrap();
-        site.get_playlist(path)
+        self.site.lock().unwrap().get_playlist(path)
+    }
+
+    /// Returns a cloned `Arc<Site>`, allowing subsequent read-only processing
+    /// of the site tree without keeping a lock on it.
+    pub fn get_site(&self) -> Arc<Site> {
+        Arc::clone(&*self.site.lock().unwrap())
+    }
+
+    /// Returns a mutable `Site` clone of the site tree root, allowing to
+    /// build an updated version of the site tree (without keeping a lock on
+    /// it in the meanwhile) that can later be commited by replacing the
+    /// `Arc<Site>` contained within `Context`.
+    pub fn get_site_mut(&self) -> Site {
+        (**(self.site.lock().unwrap())).clone()
     }
 
     /// Returns the video at the given path.
     pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
-        let site = self.site.read().unwrap();
-        site.get_video(path)
+        self.site.lock().unwrap().get_video(path)
     }
 
     pub fn new(
         build_dir: PathBuf,
-        cache: RwLock<Cache>,
+        cache: Mutex<Cache>,
         cache_dir: PathBuf,
         site: Arc<Site>,
         site_dir: PathBuf
@@ -380,9 +390,15 @@ impl Context {
             clean_urls: true,
             job_queue: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),
-            site: RwLock::new(site),
-            site_dir
+            site: Mutex::new(site),
+            site_dir,
         }
+    }
+
+    /// Replace the immutable `Arc<Site>` at the site tree root,
+    /// updating the site tree to a new version.
+    pub fn replace_site(&self, site_new: Site) {
+        *self.site.lock().unwrap() = Arc::new(site_new);
     }
 
     ///
@@ -421,7 +437,7 @@ impl Context {
     ) -> Result<Arc<Collection>, ()> {
         let mut path_parts = path.split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         let mut collection_new = None;
 
@@ -444,7 +460,7 @@ impl Context {
         }
 
         if let Some(collection) = collection_new {
-            *self.site.write().unwrap() = Arc::new(site_mut);
+            self.replace_site(site_mut);
             return Ok(collection);
         }
 
@@ -462,27 +478,29 @@ impl Context {
 
         let mut path_parts = dir_relative.to_str().unwrap().split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
-
         if let Some(&"") = path_parts.peek() {
-            *self.site.write().unwrap() = Site::read_dir(self, &self.site_dir);
-        } else if let SiteContent::Collection(collection) = &mut site_mut.content {
-            let mut collection_mut = (**collection).clone();
-            collection_mut.update_from_filesystem(self, path_parts);
-            *collection = Arc::new(collection_mut);
-            *self.site.write().unwrap() = Arc::new(site_mut);
-        } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
-            let mut playlist_mut = (**playlist).clone();
-            playlist_mut.update_from_filesystem(self, path_parts);
-            *playlist = Arc::new(playlist_mut);
-            *self.site.write().unwrap() = Arc::new(site_mut);
-        } else if let SiteContent::Video(_) = &mut site_mut.content {
-            // This branch is somewhat an odd case, e.g. the site directory
-            // had a video manifest in it, but additionally folders (which
-            // is not intended by hyper 8 at all), and then the video manifest
-            // is moved into one of those folders, triggering an update at a
-            // subdirectory that was so far ignored.
-            *self.site.write().unwrap() = Site::read_dir(self, &self.site_dir);
+            self.replace_site(Site::read_dir(self, &self.site_dir));
+        } else {
+            let mut site_mut = self.get_site_mut();
+
+            if let SiteContent::Collection(collection) = &mut site_mut.content {
+                let mut collection_mut = (**collection).clone();
+                collection_mut.update_from_filesystem(self, path_parts);
+                *collection = Arc::new(collection_mut);
+                self.replace_site(site_mut);
+            } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
+                let mut playlist_mut = (**playlist).clone();
+                playlist_mut.update_from_filesystem(self, path_parts);
+                *playlist = Arc::new(playlist_mut);
+                self.replace_site(site_mut);
+            } else if let SiteContent::Video(_) = &mut site_mut.content {
+                // This branch is somewhat an odd case, e.g. the site directory
+                // had a video manifest in it, but additionally folders (which
+                // is not intended by hyper 8 at all), and then the video manifest
+                // is moved into one of those folders, triggering an update at a
+                // subdirectory that was so far ignored.
+                self.replace_site(Site::read_dir(self, &self.site_dir));
+            }
         }
     }
 
@@ -493,7 +511,7 @@ impl Context {
     ) -> Result<Arc<Playlist>, ()> {
         let mut path_parts = path.split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         let mut playlist_new = None;
 
@@ -516,7 +534,7 @@ impl Context {
         }
 
         if let Some(playlist) = playlist_new {
-            *self.site.write().unwrap() = Arc::new(site_mut);
+            self.replace_site(site_mut);
             return Ok(playlist);
         }
 
@@ -527,13 +545,13 @@ impl Context {
         &self,
         mutation: impl FnOnce(&mut Site),
     ) -> Arc<Site> {
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         mutation(&mut site_mut);
 
         let site_new = Arc::new(site_mut);
 
-        *self.site.write().unwrap() = Arc::clone(&site_new);
+        *self.site.lock().unwrap() = Arc::clone(&site_new);
 
         site_new
     }
@@ -545,7 +563,7 @@ impl Context {
     ) -> Result<Arc<Video>, ()> {
         let mut path_parts = path.split('/').peekable();
 
-        let mut site_mut = (**(self.site.read().unwrap())).clone();
+        let mut site_mut = self.get_site_mut();
 
         let mut video_new = None;
 
@@ -575,7 +593,7 @@ impl Context {
         }
 
         if let Some(video) = video_new {
-            *self.site.write().unwrap() = Arc::new(site_mut);
+            self.replace_site(site_mut);
             return Ok(video);
         }
 

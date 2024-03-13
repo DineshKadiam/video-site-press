@@ -172,8 +172,7 @@ fn edit_page(
 
 pub fn edit(context: &Context, form_feedback: Option<&SiteFormFeedback>, path: &str) -> String {
     if path == "" {
-        let site = context.site.read().unwrap();
-
+        let site = context.get_site();
         edit_page(form_feedback, &site)
     } else {
         String::new()
@@ -222,15 +221,13 @@ pub async fn update(
     };
 
     if base_url_error.is_none() {
-        let mutation = |site: &mut Site| {
-            site.base_url = if base_url_trimmed.is_empty() { None } else { Some(base_url_trimmed.to_owned()) };
-            site.theme = theme;
+        let mutation = |site_mut: &mut Site| {
+            site_mut.base_url = if base_url_trimmed.is_empty() { None } else { Some(base_url_trimmed.to_owned()) };
+            site_mut.theme = theme;
+            site_mut.write_manifest(&context.site_dir);
         };
 
         let site = context.update_site(mutation);
-
-        // TODO: Could/should happen implicitly as part of update_site()? (also applies for update_* elsewhere)
-        site.persist_in_site(&context.site_dir);
 
         let redirect_url = match site.content {
             SiteContent::Collection(_) => "/collection/",
@@ -241,7 +238,7 @@ pub async fn update(
 
         Either::Left(Redirect::to(redirect_url).see_other())
     } else {
-        let site = context.site.read().unwrap();
+        let site = context.get_site();
 
         let site_form_feedback = SiteFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url_error),

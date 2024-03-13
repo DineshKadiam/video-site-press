@@ -189,24 +189,6 @@ impl Video {
     }
 
     pub fn persist_in_cache(&self, cache_dir: &Path) {
-        if let Some(poster) = &self.poster {
-            if let Some(assets) = &poster.assets {
-                let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
-                    assets: assets.clone(),
-                    file_meta: poster.file_meta.clone(),
-                    path: format!("{}/{}", self.path, poster.file_name)
-                });
-
-                let serialized = bincode::serialize(&cache_item).unwrap();
-
-                let poster_path = format!("{}/{}", self.path, poster.file_name);
-                let file_name = format!("{}.bincode", hash(&poster_path));
-                let path = cache_dir.join(file_name);
-                
-                fs::write(path, serialized).unwrap();
-            }
-        }
-
         for version in &self.versions {
             if let Some(video_meta) = &version.video_meta {
                 let cache_item = CacheItem::VideoMeta(VideoMetaCached {
@@ -224,30 +206,6 @@ impl Video {
                 fs::write(path, serialized).unwrap();
             }
         }
-    }
-
-    pub fn persist_in_site(&self, context: &Context) {
-        let mut eno = String::new();
-
-        if let Some(poster) = &self.poster {
-            eno.push_str(&format!("poster: {}\n", poster.file_name));
-        }
-
-        if let Some(title) = &self.title {
-            eno.push_str(&format!("title: {}\n", title));
-        }
-
-        if self.unlisted {
-            eno.push_str("unlisted\n");
-        }
-
-        if let Some(description) = &self.description {
-            if !eno.is_empty() { eno.push('\n'); }
-            eno.push_str(&format!("-- description\n{}\n--description\n", description));
-        }
-
-        let path = context.site_dir.join(&self.path).join("video.eno");
-        fs::write(path, eno).unwrap();
     }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir) -> Arc<Video> {
@@ -275,7 +233,7 @@ impl Video {
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
             let poster_path = format!("{}/{}", &video.path, file_name);
-            let assets = context.cache.read().unwrap().poster_assets
+            let assets = context.cache.lock().unwrap().poster_assets
                 .iter()
                 .find(|cached| cached.file_meta == file_meta && cached.path == poster_path)
                 .map(|cached| cached.assets.clone());
@@ -290,7 +248,7 @@ impl Video {
             let file_name = video_file.file_name().unwrap().to_string_lossy().to_string();
 
             let version_path = format!("{}/{}", &video.path, file_name);
-            let video_meta = context.cache.read().unwrap().video_meta
+            let video_meta = context.cache.lock().unwrap().video_meta
                 .iter()
                 .find(|cached| cached.file_meta == file_meta && cached.path == version_path)
                 .map(|cached| cached.video_meta.clone());
@@ -344,6 +302,30 @@ impl Video {
         //     let poster_path = context.cache_dir.join(poster);
         //     fs::remove_file(poster_path).unwrap();
         // }
+    }
+
+    pub fn write_manifest(&self, context: &Context) {
+        let mut eno = String::new();
+
+        if let Some(poster) = &self.poster {
+            eno.push_str(&format!("poster: {}\n", poster.file_name));
+        }
+
+        if let Some(title) = &self.title {
+            eno.push_str(&format!("title: {}\n", title));
+        }
+
+        if self.unlisted {
+            eno.push_str("unlisted\n");
+        }
+
+        if let Some(description) = &self.description {
+            if !eno.is_empty() { eno.push('\n'); }
+            eno.push_str(&format!("-- description\n{}\n--description\n", description));
+        }
+
+        let path = context.site_dir.join(&self.path).join("video.eno");
+        fs::write(path, eno).unwrap();
     }
 }
 

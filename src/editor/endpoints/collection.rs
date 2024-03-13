@@ -341,7 +341,7 @@ pub fn edit_page(
         </form>
     "#);
 
-    let site = &context.site.read().unwrap();
+    let site = context.get_site();
     let head_title = collection.title.as_deref().unwrap_or_else(|| collection.slug());
     let html = layout(context, path, &site, &body, head_title);
 

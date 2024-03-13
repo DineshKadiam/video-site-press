@@ -160,20 +160,7 @@ impl Site {
         }
     }
 
-    pub fn persist_in_site(&self, site_dir: &Path) {
-        let mut eno = String::new();
-
-        if let Some(base_url) = &self.base_url {
-            eno.push_str(&format!("base_url: {}\n", base_url));
-        }
-
-        eno.push_str(&format!("theme: {}\n", self.theme.key));
-
-        let path = site_dir.join("site.eno");
-        fs::write(path, eno).unwrap();
-    }
-
-    pub fn read_dir(context: &Context, dir: &Path) -> Arc<Site> {
+    pub fn read_dir(context: &Context, dir: &Path) -> Site {
         let hyper_dir = HyperDir::read(dir);
 
         let mut site = Site::new();
@@ -213,7 +200,7 @@ impl Site {
             site.content = SiteContent::Video(video);
         }
 
-        Arc::new(site)
+        site
     }
 
     pub fn title(&self) -> &str {
@@ -223,5 +210,19 @@ impl Site {
             SiteContent::Video(video) => video.title.as_deref().unwrap_or("Hyper 8"),
             _ => "Hyper 8"
         }
+    }
+
+    /// Writes `site.eno` in the site directory
+    pub fn write_manifest(&self, site_dir: &Path) {
+        let mut eno = String::new();
+
+        if let Some(base_url) = &self.base_url {
+            eno.push_str(&format!("base_url: {}\n", base_url));
+        }
+
+        eno.push_str(&format!("theme: {}\n", self.theme.key));
+
+        let path = site_dir.join("site.eno");
+        fs::write(path, eno).unwrap();
     }
 }

@@ -140,7 +140,7 @@ use crate::editor::widgets::layout;
 // }
 
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
-    let site = &context.site.read().unwrap();
+    let site = context.get_site();
 
     let body = match &site.content {
         SiteContent::Collection(_) => {
@@ -178,7 +178,7 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         }
     };
 
-    let html = layout(&context, "", site, &body, site.title());
+    let html = layout(&context, "", &site, &body, site.title());
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

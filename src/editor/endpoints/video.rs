@@ -370,7 +370,7 @@ pub fn edit_page(
         </form>
     "#);
 
-    let site = &context.site.read().unwrap();
+    let site = context.get_site();
     let head_title = video.title.as_deref().unwrap_or(video.slug());
     let html = layout(context, path, &site, &body, head_title);
 
@@ -423,6 +423,7 @@ pub async fn r#move(
         let mutation = |video: &mut Video| {
             // TODO: Here and elsewhere: Changing the slug works very differently now (!) b/c it's encoded in the filesystem path
             // video.slug = slug_trimmed.to_owned();
+            video.write_manifest(&context);
         };
 
         let video = match context.update_video(mutation, &path.path) {
@@ -431,8 +432,6 @@ pub async fn r#move(
                 not_found(&context, &format!("Video {} not found.", &path.path))
             )
         };
-
-        video.persist_in_site(&context);
 
         let redirect_url = format!("/video/{}", video.path);
         Either::Left(Redirect::to(redirect_url).see_other())
@@ -469,6 +468,7 @@ pub async fn update(
             video.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             video.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             video.unlisted = unlisted;
+            video.write_manifest(&context);
         };
 
         let video = match context.update_video(mutation, &path.path) {
@@ -477,8 +477,6 @@ pub async fn update(
                 not_found(&context, &format!("Video {} not found.", &path.path))
             )
         };
-
-        video.persist_in_site(&context);
 
         let redirect_url = format!("/video/{}", video.path);
         Either::Left(Redirect::to(redirect_url).see_other())
@@ -547,6 +545,7 @@ pub async fn upload_poster(
 
             let mutation = |video: &mut Video| {
                 video.poster = Some(poster_file);
+                video.write_manifest(&context);
             };
 
             let video = match context.update_video(mutation, &path.path) {
@@ -557,8 +556,6 @@ pub async fn upload_poster(
                     return Ok(Either::Right(http_response));
                 }
             };
-
-            video.persist_in_site(&context);
 
             let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
             context.job_queue.lock().unwrap().push(job);

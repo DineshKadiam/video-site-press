@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 use clap::Parser;
 
@@ -71,17 +71,20 @@ fn main() {
 
     util::ensure_dir(&cache_dir);
 
-    let cache = RwLock::new(Cache::retrieve(&cache_dir));
+    let cache = Mutex::new(Cache::retrieve(&cache_dir));
 
     let context = Context::new(
         build_dir,
         cache,
         cache_dir,
-        Arc::new(Site::new()), // TODO: Clean this up, super hacky
+        Arc::new(Site::new()),
         site_dir.clone()
     );
 
-    *context.site.write().unwrap() = Site::read_dir(&context, &site_dir);
+    // TODO: Would be great if we could somehow resolve the conundrum that
+    //       context depends on site and site depends on context, which
+    //       forces us to initialize context with a dummy site and replace it here.
+    context.replace_site(Site::read_dir(&context, &site_dir));
 
     let context = Arc::new(context);
 

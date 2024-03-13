@@ -210,7 +210,7 @@ impl Playlist {
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
             let poster_path = format!("{}/{}", &playlist.path, file_name);
-            let assets = context.cache.read().unwrap().poster_assets
+            let assets = context.cache.lock().unwrap().poster_assets
                 .iter()
                 .find(|cached| cached.file_meta == file_meta && cached.path == poster_path)
                 .map(|cached| cached.assets.clone());

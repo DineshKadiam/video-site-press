@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
@@ -35,7 +36,6 @@ const ICON_VIDEO: &'static str = r#"
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
-    context: &Context,
     path: &str
 ) -> String {
     let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.iter().cloned().collect();
@@ -63,7 +63,7 @@ fn collection_tree(
                 breadcrumbs.push(format!(r#"<a href="{href}">{ICON_COLLECTION} {label}</a>"#));
             }
 
-            let collection_content = collection_tree(breadcrumbs, collection, context, path);
+            let collection_content = collection_tree(breadcrumbs, collection, path);
 
             formatdoc!(r#"
                 <li>
@@ -266,7 +266,7 @@ pub fn layout(
     body: &str,
     title: &str
 ) -> String {
-    let (breadcrumbs, sidebar) = site_tree(&context, path);
+    let (breadcrumbs, sidebar) = site_tree(path, site, &context.site_dir);
 
     // TODO: Possibly hash scripts/styles
     let head = formatdoc!(r#"
@@ -320,28 +320,26 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
         <a href="/">Back to index</a>
     "#);
 
-    let site = &context.site.read().unwrap();
-    let html = layout(context, "", site, &body, "Not Found");
+    let site = &context.get_site();
+    let html = layout(context, "", &site, &body, "Not Found");
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
 }
 
-pub fn site_tree(context: &Context, path: &str) -> (String, String) {
-    let site: &Site = &context.site.read().unwrap();
-
+pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
-    let root_dir = context.site_dir.file_name().unwrap().to_string_lossy();
-    let site_dir = &context.site_dir.to_string_lossy();
+    let root_dir = site_dir.file_name().unwrap().to_string_lossy();
+    let site_dir = &site_dir.to_string_lossy();
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
             let breadcrumb_title = collection.title.as_deref().unwrap_or("Collection");
             breadcrumbs.push(format!(r#"<a href="/collection/">{ICON_COLLECTION} {breadcrumb_title}</a>"#));
 
-            let collection_content = collection_tree(&mut breadcrumbs, collection, &context, path);
+            let collection_content = collection_tree(&mut breadcrumbs, collection, path);
 
             let active = path == "";
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };

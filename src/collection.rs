@@ -87,17 +87,6 @@ impl Collection {
         }
     }
 
-    // /// Returns all playlists that contain the given video. 
-    // pub fn get_playlists_for_video(&self, video: &Video) -> Vec<Playlist> {
-    //     self.playlists
-    //         .lock()
-    //         .unwrap()
-    //         .iter()
-    //         .filter(|playlist| playlist.videos.iter().any(|iterated| iterated == &video.slug))
-    //         .cloned()
-    //         .collect()
-    // }
-
     pub fn delete_collection(
         &mut self,
         context: &Context,
@@ -313,28 +302,6 @@ impl Collection {
         fs::write(path, eno).unwrap();
     }
 
-    // /// Returns all playlists that are not unlisted.
-    // pub fn public_playlists(&self) -> Vec<Playlist> {
-    //     self.playlists
-    //         .lock()
-    //         .unwrap()
-    //         .iter()
-    //         .filter(|playlist| !playlist.unlisted)
-    //         .cloned()
-    //         .collect()
-    // }
-
-    // /// Returns all videos that are not unlisted.
-    // pub fn public_videos(&self) -> Vec<Video> {
-    //     self.videos
-    //         .lock()
-    //         .unwrap()
-    //         .iter()
-    //         .filter(|video| !video.unlisted)
-    //         .cloned()
-    //         .collect()
-    // }
-
     // /// Returns the public videos in the given playlist, in correct playlist order.
     // pub fn public_videos_in_playlist(&self, playlist: &Playlist) -> Vec<Video> {
     //     let mut videos: Vec<(usize, Video)> = self.videos
@@ -429,29 +396,6 @@ impl Collection {
             //       order to communicate the existence via the brower interface too.
         }
     }
-
-    // /// Checks if any other playlist or video uses the given slug,
-    // /// and if so, returns a string indicating it.
-    // /// Owner id is the id of the playlist/video to which the slug
-    // /// in question should be applied, we obviously exclude this
-    // /// entity from collision checking.
-    // pub fn slug_collision(&self, slug: &str, owner_id: &str) -> Option<String> {
-    //     for video in self.videos.lock().unwrap().iter() {
-    //         if video.id == owner_id { continue; }
-    //         if video.slug == slug {
-    //             return Some(format!("Video '{}'", &video.title))
-    //         }
-    //     }
-
-    //     for playlist in self.playlists.lock().unwrap().iter() {
-    //         if playlist.id == owner_id { continue; }
-    //         if playlist.slug == slug && playlist.id != owner_id {
-    //             return Some(format!("Playlist '{}'", &playlist.title))
-    //         }
-    //     }
-
-    //     None
-    // }
 
     pub fn slug(&self) -> &str {
         self.path.split('/').last().unwrap()

@@ -34,7 +34,7 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
                 video_meta: video_meta.clone()
             };
 
-            context.cache.write().unwrap().video_meta.push(video_meta_cached);
+            context.cache.lock().unwrap().video_meta.push(video_meta_cached);
 
             version.video_meta = Some(video_meta);
 
@@ -62,19 +62,16 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
 
 fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
     if let Ok(file_name) = transcode::compute_poster(&context, &video) {
+        let file_path = context.site_dir.join(&video.path).join(&file_name);
+        let file_meta = FileMeta::new(&file_path);
+        let poster_file = PosterFile::new(None, file_meta, file_name);
+
         let mutation = |video_mut: &mut Video| {
-            let file_path = context.site_dir.join(&video_mut.path).join(&file_name);
-            let file_meta = FileMeta::new(&file_path);
-
-            let poster_file = PosterFile::new(None, file_meta, file_name);
-
-            video_mut.poster = Some(poster_file)
+            video_mut.poster = Some(poster_file);
         };
 
         if let Ok(video_updated) = context.update_video(mutation, &video.path) {
-            video_updated.persist_in_cache(&context.cache_dir);
-            video_updated.persist_in_site(&context);
-
+            video_updated.write_manifest(&context);
             return video_updated;
         }
     }
@@ -140,6 +137,8 @@ fn compute_poster_assets(context: &Context, video: Arc<Video>) {
             max_1280
         };
 
+        poster_assets.write_manifest(context, &video.path, poster);
+
         let mutation = |video: &mut Video| {
             // Note that we expect the poster to be Some(), virtually always.
             // If it's missing that is an edge case with (likely) user interaction.
@@ -149,8 +148,7 @@ fn compute_poster_assets(context: &Context, video: Arc<Video>) {
         };
 
         if let Ok(video) = context.update_video(mutation, &video.path) {
-            video.persist_in_cache(&context.cache_dir);
-            video.persist_in_site(&context);
+            video.write_manifest(&context);
         }
     } 
 }

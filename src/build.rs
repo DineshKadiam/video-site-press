@@ -4,6 +4,7 @@ use crate::{
     Collection,
     Context,
     Playlist,
+    Site,
     SiteContent,
     Video
 };
@@ -20,14 +21,14 @@ use playlist::playlist_html;
 use video::video_html;
 
 pub fn perform_build(context: &Context) {
-    let site = &context.site.read().unwrap();
+    let site = context.get_site();
     
     ensure_empty_dir(&context.build_dir);
 
     match &site.content {
-        SiteContent::Collection(collection) => build_collection(context, collection),
-        SiteContent::Playlist(playlist) => build_playlist(context, playlist),
-        SiteContent::Video(video) => build_video(context, video),
+        SiteContent::Collection(collection) => build_collection(context, collection, &site),
+        SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site),
+        SiteContent::Video(video) => build_video(context, video, &site),
         SiteContent::Empty => (),
         SiteContent::Invalid => todo!()
     }
@@ -40,23 +41,23 @@ pub fn perform_build(context: &Context) {
     styles::generate(&context, &site);
 }
 
-fn build_collection(context: &Context, collection: &Collection) {
+fn build_collection(context: &Context, collection: &Collection, site: &Site) {
     for subcollection in &collection.subcollections {
-        build_collection(context, subcollection);
+        build_collection(context, subcollection, site);
     }
 
     for playlist in &collection.playlists {
-        build_playlist(context, playlist);
+        build_playlist(context, playlist, site);
     }
 
     for video in &collection.videos {
-        build_video(context, video);
+        build_video(context, video, site);
     }
 
-    collection_html(context, collection, &context.site.read().unwrap());
+    collection_html(context, collection, site);
 }
 
-fn build_playlist(context: &Context, playlist: &Playlist) {
+fn build_playlist(context: &Context, playlist: &Playlist, site: &Site) {
     if let Some(poster) = &playlist.poster {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
         fs::create_dir_all(&playlist_build_dir).unwrap();
@@ -76,14 +77,14 @@ fn build_playlist(context: &Context, playlist: &Playlist) {
         }
     }
 
-    playlist_html(context, playlist, &context.site.read().unwrap());
+    playlist_html(context, playlist, site);
 
     for video in &playlist.videos_physical {
-        build_video(context, video);
+        build_video(context, video, site);
     }
 }
 
-fn build_video(context: &Context, video: &Video) {
+fn build_video(context: &Context, video: &Video, site: &Site) {
     let video_build_dir = context.build_dir.join(&video.path);
     fs::create_dir_all(&video_build_dir).unwrap();
 
@@ -110,5 +111,5 @@ fn build_video(context: &Context, video: &Video) {
         }
     }
 
-    video_html(context, video, &context.site.read().unwrap());
+    video_html(context, video, site);
 }
