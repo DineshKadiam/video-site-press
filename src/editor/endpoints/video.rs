@@ -7,6 +7,7 @@ use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::http::header::ContentType;
 use actix_web::web::{self, Data, Form, Path as ActixPath, Redirect};
+use chrono::NaiveDate;
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
@@ -31,6 +32,7 @@ use crate::{
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     form_checkbox,
+    form_field_date,
     form_field,
     form_field_pattern,
     form_textarea,
@@ -52,6 +54,7 @@ pub enum VideoFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        release_date: Field,
         title: Field,
         unlisted: bool
     }
@@ -65,6 +68,7 @@ pub struct VideoMoveForm {
 #[derive(Deserialize)]
 pub struct VideoUpdateForm {
     description: String,
+    release_date: String,
     title: String,
     unlisted: Option<String>
 }
@@ -217,32 +221,6 @@ pub fn edit_page(
         "#)
     };
 
-    // let in_playlists = {
-    //     let playlists = context.collection.get_playlists_for_video(&video);
-
-    //     if playlists.is_empty() {
-    //         String::new()
-    //     } else {
-    //         let list = playlists
-    //             .into_iter()
-    //             .map(|playlist| {
-    //                 let id = &playlist.id;
-    //                 let title = &playlist.title;
-                    
-    //                 format!(r#"<a href="/playlist/{id}">{title}</a>"#)
-    //             })
-    //             .collect::<Vec<String>>()
-    //             .join(", ");
-
-    //         formatdoc!("
-    //             <br><br>
-    //             <div>
-    //                 In playlists: {list}
-    //             </div>"
-    //         )
-    //     }
-    // };
-
     let poster = video.poster
         .as_ref()
         .map(|poster| {
@@ -261,19 +239,27 @@ pub fn edit_page(
     let (
         feedback_update,
         input_description,
+        input_release_date,
         input_title,
         input_unlisted,
-    ) = if let Some(VideoFormFeedback::Update { description, title, unlisted }) = &form_feedback {
+    ) = if let Some(VideoFormFeedback::Update { description, title, release_date, unlisted }) = &form_feedback {
         (
             r#"<span class="feedback">Not Saved</span>"#,
             form_textarea("description", "Description", "Description", Some(description)),
+            form_field_date(release_date, "release_date", "Release Date"),
             form_field(title, "title", "Title", "Title"),
             form_checkbox(*unlisted, "unlisted", "Unlisted")
         )
     } else {
+        let release_date = video.release_date
+            .as_ref()
+            .map(|date| date.to_string())
+            .unwrap_or(String::new());
+
         (
             "",
             form_textarea("description", "Description", "Description", video.description.as_deref()),
+            form_field_date(&Field::valid(release_date), "release_date", "Release Date"),
             form_field(&Field::valid(video.title.as_deref().unwrap_or("")), "title", "Title", "Title"),
             form_checkbox(video.unlisted, "unlisted", "Unlisted")
         )
@@ -330,6 +316,7 @@ pub fn edit_page(
         <form action="/video/{path}" method="post">
             {input_title}
             {input_description}
+            {input_release_date}
             {input_unlisted}
 
             <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -459,13 +446,15 @@ pub async fn update(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let description_trimmed = form.description.trim();
+    let release_date = NaiveDate::parse_from_str(&form.release_date, "%Y-%m-%d").map_err(|err| err.to_string());
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
 
-    // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
-    if true {
+
+    if release_date.is_ok() {
         let mutation = |video: &mut Video| {
             video.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            video.release_date = release_date.ok();
             video.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             video.unlisted = unlisted;
             video.write_manifest(&context);
@@ -490,6 +479,7 @@ pub async fn update(
 
         let form_feedback = VideoFormFeedback::Update {
             description: description_trimmed,
+            release_date: Field::validated(&form.release_date, release_date.err()),
             title: Field::valid(title_trimmed),
             unlisted
         };

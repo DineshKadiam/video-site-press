@@ -222,6 +222,27 @@ pub fn form_field(
     "#)
 }
 
+
+pub fn form_field_date(
+    field: &Field,
+    key: &str,
+    label: &str
+) -> String {
+    let error = field.error
+        .as_deref()
+        .map(|message| format!(r#"<span class="error">{message}</span>"#))
+        .unwrap_or(String::new());
+    let value = &field.value;
+
+    formatdoc!(r#"
+        <div class="form_field">
+            <label for="{key}">{label}</label>
+            <input id="{key}" name="{key}" type="date" value="{value}">
+            {error}
+        </div>
+    "#)
+}
+
 pub fn form_field_pattern(
     field: &Field,
     key: &str,

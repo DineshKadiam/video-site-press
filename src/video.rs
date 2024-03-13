@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
+use chrono::NaiveDate;
 use enolib::SectionElement;
 use serde_derive::{Deserialize, Serialize};
 
@@ -24,6 +25,7 @@ pub struct Video {
     /// Relative to site dir, always without leading/trailing slashes
     pub path: String,
     pub poster: Option<PosterFile>,
+    pub release_date: Option<NaiveDate>,
     pub title: Option<String>,
     /// Unlisted videos are not linked from the site anywhere,
     /// one needs to know the link to access them.
@@ -119,6 +121,22 @@ impl Video {
             _ => ()
         }
 
+        match document.optional_field("release_date") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(value) => match NaiveDate::parse_from_str(&value, "%Y-%m-%d") {
+                        Ok(date) => {
+                            self.release_date = Some(date);
+                        }
+                        Err(err) => self.errors.push(format!("Error in {} ({})", manifest_path.display(), err))
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
         match document.optional_field("title") {
             Ok(Some(field)) => {
                 match field.required_value() {
@@ -182,6 +200,7 @@ impl Video {
             errors: Vec::new(),
             path,
             poster: None,
+            release_date: None,
             title: None,
             unlisted: false,
             versions: Vec::new()
@@ -309,6 +328,10 @@ impl Video {
 
         if let Some(poster) = &self.poster {
             eno.push_str(&format!("poster: {}\n", poster.file_name));
+        }
+
+        if let Some(release_date) = &self.release_date {
+            eno.push_str(&format!("release_date: {}\n", release_date));
         }
 
         if let Some(title) = &self.title {
