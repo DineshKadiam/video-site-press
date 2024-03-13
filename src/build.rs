@@ -20,15 +20,34 @@ use collection::collection_html;
 use playlist::playlist_html;
 use video::video_html;
 
+#[derive(Clone)]
+pub enum Breadcrumb {
+    Collection(String),
+    Playlist(String),
+    Video(String)
+}
+
+impl Breadcrumb {
+    pub fn label(&self) -> &str {
+        match self {
+            Breadcrumb::Collection(label) => &label,
+            Breadcrumb::Playlist(label) => &label,
+            Breadcrumb::Video(label) => &label
+        }
+    }
+}
+
 pub fn perform_build(context: &Context) {
     let site = context.get_site();
     
     ensure_empty_dir(&context.build_dir);
 
+    let breadcrumbs = Vec::new();
+
     match &site.content {
-        SiteContent::Collection(collection) => build_collection(context, collection, &site),
-        SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site),
-        SiteContent::Video(video) => build_video(context, video, &site),
+        SiteContent::Collection(collection) => build_collection(context, collection, &site, &breadcrumbs),
+        SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site, &breadcrumbs),
+        SiteContent::Video(video) => build_video(context, video, &site, &breadcrumbs),
         SiteContent::Empty => (),
         SiteContent::Invalid => todo!()
     }
@@ -41,23 +60,41 @@ pub fn perform_build(context: &Context) {
     styles::generate(&context, &site);
 }
 
-fn build_collection(context: &Context, collection: &Collection, site: &Site) {
+fn build_collection(
+    context: &Context,
+    collection: &Collection,
+    site: &Site,
+    breadcrumbs: &Vec<Breadcrumb>
+) {
+    let mut breadcrumbs_extended = breadcrumbs.clone();
+
+    breadcrumbs_extended.push(Breadcrumb::Collection(collection.label().to_string()));
+
     for subcollection in &collection.subcollections {
-        build_collection(context, subcollection, site);
+        build_collection(context, subcollection, site, &breadcrumbs_extended);
     }
 
     for playlist in &collection.playlists {
-        build_playlist(context, playlist, site);
+        build_playlist(context, playlist, site, &breadcrumbs_extended);
     }
 
     for video in &collection.videos {
-        build_video(context, video, site);
+        build_video(context, video, site, &breadcrumbs_extended);
     }
 
-    collection_html(context, collection, site);
+    collection_html(context, collection, site, &breadcrumbs_extended);
 }
 
-fn build_playlist(context: &Context, playlist: &Playlist, site: &Site) {
+fn build_playlist(
+    context: &Context,
+    playlist: &Playlist,
+    site: &Site,
+    breadcrumbs: &Vec<Breadcrumb>
+) {
+    let mut breadcrumbs_extended = breadcrumbs.clone();
+
+    breadcrumbs_extended.push(Breadcrumb::Playlist(playlist.label().to_string()));
+
     if let Some(poster) = &playlist.poster {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
         fs::create_dir_all(&playlist_build_dir).unwrap();
@@ -77,14 +114,23 @@ fn build_playlist(context: &Context, playlist: &Playlist, site: &Site) {
         }
     }
 
-    playlist_html(context, playlist, site);
+    playlist_html(context, playlist, site, &breadcrumbs_extended);
 
     for video in &playlist.videos_physical {
-        build_video(context, video, site);
+        build_video(context, video, site, &breadcrumbs_extended);
     }
 }
 
-fn build_video(context: &Context, video: &Video, site: &Site) {
+fn build_video(
+    context: &Context,
+    video: &Video,
+    site: &Site,
+    breadcrumbs: &Vec<Breadcrumb>
+) {
+    let mut breadcrumbs_extended = breadcrumbs.clone();
+
+    breadcrumbs_extended.push(Breadcrumb::Video(video.label().to_string()));
+
     let video_build_dir = context.build_dir.join(&video.path);
     fs::create_dir_all(&video_build_dir).unwrap();
 
@@ -111,5 +157,5 @@ fn build_video(context: &Context, video: &Video, site: &Site) {
         }
     }
 
-    video_html(context, video, site);
+    video_html(context, video, site, &breadcrumbs_extended);
 }

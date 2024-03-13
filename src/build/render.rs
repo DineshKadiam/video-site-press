@@ -4,6 +4,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::{Playlist, Site, Video, VideoFile};
+use crate::build::Breadcrumb;
 use crate::util::{casual_duration, human_size};
 
 
@@ -17,7 +18,8 @@ pub fn layout(
     root_prefix: &str,
     site: &Site,
     body: &str,
-    title: &str
+    title: &str,
+    breadcrumbs: &Vec<Breadcrumb>
 ) -> String {
     // TODO: Hash assets (cache expiration)
     let head = formatdoc!(r#"
@@ -29,19 +31,31 @@ pub fn layout(
             <link rel="stylesheet" href="{root_prefix}styles.css">
         </head>
     "#);
+
+    let breadcrumbs_rendered = breadcrumbs
+        .iter()
+        .enumerate()
+        .map(|(index, breadcrumb)| {
+            let href = "../".repeat(breadcrumbs.len() - 1 - index);
+            let label = breadcrumb.label();
+            format!(r#"<a href="{href}">{label}</a>"#)
+        })
+        .collect::<Vec<String>>()
+        .join(" › ");
     
     let body = formatdoc!(r#"
-            <body>
-                <div class="center">
-                    <header>
-                        <span class="logo">Hyper 8</span> <a class="site_title" href="{root_prefix}">{title}</a>
-                    </header>
-                    {body}
-                </div>
-            </body>
-        "#,
-        title = site.title()
-    );
+        <body>
+            <div class="center">
+                <header>
+                    {breadcrumbs_rendered}
+                </header>
+                {body}
+                <footer>
+                    <span class="logo">Hyper 8</span>
+                </footer>
+            </div>
+        </body>
+    "#);
 
     formatdoc!("
         <!doctype html>
@@ -211,137 +225,137 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
     }
 }
 
-/// Renders the index page of a playlist (lists videos only)
-pub fn playlist(
-    build_dir: &Path,
-    playlist: &Playlist,
-    site: &Site,
-    videos: &[Arc<Video>]
-) {
-    let list = videos
-        .iter()
-        .map(|video| {
-            let slug = video.slug();
-            let title = video.title.as_deref().unwrap_or(video.slug());
-            let video_prefix = format!("../../{slug}/");
-            let video_thumbnail = thumbnail(video, &video_prefix);
+// /// Renders the index page of a playlist (lists videos only)
+// pub fn playlist(
+//     build_dir: &Path,
+//     playlist: &Playlist,
+//     site: &Site,
+//     videos: &[Arc<Video>]
+// ) {
+//     let list = videos
+//         .iter()
+//         .map(|video| {
+//             let slug = video.slug();
+//             let title = video.title.as_deref().unwrap_or(video.slug());
+//             let video_prefix = format!("../../{slug}/");
+//             let video_thumbnail = thumbnail(video, &video_prefix);
 
-            formatdoc!(r#"
-                <li>
-                    <a href="{slug}/">
-                        {video_thumbnail}
-                        <div>
-                            {title}
-                        </div>
-                    </a>
-                </li>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+//             formatdoc!(r#"
+//                 <li>
+//                     <a href="{slug}/">
+//                         {video_thumbnail}
+//                         <div>
+//                             {title}
+//                         </div>
+//                     </a>
+//                 </li>
+//             "#)
+//         })
+//         .collect::<Vec<String>>()
+//         .join("\n");
 
-    let description = if let Some(description) = &playlist.description { description } else { "" };
-    let title = playlist.title.as_deref().unwrap_or(playlist.slug());
+//     let description = if let Some(description) = &playlist.description { description } else { "" };
+//     let title = playlist.title.as_deref().unwrap_or(playlist.slug());
 
-    let body = formatdoc!(r#"
-        <div>
-            <h1>{title}</h1>
-            <p>
-                {description}
-            </p>
-            <div>
-                <a href="TODO">Share</a>
-            </div>
-            <ol>
-                {list}
-            </ol>
-        </div>
-    "#);
+//     let body = formatdoc!(r#"
+//         <div>
+//             <h1>{title}</h1>
+//             <p>
+//                 {description}
+//             </p>
+//             <div>
+//                 <a href="TODO">Share</a>
+//             </div>
+//             <ol>
+//                 {list}
+//             </ol>
+//         </div>
+//     "#);
 
-    let html = layout("../../", site, &body, title);
+//     let html = layout("../../", site, &body, title);
 
-    let playlist_dir = build_dir.join("playlists").join(playlist.slug());
-    fs::create_dir_all(&playlist_dir).unwrap();
+//     let playlist_dir = build_dir.join("playlists").join(playlist.slug());
+//     fs::create_dir_all(&playlist_dir).unwrap();
 
-    let index_path = playlist_dir.join("index.html");
-    fs::write(index_path, html).unwrap();
-}
+//     let index_path = playlist_dir.join("index.html");
+//     fs::write(index_path, html).unwrap();
+// }
 
-/// Renders the page for a video in the context of a playlist
-pub fn playlist_video(
-    build_dir: &Path,
-    playlist: &Playlist,
-    site: &Site,
-    videos: &[Arc<Video>],
-    video: &Video
-) {
-    let root_prefix = "../../../";
-    let video_prefix = format!("{root_prefix}{}/", video.slug());
-    let description = if let Some(description) = &video.description { description } else { "" };
-    let title = video.title.as_deref().unwrap_or(video.slug());
+// /// Renders the page for a video in the context of a playlist
+// pub fn playlist_video(
+//     build_dir: &Path,
+//     playlist: &Playlist,
+//     site: &Site,
+//     videos: &[Arc<Video>],
+//     video: &Video
+// ) {
+//     let root_prefix = "../../../";
+//     let video_prefix = format!("{root_prefix}{}/", video.slug());
+//     let description = if let Some(description) = &video.description { description } else { "" };
+//     let title = video.title.as_deref().unwrap_or(video.slug());
 
-    let player_rendered = player(video, &video_prefix);
+//     let player_rendered = player(video, &video_prefix);
 
-    let videos_rendered = videos
-        .iter()
-        .enumerate()
-        .map(|(index, iterated_video)| {
-            let active = iterated_video.slug() == video.slug();
-            let class = if active { r#" class="active""# } else { "" };
-            let number = index + 1;
-            // TODO: Use poster assets (different sizes)
-            let poster = match iterated_video.poster {
-                Some(_) => {
-                    let iterated_video_prefix = format!("{root_prefix}{}/", iterated_video.slug());
-                    format!(r#"<img class="thumbnail" src="{iterated_video_prefix}poster.jpg">"#)
-                }
-                None => String::new()
-            };
-            let slug = iterated_video.slug();
-            let title = iterated_video.title.as_deref().unwrap_or(video.slug());
+//     let videos_rendered = videos
+//         .iter()
+//         .enumerate()
+//         .map(|(index, iterated_video)| {
+//             let active = iterated_video.slug() == video.slug();
+//             let class = if active { r#" class="active""# } else { "" };
+//             let number = index + 1;
+//             // TODO: Use poster assets (different sizes)
+//             let poster = match iterated_video.poster {
+//                 Some(_) => {
+//                     let iterated_video_prefix = format!("{root_prefix}{}/", iterated_video.slug());
+//                     format!(r#"<img class="thumbnail" src="{iterated_video_prefix}poster.jpg">"#)
+//                 }
+//                 None => String::new()
+//             };
+//             let slug = iterated_video.slug();
+//             let title = iterated_video.title.as_deref().unwrap_or(video.slug());
 
-            formatdoc!(r#"
-                <a {class}href="../{slug}/">
-                    {poster}
-                    {number} {title}
-                </a>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+//             formatdoc!(r#"
+//                 <a {class}href="../{slug}/">
+//                     {poster}
+//                     {number} {title}
+//                 </a>
+//             "#)
+//         })
+//         .collect::<Vec<String>>()
+//         .join("\n");
 
-    let body = formatdoc!(r#"
-        <div>
-            <h1>{title}</h1>
-            <div class="split">
-                <div>
-                    {player_rendered}
-                    <p>
-                        {description}
-                    </p>
-                    <div>
-                        <a href="TODO">Share</a>
-                    </div>
-                </div>
-                <div class="sidebar">
-                    {videos_rendered}
-                </div>
-            </div>
-        </div>
-    "#);
+//     let body = formatdoc!(r#"
+//         <div>
+//             <h1>{title}</h1>
+//             <div class="split">
+//                 <div>
+//                     {player_rendered}
+//                     <p>
+//                         {description}
+//                     </p>
+//                     <div>
+//                         <a href="TODO">Share</a>
+//                     </div>
+//                 </div>
+//                 <div class="sidebar">
+//                     {videos_rendered}
+//                 </div>
+//             </div>
+//         </div>
+//     "#);
 
-    let html = layout(root_prefix, site, &body, playlist.title.as_deref().unwrap_or(playlist.slug()));
+//     let html = layout(root_prefix, site, &body, playlist.title.as_deref().unwrap_or(playlist.slug()));
 
-    let playlist_video_dir = build_dir
-        .join("playlists")
-        .join(playlist.slug())
-        .join(video.slug());
+//     let playlist_video_dir = build_dir
+//         .join("playlists")
+//         .join(playlist.slug())
+//         .join(video.slug());
 
-    fs::create_dir_all(&playlist_video_dir).unwrap();
+//     fs::create_dir_all(&playlist_video_dir).unwrap();
 
-    let index_path = playlist_video_dir.join("index.html");
-    fs::write(index_path, html).unwrap();
-}
+//     let index_path = playlist_video_dir.join("index.html");
+//     fs::write(index_path, html).unwrap();
+// }
 
 pub fn thumbnail(video: &Video, video_prefix: &str) -> String {
     let duration = match &video.versions.first().and_then(|version| version.video_meta.as_ref()) {

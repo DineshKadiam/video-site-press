@@ -1,12 +1,14 @@
 use std::fs;
 
 use crate::{Context, Site, Video};
+use crate::build::Breadcrumb;
 use crate::build::render::{layout, player};
 
 pub fn video_html(
     context: &Context,
     video: &Video,
-    site: &Site
+    site: &Site,
+    breadcrumbs: &Vec<Breadcrumb>
 ) {
     let description = if let Some(description) = &video.description { description } else { "" };
     let title = video.title.as_deref().unwrap_or(video.slug());
@@ -24,7 +26,7 @@ pub fn video_html(
     "#);
 
     let root_prefix = if video.path == "" { "".to_string() } else { "../".repeat(video.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title);
+    let html = layout(&root_prefix, site, &body, title, breadcrumbs);
 
     let video_dir = context.build_dir.join(&video.path);
     fs::create_dir_all(&video_dir).unwrap();

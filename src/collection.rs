@@ -269,6 +269,15 @@ impl Collection {
         None
     }
 
+    pub fn label(&self) -> &str {
+        self.title
+            .as_deref()
+            .unwrap_or_else(||
+                self.slug_opt()
+                    .unwrap_or("Collection")
+            )
+    }
+
     pub fn new(path: String) -> Collection {
         Collection {
             description: None,
@@ -399,6 +408,14 @@ impl Collection {
 
     pub fn slug(&self) -> &str {
         self.path.split('/').last().unwrap()
+    }
+
+    pub fn slug_opt(&self) -> Option<&str> {
+        if self.path == "" {
+            None
+        } else {
+            self.path.split('/').last()
+        }
     }
 
     pub fn unpersist(&self, context: &Context) {

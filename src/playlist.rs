@@ -153,6 +153,15 @@ impl Playlist {
         None
     }
 
+    pub fn label(&self) -> &str {
+        self.title
+            .as_deref()
+            .unwrap_or_else(||
+                self.slug_opt()
+                    .unwrap_or("Playlist")
+            )
+    }
+
 	pub fn new(path: String) -> Playlist {
 		Playlist {
             description: None,
@@ -250,6 +259,14 @@ impl Playlist {
 
     pub fn slug(&self) -> &str {
         self.path.split('/').last().unwrap()
+    }
+
+    pub fn slug_opt(&self) -> Option<&str> {
+        if self.path == "" {
+            None
+        } else {
+            self.path.split('/').last()
+        }
     }
 
     pub fn unpersist_in_site(&self, context: &Context) {

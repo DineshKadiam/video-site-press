@@ -3,12 +3,14 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Collection, Context, Site};
+use crate::build::Breadcrumb;
 use crate::build::render::{layout, thumbnail};
 
 pub fn collection_html(
     context: &Context,
     collection: &Collection,
-    site: &Site
+    site: &Site,
+    breadcrumbs: &Vec<Breadcrumb>
 ) {
     let mut body = String::new();
     let index_suffix = context.index_suffix();
@@ -128,7 +130,7 @@ pub fn collection_html(
     }
 
     let root_prefix = if collection.path == "" { "".to_string() } else { "../".repeat(collection.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title);
+    let html = layout(&root_prefix, site, &body, title, breadcrumbs);
 
     let collection_dir = context.build_dir.join(&collection.path);
     fs::create_dir_all(&collection_dir).unwrap();

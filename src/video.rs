@@ -100,7 +100,6 @@ impl Video {
             _ => ()
         }
 
-        // TODO: Verify that file exists at given path!
         match document.optional_field("poster") {
             Ok(Some(field)) => {
                 match field.required_value() {
@@ -194,6 +193,15 @@ impl Video {
         version_candidate.map(|pixels_version| pixels_version.1)
     }
 
+    pub fn label(&self) -> &str {
+        self.title
+            .as_deref()
+            .unwrap_or_else(||
+                self.slug_opt()
+                    .unwrap_or("Video")
+            )
+    }
+
     fn new(path: String) -> Video {
         Video {
             description: None,
@@ -280,6 +288,14 @@ impl Video {
 
     pub fn slug(&self) -> &str {
         self.path.split('/').last().unwrap()
+    }
+
+    pub fn slug_opt(&self) -> Option<&str> {
+        if self.path == "" {
+            None
+        } else {
+            self.path.split('/').last()
+        }
     }
 
     // TODO: It could happen that we delete a file while it is being transcoded.

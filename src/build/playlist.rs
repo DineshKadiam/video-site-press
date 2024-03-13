@@ -3,12 +3,14 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site};
+use crate::build::Breadcrumb;
 use crate::build::render::{layout, thumbnail};
 
 pub fn playlist_html(
     context: &Context,
     playlist: &Playlist,
-    site: &Site
+    site: &Site,
+    breadcrumbs: &Vec<Breadcrumb>
 ) {
     let mut body = String::new();
     let index_suffix = context.index_suffix();
@@ -56,7 +58,7 @@ pub fn playlist_html(
     }
 
     let root_prefix = if playlist.path == "" { "".to_string() } else { "../".repeat(playlist.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title);
+    let html = layout(&root_prefix, site, &body, title, breadcrumbs);
 
     let playlist_dir = context.build_dir.join(&playlist.path);
     fs::create_dir_all(&playlist_dir).unwrap();
