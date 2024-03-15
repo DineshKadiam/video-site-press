@@ -35,12 +35,12 @@ impl Field {
     }
 }
 
-/// Takes seconds, formats it like "25min", "33sec", "158min"
+/// Takes seconds, formats it like "25 min", "33 sec", "158 min"
 pub fn casual_duration(seconds: f32) -> String {
     if seconds < 60.0 {
-        format!("{}sec", seconds as u8)
+        format!("{} sec", seconds as u8)
     } else {
-        format!("{}", (seconds / 60.0).round() as u32)
+        format!("{} min", (seconds / 60.0).round() as u32)
     }
 }
 
