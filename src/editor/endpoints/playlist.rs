@@ -28,7 +28,7 @@ use crate::editor::widgets::{
     not_found,
     upload_widget
 };
-use crate::util::{nanoid, validate_slug};
+use crate::util::{nanoid, supported_image_extension, validate_slug};
 
 pub enum PlaylistFormFeedback<'a> {
     Move {
@@ -530,13 +530,7 @@ pub async fn upload_poster(
         let content_disposition = field.content_disposition();
 
         if let Some(filename) = content_disposition.get_filename() {
-            let filename_lowercase = filename.to_lowercase();
-            // TODO: DRY up with other places where this is done (+expand formats)
-            if !(filename_lowercase.ends_with(".jpg") ||
-                filename_lowercase.ends_with(".jpeg") ||
-                filename_lowercase.ends_with(".png") ||
-                filename_lowercase.ends_with(".webp")) {
-
+            if !supported_image_extension(filename) {
                 // TODO: Implement without panicking - return something instead
                 panic!("Unsupported file extension in {filename}");
             }

@@ -1,4 +1,4 @@
-use std::fs;
+use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
@@ -40,7 +40,13 @@ use crate::editor::widgets::{
     not_found,
     upload_widget
 };
-use crate::util::{precise_duration, human_size, nanoid, validate_slug};
+use crate::util::{
+    precise_duration,
+    human_size,
+    nanoid,
+    supported_image_extension,
+    validate_slug
+};
 
 #[derive(Deserialize)]
 pub struct DownsizeForm {
@@ -499,13 +505,7 @@ pub async fn upload_poster(
         let content_disposition = field.content_disposition();
 
         if let Some(filename) = content_disposition.get_filename() {
-            let filename_lowercase = filename.to_lowercase();
-            // TODO: DRY up with other places where this is done (+expand formats)
-            if !(filename_lowercase.ends_with(".jpg") ||
-                filename_lowercase.ends_with(".jpeg") ||
-                filename_lowercase.ends_with(".png") ||
-                filename_lowercase.ends_with(".webp")) {
-
+            if !supported_image_extension(filename) {
                 // TODO: Implement without panicking - return something instead
                 panic!("Unsupported file extension in {filename}");
             }
@@ -522,7 +522,7 @@ pub async fn upload_poster(
             let storage_path_moving = storage_path.clone();
 
             // File::create is blocking operation, use threadpool
-            let mut f = web::block(|| std::fs::File::create(storage_path_moving)).await??;
+            let mut f = web::block(|| File::create(storage_path_moving)).await??;
 
             // Field in turn is stream of *Bytes* object
             while let Some(chunk) = field.try_next().await? {
@@ -610,16 +610,13 @@ pub async fn upload_video(
 
                 let storage_path_moving = storage_path.clone();
                 // File::create is blocking operation, use threadpool
-                let mut f = web::block(|| std::fs::File::create(storage_path_moving)).await??;
+                let mut f = web::block(|| File::create(storage_path_moving)).await??;
 
                 // Field in turn is stream of *Bytes* object
                 while let Some(chunk) = field.try_next().await? {
                     // filesystem operations are blocking, we have to use threadpool
                     f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
                 }
-
-                // TODO: path.path must be verified, and video actually appended in to the site tree
-                // let video = Video::new_upload(&original_filename, &storage_filename, &path.path);
 
                 match &container {
                     GetAnyResult::Collection(_) => {
@@ -639,9 +636,6 @@ pub async fn upload_video(
                         let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
                         context.job_queue.lock().unwrap().push(job);
 
-                        // TODO: Do we really need to persist anything here? Video is implicitly video anyway through the video file ...
-                        // collection.persist_in_site(&context.site_dir);
-
                         let redirect_url = format!("/video/{}", &video.path);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                     }
@@ -658,9 +652,6 @@ pub async fn upload_video(
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
                             return Ok(Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path))));
                         }
-
-                        // TODO: Do we really need to persist anything here? Video is implicitly video anyway through the video file ...
-                        // playlist.persist_in_site(&context.site_dir);
 
                         let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
                         context.job_queue.lock().unwrap().push(job);

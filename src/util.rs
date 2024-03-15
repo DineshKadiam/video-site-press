@@ -120,6 +120,16 @@ pub fn remove_file(path: &Path) {
     }
 }
 
+pub fn supported_image_extension(filename: &str) -> bool {
+    let filename_lowercase = filename.to_lowercase();
+
+    return filename_lowercase.ends_with(".gif") ||
+        filename_lowercase.ends_with(".jpg") ||
+        filename_lowercase.ends_with(".jpeg") ||
+        filename_lowercase.ends_with(".png") ||
+        filename_lowercase.ends_with(".webp");
+}
+
 pub fn timestamp() -> u128 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
 }
