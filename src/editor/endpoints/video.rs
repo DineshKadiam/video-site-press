@@ -386,15 +386,36 @@ pub async fn edit(context: Data<Arc<Context>>, path: ActixPath<ContextPath>) -> 
 // TODO: Highly insecure b/c path arbitrary etc. you know
 pub async fn poster(context: Data<Arc<Context>>, path: ActixPath<ContextPath>) -> HttpResponse {
     let filepath = context.site_dir.join(&path.path);
-    let content = web::block(move || fs::read(filepath))
+    let filepath_moving = filepath.clone();
+    let content = web::block(move || fs::read(filepath_moving))
         .await
         .unwrap()
         .unwrap();
 
-    HttpResponse::Ok()
-        // TODO: Dynamic, correct content type
-        .content_type(ContentType::jpeg())
-        .body(content)
+    match filepath.extension() {
+        Some(extension) => {
+            let content_type = if extension.eq_ignore_ascii_case("jpg") || extension.eq_ignore_ascii_case("jpg") {
+                "image/jpeg"
+            } else if extension.eq_ignore_ascii_case("png") {
+                "image/png"
+            } else if extension.eq_ignore_ascii_case("webp") {
+                "image/webp"
+            } else if extension.eq_ignore_ascii_case("webp") {
+                "image/gif"
+            } else {
+                let body = format!("Poster file extension {} can not be requested.", extension.to_string_lossy());
+                return HttpResponse::NotImplemented().body(body);
+            };
+
+            HttpResponse::Ok()
+                .content_type(content_type)
+                .body(content)
+        }
+        None => {
+            HttpResponse::NotImplemented()
+                .body("Files without extension can not be requested as a poster.")
+        }
+    }
 }
 
 pub async fn r#move(
