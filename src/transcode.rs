@@ -54,8 +54,7 @@ struct FFprobeStream {
 }
 
 pub fn compute_poster(context: &Context, video: &Video) -> Result<String, ()> {
-    // TODO: Should be from whatever we consider "original" (and however we determine that)
-    if let Some(version) = &video.versions.first() {
+    if let Some(version) = &video.highest_resolution_version() {
         // Compute from video
         let mut command = Command::new(FFMPEG);
 
