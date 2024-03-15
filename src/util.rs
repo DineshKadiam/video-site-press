@@ -120,14 +120,45 @@ pub fn remove_file(path: &Path) {
     }
 }
 
-pub fn supported_image_extension(filename: &str) -> bool {
-    let filename_lowercase = filename.to_lowercase();
+pub fn supported_audio_extension(filename: &str) -> bool {
+    match Path::new(filename).extension() {
+        Some(extension) => {
+            extension.eq_ignore_ascii_case("aac") ||
+            extension.eq_ignore_ascii_case("aiff") ||
+            extension.eq_ignore_ascii_case("alac") ||
+            extension.eq_ignore_ascii_case("flac") ||
+            extension.eq_ignore_ascii_case("mp3") ||
+            extension.eq_ignore_ascii_case("ogg") ||
+            extension.eq_ignore_ascii_case("opus") ||
+            extension.eq_ignore_ascii_case("wav")
+        }
+        None => false
+    }
+}
 
-    return filename_lowercase.ends_with(".gif") ||
-        filename_lowercase.ends_with(".jpg") ||
-        filename_lowercase.ends_with(".jpeg") ||
-        filename_lowercase.ends_with(".png") ||
-        filename_lowercase.ends_with(".webp");
+pub fn supported_image_extension(filename: &str) -> bool {
+    match Path::new(filename).extension() {
+        Some(extension) => {
+            extension.eq_ignore_ascii_case("gif") ||
+            extension.eq_ignore_ascii_case("jpg") ||
+            extension.eq_ignore_ascii_case("jpeg") ||
+            extension.eq_ignore_ascii_case("png") ||
+            extension.eq_ignore_ascii_case("webp")
+        }
+        None => false
+    }
+}
+
+pub fn supported_video_extension(filename: &str) -> bool {
+    match Path::new(filename).extension() {
+        Some(extension) => {
+            extension.eq_ignore_ascii_case("m4v") ||
+            extension.eq_ignore_ascii_case("mp4") ||
+            extension.eq_ignore_ascii_case("mkv") ||
+            extension.eq_ignore_ascii_case("mov")
+        }
+        None => false
+    }
 }
 
 pub fn timestamp() -> u128 {

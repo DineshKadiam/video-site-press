@@ -282,11 +282,11 @@ impl Video {
             video.versions.push(VideoFile::new(file_meta, file_name, video_meta));
         }
 
-        if !hyper_dir.invalid_dirs.is_empty() {
-            let mut error = "Directories inside this video have names that are not valid (try to only use alphanumeric characters, dash and underscore):".to_string();
+        if !hyper_dir.errors.is_empty() {
+            let mut error = "Directories and/or files inside this video directory have issues:".to_string();
 
-            for invalid_dir in &hyper_dir.invalid_dirs {
-                error.push_str(&format!("\n- {}", invalid_dir));
+            for message in &hyper_dir.errors {
+                error.push_str(&format!("\n- {}", message));
             }
 
             video.errors.push(error);

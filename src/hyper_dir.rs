@@ -3,6 +3,11 @@ use std::path::{Path, PathBuf};
 use slug::slugify;
 
 use crate::Context;
+use crate::util::{
+    supported_audio_extension,
+    supported_image_extension,
+    supported_video_extension
+};
 
 /// Convenience wrapper to generically pre-scan directories for
 /// repeating/required patterns used in hyper8's folder hierarchy.
@@ -11,8 +16,8 @@ pub struct HyperDir {
     pub audio_files: Vec<PathBuf>,
     pub collection_manifest: Option<PathBuf>,
     pub dirs: Vec<PathBuf>,
+    pub errors: Vec<String>,
     pub image_files: Vec<PathBuf>,
-    pub invalid_dirs: Vec<String>,
     pub path: PathBuf,
     pub playlist_manifest: Option<PathBuf>,
     pub site_manifest: Option<PathBuf>,
@@ -26,8 +31,8 @@ impl HyperDir {
             audio_files: Vec::new(),
             collection_manifest: None,
             dirs: Vec::new(),
+            errors: Vec::new(),
             image_files: Vec::new(),
-            invalid_dirs: Vec::new(),
             path: path.to_owned(),
             playlist_manifest: None,
             site_manifest: None,
@@ -53,7 +58,8 @@ impl HyperDir {
                             if slugify(&file_name) == file_name {
                                 hyper_dir.dirs.push(dir_entry.path());
                             } else {
-                                hyper_dir.invalid_dirs.push(file_name);
+                                let error = format!("Ignoring directory {} because its name is invalid (try to only use alphanumeric characters, dash and underscore)", file_name);
+                                hyper_dir.errors.push(error);
                             }
                         } else if file_type.is_file() {
                             match dir_entry.file_name().to_string_lossy().as_ref() {
@@ -70,32 +76,27 @@ impl HyperDir {
                                     hyper_dir.video_manifest = Some(path.join("video.eno"));
                                 }
                                 filename => {
-                                    let path = dir_entry.path();
-                                    if let Some(extension) = path.extension() {
-                                        match extension.to_string_lossy().to_lowercase().as_str() {
-                                            "aac" | "aiff" | "alac" | "flac" | "mp3" | "ogg" | "opus" | "wav" => {
-                                                hyper_dir.audio_files.push(dir_entry.path());
-                                            }
-                                            "eno" => {
-                                                eprintln!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", filename);
-                                            }
-                                            "gif" | "jpeg" | "jpg" | "png" | "webp" => {
-                                                hyper_dir.image_files.push(dir_entry.path());
-                                            }
-                                            "m4v" | "mp4" | "mkv" | "mov" => {
-                                                hyper_dir.video_files.push(dir_entry.path());
-                                            }
-                                            unsupported_extension => {
-                                                eprintln!("Ignoring unsupported file {} (.{} is an unsupported extension)", path.display(), unsupported_extension);
-                                            }
-                                        }
+                                    if supported_video_extension(filename) {
+                                        hyper_dir.video_files.push(dir_entry.path());
+                                    } else if supported_image_extension(filename) {
+                                        hyper_dir.image_files.push(dir_entry.path());
+                                    } else if supported_audio_extension(filename) {
+                                        hyper_dir.audio_files.push(dir_entry.path());
+                                    } else if filename.ends_with(".eno") {
+                                        let error = format!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", filename);
+                                        hyper_dir.errors.push(error);
+                                    } else {
+                                        let error = format!("Ignoring unsupported file {} (unsupported extension)", filename);
+                                        hyper_dir.errors.push(error);
                                     }
                                 }
                             }
                         } else if file_type.is_symlink() {
-                            eprintln!("Ignoring symlink '{}'", dir_entry.path().display());
+                            let error = format!("Ignoring symlink '{}'", dir_entry.path().display());
+                            hyper_dir.errors.push(error);
                         } else {
-                            eprintln!("Ignoring file '{}' of unsupported type", dir_entry.path().display());
+                            let error = format!("Ignoring file '{}' of unsupported type", dir_entry.path().display());
+                            hyper_dir.errors.push(error);
                         }
                     }
                 }
