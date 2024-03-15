@@ -12,7 +12,6 @@ use crate::{
     Context,
     FileMeta,
     HyperDir,
-    PosterAssetsCached,
     PosterFile,
     VideoMetaCached
 };
@@ -281,6 +280,16 @@ impl Video {
                 .map(|cached| cached.video_meta.clone());
 
             video.versions.push(VideoFile::new(file_meta, file_name, video_meta));
+        }
+
+        if !hyper_dir.invalid_dirs.is_empty() {
+            let mut error = "Directories inside this video have names that are not valid (try to only use alphanumeric characters, dash and underscore):".to_string();
+
+            for invalid_dir in &hyper_dir.invalid_dirs {
+                error.push_str(&format!("\n- {}", invalid_dir));
+            }
+
+            video.errors.push(error);
         }
 
         Arc::new(video)

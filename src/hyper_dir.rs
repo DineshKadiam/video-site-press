@@ -12,6 +12,7 @@ pub struct HyperDir {
     pub collection_manifest: Option<PathBuf>,
     pub dirs: Vec<PathBuf>,
     pub image_files: Vec<PathBuf>,
+    pub invalid_dirs: Vec<String>,
     pub path: PathBuf,
     pub playlist_manifest: Option<PathBuf>,
     pub site_manifest: Option<PathBuf>,
@@ -26,6 +27,7 @@ impl HyperDir {
             collection_manifest: None,
             dirs: Vec::new(),
             image_files: Vec::new(),
+            invalid_dirs: Vec::new(),
             path: path.to_owned(),
             playlist_manifest: None,
             site_manifest: None,
@@ -46,11 +48,13 @@ impl HyperDir {
 
                             if file_name.starts_with('.') { continue }
 
-                            if slugify(&file_name) != file_name {
-                                // TODO: Reject and report dirs whose names do not match the permalink character limitations
-                                dbg!("TODO: Should reject folder for its (non-permalink) name");
+                            // TODO: Revisit whether slugify(...) actually imposes the sort of dir name constraints
+                            //       we want, and also, what are these anyway, exactly?
+                            if slugify(&file_name) == file_name {
+                                hyper_dir.dirs.push(dir_entry.path());
+                            } else {
+                                hyper_dir.invalid_dirs.push(file_name);
                             }
-                            hyper_dir.dirs.push(dir_entry.path());
                         } else if file_type.is_file() {
                             match dir_entry.file_name().to_string_lossy().as_ref() {
                                 "collection.eno" => {
