@@ -438,21 +438,21 @@ impl Collection {
             for subcollection in &self.subcollections {
                 let subcollection_path = context.site_dir.join(subcollection.slug());
                 if subcollection_path.exists() {
-                    fs::remove_file(&subcollection_path).unwrap();
+                    fs::remove_dir_all(&subcollection_path).unwrap();
                 }
             }
 
             for playlist in &self.playlists {
                 let playlist_path = context.site_dir.join(playlist.slug());
                 if playlist_path.exists() {
-                    fs::remove_file(&playlist_path).unwrap();
+                    fs::remove_dir_all(&playlist_path).unwrap();
                 }
             }
 
             for video in &self.videos {
                 let video_path = context.site_dir.join(video.slug());
                 if video_path.exists() {
-                    fs::remove_file(&video_path).unwrap();
+                    fs::remove_dir_all(&video_path).unwrap();
                 }
             }
         } else {
