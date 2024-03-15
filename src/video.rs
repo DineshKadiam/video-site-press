@@ -9,9 +9,11 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{
     BrowserSupport,
     CacheItem,
+    Collection,
     Context,
     FileMeta,
     HyperDir,
+    Playlist,
     PosterFile,
     VideoMetaCached
 };
@@ -72,6 +74,11 @@ pub struct VideoMeta {
     pub has_audio: bool,
     pub height: usize,
     pub width: usize
+}
+
+pub enum VideoParent {
+    Collection(Arc<Collection>),
+    Playlist(Arc<Playlist>)
 }
 
 impl Video {

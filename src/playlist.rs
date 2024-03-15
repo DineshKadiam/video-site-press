@@ -279,7 +279,7 @@ impl Playlist {
         }
     }
 
-    pub fn unpersist_in_site(&self, context: &Context) {
+    pub fn unpersist(&self, context: &Context) {
         if self.path == "" {
             let manifest_path = context.site_dir.join("playlist.eno");
             if manifest_path.exists() {

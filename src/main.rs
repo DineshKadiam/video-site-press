@@ -37,7 +37,7 @@ use processing::{Job, JobKind, Processing};
 use site::{Site, SiteContent};
 use theme::Theme;
 use util::Field;
-use video::{Video, VideoFile, VideoMeta};
+use video::{Video, VideoFile, VideoMeta, VideoParent};
 use video_format::{Codec, Container, EncodingApproach, VideoFormat};
 
 fn main() {

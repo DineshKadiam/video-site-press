@@ -27,7 +27,8 @@ use crate::{
     PosterFile,
     Video,
     VideoFile,
-    VideoFormat
+    VideoFormat,
+    VideoParent
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::{
@@ -83,17 +84,19 @@ pub async fn delete(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
-    if !context.delete_video(&path.path) {
-        return Either::Right(not_found(&context, &format!("Video {} not found.", &path.path)))
+    let video_parent = match context.delete_video(&path.path) {
+        Ok(video_parent) => video_parent,
+        Err(()) => return Either::Right(not_found(&context, &format!("Video {} not found.", &path.path)))
     };
 
-    let redirect_url = if &path.path == "" {
-        "/".to_string()
-    } else {
-        // TODO: The video might have been in a collection OR playlist, so we need to dynamically
-        // find out what it was and use the correct url. (or some other solution e.g. where we
-        // don't need to spell out collection/playlist/video in the url, somewhat like /any/.*)
-        Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
+    let redirect_url = match video_parent {
+        Some(VideoParent::Collection(collection)) => {
+            Path::new("/collection").join(&collection.path).to_str().unwrap().to_string()
+        }
+        Some(VideoParent::Playlist(playlist)) => {
+            Path::new("/playlist").join(&playlist.path).to_str().unwrap().to_string()
+        }
+        None => "/".to_string()
     };
 
     Either::Left(Redirect::to(redirect_url).see_other())

@@ -11,7 +11,8 @@ use crate::{
     GetAnyResult,
     HyperDir,
     Playlist,
-    Video
+    Video,
+    VideoParent
 };
 
 #[derive(Clone, Debug)]
@@ -124,7 +125,7 @@ impl Collection {
                 .iter()
                 .position(|playlist| playlist.slug() == slug)
                 .map(|index| self.playlists.swap_remove(index)) {
-                playlist.unpersist_in_site(context);
+                playlist.unpersist(context);
                 return true;
             } else if let Some(subcollection) = self.subcollections
                 .iter_mut()
@@ -141,18 +142,21 @@ impl Collection {
         false
     }
 
+    /// Deletes the video at path (if found) and in case of success returns
+    /// its deeper parent (subcollection or playlist or None if it was a
+    /// direct child of this collection).
     pub fn delete_video(
         &mut self,
         context: &Context,
         mut path_parts: Peekable<Split<char>>
-    ) -> bool {
+    ) -> Result<Option<VideoParent>, ()> {
         if let Some(slug) = path_parts.next() {
             if let Some(video) = self.videos
                 .iter()
                 .position(|video| video.slug() == slug)
                 .map(|index| self.videos.swap_remove(index)) {
                 video.unpersist(context);
-                return true;
+                return Ok(None);
             } else if let Some(playlist) = self.playlists
                 .iter_mut()
                 .find(|playlist| playlist.slug() == slug) {
@@ -160,21 +164,30 @@ impl Collection {
 
                 if playlist_mut.delete_video(context, path_parts) {
                     *playlist = Arc::new(playlist_mut);
-                    return true;
+                    return Ok(Some(VideoParent::Playlist(Arc::clone(playlist))));
                 }
             } else if let Some(subcollection) = self.subcollections
                 .iter_mut()
                 .find(|subcollection| subcollection.slug() == slug) {
                 let mut subcollection_mut = (**subcollection).clone();
 
-                if subcollection_mut.delete_video(context, path_parts) {
-                    *subcollection = Arc::new(subcollection_mut);
-                    return true;
+                if let Ok(video_parent) = subcollection_mut.delete_video(context, path_parts) {
+                    match video_parent {
+                        Some(video_parent) => {
+                            *subcollection = Arc::new(subcollection_mut);
+                            return Ok(Some(video_parent));
+                        }
+                        None => {
+                            let subcollection_new = Arc::new(subcollection_mut);
+                            *subcollection = Arc::clone(&subcollection_new);
+                            return Ok(Some(VideoParent::Collection(subcollection_new)))
+                        }
+                    }
                 }
             }
         }
 
-        false
+        Err(())
     }
 
     /// Returns a collection, playlist or video at the given path.
