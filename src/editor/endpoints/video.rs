@@ -476,15 +476,41 @@ pub async fn update(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let description_trimmed = form.description.trim();
-    let release_date = NaiveDate::parse_from_str(&form.release_date, "%Y-%m-%d").map_err(|err| err.to_string());
+    let release_date = if form.release_date.is_empty() {
+        None
+    } else {
+        Some(
+            NaiveDate::parse_from_str(&form.release_date, "%Y-%m-%d")
+                .map_err(|err| err.to_string())
+        )
+    };
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
 
 
-    if release_date.is_ok() {
+
+    if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) {
+        let video = match context.get_video(&path.path) {
+            Some(video) => video,
+            None => return Either::Right(
+                not_found(&context, &format!("Video {} not found.", &path.path))
+            )
+        };
+
+        let form_feedback = VideoFormFeedback::Update {
+            description: description_trimmed,
+            release_date: Field::validated(&form.release_date, release_date.unwrap().err()),
+            title: Field::valid(title_trimmed),
+            unlisted
+        };
+
+        Either::Right(
+            edit_page(&context, Some(form_feedback), &video)
+        )
+    } else {
         let mutation = |video: &mut Video| {
             video.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            video.release_date = release_date.ok();
+            video.release_date = release_date.and_then(|release_date| release_date.ok());
             video.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             video.unlisted = unlisted;
             video.write_manifest(&context);
@@ -499,24 +525,6 @@ pub async fn update(
 
         let redirect_url = format!("/video/{}", video.path);
         Either::Left(Redirect::to(redirect_url).see_other())
-    } else {
-        let video = match context.get_video(&path.path) {
-            Some(video) => video,
-            None => return Either::Right(
-                not_found(&context, &format!("Video {} not found.", &path.path))
-            )
-        };
-
-        let form_feedback = VideoFormFeedback::Update {
-            description: description_trimmed,
-            release_date: Field::validated(&form.release_date, release_date.err()),
-            title: Field::valid(title_trimmed),
-            unlisted
-        };
-
-        Either::Right(
-            edit_page(&context, Some(form_feedback), &video)
-        )
     }
 }
 
