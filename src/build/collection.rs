@@ -96,7 +96,7 @@ pub fn collection_html(
                     let video_thumbnail = thumbnail(video, &video_prefix);
 
                     formatdoc!(r#"
-                        <a href="{slug}{index_suffix}">
+                        <a href="{subcollection_slug}/{slug}{index_suffix}">
                             {video_thumbnail}
                             <div>{title}</div>
                         </a>
