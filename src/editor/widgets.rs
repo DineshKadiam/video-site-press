@@ -38,7 +38,7 @@ fn collection_tree(
     collection: &Collection,
     path: &str
 ) -> String {
-    let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.iter().cloned().collect();
+    let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.to_vec();
 
     subcollections_sorted.sort_unstable_by(|a, b| {
         let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
@@ -75,7 +75,7 @@ fn collection_tree(
         .collect::<Vec<String>>()
         .join("");
 
-    let mut playlists_sorted: Vec<Arc<Playlist>> = collection.playlists.iter().cloned().collect();
+    let mut playlists_sorted: Vec<Arc<Playlist>> = collection.playlists.to_vec();
 
     playlists_sorted.sort_unstable_by(|a, b| {
         let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
@@ -143,7 +143,7 @@ fn collection_tree(
         .collect::<Vec<String>>()
         .join("");
 
-    let mut videos_sorted: Vec<Arc<Video>> = collection.videos.iter().cloned().collect();
+    let mut videos_sorted: Vec<Arc<Video>> = collection.videos.to_vec();
 
     videos_sorted.sort_unstable_by(|a, b| {
         let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
@@ -342,7 +342,7 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
     "#);
 
     let site = &context.get_site();
-    let html = layout(context, "", &site, &body, "Not Found");
+    let html = layout(context, "", site, &body, "Not Found");
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -390,7 +390,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
                     </li>
                 "#)
             } else {
-                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos_physical.iter().cloned().collect();
+                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos_physical.to_vec();
 
                 videos_sorted.sort_unstable_by(|a, b| {
                     let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
@@ -456,7 +456,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
 
 fn tree_node(
     active: bool,
-    errors: &Vec<String>,
+    errors: &[String],
     href: &str,
     icon: &str,
     slug: &str,

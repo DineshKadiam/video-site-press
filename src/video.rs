@@ -116,7 +116,7 @@ impl Video {
                             let poster_file = PosterFile::new(None, file_meta, value);
                             self.poster = Some(poster_file);
                         } else {
-                            // TODO: Error
+                            self.errors.push(format!("Error in {} (Path to poster is invalid, file not found)", manifest_path.display()));
                         }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
@@ -258,11 +258,11 @@ impl Video {
             video.errors.push(format!("Ignoring folders {folder_names} inside video folder {} (only files may be placed inside a video folder).", hyper_dir.path.display()));
         }
 
-        if !hyper_dir.image_files.is_empty() {
-            // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
+        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
+        if !hyper_dir.image_files.is_empty() && video.poster.is_none() {
             let first_image = hyper_dir.image_files.first().unwrap();
 
-            let file_meta = FileMeta::new(&first_image);
+            let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
             let poster_path = format!("{}/{}", &video.path, file_name);
@@ -277,7 +277,7 @@ impl Video {
         }
 
         for video_file in &hyper_dir.video_files {
-            let file_meta = FileMeta::new(&video_file);
+            let file_meta = FileMeta::new(video_file);
             let file_name = video_file.file_name().unwrap().to_string_lossy().to_string();
 
             let version_path = format!("{}/{}", &video.path, file_name);
@@ -342,17 +342,6 @@ impl Video {
             let video_dir = context.site_dir.join(&self.path);
             fs::remove_dir_all(video_dir).unwrap();
         }
-
-        // TODO: (Potentially) remove cached assets such as resized images, cached metadata etc.
-        // let filename_in_cache = format!("{}.bincode", &self.id);
-        // let path_in_cache = context.cache_dir.join(filename_in_cache);
-        
-        // fs::remove_file(path_in_cache).unwrap();
-
-        // if let Some(poster) = &self.assets.poster {
-        //     let poster_path = context.cache_dir.join(poster);
-        //     fs::remove_file(poster_path).unwrap();
-        // }
     }
 
     pub fn write_manifest(&self, context: &Context) {

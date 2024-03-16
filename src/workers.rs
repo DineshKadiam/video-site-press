@@ -61,7 +61,7 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
 }
 
 fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
-    if let Ok(file_name) = transcode::compute_poster(&context, &video) {
+    if let Ok(file_name) = transcode::compute_poster(context, &video) {
         let file_path = context.site_dir.join(&video.path).join(&file_name);
         let file_meta = FileMeta::new(&file_path);
         let poster_file = PosterFile::new(None, file_meta, file_name);
@@ -71,7 +71,7 @@ fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
         };
 
         if let Ok(video_updated) = context.update_video(mutation, &video.path) {
-            video_updated.write_manifest(&context);
+            video_updated.write_manifest(context);
             return video_updated;
         }
     }
@@ -148,7 +148,7 @@ fn compute_poster_assets(context: &Context, video: Arc<Video>) {
         };
 
         if let Ok(video) = context.update_video(mutation, &video.path) {
-            video.write_manifest(&context);
+            video.write_manifest(context);
         }
     } 
 }
@@ -206,8 +206,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                 video.persist_in_cache(&context.cache_dir);
                             }
                         }
-                        // TODO: Temporary hack - for now we don't set video_metadata in transcode::encode (although we totally could, see TODO in there)
-                        //       Instead of appending a FastTasks job, fill video metadata in transcode::encode and remove this job creation here.
+
                         let follow_up_job = Job::new(JobKind::FastTasks, Arc::clone(&job.video));
                         context.job_queue.lock().unwrap().push(follow_up_job);
 

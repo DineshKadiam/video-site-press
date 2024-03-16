@@ -67,7 +67,7 @@ pub async fn create_playlist(
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
     } else if context.site_dir.join(&path.path).join(slug_trimmed).exists() {
-        Some(format!("Already used by another collection, playlist or video"))
+        Some("Already used by another collection, playlist or video".to_string())
     } else {
         None
     };
@@ -118,7 +118,7 @@ pub async fn create_subcollection(
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
     } else if context.site_dir.join(&path.path).join(slug_trimmed).exists() {
-        Some(format!("Already used by another collection, playlist or video"))
+        Some("Already used by another collection, playlist or video".to_string())
     } else {
         None
     };
@@ -258,7 +258,7 @@ pub fn edit_page(
         Some(CollectionFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(&context, site_form_feedback, path);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path);
 
     let (input_slug_create_playlist, feedback_create_playlist) = if let Some(CollectionFormFeedback::CreatePlaylist { slug }) = &form_feedback {
         (
@@ -356,7 +356,7 @@ pub async fn edit(
 ) -> HttpResponse {
     match context.get_collection(&path.path) {
         Some(collection) => edit_page(&collection, &context, None),
-        None => return not_found(&context, &format!("Collection {} not found.", &path.path))
+        None => not_found(&context, &format!("Collection {} not found.", &path.path))
     }
 }
 
@@ -392,7 +392,8 @@ pub async fn r#move(
         collection.persist_in_site(&context.site_dir);
 
         let redirect_url = format!("/collection/{}", &collection.path);
-        return Either::Left(Redirect::to(redirect_url).see_other())
+
+        Either::Left(Redirect::to(redirect_url).see_other())
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
@@ -405,9 +406,7 @@ pub async fn r#move(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(
-            edit_page(&collection, &context, Some(form_feedback))
-        )
+        Either::Right(edit_page(&collection, &context, Some(form_feedback)))
     }
 }
 
@@ -438,7 +437,8 @@ pub async fn update(
         collection.persist_in_site(&context.site_dir);
 
         let redirect_url = format!("/collection/{}", &collection.path);
-        return Either::Left(Redirect::to(redirect_url).see_other())
+
+        Either::Left(Redirect::to(redirect_url).see_other())
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
@@ -453,12 +453,6 @@ pub async fn update(
             unlisted
         };
 
-        return Either::Right(
-            edit_page(
-                &collection,
-                &context,
-                Some(form_feedback)
-            )
-        )
+        Either::Right(edit_page(&collection, &context, Some(form_feedback)))
     }
 }

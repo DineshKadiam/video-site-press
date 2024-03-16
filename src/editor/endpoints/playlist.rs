@@ -183,7 +183,7 @@ pub fn edit_page(
         Some(PlaylistFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(&context, site_form_feedback, path);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path);
 
     let body = formatdoc!(r#"
         {errors}

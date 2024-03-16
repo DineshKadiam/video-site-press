@@ -361,7 +361,7 @@ impl Collection {
         }
 
         if !hyper_dir.image_files.is_empty() {
-            let mut error = "Image files in a collection directory are not supported/used, maybe you wanted to put them in subfolder instead?".to_string();
+            let mut error = "Image files in a collection directory are not supported/used, maybe you wanted to put them in a subfolder instead?".to_string();
 
             for image_file in &hyper_dir.image_files {
                 error.push_str(&format!("\n- {}", image_file.display()));
@@ -371,7 +371,7 @@ impl Collection {
         }
 
         if !hyper_dir.video_files.is_empty() {
-            let mut error = "No video files should be directly in a collection directory, maybe you wanted to put them in subfolder instead?".to_string();
+            let mut error = "No video files should be directly in a collection directory, maybe you wanted to put them in a subfolder instead?".to_string();
 
             for video_file in &hyper_dir.video_files {
                 error.push_str(&format!("\n- {}", video_file.display()));

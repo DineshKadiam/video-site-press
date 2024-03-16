@@ -132,7 +132,7 @@ fn edit_page(
         (
             if theme.key == "dark" { "checked " } else { "" },
             if theme.key == "light" { "checked " } else { "" },
-            form_field(&base_url, "base_url", "Base URL", "Base URL"),
+            form_field(base_url, "base_url", "Base URL", "Base URL"),
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
@@ -248,15 +248,15 @@ pub async fn update(
         let http_response = match &site.content {
             SiteContent::Collection(collection) => {
                 let form_feedback = endpoints::collection::CollectionFormFeedback::Site(site_form_feedback);
-                endpoints::collection::edit_page(&collection, &context, Some(form_feedback))
+                endpoints::collection::edit_page(collection, &context, Some(form_feedback))
             }
             SiteContent::Playlist(playlist) => {
                 let form_feedback = endpoints::playlist::PlaylistFormFeedback::Site(site_form_feedback);
-                endpoints::playlist::edit_page(&context, Some(form_feedback), &playlist)
+                endpoints::playlist::edit_page(&context, Some(form_feedback), playlist)
             }
             SiteContent::Video(video) => {
                 let form_feedback = endpoints::video::VideoFormFeedback::Site(site_form_feedback);
-                endpoints::video::edit_page(&context, Some(form_feedback), &video)
+                endpoints::video::edit_page(&context, Some(form_feedback), video)
             }
             // TODO: At best a time of check/time of use edge case possibility?
             _ => unreachable!()

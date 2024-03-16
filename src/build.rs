@@ -30,9 +30,9 @@ pub enum Breadcrumb {
 impl Breadcrumb {
     pub fn label(&self) -> &str {
         match self {
-            Breadcrumb::Collection(label) => &label,
-            Breadcrumb::Playlist(label) => &label,
-            Breadcrumb::Video(label) => &label
+            Breadcrumb::Collection(label) => label,
+            Breadcrumb::Playlist(label) => label,
+            Breadcrumb::Video(label) => label
         }
     }
 }
@@ -57,16 +57,16 @@ pub fn perform_build(context: &Context) {
         include_str!("build/assets/scripts.js")
     ).unwrap();
 
-    styles::generate(&context, &site);
+    styles::generate(context, &site);
 }
 
 fn build_collection(
     context: &Context,
     collection: &Collection,
     site: &Site,
-    breadcrumbs: &Vec<Breadcrumb>
+    breadcrumbs: &[Breadcrumb]
 ) {
-    let mut breadcrumbs_extended = breadcrumbs.clone();
+    let mut breadcrumbs_extended = breadcrumbs.to_owned();
 
     breadcrumbs_extended.push(Breadcrumb::Collection(collection.label().to_string()));
 
@@ -89,9 +89,9 @@ fn build_playlist(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
-    breadcrumbs: &Vec<Breadcrumb>
+    breadcrumbs: &[Breadcrumb]
 ) {
-    let mut breadcrumbs_extended = breadcrumbs.clone();
+    let mut breadcrumbs_extended = breadcrumbs.to_owned();
 
     breadcrumbs_extended.push(Breadcrumb::Playlist(playlist.label().to_string()));
 
@@ -125,9 +125,9 @@ fn build_video(
     context: &Context,
     video: &Video,
     site: &Site,
-    breadcrumbs: &Vec<Breadcrumb>
+    breadcrumbs: &[Breadcrumb]
 ) {
-    let mut breadcrumbs_extended = breadcrumbs.clone();
+    let mut breadcrumbs_extended = breadcrumbs.to_owned();
 
     breadcrumbs_extended.push(Breadcrumb::Video(video.label().to_string()));
 

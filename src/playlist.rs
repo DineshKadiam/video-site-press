@@ -26,15 +26,23 @@ pub struct Playlist {
     /// one needs to know the link to access them.
     pub unlisted: bool,
 	pub videos_physical: Vec<Arc<Video>>,
+    // TODO: We could potentially drop this and follow up with the plan of
+    //       making video order simply a sorting matter, i.e. based on video release_date
+    //       and/or a user-assigned video "number" respectively.
     pub videos_virtual: Vec<String>
 }
 
 impl Playlist {
-    /// TODO:
-    /// - poster support (image description/path)
-    /// - video listing
     fn apply_manifest(&mut self, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
+
+        // TODO: Tricky manifest problem/question in general: If there is anything wrong
+        //       with the manifest (especially: syntax error rendering the entire manifest useless),
+        //       we can potentially erase everything contained in it by doing an update via the browser
+        //       editor (it persists what has been read - nothing!). Consequently we should e.g. disable
+        //       the edit form/updates via browser editor while there are issues with the manifest, or
+        //       try to read in some things in a "broken state", e.g. registering a poster although the
+        //       image referenced was not found.
 
         let document = match enolib::parse(&content) {
             Ok(document) => document,
@@ -67,7 +75,7 @@ impl Playlist {
                             let poster_file = PosterFile::new(None, file_meta, value);
                             self.poster = Some(poster_file);
                         } else {
-                            // TODO: Error
+                            self.errors.push(format!("Error in {} (Path to poster is invalid, file not found)", manifest_path.display()));
                         }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
@@ -211,11 +219,11 @@ impl Playlist {
             playlist.read_subdir(context, &hyper_subdir);
         }
 
-        if !hyper_dir.image_files.is_empty() {
-            // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
+        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
+        if !hyper_dir.image_files.is_empty() && playlist.poster.is_none() {
             let first_image = hyper_dir.image_files.first().unwrap();
 
-            let file_meta = FileMeta::new(&first_image);
+            let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
             let poster_path = format!("{}/{}", &playlist.path, file_name);

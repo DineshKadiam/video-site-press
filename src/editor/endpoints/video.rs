@@ -199,7 +199,7 @@ pub fn edit_page(
                         let browser_support = match video_meta.browser_support.analysis() {
                             Some(Ok(message)) => format!("[Very likely playable in browsers: {message}]"),
                             Some(Err(message)) => format!("[Unfit for browser playback: {message}]"),
-                            None => format!("[Might be incompatible with and not play in people's browsers]"),
+                            None => "[Might be incompatible with and not play in people's browsers]".to_string(),
                         };
 
                         format!("{width}×{height} {duration} {size} {browser_support}")
@@ -313,7 +313,7 @@ pub fn edit_page(
         Some(VideoFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(&context, site_form_feedback, &video.path);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path);
 
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, "Upload New Version");
@@ -720,5 +720,5 @@ pub async fn upload_video(
     }
 
     let http_response = not_found(&context, "No actionable payload found in request");
-    return Ok(Either::Right(http_response));
+    Ok(Either::Right(http_response))
 }

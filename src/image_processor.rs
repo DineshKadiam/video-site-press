@@ -54,7 +54,7 @@ impl ImageProcessor {
             let resized_image = cropped_image.resize(new_width, new_height, FilterType::Lanczos3);
             self.export(context, &resized_image)
         } else {
-            self.export(context, &cropped_image)
+            self.export(context, cropped_image)
         }
     }
 

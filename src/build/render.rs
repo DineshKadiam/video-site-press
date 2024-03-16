@@ -1,9 +1,6 @@
 use indoc::formatdoc;
-use std::fs;
-use std::path::Path;
-use std::sync::Arc;
 
-use crate::{Playlist, Site, Video, VideoFile};
+use crate::{Site, Video, VideoFile};
 use crate::build::Breadcrumb;
 use crate::util::{casual_duration, human_size};
 
@@ -19,7 +16,7 @@ pub fn layout(
     site: &Site,
     body: &str,
     title: &str,
-    breadcrumbs: &Vec<Breadcrumb>
+    breadcrumbs: &[Breadcrumb]
 ) -> String {
     // TODO: Hash assets (cache expiration)
     let head = formatdoc!(r#"
