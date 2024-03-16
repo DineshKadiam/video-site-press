@@ -46,6 +46,7 @@ use crate::util::{
     human_size,
     nanoid,
     supported_image_extension,
+    supported_video_extension,
     validate_slug
 };
 
@@ -607,8 +608,9 @@ pub async fn upload_video(
         let content_disposition = field.content_disposition();
 
         if let Some(filename) = content_disposition.get_filename() {
-            // TODO: Support all the formats plz, also audio (?!)
-            if filename.ends_with(".mp4") {
+            // TODO: Support audio formats as well?
+            //       Or should this be a separate endpoint/feature?
+            if supported_video_extension(filename) {
                 let original_filename = filename.to_string();
 
                 let storage_path = match &container {
