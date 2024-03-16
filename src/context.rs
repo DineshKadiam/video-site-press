@@ -107,56 +107,19 @@ impl Context {
         }
     }
 
-    fn queue_collection(&self, collection: &Arc<Collection>) {
-        for subcollection in &collection.subcollections {
-            self.queue_collection(subcollection);
-        }
-        for playlist in &collection.playlists {
-            self.queue_playlist(playlist);
-        }
-        for video in &collection.videos {
-            self.queue_video(video);
-        }
-    }
-
-    fn queue_playlist(&self, playlist: &Arc<Playlist>) {
-        for video in &playlist.videos_physical {
-            self.queue_video(video);
-        }
-    }
-
-    fn queue_video(&self, video: &Arc<Video>) {
-        if video.versions.iter().any(|version| version.video_meta.is_none()) ||
-           (video.poster.is_none() && !video.versions.is_empty()) ||
-           video.poster.as_ref().is_some_and(|poster| poster.assets.is_none()) {
-            let job = Job::new(JobKind::FastTasks, Arc::clone(video));
-            self.job_queue.lock().unwrap().push(job);
-        }
-
-        // if video.assets.metadata.is_some() {
-        //     // TODO: Reactivate
-        //     // self.create_version_jobs(video);
-        // }
-    }
-
     pub fn compute_job_queue(&self) {
         let site = self.get_site();
 
+        let mut jobs = Vec::new();
+
         match &site.content {
-            SiteContent::Collection(collection) => self.queue_collection(collection),
-            SiteContent::Playlist(playlist) => self.queue_playlist(playlist),
-            SiteContent::Video(video) => self.queue_video(video),
+            SiteContent::Collection(collection) => self.queue_collection_jobs(collection, &mut jobs),
+            SiteContent::Playlist(playlist) => self.queue_playlist_jobs(playlist, &mut jobs),
+            SiteContent::Video(video) => self.queue_video_jobs(video, &mut jobs),
             _ => ()
         }
 
-        // TODO: We want to build a Vec here with all the jobs we need,
-        //       and then perform a single lock on self.job_queue to
-        //       extend it with the jobs we generated. Right now this
-        //       this is architecturally impossible because
-        //       create_version_jobs directly does the locking/extending
-        //       on its own (and this is used elsewhere), so this needs
-        //       some refactoring.
-        // let mut jobs = Vec::new();
+        self.job_queue.lock().unwrap().extend(jobs);
     }
 
     pub fn convert_to_collection(&self) {
@@ -206,44 +169,6 @@ impl Context {
             todo!();
         }
     }
-
-    // pub fn create_version_jobs(&self, video: &Video) {
-    //     let metadata = video.assets.metadata.as_ref().unwrap();
-
-    //     let settings = self.collection.get_settings();
-
-    //     let mut target_formats = Vec::new();
-
-    //     for format in &settings.formats {
-    //         match format {
-    //             // TODO: This would actually make more sense as a singleton prop?
-    //             //       May have settings, but only one audio format is probably enough.
-    //             VideoFormat::AudioOnly => {
-    //                 if metadata.has_audio {
-    //                     target_formats.push(VideoFormat::AudioOnly);
-    //                 }
-    //             }
-    //             VideoFormat::Video { width, .. } => {
-    //                 if metadata.width >= *width {
-    //                     target_formats.push(format.clone());
-    //                 } 
-    //             }
-    //         }
-    //     }
-
-    //     // TODO: If the video is smaller than the smallest video format
-    //     //       we don't get any single video version - how do we model
-    //     //       our format list differently so we can nicely prevent
-    //     //       even getting in that kind of a problem space?
-    //     //       (Should the formats be more kind of suggestions/hints?)
-
-    //     let version_jobs = target_formats
-    //         .into_iter()
-    //         .filter(|format| !video.has_format(format))
-    //         .map(|format| Job::new(JobKind::Format(format), video.clone()));
-
-    //     self.job_queue.lock().unwrap().extend(version_jobs);
-    // }
 
     pub fn delete_collection(
         &self,
@@ -407,6 +332,79 @@ impl Context {
             site: Mutex::new(site),
             site_dir,
         }
+    }
+
+    fn queue_collection_jobs(&self, collection: &Arc<Collection>, queue: &mut Vec<Job>) {
+        for subcollection in &collection.subcollections {
+            self.queue_collection_jobs(subcollection, queue);
+        }
+        for playlist in &collection.playlists {
+            self.queue_playlist_jobs(playlist, queue);
+        }
+        for video in &collection.videos {
+            self.queue_video_jobs(video, queue);
+        }
+    }
+
+    fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, queue: &mut Vec<Job>) {
+        for video in &playlist.videos_physical {
+            self.queue_video_jobs(video, queue);
+        }
+    }
+
+    // fn queue_version_jobs(&self, video: &Arc<Video>, queue: &mut Vec<Job>) {
+    //     let metadata = video.assets.metadata.as_ref().unwrap();
+
+    //     let settings = self.collection.get_settings();
+
+    //     let mut target_formats = Vec::new();
+
+    //     for format in &settings.formats {
+    //         match format {
+    //             // TODO: This would actually make more sense as a singleton prop?
+    //             //       May have settings, but only one audio format is probably enough.
+    //             VideoFormat::AudioOnly => {
+    //                 if metadata.has_audio {
+    //                     target_formats.push(VideoFormat::AudioOnly);
+    //                 }
+    //             }
+    //             VideoFormat::Video { width, .. } => {
+    //                 if metadata.width >= *width {
+    //                     target_formats.push(format.clone());
+    //                 } 
+    //             }
+    //         }
+    //     }
+
+    //     // TODO: If the video is smaller than the smallest video format
+    //     //       we don't get any single video version - how do we model
+    //     //       our format list differently so we can nicely prevent
+    //     //       even getting in that kind of a problem space?
+    //     //       (Should the formats be more kind of suggestions/hints?)
+
+    //     let version_jobs = target_formats
+    //         .into_iter()
+    //         .filter(|format| !video.has_format(format))
+    //         .map(|format| Job::new(JobKind::Format(format), video.clone()));
+
+    //     queue.extend(version_jobs);
+    // }
+
+    /// Determine what needs to be computed for this video and append the
+    /// required jobs to the passed queue.
+    fn queue_video_jobs(&self, video: &Arc<Video>, queue: &mut Vec<Job>) {
+        if video.versions.iter().any(|version| version.video_meta.is_none()) ||
+           (video.poster.is_none() && !video.versions.is_empty()) ||
+           video.poster.as_ref().is_some_and(|poster| poster.assets.is_none()) {
+            let job = Job::new(JobKind::FastTasks, Arc::clone(video));
+            queue.push(job);
+        }
+
+        // if video.assets.metadata.is_some() {
+        //     // TODO: Reactivate, this time needs to be based on markers in the dir/manifest
+        //     //       that request a certain audio-only/resolution version?
+        //     // self.create_version_jobs(video);
+        // }
     }
 
     /// Replace the immutable `Arc<Site>` at the site tree root,
