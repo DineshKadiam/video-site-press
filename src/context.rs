@@ -120,7 +120,20 @@ impl Context {
             _ => ()
         }
 
-        self.job_queue.lock().unwrap().extend(jobs);
+        if jobs.is_empty() { return }
+
+        if let Ok(mut job_queue) = self.job_queue.lock() {
+            for job in jobs {
+                if !job_queue
+                    .iter()
+                    .any(|existing_job|
+                        existing_job.kind == job.kind &&
+                        Arc::ptr_eq(&existing_job.video, &job.video)
+                    ) {
+                    job_queue.push(job);
+                }
+            }
+        }
     }
 
     pub fn convert_to_collection(&self) {

@@ -15,7 +15,7 @@ pub struct Job {
     pub video: Arc<Video>
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum JobKind {
     FastTasks,
     Format(VideoFormat)
