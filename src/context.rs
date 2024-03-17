@@ -29,6 +29,7 @@ pub struct Context {
     pub clean_urls: bool,
     pub job_queue: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
+    pub processing_errors: Mutex<Vec<String>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
 }
@@ -329,6 +330,7 @@ impl Context {
             clean_urls: true,
             job_queue: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),
+            processing_errors: Mutex::new(Vec::new()),
             site: Mutex::new(site),
             site_dir,
         }

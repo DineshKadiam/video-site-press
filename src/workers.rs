@@ -79,78 +79,88 @@ fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
     video
 }
 
-fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, width: u32) -> PosterAsset {
+fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, width: u32) -> Result<PosterAsset, String> {
     let (file_name, dimensions) = source_image.resize(
         context,
         ResizeMode::CoverRectangle { aspect: 1.7777777, max_width: width }
     );
 
-    let metadata = fs::metadata(context.cache_dir.join(&file_name)).unwrap();
+    let filesize_bytes = match fs::metadata(context.cache_dir.join(&file_name)) {
+        Ok(metadata) => metadata.len(),
+        Err(err) => return Err(err.to_string())
+    };
 
-    PosterAsset {
-        file_name,
-        filesize_bytes: metadata.len(),
-        height: dimensions.1,
-        width: dimensions.0
-    }
+    Ok(
+        PosterAsset {
+            file_name,
+            filesize_bytes,
+            height: dimensions.1,
+            width: dimensions.0
+        }
+    )
 }
 
-fn compute_poster_assets(context: &Context, video: Arc<Video>) {
+fn compute_poster_assets(context: &Context, video: Arc<Video>) -> Result<(), String> {
     if let Some(poster) = &video.poster {
         let source_path = context.site_dir.join(&video.path).join(&poster.file_name);
 
-        let source_processor = ImageProcessor::open(&source_path);
+        match ImageProcessor::open(&source_path) {
+            Ok(source_processor) => {
+                let min_overshoot = 1.1;
 
-        let min_overshoot = 1.1;
+                let max_160 = compute_poster_asset(context, &source_processor, 160)?;
 
-        let max_160 = compute_poster_asset(context, &source_processor, 160);
+                let max_320 = if source_processor.source_width as f32 > 160.0 * min_overshoot {
+                    Some(compute_poster_asset(context, &source_processor, 320)?)
+                } else {
+                    None
+                };
 
-        let max_320 = if source_processor.source_width as f32 > 160.0 * min_overshoot {
-            Some(compute_poster_asset(context, &source_processor, 320))
-        } else {
-            None
-        };
+                let max_480 = if source_processor.source_width as f32 > 320.0 * min_overshoot {
+                    Some(compute_poster_asset(context, &source_processor, 480)?)
+                } else {
+                    None
+                };
 
-        let max_480 = if source_processor.source_width as f32 > 320.0 * min_overshoot {
-            Some(compute_poster_asset(context, &source_processor, 480))
-        } else {
-            None
-        };
+                let max_800 = if source_processor.source_width as f32 > 480.0 * min_overshoot {
+                    Some(compute_poster_asset(context, &source_processor, 800)?)
+                } else {
+                    None
+                };
 
-        let max_800 = if source_processor.source_width as f32 > 480.0 * min_overshoot {
-            Some(compute_poster_asset(context, &source_processor, 800))
-        } else {
-            None
-        };
+                let max_1280 = if source_processor.source_width as f32 > 800.0 * min_overshoot {
+                    Some(compute_poster_asset(context, &source_processor, 1280)?)
+                } else {
+                    None
+                };
 
-        let max_1280 = if source_processor.source_width as f32 > 800.0 * min_overshoot {
-            Some(compute_poster_asset(context, &source_processor, 1280))
-        } else {
-            None
-        };
+                let poster_assets = PosterAssets {
+                    max_160,
+                    max_320,
+                    max_480,
+                    max_800,
+                    max_1280
+                };
 
-        let poster_assets = PosterAssets {
-            max_160,
-            max_320,
-            max_480,
-            max_800,
-            max_1280
-        };
+                poster_assets.write_manifest(context, &video.path, poster);
 
-        poster_assets.write_manifest(context, &video.path, poster);
+                let mutation = |video: &mut Video| {
+                    // Note that we expect the poster to be Some(), virtually always.
+                    // If it's missing that is an edge case with (likely) user interaction.
+                    if let Some(poster) = &mut video.poster {
+                        poster.assets = Some(poster_assets);
+                    }
+                };
 
-        let mutation = |video: &mut Video| {
-            // Note that we expect the poster to be Some(), virtually always.
-            // If it's missing that is an edge case with (likely) user interaction.
-            if let Some(poster) = &mut video.poster {
-                poster.assets = Some(poster_assets);
+                if let Ok(video) = context.update_video(mutation, &video.path) {
+                    video.write_manifest(context);
+                }
             }
-        };
-
-        if let Ok(video) = context.update_video(mutation, &video.path) {
-            video.write_manifest(context);
+            Err(err) => return Err(err)
         }
-    } 
+    }
+
+    Ok(())
 }
 
 pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
@@ -183,11 +193,16 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                         if let Some(poster) = &video_with_metadata.poster {
                             if poster.assets.is_none() {
-                                compute_poster_assets(&context, video_with_metadata);
+                                if let Err(err) = compute_poster_assets(&context, video_with_metadata) {
+                                    context.processing_errors.lock().unwrap().push(err);
+                                }
                             }
                         } else {
                             let video_with_poster = compute_poster(&context, video_with_metadata);
-                            compute_poster_assets(&context, video_with_poster);
+
+                            if let Err(err) = compute_poster_assets(&context, video_with_poster) {
+                                context.processing_errors.lock().unwrap().push(err);
+                            }
                         }
 
                         context.processing.lock().unwrap().remove(process_id);

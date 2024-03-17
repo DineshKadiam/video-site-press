@@ -58,16 +58,19 @@ impl ImageProcessor {
         }
     }
 
-    pub fn open(path: &Path) -> ImageProcessor {
-        let source_image = image::open(path).unwrap();
-        let source_height = source_image.height();
-        let source_width = source_image.width();
+    pub fn open(path: &Path) -> Result<ImageProcessor, String> {
+        image::open(path)
+            .map(|source_image| {
+                let source_height = source_image.height();
+                let source_width = source_image.width();
 
-        ImageProcessor {
-            source_height,
-            source_image,
-            source_width
-        }
+                ImageProcessor {
+                    source_height,
+                    source_image,
+                    source_width
+                }
+            })
+            .map_err(|err| err.to_string())
     }
 
     pub fn resize(

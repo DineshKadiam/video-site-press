@@ -8,141 +8,10 @@ use indoc::formatdoc;
 use crate::{Context, SiteContent};
 use crate::editor::widgets::layout;
 
-// pub async fn playlists(context: Data<Arc<Context>>) -> HttpResponse {
-//     let playlists = context.collection.all_playlists();
-//     let playlists_rendered = playlists
-//         .iter()
-//         .map(|playlist| {
-//             let count = &playlist.videos.len();
-//             let id = &playlist.id;
-//             let title = &playlist.title;
-
-//             let unlisted = match playlist.unlisted {
-//                 true => r#" <span class="badge">Unlisted</span>"#,
-//                 false => ""
-//             };
-
-//             formatdoc!(r#"
-//                 <div>
-//                     <a href="/playlist/{id}">{title}</a>{unlisted}<br>
-//                     {count} Videos
-//                 </div>
-//             "#)
-//         })
-//         .collect::<Vec<String>>()
-//         .join("");
-
-//     let controls_rendered = controls();
-
-//     let body = formatdoc!(r#"
-//         <div class="updates"></div>
-
-//         {controls_rendered}
-
-//         <h2>Playlists</h2>
-
-//         <form action="/playlist" method="post" style="column-gap: .5rem; display: flex;">
-//             <div>
-//                 <input name="title" placeholder="New playlist title">
-//             </div>
-//             <button>Create</button>
-//         </form>
-//         <br>
-
-//         {playlists_rendered}
-
-//         <br><br>
-//     "#);
-
-//     let settings = context.collection.get_settings();
-
-//     let html = layout(&settings, &body, &settings.title);
-
-//     HttpResponse::Ok()
-//         .content_type(ContentType::html())
-//         .body(html)
-// }
-
-// pub async fn videos(context: Data<Arc<Context>>) -> HttpResponse {
-//     let videos = context.collection.all_videos();
-//     let videos_rendered = videos
-//         .iter()
-//         .map(|video| {
-//             let info = match &video.assets.metadata {
-//                 Some(metadata) => format!(
-//                     "{}×{} {}<br>{} versions",
-//                     metadata.width,
-//                     metadata.height,
-//                     precise_duration(metadata.duration),
-//                     video.assets.versions.len()
-//                 ),
-//                 None => String::from("No source or metadata yet.")
-//             };
-//             let id = &video.id;
-//             let title = &video.title;
-
-//             let poster = video.assets.poster
-//                 .as_deref()
-//                 .map(|poster| format!(r#"<img class="thumbnail" src="/poster/{poster}">"#))
-//                 .unwrap_or(String::new());
-
-//             let unlisted = match video.unlisted {
-//                 true => r#" <span class="badge">Unlisted</span>"#,
-//                 false => ""
-//             };
-
-//             // TODO: Escape data-search, add more in there (description etc.), consider better implementation too of course
-//             formatdoc!(r#"
-//                 <div class="video" data-id="{id}" data-search="{title}">
-//                     {poster}
-//                     <div>
-//                         <a href="/video/{id}">{title}</a>{unlisted}<br>
-//                         {info}
-//                     </div>
-//                 </div>
-//             "#)
-//         })
-//         .collect::<Vec<String>>()
-//         .join("");
-
-//     let video_upload_button = upload_widget("/video", "Upload Video");
-
-//     let controls_rendered = controls();
-
-//     let videos_js = include_str!("../assets/videos.js");
-
-//     let body = formatdoc!(r#"
-//         <div class="updates"></div>
-
-//         {controls_rendered}
-
-//         <h2>Videos</h2>
-
-//         {video_upload_button}
-
-//         <input class="filter" placeholder="Filter videos" type="search">
-
-//         <script>
-//             {videos_js}
-//         </script>
-
-//         <div class="videos">
-//             {videos_rendered}
-//         </div>
-//     "#);
-
-//     let settings = context.collection.get_settings();
-//     let html = layout(&settings, &body, &settings.title);
-
-//     HttpResponse::Ok()
-//         .content_type(ContentType::html())
-//         .body(html)
-// }
-
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     let site = context.get_site();
 
-    let body = match &site.content {
+    let mut body = match &site.content {
         SiteContent::Collection(_) => {
             formatdoc!(r#"
                 This site is operating as a collection
@@ -177,6 +46,39 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             "#)
         }
     };
+
+    let job_info = context.job_queue
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|job| {
+            format!(
+                "{video} {status}",
+                status = if job.assigned { "assigned" } else { "idle" },
+                video = job.video.label()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    body.push_str(&job_info);
+
+    if let Ok(processing_errors) = context.processing_errors.lock() {
+        let errors = processing_errors
+            .iter()
+            .map(|err| format!("- {err}<br>"))
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let wrapped = formatdoc!(r#"
+            <div>
+                Processing errors:<br>
+                {errors}
+            </div>
+        "#);
+
+        body.push_str(&wrapped);
+    }
 
     let html = layout(&context, "", &site, &body, site.title());
 
