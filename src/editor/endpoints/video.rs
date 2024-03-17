@@ -429,19 +429,28 @@ pub async fn r#move(
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
+    let new_path = Path::new(&path.path)
+        .with_file_name(slug_trimmed)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    // } else if let Some(owner) = context.collection.slug_collision(slug_trimmed, &path.id) {
-    //     Some(format!("Already used by another playlist or video: {owner}"))
+    } else if context.site_dir.join(&new_path).exists() {
+        Some(format!("This permalink is already used by another collection, playlist or video."))
     } else {
         None
     };
 
     if slug_error.is_none() {
         let mutation = |video: &mut Video| {
-            // TODO: Here and elsewhere: Changing the slug works very differently now (!) b/c it's encoded in the filesystem path
-            // video.slug = slug_trimmed.to_owned();
-            video.write_manifest(&context);
+            fs::rename(
+                context.site_dir.join(&video.path),
+                context.site_dir.join(&new_path)
+            ).unwrap();
+
+            video.path = new_path;
         };
 
         let video = match context.update_video(mutation, &path.path) {

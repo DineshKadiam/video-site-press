@@ -1,11 +1,12 @@
-use std::fs;
+use std::fs::{self, File};
 use std::io::Write;
+use std::path::Path;
 use std::sync::Arc;
 
 use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::http::header::ContentType;
-use actix_web::web::{self, Data, Form, Path, Redirect};
+use actix_web::web::{self, Data, Form, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
@@ -66,7 +67,7 @@ pub struct VideoForm {
 
 pub async fn delete(
     context: Data<Arc<Context>>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_playlist(&path.path) {
         return Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path)))
@@ -75,7 +76,7 @@ pub async fn delete(
     let redirect_url = if &path.path == "" {
         "/".to_string()
     } else {
-        std::path::Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
+        Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
     };
 
     Either::Left(Redirect::to(redirect_url).see_other())
@@ -303,7 +304,7 @@ pub fn edit_page(
 // pub async fn add_video(
 //     context: Data<Arc<Context>>,
 //     form: Form<VideoForm>,
-//     path: Path<ContextPath>
+//     path: ActixPath<ContextPath>
 // ) -> Either<Redirect, HttpResponse> {
 //     if !form.slug.is_empty() {
 //         let playlist = {
@@ -379,7 +380,7 @@ pub fn edit_page(
 
 pub async fn edit(
     context: Data<Arc<Context>>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> HttpResponse {
     // TODO: Should be cloned because the returned one is mut and locking?
     let playlist = match context.get_playlist(&path.path) {
@@ -393,7 +394,7 @@ pub async fn edit(
 pub async fn remove_video(
     context: Data<Arc<Context>>,
     form: Form<VideoForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     if !form.slug.is_empty() {
         let mutation = |playlist: &mut Playlist| {
@@ -425,23 +426,32 @@ pub async fn remove_video(
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<PlaylistMoveForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
+    let new_path = Path::new(&path.path)
+        .with_file_name(slug_trimmed)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    // TODO: Must be performed on parent, not on context
-    // } else if let Some(owner) = context.slug_collision(slug_trimmed, &path.path) {
-    //     Some(format!("Already used by another playlist or video: {owner}"))
+    } else if context.site_dir.join(&new_path).exists() {
+        Some(format!("This permalink is already used by another collection, playlist or video."))
     } else {
         None
     };
 
     if slug_error.is_none() {
         let mutation = |playlist: &mut Playlist| {
-            // TODO: Not anymore like that, this is a very complex operation, involves moving/renaming the folder
-            // playlist.slug = slug_trimmed.to_owned();
+            fs::rename(
+                context.site_dir.join(&playlist.path),
+                context.site_dir.join(&new_path)
+            ).unwrap();
+
+            playlist.path = new_path;
         };
 
         let playlist = match context.update_playlist(mutation, &path.path) {
@@ -450,8 +460,6 @@ pub async fn r#move(
                 not_found(&context, &format!("Playlist {} not found.", &path.path))
             )
         };
-
-        playlist.persist_in_site(&context.site_dir);
 
         let redirect_url = format!("/playlist/{}", playlist.path);
         Either::Left(Redirect::to(redirect_url).see_other())
@@ -476,7 +484,7 @@ pub async fn r#move(
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<PlaylistUpdateForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let description_trimmed = form.description.trim();
     let title_trimmed = form.title.trim();
@@ -524,7 +532,7 @@ pub async fn update(
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
     while let Some(mut field) = payload.try_next().await? {
         let content_disposition = field.content_disposition();
@@ -543,7 +551,7 @@ pub async fn upload_poster(
             let storage_path_moving = storage_path.clone();
 
             // File::create is blocking operation, use threadpool
-            let mut f = web::block(|| std::fs::File::create(storage_path_moving)).await??;
+            let mut f = web::block(|| File::create(storage_path_moving)).await??;
 
             while let Some(chunk) = field.try_next().await? {
                 f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;

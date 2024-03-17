@@ -1,9 +1,10 @@
 use std::fs;
+use std::path::Path;
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
-use actix_web::web::{Data, Either, Form, Path, Redirect};
+use actix_web::web::{Data, Either, Form, Path as ActixPath, Redirect};
 use indoc::formatdoc;
 use serde_derive::Deserialize;
 
@@ -60,7 +61,7 @@ pub struct UpdateForm {
 pub async fn create_playlist(
     context: Data<Arc<Context>>,
     form: Form<SlugForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
@@ -111,7 +112,7 @@ pub async fn create_playlist(
 pub async fn create_subcollection(
     context: Data<Arc<Context>>,
     form: Form<SlugForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
@@ -139,7 +140,7 @@ pub async fn create_subcollection(
             return Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path)));
         }
 
-        subcollection.persist_in_site(&context.site_dir);
+        subcollection.write_manifest(&context);
 
         let redirect_url = format!("/collection/{}", subcollection.path);
         Either::Left(Redirect::to(redirect_url).see_other())
@@ -161,7 +162,7 @@ pub async fn create_subcollection(
 
 pub async fn delete(
     context: Data<Arc<Context>>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_collection(&path.path) {
         return Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path)))
@@ -170,7 +171,7 @@ pub async fn delete(
     let redirect_url = if &path.path == "" {
         "/".to_string()
     } else {
-        std::path::Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
+        Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
     };
 
     Either::Left(Redirect::to(redirect_url).see_other())
@@ -297,7 +298,7 @@ pub fn edit_page(
             {input_slug_create_playlist}
 
             <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Update Permalink</button> {feedback_create_playlist}
+                <button>Create Playlist</button> {feedback_create_playlist}
             </div>
         </form>
 
@@ -307,7 +308,7 @@ pub fn edit_page(
             {input_slug_create_subcollection}
 
             <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Update Permalink</button> {feedback_create_subcollection}
+                <button>Create Subcollection</button> {feedback_create_subcollection}
             </div>
         </form>
 
@@ -352,7 +353,7 @@ pub fn edit_page(
 
 pub async fn edit(
     context: Data<Arc<Context>>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> HttpResponse {
     match context.get_collection(&path.path) {
         Some(collection) => edit_page(&collection, &context, None),
@@ -363,23 +364,32 @@ pub async fn edit(
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<SlugForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
+    let new_path = Path::new(&path.path)
+        .with_file_name(slug_trimmed)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    // TODO: Must be performed on parent, not on context
-    // } else if let Some(owner) = context.slug_collision(slug_trimmed, &path.path) {
-    //     Some(format!("Already used by another collection or video: {owner}"))
+    } else if context.site_dir.join(&new_path).exists() {
+        Some("This permalink is already used by another collection, playlist or video.".to_string())
     } else {
         None
     };
 
     if slug_error.is_none() {
         let mutation = |collection: &mut Collection| {
-            // TODO: No work like that anymore
-            // collection.slug = slug_trimmed.to_owned();
+            fs::rename(
+                context.site_dir.join(&collection.path),
+                context.site_dir.join(&new_path)
+            ).unwrap();
+
+            collection.path = new_path;
         };
 
         let collection = match context.update_collection(mutation, &path.path) {
@@ -388,8 +398,6 @@ pub async fn r#move(
                 not_found(&context, &format!("Collection {} not found.", &path.path))
             )
         };
-
-        collection.persist_in_site(&context.site_dir);
 
         let redirect_url = format!("/collection/{}", &collection.path);
 
@@ -413,7 +421,7 @@ pub async fn r#move(
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<UpdateForm>,
-    path: Path<ContextPath>
+    path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let description_trimmed = form.description.trim();
     let title_trimmed = form.title.trim();
@@ -434,7 +442,7 @@ pub async fn update(
             )
         };
 
-        collection.persist_in_site(&context.site_dir);
+        collection.write_manifest(&context);
 
         let redirect_url = format!("/collection/{}", &collection.path);
 

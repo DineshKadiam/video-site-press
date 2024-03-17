@@ -304,26 +304,6 @@ impl Collection {
         }
     }
 
-    pub fn persist_in_site(&self, site_dir: &Path) {
-        let mut eno = String::new();
-
-        if let Some(title) = &self.title {
-            eno.push_str(&format!("title: {}\n", title));
-        }
-
-        if self.unlisted {
-            eno.push_str("unlisted\n");
-        }
-
-        if let Some(description) = &self.description {
-            if !eno.is_empty() { eno.push('\n'); }
-            eno.push_str(&format!("-- description\n{}\n--description\n", description));
-        }
-
-        let path = site_dir.join(&self.path).join("collection.eno");
-        fs::write(path, eno).unwrap();
-    }
-
     // /// Returns the public videos in the given playlist, in correct playlist order.
     // pub fn public_videos_in_playlist(&self, playlist: &Playlist) -> Vec<Video> {
     //     let mut videos: Vec<(usize, Video)> = self.videos
@@ -629,5 +609,25 @@ impl Collection {
         }
 
         Err(())
+    }
+
+    pub fn write_manifest(&self, context: &Context) {
+        let mut eno = String::new();
+
+        if let Some(title) = &self.title {
+            eno.push_str(&format!("title: {}\n", title));
+        }
+
+        if self.unlisted {
+            eno.push_str("unlisted\n");
+        }
+
+        if let Some(description) = &self.description {
+            if !eno.is_empty() { eno.push('\n'); }
+            eno.push_str(&format!("-- description\n{}\n--description\n", description));
+        }
+
+        let path = context.site_dir.join(&self.path).join("collection.eno");
+        fs::write(path, eno).unwrap();
     }
 }
