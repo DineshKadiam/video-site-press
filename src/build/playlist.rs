@@ -27,8 +27,8 @@ pub fn playlist_html(
         body.push_str(&format!("<p>{description}</p>\n\n"));
     }
 
-    if !playlist.videos_physical.is_empty() {
-        let videos = playlist.videos_physical
+    if !playlist.videos.is_empty() {
+        let videos = playlist.videos
             .iter()
             .map(|video| {
                 let slug = &video.slug();

@@ -347,7 +347,7 @@ impl Context {
     }
 
     fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, queue: &mut Vec<Job>) {
-        for video in &playlist.videos_physical {
+        for video in &playlist.videos {
             self.queue_video_jobs(video, queue);
         }
     }

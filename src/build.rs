@@ -116,7 +116,7 @@ fn build_playlist(
 
     playlist_html(context, playlist, site, &breadcrumbs_extended);
 
-    for video in &playlist.videos_physical {
+    for video in &playlist.videos {
         build_video(context, video, site, &breadcrumbs_extended);
     }
 }

@@ -100,10 +100,10 @@ fn collection_tree(
                 breadcrumbs.push(format!(r#"<a href="{href}">{ICON_PLAYLIST} {label}</a>"#));
             }
 
-            let children = if playlist.videos_physical.is_empty() {
+            let children = if playlist.videos.is_empty() {
                 String::new()
             } else {
-                let lis = playlist.videos_physical
+                let lis = playlist.videos
                     .iter()
                     .map(|video| {
                         let video_path = &video.path;
@@ -383,14 +383,14 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
             let breadcrumb_title = playlist.title.as_deref().unwrap_or("Playlist");
             breadcrumbs.push(format!(r#"<a href="/playlist/">{ICON_PLAYLIST} {breadcrumb_title}</a>"#));
 
-            let videos = if playlist.videos_physical.is_empty() {
+            let videos = if playlist.videos.is_empty() {
                 formatdoc!(r#"
                     <li>
                         <span class="muted">Empty</span>
                     </li>
                 "#)
             } else {
-                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos_physical.to_vec();
+                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
 
                 videos_sorted.sort_unstable_by(|a, b| {
                     let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());

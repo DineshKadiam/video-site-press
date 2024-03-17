@@ -25,7 +25,7 @@ pub struct Playlist {
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
     pub unlisted: bool,
-	pub videos_physical: Vec<Arc<Video>>,
+	pub videos: Vec<Arc<Video>>,
     // TODO: We could potentially drop this and follow up with the plan of
     //       making video order simply a sorting matter, i.e. based on video release_date
     //       and/or a user-assigned video "number" respectively.
@@ -127,10 +127,10 @@ impl Playlist {
         mut path_parts: Peekable<Split<char>>
     ) -> bool {
         if let Some(slug) = path_parts.next() {
-            if let Some(video) = self.videos_physical
+            if let Some(video) = self.videos
                 .iter()
                 .position(|video| video.slug() == slug)
-                .map(|index| self.videos_physical.swap_remove(index)) {
+                .map(|index| self.videos.swap_remove(index)) {
                 video.unpersist(context);
                 return true;
             }
@@ -141,7 +141,7 @@ impl Playlist {
 
     /// Potentially returns a video at the given path.
     pub fn get_any(&self, path: &str) -> GetAnyResult {
-        for video in &self.videos_physical {
+        for video in &self.videos {
             if video.path == path {
                 return GetAnyResult::Video(Arc::clone(video));
             }
@@ -152,7 +152,7 @@ impl Playlist {
 
     /// Returns the video at the given path.
     pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
-        for video in &self.videos_physical {
+        for video in &self.videos {
             if video.path == path {
                 return Some(Arc::clone(video));
             }
@@ -177,7 +177,7 @@ impl Playlist {
             path,
             poster: None,
             title: None,
-            videos_physical: Vec::new(),
+            videos: Vec::new(),
             videos_virtual: Vec::new(),
             unlisted: false
         }
@@ -271,7 +271,7 @@ impl Playlist {
             !hyper_subdir.video_files.is_empty() ||
             !hyper_subdir.audio_files.is_empty() {
             let video = Video::read_dir(context, hyper_subdir);
-            self.videos_physical.push(video);
+            self.videos.push(video);
         }
     }
 
@@ -301,7 +301,7 @@ impl Playlist {
                 }
             }
 
-            for video in &self.videos_physical {
+            for video in &self.videos {
                 let video_path = context.site_dir.join(video.slug());
                 if video_path.exists() {
                     fs::remove_dir_all(&video_path).unwrap();
@@ -325,16 +325,16 @@ impl Playlist {
             // to have subfolders, so this is a bit of an odd case.
 
             // Remove a video at this path if there is one
-            if let Some(index) = self.videos_physical.iter().position(|video| video.slug() == slug) {
-                self.videos_physical.swap_remove(index);
+            if let Some(index) = self.videos.iter().position(|video| video.slug() == slug) {
+                self.videos.swap_remove(index);
             }
 
             let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
             self.read_subdir(context, &hyper_subdir);
         } else {
             // If we presently have a video at the given path, we remove it.
-            if let Some(index) = self.videos_physical.iter().position(|video| video.slug() == slug) {
-                self.videos_physical.swap_remove(index);
+            if let Some(index) = self.videos.iter().position(|video| video.slug() == slug) {
+                self.videos.swap_remove(index);
             }
 
             // Add the new leaf (respectively, replace what was removed)
@@ -343,13 +343,16 @@ impl Playlist {
         }
     }
 
+    /// Performs the passed mutation on the video under the given path (if it exists).
+    /// Should not be called directly, instead only through a cascade call originating
+    /// from `update_video` on [Context].
     pub fn update_video(
         &mut self,
         mutation: impl FnOnce(&mut Video),
         mut path_parts: Peekable<Split<char>>
     ) -> Result<Arc<Video>, ()> {
         if let Some(slug) = path_parts.next() {
-            if let Some(video) = self.videos_physical.iter_mut().find(|video| video.slug() == slug) {
+            if let Some(video) = self.videos.iter_mut().find(|video| video.slug() == slug) {
                 let mut video_mut = (**video).clone();
                 mutation(&mut video_mut);
                 *video = Arc::new(video_mut);

@@ -688,7 +688,7 @@ pub async fn upload_video(
 
                         let video_moving = Arc::clone(&video);
                         let mutation = |playlist: &mut Playlist| {
-                            playlist.videos_physical.push(video_moving);
+                            playlist.videos.push(video_moving);
                         };
 
                         if context.update_playlist(mutation, &path.path).is_err() {
