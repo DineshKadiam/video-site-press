@@ -53,12 +53,14 @@ impl HyperDir {
 
                             if file_name.starts_with('.') { continue }
 
+                            let slugified = slugify(&file_name);
+
                             // TODO: Revisit whether slugify(...) actually imposes the sort of dir name constraints
                             //       we want, and also, what are these anyway, exactly?
-                            if slugify(&file_name) == file_name {
+                            if slugified == file_name {
                                 hyper_dir.dirs.push(dir_entry.path());
                             } else {
-                                let error = format!("Ignoring directory {} because its name is invalid (try to only use alphanumeric characters, dash and underscore)", file_name);
+                                let error = format!("Ignoring directory '{file_name}' because its name is invalid (try to only use alphanumeric characters, dash and underscore, e.g. '{slugified}')");
                                 hyper_dir.errors.push(error);
                             }
                         } else if file_type.is_file() {
