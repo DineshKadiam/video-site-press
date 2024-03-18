@@ -64,20 +64,22 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     body.push_str(&job_info);
 
     if let Ok(processing_errors) = context.processing_errors.lock() {
-        let errors = processing_errors
-            .iter()
-            .map(|err| format!("- {err}<br>"))
-            .collect::<Vec<String>>()
-            .join("\n");
+        if !processing_errors.is_empty() {
+            let errors = processing_errors
+                .iter()
+                .map(|err| format!("- {err}<br>"))
+                .collect::<Vec<String>>()
+                .join("\n");
 
-        let wrapped = formatdoc!(r#"
-            <div>
-                Processing errors:<br>
-                {errors}
-            </div>
-        "#);
+            let wrapped = formatdoc!(r#"
+                <div>
+                    Processing errors:<br>
+                    {errors}
+                </div>
+            "#);
 
-        body.push_str(&wrapped);
+            body.push_str(&wrapped);
+        }
     }
 
     let html = layout(&context, "", &site, &body, site.title());
