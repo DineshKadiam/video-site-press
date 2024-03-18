@@ -18,15 +18,6 @@ use crate::util;
 const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_1";
 
 pub struct Cache {
-    /// We register all files found in the cache (except manifests = bincode files)
-    /// here before we read the cache manifests. Files
-    /// referenced in the manifests that do not appear in the registry mean
-    /// that the cache entry is corrupt (we then remove it). The other way
-    /// around, every time we find a file in the registry we increase its
-    /// usage count (the value in the HashMap). At the end of the cache retrieval
-    /// process we know that all files in the registry with a usage count of 0
-    /// are orphaned and can therefore be removed.
-    artifact_registry: HashMap<String, usize>,
     pub poster_assets: Vec<PosterAssetsCached>,
     pub video_meta: Vec<VideoMetaCached>
 }
@@ -78,7 +69,9 @@ impl Cache {
     /// Scans the cache dir and initializes a HashMap that tracks
     /// all filenames, mapping them to a usage count (initialized to 0).
     /// The asset cache version marker is explicitly excluded from this.
-    fn fill_registry(&mut self, cache_dir: &Path) {
+    fn fill_registry(cache_dir: &Path) -> HashMap<String, usize> {
+        let mut artifact_registry: HashMap<String, usize> = HashMap::new();
+
         if let Ok(dir_entries) = cache_dir.read_dir() {
             for dir_entry_result in dir_entries {
                 if let Ok(dir_entry) = dir_entry_result {
@@ -89,24 +82,25 @@ impl Cache {
                         let file_name = dir_entry.file_name().to_str().unwrap().to_string();
 
                         if !file_name.ends_with(".bincode") && file_name != CACHE_VERSION_MARKER {
-                            self.artifact_registry.insert(file_name, 0);
+                            artifact_registry.insert(file_name, 0);
                         }
                     }
                 }
             }
         }
+
+        artifact_registry
     }
 
     fn new() -> Cache {
         Cache {
-            artifact_registry: HashMap::new(),
             poster_assets: Vec::new(),
             video_meta: Vec::new()
         }
     }
 
-    fn remove_orphaned(&mut self, cache_dir: &Path) {
-        for (filename, usage_counter) in self.artifact_registry.drain() {
+    fn remove_orphaned(artifact_registry: HashMap<String, usize>, cache_dir: &Path) {
+        for (filename, usage_counter) in artifact_registry {
             if usage_counter == 0 {
                 eprintln!(
                     "Removing orphaned cache artifact ({}) - it was probably created with a different version of hyper8.",
@@ -132,7 +126,16 @@ impl Cache {
             fs::write(version_marker_file, "").unwrap();
         }
 
-        cache.fill_registry(cache_dir);
+        // We register all files found in the cache (except manifests =
+        // bincode files) here before we read the cache manifests. Files
+        // referenced in the manifests that do not appear in the registry
+        // mean that the cache entry is corrupt (we then remove it). The
+        // other way around, every time we find a file in the registry we
+        // increase its usage count (the value in the HashMap). At the end of
+        // the cache retrieval process we know that all files in the registry
+        // with a usage count of 0 are orphaned and can therefore be
+        // removed.
+        let mut artifact_registry = Cache::fill_registry(cache_dir);
 
         if let Ok(dir_entries) = cache_dir.read_dir() {
             for dir_entry_result in dir_entries {
@@ -152,7 +155,7 @@ impl Cache {
                             CacheItem::PosterAssets(poster_assets) => {
                                 let all_assets = poster_assets.assets.all();
                                 for asset in &all_assets {
-                                    if let Some(usage_counter) = cache.artifact_registry.get_mut(&asset.file_name) {
+                                    if let Some(usage_counter) = artifact_registry.get_mut(&asset.file_name) {
                                         *usage_counter += 1;
                                     } else {
                                         // If a single asset is in a corrupt state (cached file missing)
@@ -183,7 +186,7 @@ impl Cache {
             }
         }
 
-        cache.remove_orphaned(cache_dir);
+        Cache::remove_orphaned(artifact_registry, cache_dir);
 
         cache
     }
