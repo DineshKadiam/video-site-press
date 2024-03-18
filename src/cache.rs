@@ -66,6 +66,15 @@ pub struct VideoMetaCached {
 }
 
 impl Cache {
+    pub fn fetch_poster_assets(&self, file_meta: &FileMeta, file_name: &str, path: &str) -> Option<PosterAssets> {
+        let poster_path = format!("{}/{}", path, file_name);
+
+        self.poster_assets
+            .iter()
+            .find(|cached| cached.file_meta == *file_meta && cached.path == poster_path)
+            .map(|cached| cached.assets.clone())
+    }
+
     /// Scans the cache dir and initializes a HashMap that tracks
     /// all filenames, mapping them to a usage count (initialized to 0).
     /// The asset cache version marker is explicitly excluded from this.

@@ -108,18 +108,12 @@ impl Video {
 
         match document.optional_field("poster") {
             Ok(Some(field)) => {
-                match field.required_value() {
+                match field.required_value::<String>() {
                     Ok(file_name) => {
                         let path_absolute = manifest_path.parent().unwrap().join(&file_name);
                         if path_absolute.exists() {
                             let file_meta = FileMeta::new(&path_absolute);
-
-                            let poster_path = format!("{}/{}", &self.path, file_name);
-                            let assets = context.cache.lock().unwrap().poster_assets
-                                .iter()
-                                .find(|cached| cached.file_meta == file_meta && cached.path == poster_path)
-                                .map(|cached| cached.assets.clone());
-
+                            let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &self.path);
                             let poster_file = PosterFile::new(assets, file_meta, file_name);
 
                             self.poster = Some(poster_file);
@@ -273,11 +267,7 @@ impl Video {
             let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
-            let poster_path = format!("{}/{}", &video.path, file_name);
-            let assets = context.cache.lock().unwrap().poster_assets
-                .iter()
-                .find(|cached| cached.file_meta == file_meta && cached.path == poster_path)
-                .map(|cached| cached.assets.clone());
+            let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &video.path);
 
             let poster_file = PosterFile::new(assets, file_meta, file_name);
 
