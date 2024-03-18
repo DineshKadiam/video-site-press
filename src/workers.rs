@@ -152,8 +152,8 @@ fn compute_poster_assets(context: &Context, video: Arc<Video>) -> Result<(), Str
                     }
                 };
 
-                if let Ok(video) = context.update_video(mutation, &video.path) {
-                    video.write_manifest(context);
+                if let Err(()) = context.update_video(mutation, &video.path) {
+                    return Err("Poster assets could not be assigned in the site tree as the video has meanwhile changed path.".to_string());
                 }
             }
             Err(err) => return Err(err)

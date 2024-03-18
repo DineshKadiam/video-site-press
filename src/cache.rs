@@ -31,7 +31,7 @@ pub struct Cache {
     pub video_meta: Vec<VideoMetaCached>
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum CacheItem {
     PosterAssets(PosterAssetsCached),
     VideoMeta(VideoMetaCached)
@@ -49,7 +49,7 @@ pub struct FileMeta {
 /// its source image, this is the strategy:
 /// - If the path, modified and size match, we assume it's the same file
 /// - For now there is no other strategy
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct PosterAssetsCached {
     pub assets: PosterAssets,
     pub file_meta: FileMeta,
@@ -64,7 +64,7 @@ pub struct PosterAssetsCached {
 /// its video(s), this is the strategy:
 /// - If the path, modified and size match, we assume it's the same file
 /// - For now there is no other strategy
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct VideoMetaCached {
     pub file_meta: FileMeta,
     /// The path is relative to the site_dir. This ensures

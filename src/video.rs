@@ -82,7 +82,7 @@ pub enum VideoParent {
 }
 
 impl Video {
-    fn apply_manifest(&mut self, manifest_path: &Path) {
+    fn apply_manifest(&mut self, context: &Context, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
         let document = match enolib::parse(&content) {
@@ -109,11 +109,19 @@ impl Video {
         match document.optional_field("poster") {
             Ok(Some(field)) => {
                 match field.required_value() {
-                    Ok(value) => {
-                        let path_absolute = manifest_path.parent().unwrap().join(&value);
+                    Ok(file_name) => {
+                        let path_absolute = manifest_path.parent().unwrap().join(&file_name);
                         if path_absolute.exists() {
                             let file_meta = FileMeta::new(&path_absolute);
-                            let poster_file = PosterFile::new(None, file_meta, value);
+
+                            let poster_path = format!("{}/{}", &self.path, file_name);
+                            let assets = context.cache.lock().unwrap().poster_assets
+                                .iter()
+                                .find(|cached| cached.file_meta == file_meta && cached.path == poster_path)
+                                .map(|cached| cached.assets.clone());
+
+                            let poster_file = PosterFile::new(assets, file_meta, file_name);
+
                             self.poster = Some(poster_file);
                         } else {
                             self.errors.push(format!("Error in {} (Path to poster is invalid, file not found)", manifest_path.display()));
@@ -245,7 +253,7 @@ impl Video {
         let mut video = Video::new(hyper_dir.site_path(context));
 
         if let Some(manifest) = &hyper_dir.video_manifest {
-            video.apply_manifest(manifest);
+            video.apply_manifest(context, manifest);
         }
 
         if !hyper_dir.dirs.is_empty() {
