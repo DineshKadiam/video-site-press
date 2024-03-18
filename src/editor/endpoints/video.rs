@@ -65,6 +65,9 @@ pub enum VideoFormFeedback<'a> {
         release_date: Field,
         title: Field,
         unlisted: bool
+    },
+    UploadPoster {
+        error: String
     }
 }
 
@@ -246,6 +249,12 @@ pub fn edit_page(
 
     let poster_upload_button = upload_widget(&format!("/upload-video-poster/{path}"), "Upload Poster");
 
+    let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
+        format!(r#"<span class="error">{error}</span>"#)
+    } else {
+        String::new()
+    };
+
     let (
         feedback_update,
         input_description,
@@ -343,7 +352,10 @@ pub fn edit_page(
         <h2>Poster Image</h2>
 
         {poster}
+
         {poster_upload_button}
+        {poster_upload_button_error}
+
         <form action="/video-random-poster/{path}" enctype="multipart/form-data" method="post">
             <button>Randomly pick another poster frame (unimplemented)</button>
         </form>
@@ -548,8 +560,18 @@ pub async fn upload_poster(
 
         if let Some(filename) = content_disposition.get_filename() {
             if !supported_image_extension(filename) {
-                // TODO: Implement without panicking - return something instead
-                panic!("Unsupported file extension in {filename}");
+                match context.get_video(&path.path) {
+                    Some(video) => {
+                        let error = format!("Unsupported file extension in {filename}");
+                        let form_feedback = VideoFormFeedback::UploadPoster { error };
+                        let http_response = edit_page(&context, Some(form_feedback), &video);
+                        return Ok(Either::Right(http_response))
+                    }
+                    None => {
+                        let http_response = not_found(&context, &format!("Video {} not found.", &path.path));
+                        return Ok(Either::Right(http_response));
+                    }
+                }
             }
 
             let original_filename = filename.to_string();
