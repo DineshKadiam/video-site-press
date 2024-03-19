@@ -38,12 +38,18 @@ pub struct PosterFile {
 }
 
 impl PosterAssets {
-    pub fn write_manifest(&self, context: &Context, path: &str, poster: &PosterFile) {
-        let poster_path = format!("{}/{}", path, poster.file_name);
+    pub fn write_cache_manifest(
+        &self,
+        context: &Context,
+        file_meta: &FileMeta,
+        file_name: &str,
+        path: &str
+    ) {
+        let poster_path = format!("{}/{}", path, file_name);
 
         let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
             assets: self.clone(),
-            file_meta: poster.file_meta.clone(),
+            file_meta: file_meta.clone(),
             path: poster_path.clone()
         });
 

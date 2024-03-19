@@ -5,7 +5,7 @@ use actix_web::http::header::ContentType;
 use actix_web::web::Data;
 use indoc::formatdoc;
 
-use crate::{Context, SiteContent};
+use crate::{Context, JobKind, SiteContent};
 use crate::editor::widgets::layout;
 
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
@@ -52,11 +52,14 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         .unwrap()
         .iter()
         .map(|job| {
-            format!(
-                "{video} {status}",
-                status = if job.assigned { "assigned" } else { "idle" },
-                video = job.video.label()
-            )
+            let label = match &job.kind {
+                JobKind::PlaylistFastTasks(playlist) => playlist.label(),
+                JobKind::VideoFastTasks(video) => video.label(),
+                JobKind::VideoFormat { video, .. } => video.label(),
+            };
+            let status = if job.assigned { "assigned" } else { "idle" };
+
+            format!("{label} {status}")
         })
         .collect::<Vec<String>>()
         .join("\n");

@@ -120,7 +120,8 @@ pub async fn downsize(
     let video_format_string = format!("video:h264:mp4:speed:1.0:{}", form.width);
     let video_format = VideoFormat::parse(&video_format_string).unwrap();
 
-    let job = Job::new(JobKind::Format(video_format), Arc::clone(&video));
+    let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
+    let job = Job::new(job_kind);
     context.job_queue.lock().unwrap().push(job);
 
     let redirect_url = format!("/video/{}", &path.path);
@@ -611,7 +612,8 @@ pub async fn upload_poster(
                 }
             };
 
-            let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
+            let job_kind = JobKind::VideoFastTasks(Arc::clone(&video));
+            let job = Job::new(job_kind);
             context.job_queue.lock().unwrap().push(job);
 
             let redirect_url = format!("/video/{}", path.path);
@@ -683,7 +685,7 @@ pub async fn upload_video(
                     f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
                 }
 
-                match &container {
+                let video = match &container {
                     GetAnyResult::Collection(_) => {
                         let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
                         let video = Video::read_dir(&context, &hyper_dir);
@@ -698,11 +700,7 @@ pub async fn upload_video(
                             return Ok(Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path))));
                         }
 
-                        let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
-                        context.job_queue.lock().unwrap().push(job);
-
-                        let redirect_url = format!("/video/{}", &video.path);
-                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
+                        video
                     }
                     GetAnyResult::Playlist(_) => {
                         let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
@@ -718,11 +716,7 @@ pub async fn upload_video(
                             return Ok(Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path))));
                         }
 
-                        let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
-                        context.job_queue.lock().unwrap().push(job);
-
-                        let redirect_url = format!("/video/{}", &video.path);
-                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
+                        video
                     }
                     GetAnyResult::Video(_) => {
                         let file_meta = FileMeta::new(&storage_path);
@@ -732,20 +726,21 @@ pub async fn upload_video(
                             video.versions.push(VideoFile::new(file_meta, file_name, None));
                         };
 
-                        let video = match context.update_video(mutation, &path.path) {
+                        match context.update_video(mutation, &path.path) {
                             Ok(video) => video,
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
                             Err(()) => return Ok(Either::Right(not_found(&context, &format!("Video {} not found.", &path.path))))
-                        };
-
-                        let job = Job::new(JobKind::FastTasks, Arc::clone(&video));
-                        context.job_queue.lock().unwrap().push(job);
-
-                        let redirect_url = format!("/video/{}", &video.path);
-                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
+                        }
                     }
                     GetAnyResult::None => unreachable!()
-                }
+                };
+
+                let job_kind = JobKind::VideoFastTasks(Arc::clone(&video));
+                let job = Job::new(job_kind);
+                context.job_queue.lock().unwrap().push(job);
+
+                let redirect_url = format!("/video/{}", &video.path);
+                return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
             }
         }
     }

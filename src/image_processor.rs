@@ -9,6 +9,10 @@ use crate::util::nanoid;
 
 
 pub enum ResizeMode {
+    /// Perform a crop to a rectangle with the minimum target aspect ratio (if needed),
+    /// then resize to a maximum width.
+    /// Aspect ratio is width / height, e.g. 16/9 = 1.7777777    
+    CoverCroppedRectangle { max_width: u32, min_aspect: f32 },
     /// Perform a crop to a rectangle with the target aspect ratio (if needed),
     /// then resize to a maximum width.
     /// Aspect ratio is width / height, e.g. 16/9 = 1.7777777
@@ -79,6 +83,18 @@ impl ImageProcessor {
         resize_mode: ResizeMode
     ) -> (String, (u32, u32)) {
         match resize_mode {
+            ResizeMode::CoverCroppedRectangle { max_width, min_aspect } => {
+                let found_aspect = self.source_width as f32 / self.source_height as f32;
+                if found_aspect < min_aspect {
+                    // too tall, reduce height
+                    let new_height = (self.source_width as f32 / min_aspect).floor() as u32;
+                    let y = (self.source_height - new_height) / 2;
+                    let cropped_image = self.source_image.crop_imm(0, y, self.source_width, new_height);
+                    self.resize_and_export(context, max_width, &cropped_image)
+                } else {
+                    self.resize_and_export(context, max_width, &self.source_image)
+                }
+            }
             ResizeMode::CoverRectangle { aspect, max_width } => {
                 let found_aspect = self.source_width as f32 / self.source_height as f32;
                 if found_aspect < aspect {

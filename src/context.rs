@@ -126,10 +126,7 @@ impl Context {
             for job in jobs {
                 if !job_queue
                     .iter()
-                    .any(|existing_job|
-                        existing_job.kind == job.kind &&
-                        Arc::ptr_eq(&existing_job.video, &job.video)
-                    ) {
+                    .any(|existing_job| existing_job.kind == job.kind) {
                     job_queue.push(job);
                 }
             }
@@ -362,6 +359,12 @@ impl Context {
     }
 
     fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, queue: &mut Vec<Job>) {
+        if playlist.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
+            let job_kind = JobKind::PlaylistFastTasks(Arc::clone(playlist));
+            let job = Job::new(job_kind);
+            queue.push(job);
+        }
+
         for video in &playlist.videos {
             self.queue_video_jobs(video, queue);
         }
@@ -411,7 +414,8 @@ impl Context {
         if video.versions.iter().any(|version| version.video_meta.is_none()) ||
            (video.poster.is_none() && !video.versions.is_empty()) ||
            video.poster.as_ref().is_some_and(|poster| poster.assets.is_none()) {
-            let job = Job::new(JobKind::FastTasks, Arc::clone(video));
+            let job_kind = JobKind::VideoFastTasks(Arc::clone(video));
+            let job = Job::new(job_kind);
             queue.push(job);
         }
 
@@ -436,7 +440,7 @@ impl Context {
             .iter_mut()
             .filter(|job| {
                 if high_priority_only {
-                    if let JobKind::Format(_) = job.kind {
+                    if let JobKind::VideoFormat { .. } = job.kind {
                         return false;
                     }
                 }

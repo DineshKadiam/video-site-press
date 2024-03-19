@@ -17,6 +17,8 @@ use crate::{
     ContextPath,
     Field,
     FileMeta,
+    Job,
+    JobKind,
     Playlist
 };
 use crate::editor::endpoints;
@@ -643,16 +645,18 @@ pub async fn upload_banner(
                 playlist.write_manifest(&context.site_dir);
             };
 
-            if context.update_playlist(mutation, &path.path).is_err() {
-                fs::remove_file(&storage_path).unwrap();
-                let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
-                return Ok(Either::Right(http_response));
-            };
-
-            // TODO: Would need some architectural changes.
-            //       Maybe implement together with new job model? (which maybe does not use a job queue at all?)
-            // let job = Job::new(JobKind::Poster, playlist.clone());
-            // context.job_queue.lock().unwrap().push(job);
+            match context.update_playlist(mutation, &path.path) {
+                Ok(playlist) => {
+                    let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist));
+                    let job = Job::new(job_kind);
+                    context.job_queue.lock().unwrap().push(job);
+                }
+                Err(()) => {
+                    fs::remove_file(&storage_path).unwrap();
+                    let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
+                    return Ok(Either::Right(http_response));
+                }
+            }
         }
     }
 

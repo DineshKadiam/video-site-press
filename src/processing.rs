@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use serde_derive::Serialize;
 
-use crate::{Video, VideoFormat};
+use crate::{Playlist, Video, VideoFormat};
 use crate::util::{nanoid, timestamp};
 
 #[derive(Clone, Debug)]
@@ -11,14 +11,17 @@ pub struct Job {
     pub assigned: bool,
     pub created: u128,
     pub id: String,
-    pub kind: JobKind,
-    pub video: Arc<Video>
+    pub kind: JobKind
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum JobKind {
-    FastTasks,
-    Format(VideoFormat)
+    PlaylistFastTasks(Arc<Playlist>),
+    VideoFastTasks(Arc<Video>),
+    VideoFormat {
+        format: VideoFormat,
+        video: Arc<Video>
+    }
 }
 
 #[derive(Clone, Serialize)]
@@ -26,7 +29,7 @@ pub enum JobKind {
 pub struct Operation {
     pub id: usize,
     pub label: String,
-    pub video_path: String
+    pub path: String
 }
 
 #[derive(Clone, Serialize)]
@@ -37,13 +40,12 @@ pub struct Processing {
 }
 
 impl Job {
-    pub fn new(kind: JobKind, video: Arc<Video>) -> Job {
+    pub fn new(kind: JobKind) -> Job {
         Job {
             assigned: false,
             created: timestamp(),
             id: nanoid(),
-            kind,
-            video
+            kind
         }
     }
 
@@ -55,13 +57,20 @@ impl Job {
     /// relevant), the one that exists longer is prioritized.
     pub fn cmp_priority(&self, other: &Job) -> Ordering {
         match &self.kind {
-            JobKind::FastTasks => match other.kind {
-                JobKind::FastTasks => (),
-                JobKind::Format(_) => return Ordering::Greater
+            JobKind::PlaylistFastTasks(_) => match other.kind {
+                JobKind::PlaylistFastTasks(_) => (),
+                JobKind::VideoFastTasks(_) => (),
+                JobKind::VideoFormat { .. } => return Ordering::Greater
             }
-            JobKind::Format(format) => match &other.kind {
-                JobKind::FastTasks => return Ordering::Less,
-                JobKind::Format(other_format) => match format.cmp_priority(other_format) {
+            JobKind::VideoFastTasks(_) => match other.kind {
+                JobKind::PlaylistFastTasks(_) => (),
+                JobKind::VideoFastTasks(_) => (),
+                JobKind::VideoFormat { .. } => return Ordering::Greater
+            }
+            JobKind::VideoFormat { format, .. } => match &other.kind {
+                JobKind::PlaylistFastTasks(_) => return Ordering::Less,
+                JobKind::VideoFastTasks(_) => return Ordering::Less,
+                JobKind::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
                     ordering => return ordering
                 }
@@ -69,6 +78,25 @@ impl Job {
         }
 
         self.created.cmp(&other.created).reverse()
+    }
+}
+
+impl PartialEq for JobKind {
+    fn eq(&self, other: &JobKind) -> bool {
+        match self {
+            JobKind::PlaylistFastTasks(playlist) => match other {
+                JobKind::PlaylistFastTasks(other_playlist) => playlist.path == other_playlist.path,
+                _ => false
+            }
+            JobKind::VideoFastTasks(video) => match other {
+                JobKind::VideoFastTasks(other_video) => video.path == other_video.path,
+                _ => false
+            }
+            JobKind::VideoFormat { video, .. } => match other {
+                JobKind::VideoFormat { video: other_video, .. } => video.path == other_video.path,
+                _ => false
+            }
+        }
     }
 }
 
@@ -82,7 +110,7 @@ impl Processing {
 
     /// Add a background operation to the processing registry, return an id
     /// with which it can be identified in the registry again.
-    pub fn push(&mut self, video_path: &str, label: String) -> usize {
+    pub fn push(&mut self, path: &str, label: String) -> usize {
         let id = self.operations
             .iter()
             .last()
@@ -92,7 +120,7 @@ impl Processing {
         println!("{label}");
 
         let operation = Operation {
-            video_path: video_path.to_owned(),
+            path: path.to_owned(),
             id,
             label
         };

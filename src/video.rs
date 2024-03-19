@@ -223,26 +223,6 @@ impl Video {
         }
     }
 
-    pub fn persist_in_cache(&self, cache_dir: &Path) {
-        for version in &self.versions {
-            if let Some(video_meta) = &version.video_meta {
-                let cache_item = CacheItem::VideoMeta(VideoMetaCached {
-                    file_meta: version.file_meta.clone(),
-                    path: format!("{}/{}", self.path, version.file_name),
-                    video_meta: video_meta.clone()
-                });
-
-                let serialized = bincode::serialize(&cache_item).unwrap();
-
-                let version_path = format!("{}/{}", self.path, version.file_name);
-                let file_name = format!("{}.bincode", hash(&version_path));
-                let path = cache_dir.join(file_name);
-                
-                fs::write(path, serialized).unwrap();
-            }
-        }
-    }
-
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir) -> Arc<Video> {
         let mut video = Video::new(hyper_dir.site_path(context));
 
@@ -400,5 +380,28 @@ impl VideoMeta {
             height,
             width
         }
+    }
+
+    pub fn write_cache_manifest(
+        &self,
+        context: &Context,
+        file_meta: &FileMeta,
+        file_name: &str,
+        path: &str
+    ) {
+        let version_path = format!("{}/{}", path, file_name);
+
+        let cache_item = CacheItem::VideoMeta(VideoMetaCached {
+            file_meta: file_meta.clone(),
+            path: version_path.clone(),
+            video_meta: self.clone()
+        });
+
+        let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
+
+        let cache_item_file_name = format!("{}.bincode", hash(&version_path));
+        let cache_item_path = context.cache_dir.join(cache_item_file_name);
+        
+        fs::write(cache_item_path, cache_item_serialized).unwrap();
     }
 }
