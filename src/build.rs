@@ -95,21 +95,21 @@ fn build_playlist(
 
     breadcrumbs_extended.push(Breadcrumb::Playlist(playlist.label().to_string()));
 
-    if let Some(poster) = &playlist.poster {
+    if let Some(banner) = &playlist.banner {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
         fs::create_dir_all(&playlist_build_dir).unwrap();
 
-        if let Some(poster_assets) = &poster.assets {
-            for asset in &poster_assets.all() {
+        if let Some(banner_assets) = &banner.assets {
+            for asset in &banner_assets.all() {
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
-                    playlist_build_dir.join(format!("poster_{}x{}.jpg", asset.width, asset.height))
+                    playlist_build_dir.join(format!("banner_{}x{}.jpg", asset.width, asset.height))
                 );
             }
         } else {
             hard_link_or_copy(
-                context.site_dir.join(&playlist.path).join(&poster.file_name),
-                playlist_build_dir.join("poster.jpg")
+                context.site_dir.join(&playlist.path).join(&banner.file_name),
+                playlist_build_dir.join("banner.jpg")
             );
         }
     }

@@ -12,6 +12,7 @@ use indoc::formatdoc;
 use serde_derive::Deserialize;
 
 use crate::{
+    Banner,
     Context,
     ContextPath,
     Field,
@@ -106,11 +107,11 @@ pub fn edit_page(
     // let videos = context.collection.all_videos();
     // let video_form_rendered = videos_form(playlist, &videos);
 
-    let poster = playlist.poster
+    let banner = playlist.banner
         .as_ref()
-        .map(|poster| {
+        .map(|banner| {
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
-            let file_name = &poster.file_name;
+            let file_name = &banner.file_name;
             let src = if path == "" {
                 format!("/poster/{file_name}")
             } else {
@@ -120,7 +121,7 @@ pub fn edit_page(
         })
         .unwrap_or(String::new());
 
-    let poster_upload_button = upload_widget(&format!("/upload-playlist-poster/{path}"), "Upload Poster");
+    let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), "Upload Banner");
 
     let (
         feedback_update,
@@ -205,10 +206,10 @@ pub fn edit_page(
             </div>
         </form>
 
-        <h2>Poster Image</h2>
+        <h2>Banner Image</h2>
         
-        {poster}<br>
-        {poster_upload_button}
+        {banner}<br>
+        {banner_upload_button}
 
         {site_edit}
 
@@ -217,7 +218,7 @@ pub fn edit_page(
         {slug_form}
 
        <p>
-            Deleting the playlist removes the playlist manifest, poster image,
+            Deleting the playlist removes the playlist manifest, banner image,
             and all videos contained in the playlist. If the playlist lies at the
             site root it does not remove the site manifest and the site itself,
             so the site can afterwards be reinitialized again as a collection,
@@ -529,7 +530,7 @@ pub async fn update(
     }
 }
 
-pub async fn upload_poster(
+pub async fn upload_banner(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
     path: ActixPath<ContextPath>
@@ -558,10 +559,14 @@ pub async fn upload_poster(
             }
 
             let file_meta = FileMeta::new(&storage_path);
-            let poster_file = PosterFile::new(None, file_meta, storage_filename);
+
+            // TODO: Although unlikely to result in anything, most of the time,
+            //       we could fetch assets from the cache, just in case?
+
+            let banner = Banner::new(None, None, file_meta, storage_filename);
 
             let mutation = |playlist: &mut Playlist| {
-                playlist.poster = Some(poster_file);
+                playlist.banner = Some(banner);
             };
 
             let playlist = match context.update_playlist(mutation, &path.path) {

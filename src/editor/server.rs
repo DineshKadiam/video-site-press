@@ -77,9 +77,9 @@ pub async fn start(context: Arc<Context>) {
                     .route(post().to(video::update)),
             )
             // .route("/videos", get().to(index::videos))
-            .route("/upload-playlist-poster/{path:.*}", post().to(playlist::upload_poster))
+            .route("/upload-banner/{path:.*}", post().to(playlist::upload_banner))
+            .route("/upload-poster/{path:.*}", post().to(video::upload_poster))
             .route("/upload-video/{path:.*}", post().to(video::upload_video))
-            .route("/upload-video-poster/{path:.*}", post().to(video::upload_poster))
     })
     .bind(("127.0.0.1", 8081))
     .unwrap()

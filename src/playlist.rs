@@ -4,9 +4,10 @@ use std::path::Path;
 use std::str::Split;
 use std::sync::Arc;
 
-use enolib::SectionElement;
+use enolib::{Element, SectionElement};
 
 use crate::{
+    Banner,
     Context,
     FileMeta,
     GetAnyResult,
@@ -17,10 +18,10 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct Playlist {
+	pub banner: Option<Banner>,
 	pub description: Option<String>,
     pub errors: Vec<String>,
     pub path: String,
-	pub poster: Option<PosterFile>,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
@@ -33,7 +34,7 @@ pub struct Playlist {
 }
 
 impl Playlist {
-    fn apply_manifest(&mut self, manifest_path: &Path) {
+    fn apply_manifest(&mut self, context: &Context, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
         // TODO: Tricky manifest problem/question in general: If there is anything wrong
@@ -65,20 +66,37 @@ impl Playlist {
             _ => ()
         }
 
-        match document.optional_field("poster") {
+        match document.optional_field("banner") {
             Ok(Some(field)) => {
-                match field.required_value() {
-                    Ok(value) => {
-                        let path_absolute = manifest_path.parent().unwrap().join(&value);
-                        if path_absolute.exists() {
-                            let file_meta = FileMeta::new(&path_absolute);
-                            let poster_file = PosterFile::new(None, file_meta, value);
-                            self.poster = Some(poster_file);
-                        } else {
-                            self.errors.push(format!("Error in {} (Path to poster is invalid, file not found)", manifest_path.display()));
+                match field.required_attribute("file") {
+                    Ok(attribute) => {
+                        match attribute.required_value::<String>() {
+                            Ok(file_name) => {
+                                let path_absolute = manifest_path.parent().unwrap().join(&file_name);
+                                if path_absolute.exists() {
+                                    let file_meta = FileMeta::new(&path_absolute);
+
+                                    // TODO: Errors
+                                    let description = match field.required_attribute("description") {
+                                        Ok(attribute) => match attribute.required_value() {
+                                            Ok(description) => Some(description),
+                                            _ => None
+                                        }
+                                        _ => None
+                                    };
+
+                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &self.path);
+
+                                    let banner = Banner::new(assets, description, file_meta, file_name);
+                                    self.banner = Some(banner);
+                                } else {
+                                    self.errors.push(format!("Error in {}:{} (Path to banner is invalid, file not found)", manifest_path.display(), attribute.line_number()));
+                                }
+                            }
+                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
                 }
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
@@ -172,10 +190,10 @@ impl Playlist {
 
 	pub fn new(path: String) -> Playlist {
 		Playlist {
+            banner: None,
             description: None,
             errors: Vec::new(),
             path,
-            poster: None,
             title: None,
             videos: Vec::new(),
             videos_virtual: Vec::new(),
@@ -186,8 +204,14 @@ impl Playlist {
     pub fn persist_in_site(&self, site_dir: &Path) {
         let mut eno = String::new();
 
-        if let Some(poster) = &self.poster {
-            eno.push_str(&format!("poster: {}\n", poster.file_name));
+        if let Some(banner) = &self.banner {
+            eno.push_str("banner:\n");
+
+            if let Some(description) = &self.description {
+                eno.push_str(&format!("description = {}\n", description));
+            }
+
+            eno.push_str(&format!("file = {}\n", banner.file_name));
         }
 
         if let Some(title) = &self.title {
@@ -211,7 +235,7 @@ impl Playlist {
         let mut playlist = Playlist::new(hyper_dir.site_path(context));
 
         if let Some(manifest) = &hyper_dir.playlist_manifest {
-            playlist.apply_manifest(manifest);
+            playlist.apply_manifest(context, manifest);
         }
 
         for subdir in &hyper_dir.dirs {
@@ -219,22 +243,18 @@ impl Playlist {
             playlist.read_subdir(context, &hyper_subdir);
         }
 
-        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
-        if !hyper_dir.image_files.is_empty() && playlist.poster.is_none() {
+        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable banner, use additional ones, etc.)
+        if !hyper_dir.image_files.is_empty() && playlist.banner.is_none() {
             let first_image = hyper_dir.image_files.first().unwrap();
 
             let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
-            let poster_path = format!("{}/{}", &playlist.path, file_name);
-            let assets = context.cache.lock().unwrap().poster_assets
-                .iter()
-                .find(|cached| cached.file_meta == file_meta && cached.path == poster_path)
-                .map(|cached| cached.assets.clone());
+            let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &playlist.path);
 
-            let poster_file = PosterFile::new(assets, file_meta, file_name);
+            let banner = Banner::new(assets, None, file_meta, file_name);
 
-            playlist.poster = Some(poster_file);
+            playlist.banner = Some(banner);
         }
 
         if !hyper_dir.video_files.is_empty() {
@@ -294,10 +314,10 @@ impl Playlist {
                 fs::remove_file(&manifest_path).unwrap();
             }
 
-            if let Some(poster) = &self.poster {
-                let poster_path = context.site_dir.join(&poster.file_name);
-                if poster_path.exists() {
-                    fs::remove_file(&poster_path).unwrap();
+            if let Some(banner) = &self.banner {
+                let banner_path = context.site_dir.join(&banner.file_name);
+                if banner_path.exists() {
+                    fs::remove_file(&banner_path).unwrap();
                 }
             }
 

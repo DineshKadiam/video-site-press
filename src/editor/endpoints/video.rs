@@ -247,7 +247,7 @@ pub fn edit_page(
         })
         .unwrap_or(String::new());
 
-    let poster_upload_button = upload_widget(&format!("/upload-video-poster/{path}"), "Upload Poster");
+    let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), "Upload Poster");
 
     let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
         format!(r#"<span class="error">{error}</span>"#)

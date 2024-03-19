@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use clap::Parser;
 
 mod args;
+mod banner;
 mod browser_support;
 mod build;
 mod cache;
@@ -25,6 +26,7 @@ mod watcher;
 mod workers;
 
 use args::Args;
+use banner::Banner;
 use browser_support::BrowserSupport;
 use cache::{Cache, CacheItem, FileMeta, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
