@@ -40,6 +40,7 @@ pub async fn start(context: Arc<Context>) {
                     .route(get().to(collection::edit))
                     .route(post().to(collection::update)),
             )
+            .route("/delete-banner/{path:.*}", post().to(playlist::delete_banner))
             .route("/delete-collection/{path:.*}", post().to(collection::delete))
             .route("/delete-playlist/{path:.*}", post().to(playlist::delete))
             .route("/delete-playlist-video/{path:.*}", post().to(playlist::remove_video))
@@ -77,6 +78,7 @@ pub async fn start(context: Arc<Context>) {
                     .route(post().to(video::update)),
             )
             // .route("/videos", get().to(index::videos))
+            .route("/update-banner/{path:.*}", post().to(playlist::update_banner))
             .route("/upload-banner/{path:.*}", post().to(playlist::upload_banner))
             .route("/upload-poster/{path:.*}", post().to(video::upload_poster))
             .route("/upload-video/{path:.*}", post().to(video::upload_video))

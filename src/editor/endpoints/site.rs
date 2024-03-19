@@ -198,8 +198,6 @@ pub fn edit(context: &Context, form_feedback: Option<&SiteFormFeedback>, path: &
 
 //     site.persist_in_site(&context.site_dir);
 
-//     // TODO: Fully delegate rendering of edit page to shared function (shared with "edit")?
-
 //     Redirect::to("/site").see_other()
 // }
 

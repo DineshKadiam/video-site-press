@@ -89,7 +89,7 @@ pub async fn create_playlist(
             return Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path)));
         }
 
-        playlist.persist_in_site(&context.site_dir);
+        playlist.write_manifest(&context.site_dir);
 
         let redirect_url = format!("/playlist/{}", playlist.path);
         Either::Left(Redirect::to(redirect_url).see_other())

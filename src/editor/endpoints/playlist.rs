@@ -17,8 +17,7 @@ use crate::{
     ContextPath,
     Field,
     FileMeta,
-    Playlist,
-    PosterFile
+    Playlist
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::{
@@ -31,6 +30,11 @@ use crate::editor::widgets::{
     upload_widget
 };
 use crate::util::{nanoid, supported_image_extension, validate_slug};
+
+#[derive(Deserialize)]
+pub struct BannerUpdateForm {
+    description: String
+}
 
 pub enum PlaylistFormFeedback<'a> {
     Move {
@@ -83,6 +87,30 @@ pub async fn delete(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
+pub async fn delete_banner(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |playlist: &mut Playlist| {
+        if let Some(banner) = &playlist.banner {
+            let banner_path = context.site_dir.join(&playlist.path).join(&banner.file_name);
+            playlist.banner = None;
+            playlist.write_manifest(&context.site_dir);
+            fs::remove_file(banner_path).ok();
+        }
+    };
+
+    let playlist = match context.update_playlist(mutation, &path.path) {
+        Ok(playlist) => playlist,
+        Err(()) => return Either::Right(
+            not_found(&context, &format!("Playlist {} not found.", &path.path))
+        )
+    };
+
+    let redirect_url = format!("/playlist/{}", playlist.path);
+    Either::Left(Redirect::to(redirect_url).see_other())
+}
+
 pub fn edit_page(
     context: &Context,
     form_feedback: Option<PlaylistFormFeedback>,
@@ -104,9 +132,6 @@ pub fn edit_page(
 
     let path = &playlist.path;
 
-    // let videos = context.collection.all_videos();
-    // let video_form_rendered = videos_form(playlist, &videos);
-
     let banner = playlist.banner
         .as_ref()
         .map(|banner| {
@@ -117,11 +142,39 @@ pub fn edit_page(
             } else {
                 format!("/poster/{path}/{file_name}")
             };
-            format!(r#"<img class="thumbnail" src="{src}">"#)
+
+            let description = form_textarea(
+                "description",
+                "Banner Description",
+                "Banner Description",
+                banner.description.as_deref()
+            );
+
+            format!(r#"
+                <img class="thumbnail" src="{src}">
+
+                <form action="/update-banner/{path}" method="post">
+                    {description}
+
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button>Update Banner Description</button>
+                    </div>
+                </form>
+
+                <form action="/delete-banner/{path}" method="post">
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button>Delete Banner</button>
+                    </div>
+                </form>
+            "#)
         })
         .unwrap_or(String::new());
 
     let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), "Upload Banner");
+    let banner_form = formatdoc!(r#"
+        {banner}
+        {banner_upload_button}
+    "#);
 
     let (
         feedback_update,
@@ -208,8 +261,7 @@ pub fn edit_page(
 
         <h2>Banner Image</h2>
         
-        {banner}<br>
-        {banner_upload_button}
+        {banner_form}
 
         {site_edit}
 
@@ -321,7 +373,7 @@ pub fn edit_page(
 //             playlist_mut.clone()
 //         };
 
-//         playlist.persist_in_site(&context.site_dir);
+//         playlist.write_manifest(&context.site_dir);
 
 //         let redirect_url = format!("/playlist/{}", path.path);
 
@@ -403,6 +455,7 @@ pub async fn remove_video(
                 .iter()
                 .position(|slug| slug == &form.slug) {
                 playlist.videos_virtual.remove(index);
+                playlist.write_manifest(&context.site_dir);
             }
         };
 
@@ -411,9 +464,7 @@ pub async fn remove_video(
             Err(()) => return Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path)))
         };
 
-        playlist.persist_in_site(&context.site_dir);
-
-        let redirect_url = format!("/playlist/{}", path.path);
+        let redirect_url = format!("/playlist/{}", playlist.path);
 
         Either::Left(
             Redirect::to(redirect_url).see_other()
@@ -497,6 +548,7 @@ pub async fn update(
             playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             playlist.unlisted = unlisted;
+            playlist.write_manifest(&context.site_dir);
         };
 
         let playlist = match context.update_playlist(mutation, &path.path) {
@@ -505,8 +557,6 @@ pub async fn update(
                 not_found(&context, &format!("Playlist {} not found.", &path.path))
             )
         };
-
-        playlist.persist_in_site(&context.site_dir);
 
         let redirect_url = format!("/playlist/{}", playlist.path);
         Either::Left(Redirect::to(redirect_url).see_other())
@@ -528,6 +578,29 @@ pub async fn update(
             edit_page(&context, Some(form_feedback), &playlist)
         )
     }
+}
+
+pub async fn update_banner(
+    context: Data<Arc<Context>>,
+    form: Form<BannerUpdateForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |playlist: &mut Playlist| {
+        if let Some(banner) = &mut playlist.banner {
+            banner.description = Some(form.description.clone());
+        }
+        playlist.write_manifest(&context.site_dir);
+    };
+
+    let playlist = match context.update_playlist(mutation, &path.path) {
+        Ok(playlist) => playlist,
+        Err(()) => return Either::Right(
+            not_found(&context, &format!("Playlist {} not found.", &path.path))
+        )
+    };
+
+    let redirect_url = format!("/playlist/{}", playlist.path);
+    Either::Left(Redirect::to(redirect_url).see_other())
 }
 
 pub async fn upload_banner(
@@ -567,18 +640,14 @@ pub async fn upload_banner(
 
             let mutation = |playlist: &mut Playlist| {
                 playlist.banner = Some(banner);
+                playlist.write_manifest(&context.site_dir);
             };
 
-            let playlist = match context.update_playlist(mutation, &path.path) {
-                Ok(playlist) => playlist,
-                Err(()) => {
-                    fs::remove_file(&storage_path).unwrap();
-                    let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
-                    return Ok(Either::Right(http_response));
-                }
+            if context.update_playlist(mutation, &path.path).is_err() {
+                fs::remove_file(&storage_path).unwrap();
+                let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
+                return Ok(Either::Right(http_response));
             };
-
-            playlist.persist_in_site(&context.site_dir);
 
             // TODO: Would need some architectural changes.
             //       Maybe implement together with new job model? (which maybe does not use a job queue at all?)

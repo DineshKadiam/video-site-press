@@ -12,7 +12,6 @@ use crate::{
     FileMeta,
     GetAnyResult,
     HyperDir,
-    PosterFile,
     Video
 };
 
@@ -201,36 +200,6 @@ impl Playlist {
         }
 	}
 
-    pub fn persist_in_site(&self, site_dir: &Path) {
-        let mut eno = String::new();
-
-        if let Some(banner) = &self.banner {
-            eno.push_str("banner:\n");
-
-            if let Some(description) = &self.description {
-                eno.push_str(&format!("description = {}\n", description));
-            }
-
-            eno.push_str(&format!("file = {}\n", banner.file_name));
-        }
-
-        if let Some(title) = &self.title {
-            eno.push_str(&format!("title: {}\n", title));
-        }
-
-        if self.unlisted {
-            eno.push_str("unlisted\n");
-        }
-
-        if let Some(description) = &self.description {
-            if !eno.is_empty() { eno.push('\n'); }
-            eno.push_str(&format!("-- description\n{}\n--description\n", description));
-        }
-
-        let path = site_dir.join(&self.path).join("playlist.eno");
-        fs::write(path, eno).unwrap();
-    }
-
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir) -> Arc<Playlist> {
         let mut playlist = Playlist::new(hyper_dir.site_path(context));
 
@@ -381,5 +350,35 @@ impl Playlist {
         }
 
         Err(())
+    }
+
+    pub fn write_manifest(&self, site_dir: &Path) {
+        let mut eno = String::new();
+
+        if let Some(banner) = &self.banner {
+            eno.push_str("banner:\n");
+
+            if let Some(description) = &banner.description {
+                eno.push_str(&format!("description = {}\n", description));
+            }
+
+            eno.push_str(&format!("file = {}\n", banner.file_name));
+        }
+
+        if let Some(title) = &self.title {
+            eno.push_str(&format!("title: {}\n", title));
+        }
+
+        if self.unlisted {
+            eno.push_str("unlisted\n");
+        }
+
+        if let Some(description) = &self.description {
+            if !eno.is_empty() { eno.push('\n'); }
+            eno.push_str(&format!("-- description\n{}\n--description\n", description));
+        }
+
+        let path = site_dir.join(&self.path).join("playlist.eno");
+        fs::write(path, eno).unwrap();
     }
 }

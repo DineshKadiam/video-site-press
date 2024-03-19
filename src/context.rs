@@ -158,7 +158,7 @@ impl Context {
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let playlist = Playlist::read_dir(self, &hyper_dir);
-            playlist.persist_in_site(&self.site_dir);
+            playlist.write_manifest(&self.site_dir);
             site_mut.content = SiteContent::Playlist(playlist);
             self.replace_site(site_mut);
         } else if let SiteContent::Collection(_playlist) = &mut site_mut.content {
