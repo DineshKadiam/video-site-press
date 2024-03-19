@@ -2,9 +2,28 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Context, Playlist, Site};
+use crate::{Banner, Context, Playlist, Site};
 use crate::build::Breadcrumb;
 use crate::build::render::{layout, thumbnail};
+
+pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
+    let alt = if let Some(description) = &banner.description {
+        format!(r#"alt="{description}" "#)
+    } else {
+        String::new()
+    };
+
+    if let Some(poster_assets) = &banner.assets {
+        // TODO: Adjust up_to_xxx (depends on final content width we're using)
+        let image_attributes = poster_assets.img_attributes_up_to_1280("banner", playlist_prefix);
+        let src = image_attributes.src;
+        let srcset = image_attributes.srcset;
+
+        formatdoc!(r#"<img {alt}src="{src}" srcset="{srcset}">"#)
+    } else {
+        formatdoc!(r#"<img {alt}src="{playlist_prefix}banner.jpg">"#)
+    }
+}
 
 pub fn playlist_html(
     context: &Context,
@@ -20,6 +39,12 @@ pub fn playlist_html(
     } else {
         playlist.title.as_deref().unwrap_or_else(|| playlist.slug())
     };
+
+    if let Some(banner) = &playlist.banner {
+        let playlist_prefix = "";
+        let img = banner_html(banner, playlist_prefix);
+        body.push_str(&img);
+    }
 
     body.push_str(&format!("<h1>{title}</h1>\n\n"));
 

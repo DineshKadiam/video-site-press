@@ -4,6 +4,7 @@ use indoc::formatdoc;
 
 use crate::{Collection, Context, Site};
 use crate::build::Breadcrumb;
+use crate::build::playlist::banner_html;
 use crate::build::render::{layout, thumbnail};
 
 pub fn collection_html(
@@ -64,7 +65,16 @@ pub fn collection_html(
                 let slug = playlist.slug();
                 let title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
 
+                let playlist_prefix = format!("{slug}/");
+
+                let banner = if let Some(banner) = &playlist.banner {
+                    banner_html(banner, &playlist_prefix)
+                } else {
+                    String::new()
+                };
+
                 formatdoc!(r#"
+                    {banner}
                     <a href="{slug}{index_suffix}">{title}</a>
                 "#)
             })

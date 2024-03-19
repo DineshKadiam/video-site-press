@@ -60,6 +60,7 @@ impl ImgAttributes {
     /// Assets MUST be passed in ascending size
     pub fn new(
         assets_ascending_by_size: Vec<&PosterAsset>,
+        base_name: &str,
         prefix: &str
     ) -> ImgAttributes {
         let mut src = String::new();
@@ -68,10 +69,13 @@ impl ImgAttributes {
         let mut asset_peek_iter = assets_ascending_by_size.iter().peekable();
 
         while let Some(asset) = asset_peek_iter.next() {
-            srcset.push(format!("{}poster_{}x{}.jpg {}w", prefix, asset.width, asset.height, asset.width));
+            let height = asset.height;
+            let width = asset.width;
+
+            srcset.push(format!("{prefix}{base_name}_{width}x{height}.jpg {width}w"));
 
             if asset_peek_iter.peek().is_none() {
-                src = format!("{}poster_{}x{}.jpg", prefix, asset.width, asset.height);
+                src = format!("{prefix}{base_name}_{width}x{height}.jpg");
             }
         }
 
@@ -95,16 +99,16 @@ impl PosterAssets {
         result
     }
 
-    pub fn img_attributes_up_to_320(&self, prefix: &str) -> ImgAttributes {
+    pub fn img_attributes_up_to_320(&self, base_name: &str, prefix: &str) -> ImgAttributes {
         let assets = match &self.max_320 {
             Some(max_320) => vec![&self.max_160, max_320],
             None => vec![&self.max_160]
         };
 
-        ImgAttributes::new(assets, prefix)
+        ImgAttributes::new(assets, base_name, prefix)
     }
 
-    pub fn img_attributes_up_to_480(&self, prefix: &str) -> ImgAttributes {
+    pub fn img_attributes_up_to_480(&self, base_name: &str, prefix: &str) -> ImgAttributes {
         let assets = match &self.max_320 {
             Some(max_320) => match &self.max_480 {
                 Some(max_480) => vec![&self.max_160, max_320, max_480],
@@ -113,10 +117,10 @@ impl PosterAssets {
             None => vec![&self.max_160]
         };
 
-        ImgAttributes::new(assets, prefix)
+        ImgAttributes::new(assets, base_name, prefix)
     }
 
-    pub fn img_attributes_up_to_1280(&self, prefix: &str) -> ImgAttributes {
+    pub fn img_attributes_up_to_1280(&self, base_name: &str, prefix: &str) -> ImgAttributes {
         let mut assets = Vec::with_capacity(4);
 
         assets.push(&self.max_160);
@@ -125,7 +129,7 @@ impl PosterAssets {
         if let Some(asset) = &self.max_800 { assets.push(asset); }
         if let Some(asset) = &self.max_1280 { assets.push(asset); }
 
-        ImgAttributes::new(assets, prefix)
+        ImgAttributes::new(assets, base_name, prefix)
     }
 
     pub fn largest(&self) -> &PosterAsset {

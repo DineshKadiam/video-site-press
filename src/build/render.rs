@@ -366,7 +366,7 @@ pub fn thumbnail(video: &Video, video_prefix: &str) -> String {
     match &video.poster {
         Some(poster) => {
             if let Some(poster_assets) = &poster.assets {
-                let image_attributes = poster_assets.img_attributes_up_to_480(video_prefix);
+                let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
                 let src = image_attributes.src;
                 let srcset = image_attributes.srcset;
 
