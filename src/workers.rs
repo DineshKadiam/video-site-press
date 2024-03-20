@@ -28,32 +28,32 @@ fn compute_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(
             Ok(source_processor) => {
                 let min_overshoot = 1.1;
 
-                let cover_rectangle_160 = ResizeMode::CoverCroppedRectangle { max_width: 160, min_aspect: 1.7777777 };
+                let cover_rectangle_160 = ResizeMode::CoverCroppedRectangle { max_width: 160, min_aspect: 2.39 };
                 let max_160 = compute_poster_asset(context, &source_processor, cover_rectangle_160)?;
 
                 let max_320 = if source_processor.source_width as f32 > 160.0 * min_overshoot {
-                    let cover_rectangle_320 = ResizeMode::CoverCroppedRectangle { max_width: 320, min_aspect: 1.7777777 };
+                    let cover_rectangle_320 = ResizeMode::CoverCroppedRectangle { max_width: 320, min_aspect: 2.39 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_320)?)
                 } else {
                     None
                 };
 
                 let max_480 = if source_processor.source_width as f32 > 320.0 * min_overshoot {
-                    let cover_rectangle_480 = ResizeMode::CoverCroppedRectangle { max_width: 480, min_aspect: 1.7777777 };
+                    let cover_rectangle_480 = ResizeMode::CoverCroppedRectangle { max_width: 480, min_aspect: 2.39 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_480)?)
                 } else {
                     None
                 };
 
                 let max_800 = if source_processor.source_width as f32 > 480.0 * min_overshoot {
-                    let cover_rectangle_800 = ResizeMode::CoverCroppedRectangle { max_width: 800, min_aspect: 1.7777777 };
+                    let cover_rectangle_800 = ResizeMode::CoverCroppedRectangle { max_width: 800, min_aspect: 2.39 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_800)?)
                 } else {
                     None
                 };
 
                 let max_1280 = if source_processor.source_width as f32 > 800.0 * min_overshoot {
-                    let cover_rectangle_1280 = ResizeMode::CoverCroppedRectangle { max_width: 1280, min_aspect: 1.7777777 };
+                    let cover_rectangle_1280 = ResizeMode::CoverCroppedRectangle { max_width: 1280, min_aspect: 2.39 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_1280)?)
                 } else {
                     None
@@ -171,7 +171,7 @@ fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
     if let Ok(file_name) = transcode::compute_poster(context, &video) {
         let file_path = context.site_dir.join(&video.path).join(&file_name);
         let file_meta = FileMeta::new(&file_path);
-        let poster_file = PosterFile::new(None, file_meta, file_name);
+        let poster_file = PosterFile::new(None, None, file_meta, file_name);
 
         let mutation = |video_mut: &mut Video| {
             video_mut.poster = Some(poster_file);

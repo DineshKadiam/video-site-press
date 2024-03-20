@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
-use enolib::SectionElement;
+use enolib::{Element, SectionElement};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
@@ -108,20 +108,35 @@ impl Video {
 
         match document.optional_field("poster") {
             Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(file_name) => {
-                        let path_absolute = manifest_path.parent().unwrap().join(&file_name);
-                        if path_absolute.exists() {
-                            let file_meta = FileMeta::new(&path_absolute);
-                            let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &self.path);
-                            let poster_file = PosterFile::new(assets, file_meta, file_name);
+                match field.required_attribute("file") {
+                    Ok(attribute) => {
+                        match attribute.required_value::<String>() {
+                            Ok(file_name) => {
+                                let path_absolute = manifest_path.parent().unwrap().join(&file_name);
+                                if path_absolute.exists() {
+                                    let file_meta = FileMeta::new(&path_absolute);
 
-                            self.poster = Some(poster_file);
-                        } else {
-                            self.errors.push(format!("Error in {} (Path to poster is invalid, file not found)", manifest_path.display()));
+                                    // TODO: Errors
+                                    let description = match field.required_attribute("description") {
+                                        Ok(attribute) => match attribute.required_value() {
+                                            Ok(description) => Some(description),
+                                            _ => None
+                                        }
+                                        _ => None
+                                    };
+
+                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &self.path);
+
+                                    let poster = PosterFile::new(assets, description, file_meta, file_name);
+                                    self.poster = Some(poster);
+                                } else {
+                                    self.errors.push(format!("Error in {}:{} (Path to poster is invalid, file not found)", manifest_path.display(), attribute.line_number()));
+                                }
+                            }
+                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
                 }
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
@@ -249,7 +264,7 @@ impl Video {
 
             let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &video.path);
 
-            let poster_file = PosterFile::new(assets, file_meta, file_name);
+            let poster_file = PosterFile::new(assets, None, file_meta, file_name);
 
             video.poster = Some(poster_file);
         }
@@ -326,7 +341,13 @@ impl Video {
         let mut eno = String::new();
 
         if let Some(poster) = &self.poster {
-            eno.push_str(&format!("poster: {}\n", poster.file_name));
+            eno.push_str("poster:\n");
+
+            if let Some(description) = &poster.description {
+                eno.push_str(&format!("description = {}\n", description));
+            }
+
+            eno.push_str(&format!("file = {}\n", poster.file_name));
         }
 
         if let Some(release_date) = &self.release_date {

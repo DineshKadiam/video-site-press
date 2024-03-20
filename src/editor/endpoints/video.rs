@@ -51,6 +51,11 @@ use crate::util::{
 };
 
 #[derive(Deserialize)]
+pub struct PosterUpdateForm {
+    description: String
+}
+
+#[derive(Deserialize)]
 pub struct DownsizeForm {
     width: String
 }
@@ -104,6 +109,30 @@ pub async fn delete(
     };
 
     Either::Left(Redirect::to(redirect_url).see_other())
+}
+
+pub async fn delete_poster(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |video: &mut Video| {
+        if let Some(poster) = &video.poster {
+            let poster_path = context.site_dir.join(&video.path).join(&poster.file_name);
+            video.poster = None;
+            video.write_manifest(&context);
+            fs::remove_file(poster_path).ok();
+        }
+    };
+
+    match context.update_video(mutation, &path.path) {
+        Ok(video) => {
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => Either::Right(
+            not_found(&context, &format!("Video {} not found.", &path.path))
+        )
+    }
 }
 
 pub async fn downsize(
@@ -238,23 +267,55 @@ pub fn edit_page(
     let poster = video.poster
         .as_ref()
         .map(|poster| {
+            // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &poster.file_name;
             let src = if path == "" {
                 format!("/poster/{file_name}")
             } else {
                 format!("/poster/{path}/{file_name}")
             };
-            format!(r#"<img class="thumbnail" src="{src}">"#)
+
+            let description = form_textarea(
+                "description",
+                "Poster Description",
+                "Poster Description",
+                poster.description.as_deref()
+            );
+
+            format!(r#"
+                <img class="thumbnail" src="{src}">
+
+                <form action="/update-poster/{path}" method="post">
+                    {description}
+
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button>Update Poster Description</button>
+                    </div>
+                </form>
+
+                <form action="/delete-poster/{path}" method="post">
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button>Delete Poster</button>
+                    </div>
+                </form>
+            "#)
         })
         .unwrap_or(String::new());
 
     let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), "Upload Poster");
-
     let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
         format!(r#"<span class="error">{error}</span>"#)
     } else {
         String::new()
     };
+    let poster_form = formatdoc!(r#"
+        {poster}
+        {poster_upload_button}
+        <form action="/video-random-poster/{path}" method="post">
+            <button>Randomly pick another poster frame (unimplemented)</button>
+        </form>
+        {poster_upload_button_error}
+    "#);
 
     let (
         feedback_update,
@@ -352,14 +413,7 @@ pub fn edit_page(
 
         <h2>Poster Image</h2>
 
-        {poster}
-
-        {poster_upload_button}
-        {poster_upload_button_error}
-
-        <form action="/video-random-poster/{path}" enctype="multipart/form-data" method="post">
-            <button>Randomly pick another poster frame (unimplemented)</button>
-        </form>
+        {poster_form}
 
         {site_edit}
 
@@ -551,6 +605,29 @@ pub async fn update(
     }
 }
 
+pub async fn update_poster(
+    context: Data<Arc<Context>>,
+    form: Form<PosterUpdateForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |video: &mut Video| {
+        if let Some(poster) = &mut video.poster {
+            poster.description = Some(form.description.clone());
+        }
+        video.write_manifest(&context);
+    };
+
+    match context.update_video(mutation, &path.path) {
+        Ok(video) => {
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => Either::Right(
+            not_found(&context, &format!("Video {} not found.", &path.path))
+        )
+    }
+}
+
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
@@ -596,7 +673,7 @@ pub async fn upload_poster(
             }
 
             let file_meta = FileMeta::new(&storage_path);
-            let poster_file = PosterFile::new(None, file_meta, storage_filename);
+            let poster_file = PosterFile::new(None, None, file_meta, storage_filename);
 
             let mutation = |video: &mut Video| {
                 video.poster = Some(poster_file);

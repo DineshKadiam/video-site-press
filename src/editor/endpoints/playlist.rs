@@ -102,15 +102,15 @@ pub async fn delete_banner(
         }
     };
 
-    let playlist = match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => playlist,
-        Err(()) => return Either::Right(
+    match context.update_playlist(mutation, &path.path) {
+        Ok(playlist) => {
+            let redirect_url = format!("/playlist/{}", playlist.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => Either::Right(
             not_found(&context, &format!("Playlist {} not found.", &path.path))
         )
-    };
-
-    let redirect_url = format!("/playlist/{}", playlist.path);
-    Either::Left(Redirect::to(redirect_url).see_other())
+    }
 }
 
 pub fn edit_page(
@@ -594,15 +594,15 @@ pub async fn update_banner(
         playlist.write_manifest(&context.site_dir);
     };
 
-    let playlist = match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => playlist,
+    match context.update_playlist(mutation, &path.path) {
+        Ok(playlist) => {
+            let redirect_url = format!("/playlist/{}", playlist.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
         Err(()) => return Either::Right(
             not_found(&context, &format!("Playlist {} not found.", &path.path))
         )
-    };
-
-    let redirect_url = format!("/playlist/{}", playlist.path);
-    Either::Left(Redirect::to(redirect_url).see_other())
+    }
 }
 
 pub async fn upload_banner(

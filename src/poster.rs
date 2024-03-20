@@ -33,6 +33,7 @@ pub struct PosterAssets {
 #[derive(Clone, Debug)]
 pub struct PosterFile {
     pub assets: Option<PosterAssets>,
+    pub description: Option<String>,
     pub file_meta: FileMeta,
     pub file_name: String
 }
@@ -156,11 +157,13 @@ impl PosterAssets {
 impl PosterFile {
     pub fn new(
         assets: Option<PosterAssets>,
+        description: Option<String>,
         file_meta: FileMeta,
         file_name: String
     ) -> PosterFile {
         PosterFile {
             assets,
+            description,
             file_meta,
             file_name
         }
