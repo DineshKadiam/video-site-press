@@ -71,6 +71,12 @@ pub fn hash(input: &str) -> String {
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
+pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
+    let mut hasher = DefaultHasher::new();
+    closure(&mut hasher);
+    URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
+}
+
 /// Takes seconds, formats it like "0:13", "3:15", "2:06:48"
 pub fn precise_duration(seconds: f32) -> String {
     if seconds < 60.0 {

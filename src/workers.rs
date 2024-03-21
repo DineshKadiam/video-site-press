@@ -7,7 +7,6 @@ use crate::{
     Context,
     FileMeta,
     ImageProcessor,
-    Job,
     JobKind,
     Playlist,
     PosterAsset,
@@ -64,7 +63,10 @@ fn compute_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(
                     max_320,
                     max_480,
                     max_800,
-                    max_1280
+                    max_1280,
+                    // TODO: For banners there is no configurable aspect, we could/should model this
+                    //       more cleanly in the future by using separate types for banner/poster assets
+                    poster_aspect: 0.0
                 };
 
                 // TODO: This internally allocates a PosterAssetsCached which it then serializes,
@@ -204,7 +206,7 @@ fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, resize
     )
 }
 
-fn compute_poster_assets(context: &Context, video: Arc<Video>) -> Result<(), String> {
+fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video>) -> Result<(), String> {
     if let Some(poster) = &video.poster {
         let source_path = context.site_dir.join(&video.path).join(&poster.file_name);
 
@@ -212,32 +214,32 @@ fn compute_poster_assets(context: &Context, video: Arc<Video>) -> Result<(), Str
             Ok(source_processor) => {
                 let min_overshoot = 1.1;
 
-                let cover_rectangle_160 = ResizeMode::CoverRectangle { aspect: 1.7777777, max_width: 160 };
+                let cover_rectangle_160 = ResizeMode::CoverRectangle { aspect: poster_aspect, max_width: 160 };
                 let max_160 = compute_poster_asset(context, &source_processor, cover_rectangle_160)?;
 
                 let max_320 = if source_processor.source_width as f32 > 160.0 * min_overshoot {
-                    let cover_rectangle_320 = ResizeMode::CoverRectangle { aspect: 1.7777777, max_width: 320 };
+                    let cover_rectangle_320 = ResizeMode::CoverRectangle { aspect: poster_aspect, max_width: 320 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_320)?)
                 } else {
                     None
                 };
 
                 let max_480 = if source_processor.source_width as f32 > 320.0 * min_overshoot {
-                    let cover_rectangle_480 = ResizeMode::CoverRectangle { aspect: 1.7777777, max_width: 480 };
+                    let cover_rectangle_480 = ResizeMode::CoverRectangle { aspect: poster_aspect, max_width: 480 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_480)?)
                 } else {
                     None
                 };
 
                 let max_800 = if source_processor.source_width as f32 > 480.0 * min_overshoot {
-                    let cover_rectangle_800 = ResizeMode::CoverRectangle { aspect: 1.7777777, max_width: 800 };
+                    let cover_rectangle_800 = ResizeMode::CoverRectangle { aspect: poster_aspect, max_width: 800 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_800)?)
                 } else {
                     None
                 };
 
                 let max_1280 = if source_processor.source_width as f32 > 800.0 * min_overshoot {
-                    let cover_rectangle_1280 = ResizeMode::CoverRectangle { aspect: 1.7777777, max_width: 1280 };
+                    let cover_rectangle_1280 = ResizeMode::CoverRectangle { aspect: poster_aspect, max_width: 1280 };
                     Some(compute_poster_asset(context, &source_processor, cover_rectangle_1280)?)
                 } else {
                     None
@@ -248,7 +250,8 @@ fn compute_poster_assets(context: &Context, video: Arc<Video>) -> Result<(), Str
                     max_320,
                     max_480,
                     max_800,
-                    max_1280
+                    max_1280,
+                    poster_aspect
                 };
 
                 poster_assets.write_cache_manifest(context, &poster.file_meta, &poster.file_name, &video.path);
@@ -329,7 +332,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                         context.processing.lock().unwrap().remove(process_id);
                     }
-                    JobKind::VideoFastTasks(video) => {
+                    JobKind::VideoFastTasks { poster_aspect, video } => {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.path);
                         let process_id = context.processing.lock().unwrap().push(&video.path, label);
 
@@ -337,14 +340,14 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                         if let Some(poster) = &video_with_metadata.poster {
                             if poster.assets.is_none() {
-                                if let Err(err) = compute_poster_assets(&context, video_with_metadata) {
+                                if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_metadata) {
                                     context.processing_errors.lock().unwrap().push(err);
                                 }
                             }
                         } else {
                             let video_with_poster = compute_poster(&context, video_with_metadata);
 
-                            if let Err(err) = compute_poster_assets(&context, video_with_poster) {
+                            if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_poster) {
                                 context.processing_errors.lock().unwrap().push(err);
                             }
                         }
@@ -363,9 +366,12 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                             match context.update_video(mutation, &video.path) {
                                 Ok(video_updated) => {
-                                    let job_kind = JobKind::VideoFastTasks(Arc::clone(&video_updated));
-                                    let follow_up_job = Job::new(job_kind);
-                                    context.job_queue.lock().unwrap().push(follow_up_job);
+                                    let site = context.get_site();
+                                    let job_kind = JobKind::VideoFastTasks {
+                                        poster_aspect: site.poster_aspect.numeric(),
+                                        video: Arc::clone(&video_updated)
+                                    };
+                                    context.push_job_queue(job_kind);
                                 }
                                 Err(()) => context.processing_errors.lock().unwrap().push("Video could not be updated with newly computed version.".to_string())
                             }

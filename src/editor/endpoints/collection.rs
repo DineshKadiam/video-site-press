@@ -13,7 +13,6 @@ use crate::{
     Context,
     ContextPath,
     Field,
-    HyperDir,
     Playlist
 };
 use crate::editor::endpoints;
@@ -65,20 +64,21 @@ pub async fn create_playlist(
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
+    let playlist_path = format!("{}/{slug_trimmed}", &path.path);
+
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    } else if context.site_dir.join(&path.path).join(slug_trimmed).exists() {
+    } else if context.site_dir.join(&playlist_path).exists() {
         Some("Already used by another collection, playlist or video".to_string())
     } else {
         None
     };
 
     if slug_error.is_none() {
-        let playlist_dir = context.site_dir.join(&path.path).join(slug_trimmed);
+        let playlist_dir = context.site_dir.join(&playlist_path);
         fs::create_dir_all(&playlist_dir).unwrap();
 
-        let hyper_dir = HyperDir::read(&playlist_dir);
-        let playlist = Playlist::read_dir(&context, &hyper_dir);
+        let playlist = Arc::new(Playlist::new(playlist_path));
 
         let playlist_moving = Arc::clone(&playlist);
         let mutation = |collection: &mut Collection| {
@@ -116,20 +116,21 @@ pub async fn create_subcollection(
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
+    let subcollection_path = format!("{}/{slug_trimmed}", &path.path);
+
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    } else if context.site_dir.join(&path.path).join(slug_trimmed).exists() {
+    } else if context.site_dir.join(&subcollection_path).exists() {
         Some("Already used by another collection, playlist or video".to_string())
     } else {
         None
     };
 
     if slug_error.is_none() {
-        let subcollection_dir = context.site_dir.join(&path.path).join(slug_trimmed);
+        let subcollection_dir = context.site_dir.join(&subcollection_path);
         fs::create_dir_all(&subcollection_dir).unwrap();
 
-        let hyper_dir = HyperDir::read(&subcollection_dir);
-        let subcollection = Collection::read_dir(&context, &hyper_dir);
+        let subcollection = Arc::new(Collection::new(subcollection_path));
 
         let subcollection_moving = Arc::clone(&subcollection);
         let mutation = |collection: &mut Collection| {

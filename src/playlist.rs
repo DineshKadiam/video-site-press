@@ -12,6 +12,7 @@ use crate::{
     FileMeta,
     GetAnyResult,
     HyperDir,
+    Site,
     Video
 };
 
@@ -84,7 +85,12 @@ impl Playlist {
                                         _ => None
                                     };
 
-                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &self.path);
+                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                                        &file_meta,
+                                        &file_name,
+                                        &self.path,
+                                        0.0 // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                    );
 
                                     let banner = Banner::new(assets, description, file_meta, file_name);
                                     self.banner = Some(banner);
@@ -200,7 +206,7 @@ impl Playlist {
         }
 	}
 
-    pub fn read_dir(context: &Context, hyper_dir: &HyperDir) -> Arc<Playlist> {
+    pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
         let mut playlist = Playlist::new(hyper_dir.site_path(context));
 
         if let Some(manifest) = &hyper_dir.playlist_manifest {
@@ -209,7 +215,7 @@ impl Playlist {
 
         for subdir in &hyper_dir.dirs {
             let hyper_subdir = HyperDir::read(subdir);
-            playlist.read_subdir(context, &hyper_subdir);
+            playlist.read_subdir(context, &hyper_subdir, site);
         }
 
         // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable banner, use additional ones, etc.)
@@ -219,7 +225,12 @@ impl Playlist {
             let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
-            let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &playlist.path);
+            let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                &file_meta,
+                &file_name,
+                &playlist.path,
+                0.0
+            );
 
             let banner = Banner::new(assets, None, file_meta, file_name);
 
@@ -249,7 +260,7 @@ impl Playlist {
         Arc::new(playlist)
     }
 
-    fn read_subdir(&mut self, context: &Context, hyper_subdir: &HyperDir) {
+    fn read_subdir(&mut self, context: &Context, hyper_subdir: &HyperDir, site: &Site) {
         if hyper_subdir.collection_manifest.is_some() {
             let error = format!("Ignoring playlist subdirectory {} because it contains collection.eno (only video.eno may exist in a playlist subdirectory).", hyper_subdir.path.display());
             self.errors.push(error);
@@ -259,7 +270,7 @@ impl Playlist {
         } else if hyper_subdir.video_manifest.is_some() ||
             !hyper_subdir.video_files.is_empty() ||
             !hyper_subdir.audio_files.is_empty() {
-            let video = Video::read_dir(context, hyper_subdir);
+            let video = Video::read_dir(context, hyper_subdir, site);
             self.videos.push(video);
         }
     }
@@ -306,7 +317,12 @@ impl Playlist {
 
     /// Intended to be called with at least one remaining path part to consume,
     /// otherwise will panic.
-    pub fn update_from_filesystem(&mut self, context: &Context, mut path_parts: Peekable<Split<char>>) {
+    pub fn update_from_filesystem(
+        &mut self,
+        context: &Context,
+        mut path_parts: Peekable<Split<char>>,
+        site: &Site
+    ) {
         let slug = path_parts.next().unwrap();
 
         if path_parts.peek().is_some() {
@@ -319,7 +335,7 @@ impl Playlist {
             }
 
             let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-            self.read_subdir(context, &hyper_subdir);
+            self.read_subdir(context, &hyper_subdir, site);
         } else {
             // If we presently have a video at the given path, we remove it.
             if let Some(index) = self.videos.iter().position(|video| video.slug() == slug) {
@@ -328,7 +344,7 @@ impl Playlist {
 
             // Add the new leaf (respectively, replace what was removed)
             let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-            self.read_subdir(context, &hyper_subdir);
+            self.read_subdir(context, &hyper_subdir, site);
         }
     }
 

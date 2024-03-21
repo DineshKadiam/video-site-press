@@ -15,6 +15,7 @@ use crate::{
     HyperDir,
     Playlist,
     PosterFile,
+    Site,
     VideoMetaCached
 };
 use crate::util::hash;
@@ -82,7 +83,7 @@ pub enum VideoParent {
 }
 
 impl Video {
-    fn apply_manifest(&mut self, context: &Context, manifest_path: &Path) {
+    fn apply_manifest(&mut self, context: &Context, manifest_path: &Path, site: &Site) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
         let document = match enolib::parse(&content) {
@@ -125,7 +126,12 @@ impl Video {
                                         _ => None
                                     };
 
-                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &self.path);
+                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                                        &file_meta,
+                                        &file_name,
+                                        &self.path,
+                                        site.poster_aspect.numeric()
+                                    );
 
                                     let poster = PosterFile::new(assets, description, file_meta, file_name);
                                     self.poster = Some(poster);
@@ -238,11 +244,11 @@ impl Video {
         }
     }
 
-    pub fn read_dir(context: &Context, hyper_dir: &HyperDir) -> Arc<Video> {
+    pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Video> {
         let mut video = Video::new(hyper_dir.site_path(context));
 
         if let Some(manifest) = &hyper_dir.video_manifest {
-            video.apply_manifest(context, manifest);
+            video.apply_manifest(context, manifest, site);
         }
 
         if !hyper_dir.dirs.is_empty() {
@@ -262,7 +268,12 @@ impl Video {
             let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
-            let assets = context.cache.lock().unwrap().fetch_poster_assets(&file_meta, &file_name, &video.path);
+            let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                &file_meta,
+                &file_name,
+                &video.path,
+                site.poster_aspect.numeric()
+            );
 
             let poster_file = PosterFile::new(assets, None, file_meta, file_name);
 

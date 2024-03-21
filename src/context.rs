@@ -111,24 +111,38 @@ impl Context {
     pub fn compute_job_queue(&self) {
         let site = self.get_site();
 
-        let mut jobs = Vec::new();
+        let mut job_kinds = Vec::new();
 
         match &site.content {
-            SiteContent::Collection(collection) => self.queue_collection_jobs(collection, &mut jobs),
-            SiteContent::Playlist(playlist) => self.queue_playlist_jobs(playlist, &mut jobs),
-            SiteContent::Video(video) => self.queue_video_jobs(video, &mut jobs),
+            SiteContent::Collection(collection) => self.queue_collection_jobs(collection, &site, &mut job_kinds),
+            SiteContent::Playlist(playlist) => self.queue_playlist_jobs(playlist, &site, &mut job_kinds),
+            SiteContent::Video(video) => self.queue_video_jobs(video, &site, &mut job_kinds),
             _ => ()
         }
 
-        if jobs.is_empty() { return }
+        if !job_kinds.is_empty() {
+            self.extend_job_queue(job_kinds);
+        }
+    }
 
+    pub fn extend_job_queue(&self, job_kinds: Vec<JobKind>) {
         if let Ok(mut job_queue) = self.job_queue.lock() {
-            for job in jobs {
+            for job_kind in job_kinds {
                 if !job_queue
                     .iter()
-                    .any(|existing_job| existing_job.kind == job.kind) {
-                    job_queue.push(job);
+                    .any(|existing_job| existing_job.kind == job_kind) {
+                    job_queue.push(Job::new(job_kind));
                 }
+            }
+        }
+    }
+
+    pub fn push_job_queue(&self, job_kind: JobKind) {
+        if let Ok(mut job_queue) = self.job_queue.lock() {
+            if !job_queue
+                .iter()
+                .any(|existing_job| existing_job.kind == job_kind) {
+                job_queue.push(Job::new(job_kind));
             }
         }
     }
@@ -138,7 +152,7 @@ impl Context {
 
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
-            let collection = Collection::read_dir(self, &hyper_dir);
+            let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
             collection.write_manifest(self);
             site_mut.content = SiteContent::Collection(collection);
             self.replace_site(site_mut);
@@ -154,7 +168,7 @@ impl Context {
 
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
-            let playlist = Playlist::read_dir(self, &hyper_dir);
+            let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
             playlist.write_manifest(&self.site_dir);
             site_mut.content = SiteContent::Playlist(playlist);
             self.replace_site(site_mut);
@@ -170,7 +184,7 @@ impl Context {
 
         if let SiteContent::Empty = &mut site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
-            let video = Video::read_dir(self, &hyper_dir);
+            let video = Video::read_dir(self, &hyper_dir, &site_mut);
             video.write_manifest(self);
             site_mut.content = SiteContent::Video(video);
             self.replace_site(site_mut);
@@ -346,27 +360,25 @@ impl Context {
         }
     }
 
-    fn queue_collection_jobs(&self, collection: &Arc<Collection>, queue: &mut Vec<Job>) {
+    fn queue_collection_jobs(&self, collection: &Arc<Collection>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
         for subcollection in &collection.subcollections {
-            self.queue_collection_jobs(subcollection, queue);
+            self.queue_collection_jobs(subcollection, site, job_kinds);
         }
         for playlist in &collection.playlists {
-            self.queue_playlist_jobs(playlist, queue);
+            self.queue_playlist_jobs(playlist, site, job_kinds);
         }
         for video in &collection.videos {
-            self.queue_video_jobs(video, queue);
+            self.queue_video_jobs(video, site, job_kinds);
         }
     }
 
-    fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, queue: &mut Vec<Job>) {
+    fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
         if playlist.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            let job_kind = JobKind::PlaylistFastTasks(Arc::clone(playlist));
-            let job = Job::new(job_kind);
-            queue.push(job);
+            job_kinds.push(JobKind::PlaylistFastTasks(Arc::clone(playlist)));
         }
 
         for video in &playlist.videos {
-            self.queue_video_jobs(video, queue);
+            self.queue_video_jobs(video, site, job_kinds);
         }
     }
 
@@ -410,13 +422,20 @@ impl Context {
 
     /// Determine what needs to be computed for this video and append the
     /// required jobs to the passed queue.
-    fn queue_video_jobs(&self, video: &Arc<Video>, queue: &mut Vec<Job>) {
+    fn queue_video_jobs(&self, video: &Arc<Video>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
         if video.versions.iter().any(|version| version.video_meta.is_none()) ||
            (video.poster.is_none() && !video.versions.is_empty()) ||
-           video.poster.as_ref().is_some_and(|poster| poster.assets.is_none()) {
-            let job_kind = JobKind::VideoFastTasks(Arc::clone(video));
-            let job = Job::new(job_kind);
-            queue.push(job);
+           video.poster.as_ref().is_some_and(|poster|
+                poster.assets.is_none() || poster.assets.as_ref().is_some_and(|assets|
+                    assets.poster_aspect != site.poster_aspect.numeric()
+                )
+            ) {
+            let job_kind = JobKind::VideoFastTasks {
+                poster_aspect: site.poster_aspect.numeric(),
+                video: Arc::clone(video)
+            };
+
+            job_kinds.push(job_kind);
         }
 
         // if video.assets.metadata.is_some() {
@@ -432,7 +451,8 @@ impl Context {
         *self.site.lock().unwrap() = Arc::new(site_new);
     }
 
-    ///
+    /// Take the job with the highest priority that isn't assigned yet.
+    /// (The job is left in the queue too, marked as assigned for others)
     pub fn take_processing_job(&self, high_priority_only: bool) -> Option<Job> {
         let mut job_queue = self.job_queue.lock().unwrap();
 
@@ -498,7 +518,7 @@ impl Context {
         Err(())
     }
 
-    pub fn update_from_filesystem(&self, path: &Path) {
+    pub fn update_from_filesystem(&self, path: &Path, site: &Site) {
         let dir_relative = if path.is_dir() {
             path.strip_prefix(&self.site_dir).unwrap()
         } else if path.is_file() {
@@ -516,12 +536,12 @@ impl Context {
 
             if let SiteContent::Collection(collection) = &mut site_mut.content {
                 let mut collection_mut = (**collection).clone();
-                collection_mut.update_from_filesystem(self, path_parts);
+                collection_mut.update_from_filesystem(self, path_parts, site);
                 *collection = Arc::new(collection_mut);
                 self.replace_site(site_mut);
             } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
                 let mut playlist_mut = (**playlist).clone();
-                playlist_mut.update_from_filesystem(self, path_parts);
+                playlist_mut.update_from_filesystem(self, path_parts, site);
                 *playlist = Arc::new(playlist_mut);
                 self.replace_site(site_mut);
             } else if let SiteContent::Video(_) = &mut site_mut.content {

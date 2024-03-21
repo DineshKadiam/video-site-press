@@ -1,9 +1,10 @@
 use std::fs;
+use std::hash::{DefaultHasher, Hash};
 
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{CacheItem, Context, FileMeta, PosterAssetsCached};
-use crate::util::hash;
+use crate::util::hash_closure;
 
 pub struct ImgAttributes {
     pub src: String,
@@ -27,7 +28,8 @@ pub struct PosterAssets {
     pub max_320: Option<PosterAsset>,
     pub max_480: Option<PosterAsset>,
     pub max_800: Option<PosterAsset>,
-    pub max_1280: Option<PosterAsset>
+    pub max_1280: Option<PosterAsset>,
+    pub poster_aspect: f32
 }
 
 #[derive(Clone, Debug)]
@@ -56,7 +58,13 @@ impl PosterAssets {
 
         let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
 
-        let cache_item_file_name = format!("{}.bincode", hash(&poster_path));
+        let hash = |hasher: &mut DefaultHasher| {
+            poster_path.hash(hasher);
+            file_meta.hash(hasher);
+            self.poster_aspect.to_string().hash(hasher);
+        };
+
+        let cache_item_file_name = format!("{}.bincode", hash_closure(hash));
         let cache_item_path = context.cache_dir.join(cache_item_file_name);
         
         fs::write(cache_item_path, cache_item_serialized).unwrap();

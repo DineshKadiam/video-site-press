@@ -60,6 +60,7 @@ video { width: 100%; }
 	transition: opacity ease .5s;
 }
 .emissions .bar { background-color: var(--c-grey); }
+img { max-width: 100%; }
 .logo {
 	background-color: var(--c-text);
 	color: var(--c-background);
@@ -90,10 +91,10 @@ video { width: 100%; }
 	row-gap: 1rem;
 }
 .thumbnail {
+	aspect-ratio: var(--poster-aspect);
 	background-color: var(--c-letterbox);
 	border-radius: 0.4rem;
 	flex-shrink: 0;
-	height: 9rem;
 	object-fit: contain;
 	width: 16rem;
 }

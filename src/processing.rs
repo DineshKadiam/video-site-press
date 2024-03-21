@@ -17,7 +17,10 @@ pub struct Job {
 #[derive(Clone, Debug)]
 pub enum JobKind {
     PlaylistFastTasks(Arc<Playlist>),
-    VideoFastTasks(Arc<Video>),
+    VideoFastTasks {
+        poster_aspect: f32,
+        video: Arc<Video>
+    },
     VideoFormat {
         format: VideoFormat,
         video: Arc<Video>
@@ -59,17 +62,17 @@ impl Job {
         match &self.kind {
             JobKind::PlaylistFastTasks(_) => match other.kind {
                 JobKind::PlaylistFastTasks(_) => (),
-                JobKind::VideoFastTasks(_) => (),
+                JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater
             }
-            JobKind::VideoFastTasks(_) => match other.kind {
+            JobKind::VideoFastTasks { .. } => match other.kind {
                 JobKind::PlaylistFastTasks(_) => (),
-                JobKind::VideoFastTasks(_) => (),
+                JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater
             }
             JobKind::VideoFormat { format, .. } => match &other.kind {
                 JobKind::PlaylistFastTasks(_) => return Ordering::Less,
-                JobKind::VideoFastTasks(_) => return Ordering::Less,
+                JobKind::VideoFastTasks { .. } => return Ordering::Less,
                 JobKind::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
                     ordering => return ordering
@@ -88,8 +91,10 @@ impl PartialEq for JobKind {
                 JobKind::PlaylistFastTasks(other_playlist) => playlist.path == other_playlist.path,
                 _ => false
             }
-            JobKind::VideoFastTasks(video) => match other {
-                JobKind::VideoFastTasks(other_video) => video.path == other_video.path,
+            JobKind::VideoFastTasks { poster_aspect, video } => match other {
+                JobKind::VideoFastTasks { poster_aspect: other_poster_aspect, video: other_video } => {
+                    video.path == other_video.path && poster_aspect == other_poster_aspect
+                }
                 _ => false
             }
             JobKind::VideoFormat { video, .. } => match other {

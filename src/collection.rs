@@ -11,6 +11,7 @@ use crate::{
     GetAnyResult,
     HyperDir,
     Playlist,
+    Site,
     Video,
     VideoParent
 };
@@ -328,7 +329,7 @@ impl Collection {
     //         .collect()
     // }
 
-    pub fn read_dir(context: &Context, hyper_dir: &HyperDir) -> Arc<Collection> {
+    pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Collection> {
         let mut collection = Collection::new(hyper_dir.site_path(context));
 
         if let Some(manifest) = &hyper_dir.collection_manifest {
@@ -337,7 +338,7 @@ impl Collection {
 
         for subdir in &hyper_dir.dirs {
             let hyper_subdir = HyperDir::read(subdir);
-            collection.read_subdir(context, &hyper_subdir);
+            collection.read_subdir(context, &hyper_subdir, site);
         }
 
         if !hyper_dir.image_files.is_empty() {
@@ -373,13 +374,13 @@ impl Collection {
         Arc::new(collection)
     }
 
-    fn read_subdir(&mut self, context: &Context, hyper_subdir: &HyperDir) {
+    fn read_subdir(&mut self, context: &Context, hyper_subdir: &HyperDir, site: &Site) {
         if hyper_subdir.collection_manifest.is_some() {
             if hyper_subdir.playlist_manifest.is_some() || hyper_subdir.video_manifest.is_some() {
                 let error = format!("Ignoring collection subdirectory {} because it contains conflicting manifest types (only one of collection.eno, playlist.eno and video.eno may exist in one directory)", hyper_subdir.path.display());
                 self.errors.push(error);
             } else {
-                let subcollection = Collection::read_dir(context, hyper_subdir);
+                let subcollection = Collection::read_dir(context, hyper_subdir, site);
                 self.subcollections.push(subcollection);
             }
         } else if hyper_subdir.playlist_manifest.is_some() {
@@ -387,19 +388,19 @@ impl Collection {
                 let error = format!("Ignoring collection subdirectory {} because it contains both playlist.eno and video.eno (only one of the two may exist in one directory)", hyper_subdir.path.display());
                 self.errors.push(error);
             } else {
-                let playlist = Playlist::read_dir(context, hyper_subdir);
+                let playlist = Playlist::read_dir(context, hyper_subdir, site);
                 self.playlists.push(playlist);
             }
         } else if hyper_subdir.video_manifest.is_some() {
-            let video = Video::read_dir(context, hyper_subdir);
+            let video = Video::read_dir(context, hyper_subdir, site);
             self.videos.push(video);
         } else if !hyper_subdir.dirs.is_empty() {
             eprintln!("No manifest in the collection subdirectory. Going forward, a collection is assumed (because there are folders inside).");
-            let subcollection = Collection::read_dir(context, hyper_subdir);
+            let subcollection = Collection::read_dir(context, hyper_subdir, site);
             self.subcollections.push(subcollection);
         } else if !hyper_subdir.video_files.is_empty() {
             eprintln!("No manifest in the collection subdirectory. Going forward, a video is assumed (because there is a/are video file(s) inside).");
-            let video = Video::read_dir(context, hyper_subdir);
+            let video = Video::read_dir(context, hyper_subdir, site);
             self.videos.push(video);
         } else {
             // TODO: We currently ignore an empty subdir, as if it didn't exist.
@@ -488,7 +489,12 @@ impl Collection {
 
     /// Intended to be called with at least one remaining path part to consume,
     /// otherwise will panic.
-    pub fn update_from_filesystem(&mut self, context: &Context, mut path_parts: Peekable<Split<char>>) {
+    pub fn update_from_filesystem(
+        &mut self,
+        context: &Context,
+        mut path_parts: Peekable<Split<char>>,
+        site: &Site
+    ) {
         let slug = path_parts.next().unwrap();
 
         if path_parts.peek().is_some() {
@@ -503,18 +509,18 @@ impl Collection {
                 // so we just remove and replace it with whatever happened down this branch.
                 self.videos.swap_remove(index);
                 let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-                self.read_subdir(context, &hyper_subdir);
+                self.read_subdir(context, &hyper_subdir, site);
             } else if let Some(playlist) = self.playlists
                 .iter_mut()
                 .find(|playlist| playlist.slug() == slug) {
                 let mut playlist_mut = (**playlist).clone();
-                playlist_mut.update_from_filesystem(context, path_parts);
+                playlist_mut.update_from_filesystem(context, path_parts, site);
                 *playlist = Arc::new(playlist_mut);
             } else if let Some(subcollection) = self.subcollections
                 .iter_mut()
                 .find(|subcollection| subcollection.slug() == slug) {
                 let mut subcollection_mut = (**subcollection).clone();
-                subcollection_mut.update_from_filesystem(context, path_parts);
+                subcollection_mut.update_from_filesystem(context, path_parts, site);
                 *subcollection = Arc::new(subcollection_mut);
             } else {
                 // Here a sub-subdir needs to be updated (e.g. a video in a
@@ -522,7 +528,7 @@ impl Collection {
                 // even yet registered as subdir, so we read the entire
                 // subtree.
                 let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-                self.read_subdir(context, &hyper_subdir);
+                self.read_subdir(context, &hyper_subdir, site);
             }
         } else {
             // If we presently have a video, playlist or collection registered at the given path, we remove it.
@@ -542,7 +548,7 @@ impl Collection {
 
             // Add the new leaf (respectively, replace what was removed)
             let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-            self.read_subdir(context, &hyper_subdir);
+            self.read_subdir(context, &hyper_subdir, site);
         }
     }
 

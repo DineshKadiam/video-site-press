@@ -10,6 +10,8 @@ pub fn generate(context: &Context, site: &Site) {
     let background_color = &site.theme.background_color;
     let text_color = &site.theme.text_color;
 
+    let poster_aspect = site.poster_aspect.numeric();
+
     let dynamic_css = formatdoc!(r#"
         :root {{
             --c-accent: {accent_color};
@@ -17,6 +19,7 @@ pub fn generate(context: &Context, site: &Site) {
             --c-grey: #444;
             --c-green: #5bd217;
             --c-text: {text_color};
+            --poster-aspect: {poster_aspect}
         }}
     "#);
 

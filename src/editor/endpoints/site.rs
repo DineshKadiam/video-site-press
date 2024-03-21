@@ -6,6 +6,7 @@ use indoc::formatdoc;
 use serde_derive::Deserialize;
 
 use crate::{
+    AspectRatio,
     Context,
     Field,
     Site,
@@ -19,11 +20,13 @@ use crate::util::validate_url;
 #[derive(Deserialize)]
 pub struct SiteForm {
     base_url: String,
+    poster_aspect: String,
     theme: String
 }
 
 pub struct SiteFormFeedback {
     pub base_url: Field,
+    pub poster_aspect: Field,
     pub theme: Theme
 }
 
@@ -127,19 +130,27 @@ fn edit_page(
         checked_dark,
         checked_light,
         input_base_url,
+        input_poster_aspect,
         feedback
-    ) = if let Some(SiteFormFeedback { base_url, theme }) = &form_feedback {
+    ) = if let Some(SiteFormFeedback { base_url, poster_aspect, theme }) = &form_feedback {
         (
             if theme.key == "dark" { "checked " } else { "" },
             if theme.key == "light" { "checked " } else { "" },
             form_field(base_url, "base_url", "Base URL", "Base URL"),
+            form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
+        let poster_aspect = match &site.poster_aspect {
+            AspectRatio::Custom { representation, .. } => representation,
+            AspectRatio::Default => ""
+        };
+
         (
             if site.theme.key == "dark" { "checked " } else { "" },
             if site.theme.key == "light" { "checked " } else { "" },
             form_field(&Field::valid(site.base_url.as_deref().unwrap_or("")), "base_url", "Base URL", "Base URL"),
+            form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             ""
         )
     };
@@ -151,6 +162,7 @@ fn edit_page(
         
         <form action="/site" method="post">
             {input_base_url}
+            {input_poster_aspect}
             <div class="form_field">
                 <span>Theme</span>
                 <div>
@@ -206,6 +218,7 @@ pub async fn update(
     form: Form<SiteForm>
 ) -> Either<Redirect, HttpResponse> {
     let base_url_trimmed = form.base_url.trim();
+    let poster_aspect_trimmed = form.poster_aspect.trim();
     let theme = if &form.theme == "dark" { Theme::dark() } else { Theme::light() };
 
     let base_url_error = if !base_url_trimmed.is_empty() {
@@ -218,28 +231,19 @@ pub async fn update(
         None
     };
 
-    if base_url_error.is_none() {
-        let mutation = |site_mut: &mut Site| {
-            site_mut.base_url = if base_url_trimmed.is_empty() { None } else { Some(base_url_trimmed.to_owned()) };
-            site_mut.theme = theme;
-            site_mut.write_manifest(&context.site_dir);
-        };
-
-        let site = context.update_site(mutation);
-
-        let redirect_url = match site.content {
-            SiteContent::Collection(_) => "/collection/",
-            SiteContent::Playlist(_) => "/playlist/",
-            SiteContent::Video(_) => "/video/",
-            _ => todo!()
-        };
-
-        Either::Left(Redirect::to(redirect_url).see_other())
+    let poster_aspect = if poster_aspect_trimmed.is_empty() {
+        Ok(AspectRatio::Default)
     } else {
+        AspectRatio::from_representation(poster_aspect_trimmed)
+            .map_err(|err| err.to_string())
+    };
+
+    if base_url_error.is_some() || poster_aspect.is_err() {
         let site = context.get_site();
 
         let site_form_feedback = SiteFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url_error),
+            poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
             theme
         };
 
@@ -261,5 +265,27 @@ pub async fn update(
         };
 
         Either::Right(http_response)
+    } else {
+        let mutation = |site_mut: &mut Site| {
+            site_mut.base_url = if base_url_trimmed.is_empty() { None } else { Some(base_url_trimmed.to_owned()) };
+            site_mut.poster_aspect = poster_aspect.unwrap();
+            site_mut.theme = theme;
+            site_mut.write_manifest(&context.site_dir);
+        };
+
+        let site = context.update_site(mutation);
+
+        let redirect_url = match site.content {
+            SiteContent::Collection(_) => "/collection/",
+            SiteContent::Playlist(_) => "/playlist/",
+            SiteContent::Video(_) => "/video/",
+            _ => todo!()
+        };
+
+        // Banner/Poster assets need recomputation when site.poster_aspect
+        // changes (which could have happened here).
+        context.compute_job_queue();
+
+        Either::Left(Redirect::to(redirect_url).see_other())
     }
 }

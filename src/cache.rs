@@ -28,7 +28,7 @@ pub enum CacheItem {
     VideoMeta(VideoMetaCached)
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Hash, PartialEq, Serialize)]
 pub struct FileMeta {
     pub modified: SystemTime,
     /// File size in bytes
@@ -66,12 +66,22 @@ pub struct VideoMetaCached {
 }
 
 impl Cache {
-    pub fn fetch_poster_assets(&self, file_meta: &FileMeta, file_name: &str, path: &str) -> Option<PosterAssets> {
+    pub fn fetch_poster_assets(
+        &self,
+        file_meta: &FileMeta,
+        file_name: &str,
+        path: &str,
+        poster_aspect: f32
+    ) -> Option<PosterAssets> {
         let poster_path = format!("{}/{}", path, file_name);
 
         self.poster_assets
             .iter()
-            .find(|cached| cached.file_meta == *file_meta && cached.path == poster_path)
+            .find(|cached|
+                cached.path == poster_path &&
+                cached.file_meta == *file_meta &&
+                cached.assets.poster_aspect == poster_aspect
+            )
             .map(|cached| cached.assets.clone())
     }
 

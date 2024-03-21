@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
-use enolib::SectionElement;
+use enolib::{Element, SectionElement};
 
 use crate::{
     Context,
@@ -15,10 +15,20 @@ use crate::{
 };
 
 #[derive(Clone, Debug)]
+pub enum AspectRatio {
+    Custom {
+        representation: String,
+        value: f32
+    },
+    Default
+}
+
+#[derive(Clone, Debug)]
 pub struct Site {
     pub base_url: Option<String>,
     pub content: SiteContent,
     pub errors: Vec<String>,
+    pub poster_aspect: AspectRatio,
     pub theme: Theme
 }
 
@@ -29,6 +39,41 @@ pub enum SiteContent {
     Invalid,
     Playlist(Arc<Playlist>),
     Video(Arc<Video>)
+}
+
+impl AspectRatio {
+    pub fn from_representation(representation: &str) -> Result<AspectRatio, String> {
+        if let Ok(ratio) = representation.parse::<f32>() {
+            let aspect_ratio = AspectRatio::Custom {
+                representation: representation.to_owned(),
+                value: ratio
+            };
+
+            return Ok(aspect_ratio);
+        }
+
+        let mut parts = representation.split(|c| c == '/' || c == ':');
+        if let (Some(dividend), Some(divisor), None) = (parts.next(), parts.next(), parts.next()) {
+            if let (Ok(dividend), Ok(divisor)) = (dividend.parse::<f32>(), divisor.parse::<f32>()) {
+                let aspect_ratio = AspectRatio::Custom {
+                    representation: representation.to_owned(),
+                    value: dividend / divisor
+                };
+
+                return Ok(aspect_ratio);
+            }
+        }
+
+        let error = format!("'{representation}' is not understood, allowed aspect formats are e.g. '1.78', '16:9' or '16/9')");
+        Err(error)
+    }
+
+    pub fn numeric(&self) -> f32 {
+        match self {
+            AspectRatio::Default => 16.0/9.0,
+            AspectRatio::Custom { value, .. } => *value
+        }
+    }
 }
 
 impl Site {
@@ -47,7 +92,24 @@ impl Site {
             Ok(Some(field)) => {
                 match field.required_value() {
                     Ok(value) => {
+                        // TODO: Validate url
                         self.base_url = Some(value);
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_field("poster_aspect") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(representation) => {
+                        match AspectRatio::from_representation(&representation) {
+                            Ok(aspect_ratio) => self.poster_aspect = aspect_ratio,
+                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                        }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
@@ -156,6 +218,7 @@ impl Site {
             base_url: None,
             content: SiteContent::Empty,
             errors: Vec::new(),
+            poster_aspect: AspectRatio::Default,
             theme: Theme::default()
         }
     }
@@ -175,7 +238,7 @@ impl Site {
                 site.errors.push(error);
                 site.content = SiteContent::Invalid;
             } else {
-                let collection = Collection::read_dir(context, &hyper_dir);
+                let collection = Collection::read_dir(context, &hyper_dir, &site);
                 site.content = SiteContent::Collection(collection);
             }
         } else if hyper_dir.playlist_manifest.is_some() {
@@ -184,19 +247,19 @@ impl Site {
                 site.errors.push(error);
                 site.content = SiteContent::Invalid;
             } else {
-                let playlist = Playlist::read_dir(context, &hyper_dir);
+                let playlist = Playlist::read_dir(context, &hyper_dir, &site);
                 site.content = SiteContent::Playlist(playlist);
             }
         } else if hyper_dir.video_manifest.is_some() {
-            let video = Video::read_dir(context, &hyper_dir);
+            let video = Video::read_dir(context, &hyper_dir, &site);
             site.content = SiteContent::Video(video);
         } else if !hyper_dir.dirs.is_empty() {
             eprintln!("No manifest in the site directory. Going forward, a collection is assumed (because there are folders inside).");
-            let collection = Collection::read_dir(context, &hyper_dir);
+            let collection = Collection::read_dir(context, &hyper_dir, &site);
             site.content = SiteContent::Collection(collection);
         } else if !hyper_dir.video_files.is_empty() {
             eprintln!("No manifest in the site directory. Going forward, a video is assumed (because there is a/are video file(s) inside).");
-            let video = Video::read_dir(context, &hyper_dir);
+            let video = Video::read_dir(context, &hyper_dir, &site);
             site.content = SiteContent::Video(video);
         }
 
@@ -218,6 +281,10 @@ impl Site {
 
         if let Some(base_url) = &self.base_url {
             eno.push_str(&format!("base_url: {}\n", base_url));
+        }
+
+        if let AspectRatio::Custom { representation, .. } = &self.poster_aspect {
+            eno.push_str(&format!("poster_aspect: {}\n", representation));
         }
 
         eno.push_str(&format!("theme: {}\n", self.theme.key));

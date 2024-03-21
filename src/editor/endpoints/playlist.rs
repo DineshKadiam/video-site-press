@@ -17,7 +17,6 @@ use crate::{
     ContextPath,
     Field,
     FileMeta,
-    Job,
     JobKind,
     Playlist
 };
@@ -648,8 +647,7 @@ pub async fn upload_banner(
             match context.update_playlist(mutation, &path.path) {
                 Ok(playlist) => {
                     let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist));
-                    let job = Job::new(job_kind);
-                    context.job_queue.lock().unwrap().push(job);
+                    context.push_job_queue(job_kind);
                 }
                 Err(()) => {
                     fs::remove_file(&storage_path).unwrap();
