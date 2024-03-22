@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -150,33 +151,85 @@ impl Context {
     pub fn convert_to_collection(&self) {
         let mut site_mut = self.get_site_mut();
 
-        if let SiteContent::Empty = &mut site_mut.content {
+        if let SiteContent::Empty = &site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
             collection.write_manifest(self);
             site_mut.content = SiteContent::Collection(collection);
             self.replace_site(site_mut);
-        } else if let SiteContent::Playlist(_playlist) = &mut site_mut.content {
-            todo!();
-        } else if let SiteContent::Video(_video) = &site_mut.content {
+        } else if let SiteContent::Playlist(playlist) = &site_mut.content {
+            let manifest_path = self.site_dir.join("playlist.eno");
+            let _ = fs::remove_file(&manifest_path);
+
+            if let Some(banner) = &playlist.banner {
+                let banner_path = self.site_dir.join(&banner.file_name);
+                let _ = fs::remove_file(&banner_path);
+            }
+
+            let hyper_dir = HyperDir::read(&self.site_dir);
+            let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+
+            // This always succeeds, as the Arc is guaranteed single-owner at this point.
+            if let Some(collection) = Arc::<Collection>::get_mut(&mut collection) {
+                if let Some(description) = &playlist.description {
+                    collection.description = Some(description.clone());
+                }
+                if let Some(title) = &playlist.title {
+                    collection.title = Some(title.clone());
+                }
+            };
+
+            collection.write_manifest(self);
+            site_mut.content = SiteContent::Collection(collection);
+            self.replace_site(site_mut);
+        } else if let SiteContent::Video(_) = &site_mut.content {
             todo!();
         } 
     }
 
-    pub fn convert_to_playlist(&self) {
+    // TODO: Implement this functionality at deeper levels as well, e.g. a
+    //       subcollection can also be converted to a playlist, not just the
+    //       collection at the root of the site. Same for convert_to_*.
+    pub fn convert_to_playlist(&self) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
-        if let SiteContent::Empty = &mut site_mut.content {
+        if let SiteContent::Empty = &site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
             playlist.write_manifest(&self.site_dir);
             site_mut.content = SiteContent::Playlist(playlist);
             self.replace_site(site_mut);
-        } else if let SiteContent::Collection(_playlist) = &mut site_mut.content {
-            todo!();
-        } else if let SiteContent::Video(_video) = &site_mut.content {
+        } else if let SiteContent::Collection(collection) = &site_mut.content {
+            if !collection.playlists.is_empty() {
+                return Err("A collection containing (a) playlist(s) can not be converted to a playlist".to_string());
+            } else if !collection.subcollections.is_empty() {
+                return Err("A collection containing (a) subcollection(s) can not be converted to a playlist".to_string());
+            }
+
+            let manifest_path = self.site_dir.join("collection.eno");
+            let _ = fs::remove_file(&manifest_path);
+
+            let hyper_dir = HyperDir::read(&self.site_dir);
+            let mut playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+
+            // This always succeeds, as the Arc is guaranteed single-owner at this point.
+            if let Some(playlist) = Arc::<Playlist>::get_mut(&mut playlist) {
+                if let Some(description) = &collection.description {
+                    playlist.description = Some(description.clone());
+                }
+                if let Some(title) = &collection.title {
+                    playlist.title = Some(title.clone());
+                }
+            };
+
+            playlist.write_manifest(&self.site_dir);
+            site_mut.content = SiteContent::Playlist(playlist);
+            self.replace_site(site_mut);
+        } else if let SiteContent::Video(_) = &site_mut.content {
             todo!();
         } 
+
+        Ok(())
     }
 
     pub fn convert_to_video(&self) {

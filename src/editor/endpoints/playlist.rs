@@ -247,6 +247,17 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, path);
 
+    let convert_form = formatdoc!(r#"
+        <p>
+            A playlist can seamlessly be converted to a collection, but note that the
+            banner will be deleted, because collections don't have one.
+        </p>
+
+        <form action="/convert/collection" method="post">
+            <button>Convert playlist to collection</button>
+        </form>
+    "#);
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -275,6 +286,8 @@ pub fn edit_page(
         <h2>Danger Zone</h2>
 
         {slug_form}
+
+        {convert_form}
 
        <p>
             Deleting the playlist removes the playlist manifest, banner image,

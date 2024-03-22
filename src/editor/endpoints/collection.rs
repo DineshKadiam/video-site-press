@@ -286,6 +286,21 @@ pub fn edit_page(
         )
     };
 
+    let convert_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
+        formatdoc!(r#"
+            <p>
+                This collection contains no playlists or subcollections and can therefore
+                seamlessly be converted to a playlist.
+            </p>
+
+            <form action="/convert/playlist" method="post">
+                <button>Convert collection to playlist</button>
+            </form>
+        "#)
+    } else {
+        String::new()
+    };
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -330,6 +345,8 @@ pub fn edit_page(
         <h2>Danger Zone</h2>
 
         {slug_form}
+
+        {convert_form}
 
         <p>
             Deleting the collection removes the collection manifest, all videos,
