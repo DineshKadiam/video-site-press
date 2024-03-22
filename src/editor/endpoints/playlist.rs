@@ -97,7 +97,7 @@ pub async fn delete_banner(
             let banner_path = context.site_dir.join(&playlist.path).join(&banner.file_name);
             playlist.banner = None;
             playlist.write_manifest(&context.site_dir);
-            fs::remove_file(banner_path).ok();
+            let _ = fs::remove_file(banner_path);
         }
     };
 
@@ -669,7 +669,7 @@ pub async fn upload_banner(
                     context.push_job_queue(job_kind);
                 }
                 Err(()) => {
-                    fs::remove_file(&storage_path).unwrap();
+                    let _ = fs::remove_file(&storage_path);
                     let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
                     return Ok(Either::Right(http_response));
                 }

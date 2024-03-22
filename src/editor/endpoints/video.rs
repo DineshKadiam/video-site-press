@@ -119,7 +119,7 @@ pub async fn delete_poster(
             let poster_path = context.site_dir.join(&video.path).join(&poster.file_name);
             video.poster = None;
             video.write_manifest(&context);
-            fs::remove_file(poster_path).ok();
+            let _ = fs::remove_file(poster_path);
         }
     };
 
@@ -687,7 +687,7 @@ pub async fn upload_poster(
             let video = match context.update_video(mutation, &path.path) {
                 Ok(video) => video,
                 Err(()) => {
-                    fs::remove_file(&storage_path).unwrap();
+                    let _ = fs::remove_file(&storage_path);
                     let http_response = not_found(&context, &format!("Video {} not found.", &path.path));
                     return Ok(Either::Right(http_response));
                 }

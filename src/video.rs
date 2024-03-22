@@ -323,28 +323,22 @@ impl Video {
     pub fn unpersist(&self, context: &Context) {
         if self.path == "" {
             let manifest_path = context.site_dir.join("video.eno");
-            if manifest_path.exists() {
-                fs::remove_file(&manifest_path).unwrap();
-            }
+            let _ = fs::remove_file(&manifest_path);
 
             if let Some(poster) = &self.poster {
                 let poster_path = context.site_dir.join(&poster.file_name);
-                if poster_path.exists() {
-                    fs::remove_file(&poster_path).unwrap();
-                }
+                let _ = fs::remove_file(&poster_path);
             }
 
             for version in &self.versions {
                 let version_path = context.site_dir.join(&version.file_name);
-                if version_path.exists() {
-                    fs::remove_file(&version_path).unwrap();
-                }
+                let _ = fs::remove_file(&version_path);
             }
         } else {
             // Guard against disastrous recursive folder removal from concatenating absolute paths
             assert!(!self.path.starts_with('/'), "Recursive folder removal aborted due to dangerous circumstances");
             let video_dir = context.site_dir.join(&self.path);
-            fs::remove_dir_all(video_dir).unwrap();
+            let _ = fs::remove_dir_all(video_dir);
         }
     }
 

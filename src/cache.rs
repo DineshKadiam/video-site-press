@@ -125,7 +125,7 @@ impl Cache {
                     "Removing orphaned cache artifact ({}) - it was probably created with a different version of hyper8.",
                     filename
                 );
-                util::remove_file(&cache_dir.join(filename));
+                let _ = fs::remove_file(&cache_dir.join(filename));
             }
         }
     }
@@ -182,11 +182,11 @@ impl Cache {
 
                                         for asset_to_delete in &all_assets {
                                             let asset_path = cache_dir.join(&asset_to_delete.file_name);
-                                            if asset_path.exists() { util::remove_file(&asset_path); }
+                                            let _ = fs::remove_file(&asset_path);
                                         }
 
                                         eprintln!("Removing corrupted cache item {filename}");
-                                        fs::remove_file(dir_entry.path()).unwrap();
+                                        let _ = fs::remove_file(dir_entry.path());
                                         break;
                                     }
                                 }
@@ -199,7 +199,7 @@ impl Cache {
                         }
                     } else {
                         eprintln!("Removing incompatible cache item {filename}");
-                        fs::remove_file(dir_entry.path()).unwrap();
+                        let _ = fs::remove_file(dir_entry.path());
                     }
                 }
             }

@@ -425,35 +425,27 @@ impl Collection {
     pub fn unpersist(&self, context: &Context) {
         if self.path == "" {
             let manifest_path = context.site_dir.join("collection.eno");
-            if manifest_path.exists() {
-                fs::remove_file(&manifest_path).unwrap();
-            }
+            let _ = fs::remove_file(&manifest_path);
 
             for subcollection in &self.subcollections {
                 let subcollection_path = context.site_dir.join(subcollection.slug());
-                if subcollection_path.exists() {
-                    fs::remove_dir_all(&subcollection_path).unwrap();
-                }
+                let _ = fs::remove_dir_all(&subcollection_path);
             }
 
             for playlist in &self.playlists {
                 let playlist_path = context.site_dir.join(playlist.slug());
-                if playlist_path.exists() {
-                    fs::remove_dir_all(&playlist_path).unwrap();
-                }
+                let _ = fs::remove_dir_all(&playlist_path);
             }
 
             for video in &self.videos {
                 let video_path = context.site_dir.join(video.slug());
-                if video_path.exists() {
-                    fs::remove_dir_all(&video_path).unwrap();
-                }
+                let _ = fs::remove_dir_all(&video_path);
             }
         } else {
             // Guard against disastrous recursive folder removal from concatenating absolute paths
             assert!(!self.path.starts_with('/'), "Recursive folder removal aborted due to dangerous circumstances");
             let collection_dir = context.site_dir.join(&self.path);
-            fs::remove_dir_all(collection_dir).unwrap();
+            let _ = fs::remove_dir_all(collection_dir);
         }
     }
 
