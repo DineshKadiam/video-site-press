@@ -209,7 +209,15 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
     } else {
         // TODO: Should use poster assets (different sizes)
         let poster = match &video.poster {
-            Some(_) => format!(r#"<img class="thumbnail" src="{video_prefix}poster.jpg">"#),
+            Some(poster) => {
+                let alt = if let Some(description) = &poster.description {
+                    format!(r#"alt="{description}" "#)
+                } else {
+                    String::new()
+                };
+
+                format!(r#"<img {alt}class="thumbnail" src="{video_prefix}poster.jpg">"#)
+            }
             None => String::new()
         };
 
@@ -304,7 +312,7 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
 //             let poster = match iterated_video.poster {
 //                 Some(_) => {
 //                     let iterated_video_prefix = format!("{root_prefix}{}/", iterated_video.slug());
-//                     format!(r#"<img class="thumbnail" src="{iterated_video_prefix}poster.jpg">"#)
+//                     format!(r#"<img {alt}class="thumbnail" src="{iterated_video_prefix}poster.jpg">"#)
 //                 }
 //                 None => String::new()
 //             };
@@ -365,6 +373,12 @@ pub fn thumbnail(video: &Video, video_prefix: &str) -> String {
 
     match &video.poster {
         Some(poster) => {
+            let alt = if let Some(description) = &poster.description {
+                format!(r#"alt="{description}" "#)
+            } else {
+                String::new()
+            };
+
             if let Some(poster_assets) = &poster.assets {
                 let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
                 let src = image_attributes.src;
@@ -372,14 +386,14 @@ pub fn thumbnail(video: &Video, video_prefix: &str) -> String {
 
                 formatdoc!(r#"
                     <div class="thumbnail_wrapper">
-                        <img class="thumbnail" src="{src}" srcset="{srcset}">
+                        <img {alt}class="thumbnail" src="{src}" srcset="{srcset}">
                         {duration}
                     </div>
                 "#)
             } else {
                 formatdoc!(r#"
                     <div class="thumbnail_wrapper">
-                        <img class="thumbnail" src="{video_prefix}poster.jpg">
+                        <img {alt}class="thumbnail" src="{video_prefix}poster.jpg">
                         {duration}
                     </div>
                 "#)

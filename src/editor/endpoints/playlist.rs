@@ -136,6 +136,12 @@ pub fn edit_page(
     let banner = playlist.banner
         .as_ref()
         .map(|banner| {
+            let alt = if let Some(description) = &banner.description {
+                format!(r#"alt="{description}" "#)
+            } else {
+                String::new()
+            };
+
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &banner.file_name;
             let src = if path == "" {
@@ -152,7 +158,7 @@ pub fn edit_page(
             );
 
             format!(r#"
-                <img class="thumbnail" src="{src}">
+                <img {alt}class="thumbnail" src="{src}">
 
                 <form action="/update-banner/{path}" method="post">
                     {description}
