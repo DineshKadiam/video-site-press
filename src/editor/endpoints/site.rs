@@ -9,6 +9,7 @@ use crate::{
     AspectRatio,
     Context,
     Field,
+    Language,
     Site,
     SiteContent,
     Theme
@@ -20,12 +21,14 @@ use crate::util::validate_url;
 #[derive(Deserialize)]
 pub struct SiteForm {
     base_url: String,
+    language: String,
     poster_aspect: String,
     theme: String
 }
 
 pub struct SiteFormFeedback {
     pub base_url: Field,
+    pub language: Field,
     pub poster_aspect: Field,
     pub theme: Theme
 }
@@ -129,16 +132,24 @@ fn edit_page(
     let (
         theme_key,
         input_base_url,
+        input_language,
         input_poster_aspect,
         feedback
-    ) = if let Some(SiteFormFeedback { base_url, poster_aspect, theme }) = &form_feedback {
+    ) = if let Some(SiteFormFeedback { base_url, language, poster_aspect, theme }) = &form_feedback {
         (
             &theme.key,
-            form_field(base_url, "base_url", "Base URL", "Base URL"),
+            form_field(base_url, "base_url", "Base URL", "https://example.com"),
+            form_field(language, "language", "Language", "en, de, ..."),
             form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
+        let language = match &site.language {
+            Language::Default => "",
+            Language::Supported(code) => code,
+            Language::Unsupported(code) => code
+        };
+
         let poster_aspect = match &site.poster_aspect {
             AspectRatio::Custom { representation, .. } => representation,
             AspectRatio::Default => ""
@@ -146,7 +157,8 @@ fn edit_page(
 
         (
             &site.theme.key,
-            form_field(&Field::valid(site.base_url.as_deref().unwrap_or("")), "base_url", "Base URL", "Base URL"),
+            form_field(&Field::valid(site.base_url.as_deref().unwrap_or("")), "base_url", "Base URL", "https://example.com"),
+            form_field(&Field::valid(language), "language", "Language", "en, de, ..."),
             form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             ""
         )
@@ -173,6 +185,7 @@ fn edit_page(
         <form action="/site" method="post">
             {input_base_url}
             {input_poster_aspect}
+            {input_language}
             <div class="form_field">
                 <span>Theme</span>
                 <div>
@@ -225,6 +238,7 @@ pub async fn update(
     form: Form<SiteForm>
 ) -> Either<Redirect, HttpResponse> {
     let base_url_trimmed = form.base_url.trim();
+    let language_trimmed = form.language.trim();
     let poster_aspect_trimmed = form.poster_aspect.trim();
     let theme = match Theme::from_key(&form.theme) {
         Ok(theme) => theme,
@@ -253,6 +267,7 @@ pub async fn update(
 
         let site_form_feedback = SiteFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url_error),
+            language: Field::valid(language_trimmed),
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
             theme
         };
@@ -276,8 +291,15 @@ pub async fn update(
 
         Either::Right(http_response)
     } else {
+        let language = if language_trimmed.is_empty() {
+            Language::Default
+        } else {
+            Language::from_code(language_trimmed)
+        };
+
         let mutation = |site_mut: &mut Site| {
             site_mut.base_url = if base_url_trimmed.is_empty() { None } else { Some(base_url_trimmed.to_owned()) };
+            site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
             site_mut.theme = theme;
             site_mut.write_manifest(&context.site_dir);

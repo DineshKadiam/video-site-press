@@ -24,10 +24,18 @@ pub enum AspectRatio {
 }
 
 #[derive(Clone, Debug)]
+pub enum Language {
+    Default,
+    Supported(String),
+    Unsupported(String)
+}
+
+#[derive(Clone, Debug)]
 pub struct Site {
     pub base_url: Option<String>,
     pub content: SiteContent,
     pub errors: Vec<String>,
+    pub language: Language,
     pub poster_aspect: AspectRatio,
     pub theme: Theme
 }
@@ -76,6 +84,24 @@ impl AspectRatio {
     }
 }
 
+impl Language {
+    pub fn code(&self) -> &str {
+        match self {
+            Language::Default => "en",
+            Language::Supported(code) => code,
+            Language::Unsupported(code) => code
+        }
+    }
+
+    pub fn from_code(code: &str) -> Language {
+        match code {
+            "de" => Language::Supported(code.to_string()),
+            "en" => Language::Supported(code.to_string()),
+            _ => Language::Unsupported(code.to_string())
+        }
+    }
+}
+
 impl Site {
     fn apply_manifest(&mut self, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
@@ -94,6 +120,19 @@ impl Site {
                     Ok(value) => {
                         // TODO: Validate url
                         self.base_url = Some(value);
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_field("language") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(value) => {
+                        self.language = Language::from_code(&value);
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
@@ -217,6 +256,7 @@ impl Site {
             base_url: None,
             content: SiteContent::Empty,
             errors: Vec::new(),
+            language: Language::Default,
             poster_aspect: AspectRatio::Default,
             theme: Theme::default()
         }
@@ -280,6 +320,12 @@ impl Site {
 
         if let Some(base_url) = &self.base_url {
             eno.push_str(&format!("base_url: {}\n", base_url));
+        }
+
+        if let Language::Supported(code) = &self.language {
+            eno.push_str(&format!("language: {}\n", code));
+        } else if let Language::Unsupported(code) = &self.language {
+            eno.push_str(&format!("language: {}\n", code));
         }
 
         if let AspectRatio::Custom { representation, .. } = &self.poster_aspect {

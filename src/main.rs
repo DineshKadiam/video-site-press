@@ -36,7 +36,7 @@ use image_processor::{ImageProcessor, ResizeMode};
 use playlist::Playlist;
 use poster::{PosterAsset, PosterAssets, PosterFile};
 use processing::{Job, JobKind, Processing};
-use site::{AspectRatio, Site, SiteContent};
+use site::{AspectRatio, Language, Site, SiteContent};
 use theme::{Theme, ThemeKind};
 use util::Field;
 use video::{Video, VideoFile, VideoMeta, VideoParent};

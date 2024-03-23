@@ -44,7 +44,6 @@ pub fn layout(
         ThemeKind::Adaptive { .. } => formatdoc!(r##"
             <a href="#" id="theme-toggle">[Toggle Dark/Light]</a>
             <script>
-                console.log(document.querySelector('#theme-toggle'))
                 document.querySelector('#theme-toggle').addEventListener('click', event => {{
                     event.preventDefault();
                     toggleColorScheme();
@@ -68,13 +67,15 @@ pub fn layout(
         </body>
     "##);
 
-    formatdoc!("
+    let lang = site.language.code();
+
+    formatdoc!(r#"
         <!doctype html>
-        <html>
+        <html lang="{lang}">
             {head}
             {body}
         </html>
-    ")
+    "#)
 }
 
 fn compute_representations(versions: &[VideoFile]) -> Vec<VideoRepresentation> {
