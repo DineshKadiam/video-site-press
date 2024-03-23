@@ -6,6 +6,7 @@ use crate::Context;
 use crate::util::{
     supported_audio_extension,
     supported_image_extension,
+    supported_subtitle_extension,
     supported_video_extension
 };
 
@@ -21,6 +22,7 @@ pub struct HyperDir {
     pub path: PathBuf,
     pub playlist_manifest: Option<PathBuf>,
     pub site_manifest: Option<PathBuf>,
+    pub subtitle_files: Vec<PathBuf>,
     pub video_files: Vec<PathBuf>,
     pub video_manifest: Option<PathBuf>
 }
@@ -36,6 +38,7 @@ impl HyperDir {
             path: path.to_owned(),
             playlist_manifest: None,
             site_manifest: None,
+            subtitle_files: Vec::new(),
             video_files: Vec::new(),
             video_manifest: None
         }
@@ -84,6 +87,8 @@ impl HyperDir {
                                         hyper_dir.image_files.push(dir_entry.path());
                                     } else if supported_audio_extension(filename) {
                                         hyper_dir.audio_files.push(dir_entry.path());
+                                    } else if supported_subtitle_extension(filename) {
+                                        hyper_dir.subtitle_files.push(dir_entry.path());
                                     } else if filename.ends_with(".eno") {
                                         let error = format!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", filename);
                                         hyper_dir.errors.push(error);

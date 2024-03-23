@@ -147,6 +147,16 @@ pub fn supported_image_extension(filename: &str) -> bool {
     }
 }
 
+pub fn supported_subtitle_extension(filename: &str) -> bool {
+    match Path::new(filename).extension() {
+        Some(extension) => {
+            extension.eq_ignore_ascii_case("srt") ||
+            extension.eq_ignore_ascii_case("vtt")
+        }
+        None => false
+    }
+}
+
 pub fn supported_video_extension(filename: &str) -> bool {
     match Path::new(filename).extension() {
         Some(extension) => {

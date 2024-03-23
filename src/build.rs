@@ -1,5 +1,7 @@
 use std::fs;
 
+use rsubs_lib::srt;
+
 use crate::{
     Collection,
     Context,
@@ -151,6 +153,27 @@ fn build_video(
                 context.site_dir.join(&video.path).join(&poster.file_name),
                 video_build_dir.join("poster.jpg")
             );
+        }
+    }
+
+    for (index, file_name) in video.subtitles.iter().enumerate() {
+        let source_path = &context.site_dir.join(&video.path).join(&file_name);
+        let target_path = video_build_dir.join(format!("{index}.vtt"));
+
+        if file_name.ends_with(".vtt") {
+            hard_link_or_copy(source_path, target_path);
+        } else if file_name.ends_with(".srt") {
+            // TODO: Conversion could/should be a (only if necessary:
+            // background) job eventually to save on redundant processing and
+            // wait time during build. Also possible errors should be
+            // communicated as early as possible, e.g. checking the integrity
+            // of the subtitle format right when we try to attach it to the video
+            // on read_dir invocation.
+            srt::parse(source_path.to_string_lossy().to_string())
+                .unwrap()
+                .to_vtt()
+                .to_file(&target_path.to_string_lossy())
+                .unwrap();
         }
     }
 

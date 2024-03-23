@@ -2,11 +2,10 @@
 
 ## Video
 
-In principle you can use any format you like, however, Hyper 8 will
-determine whether the format you provided is actually playable in
-a standard browser and inform you about it when it isn't. In that
-case Hyper 8 will also prompt you for an automatic transcoding of
-the file into a playable format. (Note: Not yet implemented)
+In principle you can use any format you like, however, Hyper 8 will determine
+whether the format you provided is actually playable in a standard browser
+and report when it isn't. Hyper 8 offers then offers the possibility to request
+and automatic transcoding of the file into a playable format.
 
 The video container formats Hyper 8 currently recognizes are:
 
@@ -34,7 +33,7 @@ The audio formats Hyper 8 currently recognizes are:
 - opus
 - wav
 
-## Supported image formats
+## Images
 
 These are the formats you can use for poster images. Poster images
 are always resized and transcoded for site builds. (Note: Not yet implemented)
@@ -43,3 +42,8 @@ are always resized and transcoded for site builds. (Note: Not yet implemented)
 - jpg/jpeg
 - png
 - webp
+
+## Subtitles
+
+- srt
+- vtt

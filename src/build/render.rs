@@ -4,7 +4,6 @@ use crate::{Site, ThemeKind, Video, VideoFile};
 use crate::build::Breadcrumb;
 use crate::util::{casual_duration, human_size};
 
-
 pub struct VideoRepresentation {
     pub saving_factor: f32,
     pub saving_size: u64,
@@ -211,8 +210,26 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
             height = height * scale
         );
 
+        let subtitles = video.subtitles
+            .iter()
+            .enumerate()
+            .map(|(index, _file_name)| {
+                // TODO: kind/label/srclang need dynamic sourcing from user-supplied data
+                formatdoc!(r#"
+                    <track
+                        default
+                        kind="subtitles"
+                        label="English ({index})"
+                        src="{index}.vtt"
+                        srclang="en"/>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
         formatdoc!(r#"
             <video controls {poster}preload="none" src="{src}">
+                {subtitles}
             </video>
             <br><br>
             <div>{representations}</div>
