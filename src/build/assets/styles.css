@@ -1,4 +1,6 @@
 :root {
+	--c-green: #5bd217;
+	--c-grey: #444;
 	--c-letterbox: #000;
 }
 a {
@@ -25,8 +27,6 @@ video { width: 100%; }
 	column-gap: 1px;
 	margin-bottom: .5rem;
 	position: relative;
-}
-.chart span {
 }
 .bar {
 	height: 1.17rem;
@@ -60,6 +60,12 @@ video { width: 100%; }
 	transition: opacity ease .5s;
 }
 .emissions .bar { background-color: var(--c-grey); }
+header {
+	align-items: center;
+	column-gap: .7rem;
+	display: flex;
+	height: 2rem;
+}
 img { max-width: 100%; }
 .logo {
 	background-color: var(--c-text);
@@ -114,4 +120,9 @@ img { max-width: 100%; }
 	display: flex;
 	flex-flow: row wrap;
 	row-gap: 1rem;
+}
+.videos_grid {
+	display: grid;
+	grid-gap: 1rem;
+	grid-template-columns: 16rem auto;
 }

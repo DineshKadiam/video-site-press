@@ -13,6 +13,7 @@ use crate::util::{ensure_empty_dir, hard_link_or_copy};
 mod collection;
 mod playlist;
 mod render;
+mod scripts;
 mod styles;
 mod video;
 
@@ -52,11 +53,7 @@ pub fn perform_build(context: &Context) {
         SiteContent::Invalid => todo!()
     }
 
-    fs::write(
-        context.build_dir.join("scripts.js"),
-        include_str!("build/assets/scripts.js")
-    ).unwrap();
-
+    scripts::generate(context, &site);
     styles::generate(context, &site);
 }
 

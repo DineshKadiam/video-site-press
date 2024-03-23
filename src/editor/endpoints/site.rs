@@ -127,15 +127,13 @@ fn edit_page(
     // </form>
 
     let (
-        checked_dark,
-        checked_light,
+        theme_key,
         input_base_url,
         input_poster_aspect,
         feedback
     ) = if let Some(SiteFormFeedback { base_url, poster_aspect, theme }) = &form_feedback {
         (
-            if theme.key == "dark" { "checked " } else { "" },
-            if theme.key == "light" { "checked " } else { "" },
+            &theme.key,
             form_field(base_url, "base_url", "Base URL", "Base URL"),
             form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             r#"<span class="feedback">Not Saved</span>"#
@@ -147,13 +145,25 @@ fn edit_page(
         };
 
         (
-            if site.theme.key == "dark" { "checked " } else { "" },
-            if site.theme.key == "light" { "checked " } else { "" },
+            &site.theme.key,
             form_field(&Field::valid(site.base_url.as_deref().unwrap_or("")), "base_url", "Base URL", "Base URL"),
             form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             ""
         )
     };
+
+    let radio_button = |checked_key: &str, key: &str, label: &str| -> String {
+        let checked = if key == checked_key { "checked " } else { "" };
+        formatdoc!(r#"
+            <span>
+                <input {checked}name="theme" type="radio" value="{key}"> <label for="{key}">{label}</label>
+            </span>
+        "#)
+    };
+
+    let radio_button_adaptive = radio_button(theme_key, "adaptive", "Adaptive");
+    let radio_button_dark = radio_button(theme_key, "dark", "Dark");
+    let radio_button_light = radio_button(theme_key, "light", "Light");
 
     formatdoc!(r#"
         <h2>Site settings</h2>
@@ -166,12 +176,9 @@ fn edit_page(
             <div class="form_field">
                 <span>Theme</span>
                 <div>
-                    <span>
-                        <input {checked_dark}name="theme" type="radio" value="dark"> <label for="dark">Dark</label>
-                    </span>
-                    <span>
-                        <input {checked_light}name="theme" type="radio" value="light"> <label for="light">Light</label>
-                    </span>
+                    {radio_button_adaptive}
+                    {radio_button_dark}
+                    {radio_button_light}
                 </div>
             </div>
             
@@ -219,7 +226,10 @@ pub async fn update(
 ) -> Either<Redirect, HttpResponse> {
     let base_url_trimmed = form.base_url.trim();
     let poster_aspect_trimmed = form.poster_aspect.trim();
-    let theme = if &form.theme == "dark" { Theme::dark() } else { Theme::light() };
+    let theme = match Theme::from_key(&form.theme) {
+        Ok(theme) => theme,
+        Err(_) => Theme::default()
+    };
 
     let base_url_error = if !base_url_trimmed.is_empty() {
         if let Err(message) = validate_url(base_url_trimmed) {

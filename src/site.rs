@@ -122,14 +122,13 @@ impl Site {
             Ok(Some(field)) => {
                 match field.required_value::<String>() {
                     Ok(value) => {
-                        match value.as_str() {
-                            "dark" => {
-                                self.theme = Theme::dark();
+                        match Theme::from_key(value.as_str()) {
+                            Ok(theme) => {
+                                self.theme = theme;
                             }
-                            "light" => {
-                                self.theme = Theme::light();
+                            Err(err) => {
+                                self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), field.line_number(), err));
                             }
-                            _ => self.errors.push(format!("Ignoring unknown theme option '{}' in {}", value, manifest_path.display()))
                         }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))

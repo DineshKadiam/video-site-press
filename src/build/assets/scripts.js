@@ -1,1 +1,1 @@
-console.log('scripts.js mounted.');
+// noop for now

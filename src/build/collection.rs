@@ -50,7 +50,7 @@ pub fn collection_html(
         let videos_rendered = formatdoc!(r#"
             <h2>Videos</h2>
 
-            <div>
+            <div class="videos_grid">
                 {videos}
             </div>
         "#);

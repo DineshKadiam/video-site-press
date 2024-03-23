@@ -1,6 +1,6 @@
 use indoc::formatdoc;
 
-use crate::{Site, Video, VideoFile};
+use crate::{Site, ThemeKind, Video, VideoFile};
 use crate::build::Breadcrumb;
 use crate::util::{casual_duration, human_size};
 
@@ -39,20 +39,34 @@ pub fn layout(
         })
         .collect::<Vec<String>>()
         .join(" › ");
+
+    let theme_toggle = match &site.theme.kind {
+        ThemeKind::Adaptive { .. } => formatdoc!(r##"
+            <a href="#" id="theme-toggle">[Toggle Dark/Light]</a>
+            <script>
+                console.log(document.querySelector('#theme-toggle'))
+                document.querySelector('#theme-toggle').addEventListener('click', event => {{
+                    event.preventDefault();
+                    toggleColorScheme();
+                }});
+            </script>
+        "##),
+        ThemeKind::Static(_) => String::new()
+    };
     
-    let body = formatdoc!(r#"
+    let body = formatdoc!(r##"
         <body>
             <div class="center">
                 <header>
-                    {breadcrumbs_rendered}
+                    {breadcrumbs_rendered} {theme_toggle}
                 </header>
                 {body}
-                <footer>
-                    <span class="logo">Hyper 8</span>
+                <footer style="margin-top: 3rem">
+                    Hyper 8 Video System Alpha
                 </footer>
             </div>
         </body>
-    "#);
+    "##);
 
     formatdoc!("
         <!doctype html>

@@ -37,7 +37,7 @@ use playlist::Playlist;
 use poster::{PosterAsset, PosterAssets, PosterFile};
 use processing::{Job, JobKind, Processing};
 use site::{AspectRatio, Site, SiteContent};
-use theme::Theme;
+use theme::{Theme, ThemeKind};
 use util::Field;
 use video::{Video, VideoFile, VideoMeta, VideoParent};
 use video_format::{Codec, Container, EncodingApproach, VideoFormat};
