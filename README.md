@@ -2,6 +2,17 @@
 
 A static site generator for video content
 
+<img src="https://simonrepp.com/hyper8/readme.png?1" alt="Screenshot showing the hyper8 browser editor and a built page (alpha version)"/>
+
+## Get an early glimpse
+
+Watch the ~4min [introduction video](https://simonrepp.com/hyper8/teaser) to get an idea what is being built here.
+
+Follow this [thread on the fediverse](https://post.lurk.org/@freebliss/112043777597496559) for continuing reports on the development.
+
+You can also already browse the [work-in-progress documentation](https://simonrepp.com/hyper8/docs)
+to get a feel for what hyper8 is all about.
+
 ## Hyper 8 is in Alpha
 
 Hyper 8 can mostly be stably built and run from the main branch,

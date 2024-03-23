@@ -41,7 +41,10 @@ there is even already a video file in it.
 
 ```eno
 poster:
+description = Confused looking people in an office
 file = episode_1.jpg
+
+release_date: 2024-02-12
 title: The pilot episode of the show
 unlisted
 
