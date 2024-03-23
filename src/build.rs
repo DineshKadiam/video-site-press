@@ -156,13 +156,13 @@ fn build_video(
         }
     }
 
-    for (index, file_name) in video.subtitles.iter().enumerate() {
-        let source_path = &context.site_dir.join(&video.path).join(&file_name);
+    for (index, subtitle_file) in video.subtitles.iter().enumerate() {
+        let source_path = &context.site_dir.join(&video.path).join(&subtitle_file.file_name);
         let target_path = video_build_dir.join(format!("{index}.vtt"));
 
-        if file_name.ends_with(".vtt") {
+        if subtitle_file.file_name.ends_with(".vtt") {
             hard_link_or_copy(source_path, target_path);
-        } else if file_name.ends_with(".srt") {
+        } else if subtitle_file.file_name.ends_with(".srt") {
             // TODO: Conversion could/should be a (only if necessary:
             // background) job eventually to save on redundant processing and
             // wait time during build. Also possible errors should be

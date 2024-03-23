@@ -989,6 +989,7 @@ dependencies = [
  "futures-util",
  "image",
  "indoc",
+ "language-tags",
  "nanoid",
  "notify",
  "pulldown-cmark",

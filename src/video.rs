@@ -16,6 +16,7 @@ use crate::{
     Playlist,
     PosterFile,
     Site,
+    SubtitleFile,
     VideoMetaCached
 };
 use crate::util::hash;
@@ -28,7 +29,7 @@ pub struct Video {
     pub path: String,
     pub poster: Option<PosterFile>,
     pub release_date: Option<NaiveDate>,
-    pub subtitles: Vec<String>,
+    pub subtitles: Vec<SubtitleFile>,
     pub title: Option<String>,
     /// Unlisted videos are not linked from the site anywhere,
     /// one needs to know the link to access them.
@@ -283,9 +284,7 @@ impl Video {
         }
 
         for subtitle_file in &hyper_dir.subtitle_files {
-            let file_name = subtitle_file.file_name().unwrap().to_string_lossy().to_string();
-
-            video.subtitles.push(file_name);
+            video.subtitles.push(SubtitleFile::new(subtitle_file));
         }
 
         for video_file in &hyper_dir.video_files {

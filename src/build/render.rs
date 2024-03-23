@@ -213,15 +213,21 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
         let subtitles = video.subtitles
             .iter()
             .enumerate()
-            .map(|(index, _file_name)| {
-                // TODO: kind/label/srclang need dynamic sourcing from user-supplied data
+            .map(|(index, subtitle_file)| {
+                // TODO: label needs to be escaped
+                let (label, srclang) = match &subtitle_file.language {
+                    Some(code) => (code, format!(r#"srclang="{code}""#)),
+                    None => (&subtitle_file.file_name, String::new())
+                };
+
+                // TODO: Dynamic sourcing from user-supplied data for kind/label
+                // TODO: Maybe use 'default' attribute (but based on what?)
                 formatdoc!(r#"
                     <track
-                        default
                         kind="subtitles"
-                        label="English ({index})"
+                        label="{label}"
                         src="{index}.vtt"
-                        srclang="en"/>
+                        {srclang}/>
                 "#)
             })
             .collect::<Vec<String>>()
