@@ -105,12 +105,11 @@ fn main() {
         context.compute_job_queue();
 
         println!("Using site directory: {}", context.site_dir.display());
-        println!("Serving at: http://localhost:8081");
 
         workers::start_threads(args.workers, &context);
 
         watcher::watch(Arc::clone(&context));
 
-        editor::server::start(context);
+        editor::server::start(context, &args.port);
     }
 }

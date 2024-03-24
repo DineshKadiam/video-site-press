@@ -30,6 +30,10 @@ pub struct Args {
     #[clap(long)]
     pub deploy: bool,
 
+    /// Manually sets the port used by the web editor (otherwise hyper8 chooses an available port on its own)
+    #[clap(long = "port")]
+    pub port: Option<u16>,
+
     /// The path at which the site resides (user videos and metadata)
     pub site_dir: PathBuf,
 

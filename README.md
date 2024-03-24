@@ -27,41 +27,37 @@ browser interface might yield unfortunate results.
 
 ## Documentation
 
-Uses `path/to/collection` as site directory and locally serves
-a web interface (currently fixed at `http://localhost:8081`) where you can
-manage your collection.
+Running the web interface to edit and preview a site:
 
 ```sh
 hyper8 [SITE_DIR]
 ```
 
-Run it like this to perform an instant build (wihout hosting the web interface):
+Perform an instant build (wihout hosting the web editor) - **ONLY PARTIALLY IMPLEMENTED**:
 
 ```sh
 hyper8 --build [SITE_DIR]
 ```
 
-The build directory (by default `.hyper8_build` in the collection directory) can be configured:
+The build directory (by default `.hyper8_build` in the site directory) can be configured:
 
 ```sh
-hyper8 --build --build-dir [BUILD_DIR] [SITE_DIR] 
+hyper8 --build-dir [BUILD_DIR] [SITE_DIR] 
 ```
 
-You can use `--workers [count]` to determine how many background workers Hyper 8 should
-use to encode videos and thumbnails, etc., however the count can be no less than 2 (one
-worker for fast jobs - video analysis, thumbnails, one worker for slow jobs - video transcoding).
+You can use `--workers [count]` to determine how many background workers Hyper
+8 should use, however the count can be no less than 2 (one worker for fast
+jobs - video analysis, thumbnails, one worker for slow jobs - video
+transcoding).
 
 ```sh
 hyper8 --workers 3 [SITE_DIR]
 ```
 
-Run with `FAST_ENCODING=1 hyper8 ...` to encode everything at the lowest quality and
-as fast as possible (debugging aid).
-
 ## Funding
 
 Initial development of the Hyper 8 Video System is being funded by the [Austrian Federal
-Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html) – thank you.
+Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html) – thank you!
 
 ![BMKÖS Logo](https://simonrepp.com/hyper8/bmkoes_logo.jpg)
 
