@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use indoc::formatdoc;
 
 use crate::{Site, ThemeKind, Video, VideoFile};
@@ -117,13 +119,29 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
         let downloads = video.versions
             .iter()
             .map(|version| {
-                let filename = &version.file_name;
-                // let format_label = &version.format.label();
-                let format_label = "[TODO: format_label]";
+                // TODO: Clean up/better/more complete concept for how to build file names (e.g. maybe hide original names altogether!)
+                let file_name = version.file_name.as_str();
+                let (format_label, download_name) = if let Some(video_meta) = &version.video_meta {
+                    let height = video_meta.height;
+                    let width = video_meta.width;
+
+                    let slug = video.slug_opt().map(|slug| format!("{slug}_")).unwrap_or_else(|| format!("video_"));
+                    let download_name = Path::new(file_name).with_file_name(format!("{slug}_{width}x{height}")).to_string_lossy().to_string();
+
+                    (
+                        format!("{width}×{height}"),
+                        download_name
+                    )
+                } else {
+                    (
+                        String::new(),
+                        file_name.to_owned()
+                    )
+                };
                 let size = human_size(version.file_meta.size);
 
                 formatdoc!(r#"
-                    <a download="{format_label}.mp4" href="{video_prefix}{filename}">
+                    <a download="{download_name}" href="{video_prefix}{file_name}">
                         <strong>Download {format_label}</strong> {size}
                     </a>
                 "#)
