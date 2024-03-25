@@ -11,6 +11,8 @@ pub fn generate(context: &Context, site: &Site) {
 
     let theme_vars = match &site.theme.kind {
         ThemeKind::Adaptive { dark, light } => {
+            let static_adaptive_theme_css = include_str!("assets/adaptive_theme.css");
+
             let dark_vars = dark.print();
             let light_vars = light.print();
 
@@ -21,6 +23,7 @@ pub fn generate(context: &Context, site: &Site) {
                 body.light {{
                     {light_vars}
                 }}
+                {static_adaptive_theme_css}
             "#)
         }
         ThemeKind::Static(vars) => {

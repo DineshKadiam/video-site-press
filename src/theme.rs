@@ -19,6 +19,7 @@ pub enum ThemeKind {
 pub struct ThemeVars {
 	pub accent_color: String,
 	pub background_color: String,
+	pub backdrop_color: String,
 	pub text_color: String
 }
 
@@ -67,6 +68,7 @@ impl ThemeVars {
     pub fn dark() -> ThemeVars {
         ThemeVars {
 			accent_color: String::from("#fbdf46"),
+			backdrop_color: String::from("#444"),
 			background_color: String::from("#1a1a1a"),
 			text_color: String::from("#c9c9c9")
 		}
@@ -75,6 +77,7 @@ impl ThemeVars {
     pub fn light() -> ThemeVars {
         ThemeVars {
 			accent_color: String::from("#9f2e02"),
+			backdrop_color: String::from("#ccc"),
 			background_color: String::from("#fafafa"),
 			text_color: String::from("#272727")
 		}
@@ -82,11 +85,13 @@ impl ThemeVars {
 
     pub fn print(&self) -> String {
     	let accent_color = &self.accent_color;
+	    let backdrop_color = &self.backdrop_color;
 	    let background_color = &self.background_color;
 	    let text_color = &self.text_color;
 
 	    formatdoc!(r#"
             --c-accent: {accent_color};
+            --c-backdrop: {backdrop_color};
             --c-background: {background_color};
             --c-text: {text_color};
 	    "#)

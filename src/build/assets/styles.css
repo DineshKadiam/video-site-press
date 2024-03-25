@@ -10,6 +10,7 @@ a {
 body {
 	background-color: var(--c-background);
 	color: var(--c-text);
+	fill: var(--c-text);
 	font-family: sans-serif;
 	margin: 0;
 }
@@ -96,6 +97,10 @@ img { max-width: 100%; }
 .split {
 	display: flex;
 	row-gap: 1rem;
+}
+svg {
+	height: 1rem;
+	width: 1rem;
 }
 .thumbnail {
 	aspect-ratio: var(--poster-aspect);
