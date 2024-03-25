@@ -1,11 +1,11 @@
 body.light #theme-toggles:not(.pinned) #toggle-light,
 body:not(.light) #theme-toggles:not(.pinned) #toggle-dark {
-    background-color: var(--c-backdrop);
+    background-color: var(--c-bg-3);
 }
 body.light #theme-toggles.pinned #toggle-light,
 body:not(.light) #theme-toggles.pinned #toggle-dark {
-    background-color: var(--c-text);
-    fill: var(--c-background);
+    background-color: var(--c-fg-1);
+    fill: var(--c-bg-1);
 }
 .theme_toggle {
     align-items: center;
@@ -24,8 +24,8 @@ body:not(.light) #theme-toggles.pinned #toggle-dark {
     width: 1.2rem;
 }
 .theme_toggle:hover {
-    background-color: var(--c-backdrop);
-    fill: var(--c-text);
+    background-color: var(--c-bg-3);
+    fill: var(--c-fg-1);
 }
 #theme-toggles {
     position: fixed;
