@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::path::Path;
 
-use image::{DynamicImage, ImageOutputFormat};
+use image::{DynamicImage, ImageFormat};
 use image::imageops::FilterType;
 
 use crate::Context;
@@ -38,7 +38,7 @@ impl ImageProcessor {
 
         let mut output_file = File::create(output_path).unwrap();
 
-        resized_image.write_to(&mut output_file, ImageOutputFormat::Jpeg(80)).unwrap();
+        resized_image.write_to(&mut output_file, ImageFormat::Jpeg).unwrap();
 
         (output_filename, result_dimensions)
     }
