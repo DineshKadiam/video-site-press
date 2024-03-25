@@ -15,6 +15,7 @@ use crate::{
     Processing,
     Site,
     SiteContent,
+    Theme,
     Video,
     VideoParent
 };
@@ -28,6 +29,7 @@ pub struct Context {
     //       (in which case it needs to go e.g. in/on site,
     //       because context is immutable (with interior mutability on some things))
     pub clean_urls: bool,
+    pub editor_theme: Theme,
     pub job_queue: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
     pub processing_errors: Mutex<Vec<String>>,
@@ -48,46 +50,6 @@ pub enum GetAnyResult {
 }
 
 impl Context {
-    // pub fn add_video(&self, mut video: Video) -> Video {
-    //     let video = {
-    //         let mut videos = self.collection.videos.lock().unwrap();
-
-    //         while videos.iter().any(|iterated| iterated.slug == video.slug) {
-    //             // Create a modified, unique slug.
-    //             // TODO: Improve in the future, a full nanoid in a permalink
-    //             // is rather cryptic/goes against the idea.
-    //             video.slug = format!("{}_{}", &video.slug, nanoid());
-    //         }
-
-    //         // if video.source.is_some() {
-    //         //     video.assets.requested.push()
-    //         //     let jobs = [
-    //         //         Job::new(JobKind::Metadata, video.clone()),
-    //         //         Job::new(JobKind::Poster, video.clone())
-    //         //     ];
-
-    //         //     self.job_queue.lock().unwrap().extend(jobs);
-    //         // }
-
-    //         // video.asset
-
-    //         videos.push(video.clone());
-
-    //         video
-    //     };
-
-    //     if video.source.is_some() {
-    //         let jobs = [
-    //             Job::new(JobKind::Metadata, video.clone()),
-    //             Job::new(JobKind::Poster, video.clone())
-    //         ];
-
-    //         self.job_queue.lock().unwrap().extend(jobs);
-    //     }
-
-    //     video
-    // }
-
     pub fn complete_job(&self, id: &str) {
         let mut job_queue = self.job_queue.lock().unwrap();
 
@@ -405,6 +367,8 @@ impl Context {
             cache,
             cache_dir,
             clean_urls: true,
+            // TODO: Eventually make this customizable via CLI option
+            editor_theme: Theme::adaptive(),
             job_queue: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),
             processing_errors: Mutex::new(Vec::new()),
