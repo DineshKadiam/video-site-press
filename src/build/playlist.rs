@@ -55,17 +55,19 @@ pub fn playlist_html(
     if !playlist.videos.is_empty() {
         let videos = playlist.videos
             .iter()
-            .map(|video| {
-                let slug = &video.slug();
-                let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+            .enumerate()
+            .map(|(index, video)| {
+                let number = index + 1;
+                let slug = video.slug();
+                let label = video.label();
                 let video_prefix = format!("{slug}/");
                 let video_thumbnail = thumbnail(video, &video_prefix);
 
                 formatdoc!(r#"
-                    <a href="{slug}{index_suffix}">
-                        {video_thumbnail}
-                        <div>{title}</div>
-                    </a>
+                    <div>
+                        <div>{video_thumbnail}</div>
+                        <div>{number} <a href="{slug}{index_suffix}">{label}</a></div>
+                    </div>
                 "#)
             })
             .collect::<Vec<String>>()
@@ -74,7 +76,7 @@ pub fn playlist_html(
         let videos_rendered = formatdoc!(r#"
             <h2>Videos</h2>
 
-            <div>
+            <div class="playlist">
                 {videos}
             </div>
         "#);

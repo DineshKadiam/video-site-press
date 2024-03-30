@@ -20,6 +20,7 @@ video { width: 100%; }
 .center {
 	margin: 0 auto;
 	max-width: 33rem;
+	position: relative;
 }
 .chart {
 	align-items: center;
@@ -47,6 +48,9 @@ video { width: 100%; }
 	position: absolute;
 	left: 50%;
 	transform: translateX(-50%);
+}
+.current {
+	background-color: var(--c-bg-3);
 }
 .duration {
 	background-color: hsla(0, 0%, 0%, .9);
@@ -78,6 +82,11 @@ img { max-width: 100%; }
 	font-weight: 500;
 	padding: .5rem;
 }
+.playlist > div {
+	column-gap: 1rem;
+	display: flex;
+}
+.playlist.context .thumbnail { height: 5rem; }
 .savings .bar { background-color: var(--c-green); }
 .savings_percent {
 	color: var(--c-green);
@@ -110,15 +119,11 @@ svg {
 	background-color: var(--c-letterbox);
 	border-radius: 0.4rem;
 	flex-shrink: 0;
+	height: 9rem;
 	object-fit: contain;
-	width: 16rem;
 }
-.thumbnail_wrapper {
-	position: relative;
-}
-.thumbnail_wrapper:hover .duration {
-	opacity: 1;
-}
+.thumbnail_wrapper { position: relative; }
+.thumbnail_wrapper:hover .duration { opacity: 1; }
 .video {
 	color: var(--c-fg-2);
 	display: flex;
@@ -134,4 +139,13 @@ svg {
 	display: grid;
 	grid-gap: 1rem;
 	grid-template-columns: 16rem auto;
+}
+
+@media (min-width: 80rem) {
+	.playlist.context {
+		left: calc(100% + 2rem);
+		position: absolute;
+		top: 6rem;
+		width: 24rem;
+	}
 }

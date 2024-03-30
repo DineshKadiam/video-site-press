@@ -50,7 +50,7 @@ pub fn perform_build(context: &Context) {
     match &site.content {
         SiteContent::Collection(collection) => build_collection(context, collection, &site, &breadcrumbs),
         SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site, &breadcrumbs),
-        SiteContent::Video(video) => build_video(context, video, &site, &breadcrumbs),
+        SiteContent::Video(video) => build_video(context, None, video, &site, &breadcrumbs),
         SiteContent::Empty => (),
         SiteContent::Invalid => todo!()
     }
@@ -78,7 +78,7 @@ fn build_collection(
     }
 
     for video in &collection.videos {
-        build_video(context, video, site, &breadcrumbs_extended);
+        build_video(context, None, video, site, &breadcrumbs_extended);
     }
 
     collection_html(context, collection, site, &breadcrumbs_extended);
@@ -116,12 +116,13 @@ fn build_playlist(
     playlist_html(context, playlist, site, &breadcrumbs_extended);
 
     for video in &playlist.videos {
-        build_video(context, video, site, &breadcrumbs_extended);
+        build_video(context, Some(playlist), video, site, &breadcrumbs_extended);
     }
 }
 
 fn build_video(
     context: &Context,
+    playlist: Option<&Playlist>,
     video: &Video,
     site: &Site,
     breadcrumbs: &[Breadcrumb]
@@ -177,5 +178,5 @@ fn build_video(
         }
     }
 
-    video_html(context, video, site, &breadcrumbs_extended);
+    video_html(context, playlist, video, site, &breadcrumbs_extended);
 }

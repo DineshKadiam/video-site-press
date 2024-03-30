@@ -62,7 +62,7 @@ pub fn layout(
         "#),
         ThemeKind::Static(_) => String::new()
     };
-    
+
     let body = formatdoc!(r##"
         <body>
             <div class="center">
