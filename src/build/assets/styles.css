@@ -68,9 +68,10 @@ video { width: 100%; }
 }
 .emissions .bar { background-color: var(--c-bg-mg); }
 footer {
-	background-color: var(--c-fg-1);
-	color: var(--c-bg-1);
+	color: var(--c-fg-2);
+	padding: 1rem;
 }
+footer a { text-decoration: underline; }
 header {
 	align-items: center;
 	column-gap: .7rem;
@@ -87,6 +88,17 @@ img { max-width: 100%; }
 .playlist > div {
 	column-gap: 1rem;
 	display: flex;
+}
+.playlist .description {
+	align-items: center;
+	display: flex;
+	flex-grow: 1;
+}
+.playlist .more {
+	align-items: center;
+	display: flex;
+	height: 4rem;
+	justify-content: center;
 }
 .playlist.context .thumbnail { height: 5rem; }
 .savings .bar { background-color: var(--c-green); }
@@ -115,6 +127,10 @@ img { max-width: 100%; }
 svg {
 	height: 1rem;
 	width: 1rem;
+}
+.system_info {
+	font-size: .8rem;
+	text-underline-offset: .3rem;
 }
 .thumbnail {
 	aspect-ratio: var(--poster-aspect);

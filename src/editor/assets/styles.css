@@ -116,6 +116,7 @@ input, textarea {
     color: var(--c-fg-2);
     padding: .3rem;
 }
+input[type="file"] { display: none; }
 main {
     padding: 1rem;
     max-width: 32rem;
@@ -183,8 +184,4 @@ pre.error {
     flex-direction: column;
     margin: 1rem 0 2rem 0;
     row-gap: .5rem;
-}
-
-.js_enabled input[type="file"] {
-    display: none;
 }

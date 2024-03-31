@@ -66,7 +66,9 @@ pub fn playlist_html(
                 formatdoc!(r#"
                     <div>
                         <div>{video_thumbnail}</div>
-                        <div>{number} <a href="{slug}{index_suffix}">{label}</a></div>
+                        <div class="description">
+                            {number} <a href="{slug}{index_suffix}">{label}</a>
+                        </div>
                     </div>
                 "#)
             })

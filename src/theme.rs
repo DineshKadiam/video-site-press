@@ -82,8 +82,8 @@ impl ThemeVars {
     pub fn dark() -> ThemeVars {
         ThemeVars {
 			color_accent: String::from("#fbdf46"),
-			color_bg_1: String::from("#1a1a1a"),
-			color_bg_2: String::from("#2a2a2a"),
+			color_bg_1: String::from("#161616"),
+			color_bg_2: String::from("#262626"),
 			color_bg_3: String::from("#333"),
 			color_bg_mg: String::from("#444"),
 			color_fg_1: String::from("#fff"),
@@ -117,10 +117,10 @@ impl ThemeVars {
 
 	    formatdoc!(r#"
             --c-accent: {color_accent};
-            --c-bg-mg: {color_bg_mg};
             --c-bg-1: {color_bg_1};
             --c-bg-2: {color_bg_2};
             --c-bg-3: {color_bg_3};
+            --c-bg-mg: {color_bg_mg};
             --c-fg-1: {color_fg_1};
             --c-fg-2: {color_fg_2};
             --c-fg-3: {color_fg_3};

@@ -304,7 +304,6 @@ pub fn layout(
 
     let body = formatdoc!(r#"
             <body>
-                <script>document.body.classList.add('js_enabled');</script>
                 <header>
                     <a class="collection_title" href="/">{title}</a>
                     <div class="controls">

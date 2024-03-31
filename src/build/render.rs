@@ -63,6 +63,8 @@ pub fn layout(
         ThemeKind::Static(_) => String::new()
     };
 
+    let hyper8_version = env!("CARGO_PKG_VERSION");
+
     let body = formatdoc!(r##"
         <body>
             <div class="center">
@@ -71,7 +73,7 @@ pub fn layout(
                 </header>
                 {body}
                 <footer style="margin-top: 3rem">
-                    Hyper 8 Video System Alpha
+                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">Hyper 8 Video System {hyper8_version}</a> 
                 </footer>
             </div>
         </body>

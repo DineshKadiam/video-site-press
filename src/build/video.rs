@@ -36,7 +36,14 @@ pub fn video_html(
 
             let previous_videos = position;
             if previous_videos > adjacent_shown {
-                out.push_str(&format!("{} previous videos", previous_videos - adjacent_shown));
+                let hidden_videos = previous_videos - adjacent_shown;
+                let more = formatdoc!(r#"
+                    <div class="more">
+                        <a href="..{index_suffix}">{hidden_videos} previous videos</a>
+                    </div>
+                "#);
+
+                out.push_str(&more);
             }
 
             for (index, video_iterated) in playlist.videos.iter().enumerate() {
@@ -63,7 +70,9 @@ pub fn video_html(
                 let line = formatdoc!(r#"
                     <div class="{current}">
                         <div>{thumbnail_rendered}</div>
-                        <div>{number} <a href="{href}">{label}</a></div>
+                        <div class="description">
+                            {number} <a href="{href}">{label}</a>
+                        </div>
                     </div>
                 "#);
 
@@ -72,7 +81,14 @@ pub fn video_html(
 
             let remaining_videos = playlist.videos.len() - position - 1;
             if remaining_videos > adjacent_shown {
-                out.push_str(&format!("{} more videos", remaining_videos - adjacent_shown));
+                let hidden_videos = remaining_videos - adjacent_shown;
+                let more = formatdoc!(r#"
+                    <div class="more">
+                        <a href="..{index_suffix}">{hidden_videos} more videos</a>
+                    </div>
+                "#);
+
+                out.push_str(&more);
             }
 
             out
