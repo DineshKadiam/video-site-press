@@ -18,6 +18,7 @@ mod render;
 mod scripts;
 mod styles;
 mod video;
+mod widgets;
 
 use collection::collection_html;
 use playlist::playlist_html;

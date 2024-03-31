@@ -5,6 +5,7 @@ use indoc::formatdoc;
 use crate::{Context, Playlist, Site, Video};
 use crate::build::Breadcrumb;
 use crate::build::render::{layout, player, thumbnail};
+use crate::build::widgets::copy_link;
 
 pub fn video_html(
     context: &Context,
@@ -79,6 +80,8 @@ pub fn video_html(
         None => String::new()
     };
 
+    let copy_link_widget = copy_link(site, &video.path);
+
     let body = format!(r#"
         <h1>{title}</h1>
         {player_rendered}
@@ -88,9 +91,7 @@ pub fn video_html(
         <div class="playlist context">
             {playlist_context}
         </div>
-        <div>
-            <a href="TODO">Share</a>
-        </div>
+        {copy_link_widget}
     "#);
 
     let root_prefix = if video.path == "" { "".to_string() } else { "../".repeat(video.path.split('/').count()) };

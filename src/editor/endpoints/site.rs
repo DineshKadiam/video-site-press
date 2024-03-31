@@ -4,6 +4,7 @@ use actix_web::HttpResponse;
 use actix_web::web::{Data, Either, Form, Redirect};
 use indoc::formatdoc;
 use serde_derive::Deserialize;
+use url::Url;
 
 use crate::{
     AspectRatio,
@@ -16,7 +17,6 @@ use crate::{
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::form_field;
-use crate::util::validate_url;
 
 #[derive(Deserialize)]
 pub struct SiteForm {
@@ -157,7 +157,7 @@ fn edit_page(
 
         (
             &site.theme.key,
-            form_field(&Field::valid(site.base_url.as_deref().unwrap_or("")), "base_url", "Base URL", "https://example.com"),
+            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.as_str()).unwrap_or("")), "base_url", "Base URL", "https://example.com"),
             form_field(&Field::valid(language), "language", "Language", "en, de, ..."),
             form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
             ""
@@ -245,14 +245,10 @@ pub async fn update(
         Err(_) => Theme::default()
     };
 
-    let base_url_error = if !base_url_trimmed.is_empty() {
-        if let Err(message) = validate_url(base_url_trimmed) {
-            Some(format!("Not a valid URL: {message}"))
-        } else {
-            None
-        }
-    } else {
+    let base_url = if base_url_trimmed.is_empty() {
         None
+    } else {
+        Some(Url::parse(base_url_trimmed))
     };
 
     let poster_aspect = if poster_aspect_trimmed.is_empty() {
@@ -262,11 +258,11 @@ pub async fn update(
             .map_err(|err| err.to_string())
     };
 
-    if base_url_error.is_some() || poster_aspect.is_err() {
+    if base_url.as_ref().is_some_and(|base_url| base_url.is_err()) || poster_aspect.is_err() {
         let site = context.get_site();
 
         let site_form_feedback = SiteFormFeedback {
-            base_url: Field::validated(base_url_trimmed, base_url_error),
+            base_url: Field::validated(base_url_trimmed, base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()))),
             language: Field::valid(language_trimmed),
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
             theme
@@ -298,7 +294,7 @@ pub async fn update(
         };
 
         let mutation = |site_mut: &mut Site| {
-            site_mut.base_url = if base_url_trimmed.is_empty() { None } else { Some(base_url_trimmed.to_owned()) };
+            site_mut.base_url = base_url.map(|base_url| base_url.unwrap());
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
             site_mut.theme = theme;

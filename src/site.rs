@@ -3,6 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use enolib::{Element, SectionElement};
+use url::Url;
 
 use crate::{
     Context,
@@ -32,7 +33,7 @@ pub enum Language {
 
 #[derive(Clone, Debug)]
 pub struct Site {
-    pub base_url: Option<String>,
+    pub base_url: Option<Url>,
     pub content: SiteContent,
     pub errors: Vec<String>,
     pub language: Language,
@@ -116,10 +117,10 @@ impl Site {
 
         match document.optional_field("base_url") {
             Ok(Some(field)) => {
-                match field.required_value() {
-                    Ok(value) => {
-                        // TODO: Validate url
-                        self.base_url = Some(value);
+                match field.required_value::<String>() {
+                    Ok(value) => match Url::parse(&value) {
+                        Ok(url) => self.base_url = Some(url),
+                        Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), field.line_number(), err))
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }

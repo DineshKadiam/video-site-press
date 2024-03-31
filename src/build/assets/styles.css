@@ -49,6 +49,8 @@ video { width: 100%; }
 	left: 50%;
 	transform: translateX(-50%);
 }
+#copy-link.confirmed { border-color: green; }
+#copy-link.failed { border-color: red; }
 .current {
 	background-color: var(--c-bg-3);
 }

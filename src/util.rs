@@ -8,7 +8,6 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use nanoid::nanoid;
 use slug::slugify;
-use url::Url;
 
 pub struct Field {
     pub error: Option<String>,
@@ -187,11 +186,4 @@ pub fn validate_slug(slug: &str) -> Result<(), String> {
     }
 
     Ok(())
-}
-
-/// If the url comes from user input make sure to trim it before passing it.
-pub fn validate_url(url: &str) -> Result<(), String> {
-    Url::parse(url)
-        .map(|_url| ())
-        .map_err(|err| err.to_string())
 }
