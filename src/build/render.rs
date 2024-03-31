@@ -80,10 +80,11 @@ pub fn layout(
     "##);
 
     let lang_code = &site.language.code;
+    let dir_attribute = if site.language.rtl { r#"dir="rtl""# } else { "" };
 
     formatdoc!(r#"
         <!doctype html>
-        <html lang="{lang_code}">
+        <html {dir_attribute} lang="{lang_code}">
             {head}
             {body}
         </html>

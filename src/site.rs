@@ -15,6 +15,7 @@ use crate::{
     Translations,
     Video
 };
+use crate::util::is_rtl_language;
 
 #[derive(Clone, Debug)]
 pub enum AspectRatio {
@@ -29,6 +30,8 @@ pub enum AspectRatio {
 pub struct Language {
     pub code: String,
     pub default: bool,
+    /// Whether this is a right-to-left language
+    pub rtl: bool,
     pub translations: Translations
 }
 
@@ -91,6 +94,7 @@ impl Language {
         Language {
             code: String::from("en"),
             default: true,
+            rtl: false,
             translations: Translations::en()
         }
     }
@@ -102,13 +106,14 @@ impl Language {
             _ => Translations::en()
         };
 
-        Language::manual(code.to_string(), translations)
+        Language::manual(code, translations)
     }
 
-    pub fn manual(code: String, translations: Translations) -> Language {
+    pub fn manual(code: &str, translations: Translations) -> Language {
         Language {
-            code,
+            code: code.to_string(),
             default: false,
+            rtl: is_rtl_language(code),
             translations
         }
     }
