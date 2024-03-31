@@ -17,6 +17,7 @@ mod playlist;
 mod render;
 mod scripts;
 mod styles;
+pub mod translations;
 mod video;
 mod widgets;
 

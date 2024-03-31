@@ -7,8 +7,6 @@ use crate::{Context, Site, ThemeKind};
 pub fn generate(context: &Context, site: &Site) {
     let static_css = include_str!("assets/styles.css");
 
-    let poster_aspect = site.poster_aspect.numeric();
-
     let theme_vars = match &site.theme.kind {
         ThemeKind::Adaptive { dark, light } => {
             let static_adaptive_theme_css = include_str!("assets/adaptive_theme.css");
@@ -37,9 +35,15 @@ pub fn generate(context: &Context, site: &Site) {
         }
     };
 
+    let poster_aspect = site.poster_aspect.numeric();
+    let t_copied = &site.language.translations.copied;
+    let t_failed = &site.language.translations.failed;
+
     let css = formatdoc!(r#"
         :root {{
             --poster-aspect: {poster_aspect};
+            --t-copied: '{t_copied}';
+            --t-failed: '{t_failed}';
         }}
         {theme_vars}
         {static_css}

@@ -12,6 +12,7 @@ use crate::{
     HyperDir,
     Playlist,
     Theme,
+    Translations,
     Video
 };
 
@@ -25,10 +26,10 @@ pub enum AspectRatio {
 }
 
 #[derive(Clone, Debug)]
-pub enum Language {
-    Default,
-    Supported(String),
-    Unsupported(String)
+pub struct Language {
+    pub code: String,
+    pub default: bool,
+    pub translations: Translations
 }
 
 #[derive(Clone, Debug)]
@@ -86,19 +87,29 @@ impl AspectRatio {
 }
 
 impl Language {
-    pub fn code(&self) -> &str {
-        match self {
-            Language::Default => "en",
-            Language::Supported(code) => code,
-            Language::Unsupported(code) => code
+    pub fn default() -> Language {
+        Language {
+            code: String::from("en"),
+            default: true,
+            translations: Translations::en()
         }
     }
 
     pub fn from_code(code: &str) -> Language {
-        match code {
-            "de" => Language::Supported(code.to_string()),
-            "en" => Language::Supported(code.to_string()),
-            _ => Language::Unsupported(code.to_string())
+        let translations = match code {
+            "de" => Translations::de(),
+            "en" => Translations::en(),
+            _ => Translations::en()
+        };
+
+        Language::manual(code.to_string(), translations)
+    }
+
+    pub fn manual(code: String, translations: Translations) -> Language {
+        Language {
+            code,
+            default: false,
+            translations
         }
     }
 }
@@ -257,7 +268,7 @@ impl Site {
             base_url: None,
             content: SiteContent::Empty,
             errors: Vec::new(),
-            language: Language::Default,
+            language: Language::default(),
             poster_aspect: AspectRatio::Default,
             theme: Theme::default()
         }
@@ -323,10 +334,8 @@ impl Site {
             eno.push_str(&format!("base_url: {}\n", base_url));
         }
 
-        if let Language::Supported(code) = &self.language {
-            eno.push_str(&format!("language: {}\n", code));
-        } else if let Language::Unsupported(code) = &self.language {
-            eno.push_str(&format!("language: {}\n", code));
+        if !self.language.default {
+            eno.push_str(&format!("language: {}\n", self.language.code));
         }
 
         if let AspectRatio::Custom { representation, .. } = &self.poster_aspect {

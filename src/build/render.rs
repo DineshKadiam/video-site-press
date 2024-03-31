@@ -79,11 +79,11 @@ pub fn layout(
         </body>
     "##);
 
-    let lang = site.language.code();
+    let lang_code = &site.language.code;
 
     formatdoc!(r#"
         <!doctype html>
-        <html lang="{lang}">
+        <html lang="{lang_code}">
             {head}
             {body}
         </html>

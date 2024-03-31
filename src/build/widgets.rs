@@ -9,9 +9,11 @@ pub fn copy_link(site: &Site, path: &str) -> String {
         None => String::new()
     };
 
+    let t_copy_link = &site.language.translations.copy_link;
+
     format!(r#"
         <div>
-            <button {data_url} id="copy-link">Copy link</button>
+            <button {data_url} id="copy-link">{t_copy_link}</button>
         </div>
     "#)
 }

@@ -144,10 +144,9 @@ fn edit_page(
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
-        let language = match &site.language {
-            Language::Default => "",
-            Language::Supported(code) => code,
-            Language::Unsupported(code) => code
+        let language = match site.language.default {
+            true => "",
+            false => &site.language.code
         };
 
         let poster_aspect = match &site.poster_aspect {
@@ -288,7 +287,7 @@ pub async fn update(
         Either::Right(http_response)
     } else {
         let language = if language_trimmed.is_empty() {
-            Language::Default
+            Language::default()
         } else {
             Language::from_code(language_trimmed)
         };
