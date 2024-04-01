@@ -207,15 +207,15 @@ pub fn edit_page(
     ) = if let Some(CollectionFormFeedback::Update { description, title, unlisted }) = &form_feedback {
         (
             r#"<span class="feedback">Not Saved</span>"#,
-            form_textarea("description", "Description", "Description", Some(description)),
-            form_field(title, "title", "Title", "Title"),
+            form_textarea("description", "Description", Some(description)),
+            form_field(title, "title", "Title"),
             form_checkbox(*unlisted, "unlisted", "Unlisted")
         )
     } else {
         (
             "",
-            form_textarea("description", "Description", "Description", collection.description.as_deref()),
-            form_field(&Field::valid(collection.title.as_deref().unwrap_or("")), "title", "Title", "Title"),
+            form_textarea("description", "Description", collection.description.as_deref()),
+            form_field(&Field::valid(collection.title.as_deref().unwrap_or("")), "title", "Title"),
             form_checkbox(collection.unlisted, "unlisted", "Unlisted")
         )
     };
@@ -304,60 +304,69 @@ pub fn edit_page(
     let body = formatdoc!(r#"
         {errors}
 
-        <h2>New Video</h2>
+        <div class="form_group">
+            <h2>Collection</h2>
 
-        {video_upload_button}
+            <form action="/collection/{path}" method="post">
+                {input_title}
+                {input_description}
+                {input_unlisted}
 
-        <h2>New Playlist</h2>
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Update Collection</button> {feedback_update}
+                </div>
+            </form>
+        </div>
 
-        <form action="/create-playlist/{path}" method="post">
-            {input_slug_create_playlist}
+        <div class="form_group">
+            <h2>New Subcollection</h2>
 
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Create Playlist</button> {feedback_create_playlist}
-            </div>
-        </form>
+            <form action="/create-subcollection/{path}" method="post">
+                {input_slug_create_subcollection}
 
-        <h2>New Subcollection</h2>
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Create Subcollection</button> {feedback_create_subcollection}
+                </div>
+            </form>
+        </div>
 
-        <form action="/create-subcollection/{path}" method="post">
-            {input_slug_create_subcollection}
+        <div class="form_group">
+            <h2>New Playlist</h2>
 
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Create Subcollection</button> {feedback_create_subcollection}
-            </div>
-        </form>
+            <form action="/create-playlist/{path}" method="post">
+                {input_slug_create_playlist}
 
-        <h2>Collection</h2>
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Create Playlist</button> {feedback_create_playlist}
+                </div>
+            </form>
+        </div>
 
-        <form action="/collection/{path}" method="post">
-            {input_title}
-            {input_description}
-            {input_unlisted}
-
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Update Collection</button> {feedback_update}
-            </div>
-        </form>
+        <div class="form_group">
+            <h2>New Video</h2>
+            {video_upload_button}
+        </div>
 
         {site_edit}
 
-        <h2>Danger Zone</h2>
+        <div class="form_group">
+            <h2>Danger Zone</h2>
 
-        {slug_form}
+            {slug_form}
 
-        {convert_form}
+            {convert_form}
 
-        <p>
-            Deleting the collection removes the collection manifest, all videos,
-            playlists and subcollections. It does not remove the site manifest and
-            the site itself, so the site can afterwards be reinitialized again as
-            a collection, playlist or video.
-        </p>
+            <p>
+                Deleting the collection removes the collection manifest, all videos,
+                playlists and subcollections. It does not remove the site manifest and
+                the site itself, so the site can afterwards be reinitialized again as
+                a collection, playlist or video.
+            </p>
 
-        <form action="/delete-collection/{path}" method="post">
-            <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Collection</button>
-        </form>
+            <form action="/delete-collection/{path}" method="post">
+                <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Collection</button>
+            </form>
+        </div>
     "#);
 
     let site = context.get_site();

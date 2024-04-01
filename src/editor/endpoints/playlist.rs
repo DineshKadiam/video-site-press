@@ -150,12 +150,7 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let description = form_textarea(
-                "description",
-                "Banner Description",
-                "Banner Description",
-                banner.description.as_deref()
-            );
+            let description = form_textarea("description", "Banner Description", banner.description.as_deref());
 
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
@@ -191,15 +186,15 @@ pub fn edit_page(
     ) = if let Some(PlaylistFormFeedback::Update { description, title, unlisted }) = &form_feedback {
         (
             r#"<span class="feedback">Not Saved</span>"#,
-            form_textarea("description", "Description", "Description", Some(description)),
-            form_field(title, "title", "Title", "Title"),
+            form_textarea("description", "Description", Some(description)),
+            form_field(title, "title", "Title"),
             form_checkbox(*unlisted, "unlisted", "Unlisted")
         )
     } else {
         (
             "",
-            form_textarea("description", "Description", "Description", playlist.description.as_deref()),
-            form_field(&Field::valid(playlist.title.as_deref().unwrap_or("")), "title", "Title", "Title"),
+            form_textarea("description", "Description", playlist.description.as_deref()),
+            form_field(&Field::valid(playlist.title.as_deref().unwrap_or("")), "title", "Title"),
             form_checkbox(playlist.unlisted, "unlisted", "Unlisted")
         )
     };
@@ -261,45 +256,52 @@ pub fn edit_page(
     let body = formatdoc!(r#"
         {errors}
 
-        <h2>New Video</h2>
+        <div class="form_group">
+            <h2>Playlist</h2>
 
-        {video_upload_button}
+            <form action="/playlist/{path}" method="post">
+                {input_title}
+                {input_description}
+                {input_unlisted}
 
-        <h2>Playlist</h2>
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Update Playlist</button> {feedback_update}
+                </div>
+            </form>
+        </div>
 
-        <form action="/playlist/{path}" method="post">
-            {input_title}
-            {input_description}
-            {input_unlisted}
+        <div class="form_group">
+            <h2>New Video</h2>
 
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Update Playlist</button> {feedback_update}
-            </div>
-        </form>
+            {video_upload_button}
+        </div>
 
-        <h2>Banner Image</h2>
-        
-        {banner_form}
+        <div class="form_group">
+            <h2>Banner Image</h2>
+            {banner_form}
+        </div>
 
         {site_edit}
 
-        <h2>Danger Zone</h2>
+        <div class="form_group">
+            <h2>Danger Zone</h2>
 
-        {slug_form}
+            {slug_form}
 
-        {convert_form}
+            {convert_form}
 
-       <p>
-            Deleting the playlist removes the playlist manifest, banner image,
-            and all videos contained in the playlist. If the playlist lies at the
-            site root it does not remove the site manifest and the site itself,
-            so the site can afterwards be reinitialized again as a collection,
-            playlist or video.
-        </p>
+           <p>
+                Deleting the playlist removes the playlist manifest, banner image,
+                and all videos contained in the playlist. If the playlist lies at the
+                site root it does not remove the site manifest and the site itself,
+                so the site can afterwards be reinitialized again as a collection,
+                playlist or video.
+            </p>
 
-        <form action="/delete-playlist/{path}" method="post">
-            <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Playlist</button>
-        </form>
+            <form action="/delete-playlist/{path}" method="post">
+                <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Playlist</button>
+            </form>
+        </div>
     "#);
 
     let site = context.get_site();

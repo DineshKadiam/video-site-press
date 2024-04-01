@@ -34,7 +34,9 @@ pub struct ThemeVars {
 	/// Foreground 2 (closer)
 	pub color_fg_2: String,
 	/// Foreground 3 (close)
-	pub color_fg_3: String
+	pub color_fg_3: String,
+	/// Middleground  (in between)
+	pub color_mg: String
 }
 
 impl Theme {
@@ -88,20 +90,22 @@ impl ThemeVars {
 			color_bg_mg: String::from("#444"),
 			color_fg_1: String::from("#fff"),
 			color_fg_2: String::from("#c9c9c9"),
-			color_fg_3: String::from("#b2b2b2")
+			color_fg_3: String::from("#b2b2b2"),
+			color_mg: String::from("#888")
 		}
     }
 
     pub fn light() -> ThemeVars {
         ThemeVars {
 			color_accent: String::from("#9f2e02"),
-			color_bg_1: String::from("#fafafa"),
-			color_bg_2: String::from("#e0e0e0"),
+			color_bg_1: String::from("#fff"),
+			color_bg_2: String::from("#eee"),
 			color_bg_3: String::from("#ddd"),
 			color_bg_mg: String::from("#ccc"),
 			color_fg_1: String::from("#000"),
 			color_fg_2: String::from("#272727"),
-			color_fg_3: String::from("#444")
+			color_fg_3: String::from("#444"),
+			color_mg: String::from("#888")
 		}
     }
 
@@ -114,6 +118,7 @@ impl ThemeVars {
 	    let color_fg_1 = &self.color_fg_1;
 	    let color_fg_2 = &self.color_fg_2;
 	    let color_fg_3 = &self.color_fg_3;
+	    let color_mg = &self.color_mg;
 
 	    formatdoc!(r#"
             --c-accent: {color_accent};
@@ -124,6 +129,7 @@ impl ThemeVars {
             --c-fg-1: {color_fg_1};
             --c-fg-2: {color_fg_2};
             --c-fg-3: {color_fg_3};
+            --c-mg: {color_mg};
 	    "#)
     }
 }

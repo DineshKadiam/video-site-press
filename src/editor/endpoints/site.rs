@@ -138,9 +138,9 @@ fn edit_page(
     ) = if let Some(SiteFormFeedback { base_url, language, poster_aspect, theme }) = &form_feedback {
         (
             &theme.key,
-            form_field(base_url, "base_url", "Base URL", "https://example.com"),
-            form_field(language, "language", "Language", "en, de, ..."),
-            form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
+            form_field(base_url, "base_url", "Base URL (e.g. https://example.com)"),
+            form_field(language, "language", "Language (e.g. en, de, ...)"),
+            form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio"),
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
@@ -156,9 +156,9 @@ fn edit_page(
 
         (
             &site.theme.key,
-            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.as_str()).unwrap_or("")), "base_url", "Base URL", "https://example.com"),
-            form_field(&Field::valid(language), "language", "Language", "en, de, ..."),
-            form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio", "Custom Poster Aspect Ratio"),
+            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.as_str()).unwrap_or("")), "base_url", "Base URL (e.g. https://example.com)"),
+            form_field(&Field::valid(language), "language", "Language (e.g. en, de, ...)"),
+            form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio"),
             ""
         )
     };
@@ -177,27 +177,29 @@ fn edit_page(
     let radio_button_light = radio_button(theme_key, "light", "Light");
 
     formatdoc!(r#"
-        <h2>Site settings</h2>
+        <div class="form_group">
+            <h2>Site settings</h2>
 
-        {errors}
-        
-        <form action="/site" method="post">
-            {input_base_url}
-            {input_poster_aspect}
-            {input_language}
-            <div class="form_field">
-                <span>Theme</span>
-                <div>
-                    {radio_button_adaptive}
-                    {radio_button_dark}
-                    {radio_button_light}
-                </div>
-            </div>
+            {errors}
             
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Update</button> {feedback}
-            </div>
-        </form>
+            <form action="/site" method="post">
+                {input_base_url}
+                {input_poster_aspect}
+                {input_language}
+                <div class="form_field">
+                    <span>Theme</span>
+                    <div>
+                        {radio_button_adaptive}
+                        {radio_button_dark}
+                        {radio_button_light}
+                    </div>
+                </div>
+
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Update</button> {feedback}
+                </div>
+            </form>
+        </div>
     "#)
 }
 

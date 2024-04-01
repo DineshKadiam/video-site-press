@@ -279,12 +279,7 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let description = form_textarea(
-                "description",
-                "Poster Description",
-                "Poster Description",
-                poster.description.as_deref()
-            );
+            let description = form_textarea("description", "Poster Description", poster.description.as_deref());
 
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
@@ -330,9 +325,9 @@ pub fn edit_page(
     ) = if let Some(VideoFormFeedback::Update { description, title, release_date, unlisted }) = &form_feedback {
         (
             r#"<span class="feedback">Not Saved</span>"#,
-            form_textarea("description", "Description", "Description", Some(description)),
+            form_textarea("description", "Description", Some(description)),
             form_field_date(release_date, "release_date", "Release Date"),
-            form_field(title, "title", "Title", "Title"),
+            form_field(title, "title", "Title"),
             form_checkbox(*unlisted, "unlisted", "Unlisted")
         )
     } else {
@@ -343,9 +338,9 @@ pub fn edit_page(
 
         (
             "",
-            form_textarea("description", "Description", "Description", video.description.as_deref()),
+            form_textarea("description", "Description", video.description.as_deref()),
             form_field_date(&Field::valid(release_date), "release_date", "Release Date"),
-            form_field(&Field::valid(video.title.as_deref().unwrap_or("")), "title", "Title", "Title"),
+            form_field(&Field::valid(video.title.as_deref().unwrap_or("")), "title", "Title"),
             form_checkbox(video.unlisted, "unlisted", "Unlisted")
         )
     };
@@ -396,46 +391,51 @@ pub fn edit_page(
     let body = formatdoc!(r#"
         {errors}
 
-        <h2>Video</h2>
+        <div class="form_group">
+            <h2>Video</h2>
 
-        <form action="/video/{path}" method="post">
-            {input_title}
-            {input_description}
-            {input_release_date}
-            {input_unlisted}
+            <form action="/video/{path}" method="post">
+                {input_title}
+                {input_description}
+                {input_release_date}
+                {input_unlisted}
 
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
-                <button>Update Video</button> {feedback_update}
-            </div>
-        </form>
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button>Update Video</button> {feedback_update}
+                </div>
+            </form>
+        </div>
         
-        {versions}
+        <div class="form_group">
+            {versions}
+            {video_upload_button}
+        </div>
 
-        <br><br>
 
-        {video_upload_button}
-
-        <h2>Poster Image</h2>
-
-        {poster_form}
+        <div class="form_group">
+            <h2>Poster Image</h2>
+            {poster_form}
+        </div>
 
         {site_edit}
 
-        <h2>Danger Zone</h2>
+        <div class="form_group">
+            <h2>Danger Zone</h2>
 
-        {slug_form}
+            {slug_form}
 
-        <p>
-            Deleting the video removes the video manifest, poster image,
-            and all versions of the video. If the video lies at the
-            site root it does not remove the site manifest and the site itself,
-            so the site can afterwards be reinitialized again as a collection,
-            video or video.
-        </p>
+            <p>
+                Deleting the video removes the video manifest, poster image,
+                and all versions of the video. If the video lies at the
+                site root it does not remove the site manifest and the site itself,
+                so the site can afterwards be reinitialized again as a collection,
+                video or video.
+            </p>
 
-        <form action="/delete-video/{path}" method="post">
-            <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Video</button>
-        </form>
+            <form action="/delete-video/{path}" method="post">
+                <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Video</button>
+            </form>
+        </div>
     "#);
 
     let site = context.get_site();

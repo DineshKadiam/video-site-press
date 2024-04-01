@@ -60,7 +60,8 @@ fn collection_tree(
                 .strip_prefix(&collection.path)
                 .is_some_and(|rest| rest.starts_with('/')) {
                 let label = collection.title.as_deref().unwrap_or_else(|| collection.slug());
-                breadcrumbs.push(format!(r#"<a href="{href}">{ICON_COLLECTION} {label}</a>"#));
+                let (icon, space) = if active { (ICON_COLLECTION, " ") } else { ("", "") };
+                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
             }
 
             let collection_content = collection_tree(breadcrumbs, collection, path);
@@ -97,7 +98,8 @@ fn collection_tree(
                 .strip_prefix(&playlist.path)
                 .is_some_and(|rest| rest.starts_with('/')) {
                 let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
-                breadcrumbs.push(format!(r#"<a href="{href}">{ICON_PLAYLIST} {label}</a>"#));
+                let (icon, space) = if active { (ICON_PLAYLIST, " ") } else { ("", "") };
+                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
             }
 
             let children = if playlist.videos.is_empty() {
@@ -184,11 +186,7 @@ fn collection_tree(
     "#)
 }
 
-pub fn form_checkbox(
-    checked: bool,
-    key: &str,
-    label: &str
-) -> String {
+pub fn form_checkbox(checked: bool, key: &str, label: &str) -> String {
     let checked_attribute = if checked { "checked " } else { "" };
 
     formatdoc!(r#"
@@ -201,12 +199,7 @@ pub fn form_checkbox(
     "#)
 }
 
-pub fn form_field(
-    field: &Field,
-    key: &str,
-    label: &str,
-    placeholder: &str
-) -> String {
+pub fn form_field(field: &Field, key: &str, label: &str) -> String {
     let error = field.error
         .as_deref()
         .map(|message| format!(r#"<span class="error">{message}</span>"#))
@@ -216,12 +209,11 @@ pub fn form_field(
     formatdoc!(r#"
         <div class="form_field">
             <label for="{key}">{label}</label>
-            <input id="{key}" name="{key}" placeholder="{placeholder}" value="{value}">
+            <input id="{key}" name="{key}" value="{value}">
             {error}
         </div>
     "#)
 }
-
 
 pub fn form_field_date(
     field: &Field,
@@ -268,14 +260,13 @@ pub fn form_field_pattern(
 pub fn form_textarea(
     key: &str,
     label: &str,
-    placeholder: &str,
     value: Option<&str>
 ) -> String {
     let value = value.unwrap_or("");
     formatdoc!(r#"
         <div class="form_field">
             <label for="{key}">{label}</label>
-            <textarea id="{key}" name="{key}" placeholder="{placeholder}">{value}</textarea>
+            <textarea id="{key}" name="{key}">{value}</textarea>
         </div>
     "#)
 }
@@ -302,15 +293,17 @@ pub fn layout(
         </head>
     "#);
 
+    let hyper8_version = env!("CARGO_PKG_VERSION");
+
     let body = formatdoc!(r#"
             <body>
-                <header>
-                    <a class="collection_title" href="/">{title}</a>
-                    <div class="controls">
+                <div class="controls">
+                    <div class="buttons">
                         <form action="/build" method="post" target="_blank"><button>Preview</button></form>
                         <form action="/deploy" method="post"><button>Deploy</button></form>
                     </div>
-                </header>
+                    <span class="system_info">Hyper 8 Video System {hyper8_version}</span>
+                </div>
                 <div class="split">
                     {sidebar}
                     <main>
@@ -320,12 +313,8 @@ pub fn layout(
                         {body}
                     </main>
                 </div>
-                <footer>
-                    Hyper 8 Alpha
-                </footer>
             </body>
-        "#,
-        title = site.title()
+        "#
     );
 
     format!("<!doctype html>\n<html>{head}{body}</html>")
@@ -351,19 +340,20 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
 pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
+    let root_active = path == "";
     let root_dir = site_dir.file_name().unwrap().to_string_lossy();
     let site_dir = &site_dir.to_string_lossy();
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
             let breadcrumb_title = collection.title.as_deref().unwrap_or("Collection");
-            breadcrumbs.push(format!(r#"<a href="/collection/">{ICON_COLLECTION} {breadcrumb_title}</a>"#));
+            let (icon, space) = if root_active { (ICON_COLLECTION, " ") } else { ("", "") };
+            breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
 
             let collection_content = collection_tree(&mut breadcrumbs, collection, path);
 
-            let active = path == "";
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
-            let node = tree_node(active, errors, "/collection/", ICON_COLLECTION, site_dir, collection.title.as_deref());
+            let node = tree_node(root_active, errors, "/collection/", ICON_COLLECTION, site_dir, collection.title.as_deref());
 
             formatdoc!(r#"
                 {node}
@@ -374,13 +364,13 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
         SiteContent::Invalid => {
             breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
 
-            let active = path == "";
             // TODO: Dedicated icon for empty site?
-            tree_node(active, &Vec::new(), "/", ICON_COLLECTION, site_dir, Some("Empty site"))
+            tree_node(root_active, &Vec::new(), "/", ICON_COLLECTION, site_dir, Some("Empty site"))
         }
         SiteContent::Playlist(playlist) => {
             let breadcrumb_title = playlist.title.as_deref().unwrap_or("Playlist");
-            breadcrumbs.push(format!(r#"<a href="/playlist/">{ICON_PLAYLIST} {breadcrumb_title}</a>"#));
+            let (icon, space) = if root_active { (ICON_PLAYLIST, " ") } else { ("", "") };
+            breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{breadcrumb_title}</a>"#));
 
             let videos = if playlist.videos.is_empty() {
                 formatdoc!(r#"
@@ -423,8 +413,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
                     .join("")
             };
 
-            let active = path == "";
-            let node = tree_node(active, &playlist.errors, "/playlist/", ICON_PLAYLIST, site_dir, playlist.title.as_deref());
+            let node = tree_node(root_active, &playlist.errors, "/playlist/", ICON_PLAYLIST, site_dir, playlist.title.as_deref());
 
             formatdoc!(r#"
                 {node}
@@ -435,10 +424,10 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
         }
         SiteContent::Video(video) => {
             let breadcrumb_title = video.title.as_deref().unwrap_or("Video");
-            breadcrumbs.push(format!(r#"<a href="/video/">{ICON_VIDEO} {breadcrumb_title}</a>"#));
+            let (icon, space) = if root_active { (ICON_VIDEO, " ") } else { ("", "") };
+            breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
 
-            let active = path == "";
-            tree_node(active, &video.errors, "/video/", ICON_VIDEO, site_dir, video.title.as_deref())
+            tree_node(root_active, &video.errors, "/video/", ICON_VIDEO, site_dir, video.title.as_deref())
         }
     };
 

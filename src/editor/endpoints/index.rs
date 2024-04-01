@@ -14,35 +14,46 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     let mut body = match &site.content {
         SiteContent::Collection(_) => {
             formatdoc!(r#"
-                This site is operating as a collection
+                <div class="form_group">
+                    This site is operating as a collection
+                </div>
             "#)
         }
         SiteContent::Empty => {
             formatdoc!(r#"
-                <h2>Empty site</h2>
+                <div class="form_group">
+                    <h2>Empty site</h2>
 
-                Initialize your site by placing content in the site directory,
-                or picking one of the options below:<br><br>
+                    Initialize your site by placing content in the site directory,
+                    or picking one of the options below:<br><br>
 
-                <form action="/convert/collection" method="post"><button>Initialize site as collection</button></form> As a collection the site holds videos, playlists and recursive subcollections.<br><br>
+                    <form action="/convert/collection" method="post"><button>Initialize site as collection</button></form> As a collection the site holds videos, playlists and recursive subcollections.<br><br>
 
-                <form action="/convert/playlist" method="post"><button>Initialize site as playlist</button></form> A site featuring a number of videos, presented as an ordered viewing list<br><br>
+                    <form action="/convert/playlist" method="post"><button>Initialize site as playlist</button></form> A site featuring a number of videos, presented as an ordered viewing list<br><br>
 
-                <form action="/convert/video" method="post"><button>Initialize site as video</button></form> A site presenting just a single video<br><br>
-
+                    <form action="/convert/video" method="post"><button>Initialize site as video</button></form> A site presenting just a single video
+                </div>
             "#)
         }
         SiteContent::Invalid => {
-            "Site is invalid - site folder content needs to be manually fixed.".to_string()
+            formatdoc!(r#"
+                <div class="form_group">
+                    Site is invalid - site folder content needs to be manually fixed.
+                </div>
+            "#)
         }
         SiteContent::Playlist(_) => {
             formatdoc!(r#"
-                This site is operating as a playlist
+                <div class="form_group">
+                    This site is operating as a playlist
+                </div>
             "#)
         }
         SiteContent::Video(_) => {
             formatdoc!(r#"
-                This site is operating as a video
+                <div class="form_group">
+                    This site is operating as a video
+                </div>
             "#)
         }
     };
