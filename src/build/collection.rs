@@ -5,7 +5,8 @@ use indoc::formatdoc;
 use crate::{Collection, Context, Site};
 use crate::build::Breadcrumb;
 use crate::build::playlist::banner_html;
-use crate::build::render::{layout, thumbnail};
+use crate::build::render::layout;
+use crate::build::widgets::thumbnail;
 
 pub fn collection_html(
     context: &Context,
@@ -35,6 +36,7 @@ pub fn collection_html(
                 let slug = &video.slug();
                 let title = video.title.as_deref().unwrap_or_else(|| video.slug());
                 let video_prefix = format!("{slug}/");
+
                 let video_thumbnail = thumbnail(video, &video_prefix);
 
                 formatdoc!(r#"

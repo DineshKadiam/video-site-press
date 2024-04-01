@@ -4,7 +4,8 @@ use indoc::formatdoc;
 
 use crate::{Banner, Context, Playlist, Site};
 use crate::build::Breadcrumb;
-use crate::build::render::{layout, thumbnail};
+use crate::build::render::layout;
+use crate::build::widgets::thumbnail;
 
 pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
@@ -64,12 +65,12 @@ pub fn playlist_html(
                 let video_thumbnail = thumbnail(video, &video_prefix);
 
                 formatdoc!(r#"
-                    <div>
+                    <a href="{slug}{index_suffix}">
                         <div>{video_thumbnail}</div>
                         <div class="description">
-                            {number} <a href="{slug}{index_suffix}">{label}</a>
+                            {number} {label}
                         </div>
-                    </div>
+                    </a>
                 "#)
             })
             .collect::<Vec<String>>()

@@ -4,8 +4,8 @@ use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site, Video};
 use crate::build::Breadcrumb;
-use crate::build::render::{layout, player, thumbnail};
-use crate::build::widgets::copy_link;
+use crate::build::render::{layout, player};
+use crate::build::widgets::{copy_link, thumbnail};
 
 pub fn video_html(
     context: &Context,
@@ -68,12 +68,12 @@ pub fn video_html(
                 };
 
                 let line = formatdoc!(r#"
-                    <div class="{current}">
-                        <div>{thumbnail_rendered}</div>
+                    <a class="{current}" href="{href}">
+                        {thumbnail_rendered}
                         <div class="description">
-                            {number} <a href="{href}">{label}</a>
+                            {number} {label}
                         </div>
-                    </div>
+                    </a>
                 "#);
 
                 out.push_str(&line);

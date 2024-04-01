@@ -103,7 +103,7 @@ img { max-width: 100%; }
 	font-weight: 500;
 	padding: .5rem;
 }
-.playlist > div {
+.playlist > * {
 	column-gap: 1rem;
 	display: flex;
 }
