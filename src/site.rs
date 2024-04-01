@@ -10,12 +10,11 @@ use crate::{
     Collection,
     GetAnyResult,
     HyperDir,
+    Language,
     Playlist,
     Theme,
-    Translations,
     Video
 };
-use crate::util::is_rtl_language;
 
 #[derive(Clone, Debug)]
 pub enum AspectRatio {
@@ -24,15 +23,6 @@ pub enum AspectRatio {
         value: f32
     },
     Default
-}
-
-#[derive(Clone, Debug)]
-pub struct Language {
-    pub code: String,
-    pub default: bool,
-    /// Whether this is a right-to-left language
-    pub rtl: bool,
-    pub translations: Translations
 }
 
 #[derive(Clone, Debug)]
@@ -85,36 +75,6 @@ impl AspectRatio {
         match self {
             AspectRatio::Default => 16.0/9.0,
             AspectRatio::Custom { value, .. } => *value
-        }
-    }
-}
-
-impl Language {
-    pub fn default() -> Language {
-        Language {
-            code: String::from("en"),
-            default: true,
-            rtl: false,
-            translations: Translations::en()
-        }
-    }
-
-    pub fn from_code(code: &str) -> Language {
-        let translations = match code {
-            "de" => Translations::de(),
-            "en" => Translations::en(),
-            _ => Translations::en()
-        };
-
-        Language::manual(code, translations)
-    }
-
-    pub fn manual(code: &str, translations: Translations) -> Language {
-        Language {
-            code: code.to_string(),
-            default: false,
-            rtl: is_rtl_language(code),
-            translations
         }
     }
 }

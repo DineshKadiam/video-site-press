@@ -2,7 +2,8 @@
 pub struct Translations {
 	pub copied: String,
 	pub copy_link: String,
-	pub failed: String
+	pub failed: String,
+	pub videos: String
 }
 
 impl Translations {
@@ -10,7 +11,8 @@ impl Translations {
 		Translations {
 			copied: String::from("Kopiert"),
 			copy_link: String::from("Link kopieren"),
-			failed: String::from("Fehlgeschlagen")
+			failed: String::from("Fehlgeschlagen"),
+			videos: String::from("Videos")
 		}
 	}
 
@@ -18,7 +20,8 @@ impl Translations {
 		Translations {
 			copied: String::from("Copied"),
 			copy_link: String::from("Copy link"),
-			failed: String::from("Failed")
+			failed: String::from("Failed"),
+			videos: String::from("Videos")
 		}
 	}
 }

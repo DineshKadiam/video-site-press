@@ -3,7 +3,7 @@
 	--c-letterbox: #000;
 }
 a {
-	color: var(--c-accent);
+/*	color: var(--c-accent);*/
 	text-decoration: none;
 }
 body {
@@ -69,34 +69,50 @@ video { width: 100%; }
 }
 #copy-link.confirmed::after { content: var(--copied); }
 #copy-link.failed::after { content: var(--failed); }
-.current {
-	background-color: var(--c-bg-3);
-}
+.current { background-color: var(--c-bg-3); }
 .duration {
 	background-color: hsla(0, 0%, 0%, .9);
 	border-radius: .2rem;
-	bottom: 1rem;
+	bottom: calc(var(--poster-aspect) * 5%);
 	color: #fff;
 	font-size: .8rem;
-	opacity: 0;
 	padding: .2rem .4rem;
 	position: absolute;
-	right: 1rem;
-	transition: opacity ease .5s;
+	right: 5%;
 }
 .emissions .bar { background-color: var(--c-bg-mg); }
 footer {
-	color: var(--c-fg-2);
-	padding: 1rem;
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	margin: 3rem auto 0 auto;
+	padding: 1rem 0;
+	width: min(33rem, calc(100vw - 2rem));
 }
-footer a { text-decoration: underline; }
 header {
 	align-items: center;
 	column-gap: .7rem;
 	display: flex;
 	height: 2rem;
+	padding: .5rem 0;
+}
+header a {
+	border-bottom: .2rem solid transparent;
+	color: var(--c-fg-1);
+	outline: none;
+	padding: .3rem 0;
+}
+header a:focus-visible,
+header a:hover {
+	border-bottom-color: var(--c-fg-1);
 }
 img { max-width: 100%; }
+.layout {
+	display: flex;
+	flex-direction: column;
+	height: 100dvh;
+}
+.layout .growing { flex-grow: 1; }
 .logo {
 	background-color: var(--c-fg-2);
 	color: var(--c-bg-1);
@@ -106,9 +122,13 @@ img { max-width: 100%; }
 .playlist > * {
 	column-gap: 1rem;
 	display: flex;
+	outline: none;
 }
+.playlist > *:focus-visible,
+.playlist > *:hover { background-color: var(--c-bg-2); }
 .playlist .description {
 	align-items: center;
+	color: var(--c-fg-1);
 	display: flex;
 	flex-grow: 1;
 }
@@ -147,7 +167,9 @@ svg {
 	width: 1rem;
 }
 .system_info {
+	color: var(--c-fg-3);
 	font-size: .8rem;
+	text-decoration: underline;
 	text-underline-offset: .3rem;
 }
 .thumbnail {
@@ -159,7 +181,6 @@ svg {
 	object-fit: contain;
 }
 .thumbnail_wrapper { position: relative; }
-.thumbnail_wrapper:hover .duration { opacity: 1; }
 .video {
 	color: var(--c-fg-2);
 	display: flex;
@@ -181,7 +202,7 @@ svg {
 	.playlist.context {
 		left: calc(100% + 2rem);
 		position: absolute;
-		top: 6rem;
+		top: 3rem;
 		width: 24rem;
 	}
 }

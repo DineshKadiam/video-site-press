@@ -67,13 +67,20 @@ pub fn layout(
 
     let body = formatdoc!(r##"
         <body>
-            <div class="center">
-                <header>
-                    {breadcrumbs_rendered} {theme_toggle}
-                </header>
-                {body}
-                <footer style="margin-top: 3rem">
-                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">Hyper 8 Video System {hyper8_version}</a> 
+            <div class="layout">
+                <div class="growing">
+                    <div class="center">
+                        <header>
+                            {breadcrumbs_rendered}
+                        </header>
+                        {body}
+                    </div>
+                </div>
+                <footer>
+                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
+                        Hyper 8 Video System {hyper8_version}
+                    </a>
+                    {theme_toggle}
                 </footer>
             </div>
         </body>
@@ -268,10 +275,10 @@ pub fn player(video: &Video, video_prefix: &str) -> String {
                 {subtitles}
             </video>
             <br><br>
-            <div>{representations}</div>
+            <!--div>{representations}</div>
             <br>
             {experiment_combined}
-            <br>
+            <br-->
             <div>{downloads}</div>
         "#)
     } else {

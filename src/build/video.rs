@@ -28,6 +28,18 @@ pub fn video_html(
 
             let mut out = String::new();
 
+            let label = playlist.label();
+            let t_videos = &site.language.translations.videos;
+            let video_count = playlist.videos.len();
+            let header = formatdoc!(r#"
+                <div>
+                    {label}<br>
+                    {video_count} {t_videos}
+                </div>
+            "#);
+
+            out.push_str(&header);
+
             let adjacent_shown: usize = 2;
 
             // TODO: Below a certain threshold just show all videos (at least 6 or so)
@@ -39,7 +51,8 @@ pub fn video_html(
                 let hidden_videos = previous_videos - adjacent_shown;
                 let more = formatdoc!(r#"
                     <div class="more">
-                        <a href="..{index_suffix}">{hidden_videos} previous videos</a>
+                        {hidden_videos} previous videos<br>
+                        <a href="..{index_suffix}">See entire playlist</a>
                     </div>
                 "#);
 
@@ -60,13 +73,13 @@ pub fn video_html(
 
                 let thumbnail_rendered = thumbnail(video_iterated, &video_prefix);
 
-                let number = index + 1;
                 let (current, href) = if index == position {
                     ("current", String::new())
                 } else {
                     ("", format!("../{slug}{index_suffix}"))
                 };
 
+                let number = index + 1;
                 let line = formatdoc!(r#"
                     <a class="{current}" href="{href}">
                         {thumbnail_rendered}
@@ -84,7 +97,8 @@ pub fn video_html(
                 let hidden_videos = remaining_videos - adjacent_shown;
                 let more = formatdoc!(r#"
                     <div class="more">
-                        <a href="..{index_suffix}">{hidden_videos} more videos</a>
+                        {hidden_videos} more videos<br>
+                        <a href="..{index_suffix}">See entire playlist</a>
                     </div>
                 "#);
 
@@ -98,9 +112,27 @@ pub fn video_html(
 
     let copy_link_widget = copy_link(site, &video.path);
 
+    let release_date = match video.release_date {
+        Some(release_date) => {
+            use chrono::format::{Fixed, Item, Numeric, Pad};
+
+            let format = [
+                Item::Numeric(Numeric::Day, Pad::None),
+                Item::Space(" "),
+                Item::Fixed(Fixed::LongMonthName),
+                Item::Space(" "),
+                Item::Numeric(Numeric::Year, Pad::None)
+            ];
+            let formatted = release_date.format_localized_with_items(format.iter(), site.language.chrono_locale);
+            format!("<span>{formatted}</span>")
+        }
+        None => String::new()
+    };
+
     let body = format!(r#"
-        <h1>{title}</h1>
         {player_rendered}
+        <h1>{title}</h1>
+        {release_date}
         <p>
             {description}
         </p>

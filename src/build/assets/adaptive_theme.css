@@ -23,12 +23,17 @@ body:not(.light) #theme-toggles.pinned #toggle-dark {
     height: 1.2rem;
     width: 1.2rem;
 }
+.theme_toggle:focus-visible {
+    outline: .2rem solid var(--c-fg-1);
+}
 .theme_toggle:hover {
     background-color: var(--c-bg-3);
     fill: var(--c-fg-1);
 }
-#theme-toggles {
-    position: fixed;
-    right: 1rem;
-    top: 1rem;
+@media (min-width: 100rem) {
+    #theme-toggles {
+        position: fixed;
+        right: 1rem;
+        top: 1rem;
+    }
 }
