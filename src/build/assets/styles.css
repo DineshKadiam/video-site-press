@@ -53,10 +53,6 @@ video { width: 100%; }
 	left: 50%;
 	transform: translateX(-50%);
 }
-:root {
-	--copied: 'Copied';
-	--failed: 'Failed';
-}
 #copy-link {
 	background: none;
 	border: none;
@@ -68,8 +64,8 @@ video { width: 100%; }
 	color: var(--c-fg-2);
 	padding-left: .5rem;
 }
-#copy-link.confirmed::after { content: var(--copied); }
-#copy-link.failed::after { content: var(--failed); }
+#copy-link.confirmed::after { content: var(--t-copied); }
+#copy-link.failed::after { content: var(--t-failed); }
 .current { background-color: var(--c-bg-3); }
 .duration {
 	background-color: hsla(0, 0%, 0%, .9);
