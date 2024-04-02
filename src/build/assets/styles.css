@@ -3,7 +3,7 @@
 	--c-letterbox: #000;
 }
 a {
-/*	color: var(--c-accent);*/
+	color: var(--c-fg-1);
 	text-decoration: none;
 }
 body {
@@ -62,6 +62,7 @@ video { width: 100%; }
 	border: none;
 	color: var(--c-fg-1);
 	cursor: pointer;
+	padding: 0;
 }
 #copy-link::after {
 	color: var(--c-fg-2);
@@ -139,6 +140,7 @@ img { max-width: 100%; }
 	justify-content: center;
 }
 .playlist.context .thumbnail { height: 5rem; }
+.release_date { color: var(--c-fg-3); }
 .savings .bar { background-color: var(--c-green); }
 .savings_percent {
 	color: var(--c-green);
@@ -186,6 +188,7 @@ svg {
 	display: flex;
 	flex-direction: column;
 }
+.video_title { margin-bottom: 0; }
 .videos {
 	column-gap: 1rem;
 	display: flex;

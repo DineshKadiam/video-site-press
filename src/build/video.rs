@@ -4,8 +4,8 @@ use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site, Video};
 use crate::build::Breadcrumb;
-use crate::build::render::{layout, player};
-use crate::build::widgets::{copy_link, thumbnail};
+use crate::build::render::layout;
+use crate::build::widgets::{copy_link, downloads, player, thumbnail};
 
 pub fn video_html(
     context: &Context,
@@ -17,7 +17,9 @@ pub fn video_html(
     let index_suffix = context.index_suffix();
     let description = if let Some(description) = &video.description { description } else { "" };
     let title = video.title.as_deref().unwrap_or(video.slug());
-    let player_rendered = player(video, "");
+    let player_rendered = player(site, video, "");
+
+    let downloads_widget = downloads(video);
 
     let playlist_context = match playlist {
         Some(playlist) => {
@@ -124,14 +126,14 @@ pub fn video_html(
                 Item::Numeric(Numeric::Year, Pad::None)
             ];
             let formatted = release_date.format_localized_with_items(format.iter(), site.language.chrono_locale);
-            format!("<span>{formatted}</span>")
+            format!(r#"<span class="release_date">{formatted}</span>"#)
         }
         None => String::new()
     };
 
     let body = format!(r#"
         {player_rendered}
-        <h1>{title}</h1>
+        <h1 class="video_title">{title}</h1>
         {release_date}
         <p>
             {description}
@@ -139,6 +141,7 @@ pub fn video_html(
         <div class="playlist context">
             {playlist_context}
         </div>
+        {downloads_widget}
         {copy_link_widget}
     "#);
 
