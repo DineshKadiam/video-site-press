@@ -31,12 +31,21 @@ body {
 }
 .breadcrumbs {
     align-items: center;
-    column-gap: .5rem;
+    column-gap: .3rem;
     display: flex;
 }
 .breadcrumbs a {
     align-items: center;
+    border-radius: .2rem;
+    column-gap: .3rem;
     display: inline-flex;
+    outline: none;
+    padding: .3rem .6rem;
+}
+.breadcrumbs a:first-child { margin-left: -0.6rem; }
+.breadcrumbs a:focus-visible,
+.breadcrumbs a:hover {
+    background-color: var(--c-bg-2);
 }
 .breadcrumbs a svg {
     fill: var(--c-fg-3);
@@ -70,6 +79,11 @@ button:focus-visible,
 button:hover {
     background-color: var(--c-bg-3);
     outline: none;
+}
+.button_group {
+    column-gap: .5rem;
+    display: flex;
+    margin: 1rem 0;
 }
 .collection_title {
     color: var(--c-bg-1);

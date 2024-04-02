@@ -133,11 +133,11 @@ pub fn edit_page(
 
     let path = &playlist.path;
 
-    let banner = playlist.banner
-        .as_ref()
-        .map(|banner| {
+    let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), "Upload Banner");
+    let banner_form = match &playlist.banner {
+        Some(banner) => {
             let alt = if let Some(description) = &banner.description {
-                format!(r#"alt="{description}" "#)
+                format!(r#"alt="{description}""#)
             } else {
                 String::new()
             };
@@ -153,30 +153,21 @@ pub fn edit_page(
             let description = form_textarea("description", "Banner Description", banner.description.as_deref());
 
             format!(r#"
-                <img {alt}class="thumbnail" src="{src}">
-
+                <img {alt} class="thumbnail" src="{src}">
+                <div class="button_group">
+                    {banner_upload_button}
+                    <form action="/delete-banner/{path}" method="post">
+                        <button>Delete Banner</button>
+                    </form>
+                </div>
                 <form action="/update-banner/{path}" method="post">
                     {description}
-
-                    <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button>Update Banner Description</button>
-                    </div>
-                </form>
-
-                <form action="/delete-banner/{path}" method="post">
-                    <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button>Delete Banner</button>
-                    </div>
+                    <button>Update Description</button>
                 </form>
             "#)
-        })
-        .unwrap_or(String::new());
-
-    let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), "Upload Banner");
-    let banner_form = formatdoc!(r#"
-        {banner}
-        {banner_upload_button}
-    "#);
+        }
+        None => banner_upload_button
+    };
 
     let (
         feedback_update,

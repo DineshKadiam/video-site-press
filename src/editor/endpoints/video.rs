@@ -182,11 +182,10 @@ fn downsize_form(video: &Video) -> String {
 
     formatdoc!(r#"
         <form action="/downsize/{path}" method="post">
-            <select name="width">
-                {options}
-            </select>
-
-            <div style="align-items: center; column-gap: .5rem; display: flex;">
+            <div class="button_group">
+                <select name="width">
+                    {options}
+                </select>
                 <button>Request downsized version</button>
             </div>
         </form>
@@ -262,9 +261,14 @@ pub fn edit_page(
         "#)
     };
 
-    let poster = video.poster
-        .as_ref()
-        .map(|poster| {
+    let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), "Upload Poster");
+    let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
+        format!(r#"<span class="error">{error}</span>"#)
+    } else {
+        String::new()
+    };
+    let poster_form = match &video.poster {
+        Some(poster) => {
             let alt = if let Some(description) = &poster.description {
                 format!(r#"alt="{description}" "#)
             } else {
@@ -283,38 +287,34 @@ pub fn edit_page(
 
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
-
+                <div class="button_group">
+                    {poster_upload_button}
+                    <form action="/delete-poster/{path}" method="post">
+                        <div style="align-items: center; column-gap: .5rem; display: flex;">
+                            <button>Delete Poster</button>
+                        </div>
+                    </form>
+                    <form action="/video-random-poster/{path}" method="post">
+                        <button onclick="alert("Not yet implemented">Random Poster</button>
+                    </form>
+                </div>
+                {poster_upload_button_error}
                 <form action="/update-poster/{path}" method="post">
                     {description}
 
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button>Update Poster Description</button>
-                    </div>
-                </form>
-
-                <form action="/delete-poster/{path}" method="post">
-                    <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button>Delete Poster</button>
+                        <button>Update Description</button>
                     </div>
                 </form>
             "#)
-        })
-        .unwrap_or(String::new());
-
-    let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), "Upload Poster");
-    let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
-        format!(r#"<span class="error">{error}</span>"#)
-    } else {
-        String::new()
+        }
+        None => {
+            formatdoc!(r#"
+                {poster_upload_button}
+                {poster_upload_button_error}
+            "#)
+        }
     };
-    let poster_form = formatdoc!(r#"
-        {poster}
-        {poster_upload_button}
-        <form action="/video-random-poster/{path}" method="post">
-            <button>Randomly pick another poster frame (unimplemented)</button>
-        </form>
-        {poster_upload_button_error}
-    "#);
 
     let (
         feedback_update,
