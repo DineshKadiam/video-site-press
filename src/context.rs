@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use serde_derive::Deserialize;
+use slug::slugify;
 
 use crate::{
     Cache,
@@ -19,6 +20,7 @@ use crate::{
     Video,
     VideoParent
 };
+use crate::util::nanoid;
 
 pub struct Context {
     pub build_dir: PathBuf,
@@ -194,20 +196,81 @@ impl Context {
         Ok(())
     }
 
-    pub fn convert_to_video(&self) {
+    pub fn convert_to_video(&self) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
-        if let SiteContent::Empty = &mut site_mut.content {
+        if let SiteContent::Empty = &site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
             let video = Video::read_dir(self, &hyper_dir, &site_mut);
             video.write_manifest(self);
             site_mut.content = SiteContent::Video(video);
             self.replace_site(site_mut);
-        } else if let SiteContent::Collection(_collection) = &mut site_mut.content {
+        } else if let SiteContent::Collection(_collection) = &site_mut.content {
             todo!();
-        } else if let SiteContent::Playlist(_playlist) = &mut site_mut.content {
-            todo!();
+        } else if let SiteContent::Playlist(playlist) = &site_mut.content {
+            if playlist.videos.len() > 1 {
+                return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
+            }
+
+            let manifest_path = self.site_dir.join("playlist.eno");
+            let _ = fs::remove_file(&manifest_path);
+
+            // If a (single) video dir exists in the playlist, move every file/dir in it into the root,
+            // then delete it.
+            if let Some(video) = playlist.videos.first() {
+                let temp_dir = self.site_dir.join(nanoid());
+
+                // Rename the video directory to unique temporary name, so we can copy
+                // files/folders within without any possible name collisions with the
+                // video directory name itself.
+                fs::rename(self.site_dir.join(&video.path), &temp_dir).unwrap();
+
+                if let Ok(dir_entries) = temp_dir.read_dir() {
+                    for dir_entry_result in dir_entries {
+                        if let Ok(dir_entry) = dir_entry_result {
+                            let relocation_target_in_parent = self.site_dir.join(dir_entry.file_name());
+
+                            // If a file/dir with the same name exists in the parent directory, we delete the
+                            // one in the parent directory.
+                            if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
+                                if metadata.file_type().is_dir() {
+                                    fs::remove_dir_all(&relocation_target_in_parent).unwrap();
+                                } else {
+                                    fs::remove_file(&relocation_target_in_parent).unwrap();
+                                }
+                            }
+
+                            fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                        }
+                    }
+                }
+
+                let _ = fs::remove_dir_all(&temp_dir);
+            }
+
+            let hyper_dir = HyperDir::read(&self.site_dir);
+            let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
+
+            if playlist.videos.is_empty() {
+                // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                    if let Some(description) = &playlist.description {
+                        video.description = Some(description.clone());
+                    }
+                    if let Some(title) = &playlist.title {
+                        video.title = Some(title.clone());
+                    }
+                };
+
+            }
+
+            video.write_manifest(self);
+
+            site_mut.content = SiteContent::Video(video);
+            self.replace_site(site_mut);
         }
+
+        Ok(())
     }
 
     pub fn delete_collection(

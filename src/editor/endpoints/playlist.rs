@@ -233,7 +233,7 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, path);
 
-    let convert_form = formatdoc!(r#"
+    let convert_to_collection_form = formatdoc!(r#"
         <p>
             A playlist can seamlessly be converted to a collection, but note that the
             banner will be deleted, because collections don't have one.
@@ -243,6 +243,32 @@ pub fn edit_page(
             <button>Convert playlist to collection</button>
         </form>
     "#);
+
+    let convert_to_video_form = if playlist.videos.is_empty() {
+        formatdoc!(r#"
+            <p>
+                This playlist is empty and can be seamlessly converted to a video.
+            </p>
+
+            <form action="/convert/video" method="post">
+                <button>Convert playlist to video</button>
+            </form>
+        "#)
+    } else if playlist.videos.len() == 1 {
+        formatdoc!(r#"
+            <p>
+                This playlist contains a single video and can be converted to just a video,
+                note however that playlist data will be removed or overwritten
+                with data from the video where necessary.
+            </p>
+
+            <form action="/convert/video" method="post">
+                <button>Convert playlist to video</button>
+            </form>
+        "#)
+    } else {
+        String::new()
+    };
 
     let body = formatdoc!(r#"
         {errors}
@@ -279,7 +305,9 @@ pub fn edit_page(
 
             {slug_form}
 
-            {convert_form}
+            {convert_to_collection_form}
+
+            {convert_to_video_form}
 
            <p>
                 Deleting the playlist removes the playlist manifest, banner image,
