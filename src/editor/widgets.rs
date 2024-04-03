@@ -303,6 +303,7 @@ pub fn layout(
                         <form action="/deploy" method="post"><button>Deploy</button></form>
                     </div>
                     <span class="system_info">Hyper 8 Video System {hyper8_version}</span>
+                    <span class="processing"></span>
                 </div>
                 <div class="split">
                     <nav>

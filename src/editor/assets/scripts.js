@@ -1,37 +1,28 @@
 const processing = {};
 
 function fetchProcessing() {
-	fetch('processing')
+	fetch('/processing')
 		.then(response => response.json())
 		.then(response => {
-			if (!processing.updateAnnounced) {
-				if (processing.lastUpdate === undefined) {
-					processing.lastUpdate = response.lastUpdate;
-				} else if (response.lastUpdate !== processing.lastUpdate) {
-					// document.querySelector('.updates').innerHTML = 'Updates available, refresh the page to load them.';
-					processing.updateAnnounced = true;
-				}
-			}
+			if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
+				const processingElement = document.querySelector('.processing');
 
-			for (const video of document.querySelectorAll('.video')) {
-				let operations = [];
-
-				for (const operation of response.operations) {
-					if (operation.videoId === video.dataset.id) {
-						operations.push(operation.label);
-					}
-				}
-
-				if (operations.length) {
-					video.classList.add('processing');
-					video.setAttribute('title', operations.join(', '));
+				if (response.operations.length) {
+					// TODO: This should also give feedback how many jobs are waiting to be processed (?)
+					processingElement.innerHTML = `${response.operations.length} active background jobs`;
+					processingElement.setAttribute('title', response.operations.map(op => op.label).join(', '));
 				} else {
-					video.classList.remove('processing');
-					video.removeAttribute('title', null);
+					processingElement.innerHTML = '';
+					processingElement.removeAttribute('title', null);
 				}
+
+				processing.lastUpdate = response.lastUpdate;
 			}
 		});
 }
+
+fetchProcessing();
+setInterval(fetchProcessing, 2000);
 
 document.querySelector('#filter_tree').addEventListener('input', event => {
     const query = event.target.value.trim();
@@ -52,11 +43,6 @@ document.querySelector('#filter_tree').addEventListener('input', event => {
         }
     }
 });
-
-if (window.location.pathname === '/') {
-	fetchProcessing();
-	setInterval(fetchProcessing, 2000);
-}
 
 document.addEventListener('change', event => {
 	const { target } = event;

@@ -203,7 +203,7 @@ pre.error {
     padding: 1rem;
     white-space: normal;
 }
-.processing { border: 1px solid orange; }
+.processing { color: orange; }
 .split {
     display: flex;
     flex-grow: 1;
