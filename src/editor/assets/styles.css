@@ -19,7 +19,7 @@ a {
     font-size: .8rem;
     padding: .2rem .4rem;
 }
-body, input, textarea { font-family: 'Roboto', sans-serif; }
+body, input, select, textarea { font-family: 'Roboto', sans-serif; }
 button, input { font-size: 1rem; }
 body {
     background-color: var(--bg-1);
@@ -204,6 +204,14 @@ pre.error {
     white-space: normal;
 }
 .processing { color: orange; }
+select {
+    background-color: var(--bg-2);
+    border: none;
+    border-radius: .2rem;
+    color: var(--fg-1);
+    font-size: 1rem;
+    padding: .3rem .6rem;
+}
 .split {
     display: flex;
     flex-grow: 1;
@@ -216,6 +224,18 @@ pre.error {
     width: 100%;
 }
 .updates { color: red; }
+.versions {
+    list-style: none;
+    padding-left: 0;
+}
+.versions li {}
+.versions li:not(:first-child) { margin-top: .5rem; }
+.versions .file_name { color: var(--fg-1); }
+.versions .metadata { color: var(--fg-3); }
+.versions .reasons {
+    color: var(--fg-1);
+    cursor: help;
+}
 .video {
     column-gap: .5rem;
     display: flex;

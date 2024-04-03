@@ -48,15 +48,15 @@ use crate::util::{
     supported_video_extension,
     validate_slug
 };
+#[derive(Deserialize)]
+pub struct DownsizeForm {
+    codec: String,
+    width: String
+}
 
 #[derive(Deserialize)]
 pub struct PosterUpdateForm {
     description: String
-}
-
-#[derive(Deserialize)]
-pub struct DownsizeForm {
-    width: String
 }
 
 pub enum VideoFormFeedback<'a> {
@@ -144,8 +144,12 @@ pub async fn downsize(
         None => return Either::Right(not_found(&context, &format!("Video {} not found.", &path.path)))
     };
 
+    // TODO: Safety validation of these maybe
+    let codec = &form.codec;
+    let width = &form.width;
+
     // TODO: Build programmatically in code instead of parsing from format string
-    let video_format_string = format!("video:h264:mp4:speed:1.0:{}", form.width);
+    let video_format_string = format!("video:{codec}:mp4:speed:1.0:{width}");
     let video_format = VideoFormat::parse(&video_format_string).unwrap();
 
     let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
@@ -166,8 +170,14 @@ fn downsize_form(video: &Video) -> String {
     let candidate_widths = [240, 480, 720, 1280, 1920];
     for width in candidate_widths {
         if width < widest_width {
+            let selected = if widest_width < 720 && width == 480 || width == 720 {
+                "selected"
+            } else {
+                ""
+            };
+
             let option = formatdoc!(r#"
-                <option value="{width}">{width} pixels wide</option>
+                <option {selected} value="{width}">{width} Pixels Wide</option>
             "#);
             options.push(option);
         }
@@ -186,7 +196,13 @@ fn downsize_form(video: &Video) -> String {
                 <select name="width">
                     {options}
                 </select>
-                <button>Request downsized version</button>
+                <select name="codec">
+                    <option value="h264">Default Codec</option>
+                    <option value="h264">H264</option>
+                    <option value="hevc">HEVC</option>
+                    <option value="vp9">VP9</option>
+                </select>
+                <button>Request Version</button>
             </div>
         </form>
     "#)
@@ -219,29 +235,38 @@ pub fn edit_page(
         let versions = video.versions
             .iter()
             .map(|version| {
-                let video_meta = match &version.video_meta {
+                let (browser_support, video_meta) = match &version.video_meta {
                     Some(video_meta) => {
                         let duration = precise_duration(video_meta.duration);
                         let height = video_meta.height;
                         let size = human_size(version.file_meta.size);
                         let width = video_meta.width;
 
-                        let browser_support = match video_meta.browser_support.analysis() {
-                            Some(Ok(message)) => format!("[Very likely playable in browsers: {message}]"),
-                            Some(Err(message)) => format!("[Unfit for browser playback: {message}]"),
-                            None => "[Might be incompatible with and not play in people's browsers]".to_string(),
+                        let (browser_support, reasons) = match video_meta.browser_support.analysis() {
+                            Some(Ok(message)) => ("Good browser support", message),
+                            Some(Err(message)) => ("Not supported for playback by browsers", message),
+                            None => ("Browser support unclear", String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
                         };
 
-                        format!("{width}×{height} {duration} {size} {browser_support}")
+                        (
+                            format!(r#"<div class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></div>"#),
+                            format!("{width}×{height} {duration} {size}")
+                        )
                     }
-                    None => String::from("Metadata pending")
+                    None => (
+                        String::new(),
+                        String::from("Metadata pending")
+                    )
                 };
 
                 let file_name = &version.file_name;
 
                 formatdoc!(r#"
                     <li>
-                        {file_name} ({video_meta})
+                        <div>
+                            <span class="file_name">{file_name}</span> <span class="metadata">{video_meta}</span>
+                        </div>
+                        {browser_support}
                     </li>
                 "#)
             })
@@ -253,7 +278,7 @@ pub fn edit_page(
         formatdoc!(r#"
             <h2>Video/Audio Versions</h2>
 
-            <ul>
+            <ul class="versions">
                 {versions}
             </ul>
 
