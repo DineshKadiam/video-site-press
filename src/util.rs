@@ -76,30 +76,6 @@ pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
-/// Based on data from https://meta.wikimedia.org/wiki/Template:List_of_language_names_ordered_by_code
-/// In the long(est) term might need better data, better implementation or updates, but for
-/// quite a while this could probably cover the vast majority of usecases in the wild.
-pub fn is_rtl_language(code: &str) -> bool {
-    match code {
-        "ar" |
-        "arc" |
-        "arz" |
-        "ckb" |
-        "dv" |
-        "fa" |
-        "ha" |
-        "he" |
-        "khw" |
-        "ks" |
-        "ps" |
-        "sd" |
-        "ur" |
-        "uz_AF" |
-        "yi" => true,
-        _ => false
-    }
-}
-
 /// Takes seconds, formats it like "0:13", "3:15", "2:06:48"
 pub fn precise_duration(seconds: f32) -> String {
     if seconds < 60.0 {

@@ -78,7 +78,7 @@ pub fn layout(
     "##);
 
     let lang_code = &site.language.code;
-    let dir_attribute = if site.language.rtl { r#"dir="rtl""# } else { "" };
+    let dir_attribute = if site.language.is_rtl() { r#"dir="rtl""# } else { "" };
 
     formatdoc!(r#"
         <!doctype html>
