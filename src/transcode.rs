@@ -220,11 +220,20 @@ pub fn encode(
                 Container::Mp4 => "mp4"
             };
 
-            let output_file = format!("{}.{extension}", nanoid());
+            let mut base_name = input_path.file_stem().unwrap().to_string_lossy().to_string();
+            base_name.push_str(&format!("_{width}_{}", codec.to_string()));
+
             // TODO: Eventually we should probably render to a temp dir and only move the finished file to the site_dir
             //       if the video and video dir at that later point in time stil exist. (and the job has not been cancelled,
             //       suppose we implement something like that too)
-            let output_path = context.site_dir.join(&video.path).join(&output_file);
+            let mut output_path = context.site_dir.join(&video.path).join(&base_name).with_extension(extension);
+
+            while output_path.exists() {
+                base_name.push_str("-duplicate");
+                output_path = context.site_dir.join(&video.path).join(&base_name).with_extension(extension);
+            }
+
+            let output_file = format!("{base_name}.{extension}");
 
             (output_file, output_path)
         }
