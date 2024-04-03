@@ -39,6 +39,8 @@ impl BrowserSupport {
     pub fn consider_video_codec_name(&mut self, codec_name: &str) {
         if codec_name == "h264" {
             self.supported.push("H264 video codec is generally supported in browsers".to_string());
+        } else if codec_name == "vp9" {
+            self.supported.push("VP9 video codec is generally supported in browsers".to_string());
         }
     }
 
