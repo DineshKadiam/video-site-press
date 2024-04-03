@@ -33,6 +33,26 @@ function fetchProcessing() {
 		});
 }
 
+document.querySelector('#filter_tree').addEventListener('input', event => {
+    const query = event.target.value.trim();
+
+    const regex = query.length ?
+    	new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') :
+    	null;
+
+    for (const entry of document.querySelectorAll('nav a')) {
+        if (
+        	regex === null ||
+        	regex.test(entry.querySelector('.title').innerHTML) ||
+        	regex.test(entry.querySelector('.path').innerHTML)
+        ) {
+            entry.style.display = null;
+        } else {
+        	entry.style.display = 'none';
+        }
+    }
+});
+
 if (window.location.pathname === '/') {
 	fetchProcessing();
 	setInterval(fetchProcessing, 2000);

@@ -278,7 +278,7 @@ pub fn layout(
     body: &str,
     title: &str
 ) -> String {
-    let (breadcrumbs, sidebar) = site_tree(path, site, &context.site_dir);
+    let (breadcrumbs, tree) = site_tree(path, site, &context.site_dir);
 
     // TODO: Possibly hash scripts/styles
     let head = formatdoc!(r#"
@@ -286,7 +286,7 @@ pub fn layout(
             <title>{title}</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link href="favicon.png" rel="icon" type="image/png">
+            <link href="/favicon.png" rel="icon" type="image/png">
             <!-- <link href="favicon_light.png" rel="icon" type="image/png" media="(prefers-color-scheme: light)"> -->
             <script defer src="/scripts.js"></script>
             <link rel="stylesheet" href="/styles.css">
@@ -305,7 +305,10 @@ pub fn layout(
                     <span class="system_info">Hyper 8 Video System {hyper8_version}</span>
                 </div>
                 <div class="split">
-                    {sidebar}
+                    <nav>
+                        <input id="filter_tree" placeholder="Filter" type="search">
+                        {tree}
+                    </nav>
                     <main>
                         <div class="breadcrumbs">
                             {breadcrumbs}
@@ -434,9 +437,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
     let breadcrumbs = breadcrumbs.join(" › ");
 
     let sidebar = formatdoc!(r#"
-        <nav>
             {site_content}
-        </nav>
     "#);
 
     (breadcrumbs, sidebar)

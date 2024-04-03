@@ -117,13 +117,16 @@ button:hover {
     animation: .5s ease 2s forwards hide;
 }
 @keyframes hide { to { opacity: 0; } }
+#filter_tree {
+    margin: .5rem;
+    width: calc(100% - 1rem);
+}
 footer {
     bottom: 1rem;
     color: var(--c-bg-mg);
     position: fixed;
     right: 1rem;
 }
-.filter { margin: 1rem 0; }
 .form_field {
     display: flex;
     flex-direction: column;
