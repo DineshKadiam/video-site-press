@@ -20,23 +20,23 @@ pub enum ThemeKind {
 /// is bright, and the other way round in bright color schemes.
 #[derive(Clone, Debug)]
 pub struct ThemeVars {
-	pub color_accent: String,
+	pub accent: String,
 	/// Background 1 (furthest away/bottom layer)
-	pub color_bg_1: String,
+	pub bg_1: String,
 	/// Background 2 (further away)
-	pub color_bg_2: String,
+	pub bg_2: String,
 	/// Background 3 (far away)
-	pub color_bg_3: String,
+	pub bg_3: String,
 	/// Between background and middleground
-	pub color_bg_mg: String,
+	pub bg_mg: String,
 	/// Foreground 1 (closest/top layer)
-	pub color_fg_1: String,
+	pub fg_1: String,
 	/// Foreground 2 (closer)
-	pub color_fg_2: String,
+	pub fg_2: String,
 	/// Foreground 3 (close)
-	pub color_fg_3: String,
+	pub fg_3: String,
 	/// Middleground  (in between)
-	pub color_mg: String
+	pub mg: String
 }
 
 impl Theme {
@@ -83,53 +83,53 @@ impl Default for Theme {
 impl ThemeVars {
     pub fn dark() -> ThemeVars {
         ThemeVars {
-			color_accent: String::from("#fbdf46"),
-			color_bg_1: String::from("#161616"),
-			color_bg_2: String::from("#262626"),
-			color_bg_3: String::from("#333"),
-			color_bg_mg: String::from("#444"),
-			color_fg_1: String::from("#fff"),
-			color_fg_2: String::from("#c9c9c9"),
-			color_fg_3: String::from("#b2b2b2"),
-			color_mg: String::from("#888")
+			accent: String::from("#fbdf46"),
+			bg_1: String::from("#161616"),
+			bg_2: String::from("#262626"),
+			bg_3: String::from("#333"),
+			bg_mg: String::from("#444"),
+			fg_1: String::from("#fff"),
+			fg_2: String::from("#c9c9c9"),
+			fg_3: String::from("#b2b2b2"),
+			mg: String::from("#888")
 		}
     }
 
     pub fn light() -> ThemeVars {
         ThemeVars {
-			color_accent: String::from("#9f2e02"),
-			color_bg_1: String::from("#fff"),
-			color_bg_2: String::from("#eee"),
-			color_bg_3: String::from("#ddd"),
-			color_bg_mg: String::from("#ccc"),
-			color_fg_1: String::from("#000"),
-			color_fg_2: String::from("#272727"),
-			color_fg_3: String::from("#444"),
-			color_mg: String::from("#888")
+			accent: String::from("#9f2e02"),
+			bg_1: String::from("#fff"),
+			bg_2: String::from("#eee"),
+			bg_3: String::from("#ddd"),
+			bg_mg: String::from("#ccc"),
+			fg_1: String::from("#000"),
+			fg_2: String::from("#272727"),
+			fg_3: String::from("#444"),
+			mg: String::from("#888")
 		}
     }
 
     pub fn print(&self) -> String {
-    	let color_accent = &self.color_accent;
-	    let color_bg_1 = &self.color_bg_1;
-	    let color_bg_2 = &self.color_bg_2;
-	    let color_bg_3 = &self.color_bg_3;
-	    let color_bg_mg = &self.color_bg_mg;
-	    let color_fg_1 = &self.color_fg_1;
-	    let color_fg_2 = &self.color_fg_2;
-	    let color_fg_3 = &self.color_fg_3;
-	    let color_mg = &self.color_mg;
+    	let accent = &self.accent;
+	    let bg_1 = &self.bg_1;
+	    let bg_2 = &self.bg_2;
+	    let bg_3 = &self.bg_3;
+	    let bg_mg = &self.bg_mg;
+	    let fg_1 = &self.fg_1;
+	    let fg_2 = &self.fg_2;
+	    let fg_3 = &self.fg_3;
+	    let mg = &self.mg;
 
 	    formatdoc!(r#"
-            --c-accent: {color_accent};
-            --c-bg-1: {color_bg_1};
-            --c-bg-2: {color_bg_2};
-            --c-bg-3: {color_bg_3};
-            --c-bg-mg: {color_bg_mg};
-            --c-fg-1: {color_fg_1};
-            --c-fg-2: {color_fg_2};
-            --c-fg-3: {color_fg_3};
-            --c-mg: {color_mg};
+            --accent: {accent};
+            --bg-1: {bg_1};
+            --bg-2: {bg_2};
+            --bg-3: {bg_3};
+            --bg-mg: {bg_mg};
+            --fg-1: {fg_1};
+            --fg-2: {fg_2};
+            --fg-3: {fg_3};
+            --mg: {mg};
 	    "#)
     }
 }

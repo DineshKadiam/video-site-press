@@ -9,21 +9,21 @@
     --error: #ffa500;
 }
 a {
-    color: var(--c-fg-1);
+    color: var(--fg-1);
     text-decoration: none;
 }
 .badge {
-    background-color: var(--c-fg-1);
+    background-color: var(--fg-1);
     border-radius: .2rem;
-    color: var(--c-bg-1);
+    color: var(--bg-1);
     font-size: .8rem;
     padding: .2rem .4rem;
 }
 body, input, textarea { font-family: 'Roboto', sans-serif; }
 button, input { font-size: 1rem; }
 body {
-    background-color: var(--c-bg-1);
-    color: var(--c-fg-2);
+    background-color: var(--bg-1);
+    color: var(--fg-2);
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -45,10 +45,10 @@ body {
 .breadcrumbs a:first-child { margin-left: -0.6rem; }
 .breadcrumbs a:focus-visible,
 .breadcrumbs a:hover {
-    background-color: var(--c-bg-2);
+    background-color: var(--bg-2);
 }
 .breadcrumbs a svg {
-    fill: var(--c-fg-3);
+    fill: var(--fg-3);
     height: 1.5rem;
     width: 1.5rem;
 }
@@ -56,9 +56,9 @@ button { cursor: pointer; }
 button,
 .button {
     align-items: center;
-    background-color: var(--c-fg-2);
+    background-color: var(--fg-2);
     border: 0;
-    color: var(--c-bg-1);
+    color: var(--bg-1);
     border-radius: .15rem;
     display: flex;
     padding: .3rem .9rem;
@@ -67,17 +67,17 @@ button,
     display: block;
 }
 button {
-    background-color: var(--c-bg-2);
+    background-color: var(--bg-2);
     border-radius: .15rem;
     border-radius: .2rem;
     border: none;
-    color: var(--c-fg-1);
+    color: var(--fg-1);
     display: flex;
     padding: .3rem 1.1rem;
 }
 button:focus-visible,
 button:hover {
-    background-color: var(--c-bg-3);
+    background-color: var(--bg-3);
     outline: none;
 }
 .button_group {
@@ -86,7 +86,7 @@ button:hover {
     margin: 1rem 0;
 }
 .collection_title {
-    color: var(--c-bg-1);
+    color: var(--bg-1);
     font-size: 1.17rem;
 }
 .controls {
@@ -123,7 +123,7 @@ button:hover {
 }
 footer {
     bottom: 1rem;
-    color: var(--c-bg-mg);
+    color: var(--bg-mg);
     position: fixed;
     right: 1rem;
 }
@@ -136,7 +136,7 @@ footer {
 }
 .form_group { margin-top: 4rem; }
 header {
-    background-color: var(--c-fg-2);
+    background-color: var(--fg-2);
     display: flex;
     justify-content: space-between;
     padding: 1rem;
@@ -150,11 +150,11 @@ h2 {
     font-weight: 400;
 }
 input, textarea {
-    background-color: var(--c-bg-1);
-    border: 1px solid var(--c-mg);
+    background-color: var(--bg-1);
+    border: 1px solid var(--mg);
     border-radius: .2rem;
     box-sizing: border-box;
-    color: var(--c-fg-2);
+    color: var(--fg-2);
     padding: .3rem;
 }
 input[type="file"] { display: none; }
@@ -162,8 +162,8 @@ main {
     padding: 3rem;
     max-width: 32rem;
 }
-.muted { color: var(--c-bg-mg); }
-nav { background-color: var(--c-bg-2); }
+.muted { color: var(--bg-mg); }
+nav { background-color: var(--bg-2); }
 nav ul {
     list-style: none;
     margin: 0;
@@ -179,7 +179,7 @@ nav a {
     white-space: nowrap;
 }
 nav a .path {
-    color: var(--c-fg-3);
+    color: var(--fg-3);
     direction: rtl;
     font-size: .8rem;
     overflow-x: hidden;
@@ -187,11 +187,11 @@ nav a .path {
 }
 nav a .title { font-size: .9rem; }
 nav a svg {
-    fill: var(--c-fg-3);
+    fill: var(--fg-3);
     height: 1.3rem;
     width: 1.3rem;
 }
-nav a.active { background-color: var(--c-bg-1); }
+nav a.active { background-color: var(--bg-1); }
 nav .labels {
     display: flex;
     flex-direction: column;
@@ -210,7 +210,7 @@ pre.error {
 }
 .thumbnail {
     aspect-ratio: 1.78;
-    background-color: var(--c-bg-3);
+    background-color: var(--bg-3);
     object-fit: contain;
     object-fit: contain;
     width: 100%;
