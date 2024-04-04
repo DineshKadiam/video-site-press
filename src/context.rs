@@ -112,7 +112,7 @@ impl Context {
         }
     }
 
-    pub fn convert_to_collection(&self) {
+    pub fn convert_to_collection(&self) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
         if let SiteContent::Empty = &site_mut.content {
@@ -146,9 +146,44 @@ impl Context {
             collection.write_manifest(self);
             site_mut.content = SiteContent::Collection(collection);
             self.replace_site(site_mut);
-        } else if let SiteContent::Video(_) = &site_mut.content {
-            todo!();
-        } 
+        } else if let SiteContent::Video(video) = &site_mut.content {
+            let slug = match &video.title {
+                Some(title) => slugify(title),
+                None => match video.highest_resolution_version() {
+                    Some(version) => {
+                        Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
+                    }
+                    None => String::from("video")
+                }
+            };
+
+            let video_dir = self.site_dir.join(&slug);
+            fs::create_dir(&video_dir).unwrap();
+
+            if let Ok(dir_entries) = self.site_dir.read_dir() {
+                for dir_entry_result in dir_entries {
+                    if let Ok(dir_entry) = dir_entry_result {
+                        // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
+                        if dir_entry.file_name().to_string_lossy().starts_with('.') ||
+                            dir_entry.path() == video_dir {
+                            continue;
+                        }
+
+                        let relocation_target_in_video_dir = video_dir.join(dir_entry.file_name());
+                        fs::rename(dir_entry.path(), &relocation_target_in_video_dir).unwrap();
+                    }
+                }
+            }
+
+            let hyper_dir = HyperDir::read(&self.site_dir);
+            let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+
+            collection.write_manifest(self);
+            site_mut.content = SiteContent::Collection(collection);
+            self.replace_site(site_mut);
+        }
+
+        Ok(())
     }
 
     // TODO: Implement this functionality at deeper levels as well, e.g. a
@@ -189,8 +224,41 @@ impl Context {
             playlist.write_manifest(&self.site_dir);
             site_mut.content = SiteContent::Playlist(playlist);
             self.replace_site(site_mut);
-        } else if let SiteContent::Video(_) = &site_mut.content {
-            todo!();
+        } else if let SiteContent::Video(video) = &site_mut.content {
+            let slug = match &video.title {
+                Some(title) => slugify(title),
+                None => match video.highest_resolution_version() {
+                    Some(version) => {
+                        Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
+                    }
+                    None => String::from("video")
+                }
+            };
+
+            let video_dir = self.site_dir.join(&slug);
+            fs::create_dir(&video_dir).unwrap();
+
+            if let Ok(dir_entries) = self.site_dir.read_dir() {
+                for dir_entry_result in dir_entries {
+                    if let Ok(dir_entry) = dir_entry_result {
+                        // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
+                        if dir_entry.file_name().to_string_lossy().starts_with('.') ||
+                            dir_entry.path() == video_dir {
+                            continue;
+                        }
+
+                        let relocation_target_in_video_dir = video_dir.join(dir_entry.file_name());
+                        fs::rename(dir_entry.path(), &relocation_target_in_video_dir).unwrap();
+                    }
+                }
+            }
+
+            let hyper_dir = HyperDir::read(&self.site_dir);
+            let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+
+            playlist.write_manifest(&self.site_dir);
+            site_mut.content = SiteContent::Playlist(playlist);
+            self.replace_site(site_mut);
         } 
 
         Ok(())
@@ -205,8 +273,71 @@ impl Context {
             video.write_manifest(self);
             site_mut.content = SiteContent::Video(video);
             self.replace_site(site_mut);
-        } else if let SiteContent::Collection(_collection) = &site_mut.content {
-            todo!();
+        } else if let SiteContent::Collection(collection) = &site_mut.content {
+            if !collection.playlists.is_empty() {
+                return Err("A collection containing (a) playlist(s) can not be converted to a single video".to_string());
+            } else if !collection.subcollections.is_empty() {
+                return Err("A collection containing (a) subcollection(s) can not be converted to a single video".to_string());
+            } else if collection.videos.len() > 2 {
+                return Err("A collection containing two or more videos can not be converted to a single video".to_string());
+            }
+
+            let manifest_path = self.site_dir.join("collection.eno");
+            let _ = fs::remove_file(&manifest_path);
+
+            // If a (single) video dir exists in the collection, move every file/dir in it into the root,
+            // then delete it.
+            if let Some(video) = collection.videos.first() {
+                let temp_dir = self.site_dir.join(nanoid());
+
+                // Rename the video directory to unique temporary name, so we can copy
+                // files/folders within without any possible name collisions with the
+                // video directory name itself.
+                fs::rename(self.site_dir.join(&video.path), &temp_dir).unwrap();
+
+                if let Ok(dir_entries) = temp_dir.read_dir() {
+                    for dir_entry_result in dir_entries {
+                        if let Ok(dir_entry) = dir_entry_result {
+                            let relocation_target_in_parent = self.site_dir.join(dir_entry.file_name());
+
+                            // If a file/dir with the same name exists in the parent directory, we delete the
+                            // one in the parent directory.
+                            if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
+                                if metadata.file_type().is_dir() {
+                                    fs::remove_dir_all(&relocation_target_in_parent).unwrap();
+                                } else {
+                                    fs::remove_file(&relocation_target_in_parent).unwrap();
+                                }
+                            }
+
+                            fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                        }
+                    }
+                }
+
+                let _ = fs::remove_dir_all(&temp_dir);
+            }
+
+            let hyper_dir = HyperDir::read(&self.site_dir);
+            let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
+
+            if collection.videos.is_empty() {
+                // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                    if let Some(description) = &collection.description {
+                        video.description = Some(description.clone());
+                    }
+                    if let Some(title) = &collection.title {
+                        video.title = Some(title.clone());
+                    }
+                };
+
+            }
+
+            video.write_manifest(self);
+
+            site_mut.content = SiteContent::Video(video);
+            self.replace_site(site_mut);
         } else if let SiteContent::Playlist(playlist) = &site_mut.content {
             if playlist.videos.len() > 1 {
                 return Err("A playlist containing two or more videos can not be converted to a single video".to_string());

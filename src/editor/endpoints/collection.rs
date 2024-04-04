@@ -286,7 +286,7 @@ pub fn edit_page(
         )
     };
 
-    let convert_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
+    let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
         formatdoc!(r#"
             <p>
                 This collection contains no playlists or subcollections and can therefore
@@ -295,6 +295,27 @@ pub fn edit_page(
 
             <form action="/convert/playlist" method="post">
                 <button>Convert collection to playlist</button>
+            </form>
+        "#)
+    } else {
+        String::new()
+    };
+
+    let convert_to_video_form = if
+        collection.playlists.is_empty() &&
+        collection.subcollections.is_empty() &&
+        collection.videos.len() < 2 {
+        let message = if collection.videos.is_empty() {
+            "This collection contains nothing can therefore seamlessly be converted to a video."
+        } else {
+            "This collection contains nothing can therefore seamlessly be converted to a video."
+        };
+
+        formatdoc!(r#"
+            <p>{message}</p>
+
+            <form action="/convert/video" method="post">
+                <button>Convert collection to video</button>
             </form>
         "#)
     } else {
@@ -354,7 +375,9 @@ pub fn edit_page(
 
             {slug_form}
 
-            {convert_form}
+            {convert_to_playlist_form}
+
+            {convert_to_video_form}
 
             <p>
                 Deleting the collection removes the collection manifest, all videos,

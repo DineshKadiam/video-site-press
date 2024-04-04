@@ -244,23 +244,15 @@ pub fn edit_page(
         </form>
     "#);
 
-    let convert_to_video_form = if playlist.videos.is_empty() {
-        formatdoc!(r#"
-            <p>
-                This playlist is empty and can be seamlessly converted to a video.
-            </p>
+    let convert_to_video_form = if playlist.videos.len() < 2 {
+        let message = if playlist.videos.is_empty() {
+            "This playlist is empty and can be seamlessly converted to a video."
+        } else {
+            "This playlist contains a single video and can be converted to just a video, note however that playlist data will be removed or overwritten with data from the video where necessary."
+        };
 
-            <form action="/convert/video" method="post">
-                <button>Convert playlist to video</button>
-            </form>
-        "#)
-    } else if playlist.videos.len() == 1 {
         formatdoc!(r#"
-            <p>
-                This playlist contains a single video and can be converted to just a video,
-                note however that playlist data will be removed or overwritten
-                with data from the video where necessary.
-            </p>
+            <p>{message}</p>
 
             <form action="/convert/video" method="post">
                 <button>Convert playlist to video</button>

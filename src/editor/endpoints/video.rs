@@ -413,6 +413,26 @@ pub fn edit_page(
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, "Upload New Version");
 
+    // TODO: This shows also on non-root/non-site videos (?) but that's not implemented
+    //       yet at all? (So therefore this needs to be implemented)
+    let convert_form = formatdoc!(r#"
+        <p>
+            A video can seamlessly be converted to a video in a collection.
+        </p>
+
+        <form action="/convert/collection" method="post">
+            <button>Convert video to a video in a collection</button>
+        </form>
+
+        <p>
+            A video can seamlessly be converted to a video in a playlist.
+        </p>
+
+        <form action="/convert/playlist" method="post">
+            <button>Convert video to a video in a playlist</button>
+        </form>
+    "#);
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -448,6 +468,8 @@ pub fn edit_page(
             <h2>Danger Zone</h2>
 
             {slug_form}
+
+            {convert_form}
 
             <p>
                 Deleting the video removes the video manifest, poster image,

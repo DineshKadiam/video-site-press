@@ -139,8 +139,8 @@ fn edit_page(
         (
             &theme.key,
             form_field(base_url, "base_url", "Base URL (e.g. https://example.com)"),
-            form_field(language, "language", "Language (e.g. en, de, ...)"),
-            form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778, ..."),
+            form_field(language, "language", "Language (e.g. en, fr)"),
+            form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)"),
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
@@ -157,8 +157,8 @@ fn edit_page(
         (
             &site.theme.key,
             form_field(&Field::valid(site.base_url.as_ref().map(|url| url.as_str()).unwrap_or("")), "base_url", "Base URL (e.g. https://example.com)"),
-            form_field(&Field::valid(language), "language", "Language (e.g. en, de, ...)"),
-            form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778, ..."),
+            form_field(&Field::valid(language), "language", "Language (e.g. en, fr)"),
+            form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)"),
             ""
         )
     };
