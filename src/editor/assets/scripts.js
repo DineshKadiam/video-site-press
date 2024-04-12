@@ -44,6 +44,12 @@ document.querySelector('#filter_tree').addEventListener('input', event => {
     }
 });
 
+document.querySelector('#filter_tree').addEventListener('keydown', event => {
+	if (event.key === 'Escape') {
+		document.querySelector('#filter_tree').value = '';
+	}
+});
+
 document.addEventListener('change', event => {
 	const { target } = event;
 
