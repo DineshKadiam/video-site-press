@@ -40,7 +40,7 @@ fn compute_representations(versions: &[VideoFile]) -> Vec<VideoRepresentation> {
 pub fn copy_link(site: &Site, path: &str) -> String {
     let data_url = match &site.base_url {
         Some(base_url) => {
-            let url = base_url.join(path).unwrap().to_string();
+            let url = base_url.value.join(path).unwrap().to_string();
             format!(r#"data-url="{url}""#)
         }
         None => String::new()

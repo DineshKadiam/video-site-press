@@ -40,7 +40,7 @@ use language::Language;
 use playlist::Playlist;
 use poster::{PosterAsset, PosterAssets, PosterFile};
 use processing::{Job, JobKind, Processing};
-use site::{AspectRatio, Site, SiteContent};
+use site::{AspectRatio, BaseUrl, Site, SiteContent};
 use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};
 use util::Field;

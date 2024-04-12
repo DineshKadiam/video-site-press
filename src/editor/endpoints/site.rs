@@ -4,10 +4,10 @@ use actix_web::HttpResponse;
 use actix_web::web::{Data, Either, Form, Redirect};
 use indoc::formatdoc;
 use serde_derive::Deserialize;
-use url::Url;
 
 use crate::{
     AspectRatio,
+    BaseUrl,
     Context,
     Field,
     Language,
@@ -18,9 +18,19 @@ use crate::{
 use crate::editor::endpoints;
 use crate::editor::widgets::form_field;
 
+const LABEL_BASE_URL: &str = "Base URL (e.g. https://example.com)";
+const LABEL_DEPLOYMENT_PATH: &str = "Deployment Path (e.g. /data/web/customer123/html";
+const LABEL_DEPLOYMENT_SERVER: &str = "Deployment Server (e.g. https://ssh-customer123.example.com)";
+const LABEL_DEPLOYMENT_USER: &str = "Deployment User (e.g. customer123)";
+const LABEL_LANGUAGE: &str = "Language (e.g. en, fr)";
+const LABEL_POSTER_ASPECT: &str = "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)";
+
 #[derive(Deserialize)]
 pub struct SiteForm {
     base_url: String,
+    deployment_path: String,
+    deployment_server: String,
+    deployment_user: String,
     language: String,
     poster_aspect: String,
     theme: String
@@ -28,6 +38,9 @@ pub struct SiteForm {
 
 pub struct SiteFormFeedback {
     pub base_url: Field,
+    pub deployment_path: Field,
+    pub deployment_server: Field,
+    pub deployment_user: Field,
     pub language: Field,
     pub poster_aspect: Field,
     pub theme: Theme
@@ -129,18 +142,35 @@ fn edit_page(
     //     <button>Update formats</button>
     // </form>
 
+    // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
+    //       that give very clear indication about what base url, deployment path/server/user etc. are and
+    //       what to pay attention to.
     let (
         theme_key,
         input_base_url,
+        input_deployment_path,
+        input_deployment_server,
+        input_deployment_user,
         input_language,
         input_poster_aspect,
         feedback
-    ) = if let Some(SiteFormFeedback { base_url, language, poster_aspect, theme }) = &form_feedback {
+    ) = if let Some(SiteFormFeedback {
+        base_url,
+        deployment_path,
+        deployment_server,
+        deployment_user,
+        language,
+        poster_aspect,
+        theme
+    }) = &form_feedback {
         (
             &theme.key,
-            form_field(base_url, "base_url", "Base URL (e.g. https://example.com)"),
-            form_field(language, "language", "Language (e.g. en, fr)"),
-            form_field(poster_aspect, "poster_aspect", "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)"),
+            form_field(base_url, "base_url", LABEL_BASE_URL),
+            form_field(deployment_path, "deployment_path", LABEL_DEPLOYMENT_PATH),
+            form_field(deployment_server, "deployment_server", LABEL_DEPLOYMENT_SERVER),
+            form_field(deployment_user, "deployment_user", LABEL_DEPLOYMENT_USER),
+            form_field(language, "language", LABEL_LANGUAGE),
+            form_field(poster_aspect, "poster_aspect", LABEL_POSTER_ASPECT),
             r#"<span class="feedback">Not Saved</span>"#
         )
     } else {
@@ -156,9 +186,12 @@ fn edit_page(
 
         (
             &site.theme.key,
-            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.as_str()).unwrap_or("")), "base_url", "Base URL (e.g. https://example.com)"),
-            form_field(&Field::valid(language), "language", "Language (e.g. en, fr)"),
-            form_field(&Field::valid(poster_aspect), "poster_aspect", "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)"),
+            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.representation.as_str()).unwrap_or("")), "base_url", LABEL_BASE_URL),
+            form_field(&Field::valid(site.deploy_config.path.as_ref().map(|path| path.as_str()).unwrap_or("")), "deployment_path", LABEL_DEPLOYMENT_PATH),
+            form_field(&Field::valid(site.deploy_config.server.as_ref().map(|server| server.as_str()).unwrap_or("")), "deployment_server", LABEL_DEPLOYMENT_SERVER),
+            form_field(&Field::valid(site.deploy_config.user.as_ref().map(|user| user.as_str()).unwrap_or("")), "deployment_user", LABEL_DEPLOYMENT_USER),
+            form_field(&Field::valid(language), "language", LABEL_LANGUAGE),
+            form_field(&Field::valid(poster_aspect), "poster_aspect", LABEL_POSTER_ASPECT),
             ""
         )
     };
@@ -184,6 +217,9 @@ fn edit_page(
             
             <form action="/site" method="post">
                 {input_base_url}
+                {input_deployment_path}
+                {input_deployment_server}
+                {input_deployment_user}
                 {input_poster_aspect}
                 {input_language}
                 <div class="form_field">
@@ -239,6 +275,9 @@ pub async fn update(
     form: Form<SiteForm>
 ) -> Either<Redirect, HttpResponse> {
     let base_url_trimmed = form.base_url.trim();
+    let deployment_path_trimmed = form.deployment_path.trim();
+    let deployment_server_trimmed = form.deployment_server.trim();
+    let deployment_user_trimmed = form.deployment_user.trim();
     let language_trimmed = form.language.trim();
     let poster_aspect_trimmed = form.poster_aspect.trim();
     let theme = match Theme::from_key(&form.theme) {
@@ -249,7 +288,7 @@ pub async fn update(
     let base_url = if base_url_trimmed.is_empty() {
         None
     } else {
-        Some(Url::parse(base_url_trimmed))
+        Some(BaseUrl::parse(&base_url_trimmed))
     };
 
     let poster_aspect = if poster_aspect_trimmed.is_empty() {
@@ -264,6 +303,9 @@ pub async fn update(
 
         let site_form_feedback = SiteFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()))),
+            deployment_path: Field::valid(deployment_path_trimmed),
+            deployment_server: Field::valid(deployment_server_trimmed),
+            deployment_user: Field::valid(deployment_user_trimmed),
             language: Field::valid(language_trimmed),
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
             theme
@@ -288,6 +330,24 @@ pub async fn update(
 
         Either::Right(http_response)
     } else {
+        let deployment_path = if deployment_path_trimmed.is_empty() {
+            None
+        } else {
+            Some(deployment_path_trimmed.to_string())
+        };
+
+        let deployment_server = if deployment_server_trimmed.is_empty() {
+            None
+        } else {
+            Some(deployment_server_trimmed.to_string())
+        };
+
+        let deployment_user = if deployment_user_trimmed.is_empty() {
+            None
+        } else {
+            Some(deployment_user_trimmed.to_string())
+        };
+
         let language = if language_trimmed.is_empty() {
             Language::default()
         } else {
@@ -296,6 +356,9 @@ pub async fn update(
 
         let mutation = |site_mut: &mut Site| {
             site_mut.base_url = base_url.map(|base_url| base_url.unwrap());
+            site_mut.deploy_config.path = deployment_path;
+            site_mut.deploy_config.server = deployment_server;
+            site_mut.deploy_config.user = deployment_user;
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
             site_mut.theme = theme;

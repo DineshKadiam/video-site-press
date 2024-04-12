@@ -297,10 +297,17 @@ pub fn layout(
 
     let body = formatdoc!(r#"
             <body>
+    let deploy_button = match site.deploy_config.complete() {
+        true => r#"<form action="/deploy" method="post"><button>Deploy</button></form>"#,
+        // TODO: Instead of disabled link, offer "Configure Deployment" link
+        // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
+        false => r#"<button disabled title="Deploy configuration is missing required fields">Deploy*</button>"#
+    };
+
                 <div class="controls">
                     <div class="buttons">
                         <form action="/build" method="post" target="_blank"><button>Preview</button></form>
-                        <form action="/deploy" method="post"><button>Deploy</button></form>
+                        {deploy_button}
                     </div>
                     <span class="system_info">Hyper 8 Video System {hyper8_version}</span>
                     <span class="processing"></span>

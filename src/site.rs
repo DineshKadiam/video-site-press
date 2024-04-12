@@ -25,10 +25,29 @@ pub enum AspectRatio {
     Default
 }
 
+/// Base url can be user-provided with or without trailing slash
+/// ("https://example.com/subdir" "https://example.com/subdir/"), but for
+/// further url construction through the url crate the trailing slash is
+/// significant (https://docs.rs/url/latest/url/struct.Url.html#method.join),
+/// hence we store both representation and a working copy of the parsed url.
+#[derive(Clone, Debug)]
+pub struct BaseUrl {
+    pub representation: String,
+    pub value: Url
+}
+
+#[derive(Clone, Debug)]
+pub struct DeployConfig {
+    pub path: Option<String>,
+    pub server: Option<String>,
+    pub user: Option<String>
+}
+
 #[derive(Clone, Debug)]
 pub struct Site {
-    pub base_url: Option<Url>,
+    pub base_url: Option<BaseUrl>,
     pub content: SiteContent,
+    pub deploy_config: DeployConfig,
     pub errors: Vec<String>,
     pub language: Language,
     pub poster_aspect: AspectRatio,
@@ -79,6 +98,41 @@ impl AspectRatio {
     }
 }
 
+impl BaseUrl {
+    /// Delegates parsing to the url crate but beforehand ensures a trailing
+    /// slash so further url construction is performed correctly.
+    pub fn parse(url: &str) -> Result<BaseUrl, String> {
+        let parsed_url = match url.ends_with('/') {
+            true => Url::parse(url),
+            false => Url::parse(&format!("{url}/"))
+        };
+
+        match parsed_url {
+            Ok(value) => {
+                Ok(BaseUrl {
+                    representation: url.to_owned(),
+                    value
+                })
+            }
+            Err(err) => Err(err.to_string())
+        }
+    }
+}
+
+impl DeployConfig {
+    pub fn complete(&self) -> bool {
+        self.path.is_some() && self.server.is_some() && self.user.is_some()
+    }
+
+    pub fn new() -> DeployConfig {
+        DeployConfig {
+            path: None,
+            server: None,
+            user: None
+        }
+    }
+}
+
 impl Site {
     fn apply_manifest(&mut self, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
@@ -94,12 +148,39 @@ impl Site {
         match document.optional_field("base_url") {
             Ok(Some(field)) => {
                 match field.required_value::<String>() {
-                    Ok(value) => match Url::parse(&value) {
+                    Ok(value) => match BaseUrl::parse(&value) {
                         Ok(url) => self.base_url = Some(url),
                         Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), field.line_number(), err))
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_field("deploy_config") {
+            Ok(Some(field)) => match field.attributes() {
+                Ok(attributes) => {
+                    for attribute in attributes {
+                        match attribute.key() {
+                            "path" => match attribute.required_value::<String>() {
+                                Ok(path) => self.deploy_config.path = Some(path),
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err.message))
+                            }
+                            "server" => match attribute.required_value::<String>() {
+                                Ok(server) => self.deploy_config.server = Some(server),
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err.message))
+                            }
+                            "user" => match attribute.required_value::<String>() {
+                                Ok(user) => self.deploy_config.user = Some(user),
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err.message))
+                            }
+                            _ => self.errors.push(format!("Ignoring unsupported attribute '{}' in {}:{}", attribute.key(), manifest_path.display(), attribute.line_number()))
+                        }
+                    }
+                }
+                Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
             _ => ()
@@ -232,6 +313,7 @@ impl Site {
         Site {
             base_url: None,
             content: SiteContent::Empty,
+            deploy_config: DeployConfig::new(),
             errors: Vec::new(),
             language: Language::default(),
             poster_aspect: AspectRatio::Default,
@@ -296,7 +378,24 @@ impl Site {
         let mut eno = String::new();
 
         if let Some(base_url) = &self.base_url {
-            eno.push_str(&format!("base_url: {}\n", base_url));
+            eno.push_str(&format!("base_url: {}\n", base_url.representation));
+        }
+
+        if self.deploy_config.server.is_some() ||
+            self.deploy_config.user.is_some() {
+            eno.push_str("deploy_config:\n");
+
+            if let Some(path) = &self.deploy_config.path {
+                eno.push_str(&format!("path = {}\n", path));
+            }
+
+            if let Some(server) = &self.deploy_config.server {
+                eno.push_str(&format!("server = {}\n", server));
+            }
+
+            if let Some(user) = &self.deploy_config.user {
+                eno.push_str(&format!("user = {}\n", user));
+            }
         }
 
         if !self.language.default {
