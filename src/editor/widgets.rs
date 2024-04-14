@@ -21,6 +21,18 @@ const ICON_COLLECTION: &'static str = r#"
 </svg>
 "#;
 
+const ICON_EXTERNAL: &'static str = r#"
+<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="m55.258 55.088v-21.334h-6.2832v15.074h-33.691v-33.697h15.066v-6.2832h-21.35v46.266zm0-46.24h-20.184v6.2832h9.6582l-19.932 19.932 4.4434 4.4453 19.73-19.73v9.2793h6.2832z"/>
+</svg>
+"#;
+
+const ICON_LOGO: &'static str = r#"
+<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="m32 2.1322c-0.94981 3.54e-5 -1.8871 0.11116-2.801 0.31056-14.116 1.3254-25.371 12.566-26.735 26.679-0.4247 1.9008-0.4247 3.8723 0 5.7731 1.3655 14.126 12.639 25.372 26.772 26.681 1.8217 0.38869 3.7069 0.38873 5.5285 0 14.133-1.3097 25.406-12.555 26.771-26.681 0.4247-1.9008 0.4247-3.8723 0-5.7731-1.3643-14.114-12.619-25.354-26.735-26.679-0.91412-0.19938-1.851-0.31064-2.801-0.31056zm0 2.6465c2.7864-2.461e-4 5.4576 1.1067 7.4279 3.0771 4.1132 4.1128 4.1132 10.741 0 14.854l-7.4279 7.4264-7.4264-7.4264c-4.1132-4.1128-4.1132-10.741 0-14.854 1.97-1.97 4.6404-3.077 7.4264-3.0771zm-9.6138 1.5348c-4.8054 5.147-4.702 13.252 0.31506 18.269l7.4264 7.4264-7.4264 7.4264c-5.0171 5.0166-5.1205 13.122-0.31506 18.269-7.419-2.7784-13.317-8.6618-16.086-16.091 2.8443 2.6588 6.5904 3.8211 10.223 3.4776 0.22268-0.95843 0.5352-1.8994 0.93618-2.81-3.359 0.7149-6.9943-0.2281-9.6123-2.846-4.1127-4.1127-4.1127-10.74 0-14.853 2.0564-2.0564 4.7412-3.0846 7.4264-3.0846 0.73327 0 1.4653 0.0852 2.1859 0.23854-0.40097-0.91065-0.71349-1.8516-0.93618-2.81-0.41549-0.03928-0.83271-0.06001-1.2497-0.06001-3.2286 0-6.4544 1.1806-8.9732 3.5347 2.7699-7.4278 8.6672-13.31 16.086-16.087zm19.228 0c7.4189 2.7782 13.316 8.6607 16.086 16.089-2.5189-2.3547-5.7457-3.5362-8.9747-3.5362-0.41656 0-0.83321 0.02082-1.2482 0.06001-0.22261 0.95812-0.53686 1.8982-0.93768 2.8085 0.72036-0.15334 1.4526-0.23704 2.1859-0.23704 2.6852 0 5.37 1.0282 7.4264 3.0846 4.1127 4.1128 4.1127 10.74 0 14.853-2.6177 2.6176-6.2526 3.5619-9.6108 2.8475 0.40066 0.9102 0.71364 1.8506 0.93618 2.8085 3.6326 0.343 7.3804-0.81841 10.224-3.4776-2.7694 7.4291-8.6677 13.312-16.088 16.091 4.8057-5.147 4.7037-13.252-0.31356-18.269l-7.4279-7.4264 7.4279-7.4264c5.0172-5.0167 5.1193-13.122 0.31356-18.269zm-9.6138 27.568 7.4279 7.4264c4.1132 4.1128 4.1132 10.741 0 14.854-4.1129 4.1132-10.741 4.1132-14.854 0-4.1132-4.1128-4.1132-10.741 0-14.854z"/>
+</svg>
+"#;
+
 const ICON_PLAYLIST: &'static str = r#"
 <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <path d="m32 7.4073c-13.582 6.153e-4 -24.592 11.011-24.593 24.593 6.153e-4 13.582 11.011 24.592 24.593 24.593 13.582-6.12e-4 24.592-11.011 24.593-24.593-6.12e-4 -13.582-11.011-24.592-24.593-24.593zm0 6.3023c10.101 4.56e-4 18.29 8.1893 18.29 18.29-4.56e-4 10.101-8.1893 18.29-18.29 18.29-10.101-4.56e-4 -18.29-8.1893-18.29-18.29 4.56e-4 -10.101 8.1893-18.29 18.29-18.29zm-6.5521 7.515 0.02539 21.551 17.973-10.451z"/>
@@ -295,8 +307,30 @@ pub fn layout(
 
     let hyper8_version = env!("CARGO_PKG_VERSION");
 
-    let body = formatdoc!(r#"
-            <body>
+    let splash = formatdoc!(r#"
+        <dialog class="splash_wrapper">
+            <div class="splash">
+                <img src="/splash.jpg?{hyper8_version}">
+                <div class="pad">
+                    <ul autofocus>
+                        <li>Navigate the site's content in the left sidebar</li>
+                        <li>Make changes in the main area of the page</li>
+                        <li>Use the controls top-right to preview/deploy</li>
+                    </ul>
+                    <div class="hsplit">
+                        <a href="https://simonrepp.com/hyper8" target="_blank">
+                            {ICON_EXTERNAL}
+                            <span>Hyper 8 Video System {hyper8_version}</span>
+                        </a>
+                        <form method="dialog">
+                            <button autofocus>Close</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </dialog>
+    "#);
+
     let deploy_button = match site.deploy_config.complete() {
         true => r#"<form action="/deploy" method="post"><button>Deploy</button></form>"#,
         // TODO: Instead of disabled link, offer "Configure Deployment" link
@@ -304,12 +338,14 @@ pub fn layout(
         false => r#"<button disabled title="Deploy configuration is missing required fields">Deploy*</button>"#
     };
 
+    let body = formatdoc!(r#"
+            <body data-version="{hyper8_version}">
                 <div class="controls">
                     <div class="buttons">
                         <form action="/build" method="post" target="_blank"><button>Preview</button></form>
                         {deploy_button}
+                        <button id="toggle-splash">{ICON_LOGO}</button>
                     </div>
-                    <span class="system_info">Hyper 8 Video System {hyper8_version}</span>
                     <span class="processing"></span>
                 </div>
                 <div class="split">
@@ -324,11 +360,18 @@ pub fn layout(
                         {body}
                     </main>
                 </div>
+                {splash}
             </body>
         "#
     );
 
-    format!("<!doctype html>\n<html>{head}{body}</html>")
+    formatdoc!(r#"
+        <!doctype html>
+        <html lang="en">
+            {head}
+            {body}
+        </html>
+    "#)
 }
 
 pub fn not_found(context: &Context, message: &str) -> HttpResponse {

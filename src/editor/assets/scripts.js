@@ -1,3 +1,5 @@
+const splashWrapper = document.querySelector('.splash_wrapper');
+
 const processing = {};
 
 function fetchProcessing() {
@@ -64,5 +66,19 @@ document.addEventListener('click', event => {
 	if (target.classList.contains('upload_button')) {
 		target.form.querySelector('input').click();
 		event.preventDefault();
+	} else if (target.id == 'toggle-splash') {
+		if (splashWrapper.open) {
+			splashWrapper.close();
+		} else {
+			splashWrapper.show();
+		}
 	}
 });
+
+if (splashWrapper) {
+	const version = document.body.dataset.version;
+	if (localStorage.getItem('hyper8SplashSeen') !== version) {
+		splashWrapper.show();
+		localStorage.setItem('hyper8SplashSeen', version);
+	}
+}

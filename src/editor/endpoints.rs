@@ -38,6 +38,12 @@ pub async fn scripts() -> HttpResponse {
         .body(include_str!("assets/scripts.js"))
 }
 
+pub async fn splash_image() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("image/jpeg")
+        .body(include_bytes!("assets/splash.jpg").as_slice())
+}
+
 pub async fn styles(context: Data<Arc<Context>>) -> HttpResponse {
     let theme_vars = match &context.editor_theme.kind {
         ThemeKind::Adaptive { dark, light } => {

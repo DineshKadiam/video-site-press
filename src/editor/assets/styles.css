@@ -102,7 +102,6 @@ button:hover {
     column-gap: .5rem;
     display: flex;
 }
-.controls .system_info { font-size: .9rem; }
 .error { background-color: var(--error); }
 .errors_badge {
     background-color: var(--error);
@@ -212,16 +211,95 @@ select {
     font-size: 1rem;
     padding: .3rem .6rem;
 }
+.splash {
+    background-color: var(--bg-1);
+    border-radius: .5rem;
+    box-shadow: 0 0 2rem #0006;
+    color: var(--fg-2);
+    max-width: 32rem;
+    min-height: 16rem;
+    pointer-events: initial;
+    position: fixed;
+    z-index: 13;
+}
+.splash .hsplit {
+    align-items: flex-end;
+    display: flex;
+    justify-content: space-between;
+}
+.splash .hsplit a {
+    align-items: center;
+    color: var(--fg-3);
+    column-gap: .2rem;
+    display: flex;
+}
+.splash .hsplit a svg {
+    fill: var(--fg-3);
+    height: .9rem;
+    top: .05rem;
+    width: .9rem;
+}
+.splash .hsplit a,
+.splash .hsplit button {
+    font-size: .9rem;
+}
+.splash img {
+    border: 1px solid var(--bg-3);
+    border-top-left-radius: .5rem;
+    border-top-right-radius: .5rem;
+    box-sizing: border-box;
+    display: block;
+    max-width: 100%;
+}
+.splash .pad {
+    border: 1px solid var(--bg-3);
+    border-bottom-left-radius: .5rem;
+    border-bottom-right-radius: .5rem;
+    border-top-width: 0;
+    padding: 1.2rem 1.5rem;
+}
+.splash svg {
+    height: 1rem;
+    position: relative;
+    top: .1rem;
+    width: 1rem;
+}
+.splash ul {
+    margin-top: 0;
+    padding: 0;
+    list-style: none;
+}
+.splash_wrapper {
+    align-items: center;
+    background: none;
+    border: none;
+    box-sizing: border-box;
+    height: 100vh;
+    justify-items: center;
+    pointer-events: none;
+    width: 100vw;
+}
+.splash_wrapper[open] { display: grid; }
 .split {
     display: flex;
     flex-grow: 1;
 }
+svg { fill: currentColor; }
 .thumbnail {
     aspect-ratio: 1.78;
     background-color: var(--bg-3);
     object-fit: contain;
     object-fit: contain;
     width: 100%;
+}
+#toggle-splash {
+    background-color: transparent;
+    padding: 0;
+}
+#toggle-splash svg {
+    height: 1.8rem;
+    pointer-events: none;
+    width: 1.8rem;
 }
 .updates { color: red; }
 .versions {

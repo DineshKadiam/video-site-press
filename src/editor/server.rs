@@ -16,6 +16,7 @@ use crate::editor::endpoints::{
     playlist,
     processing,
     scripts,
+    splash_image,
     styles,
     site,
     video
@@ -80,6 +81,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/roboto-v30-latin_latin-ext-regular.woff2", get().to(font))
                 .route("/site", post().to(site::update))
                 .route("/scripts.js", get().to(scripts))
+                .route("/splash.jpg", get().to(splash_image))
                 .route("/styles.css", get().to(styles))
                 .service(
                     resource("/video/{path:.*}")
