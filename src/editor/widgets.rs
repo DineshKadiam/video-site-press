@@ -327,7 +327,7 @@ pub fn layout(
     "#);
 
     let deploy_button = match site.deploy_config.complete() {
-        true => r#"<form action="/deploy" method="post"><button>Deploy</button></form>"#,
+        true => r#"<form action="/deploy" method="post" onsubmit="return confirm('Really deploy?');"><button>Deploy</button></form>"#,
         // TODO: Instead of disabled link, offer "Configure Deployment" link
         // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
         false => r#"<button disabled title="Deploy configuration is missing required fields">Deploy*</button>"#
