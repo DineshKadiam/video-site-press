@@ -297,9 +297,9 @@ svg { fill: currentColor; }
     padding: 0;
 }
 #toggle-splash svg {
-    height: 1.8rem;
+    height: 1.5rem;
     pointer-events: none;
-    width: 1.8rem;
+    width: 1.5rem;
 }
 .updates { color: red; }
 .versions {

@@ -3,6 +3,7 @@ use std::path::Path;
 use indoc::formatdoc;
 
 use crate::{Site, Video, VideoFile};
+use crate::icons::COPY_LINK_SVG;
 use crate::util::{casual_duration, human_size};
 
 pub struct VideoRepresentation {
@@ -50,7 +51,7 @@ pub fn copy_link(site: &Site, path: &str) -> String {
 
     format!(r#"
         <div>
-            <button {data_url} id="copy-link">{t_copy_link}</button>
+            <button {data_url} id="copy-link"><span class="icon">{COPY_LINK_SVG}</span> {t_copy_link}</button>
         </div>
     "#)
 }
@@ -239,15 +240,7 @@ pub fn player(site: &Site, video: &Video, video_prefix: &str) -> String {
     "#)
 }
 
-pub fn thumbnail(video: &Video, video_prefix: &str) -> String {
-    let duration = match &video.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
-        Some(video_meta) => {
-            let duration = casual_duration(video_meta.duration);
-            formatdoc!(r#"<span class="duration">{duration}</span>"#)
-        }
-        None => String::new()
-    };
-
+pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> String {
     match &video.poster {
         Some(poster) => {
             let alt = if let Some(description) = &poster.description {
@@ -267,6 +260,18 @@ pub fn thumbnail(video: &Video, video_prefix: &str) -> String {
                 None => {
                     format!(r#"<img {alt} class="thumbnail" src="{video_prefix}poster.jpg">"#)
                 }
+            };
+
+            if !with_duration {
+                return img;
+            }
+
+            let duration = match &video.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
+                Some(video_meta) => {
+                    let duration = casual_duration(video_meta.duration);
+                    formatdoc!(r#"<span class="duration">{duration}</span>"#)
+                }
+                None => String::new()
             };
 
             formatdoc!(r#"

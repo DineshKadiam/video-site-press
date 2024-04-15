@@ -62,7 +62,7 @@ pub fn playlist_html(
                 let slug = video.slug();
                 let label = video.label();
                 let video_prefix = format!("{slug}/");
-                let video_thumbnail = thumbnail(video, &video_prefix);
+                let video_thumbnail = thumbnail(video, &video_prefix, true);
 
                 formatdoc!(r#"
                     <a href="{slug}{index_suffix}">

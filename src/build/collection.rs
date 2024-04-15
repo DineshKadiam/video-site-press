@@ -37,7 +37,7 @@ pub fn collection_html(
                 let title = video.title.as_deref().unwrap_or_else(|| video.slug());
                 let video_prefix = format!("{slug}/");
 
-                let video_thumbnail = thumbnail(video, &video_prefix);
+                let video_thumbnail = thumbnail(video, &video_prefix, true);
 
                 formatdoc!(r#"
                     <a href="{slug}{index_suffix}">
@@ -105,7 +105,7 @@ pub fn collection_html(
                     let slug = &video.slug();
                     let title = video.title.as_deref().unwrap_or_else(|| video.slug());
                     let video_prefix = format!("{subcollection_slug}/{slug}/");
-                    let video_thumbnail = thumbnail(video, &video_prefix);
+                    let video_thumbnail = thumbnail(video, &video_prefix, true);
 
                     formatdoc!(r#"
                         <a href="{subcollection_slug}/{slug}{index_suffix}">

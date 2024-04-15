@@ -2,6 +2,7 @@ use indoc::formatdoc;
 
 use crate::{Site, ThemeKind};
 use crate::build::Breadcrumb;
+use crate::icons::LOGO_SVG;
 
 const ICON_DARK: &'static str = r#"
 <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -69,7 +70,7 @@ pub fn layout(
                 </div>
                 <footer>
                     <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
-                        Hyper 8 Video System {hyper8_version}
+                        {LOGO_SVG} Hyper 8 Video System {hyper8_version}
                     </a>
                     {theme_toggle}
                 </footer>

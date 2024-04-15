@@ -12,6 +12,7 @@ mod context;
 mod deploy;
 mod editor;
 mod hyper_dir;
+mod icons;
 mod image_processor;
 mod language;
 mod playlist;

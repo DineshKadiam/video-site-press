@@ -6,6 +6,7 @@ use crate::{Context, Playlist, Site, Video};
 use crate::build::Breadcrumb;
 use crate::build::render::layout;
 use crate::build::widgets::{copy_link, downloads, player, thumbnail};
+use crate::util::casual_duration;
 
 pub fn video_html(
     context: &Context,
@@ -23,70 +24,88 @@ pub fn video_html(
 
     let playlist_context = match playlist {
         Some(playlist) => {
-            let position = playlist.videos
+            let active_position = playlist.videos
                 .iter()
                 .position(|video_iterated| video_iterated.path == video.path)
                 .unwrap();
 
             let mut out = String::new();
 
-            let label = playlist.label();
-            let t_videos = &site.language.translations.videos;
-            let video_count = playlist.videos.len();
-            let header = formatdoc!(r#"
-                <div>
-                    {label}<br>
-                    {video_count} {t_videos}
-                </div>
-            "#);
+            out.push_str(r#"<div class="playlist_context">"#);
 
-            out.push_str(&header);
+            let max_shown: usize = 20;
+            let max_window: usize = max_shown - 2;
 
-            let adjacent_shown: usize = 2;
+            let indices_shown = if playlist.videos.len() > max_window {
+                let max_previous_shown = (max_window as f32 / 2.0).floor() as usize;
+
+                if max_previous_shown > active_position {
+                    0..max_window
+                } else {
+                    let max_remaining_shown = (max_window as f32 / 2.0).ceil() as usize;
+
+                    if active_position + max_remaining_shown >= playlist.videos.len() {
+                        (playlist.videos.len() - max_window)..playlist.videos.len()
+                    } else {
+                        let from_index = active_position - max_previous_shown;
+                        from_index..from_index + max_window
+                    }
+                }
+            } else {
+                0..playlist.videos.len()
+            };
 
             // TODO: Below a certain threshold just show all videos (at least 6 or so)
             // TODO: Make the display a bit more compact too so that more videos can fit
             //       (but also need to determine what to do with different aspect ratios as that changes the visual proportions)
 
-            let previous_videos = position;
-            if previous_videos > adjacent_shown {
-                let hidden_videos = previous_videos - adjacent_shown;
+            if indices_shown.start > 0 {
+                let hidden_videos = indices_shown.start;
                 let more = formatdoc!(r#"
-                    <div class="more">
-                        {hidden_videos} previous videos<br>
-                        <a href="..{index_suffix}">See entire playlist</a>
-                    </div>
+                    <a class="more" href="..{index_suffix}">
+                        <div class="thumbnail"></div>
+                        <div class="description">{hidden_videos} previous videos</div>
+                    </a>
                 "#);
 
                 out.push_str(&more);
             }
 
-            for (index, video_iterated) in playlist.videos.iter().enumerate() {
-                if (index as i16) < (position as i16) - (adjacent_shown as i16) || index > position + adjacent_shown { continue; }
+            for index in indices_shown.clone() {
+                let video_iterated = &playlist.videos[index];
 
                 let label = video_iterated.label();
                 let slug = video_iterated.slug();
 
-                let video_prefix = if index == position {
+                let video_prefix = if index == active_position {
                     String::new()
                 } else {
                     format!("../{slug}/")
                 };
 
-                let thumbnail_rendered = thumbnail(video_iterated, &video_prefix);
+                let thumbnail_rendered = thumbnail(video_iterated, &video_prefix, false);
 
-                let (current, href) = if index == position {
+                let (current, href) = if index == active_position {
                     ("current", String::new())
                 } else {
                     ("", format!("../{slug}{index_suffix}"))
                 };
 
+                let duration = match &video_iterated.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
+                    Some(video_meta) => casual_duration(video_meta.duration),
+                    None => String::new()
+                };
+
                 let number = index + 1;
                 let line = formatdoc!(r#"
                     <a class="{current}" href="{href}">
+                        <div class="number">{number}</div>
                         {thumbnail_rendered}
                         <div class="description">
-                            {number} {label}
+                            <span class="label">{label}</span>
+                            <span class="details">
+                                <span class="duration">{duration}</span>
+                            </span>
                         </div>
                     </a>
                 "#);
@@ -94,18 +113,32 @@ pub fn video_html(
                 out.push_str(&line);
             }
 
-            let remaining_videos = playlist.videos.len() - position - 1;
-            if remaining_videos > adjacent_shown {
-                let hidden_videos = remaining_videos - adjacent_shown;
+            if indices_shown.end <= playlist.videos.len() - 1 {
+                let hidden_videos = playlist.videos.len() - indices_shown.end;
                 let more = formatdoc!(r#"
-                    <div class="more">
-                        {hidden_videos} more videos<br>
-                        <a href="..{index_suffix}">See entire playlist</a>
-                    </div>
+                    <a class="more" href="..{index_suffix}">
+                        <div class="thumbnail"></div>
+                        <div class="description">{hidden_videos} more videos</div>
+                    </a>
                 "#);
 
                 out.push_str(&more);
             }
+
+            let label = playlist.label();
+            let t_videos = &site.language.translations.videos;
+            let video_count = playlist.videos.len();
+            let header = formatdoc!(r#"
+                <div class="playlist_header">
+                    {label}<br>
+                    {video_count} {t_videos}
+                </div>
+            "#);
+
+            // TODO: Reactivate
+            // out.push_str(&header);
+
+            out.push_str("</div>");
 
             out
         }
@@ -133,16 +166,18 @@ pub fn video_html(
 
     let body = format!(r#"
         {player_rendered}
-        <h1 class="video_title">{title}</h1>
-        {release_date}
-        <p>
-            {description}
-        </p>
-        <div class="playlist context">
-            {playlist_context}
+        <div class="video_info">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <h1 class="video_title">{title}</h1>
+                {copy_link_widget}
+            </div>
+            {release_date}
+            <p>
+                {description}
+            </p>
+            {downloads_widget}
         </div>
-        {downloads_widget}
-        {copy_link_widget}
+        {playlist_context}
     "#);
 
     let root_prefix = if video.path == "" { "".to_string() } else { "../".repeat(video.path.split('/').count()) };
