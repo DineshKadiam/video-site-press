@@ -9,6 +9,7 @@ use slug::slugify;
 use crate::{
     Cache,
     Collection,
+    EditorTranslations,
     HyperDir,
     Job,
     JobKind,
@@ -32,6 +33,7 @@ pub struct Context {
     //       because context is immutable (with interior mutability on some things))
     pub clean_urls: bool,
     pub editor_theme: Theme,
+    pub editor_translations: EditorTranslations,
     pub job_queue: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
     pub processing_errors: Mutex<Vec<String>>,
@@ -568,6 +570,7 @@ impl Context {
         build_dir: PathBuf,
         cache: Mutex<Cache>,
         cache_dir: PathBuf,
+        editor_language: &str,
         site: Arc<Site>,
         site_dir: PathBuf
     ) -> Context {
@@ -578,6 +581,7 @@ impl Context {
             clean_urls: true,
             // TODO: Eventually make this customizable via CLI option
             editor_theme: Theme::adaptive(),
+            editor_translations: EditorTranslations::from_code(editor_language),
             job_queue: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),
             processing_errors: Mutex::new(Vec::new()),

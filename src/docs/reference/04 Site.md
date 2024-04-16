@@ -24,11 +24,13 @@ user = customer123
 With `base_url` you configure at which domain your site will be hosted,
 which is used for rendering certain features.
 
-With `language` you can supply a language code (in BCP 47 format), that
-will identify the site's content for browsers and screenreaders. Note
-that this does not yet have any effect on user interface texts rendered
-by Hyper 8, these will for now be always english, until localization is
-implemented.
+With `language` you can supply a language code (in BCP 47 format) that will
+identify the site's content for browsers and screenreaders. For supported
+languages (currently english and german - contributions welcome!) all
+implemented texts will show up as translated in the final website. The Hyper
+8 editor itself is also usable in different languages (although this is only
+rudimentarily developed right now!), for this see the command line arguments
+documentation.
 
 The `poster_aspect` option accepts either a numeric aspect ratio like `1.78`,
 or a dividend/divisor notation like `16/9` or `4:3`. On a Hyper 8 site, this

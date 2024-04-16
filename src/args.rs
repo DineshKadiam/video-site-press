@@ -30,6 +30,10 @@ pub struct Args {
     #[clap(long)]
     pub deploy: bool,
 
+    /// Override the language displayed in the editor (e.g. 'en', 'de')
+    #[clap(long = "editor-language")]
+    pub editor_language: Option<String>,
+
     /// Manually sets the port used by the web editor (otherwise hyper8 chooses an available port on its own)
     #[clap(long = "port")]
     pub port: Option<u16>,

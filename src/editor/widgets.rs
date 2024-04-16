@@ -326,18 +326,23 @@ pub fn layout(
         </dialog>
     "#);
 
+    let t_deploy = &context.editor_translations.deploy;
+    let t_deploy_configuration_missing_required_fields = &context.editor_translations.deploy_configuration_missing_required_fields;
+    let t_really_deploy = &context.editor_translations.really_deploy;
     let deploy_button = match site.deploy_config.complete() {
-        true => r#"<form action="/deploy" method="post" onsubmit="return confirm('Really deploy?');"><button>Deploy</button></form>"#,
+        true => format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{t_deploy}</button></form>"#),
         // TODO: Instead of disabled link, offer "Configure Deployment" link
         // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
-        false => r#"<button disabled title="Deploy configuration is missing required fields">Deploy*</button>"#
+        false => format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{t_deploy}*</button>"#)
     };
 
+    let t_filter = &context.editor_translations.filter;
+    let t_preview = &context.editor_translations.preview;
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
                     <div class="buttons">
-                        <form action="/build" method="post" target="_blank"><button>Preview</button></form>
+                        <form action="/build" method="post" target="_blank"><button>{t_preview}</button></form>
                         {deploy_button}
                         <button id="toggle-splash">{LOGO_SVG}</button>
                     </div>
@@ -345,7 +350,7 @@ pub fn layout(
                 </div>
                 <div class="split">
                     <nav>
-                        <input id="filter_tree" placeholder="Filter" type="search">
+                        <input id="filter_tree" placeholder="{t_filter}" type="search">
                         {tree}
                     </nav>
                     <main>
