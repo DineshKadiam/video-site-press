@@ -475,6 +475,11 @@ pub fn edit_page(
         </form>
     "#);
 
+    let input_unlisted_conditionally_hidden = match video.path.as_str() {
+        "" => if video.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
+        _ => input_unlisted
+    };
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -485,7 +490,7 @@ pub fn edit_page(
                 {input_title}
                 {input_description}
                 {input_release_date}
-                {input_unlisted}
+                {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>Update Video</button> {feedback_update}

@@ -322,6 +322,11 @@ pub fn edit_page(
         String::new()
     };
 
+    let input_unlisted_conditionally_hidden = match collection.path.as_str() {
+        "" => if collection.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
+        _ => input_unlisted
+    };
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -331,7 +336,7 @@ pub fn edit_page(
             <form action="/collection/{path}" method="post">
                 {input_title}
                 {input_description}
-                {input_unlisted}
+                {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>Update Collection</button> {feedback_update}

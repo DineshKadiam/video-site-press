@@ -262,6 +262,11 @@ pub fn edit_page(
         String::new()
     };
 
+    let input_unlisted_conditionally_hidden = match playlist.path.as_str() {
+        "" => if playlist.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
+        _ => input_unlisted
+    };
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -271,7 +276,7 @@ pub fn edit_page(
             <form action="/playlist/{path}" method="post">
                 {input_title}
                 {input_description}
-                {input_unlisted}
+                {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>Update Playlist</button> {feedback_update}
