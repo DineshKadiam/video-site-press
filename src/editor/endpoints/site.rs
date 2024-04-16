@@ -20,7 +20,7 @@ use crate::editor::widgets::form_field;
 
 const LABEL_BASE_URL: &str = "Base URL (e.g. https://example.com)";
 const LABEL_DEPLOYMENT_PATH: &str = "Deployment Path (e.g. /data/web/customer123/html";
-const LABEL_DEPLOYMENT_SERVER: &str = "Deployment Server (e.g. https://ssh-customer123.example.com)";
+const LABEL_DEPLOYMENT_SERVER: &str = "Deployment Server (e.g. ssh-customer123.example.com)";
 const LABEL_DEPLOYMENT_USER: &str = "Deployment User (e.g. customer123)";
 const LABEL_LANGUAGE: &str = "Language (e.g. en, fr)";
 const LABEL_POSTER_ASPECT: &str = "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)";

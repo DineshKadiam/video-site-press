@@ -14,6 +14,11 @@ base_url: https://example.com
 language: es
 poster_aspect: 16:9
 theme: dark
+
+deploy_config:
+path = /data/web/customer123/html
+server = ssh-customer123.example.com
+user = customer123
 ```
 
 With `base_url` you configure at which domain your site will be hosted,
@@ -43,3 +48,13 @@ can be weighed off - e.g. it might still make sense to configure a trailer
 page for a horror movie with a dark theme only, as the imagery might be
 dark itself and a light theme would potentially collide with the desired
 aesthetics and visual impression intended by the creators.
+
+With `deploy_config` you can configure the (remote) `path`, `server` and `user`
+for an ssh/rsync based deployment. Note that for now only password-less
+(ssh public/private key) authentication is possible. In order to prevent
+accidental deployments to wrong remote servers and paths, deployment requires
+the `base_url` to be specified and the server to be set up so the contents
+at `deploy_config.path` are already accessible through the public `base_url`.
+(On deploment, Hyper 8 will do a test upload of a text file to the remote
+path and check if it's accessible through the public url - if it isn't, the
+file is removed and the deployment aborted).
