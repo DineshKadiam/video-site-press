@@ -293,7 +293,7 @@ pub fn edit_page(
                 seamlessly be converted to a playlist.
             </p>
 
-            <form action="/convert/playlist" method="post">
+            <form action="/convert-to-playlist/{path}" method="post">
                 <button>Convert collection to playlist</button>
             </form>
         "#)
@@ -314,7 +314,7 @@ pub fn edit_page(
         formatdoc!(r#"
             <p>{message}</p>
 
-            <form action="/convert/video" method="post">
+            <form action="/convert-to-video/{path}" method="post">
                 <button>Convert collection to video</button>
             </form>
         "#)

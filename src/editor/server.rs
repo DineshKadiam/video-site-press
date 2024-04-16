@@ -39,9 +39,9 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .app_data(data_moving.clone())
                 .route("/", get().to(index::index))
                 .route("/build", post().to(build))
-                .route("/convert/collection", post().to(convert::collection))
-                .route("/convert/playlist", post().to(convert::playlist))
-                .route("/convert/video", post().to(convert::video))
+                .route("/convert-to-collection/{path:.*}", post().to(convert::to_collection))
+                .route("/convert-to-playlist/{path:.*}", post().to(convert::to_playlist))
+                .route("/convert-to-video/{path:.*}", post().to(convert::to_video))
                 .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
                 .route("/create-playlist/{path:.*}", post().to(collection::create_playlist))
                 .service(

@@ -462,7 +462,7 @@ pub fn edit_page(
             A video can seamlessly be converted to a video in a collection.
         </p>
 
-        <form action="/convert/collection" method="post">
+        <form action="/convert-to-collection/{path}" method="post">
             <button>Convert video to a video in a collection</button>
         </form>
 
@@ -470,7 +470,7 @@ pub fn edit_page(
             A video can seamlessly be converted to a video in a playlist.
         </p>
 
-        <form action="/convert/playlist" method="post">
+        <form action="/convert-to-playlist/{path}" method="post">
             <button>Convert video to a video in a playlist</button>
         </form>
     "#);

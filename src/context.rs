@@ -112,8 +112,13 @@ impl Context {
         }
     }
 
-    pub fn convert_to_collection(&self) -> Result<(), String> {
+    pub fn convert_to_collection(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
+
+        // TODO: Implement conversion at any level in the site tree
+        if path != "" {
+            return Err(String::from("Unimplemented: Converting to collection/playlist/video is for now only possible at the root level of the site"));
+        }
 
         if let SiteContent::Empty = &site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
@@ -189,8 +194,13 @@ impl Context {
     // TODO: Implement this functionality at deeper levels as well, e.g. a
     //       subcollection can also be converted to a playlist, not just the
     //       collection at the root of the site. Same for convert_to_*.
-    pub fn convert_to_playlist(&self) -> Result<(), String> {
+    pub fn convert_to_playlist(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
+
+        // TODO: Implement conversion at any level in the site tree
+        if path != "" {
+            return Err(String::from("Unimplemented: Converting to collection/playlist/video is for now only possible at the root level of the site"));
+        }
 
         if let SiteContent::Empty = &site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);
@@ -264,8 +274,13 @@ impl Context {
         Ok(())
     }
 
-    pub fn convert_to_video(&self) -> Result<(), String> {
+    pub fn convert_to_video(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
+
+        // TODO: Implement conversion at any level in the site tree
+        if path != "" {
+            return Err(String::from("Unimplemented: Converting to collection/playlist/video is for now only possible at the root level of the site"));
+        }
 
         if let SiteContent::Empty = &site_mut.content {
             let hyper_dir = HyperDir::read(&self.site_dir);

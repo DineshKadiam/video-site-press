@@ -239,7 +239,7 @@ pub fn edit_page(
             banner will be deleted, because collections don't have one.
         </p>
 
-        <form action="/convert/collection" method="post">
+        <form action="/convert-to-collection/{path}" method="post">
             <button>Convert playlist to collection</button>
         </form>
     "#);
@@ -254,7 +254,7 @@ pub fn edit_page(
         formatdoc!(r#"
             <p>{message}</p>
 
-            <form action="/convert/video" method="post">
+            <form action="/convert-to-video/{path}" method="post">
                 <button>Convert playlist to video</button>
             </form>
         "#)

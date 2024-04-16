@@ -27,11 +27,11 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
                     Initialize your site by placing content in the site directory,
                     or picking one of the options below:<br><br>
 
-                    <form action="/convert/collection" method="post"><button>Initialize site as collection</button></form> As a collection the site holds videos, playlists and recursive subcollections.<br><br>
+                    <form action="/convert-to-collection/" method="post"><button>Initialize site as collection</button></form> As a collection the site holds videos, playlists and recursive subcollections.<br><br>
 
-                    <form action="/convert/playlist" method="post"><button>Initialize site as playlist</button></form> A site featuring a number of videos, presented as an ordered viewing list<br><br>
+                    <form action="/convert-to-playlist/" method="post"><button>Initialize site as playlist</button></form> A site featuring a number of videos, presented as an ordered viewing list<br><br>
 
-                    <form action="/convert/video" method="post"><button>Initialize site as video</button></form> A site presenting just a single video
+                    <form action="/convert-to-video/" method="post"><button>Initialize site as video</button></form> A site presenting just a single video
                 </div>
             "#)
         }

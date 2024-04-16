@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use actix_web::{Either, HttpResponse};
 use actix_web::http::header::ContentType;
-use actix_web::web::{Data, Redirect};
+use actix_web::web::{Data, Path as ActixPath, Redirect};
 
-use crate::Context;
+use crate::{Context, ContextPath};
 
-pub async fn collection(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse> {
-    match context.convert_to_collection() {
+pub async fn to_collection(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    match context.convert_to_collection(&path.path) {
         Ok(()) => Either::Left(Redirect::to("/collection/").see_other()),
         Err(err) => {
             // TODO: Return error gracefully in context of originating page (collection/video/empty)
@@ -16,8 +19,11 @@ pub async fn collection(context: Data<Arc<Context>>) -> Either<Redirect, HttpRes
     }
 }
 
-pub async fn playlist(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse> {
-    match context.convert_to_playlist() {
+pub async fn to_playlist(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    match context.convert_to_playlist(&path.path) {
         Ok(()) => Either::Left(Redirect::to("/playlist/").see_other()),
         Err(err) => {
             // TODO: Return error gracefully in context of originating page (collection/video/empty)
@@ -26,8 +32,11 @@ pub async fn playlist(context: Data<Arc<Context>>) -> Either<Redirect, HttpRespo
     }
 }
 
-pub async fn video(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse> {
-    match context.convert_to_video() {
+pub async fn to_video(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    match context.convert_to_video(&path.path) {
         Ok(()) => Either::Left(Redirect::to("/video/").see_other()),
         Err(err) => {
             // TODO: Return error gracefully in context of originating page (collection/playlist/empty)
