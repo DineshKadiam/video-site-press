@@ -70,10 +70,17 @@ pub fn watch (context: Arc<Context>) {
             }
 
             if last_change.elapsed().as_millis() > DEBOUNCE_PERIOD_MILLIS as u128 {
-                for path in queue.drain(..) {
-                    dbg!(&path);
-                    context.update_from_filesystem(&path);
+                if !queue.is_empty() {
+                    let site = context.get_site();
+
+                    for path in queue.drain(..) {
+                        context.update_from_filesystem(&path, &site);
+                    }
+
+                    context.compute_job_queue();
                 }
+
+                last_change = Instant::now();
             }
         }
     });
