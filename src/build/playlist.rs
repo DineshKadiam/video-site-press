@@ -56,6 +56,7 @@ pub fn playlist_html(
     if !playlist.videos.is_empty() {
         let videos = playlist.videos
             .iter()
+            .filter(|video| !video.unlisted)
             .enumerate()
             .map(|(index, video)| {
                 let number = index + 1;

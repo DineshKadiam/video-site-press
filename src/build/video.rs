@@ -1,4 +1,5 @@
 use std::fs;
+use std::sync::Arc;
 
 use indoc::formatdoc;
 
@@ -22,127 +23,133 @@ pub fn video_html(
 
     let downloads_widget = downloads(video);
 
-    let playlist_context = match playlist {
-        Some(playlist) => {
-            let active_position = playlist.videos
-                .iter()
-                .position(|video_iterated| video_iterated.path == video.path)
-                .unwrap();
+    let playlist_context = if video.unlisted {
+        String::new()
+    } else {
+        match playlist {
+            Some(playlist) => {
+                let listed_videos: Vec<Arc<Video>> = playlist.videos
+                    .iter()
+                    .filter(|video| !video.unlisted)
+                    .map(|video| Arc::clone(video))
+                    .collect();
 
-            let mut out = String::new();
+                let active_position = listed_videos
+                    .iter()
+                    .position(|video_iterated| video_iterated.path == video.path)
+                    .unwrap();
 
-            out.push_str(r#"<div class="playlist_context">"#);
+                let mut out = String::new();
 
-            let max_shown: usize = 20;
-            let max_window: usize = max_shown - 2;
+                out.push_str(r#"<div class="playlist_context">"#);
 
-            let indices_shown = if playlist.videos.len() > max_window {
-                let max_previous_shown = (max_window as f32 / 2.0).floor() as usize;
+                let max_shown: usize = 20;
+                let max_window: usize = max_shown - 2;
 
-                if max_previous_shown > active_position {
-                    0..max_window
-                } else {
-                    let max_remaining_shown = (max_window as f32 / 2.0).ceil() as usize;
+                let indices_shown = if listed_videos.len() > max_window {
+                    let max_previous_shown = (max_window as f32 / 2.0).floor() as usize;
 
-                    if active_position + max_remaining_shown >= playlist.videos.len() {
-                        (playlist.videos.len() - max_window)..playlist.videos.len()
+                    if max_previous_shown > active_position {
+                        0..max_window
                     } else {
-                        let from_index = active_position - max_previous_shown;
-                        from_index..from_index + max_window
+                        let max_remaining_shown = (max_window as f32 / 2.0).ceil() as usize;
+
+                        if active_position + max_remaining_shown >= listed_videos.len() {
+                            (listed_videos.len() - max_window)..listed_videos.len()
+                        } else {
+                            let from_index = active_position - max_previous_shown;
+                            from_index..from_index + max_window
+                        }
                     }
+                } else {
+                    0..listed_videos.len()
+                };
+
+                if indices_shown.start > 0 {
+                    let hidden_videos = indices_shown.start;
+                    let more = formatdoc!(r#"
+                        <a class="more" href="..{index_suffix}">
+                            <div class="thumbnail"></div>
+                            <div class="description">{hidden_videos} previous videos</div>
+                        </a>
+                    "#);
+
+                    out.push_str(&more);
                 }
-            } else {
-                0..playlist.videos.len()
-            };
 
-            // TODO: Below a certain threshold just show all videos (at least 6 or so)
-            // TODO: Make the display a bit more compact too so that more videos can fit
-            //       (but also need to determine what to do with different aspect ratios as that changes the visual proportions)
+                for index in indices_shown.clone() {
+                    let video_iterated = &listed_videos[index];
 
-            if indices_shown.start > 0 {
-                let hidden_videos = indices_shown.start;
-                let more = formatdoc!(r#"
-                    <a class="more" href="..{index_suffix}">
-                        <div class="thumbnail"></div>
-                        <div class="description">{hidden_videos} previous videos</div>
-                    </a>
+                    let label = video_iterated.label();
+                    let slug = video_iterated.slug();
+
+                    let video_prefix = if index == active_position {
+                        String::new()
+                    } else {
+                        format!("../{slug}/")
+                    };
+
+                    let thumbnail_rendered = thumbnail(video_iterated, &video_prefix, false);
+
+                    let (current, href) = if index == active_position {
+                        ("current", String::new())
+                    } else {
+                        ("", format!("../{slug}{index_suffix}"))
+                    };
+
+                    let duration = match &video_iterated.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
+                        Some(video_meta) => casual_duration(video_meta.duration),
+                        None => String::new()
+                    };
+
+                    let number = index + 1;
+                    let line = formatdoc!(r#"
+                        <a class="{current}" href="{href}">
+                            <div class="number">{number}</div>
+                            {thumbnail_rendered}
+                            <div class="description">
+                                <span class="label">{label}</span>
+                                <span class="details">
+                                    <span class="duration">{duration}</span>
+                                </span>
+                            </div>
+                        </a>
+                    "#);
+
+                    out.push_str(&line);
+                }
+
+                if indices_shown.end <= listed_videos.len() - 1 {
+                    let hidden_videos = listed_videos.len() - indices_shown.end;
+                    let more = formatdoc!(r#"
+                        <a class="more" href="..{index_suffix}">
+                            <div class="thumbnail"></div>
+                            <div class="description">{hidden_videos} more videos</div>
+                        </a>
+                    "#);
+
+                    out.push_str(&more);
+                }
+
+                let label = playlist.label();
+                let t_videos = &site.language.translations.videos;
+                let video_count = listed_videos.len();
+                let header = formatdoc!(r#"
+                    <div class="playlist_header">
+                        {label}<br>
+                        {video_count} {t_videos}
+                    </div>
                 "#);
 
-                out.push_str(&more);
+                // TODO: Reactivate
+                // out.push_str(&header);
+
+                out.push_str("</div>");
+
+                out
             }
-
-            for index in indices_shown.clone() {
-                let video_iterated = &playlist.videos[index];
-
-                let label = video_iterated.label();
-                let slug = video_iterated.slug();
-
-                let video_prefix = if index == active_position {
-                    String::new()
-                } else {
-                    format!("../{slug}/")
-                };
-
-                let thumbnail_rendered = thumbnail(video_iterated, &video_prefix, false);
-
-                let (current, href) = if index == active_position {
-                    ("current", String::new())
-                } else {
-                    ("", format!("../{slug}{index_suffix}"))
-                };
-
-                let duration = match &video_iterated.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
-                    Some(video_meta) => casual_duration(video_meta.duration),
-                    None => String::new()
-                };
-
-                let number = index + 1;
-                let line = formatdoc!(r#"
-                    <a class="{current}" href="{href}">
-                        <div class="number">{number}</div>
-                        {thumbnail_rendered}
-                        <div class="description">
-                            <span class="label">{label}</span>
-                            <span class="details">
-                                <span class="duration">{duration}</span>
-                            </span>
-                        </div>
-                    </a>
-                "#);
-
-                out.push_str(&line);
-            }
-
-            if indices_shown.end <= playlist.videos.len() - 1 {
-                let hidden_videos = playlist.videos.len() - indices_shown.end;
-                let more = formatdoc!(r#"
-                    <a class="more" href="..{index_suffix}">
-                        <div class="thumbnail"></div>
-                        <div class="description">{hidden_videos} more videos</div>
-                    </a>
-                "#);
-
-                out.push_str(&more);
-            }
-
-            let label = playlist.label();
-            let t_videos = &site.language.translations.videos;
-            let video_count = playlist.videos.len();
-            let header = formatdoc!(r#"
-                <div class="playlist_header">
-                    {label}<br>
-                    {video_count} {t_videos}
-                </div>
-            "#);
-
-            // TODO: Reactivate
-            // out.push_str(&header);
-
-            out.push_str("</div>");
-
-            out
+            None => String::new()
         }
-        None => String::new()
     };
 
     let copy_link_widget = copy_link(site, &video.path);

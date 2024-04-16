@@ -32,6 +32,7 @@ pub fn collection_html(
     if !collection.videos.is_empty() {
         let videos = collection.videos
             .iter()
+            .filter(|video| !video.unlisted)
             .map(|video| {
                 let slug = &video.slug();
                 let title = video.title.as_deref().unwrap_or_else(|| video.slug());
