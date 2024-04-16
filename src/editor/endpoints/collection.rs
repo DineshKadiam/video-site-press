@@ -184,6 +184,7 @@ pub fn edit_page(
     form_feedback: Option<CollectionFormFeedback>,
 ) -> HttpResponse {
     let path = &collection.path;
+    let t_not_saved = &context.editor_translations.not_saved;
 
     let errors = if collection.errors.is_empty() {
         String::new()
@@ -199,6 +200,9 @@ pub fn edit_page(
             .join("")
     };
 
+    let t_description = &context.editor_translations.description;
+    let t_title = &context.editor_translations.title;
+    let t_unlisted = &context.editor_translations.unlisted;
     let (
         feedback_update,
         input_description,
@@ -206,17 +210,17 @@ pub fn edit_page(
         input_unlisted,
     ) = if let Some(CollectionFormFeedback::Update { description, title, unlisted }) = &form_feedback {
         (
-            r#"<span class="feedback">Not Saved</span>"#,
-            form_textarea("description", "Description", Some(description)),
-            form_field(title, "title", "Title"),
-            form_checkbox(*unlisted, "unlisted", "Unlisted")
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#),
+            form_textarea("description", t_description, Some(description)),
+            form_field(title, "title", t_title),
+            form_checkbox(*unlisted, "unlisted", t_unlisted)
         )
     } else {
         (
-            "",
-            form_textarea("description", "Description", collection.description.as_deref()),
-            form_field(&Field::valid(collection.title.as_deref().unwrap_or("")), "title", "Title"),
-            form_checkbox(collection.unlisted, "unlisted", "Unlisted")
+            String::new(),
+            form_textarea("description", t_description, collection.description.as_deref()),
+            form_field(&Field::valid(collection.title.as_deref().unwrap_or("")), "title", t_title),
+            form_checkbox(collection.unlisted, "unlisted", t_unlisted)
         )
     };
 
@@ -226,15 +230,16 @@ pub fn edit_page(
         let (input, feedback) = if let Some(CollectionFormFeedback::Move { slug }) = &form_feedback {
             (
                 form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-                r#"<span class="feedback">Not Saved</span>"#
+                format!(r#"<span class="feedback">{t_not_saved}</span>"#)
             )
         } else {
             (
                 form_field_pattern(&Field::valid(collection.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-                ""
+                String::new()
             )
         };
 
+        let t_update_permalink = &context.editor_translations.update_permalink;
         formatdoc!(r#"
             <p>
                 Be aware that changing the slug/permalink of a collection changes
@@ -247,14 +252,15 @@ pub fn edit_page(
                 {input}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update Permalink</button> {feedback}
+                    <button>{t_update_permalink}</button> {feedback}
                 </div>
             </form>
         "#)
     };
 
+    let t_upload_new_video = &context.editor_translations.upload_new_video;
     let upload_url = format!("/upload-video/{path}");
-    let video_upload_button = upload_widget(&upload_url, "Upload New Video");
+    let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
     let site_form_feedback = match &form_feedback {
         Some(CollectionFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
@@ -265,24 +271,24 @@ pub fn edit_page(
     let (input_slug_create_playlist, feedback_create_playlist) = if let Some(CollectionFormFeedback::CreatePlaylist { slug }) = &form_feedback {
         (
             form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-            r#"<span class="feedback">Not Saved</span>"#
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         )
     } else {
         (
             form_field_pattern(&Field::valid(""), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-            ""
+            String::new()
         )
     };
     
     let (input_slug_create_subcollection, feedback_create_subcollection) = if let Some(CollectionFormFeedback::CreateSubcollection { slug }) = &form_feedback {
         (
             form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-            r#"<span class="feedback">Not Saved</span>"#
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         )
     } else {
         (
             form_field_pattern(&Field::valid(""), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-            ""
+            String::new()
         )
     };
 
@@ -327,11 +333,21 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
+    let t_collection = &context.editor_translations.collection;
+    let t_create_playlist = &context.editor_translations.create_playlist;
+    let t_create_subcollection = &context.editor_translations.create_subcollection;
+    let t_danger_zone = &context.editor_translations.danger_zone;
+    let t_delete_collection = &context.editor_translations.delete_collection;
+    let t_new_playlist = &context.editor_translations.new_playlist;
+    let t_new_subcollection = &context.editor_translations.new_subcollection;
+    let t_new_video = &context.editor_translations.new_video;
+    let t_really_delete = &context.editor_translations.really_delete;
+    let t_update_collection = &context.editor_translations.update_collection;
     let body = formatdoc!(r#"
         {errors}
 
         <div class="form_group">
-            <h2>Collection</h2>
+            <h2>{t_collection}</h2>
 
             <form action="/collection/{path}" method="post">
                 {input_title}
@@ -339,44 +355,44 @@ pub fn edit_page(
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update Collection</button> {feedback_update}
+                    <button>{t_update_collection}</button> {feedback_update}
                 </div>
             </form>
         </div>
 
         <div class="form_group">
-            <h2>New Subcollection</h2>
+            <h2>{t_new_subcollection}</h2>
 
             <form action="/create-subcollection/{path}" method="post">
                 {input_slug_create_subcollection}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Create Subcollection</button> {feedback_create_subcollection}
+                    <button>{t_create_subcollection}</button> {feedback_create_subcollection}
                 </div>
             </form>
         </div>
 
         <div class="form_group">
-            <h2>New Playlist</h2>
+            <h2>{t_new_playlist}</h2>
 
             <form action="/create-playlist/{path}" method="post">
                 {input_slug_create_playlist}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Create Playlist</button> {feedback_create_playlist}
+                    <button>{t_create_playlist}</button> {feedback_create_playlist}
                 </div>
             </form>
         </div>
 
         <div class="form_group">
-            <h2>New Video</h2>
+            <h2>{t_new_video}</h2>
             {video_upload_button}
         </div>
 
         {site_edit}
 
         <div class="form_group">
-            <h2>Danger Zone</h2>
+            <h2>{t_danger_zone}</h2>
 
             {slug_form}
 
@@ -392,7 +408,7 @@ pub fn edit_page(
             </p>
 
             <form action="/delete-collection/{path}" method="post">
-                <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Collection</button>
+                <button onclick="if (!confirm('{t_really_delete}')) {{ return false; }}">{t_delete_collection}</button>
             </form>
         </div>
     "#);

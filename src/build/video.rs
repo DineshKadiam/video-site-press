@@ -80,7 +80,7 @@ pub fn video_html(
                 for index in indices_shown.clone() {
                     let video_iterated = &listed_videos[index];
 
-                    let label = video_iterated.label();
+                    let label = video_iterated.label(context);
                     let slug = video_iterated.slug();
 
                     let video_prefix = if index == active_position {
@@ -131,7 +131,7 @@ pub fn video_html(
                     out.push_str(&more);
                 }
 
-                let label = playlist.label();
+                let label = playlist.label(context);
                 let t_videos = &site.language.translations.videos;
                 let video_count = listed_videos.len();
                 let header = formatdoc!(r#"

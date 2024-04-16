@@ -18,13 +18,6 @@ use crate::{
 use crate::editor::endpoints;
 use crate::editor::widgets::form_field;
 
-const LABEL_BASE_URL: &str = "Base URL (e.g. https://example.com)";
-const LABEL_DEPLOYMENT_PATH: &str = "Deployment Path (e.g. /data/web/customer123/html";
-const LABEL_DEPLOYMENT_SERVER: &str = "Deployment Server (e.g. ssh-customer123.example.com)";
-const LABEL_DEPLOYMENT_USER: &str = "Deployment User (e.g. customer123)";
-const LABEL_LANGUAGE: &str = "Language (e.g. en, fr)";
-const LABEL_POSTER_ASPECT: &str = "Custom Poster Aspect Ratio (e.g. 16/9, 4:3, 1.778)";
-
 #[derive(Deserialize)]
 pub struct SiteForm {
     base_url: String,
@@ -47,6 +40,7 @@ pub struct SiteFormFeedback {
 }
 
 fn edit_page(
+    context: &Context,
     form_feedback: Option<&SiteFormFeedback>,
     site: &Site
 ) -> String {
@@ -145,6 +139,13 @@ fn edit_page(
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
     //       that give very clear indication about what base url, deployment path/server/user etc. are and
     //       what to pay attention to.
+    let t_deployment_path_label = &context.editor_translations.deployment_path_label;
+    let t_deployment_server_label = &context.editor_translations.deployment_server_label;
+    let t_deployment_user_label = &context.editor_translations.deployment_user_label;
+    let t_language_label = &context.editor_translations.language_label;
+    let t_not_saved = &context.editor_translations.not_saved;
+    let t_poster_aspect_label = &context.editor_translations.poster_aspect_label;
+    let t_public_address_label = &context.editor_translations.public_address_label;
     let (
         theme_key,
         input_base_url,
@@ -165,13 +166,13 @@ fn edit_page(
     }) = &form_feedback {
         (
             &theme.key,
-            form_field(base_url, "base_url", LABEL_BASE_URL),
-            form_field(deployment_path, "deployment_path", LABEL_DEPLOYMENT_PATH),
-            form_field(deployment_server, "deployment_server", LABEL_DEPLOYMENT_SERVER),
-            form_field(deployment_user, "deployment_user", LABEL_DEPLOYMENT_USER),
-            form_field(language, "language", LABEL_LANGUAGE),
-            form_field(poster_aspect, "poster_aspect", LABEL_POSTER_ASPECT),
-            r#"<span class="feedback">Not Saved</span>"#
+            form_field(base_url, "base_url", t_public_address_label),
+            form_field(deployment_path, "deployment_path", t_deployment_path_label),
+            form_field(deployment_server, "deployment_server", t_deployment_server_label),
+            form_field(deployment_user, "deployment_user", t_deployment_user_label),
+            form_field(language, "language", t_language_label),
+            form_field(poster_aspect, "poster_aspect", t_poster_aspect_label),
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         )
     } else {
         let language = match site.language.default {
@@ -186,13 +187,13 @@ fn edit_page(
 
         (
             &site.theme.key,
-            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.representation.as_str()).unwrap_or("")), "base_url", LABEL_BASE_URL),
-            form_field(&Field::valid(site.deploy_config.path.as_ref().map(|path| path.as_str()).unwrap_or("")), "deployment_path", LABEL_DEPLOYMENT_PATH),
-            form_field(&Field::valid(site.deploy_config.server.as_ref().map(|server| server.as_str()).unwrap_or("")), "deployment_server", LABEL_DEPLOYMENT_SERVER),
-            form_field(&Field::valid(site.deploy_config.user.as_ref().map(|user| user.as_str()).unwrap_or("")), "deployment_user", LABEL_DEPLOYMENT_USER),
-            form_field(&Field::valid(language), "language", LABEL_LANGUAGE),
-            form_field(&Field::valid(poster_aspect), "poster_aspect", LABEL_POSTER_ASPECT),
-            ""
+            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.representation.as_str()).unwrap_or("")), "base_url", t_public_address_label),
+            form_field(&Field::valid(site.deploy_config.path.as_ref().map(|path| path.as_str()).unwrap_or("")), "deployment_path", t_deployment_path_label),
+            form_field(&Field::valid(site.deploy_config.server.as_ref().map(|server| server.as_str()).unwrap_or("")), "deployment_server", t_deployment_server_label),
+            form_field(&Field::valid(site.deploy_config.user.as_ref().map(|user| user.as_str()).unwrap_or("")), "deployment_user", t_deployment_user_label),
+            form_field(&Field::valid(language), "language", t_language_label),
+            form_field(&Field::valid(poster_aspect), "poster_aspect", t_poster_aspect_label),
+            String::new()
         )
     };
 
@@ -205,13 +206,15 @@ fn edit_page(
         "#)
     };
 
-    let radio_button_adaptive = radio_button(theme_key, "adaptive", "Adaptive");
-    let radio_button_dark = radio_button(theme_key, "dark", "Dark");
-    let radio_button_light = radio_button(theme_key, "light", "Light");
+    let radio_button_adaptive = radio_button(theme_key, "adaptive", &context.editor_translations.adaptive);
+    let radio_button_dark = radio_button(theme_key, "dark", &context.editor_translations.dark);
+    let radio_button_light = radio_button(theme_key, "light", &context.editor_translations.light);
 
+    let t_site_settings = &context.editor_translations.site_settings;
+    let t_update_site = &context.editor_translations.update_site;
     formatdoc!(r#"
         <div class="form_group">
-            <h2>Site settings</h2>
+            <h2>{t_site_settings}</h2>
 
             {errors}
             
@@ -232,7 +235,7 @@ fn edit_page(
                 </div>
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update</button> {feedback}
+                    <button>{t_update_site}</button> {feedback}
                 </div>
             </form>
         </div>
@@ -242,7 +245,7 @@ fn edit_page(
 pub fn edit(context: &Context, form_feedback: Option<&SiteFormFeedback>, path: &str) -> String {
     if path == "" {
         let site = context.get_site();
-        edit_page(form_feedback, &site)
+        edit_page(context, form_feedback, &site)
     } else {
         String::new()
     }

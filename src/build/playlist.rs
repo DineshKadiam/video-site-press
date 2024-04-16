@@ -61,7 +61,7 @@ pub fn playlist_html(
             .map(|(index, video)| {
                 let number = index + 1;
                 let slug = video.slug();
-                let label = video.label();
+                let label = video.label(context);
                 let video_prefix = format!("{slug}/");
                 let video_thumbnail = thumbnail(video, &video_prefix, true);
 
@@ -77,8 +77,9 @@ pub fn playlist_html(
             .collect::<Vec<String>>()
             .join("\n");
 
+        let t_videos = &context.editor_translations.videos;
         let videos_rendered = formatdoc!(r#"
-            <h2>Videos</h2>
+            <h2>{t_videos}</h2>
 
             <div class="playlist">
                 {videos}

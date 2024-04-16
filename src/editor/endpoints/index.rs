@@ -20,9 +20,10 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             "#)
         }
         SiteContent::Empty => {
+            let t_empty_site = &context.editor_translations.empty_site;
             formatdoc!(r#"
                 <div class="form_group">
-                    <h2>Empty site</h2>
+                    <h2>{t_empty_site}</h2>
 
                     Initialize your site by placing content in the site directory,
                     or picking one of the options below:<br><br>
@@ -64,9 +65,9 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         .iter()
         .map(|job| {
             let label = match &job.kind {
-                JobKind::PlaylistFastTasks(playlist) => playlist.label(),
-                JobKind::VideoFastTasks { video, .. } => video.label(),
-                JobKind::VideoFormat { video, .. } => video.label(),
+                JobKind::PlaylistFastTasks(playlist) => playlist.label(&context),
+                JobKind::VideoFastTasks { video, .. } => video.label(&context),
+                JobKind::VideoFormat { video, .. } => video.label(&context),
             };
             let status = if job.assigned { "assigned" } else { "idle" };
 

@@ -69,7 +69,7 @@ fn build_collection(
 ) {
     let mut breadcrumbs_extended = breadcrumbs.to_owned();
 
-    breadcrumbs_extended.push(Breadcrumb::Collection(collection.label().to_string()));
+    breadcrumbs_extended.push(Breadcrumb::Collection(collection.label(context).to_string()));
 
     for subcollection in &collection.subcollections {
         build_collection(context, subcollection, site, &breadcrumbs_extended);
@@ -94,7 +94,7 @@ fn build_playlist(
 ) {
     let mut breadcrumbs_extended = breadcrumbs.to_owned();
 
-    breadcrumbs_extended.push(Breadcrumb::Playlist(playlist.label().to_string()));
+    breadcrumbs_extended.push(Breadcrumb::Playlist(playlist.label(context).to_string()));
 
     if let Some(banner) = &playlist.banner {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
@@ -131,7 +131,7 @@ fn build_video(
 ) {
     let mut breadcrumbs_extended = breadcrumbs.to_owned();
 
-    breadcrumbs_extended.push(Breadcrumb::Video(video.label().to_string()));
+    breadcrumbs_extended.push(Breadcrumb::Video(video.label(context).to_string()));
 
     let video_build_dir = context.build_dir.join(&video.path);
     fs::create_dir_all(&video_build_dir).unwrap();

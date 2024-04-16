@@ -43,6 +43,7 @@ const ICON_VIDEO: &'static str = r#"
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
+    context: &Context,
     path: &str
 ) -> String {
     let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.to_vec();
@@ -61,7 +62,7 @@ fn collection_tree(
 
             let active = path == collection_path;
             let href = format!("/collection/{collection_path}");
-            let node = tree_node(active, &collection.errors, &href, ICON_COLLECTION, collection.slug(), collection.title.as_deref());
+            let node = tree_node(active, context, &collection.errors, &href, ICON_COLLECTION, collection.slug(), collection.title.as_deref());
 
             if active || path
                 .strip_prefix(&collection.path)
@@ -71,7 +72,7 @@ fn collection_tree(
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
             }
 
-            let collection_content = collection_tree(breadcrumbs, collection, path);
+            let collection_content = collection_tree(breadcrumbs, collection, context, path);
 
             formatdoc!(r#"
                 <li>
@@ -99,7 +100,7 @@ fn collection_tree(
 
             let active = path == playlist_path;
             let href = format!("/playlist/{playlist_path}");
-            let node = tree_node(active, &playlist.errors, &href, ICON_PLAYLIST, playlist.slug(), playlist.title.as_deref());
+            let node = tree_node(active, context, &playlist.errors, &href, ICON_PLAYLIST, playlist.slug(), playlist.title.as_deref());
 
             if active || path
                 .strip_prefix(&playlist.path)
@@ -119,7 +120,7 @@ fn collection_tree(
 
                         let active = path == video_path;
                         let href = format!("/video/{video_path}");
-                        let node = tree_node(active, &video.errors, &href, ICON_VIDEO, video.slug(), video.title.as_deref());
+                        let node = tree_node(active, context, &video.errors, &href, ICON_VIDEO, video.slug(), video.title.as_deref());
 
                         if active {
                             let label = video.title.as_deref().unwrap_or_else(|| video.slug());
@@ -168,7 +169,7 @@ fn collection_tree(
 
             let active = path == video_path;
             let href = format!("/video/{video_path}");
-            let node = tree_node(active, &video.errors, &href, ICON_VIDEO, video.slug(), video.title.as_deref());
+            let node = tree_node(active, context, &video.errors, &href, ICON_VIDEO, video.slug(), video.title.as_deref());
 
             if active {
                 let label = video.title.as_deref().unwrap_or_else(|| video.slug());
@@ -285,7 +286,7 @@ pub fn layout(
     body: &str,
     title: &str
 ) -> String {
-    let (breadcrumbs, tree) = site_tree(path, site, &context.site_dir);
+    let (breadcrumbs, tree) = site_tree(context, path, site, &context.site_dir);
 
     // TODO: Possibly hash scripts/styles
     let head = formatdoc!(r#"
@@ -302,6 +303,7 @@ pub fn layout(
 
     let hyper8_version = env!("CARGO_PKG_VERSION");
 
+    let t_close = &context.editor_translations.close;
     let splash = formatdoc!(r#"
         <dialog class="splash_wrapper">
             <div class="splash">
@@ -318,7 +320,7 @@ pub fn layout(
                             <span>Hyper 8 Video System {hyper8_version}</span>
                         </a>
                         <form method="dialog">
-                            <button autofocus>Close</button>
+                            <button autofocus>{t_close}</button>
                         </form>
                     </div>
                 </div>
@@ -375,12 +377,13 @@ pub fn layout(
 }
 
 pub fn not_found(context: &Context, message: &str) -> HttpResponse {
+    let t_back = &context.editor_translations.back;
     let body = formatdoc!(r#"
         <div>
             {message}
         </div>
 
-        <a href="/">Back to index</a>
+        <a href="/">{t_back}</a>
     "#);
 
     let site = &context.get_site();
@@ -391,7 +394,12 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
         .body(html)
 }
 
-pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
+pub fn site_tree(
+    context: &Context,
+    path: &str,
+    site: &Site,
+    site_dir: &Path
+) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
     let root_active = path == "";
@@ -404,10 +412,10 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
             let (icon, space) = if root_active { (ICON_COLLECTION, " ") } else { ("", "") };
             breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
 
-            let collection_content = collection_tree(&mut breadcrumbs, collection, path);
+            let collection_content = collection_tree(&mut breadcrumbs, collection, context, path);
 
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
-            let node = tree_node(root_active, errors, "/collection/", ICON_COLLECTION, site_dir, collection.title.as_deref());
+            let node = tree_node(root_active, context, errors, "/collection/", ICON_COLLECTION, site_dir, collection.title.as_deref());
 
             formatdoc!(r#"
                 {node}
@@ -419,10 +427,12 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
             breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
 
             // TODO: Dedicated icon for empty site?
-            tree_node(root_active, &Vec::new(), "/", ICON_COLLECTION, site_dir, Some("Empty site"))
+            let t_empty_site = &context.editor_translations.empty_site;
+            tree_node(root_active, context, &Vec::new(), "/", ICON_COLLECTION, site_dir, Some(t_empty_site))
         }
         SiteContent::Playlist(playlist) => {
-            let breadcrumb_title = playlist.title.as_deref().unwrap_or("Playlist");
+            let t_playlist = &context.editor_translations.playlist;
+            let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
             let (icon, space) = if root_active { (ICON_PLAYLIST, " ") } else { ("", "") };
             breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{breadcrumb_title}</a>"#));
 
@@ -455,7 +465,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
                             breadcrumbs.push(format!(r#"<a href="{href}">{ICON_VIDEO} {slug}</a>"#));
                         }
 
-                        let node = tree_node(active, &video.errors, &href, ICON_VIDEO, slug, video.title.as_deref());
+                        let node = tree_node(active, context, &video.errors, &href, ICON_VIDEO, slug, video.title.as_deref());
 
                         formatdoc!(r#"
                             <li>
@@ -467,7 +477,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
                     .join("")
             };
 
-            let node = tree_node(root_active, &playlist.errors, "/playlist/", ICON_PLAYLIST, site_dir, playlist.title.as_deref());
+            let node = tree_node(root_active, context, &playlist.errors, "/playlist/", ICON_PLAYLIST, site_dir, playlist.title.as_deref());
 
             formatdoc!(r#"
                 {node}
@@ -481,7 +491,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
             let (icon, space) = if root_active { (ICON_VIDEO, " ") } else { ("", "") };
             breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
 
-            tree_node(root_active, &video.errors, "/video/", ICON_VIDEO, site_dir, video.title.as_deref())
+            tree_node(root_active, context, &video.errors, "/video/", ICON_VIDEO, site_dir, video.title.as_deref())
         }
     };
 
@@ -496,6 +506,7 @@ pub fn site_tree(path: &str, site: &Site, site_dir: &Path) -> (String, String) {
 
 fn tree_node(
     active: bool,
+    context: &Context,
     errors: &[String],
     href: &str,
     icon: &str,
@@ -513,7 +524,10 @@ fn tree_node(
             </span>
         "#)
     };
-    let title = title_option.unwrap_or(r#"<span class="muted">No title</span>"#);
+    let t_no_title = &context.editor_translations.no_title;
+    let title = title_option
+        .map(|title| title.to_string())
+        .unwrap_or(format!(r#"<span class="muted">{t_no_title}</span>"#));
 
     let depth = if href.ends_with('/') { 0 } else { href.split('/').count() - 2 };
     let padding_left_rem = match depth {

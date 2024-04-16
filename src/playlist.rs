@@ -184,12 +184,12 @@ impl Playlist {
         None
     }
 
-    pub fn label(&self) -> &str {
+    pub fn label<'a>(&'a self, context: &'a Context) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
                 self.slug_opt()
-                    .unwrap_or("Playlist")
+                    .unwrap_or(&context.editor_translations.playlist)
             )
     }
 

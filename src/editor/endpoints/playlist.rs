@@ -49,10 +49,10 @@ pub enum PlaylistFormFeedback<'a> {
     }
 }
 
-#[derive(Deserialize)]
-pub struct PlaylistCreateForm {
-    title: String
-}
+// #[derive(Deserialize)]
+// pub struct PlaylistCreateForm {
+//     title: String
+// }
 
 #[derive(Deserialize)]
 pub struct PlaylistMoveForm {
@@ -117,6 +117,8 @@ pub fn edit_page(
     form_feedback: Option<PlaylistFormFeedback>,
     playlist: &Playlist
 ) -> HttpResponse {
+    let t_not_saved = &context.editor_translations.not_saved;
+
     let errors = if playlist.errors.is_empty() {
         String::new()
     } else {
@@ -133,7 +135,9 @@ pub fn edit_page(
 
     let path = &playlist.path;
 
-    let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), "Upload Banner");
+    let t_delete_banner = &context.editor_translations.delete_banner;
+    let t_upload_banner = &context.editor_translations.upload_banner;
+    let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), t_upload_banner);
     let banner_form = match &playlist.banner {
         Some(banner) => {
             let alt = if let Some(description) = &banner.description {
@@ -150,25 +154,30 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let description = form_textarea("description", "Banner Description", banner.description.as_deref());
+            let t_banner_description = &context.editor_translations.banner_description;
+            let description = form_textarea("description", t_banner_description, banner.description.as_deref());
 
+            let t_update_description = &context.editor_translations.update_description;
             format!(r#"
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
                     {banner_upload_button}
                     <form action="/delete-banner/{path}" method="post">
-                        <button>Delete Banner</button>
+                        <button>{t_delete_banner}</button>
                     </form>
                 </div>
                 <form action="/update-banner/{path}" method="post">
                     {description}
-                    <button>Update Description</button>
+                    <button>{t_update_description}</button>
                 </form>
             "#)
         }
         None => banner_upload_button
     };
 
+    let t_description = &context.editor_translations.description;
+    let t_title = &context.editor_translations.title;
+    let t_unlisted = &context.editor_translations.unlisted;
     let (
         feedback_update,
         input_description,
@@ -176,17 +185,17 @@ pub fn edit_page(
         input_unlisted,
     ) = if let Some(PlaylistFormFeedback::Update { description, title, unlisted }) = &form_feedback {
         (
-            r#"<span class="feedback">Not Saved</span>"#,
-            form_textarea("description", "Description", Some(description)),
-            form_field(title, "title", "Title"),
-            form_checkbox(*unlisted, "unlisted", "Unlisted")
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#),
+            form_textarea("description", t_description, Some(description)),
+            form_field(title, "title", t_title),
+            form_checkbox(*unlisted, "unlisted", t_unlisted)
         )
     } else {
         (
-            "",
-            form_textarea("description", "Description", playlist.description.as_deref()),
-            form_field(&Field::valid(playlist.title.as_deref().unwrap_or("")), "title", "Title"),
-            form_checkbox(playlist.unlisted, "unlisted", "Unlisted")
+            String::new(),
+            form_textarea("description", t_description, playlist.description.as_deref()),
+            form_field(&Field::valid(playlist.title.as_deref().unwrap_or("")), "title", t_title),
+            form_checkbox(playlist.unlisted, "unlisted", t_unlisted)
         )
     };
 
@@ -197,15 +206,16 @@ pub fn edit_page(
             (
                 // TODO: Double-check this pattern (and elsewhere checks from start to end ($^?))
                 form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-                r#"<span class="feedback">Not Saved</span>"#
+                format!(r#"<span class="feedback">{t_not_saved}</span>"#)
             )
         } else {
             (
                 form_field_pattern(&Field::valid(playlist.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-                ""
+                String::new()
             )
         };
 
+        let t_update_permalink = &context.editor_translations.update_permalink;
         formatdoc!(r#"
             <p>
                 Be aware that changing the slug/permalink of a playlist changes
@@ -218,14 +228,15 @@ pub fn edit_page(
                 {input}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update Permalink</button> {feedback}
+                    <button>{t_update_permalink}</button> {feedback}
                 </div>
             </form>
         "#)
     };
 
+    let t_upload_new_video = &context.editor_translations.upload_new_video;
     let upload_url = format!("/upload-video/{path}");
-    let video_upload_button = upload_widget(&upload_url, "Upload New Video");
+    let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
     let site_form_feedback = match &form_feedback {
         Some(PlaylistFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
@@ -267,11 +278,18 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
+    let t_banner_image = &context.editor_translations.banner_image;
+    let t_danger_zone = &context.editor_translations.danger_zone;
+    let t_delete_playlist = &context.editor_translations.delete_playlist;
+    let t_new_video = &context.editor_translations.new_video;
+    let t_playlist = &context.editor_translations.playlist;
+    let t_really_delete = &context.editor_translations.really_delete;
+    let t_update_playlist = &context.editor_translations.update_playlist;
     let body = formatdoc!(r#"
         {errors}
 
         <div class="form_group">
-            <h2>Playlist</h2>
+            <h2>{t_playlist}</h2>
 
             <form action="/playlist/{path}" method="post">
                 {input_title}
@@ -279,26 +297,26 @@ pub fn edit_page(
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update Playlist</button> {feedback_update}
+                    <button>{t_update_playlist}</button> {feedback_update}
                 </div>
             </form>
         </div>
 
         <div class="form_group">
-            <h2>New Video</h2>
+            <h2>{t_new_video}</h2>
 
             {video_upload_button}
         </div>
 
         <div class="form_group">
-            <h2>Banner Image</h2>
+            <h2>{t_banner_image}</h2>
             {banner_form}
         </div>
 
         {site_edit}
 
         <div class="form_group">
-            <h2>Danger Zone</h2>
+            <h2>{t_danger_zone}</h2>
 
             {slug_form}
 
@@ -315,7 +333,7 @@ pub fn edit_page(
             </p>
 
             <form action="/delete-playlist/{path}" method="post">
-                <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Playlist</button>
+                <button onclick="if (!confirm('{t_really_delete}')) {{ return false; }}">{t_delete_playlist}</button>
             </form>
         </div>
     "#);
@@ -328,101 +346,6 @@ pub fn edit_page(
         .content_type(ContentType::html())
         .body(html)
 }
-
-// fn videos_form(playlist: &Playlist, videos: &[Video]) -> String {
-//     let id = &playlist.id;
-
-//     let videos_rendered = playlist.videos
-//         .iter()
-//         .filter_map(|slug| videos.iter().find(|video| &video.slug == slug))
-//         .map(|video| {
-//             let video_id = &video.id;
-//             let video_slug = &video.slug;
-//             let title = &video.title();
-
-//             let unlisted = match video.unlisted {
-//                 true => r#" <span class="badge">Unlisted</span>"#,
-//                 false => ""
-//             };
-
-//             formatdoc!(r#"
-//                 <div style="column-gap: .5rem; display: flex;">
-//                     <a href="/video/{video_id}">{title}</a>{unlisted}<br>
-//                     <form action="/playlist/{id}/remove" method="post">
-//                         <input name="slug" type="hidden" value="{video_slug}">
-//                         <button>Delete</button>
-//                     </form>
-//                 </div>
-//             "#)
-//         })
-//         .collect::<Vec<String>>()
-//         .join("\n");
-
-//     let options_add = videos
-//         .iter()
-//         .filter(|video| !playlist.videos.contains(&video.slug))
-//         .map(|video| {
-//             let slug = &video.slug;
-//             let title = &video.title();
-
-//             formatdoc!(r#"
-//                 <option value="{slug}">{title}</option>
-//             "#)
-//         })
-//         .collect::<Vec<String>>()
-//         .join("\n");
-
-//     let select_add = formatdoc!(r#"
-//         <div>
-//             <label for="add_slug">Video to add</label>
-//             <select id="add_slug" name="slug">
-//                 {options_add}
-//             </select>
-//         </div>
-//     "#);
-
-//     let button_add = formatdoc!(r#"<button>Add</button>"#);
-
-//     formatdoc!(r#"
-//         {videos_rendered}
-//         <form action="/playlist/{id}/add" method="post">
-//             {select_add}
-//             {button_add}
-//         </form>
-//     "#)
-// }
-
-// pub async fn add_video(
-//     context: Data<Arc<Context>>,
-//     form: Form<VideoForm>,
-//     path: ActixPath<ContextPath>
-// ) -> Either<Redirect, HttpResponse> {
-//     if !form.slug.is_empty() {
-//         let playlist = {
-//             let mut playlist_mut = match context.get_playlist(&path.path) {
-//                 Some(playlist) => playlist,
-//                 None => return Either::Right(
-//                     not_found(&context, &format!("Playlist {} not found.", &path.path))
-//                 )
-//             };
-
-//             playlist_mut.videos.push(form.slug.clone());
-
-//             playlist_mut.clone()
-//         };
-
-//         playlist.write_manifest(&context.site_dir);
-
-//         let redirect_url = format!("/playlist/{}", path.path);
-
-//         Either::Left(
-//             Redirect::to(redirect_url).see_other()
-//         )
-//     } else {
-//         // TODO: Implement the entire thing properly
-//         panic!()
-//     }
-// }
 
 // pub async fn create(
 //     context: Data<Arc<Context>>,
@@ -459,7 +382,7 @@ pub fn edit_page(
 //         panic!();
 
 //         // let settings = context.collection.get_settings();
-//         // let html = layout(&settings, &body, "New Playlist");
+//         // let html = layout(&settings, &body, t_new_playlist);
 
 //         // Either::Right(
 //         //     HttpResponse::Ok()

@@ -194,7 +194,7 @@ pub async fn downsize(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
-fn downsize_form(video: &Video) -> String {
+fn downsize_form(context: &Context, video: &Video) -> String {
     let widest_width = if let Some(version) = video.highest_resolution_version() {
         version.video_meta.as_ref().unwrap().width
     } else {
@@ -225,6 +225,8 @@ fn downsize_form(video: &Video) -> String {
     let options = options.join("\n");
     let path = &video.path;
 
+    let t_default_codec = &context.editor_translations.default_codec;
+    let t_request_version = &context.editor_translations.request_version;
     formatdoc!(r#"
         <form action="/downsize/{path}" method="post">
             <div class="button_group">
@@ -232,12 +234,12 @@ fn downsize_form(video: &Video) -> String {
                     {options}
                 </select>
                 <select name="codec">
-                    <option value="h264">Default Codec</option>
+                    <option value="h264">{t_default_codec}</option>
                     <option value="h264">H264</option>
                     <option value="hevc">HEVC</option>
                     <option value="vp9">VP9</option>
                 </select>
-                <button>Request Version</button>
+                <button>{t_request_version}</button>
             </div>
         </form>
     "#)
@@ -248,6 +250,8 @@ pub fn edit_page(
     form_feedback: Option<VideoFormFeedback>,
     video: &Video
 ) -> HttpResponse {
+    let t_not_saved = &context.editor_translations.not_saved;
+
     let errors = if video.errors.is_empty() {
         String::new()
     } else {
@@ -278,9 +282,9 @@ pub fn edit_page(
                         let width = video_meta.width;
 
                         let (browser_support, reasons) = match video_meta.browser_support.analysis() {
-                            Some(Ok(message)) => ("Good browser support", message),
-                            Some(Err(message)) => ("Not supported for playback by browsers", message),
-                            None => ("Browser support unclear", String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
+                            Some(Ok(message)) => (&context.editor_translations.good_browser_support, message),
+                            Some(Err(message)) => (&context.editor_translations.not_support_by_browsers, message),
+                            None => (&context.editor_translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
                         };
 
                         (
@@ -296,8 +300,9 @@ pub fn edit_page(
 
                 let file_name = &version.file_name;
 
+                let t_really_delete = &context.editor_translations.really_delete;
                 let delete_form = formatdoc!(r#"
-                    <form action="/delete-version/{path}" method="post" onsubmit="return confirm('Really delete?');" style="display: inline;">
+                    <form action="/delete-version/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
                         <input name="file_name" type="hidden" value="{file_name}">
                         <button style="display: inline;">×</button>
                     </form>
@@ -315,10 +320,11 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let downsize_form_rendered = downsize_form(video);
+        let downsize_form_rendered = downsize_form(context, video);
 
+        let t_video_audio_versions = &context.editor_translations.video_audio_versions;
         formatdoc!(r#"
-            <h2>Video/Audio Versions</h2>
+            <h2>{t_video_audio_versions}</h2>
 
             <ul class="versions">
                 {versions}
@@ -328,7 +334,8 @@ pub fn edit_page(
         "#)
     };
 
-    let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), "Upload Poster");
+    let t_upload_poster = &context.editor_translations.upload_poster;
+    let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), t_upload_poster);
     let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
         format!(r#"<span class="error">{error}</span>"#)
     } else {
@@ -350,19 +357,23 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let description = form_textarea("description", "Poster Description", poster.description.as_deref());
+            let t_poster_description = &context.editor_translations.poster_description;
+            let description = form_textarea("description", t_poster_description, poster.description.as_deref());
 
+            let t_delete_poster = &context.editor_translations.delete_poster;
+            let t_random_poster = &context.editor_translations.random_poster;
+            let t_update_description = &context.editor_translations.update_description;
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
                 <div class="button_group">
                     {poster_upload_button}
                     <form action="/delete-poster/{path}" method="post">
                         <div style="align-items: center; column-gap: .5rem; display: flex;">
-                            <button>Delete Poster</button>
+                            <button>{t_delete_poster}</button>
                         </div>
                     </form>
                     <form action="/video-random-poster/{path}" method="post">
-                        <button onclick="alert("Not yet implemented">Random Poster</button>
+                        <button onclick="alert("Not yet implemented">{t_random_poster}</button>
                     </form>
                 </div>
                 {poster_upload_button_error}
@@ -370,7 +381,7 @@ pub fn edit_page(
                     {description}
 
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button>Update Description</button>
+                        <button>{t_update_description}</button>
                     </div>
                 </form>
             "#)
@@ -383,6 +394,10 @@ pub fn edit_page(
         }
     };
 
+    let t_description = &context.editor_translations.description;
+    let t_release_date = &context.editor_translations.release_date;
+    let t_title = &context.editor_translations.title;
+    let t_unlisted = &context.editor_translations.unlisted;
     let (
         feedback_update,
         input_description,
@@ -391,11 +406,11 @@ pub fn edit_page(
         input_unlisted,
     ) = if let Some(VideoFormFeedback::Update { description, title, release_date, unlisted }) = &form_feedback {
         (
-            r#"<span class="feedback">Not Saved</span>"#,
-            form_textarea("description", "Description", Some(description)),
-            form_field_date(release_date, "release_date", "Release Date"),
-            form_field(title, "title", "Title"),
-            form_checkbox(*unlisted, "unlisted", "Unlisted")
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#),
+            form_textarea("description", t_description, Some(description)),
+            form_field_date(release_date, "release_date", t_release_date),
+            form_field(title, "title", t_title),
+            form_checkbox(*unlisted, "unlisted", t_unlisted)
         )
     } else {
         let release_date = video.release_date
@@ -404,11 +419,11 @@ pub fn edit_page(
             .unwrap_or(String::new());
 
         (
-            "",
-            form_textarea("description", "Description", video.description.as_deref()),
-            form_field_date(&Field::valid(release_date), "release_date", "Release Date"),
-            form_field(&Field::valid(video.title.as_deref().unwrap_or("")), "title", "Title"),
-            form_checkbox(video.unlisted, "unlisted", "Unlisted")
+            String::new(),
+            form_textarea("description", t_description, video.description.as_deref()),
+            form_field_date(&Field::valid(release_date), "release_date", t_release_date),
+            form_field(&Field::valid(video.title.as_deref().unwrap_or("")), "title", t_title),
+            form_checkbox(video.unlisted, "unlisted", t_unlisted)
         )
     };
 
@@ -419,15 +434,16 @@ pub fn edit_page(
             (
                 // TODO: Double-check this pattern (and elsewhere checks from start to end ($^?))
                 form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-                r#"<span class="feedback">Not Saved</span>"#
+                format!(r#"<span class="feedback">{t_not_saved}</span>"#)
             )
         } else {
             (
                 form_field_pattern(&Field::valid(video.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
-                ""
+                String::new()
             )
         };
 
+        let t_update_permalink = &context.editor_translations.update_permalink;
         formatdoc!(r#"
             <p>
                 Be aware that changing the slug/permalink of a video changes
@@ -440,7 +456,7 @@ pub fn edit_page(
                 {input}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update Permalink</button> {feedback}
+                    <button>{t_update_permalink}</button> {feedback}
                 </div>
             </form>
         "#)
@@ -452,8 +468,9 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path);
 
+    let t_upload_new_version = &context.editor_translations.upload_new_version;
     let upload_url = format!("/upload-video/{path}");
-    let video_upload_button = upload_widget(&upload_url, "Upload New Version");
+    let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
 
     // TODO: This shows also on non-root/non-site videos (?) but that's not implemented
     //       yet at all? (So therefore this needs to be implemented)
@@ -480,11 +497,17 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
+    let t_danger_zone = &context.editor_translations.danger_zone;
+    let t_delete_video = &context.editor_translations.delete_video;
+    let t_poster_image = &context.editor_translations.poster_image;
+    let t_really_delete = &context.editor_translations.really_delete;
+    let t_video = &context.editor_translations.video;
+    let t_update_video = &context.editor_translations.update_video;
     let body = formatdoc!(r#"
         {errors}
 
         <div class="form_group">
-            <h2>Video</h2>
+            <h2>{t_video}</h2>
 
             <form action="/video/{path}" method="post">
                 {input_title}
@@ -493,7 +516,7 @@ pub fn edit_page(
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>Update Video</button> {feedback_update}
+                    <button>{t_update_video}</button> {feedback_update}
                 </div>
             </form>
         </div>
@@ -505,14 +528,14 @@ pub fn edit_page(
 
 
         <div class="form_group">
-            <h2>Poster Image</h2>
+            <h2>{t_poster_image}</h2>
             {poster_form}
         </div>
 
         {site_edit}
 
         <div class="form_group">
-            <h2>Danger Zone</h2>
+            <h2>{t_danger_zone}</h2>
 
             {slug_form}
 
@@ -527,7 +550,7 @@ pub fn edit_page(
             </p>
 
             <form action="/delete-video/{path}" method="post">
-                <button onclick="if (!confirm('Really delete?')) {{ return false; }}">Delete Video</button>
+                <button onclick="if (!confirm('{t_really_delete}')) {{ return false; }}">{t_delete_video}</button>
             </form>
         </div>
     "#);

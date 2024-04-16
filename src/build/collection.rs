@@ -50,8 +50,9 @@ pub fn collection_html(
             .collect::<Vec<String>>()
             .join("\n");
 
+        let t_videos = &context.editor_translations.videos;
         let videos_rendered = formatdoc!(r#"
-            <h2>Videos</h2>
+            <h2>{t_videos}</h2>
 
             <div class="videos_grid">
                 {videos}
@@ -84,8 +85,9 @@ pub fn collection_html(
             .collect::<Vec<String>>()
             .join("\n");
 
+        let t_playlists = &context.editor_translations.playlists;
         let playlists_rendered = formatdoc!(r#"
-            <h2>Playlists</h2>
+            <h2>{t_playlists}</h2>
 
             <div>
                 {playlists}

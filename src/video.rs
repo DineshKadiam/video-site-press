@@ -224,12 +224,12 @@ impl Video {
         version_candidate.map(|pixels_version| pixels_version.1)
     }
 
-    pub fn label(&self) -> &str {
+    pub fn label<'a>(&'a self, context: &'a Context) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
                 self.slug_opt()
-                    .unwrap_or("Video")
+                    .unwrap_or(&context.editor_translations.video)
             )
     }
 
