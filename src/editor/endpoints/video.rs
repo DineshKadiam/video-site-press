@@ -48,6 +48,12 @@ use crate::util::{
     supported_video_extension,
     validate_slug
 };
+
+#[derive(Deserialize)]
+pub struct DeleteVersionForm {
+    file_name: String
+}
+
 #[derive(Deserialize)]
 pub struct DownsizeForm {
     codec: String,
@@ -120,6 +126,35 @@ pub async fn delete_poster(
             video.poster = None;
             video.write_manifest(&context);
             let _ = fs::remove_file(poster_path);
+        }
+    };
+
+    match context.update_video(mutation, &path.path) {
+        Ok(video) => {
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => Either::Right(
+            not_found(&context, &format!("Video {} not found.", &path.path))
+        )
+    }
+}
+
+pub async fn delete_version(
+    context: Data<Arc<Context>>,
+    form: Form<DeleteVersionForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    // TODO: Minor issue if at all, but there is no feedback if the version is not found
+
+    let mutation = |video_mut: &mut Video| {
+        if let Some(version) = video_mut.versions
+            .iter()
+            .position(|version| version.file_name == form.file_name)
+            .map(|index| video_mut.versions.swap_remove(index)) {
+            let version_path = context.site_dir.join(&path.path).join(&version.file_name);
+            video_mut.write_manifest(&context);
+            let _ = fs::remove_file(&version_path);
         }
     };
 
@@ -261,10 +296,17 @@ pub fn edit_page(
 
                 let file_name = &version.file_name;
 
+                let delete_form = formatdoc!(r#"
+                    <form action="/delete-version/{path}" method="post" onsubmit="return confirm('Really delete?');" style="display: inline;">
+                        <input name="file_name" type="hidden" value="{file_name}">
+                        <button style="display: inline;">×</button>
+                    </form>
+                "#);
+
                 formatdoc!(r#"
                     <li>
                         <div>
-                            <span class="file_name">{file_name}</span> <span class="metadata">{video_meta}</span>
+                            <span class="file_name">{file_name}</span> <span class="metadata">{video_meta}</span> {delete_form}
                         </div>
                         {browser_support}
                     </li>
