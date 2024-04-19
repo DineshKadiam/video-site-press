@@ -14,31 +14,7 @@ use crate::{
     SiteContent,
     Video
 };
-use crate::icons::LOGO_SVG;
-
-const ICON_COLLECTION: &'static str = r#"
-<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <path d="m9.8672 9.9004v19.602h19.602v-19.602h-19.602zm24.664 0v19.602h19.602v-19.602h-19.602zm-24.664 24.664v19.602h19.602v-19.602h-19.602zm24.664 0v19.602h19.602v-19.602h-19.602z"/>
-</svg>
-"#;
-
-const ICON_EXTERNAL: &'static str = r#"
-<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <path d="m55.258 55.088v-21.334h-6.2832v15.074h-33.691v-33.697h15.066v-6.2832h-21.35v46.266zm0-46.24h-20.184v6.2832h9.6582l-19.932 19.932 4.4434 4.4453 19.73-19.73v9.2793h6.2832z"/>
-</svg>
-"#;
-
-const ICON_PLAYLIST: &'static str = r#"
-<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <path d="m32 7.4073c-13.582 6.153e-4 -24.592 11.011-24.593 24.593 6.153e-4 13.582 11.011 24.592 24.593 24.593 13.582-6.12e-4 24.592-11.011 24.593-24.593-6.12e-4 -13.582-11.011-24.592-24.593-24.593zm0 6.3023c10.101 4.56e-4 18.29 8.1893 18.29 18.29-4.56e-4 10.101-8.1893 18.29-18.29 18.29-10.101-4.56e-4 -18.29-8.1893-18.29-18.29 4.56e-4 -10.101 8.1893-18.29 18.29-18.29zm-6.5521 7.515 0.02539 21.551 17.973-10.451z"/>
-</svg>
-"#;
-
-const ICON_VIDEO: &'static str = r#"
-<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <path d="m9.8672 9.8672v44.266h44.266v-44.266h-44.266zm5.0625 4.4121h5.0625v5.0625h-5.0625v-5.0625zm29.078 0h5.0625v5.0625h-5.0625v-5.0625zm-29.078 10.125h5.0625v5.0645h-5.0625v-5.0645zm29.078 0h5.0625v5.0645h-5.0625v-5.0645zm-29.078 10.127h5.0625v5.0645h-5.0625v-5.0645zm29.078 0h5.0625v5.0645h-5.0625v-5.0645zm-29.078 10.127h5.0625v5.0625h-5.0625v-5.0625zm29.078 0h5.0625v5.0625h-5.0625v-5.0625z"/>
-</svg>
-"#;
+use crate::icons;
 
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
@@ -46,6 +22,9 @@ fn collection_tree(
     context: &Context,
     path: &str
 ) -> String {
+    let collection_icon = icons::collection(&context.editor_translations.collection);
+    let playlist_icon = icons::playlist(&context.editor_translations.playlist);
+    let video_icon = icons::video(&context.editor_translations.video);
     let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.to_vec();
 
     subcollections_sorted.sort_unstable_by(|a, b| {
@@ -62,13 +41,13 @@ fn collection_tree(
 
             let active = path == collection_path;
             let href = format!("/collection/{collection_path}");
-            let node = tree_node(active, context, &collection.errors, &href, ICON_COLLECTION, collection.slug(), collection.title.as_deref());
+            let node = tree_node(active, context, &collection.errors, &href, &collection_icon, collection.slug(), collection.title.as_deref());
 
             if active || path
                 .strip_prefix(&collection.path)
                 .is_some_and(|rest| rest.starts_with('/')) {
                 let label = collection.title.as_deref().unwrap_or_else(|| collection.slug());
-                let (icon, space) = if active { (ICON_COLLECTION, " ") } else { ("", "") };
+                let (icon, space) = if active { (collection_icon.as_str(), " ") } else { ("", "") };
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
             }
 
@@ -100,13 +79,13 @@ fn collection_tree(
 
             let active = path == playlist_path;
             let href = format!("/playlist/{playlist_path}");
-            let node = tree_node(active, context, &playlist.errors, &href, ICON_PLAYLIST, playlist.slug(), playlist.title.as_deref());
+            let node = tree_node(active, context, &playlist.errors, &href, &playlist_icon, playlist.slug(), playlist.title.as_deref());
 
             if active || path
                 .strip_prefix(&playlist.path)
                 .is_some_and(|rest| rest.starts_with('/')) {
                 let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
-                let (icon, space) = if active { (ICON_PLAYLIST, " ") } else { ("", "") };
+                let (icon, space) = if active { (playlist_icon.as_str(), " ") } else { ("", "") };
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
             }
 
@@ -120,11 +99,11 @@ fn collection_tree(
 
                         let active = path == video_path;
                         let href = format!("/video/{video_path}");
-                        let node = tree_node(active, context, &video.errors, &href, ICON_VIDEO, video.slug(), video.title.as_deref());
+                        let node = tree_node(active, context, &video.errors, &href, &video_icon, video.slug(), video.title.as_deref());
 
                         if active {
                             let label = video.title.as_deref().unwrap_or_else(|| video.slug());
-                            breadcrumbs.push(format!(r#"<a href="{href}">{ICON_VIDEO} {label}</a>"#));
+                            breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {label}</a>"#));
                         }
 
                         formatdoc!(r#"
@@ -169,11 +148,11 @@ fn collection_tree(
 
             let active = path == video_path;
             let href = format!("/video/{video_path}");
-            let node = tree_node(active, context, &video.errors, &href, ICON_VIDEO, video.slug(), video.title.as_deref());
+            let node = tree_node(active, context, &video.errors, &href, &video_icon, video.slug(), video.title.as_deref());
 
             if active {
                 let label = video.title.as_deref().unwrap_or_else(|| video.slug());
-                breadcrumbs.push(format!(r#"<a href="{href}">{ICON_VIDEO} {label}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {label}</a>"#));
             }
 
             formatdoc!(r#"
@@ -303,6 +282,7 @@ pub fn layout(
 
     let hyper8_version = env!("CARGO_PKG_VERSION");
 
+    let external_icon = icons::external(&context.editor_translations.external_link);
     let t_close = &context.editor_translations.close;
     let splash = formatdoc!(r#"
         <dialog class="splash_wrapper">
@@ -316,7 +296,7 @@ pub fn layout(
                     </ul>
                     <div class="hsplit">
                         <a href="https://simonrepp.com/hyper8" target="_blank">
-                            {ICON_EXTERNAL}
+                            {external_icon}
                             <span>Hyper 8 Video System {hyper8_version}</span>
                         </a>
                         <form method="dialog">
@@ -338,6 +318,7 @@ pub fn layout(
         false => format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{t_deploy}*</button>"#)
     };
 
+    let logo_icon = icons::logo(&context.editor_translations.hyper8_logo);
     let t_filter = &context.editor_translations.filter;
     let t_preview = &context.editor_translations.preview;
     let body = formatdoc!(r#"
@@ -346,7 +327,7 @@ pub fn layout(
                     <div class="buttons">
                         <form action="/build" method="post" target="_blank"><button>{t_preview}</button></form>
                         {deploy_button}
-                        <button id="toggle-splash">{LOGO_SVG}</button>
+                        <button id="toggle-splash">{logo_icon}</button>
                     </div>
                     <span class="processing"></span>
                 </div>
@@ -408,14 +389,16 @@ pub fn site_tree(
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
-            let breadcrumb_title = collection.title.as_deref().unwrap_or("Collection");
-            let (icon, space) = if root_active { (ICON_COLLECTION, " ") } else { ("", "") };
+            let t_collection = &context.editor_translations.collection;
+            let collection_icon = icons::collection(t_collection);
+            let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
+            let (icon, space) = if root_active { (collection_icon.as_str(), " ") } else { ("", "") };
             breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
 
             let collection_content = collection_tree(&mut breadcrumbs, collection, context, path);
 
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
-            let node = tree_node(root_active, context, errors, "/collection/", ICON_COLLECTION, site_dir, collection.title.as_deref());
+            let node = tree_node(root_active, context, errors, "/collection/", &collection_icon, site_dir, collection.title.as_deref());
 
             formatdoc!(r#"
                 {node}
@@ -424,16 +407,19 @@ pub fn site_tree(
         }
         SiteContent::Empty |
         SiteContent::Invalid => {
+            let t_empty_site = &context.editor_translations.empty_site;
+            // TODO: Dedicated icon for empty site?
+            let collection_icon = icons::collection(t_empty_site);
+
             breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
 
-            // TODO: Dedicated icon for empty site?
-            let t_empty_site = &context.editor_translations.empty_site;
-            tree_node(root_active, context, &Vec::new(), "/", ICON_COLLECTION, site_dir, Some(t_empty_site))
+            tree_node(root_active, context, &Vec::new(), "/", &collection_icon, site_dir, Some(t_empty_site))
         }
         SiteContent::Playlist(playlist) => {
             let t_playlist = &context.editor_translations.playlist;
+            let playlist_icon = icons::playlist(t_playlist);
             let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
-            let (icon, space) = if root_active { (ICON_PLAYLIST, " ") } else { ("", "") };
+            let (icon, space) = if root_active { (playlist_icon.as_str(), " ") } else { ("", "") };
             breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{breadcrumb_title}</a>"#));
 
             let videos = if playlist.videos.is_empty() {
@@ -443,6 +429,8 @@ pub fn site_tree(
                     </li>
                 "#)
             } else {
+                let video_icon = icons::video(&context.editor_translations.video);
+
                 let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
 
                 videos_sorted.sort_unstable_by(|a, b| {
@@ -462,10 +450,10 @@ pub fn site_tree(
                         let slug = video.slug();
 
                         if active {
-                            breadcrumbs.push(format!(r#"<a href="{href}">{ICON_VIDEO} {slug}</a>"#));
+                            breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {slug}</a>"#));
                         }
 
-                        let node = tree_node(active, context, &video.errors, &href, ICON_VIDEO, slug, video.title.as_deref());
+                        let node = tree_node(active, context, &video.errors, &href, &video_icon, slug, video.title.as_deref());
 
                         formatdoc!(r#"
                             <li>
@@ -477,7 +465,7 @@ pub fn site_tree(
                     .join("")
             };
 
-            let node = tree_node(root_active, context, &playlist.errors, "/playlist/", ICON_PLAYLIST, site_dir, playlist.title.as_deref());
+            let node = tree_node(root_active, context, &playlist.errors, "/playlist/", &playlist_icon, site_dir, playlist.title.as_deref());
 
             formatdoc!(r#"
                 {node}
@@ -487,11 +475,14 @@ pub fn site_tree(
             "#)
         }
         SiteContent::Video(video) => {
-            let breadcrumb_title = video.title.as_deref().unwrap_or("Video");
-            let (icon, space) = if root_active { (ICON_VIDEO, " ") } else { ("", "") };
+            let t_video = &context.editor_translations.video;
+            let video_icon = icons::video(t_video);
+
+            let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
+            let (icon, space) = if root_active { (video_icon.as_str(), " ") } else { ("", "") };
             breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
 
-            tree_node(root_active, context, &video.errors, "/video/", ICON_VIDEO, site_dir, video.title.as_deref())
+            tree_node(root_active, context, &video.errors, "/video/", &video_icon, site_dir, video.title.as_deref())
         }
     };
 

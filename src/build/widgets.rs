@@ -3,7 +3,7 @@ use std::path::Path;
 use indoc::formatdoc;
 
 use crate::{Site, Video, VideoFile};
-use crate::icons::COPY_LINK_SVG;
+use crate::icons;
 use crate::util::{casual_duration, human_size};
 
 pub struct VideoRepresentation {
@@ -48,10 +48,10 @@ pub fn copy_link(site: &Site, path: &str) -> String {
     };
 
     let t_copy_link = &site.language.translations.copy_link;
-
+    let copy_link_icon = icons::copy_link(t_copy_link);
     format!(r#"
         <div>
-            <button {data_url} id="copy-link"><span class="icon">{COPY_LINK_SVG}</span> {t_copy_link}</button>
+            <button {data_url} id="copy-link"><span class="icon">{copy_link_icon}</span> {t_copy_link}</button>
         </div>
     "#)
 }
