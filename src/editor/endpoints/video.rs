@@ -195,8 +195,9 @@ pub async fn downsize(
 }
 
 fn downsize_form(context: &Context, video: &Video) -> String {
-    let widest_width = if let Some(version) = video.highest_resolution_version() {
-        version.video_meta.as_ref().unwrap().width
+    let (aspect_ratio, widest_width) = if let Some(version) = video.highest_resolution_version() {
+        let video_meta = version.video_meta.as_ref().unwrap();
+        (video_meta.width as f32 / video_meta.height as f32, video_meta.width)
     } else {
         return String::new();
     };
@@ -205,14 +206,16 @@ fn downsize_form(context: &Context, video: &Video) -> String {
     let candidate_widths = [240, 480, 720, 1280, 1920];
     for width in candidate_widths {
         if width < widest_width {
-            let selected = if widest_width < 720 && width == 480 || width == 720 {
+            let height = (width as f32 / aspect_ratio) as usize;
+
+            let selected = if (widest_width < 720 && width == 480) || width == 720 {
                 "selected"
             } else {
                 ""
             };
 
             let option = formatdoc!(r#"
-                <option {selected} value="{width}">{width} Pixels Wide</option>
+                <option {selected} value="{width}">{width}×{height}</option>
             "#);
             options.push(option);
         }
