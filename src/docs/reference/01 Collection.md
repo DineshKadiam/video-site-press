@@ -39,5 +39,3 @@ New videos are released every tuesday!
 Also check us out on the [fediverse](https://social.example.com/)
 -- description
 ```
-
-The `description` field supports markdown.

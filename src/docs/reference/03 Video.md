@@ -53,5 +53,3 @@ An unsettling truth comes to light as three old friends
 reunite at an unexpected gathering.
 -- description
 ```
-
-The `description` field supports markdown.

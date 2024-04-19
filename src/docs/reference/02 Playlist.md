@@ -40,5 +40,3 @@ This playlist includes all episodes from the show,
 including the long-lost original three pilots.
 -- description
 ```
-
-The `description` field supports markdown.
