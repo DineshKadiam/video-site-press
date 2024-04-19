@@ -76,6 +76,19 @@ pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
+pub fn human_size(bytes: u64) -> String {
+    match bytes {
+        0..=999 => format!("{bytes} B"),
+        1000..=999999 => format!("{} kB", bytes / 1000),
+        1000000..=999999999 => format!("{:.1} MB", bytes as f64 / 1000000.0),
+        _ => format!("{:.2} GB", bytes as f64 / 1000000000.0),
+    }
+}
+
+pub fn nanoid() -> String {
+    nanoid!(8)
+}
+
 /// Takes seconds, formats it like "0:13", "3:15", "2:06:48"
 pub fn precise_duration(seconds: f32) -> String {
     if seconds < 60.0 {
@@ -94,19 +107,6 @@ pub fn precise_duration(seconds: f32) -> String {
             seconds as u16 % 60
         )
     }
-}
-
-pub fn human_size(bytes: u64) -> String {
-    match bytes {
-        0..=999 => format!("{bytes}B"),
-        1000..=999999 => format!("{}kB", bytes / 1000),
-        1000000..=999999999 => format!("{:.1}MB", bytes as f64 / 1000000.0),
-        _ => format!("{:.2}GB", bytes as f64 / 1000000000.0),
-    }
-}
-
-pub fn nanoid() -> String {
-    nanoid!(8)
 }
 
 pub fn remove_dir(dir: &Path) {
