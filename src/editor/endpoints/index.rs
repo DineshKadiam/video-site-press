@@ -22,6 +22,9 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         }
         SiteContent::Empty => {
             let t_empty_site = &context.editor_translations.empty_site;
+            let t_initialize_site_as_collection = &context.editor_translations.initialize_site_as_collection;
+            let t_initialize_site_as_playlist = &context.editor_translations.initialize_site_as_playlist;
+            let t_initialize_site_as_video = &context.editor_translations.initialize_site_as_video;
             formatdoc!(r#"
                 <div class="form_group">
                     <h2>{t_empty_site}</h2>
@@ -29,11 +32,21 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
                     Initialize your site by placing content in the site directory,
                     or picking one of the options below:<br><br>
 
-                    <form action="/convert-to-collection/" method="post"><button>Initialize site as collection</button></form> As a collection the site holds videos, playlists and recursive subcollections.<br><br>
+                    <form action="/convert-to-collection/" method="post">
+                        <button>{t_initialize_site_as_collection}</button> As a collection the site holds videos, playlists and recursive subcollections.
+                    </form>
 
-                    <form action="/convert-to-playlist/" method="post"><button>Initialize site as playlist</button></form> A site featuring a number of videos, presented as an ordered viewing list<br><br>
+                    <br><br>
 
-                    <form action="/convert-to-video/" method="post"><button>Initialize site as video</button></form> A site presenting just a single video
+                    <form action="/convert-to-playlist/" method="post">
+                        <button>{t_initialize_site_as_playlist}</button> A site featuring a number of videos, presented as an ordered viewing list
+                    </form>
+
+                    <br><br>
+
+                    <form action="/convert-to-video/" method="post">
+                        <button>{t_initialize_site_as_video}</button> A site presenting just a single video
+                    </form>
                 </div>
             "#)
         }
