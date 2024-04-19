@@ -29,7 +29,7 @@ Available at [simonrepp.com/hyper8/docs](https://simonrepp.com/hyper8/docs) (som
 Initial development of the Hyper 8 Video System is made possible by the [Austrian Federal
 Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html)
 
-![BMKÖS Logo](https://simonrepp.com/hyper8/bmkoes_logo.jpg)
+![BMKÖS Logo](https://simonrepp.com/hyper8/image_funding.jpg)
 
 ## License
 
