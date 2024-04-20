@@ -319,12 +319,14 @@ pub fn layout(
     };
 
     let logo_icon = icons::logo(&context.editor_translations.hyper8_logo);
+    let t_dashboard = &context.editor_translations.dashboard;
     let t_filter = &context.editor_translations.filter;
     let t_preview = &context.editor_translations.preview;
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
                     <div class="buttons">
+                        <form action="/"><button>{t_dashboard}</button></form>
                         <form action="/build" method="post" target="_blank"><button>{t_preview}</button></form>
                         {deploy_button}
                         <button id="toggle-splash">{logo_icon}</button>
