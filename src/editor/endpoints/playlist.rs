@@ -340,7 +340,7 @@ pub fn edit_page(
 
     let site = context.get_site();
     let head_title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
-    let html = layout(context, path, &site, &body, head_title);
+    let html = layout(context, Some(path), &site, &body, head_title);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

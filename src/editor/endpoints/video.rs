@@ -549,7 +549,7 @@ pub fn edit_page(
                 and all versions of the video. If the video lies at the
                 site root it does not remove the site manifest and the site itself,
                 so the site can afterwards be reinitialized again as a collection,
-                video or video.
+                playlist or video.
             </p>
 
             <form action="/delete-video/{path}" method="post">
@@ -560,7 +560,7 @@ pub fn edit_page(
 
     let site = context.get_site();
     let head_title = video.title.as_deref().unwrap_or(video.slug());
-    let html = layout(context, path, &site, &body, head_title);
+    let html = layout(context, Some(path), &site, &body, head_title);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

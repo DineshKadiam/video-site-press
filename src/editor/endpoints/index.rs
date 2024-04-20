@@ -124,7 +124,7 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         }
     }
 
-    let html = layout(&context, "", &site, &body, site.title());
+    let html = layout(&context, None, &site, &body, site.title());
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -237,19 +237,17 @@ fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
     let total_size_human = human_size(total_size);
 
     formatdoc!(r#"
-        <div class="form_group">
-            <svg class="storage_graph" width="{diameter}" height="{diameter}" version="1.1" viewBox="0 0 {diameter} {diameter}" xmlns="http://www.w3.org/2000/svg">
-                <g transform="scale(-1,1)" transform-origin="{radius} {radius}">
-                    {slices}
-                </g>
-                <text text-anchor="middle" x="{radius}" y="{radius}">
-                    {total_size_human}
-                </text>
-            </svg>
+        <svg class="storage_graph" width="{diameter}" height="{diameter}" version="1.1" viewBox="0 0 {diameter} {diameter}" xmlns="http://www.w3.org/2000/svg">
+            <g transform="scale(-1,1)" transform-origin="{radius} {radius}">
+                {slices}
+            </g>
+            <text text-anchor="middle" x="{radius}" y="{radius}">
+                {total_size_human}
+            </text>
+        </svg>
 
-            <ul class="storage_legend">
-                {list}
-            </ul>
-        </div>
+        <ul class="storage_legend">
+            {list}
+        </ul>
     "#)
 }

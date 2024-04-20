@@ -20,7 +20,7 @@ fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
     context: &Context,
-    path: &str
+    path: Option<&str>
 ) -> String {
     let collection_icon = icons::collection(&context.editor_translations.collection);
     let playlist_icon = icons::playlist(&context.editor_translations.playlist);
@@ -39,13 +39,15 @@ fn collection_tree(
         .map(|collection| {
             let collection_path = &collection.path;
 
-            let active = path == collection_path;
+            let active = path.is_some_and(|path| path == collection_path);
             let href = format!("/collection/{collection_path}");
             let node = tree_node(active, context, &collection.errors, &href, &collection_icon, collection.slug(), collection.title.as_deref());
 
-            if active || path
-                .strip_prefix(&collection.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
+            if active || path.is_some_and(|path|
+                path
+                    .strip_prefix(&collection.path)
+                    .is_some_and(|rest| rest.starts_with('/'))
+            ) {
                 let label = collection.title.as_deref().unwrap_or_else(|| collection.slug());
                 let (icon, space) = if active { (collection_icon.as_str(), " ") } else { ("", "") };
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
@@ -77,13 +79,15 @@ fn collection_tree(
         .map(|playlist| {
             let playlist_path = &playlist.path;
 
-            let active = path == playlist_path;
+            let active = path.is_some_and(|path| path == playlist_path);
             let href = format!("/playlist/{playlist_path}");
             let node = tree_node(active, context, &playlist.errors, &href, &playlist_icon, playlist.slug(), playlist.title.as_deref());
 
-            if active || path
-                .strip_prefix(&playlist.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
+            if active || path.is_some_and(|path| 
+                path
+                    .strip_prefix(&playlist.path)
+                    .is_some_and(|rest| rest.starts_with('/'))
+            ) {
                 let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
                 let (icon, space) = if active { (playlist_icon.as_str(), " ") } else { ("", "") };
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
@@ -97,7 +101,7 @@ fn collection_tree(
                     .map(|video| {
                         let video_path = &video.path;
 
-                        let active = path == video_path;
+                        let active = path.is_some_and(|path| path == video_path);
                         let href = format!("/video/{video_path}");
                         let node = tree_node(active, context, &video.errors, &href, &video_icon, video.slug(), video.title.as_deref());
 
@@ -146,7 +150,7 @@ fn collection_tree(
         .map(|video| {
             let video_path = &video.path;
 
-            let active = path == video_path;
+            let active = path.is_some_and(|path| path == video_path);
             let href = format!("/video/{video_path}");
             let node = tree_node(active, context, &video.errors, &href, &video_icon, video.slug(), video.title.as_deref());
 
@@ -258,9 +262,11 @@ pub fn form_textarea(
     "#)
 }
 
+/// When path is Some() that signifies we are viewing some node in the site tree.
+/// If it's None we are on some auxillary page such as the dashboard or 404 page.
 pub fn layout(
     context: &Context,
-    path: &str,
+    path: Option<&str>,
     site: &Site,
     body: &str,
     title: &str
@@ -339,9 +345,7 @@ pub fn layout(
                         {tree}
                     </nav>
                     <main>
-                        <div class="breadcrumbs">
-                            {breadcrumbs}
-                        </div>
+                        {breadcrumbs}
                         {body}
                     </main>
                 </div>
@@ -370,7 +374,7 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
     "#);
 
     let site = &context.get_site();
-    let html = layout(context, "", site, &body, "Not Found");
+    let html = layout(context, None, site, &body, "Not Found");
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -379,13 +383,13 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
 
 pub fn site_tree(
     context: &Context,
-    path: &str,
+    path: Option<&str>,
     site: &Site,
     site_dir: &Path
 ) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
-    let root_active = path == "";
+    let root_active = path.is_some_and(|path| path == "");
     let root_dir = site_dir.file_name().unwrap().to_string_lossy();
     let site_dir = &site_dir.to_string_lossy();
 
@@ -393,9 +397,12 @@ pub fn site_tree(
         SiteContent::Collection(collection) => {
             let t_collection = &context.editor_translations.collection;
             let collection_icon = icons::collection(t_collection);
-            let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
-            let (icon, space) = if root_active { (collection_icon.as_str(), " ") } else { ("", "") };
-            breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
+
+            if path.is_some() {
+                let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
+                let (icon, space) = if root_active { (collection_icon.as_str(), " ") } else { ("", "") };
+                breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
+            }
 
             let collection_content = collection_tree(&mut breadcrumbs, collection, context, path);
 
@@ -413,16 +420,21 @@ pub fn site_tree(
             // TODO: Dedicated icon for empty site?
             let collection_icon = icons::collection(t_empty_site);
 
-            breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
+            if path.is_some() {
+                breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
+            }
 
             tree_node(root_active, context, &Vec::new(), "/", &collection_icon, site_dir, Some(t_empty_site))
         }
         SiteContent::Playlist(playlist) => {
             let t_playlist = &context.editor_translations.playlist;
             let playlist_icon = icons::playlist(t_playlist);
-            let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
-            let (icon, space) = if root_active { (playlist_icon.as_str(), " ") } else { ("", "") };
-            breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{breadcrumb_title}</a>"#));
+
+            if path.is_some() {
+                let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
+                let (icon, space) = if root_active { (playlist_icon.as_str(), " ") } else { ("", "") };
+                breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{breadcrumb_title}</a>"#));
+            }
 
             let videos = if playlist.videos.is_empty() {
                 formatdoc!(r#"
@@ -447,7 +459,7 @@ pub fn site_tree(
                     .map(|video| {
                         let video_path = &video.path;
 
-                        let active = path == video_path;
+                        let active = path.is_some_and(|path| path == video_path);
                         let href = format!("/video/{video_path}");
                         let slug = video.slug();
 
@@ -480,21 +492,28 @@ pub fn site_tree(
             let t_video = &context.editor_translations.video;
             let video_icon = icons::video(t_video);
 
-            let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
-            let (icon, space) = if root_active { (video_icon.as_str(), " ") } else { ("", "") };
-            breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
+            if path.is_some() {
+                let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
+                let (icon, space) = if root_active { (video_icon.as_str(), " ") } else { ("", "") };
+                breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
+            }
 
             tree_node(root_active, context, &video.errors, "/video/", &video_icon, site_dir, video.title.as_deref())
         }
     };
 
-    let breadcrumbs = breadcrumbs.join(" › ");
+    let breadcrumbs = if breadcrumbs.is_empty() {
+        String::new()
+    } else {
+        let breadcrumbs_joined = breadcrumbs.join(" › ");
+        formatdoc!(r#"
+            <div class="breadcrumbs">
+                {breadcrumbs_joined}
+            </div>
+        "#)
+    };
 
-    let sidebar = formatdoc!(r#"
-            {site_content}
-    "#);
-
-    (breadcrumbs, sidebar)
+    (breadcrumbs, site_content)
 }
 
 fn tree_node(
