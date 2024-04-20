@@ -284,6 +284,28 @@ select {
     display: flex;
     flex-grow: 1;
 }
+.storage_graph path:not(.marker) { cursor: pointer; }
+.storage_graph path.marker {
+    stroke: var(--fg-1);
+    stroke-width: .5;
+}
+.storage_graph path:not(.marker):hover { fill: var(--fg-1); }
+.storage_graph text { stroke: currentColor; }
+.storage_legend {
+    font-size: .8rem;
+    list-style: none;
+    margin-top: 4rem;
+    padding-left: 0;
+}
+.storage_legend li {
+    column-gap: .5rem;
+    display: flex;
+}
+.storage_legend li div {
+    border-radius: .4rem;
+    height: .8rem;
+    width: .8rem;
+}
 svg { fill: currentColor; }
 .thumbnail {
     aspect-ratio: 1.78;
