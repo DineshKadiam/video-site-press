@@ -136,8 +136,8 @@ fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
     // TODO: Wire up chart hover with tabular row hover and vice versa
     // TODO: Tweak values/readability for pie chart further (e.g. colors too as additional for those who see it)
 
-    let radius = 190;
-    let diameter = radius * 2;
+    let radius = 190.0;
+    let diameter = radius * 2.0;
 
     let mut sizes = Vec::new();
     let mut total_size: u64 = 0;
@@ -155,65 +155,67 @@ fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
 
     sizes.sort_unstable_by(|a, b| b.0.cmp(&a.0));
 
-    let mut amount_consumed = 0.0;
-
-    // amount_of_total and offset both between 0-1
-    let slice = |amount_of_total: f32, link: &str, lightness: f32, rotation_offset: f32, title: &str| -> String {
-        let angle = amount_of_total * 360.0;
-        let radians = angle.to_radians();
-        let rotation = 180.0 + (rotation_offset * -360.0);
-
-        let outer_arc_end_x = radians.sin() * radius as f32 + radius as f32;
-        let outer_arc_end_y = radians.cos() * radius as f32 + radius as f32;
-        let large_arc_flag = if angle < 180.0 { 0 } else { 1 };
-
+    // Draws a ring segment. In clock terms we start at 12 o'clock and we go clockwise.
+    let slice = |arc_angle: f32, begin_angle: f32, link: &str, lightness: f32, title: &str| -> String {
         let fill = format!("hsl(0, 0%, {lightness}%)");
+        let large_arc_flag = if arc_angle < 180.0 { 0 } else { 1 };
 
-        let inner_radius = radius as f32 * 0.667;
-        let inner_arc_begin_x = radians.sin() * inner_radius as f32 + radius as f32;
-        let inner_arc_begin_y = radians.cos() * inner_radius as f32 + radius as f32;
-        let inner_arc_end_y = radius as f32 + inner_radius;
+        let begin_angle_rad = begin_angle.to_radians();
+        let begin_x = begin_angle_rad.sin();
+        let begin_y = -begin_angle_rad.cos();
+
+        let end_angle_rad = (begin_angle + arc_angle).to_radians();
+        let end_x = end_angle_rad.sin();
+        let end_y = -end_angle_rad.cos();
+
+        let segment_outer_begin_x = radius + begin_x * radius;
+        let segment_outer_begin_y = radius + begin_y * radius;
+
+        let segment_outer_end_x = radius + end_x * radius;
+        let segment_outer_end_y = radius + end_y * radius;
+
+        let inner_radius = radius * 0.667;
+        let segment_inner_begin_x = radius + begin_x * inner_radius;
+        let segment_inner_begin_y = radius + begin_y * inner_radius;
+
+        let segment_inner_end_x = radius + end_x * inner_radius;
+        let segment_inner_end_y = radius + end_y * inner_radius;
 
         let marker_outer_radius = inner_radius - 5.0;
-        let marker_outer_x = radians.sin() * marker_outer_radius as f32 + radius as f32;
-        let marker_outer_y = radians.cos() * marker_outer_radius as f32 + radius as f32;
+        let marker_outer_x = radius + end_x * marker_outer_radius;
+        let marker_outer_y = radius + end_y * marker_outer_radius;
 
-        let marker_inner_radius = marker_outer_radius - radius as f32 * 0.05;
-        let marker_inner_x = radians.sin() * marker_inner_radius as f32 + radius as f32;
-        let marker_inner_y = radians.cos() * marker_inner_radius as f32 + radius as f32;
+        let marker_inner_radius = marker_outer_radius - radius * 0.05;
+        let marker_inner_x = radius + end_x * marker_inner_radius;
+        let marker_inner_y = radius + end_y * marker_inner_radius;
 
         formatdoc!(r#"
-                <path d="
-                    M {radius},{diameter}
-                    A {radius} {radius} 0 {large_arc_flag} 0 {outer_arc_end_x},{outer_arc_end_y}
-                    L {inner_arc_begin_x},{inner_arc_begin_y}
-                    A {inner_radius} {inner_radius} 0 {large_arc_flag} 1 {radius},{inner_arc_end_y}
-                    Z
-                    " 
+                <path
+                    d="M {segment_outer_begin_x},{segment_outer_begin_y}
+                       A {radius} {radius} 0 {large_arc_flag} 1 {segment_outer_end_x},{segment_outer_end_y}
+                       L {segment_inner_end_x},{segment_inner_end_y}
+                       A {inner_radius} {inner_radius} 0 {large_arc_flag} 0 {segment_inner_begin_x},{segment_inner_begin_y}
+                       Z"
                     fill="{fill}"
-                    onclick="window.location = '{link}';"
-                    transform="rotate({rotation} {radius} {radius})">
+                    onclick="window.location = '{link}';">
                     <title>{title}</title>
                 </path>
                 <path class="marker"
-                    d="
-                    M {marker_inner_x},{marker_inner_y}
-                    L {marker_outer_x},{marker_outer_y}
-                    "
-                    transform="rotate({rotation} {radius} {radius})">
+                    d="M {marker_inner_x},{marker_inner_y} L {marker_outer_x},{marker_outer_y}">
                 </path>
         "#)
     };
 
     let mut list = String::new();
-    let mut odd = true;
     let mut slices = String::new();
 
+    let mut begin_angle = 0.0;
+
     for (index, (size, link, title)) in sizes.iter().enumerate() {
-        let amount_of_total = if sizes.len() == 1 {
-            0.999 // TODO: Our graph drawing code can not handle 360 degree segements yet so work around it for now with this hack
+        let arc_angle = if sizes.len() == 1 {
+            359.0 // TODO: Our graph drawing code can not handle 360 degree segments yet so work around it for now with this hack
         } else {
-            *size as f32 / total_size as f32
+            (*size as f32 / total_size as f32) * 360.0
         };
 
         let offset_fill = index as f32 / (sizes.len() - 1) as f32;
@@ -228,19 +230,16 @@ fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
 
         list.push_str(&list_text);
 
-        slices.push_str(&slice(amount_of_total, link, lightness, amount_consumed, title));
+        slices.push_str(&slice(arc_angle, begin_angle, link, lightness, title));
 
-        amount_consumed += amount_of_total;
-        odd = !odd;
+        begin_angle += arc_angle;
     }
 
     let total_size_human = human_size(total_size);
 
     formatdoc!(r#"
         <svg class="storage_graph" width="{diameter}" height="{diameter}" version="1.1" viewBox="0 0 {diameter} {diameter}" xmlns="http://www.w3.org/2000/svg">
-            <g transform="scale(-1,1)" transform-origin="{radius} {radius}">
-                {slices}
-            </g>
+            {slices}
             <text text-anchor="middle" x="{radius}" y="{radius}">
                 {total_size_human}
             </text>
