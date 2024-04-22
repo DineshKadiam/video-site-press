@@ -89,13 +89,13 @@ pub fn nanoid() -> String {
     nanoid!(8)
 }
 
-/// Takes seconds, formats it like "0:13", "3:15", "2:06:48"
+/// Takes seconds, formats it like "00:13", "03:15", "2:06:48"
 pub fn precise_duration(seconds: f32) -> String {
     if seconds < 60.0 {
-        format!("0:{:02}", seconds as u16)
+        format!("00:{:02}", seconds as u16)
     } else if seconds < 3600.0 {
         format!(
-            "{}:{:02}",
+            "{:02}:{:02}",
             seconds as u16 / 60,
             seconds as u16 % 60
         )

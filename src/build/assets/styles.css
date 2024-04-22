@@ -141,7 +141,7 @@ img { max-width: 100%; }
     justify-content: space-between;
 }
 .player_controls .control_pane button { font-size: .85rem; }
-.player_controls .control_pane div {
+.player_controls .control_pane > div {
     align-items: center;
     display: flex;
 }
