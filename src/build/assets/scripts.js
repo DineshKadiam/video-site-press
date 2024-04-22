@@ -134,11 +134,15 @@ if (video) {
 	playerWrapper.addEventListener('mousemove', revealControls);
 
 	selectResolutionButton.addEventListener('click', () => {
-		intro.style.display = null;
-		if (!video.paused) {
-			video.pause();
-			clearInterval(playbackUpdateInterval);
-			togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+		if (intro.style.display === 'none') {
+			intro.style.display = null;
+			if (!video.paused) {
+				video.pause();
+				clearInterval(playbackUpdateInterval);
+				togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+			}
+		} else {
+			intro.style.display = 'none';
 		}
 	});
 
