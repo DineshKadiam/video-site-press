@@ -195,20 +195,20 @@ pub async fn downsize(
 }
 
 fn downsize_form(context: &Context, video: &Video) -> String {
-    let (aspect_ratio, widest_width) = if let Some(version) = video.highest_resolution_version() {
+    let (aspect_ratio, tallest_height) = if let Some(version) = video.highest_resolution_version() {
         let video_meta = version.video_meta.as_ref().unwrap();
-        (video_meta.width as f32 / video_meta.height as f32, video_meta.width)
+        (video_meta.width as f32 / video_meta.height as f32, video_meta.height)
     } else {
         return String::new();
     };
 
     let mut options = Vec::new();
-    let candidate_widths = [240, 480, 720, 1280, 1920];
-    for width in candidate_widths {
-        if width < widest_width {
-            let height = (width as f32 / aspect_ratio) as usize;
+    let candidate_heights = [144, 240, 360, 480, 720, 1080];
+    for height in candidate_heights {
+        if height < tallest_height {
+            let width = (height as f32 * aspect_ratio) as usize;
 
-            let selected = if (widest_width < 720 && width == 480) || width == 720 {
+            let selected = if (tallest_height < 720 && height == 480) || height == 720 {
                 "selected"
             } else {
                 ""
