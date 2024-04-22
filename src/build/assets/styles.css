@@ -362,7 +362,7 @@ svg {
     position: absolute;
     right: 5%;
 }
-#toggle_speed { font-weight: 600; }
+#toggle_speed { font-weight: 500; }
 .video {
     color: var(--fg-2);
     display: flex;
