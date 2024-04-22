@@ -24,6 +24,8 @@ pub struct ThemeVars {
 	/// Background 1 (furthest away/bottom layer)
 	pub bg_1: String,
 	/// Background 2 (further away)
+	pub bg_1_overlay: String,
+	/// Background 2 (further away) with some transparency
 	pub bg_2: String,
 	/// Background 3 (far away)
 	pub bg_3: String,
@@ -85,6 +87,7 @@ impl ThemeVars {
         ThemeVars {
 			accent: String::from("#fbdf46"),
 			bg_1: String::from("#161616"),
+			bg_1_overlay: String::from("rgba(22, 22, 22, .92)"),
 			bg_2: String::from("#262626"),
 			bg_3: String::from("#333"),
 			bg_mg: String::from("#444"),
@@ -98,6 +101,7 @@ impl ThemeVars {
     pub fn light() -> ThemeVars {
         ThemeVars {
 			accent: String::from("#9f2e02"),
+			bg_1_overlay: String::from("rgba(255, 255, 255, .92)"),
 			bg_1: String::from("#fff"),
 			bg_2: String::from("#eee"),
 			bg_3: String::from("#ddd"),
@@ -112,6 +116,7 @@ impl ThemeVars {
     pub fn print(&self) -> String {
     	let accent = &self.accent;
 	    let bg_1 = &self.bg_1;
+	    let bg_1_overlay = &self.bg_1_overlay;
 	    let bg_2 = &self.bg_2;
 	    let bg_3 = &self.bg_3;
 	    let bg_mg = &self.bg_mg;
@@ -123,6 +128,7 @@ impl ThemeVars {
 	    formatdoc!(r#"
             --accent: {accent};
             --bg-1: {bg_1};
+            --bg-1-overlay: {bg_1_overlay};
             --bg-2: {bg_2};
             --bg-3: {bg_3};
             --bg-mg: {bg_mg};

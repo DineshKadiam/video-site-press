@@ -27,3 +27,178 @@ if (copyLink) {
 
 	copyLink.addEventListener('click', event => copyToClipboard(event.target));
 }
+
+const video = document.querySelector('video');
+
+// TODO: Potentially move in separate script file that only gets loaded on video pages
+if (video) {
+	let playbackUpdateInterval;
+
+	function formatTime(time) {
+		const timeFloored = Math.floor(time);
+
+		if (timeFloored >= 3600) {
+			const hours = Math.floor(timeFloored / 3600).toString();
+			const minutes = Math.floor((timeFloored % 3600) / 60).toString().padStart(2, '0');
+			const seconds = (timeFloored % 60).toString().padStart(2, '0');
+			return `${hours}:${minutes}:${seconds}`;
+		} else if (timeFloored >= 60) {
+			const minutes = Math.floor(timeFloored / 60).toString().padStart(2, '0');
+			const seconds = (timeFloored % 60).toString().padStart(2, '0');
+			return `${minutes}:${seconds}`;
+		} else {
+			const seconds = (timeFloored % 60).toString().padStart(2, '0');
+			return `00:${seconds}`;
+		}
+	}
+
+	const defaultPlayButton = document.querySelector('#default_play');
+	const intro = document.querySelector('.player_intro');
+	const playerControls = document.querySelector('.player_controls');
+	const playerWrapper = document.querySelector('.player_wrapper');
+	const timelineInput = document.querySelector('.timeline input');
+	const selectResolutionButton = document.querySelector('#select_resolution');
+	const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
+	const togglePlaybackButton = document.querySelector('#toggle_playback');
+	const toggleSpeedButton = document.querySelector('#toggle_speed');
+	const toggleVolumeButton = document.querySelector('#toggle_volume');
+
+	const persistedVolume = localStorage.getItem('hyper8Volume');
+
+	if (persistedVolume !== null) {
+		video.volume = parseFloat(persistedVolume);
+
+		if (video.volume > 0.666) {
+			toggleVolumeButton.replaceChildren(document.querySelector('#volume_loud_icon').content.cloneNode(true));
+		} else if (video.volume < 0.333) {
+			toggleVolumeButton.replaceChildren(document.querySelector('#volume_muted_icon').content.cloneNode(true));
+		} else {
+			toggleVolumeButton.replaceChildren(document.querySelector('#volume_medium_icon').content.cloneNode(true));
+		}
+	}
+
+	function playbackUpdate() {
+		const time = video.currentTime;
+		const timeFormatted = formatTime(time);
+
+		timelineInput.value = time;
+		timelineInput.setAttribute('aria-valuenow', time);
+		timelineInput.setAttribute('aria-valuetext', timeFormatted);
+		document.querySelector('.bar.progress').style.width = `${(time / video.duration) * 100}%`;
+		document.querySelector('#time_current').innerHTML = timeFormatted;
+
+		if (playerControls.dataset.hideBy && (new Date()).getTime() > playerControls.dataset.hideBy) {
+			playerControls.style.display = 'none';
+		}
+	}
+
+	function revealControls() {
+		playerControls.dataset.hideBy = (new Date()).getTime() + 3000;
+		playerControls.style.display = null;
+	}
+
+	function selectResolution(event) {
+		intro.style.display = 'none';
+
+		if (video.getAttribute('src') !== event.target.dataset.src) {
+			video.src = event.target.dataset.src;
+			selectResolutionButton.innerHTML = event.target.dataset.label;
+		}
+
+		video.play();
+		togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
+		playbackUpdateInterval = setInterval(playbackUpdate, 80);
+	}
+
+	function togglePlayback() {
+		if (video.paused) {
+			intro.style.display = 'none';
+			video.play();
+			togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
+			playbackUpdateInterval = setInterval(playbackUpdate, 80);
+
+		} else {
+			video.pause();
+			clearInterval(playbackUpdateInterval);
+			togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+		}
+	}
+
+	for (const path of document.querySelectorAll('.versions_ring path[data-src]')) {
+		path.addEventListener('click', selectResolution);
+	}
+
+	defaultPlayButton.addEventListener('click', togglePlayback);
+
+	window.addEventListener('keydown', revealControls);
+	playerWrapper.addEventListener('mousemove', revealControls);
+
+	selectResolutionButton.addEventListener('click', () => {
+		intro.style.display = null;
+		if (!video.paused) {
+			video.pause();
+			clearInterval(playbackUpdateInterval);
+			togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+		}
+	});
+
+	toggleFullscreenButton.addEventListener('click', () => {
+		if (document.fullscreenElement) {
+			document.exitFullscreen();
+			toggleFullscreenButton.replaceChildren(document.querySelector('#maximize_icon').content.cloneNode(true));
+		} else {
+			document.querySelector('.player_wrapper').requestFullscreen();
+			toggleFullscreenButton.replaceChildren(document.querySelector('#minimize_icon').content.cloneNode(true));
+		}
+	});
+
+	toggleSpeedButton.addEventListener('click', () => {
+		if (toggleSpeedButton.innerHTML === '1×') {
+			video.playbackRate = 1.25;
+			toggleSpeedButton.innerHTML = '1.25×'
+		} else if (toggleSpeedButton.innerHTML === '1.25×') {
+			video.playbackRate = 1.5;
+			toggleSpeedButton.innerHTML = '1.5×'
+		} else if (toggleSpeedButton.innerHTML === '1.5×') {
+			video.playbackRate = 1.75;
+			toggleSpeedButton.innerHTML = '1.75×'
+		} else if (toggleSpeedButton.innerHTML === '1.75×') {
+			video.playbackRate = 2;
+			toggleSpeedButton.innerHTML = '2×'
+		} else if (toggleSpeedButton.innerHTML === '2×') {
+			video.playbackRate = 0.5;
+			toggleSpeedButton.innerHTML = '0.5×'
+		} else if (toggleSpeedButton.innerHTML === '0.5×') {
+			video.playbackRate = 0.75;
+			toggleSpeedButton.innerHTML = '0.75×'
+		} else {
+			video.playbackRate = 1;
+			toggleSpeedButton.innerHTML = '1×'
+		}
+	});
+
+	toggleVolumeButton.addEventListener('click', () => {
+		if (video.volume > 0.666) {
+			video.volume = 0;
+			toggleVolumeButton.replaceChildren(document.querySelector('#volume_muted_icon').content.cloneNode(true));
+			localStorage.setItem('hyper8Volume', '0');
+		} else if (video.volume < 0.333) {
+			video.volume = 0.5;
+			toggleVolumeButton.replaceChildren(document.querySelector('#volume_medium_icon').content.cloneNode(true));
+			localStorage.setItem('hyper8Volume', '0.5');
+		} else {
+			video.volume = 1;
+			toggleVolumeButton.replaceChildren(document.querySelector('#volume_loud_icon').content.cloneNode(true));
+			localStorage.setItem('hyper8Volume', '1');
+		}
+	});
+
+	video.addEventListener('click', togglePlayback);
+	togglePlaybackButton.addEventListener('click', togglePlayback);
+
+	timelineInput.addEventListener('input', _ => {
+		intro.style.display = 'none';
+        video.currentTime = timelineInput.value;
+        playbackUpdate();
+    });
+}

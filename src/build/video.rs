@@ -19,7 +19,7 @@ pub fn video_html(
     let index_suffix = context.index_suffix();
     let description = if let Some(description) = &video.description { description } else { "" };
     let title = video.title.as_deref().unwrap_or(video.slug());
-    let player_rendered = player(site, video, "");
+    let player_rendered = player(site, video);
 
     let downloads_widget = downloads(video);
 

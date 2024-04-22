@@ -19,7 +19,7 @@ use crate::{
     SubtitleFile,
     VideoMetaCached
 };
-use crate::util::hash;
+use crate::util::{hash, human_size};
 
 #[derive(Clone, Debug)]
 pub struct Video {
@@ -233,6 +233,21 @@ impl Video {
             )
     }
 
+    pub fn lowest_resolution_version(&self) -> Option<&VideoFile> {
+        let mut version_candidate: Option<(usize, &VideoFile)> = None;
+
+        for version in &self.versions {
+            if let Some(video_meta) = &version.video_meta {
+                let pixels = video_meta.width * video_meta.height;
+                if version_candidate.is_none() || version_candidate.is_some_and(|pixels_version| pixels < pixels_version.0) {
+                    version_candidate = Some((pixels, version));
+                }
+            }
+        }
+
+        version_candidate.map(|pixels_version| pixels_version.1)
+    }
+
     fn new(path: String) -> Video {
         Video {
             description: None,
@@ -394,6 +409,36 @@ impl VideoFile {
             file_meta,
             file_name,
             video_meta
+        }
+    }
+
+    pub fn resolution_label(&self) -> String {
+        match &self.video_meta {
+            Some(video_meta) => {
+                let height = video_meta.height;
+                let width = video_meta.width;
+                format!("{width}×{height}")
+            }
+            None => String::new()
+        }
+    }
+
+    pub fn size_label(&self) -> String {
+        let size = human_size(self.file_meta.size);
+        match &self.video_meta {
+            Some(video_meta) => {
+                let height = video_meta.height;
+                let width = video_meta.width;
+                format!("{width}×{height} ({size})")
+            }
+            None => size
+        }
+    }
+
+    pub fn vertical_resolution_label(&self) -> String {
+        match &self.video_meta {
+            Some(video_meta) => format!("{}p", video_meta.height),
+            None => String::new()
         }
     }
 }

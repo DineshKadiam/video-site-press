@@ -4,7 +4,7 @@ use indoc::formatdoc;
 
 use crate::{Site, Video, VideoFile};
 use crate::icons;
-use crate::util::{casual_duration, human_size};
+use crate::util::{casual_duration, human_size, precise_duration};
 
 pub struct VideoRepresentation {
     pub saving_factor: f32,
@@ -92,7 +92,7 @@ pub fn downloads(video: &Video) -> String {
         .join("<br>")
 }
 
-pub fn player(site: &Site, video: &Video, video_prefix: &str) -> String {
+pub fn player(site: &Site, video: &Video) -> String {
     if video.versions.is_empty() {
         // TODO: Should use poster assets (different sizes)
         let poster = match &video.poster {
@@ -103,7 +103,7 @@ pub fn player(site: &Site, video: &Video, video_prefix: &str) -> String {
                     String::new()
                 };
 
-                format!(r#"<img {alt}class="thumbnail" src="{video_prefix}poster.jpg">"#)
+                format!(r#"<img {alt}class="thumbnail" src="poster.jpg">"#)
             }
             None => String::new()
         };
@@ -118,70 +118,7 @@ pub fn player(site: &Site, video: &Video, video_prefix: &str) -> String {
         "#);
     }
 
-    let representations = compute_representations(&video.versions)
-        .iter()
-        .map(|representation| {
-            let filename = &representation.version.file_name;
-            let format_label = "TODO";
-            let size = human_size(representation.version.file_meta.size);
-            let saving_factor = representation.saving_factor;
-            let saving_percent = (saving_factor * 100.0) as u8;
-
-            formatdoc!(r#"
-                <div class="chart" onclick="document.querySelector('video').setAttribute('src', '{video_prefix}{filename}'); document.querySelector('video').play();">
-                    <span class="size">{size}</span>
-                    <span class="label">{format_label}</span>
-                    <div class="emissions" style="width: calc((1 - {saving_factor}) * 33rem);">
-                        <div class="bar"></div>
-                    </div>
-                    <div class="savings" style="width: calc({saving_factor} * 33rem);">
-                        <div class="bar"></div>
-                    </div>
-                    <span class="savings_percent" title="-{saving_percent}% less emissions">-{saving_percent}%</span>
-                </div>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("");
-
-    let height = video.versions.first().unwrap().video_meta.as_ref().unwrap().height as f32;
-    let width = video.versions.first().unwrap().video_meta.as_ref().unwrap().width as f32;
-    let scale = if width > height { 16.0 / width } else { 9.0 / height };
-
-    let experiment = compute_representations(&video.versions)
-        .iter()
-        .rev()
-        .map(|representation| {
-            let filename = &representation.version.file_name;
-            // let format_label = representation.version.format.label();
-            // let size = human_size(representation.version.size);
-            let saving_factor = representation.saving_factor;
-            // let saving_percent = (saving_factor * 100.0) as u8;
-            let divider = 1.0 - saving_factor; // e.g. 1/4
-            let sqrt = divider.sqrt() * 100.0;
-            // let relative_size_factor = (1.0 - saving_factor.exp2()) * 100.0;
-
-            // 100MB = 1           16x16
-            // 25MB = 1/4 = 0.25   8x8  => *2
-            // 6.25MB = 1/16 = 0.0625   4z4   => *4
-
-            formatdoc!(r#"
-                <div onclick="document.querySelector('video').setAttribute('src', '{video_prefix}{filename}'); document.querySelector('video').play();"
-                    style="
-                        border: 1px solid black;
-                        left: 0;
-                        bottom: 0;
-                        height: {sqrt}%;
-                        position: absolute;
-                        width: {sqrt}%;
-                    ">
-                </div>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("");
-
-    let smallest_version = video.versions.first().unwrap();
+    let smallest_version = video.lowest_resolution_version().unwrap();
 
     let poster = match &video.poster {
         Some(poster) => match &poster.assets {
@@ -189,22 +126,12 @@ pub fn player(site: &Site, video: &Video, video_prefix: &str) -> String {
                 let largest = poster_assets.largest();
                 let height = largest.height;
                 let width = largest.width;
-                format!(r#"poster="{video_prefix}poster_{width}x{height}.jpg""#)
+                format!(r#"poster="poster_{width}x{height}.jpg""#)
             }
-            None => format!(r#"poster="{video_prefix}poster.jpg""#)
+            None => format!(r#"poster="poster.jpg""#)
         }
         None => String::new()
     };
-
-    let src = format!("{}{}", video_prefix, smallest_version.file_name);
-
-    let experiment_combined = formatdoc!(
-        r#"
-            <div style="height: {height}rem; position: relative; width: {width}rem;">{experiment}</div>
-        "#,
-        width = width * scale,
-        height = height * scale
-    );
 
     let subtitles = video.subtitles
         .iter()
@@ -229,14 +156,72 @@ pub fn player(site: &Site, video: &Video, video_prefix: &str) -> String {
         .collect::<Vec<String>>()
         .join("\n");
 
+    let duration = smallest_version.video_meta.as_ref().unwrap().duration;
+    let duration_formatted = precise_duration(duration);
+    let default_resolution_label = smallest_version.vertical_resolution_label();
+    let src = &smallest_version.file_name;
+
+    let versions_ring_rendered = versions_ring(video);
+
+    let maximize_icon = icons::maximize(&site.language.translations.maximize);
+    let minimize_icon = icons::minimize(&site.language.translations.minimize);
+    let pause_icon = icons::pause(&site.language.translations.pause);
+    let play_icon = icons::play(&site.language.translations.play);
+    let volume_loud_icon = icons::volume_loud(&site.language.translations.loud_volume);
+    let volume_medium_icon = icons::volume_medium(&site.language.translations.medium_volume);
+    let volume_muted_icon = icons::volume_muted(&site.language.translations.sound_muted);
     formatdoc!(r#"
-        <video controls {poster} preload="none" src="{src}">
-            {subtitles}
-        </video>
-        <!--
-            {representations}
-            {experiment_combined}
-        -->
+        <div class="player_wrapper">
+            <div class="player_intro">
+                <button id="default_play">{play_icon}</button>
+                {versions_ring_rendered}
+            </div>
+            <div class="player_controls">
+                <div class="timeline">
+                    <div class="bar backdrop"></div>
+                    <div class="bar progress"></div>
+                    <input aria-valuenow="0" aria-valuetext="00:00" max="{duration}" min="0" step="any" type="range" value="0">
+                </div>
+                <div class="control_pane">
+                    <div>
+                        <button id="toggle_playback">{play_icon}</button>
+                        <button id="toggle_volume">{volume_loud_icon}</button>
+                        <button id="toggle_speed">1×</button>
+                        <div>
+                            <span id="time_current">00:00</span> / <span id="time_total">{duration_formatted}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <button id="select_resolution">{default_resolution_label}</button>
+                        <button id="toggle_fullscreen">{maximize_icon}</button>
+                    </div>
+                </div>
+            </div>
+            <video {poster} preload="none" src="{src}">
+                {subtitles}
+            </video>
+            <template id="maximize_icon">
+                {maximize_icon}
+            </template>
+            <template id="minimize_icon">
+                {minimize_icon}
+            </template>
+            <template id="pause_icon">
+                {pause_icon}
+            </template>
+            <template id="play_icon">
+                {play_icon}
+            </template>
+            <template id="volume_loud_icon">
+                {volume_loud_icon}
+            </template>
+            <template id="volume_medium_icon">
+                {volume_medium_icon}
+            </template>
+            <template id="volume_muted_icon">
+                {volume_muted_icon}
+            </template>
+        </div>
     "#)
 }
 
@@ -283,4 +268,111 @@ pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> Stri
         },
         None => String::new()
     }
+}
+
+fn versions_ring(video: &Video) -> String {
+    let radius = 190.0;
+    let diameter = radius * 2.0;
+
+    let mut sizes = Vec::new();
+    let mut total_size: u64 = 0;
+
+    let mut largest_size = 0;
+
+    for version in &video.versions {
+        let src = &version.file_name;
+        let size = version.file_meta.size;
+        let resolution = version.vertical_resolution_label();
+        sizes.push((size, src, resolution));
+        total_size += size;
+
+        if size > largest_size {
+            largest_size = size;
+        }
+    }
+
+    sizes.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+    // Draws a ring segment. In clock terms we start at 12 o'clock and we go clockwise.
+    let slice = |arc_angle: f32, begin_angle: f32, lightness: f32, src: &str, tab_index: usize, resolution: &str, size: &str| -> String {
+        let fill = format!("hsl(0, 0%, {lightness}%)");
+        let large_arc_flag = if arc_angle < 180.0 { 0 } else { 1 };
+
+        let begin_angle_rad = begin_angle.to_radians();
+        let begin_x = begin_angle_rad.sin();
+        let begin_y = -begin_angle_rad.cos();
+
+        let end_angle_rad = (begin_angle + arc_angle).to_radians();
+        let end_x = end_angle_rad.sin();
+        let end_y = -end_angle_rad.cos();
+
+        let outer_radius = radius * 0.6;
+        let segment_outer_begin_x = radius + begin_x * outer_radius;
+        let segment_outer_begin_y = radius + begin_y * outer_radius;
+
+        let segment_outer_end_x = radius + end_x * outer_radius;
+        let segment_outer_end_y = radius + end_y * outer_radius;
+
+        let inner_radius = radius * 0.5;
+        let segment_inner_begin_x = radius + begin_x * inner_radius;
+        let segment_inner_begin_y = radius + begin_y * inner_radius;
+
+        let segment_inner_end_x = radius + end_x * inner_radius;
+        let segment_inner_end_y = radius + end_y * inner_radius;
+
+        let text_radius = radius * 0.8;
+        let text_angle_rad = (begin_angle + 0.5 * arc_angle).to_radians();
+        let text_x = radius + text_angle_rad.sin() * text_radius;
+        let text_resolution_y = radius + -text_angle_rad.cos() * text_radius - 9.0;
+        let text_size_y = radius + -text_angle_rad.cos() * text_radius + 9.0;
+
+        formatdoc!(r#"
+                <path
+                    d="M {segment_outer_begin_x},{segment_outer_begin_y}
+                       A {outer_radius} {outer_radius} 0 {large_arc_flag} 1 {segment_outer_end_x},{segment_outer_end_y}
+                       L {segment_inner_end_x},{segment_inner_end_y}
+                       A {inner_radius} {inner_radius} 0 {large_arc_flag} 0 {segment_inner_begin_x},{segment_inner_begin_y}
+                       Z"
+                    data-label="{resolution}"
+                    data-src="{src}"
+                    fill="{fill}"
+                    tabindex="{tab_index}">
+                    <title>{resolution} {size}</title>
+                </path>
+                <text text-anchor="middle" x="{text_x}" y="{text_resolution_y}">
+                    {resolution}
+                </text>
+                <text class="size" text-anchor="middle" x="{text_x}" y="{text_size_y}">
+                    {size}
+                </text>
+        "#)
+    };
+
+    let mut slices = String::new();
+    let gap_angle = 2.5;
+    let usable_angle = 360.0 - sizes.len() as f32 * gap_angle;
+    let mut begin_angle = gap_angle * 0.5;
+
+    for (index, (size, src, title)) in sizes.iter().enumerate() {
+        let arc_angle = if sizes.len() == 1 {
+            usable_angle
+        } else {
+            (*size as f32 / total_size as f32) * usable_angle
+        };
+
+        let offset_fill = index as f32 / (sizes.len() - 1) as f32;
+        let lightness = 75.0 - offset_fill * 50.0;
+
+        let size_humanized = human_size(*size);
+
+        slices.push_str(&slice(arc_angle, begin_angle, lightness, src, index + 1, title, &size_humanized));
+
+        begin_angle += arc_angle + gap_angle;
+    }
+
+    formatdoc!(r#"
+        <svg class="versions_ring" width="{diameter}" height="{diameter}" version="1.1" viewBox="0 0 {diameter} {diameter}" xmlns="http://www.w3.org/2000/svg">
+            {slices}
+        </svg>
+    "#)
 }
