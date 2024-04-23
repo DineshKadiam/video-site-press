@@ -87,7 +87,7 @@ impl ThemeVars {
         ThemeVars {
 			accent: String::from("#fbdf46"),
 			bg_1: String::from("#161616"),
-			bg_1_overlay: String::from("rgba(22, 22, 22, .92)"),
+			bg_1_overlay: String::from("rgba(22, 22, 22, .85)"),
 			bg_2: String::from("#262626"),
 			bg_3: String::from("#333"),
 			bg_mg: String::from("#444"),
@@ -101,7 +101,7 @@ impl ThemeVars {
     pub fn light() -> ThemeVars {
         ThemeVars {
 			accent: String::from("#9f2e02"),
-			bg_1_overlay: String::from("rgba(255, 255, 255, .92)"),
+			bg_1_overlay: String::from("rgba(255, 255, 255, .85)"),
 			bg_1: String::from("#fff"),
 			bg_2: String::from("#eee"),
 			bg_3: String::from("#ddd"),
