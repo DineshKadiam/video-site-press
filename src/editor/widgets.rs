@@ -15,6 +15,7 @@ use crate::{
     Video
 };
 use crate::icons;
+use crate::util::human_size;
 
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
@@ -299,6 +300,7 @@ pub fn layout(
                         <li>Navigate the site's content in the left sidebar</li>
                         <li>Make changes in the main area of the page</li>
                         <li>Use the controls top-right to preview/deploy</li>
+                        <li>Check the <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} docs</a> for more information</li>
                     </ul>
                     <div class="hsplit">
                         <a href="https://simonrepp.com/hyper8" target="_blank">
@@ -315,27 +317,35 @@ pub fn layout(
     "#);
 
     let t_deploy = &context.editor_translations.deploy;
-    let t_deploy_configuration_missing_required_fields = &context.editor_translations.deploy_configuration_missing_required_fields;
-    let t_really_deploy = &context.editor_translations.really_deploy;
+    let deploy_icon = icons::deploy(t_deploy);
     let deploy_button = match site.deploy_config.complete() {
-        true => format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{t_deploy}</button></form>"#),
-        // TODO: Instead of disabled link, offer "Configure Deployment" link
-        // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
-        false => format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{t_deploy}*</button>"#)
+        true => {
+            let t_really_deploy = &context.editor_translations.really_deploy;
+            format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
+        }
+        false => {
+            // TODO: Instead of disabled link, offer "Configure Deployment" link
+            // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
+            let t_deploy_configuration_missing_required_fields = &context.editor_translations.deploy_configuration_missing_required_fields;
+            format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{t_deploy}*</button>"#)
+        }
     };
 
+    let storage_usage = human_size(site.storage_usage());
     let logo_icon = icons::logo(&context.editor_translations.hyper8_logo);
-    let t_dashboard = &context.editor_translations.dashboard;
-    let t_filter = &context.editor_translations.filter;
     let t_preview = &context.editor_translations.preview;
+    let preview_icon = icons::preview(t_preview);
+    let storage_icon = icons::storage(&context.editor_translations.storage_usage);
+    let t_about = &context.editor_translations.about;
+    let t_filter = &context.editor_translations.filter;
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
                     <div class="buttons">
-                        <form action="/"><button>{t_dashboard}</button></form>
-                        <form action="/build" method="post" target="_blank"><button>{t_preview}</button></form>
+                        <form action="/"><button>{storage_icon} {storage_usage}</button></form>
+                        <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
                         {deploy_button}
-                        <button id="toggle-splash">{logo_icon}</button>
+                        <button id="toggle-splash">{logo_icon} {t_about}</button>
                     </div>
                     <span class="processing"></span>
                 </div>

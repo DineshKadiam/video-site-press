@@ -2,41 +2,9 @@ use std::path::Path;
 
 use indoc::formatdoc;
 
-use crate::{Site, Video, VideoFile};
+use crate::{Site, Video};
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
-
-pub struct VideoRepresentation {
-    pub saving_factor: f32,
-    pub saving_size: u64,
-    pub version: VideoFile
-}
-
-fn compute_representations(versions: &[VideoFile]) -> Vec<VideoRepresentation> {
-    let mut max_size = 0;
-
-    for version in versions {
-        if version.file_meta.size > max_size { max_size = version.file_meta.size; }
-    }
-
-    let mut representations = versions
-        .iter()
-        .map(|version| {
-            let saving_size = max_size - version.file_meta.size;
-            let saving_factor = 1.0 - version.file_meta.size as f32 / max_size as f32;
-
-            VideoRepresentation {
-                saving_factor,
-                saving_size,
-                version: version.clone()
-            }
-        })
-        .collect::<Vec<VideoRepresentation>>();
-
-    representations.sort_by(|a, b| b.saving_size.cmp(&a.saving_size));
-
-    representations
-}
 
 pub fn copy_link(site: &Site, path: &str) -> String {
     let data_url = match &site.base_url {

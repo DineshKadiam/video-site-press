@@ -1,5 +1,6 @@
 #[derive(Clone, Debug)]
 pub struct EditorTranslations {
+	pub about: String,
 	pub adaptive: String,
 	pub back: String,
 	pub banner_description: String,
@@ -11,7 +12,6 @@ pub struct EditorTranslations {
 	pub create_subcollection: String,
 	pub danger_zone: String,
 	pub dark: String,
-	pub dashboard: String,
 	pub default_codec: String,
 	pub delete_banner: String,
 	pub delete_collection: String,
@@ -53,6 +53,7 @@ pub struct EditorTranslations {
 	pub release_date: String,
 	pub request_version: String,
 	pub site_settings: String,
+	pub storage_usage: String,
 	pub title: String,
 	pub unlisted: String,
 	pub update_collection: String,
@@ -73,6 +74,7 @@ pub struct EditorTranslations {
 impl EditorTranslations {
 	pub fn de() -> EditorTranslations {
 		EditorTranslations {
+			about: String::from("Über"),
 			adaptive: String::from("Adaptiv"),
 			back: String::from("Banner Beschreibung"),
 			banner_description: String::from("Zurück"),
@@ -84,7 +86,6 @@ impl EditorTranslations {
 			create_subcollection: String::from("Collection erstellen"),
 			danger_zone: String::from("Gefahrenzone"),
 			dark: String::from("Dunkel"),
-			dashboard: String::from("Dashboard"),
 			default_codec: String::from("Default Codec"),
 			delete_banner: String::from("Banner löschen"),
 			delete_collection: String::from("Collection löschen"),
@@ -126,6 +127,7 @@ impl EditorTranslations {
 			release_date: String::from("Veröffentlichungsdatum"),
 			request_version: String::from("Version anfordern"),
 			site_settings: String::from("Seiteneinstellungen"),
+			storage_usage: String::from("Speicherverbrauch"),
 			title: String::from("Titel"),
 			unlisted: String::from("Ungelistet"),
 			update_collection: String::from("Collection speichern"),
@@ -146,6 +148,7 @@ impl EditorTranslations {
 
 	pub fn en() -> EditorTranslations {
 		EditorTranslations {
+			about: String::from("About"),
 			adaptive: String::from("Adaptive"),
 			back: String::from("Back"),
 			banner_description: String::from("Banner Description"),
@@ -157,7 +160,6 @@ impl EditorTranslations {
 			create_subcollection: String::from("Create Subcollection"),
 			danger_zone: String::from("Danger Zone"),
 			dark: String::from("Dark"),
-			dashboard: String::from("Dashboard"),
 			default_codec: String::from("Default Codec"),
 			delete_banner: String::from("Delete Banner"),
 			delete_collection: String::from("Delete Collection"),
@@ -199,6 +201,7 @@ impl EditorTranslations {
 			release_date: String::from("Release Date"),
 			request_version: String::from("Request Version"),
 			site_settings: String::from("Site Settings"),
+			storage_usage: String::from("Storage Usage"),
 			title: String::from("Title"),
 			unlisted: String::from("Unlisted"),
 			update_collection: String::from("Update Collection"),

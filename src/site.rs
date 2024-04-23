@@ -364,6 +364,44 @@ impl Site {
         site
     }
 
+    /// Returns storage used in bytes (only takes videos into account for now)
+    pub fn storage_usage(&self) -> u64 {
+        fn video_size(video: &Video) -> u64 {
+            video.versions.iter().map(|version| version.file_meta.size).sum()
+        }
+
+        fn playlist_size(playlist: &Playlist) -> u64 {
+            playlist.videos.iter().map(|video| video_size(video)).sum()
+        }
+
+        match &self.content {
+            SiteContent::Collection(collection) => {
+                fn collection_size(collection: &Collection) -> u64 {
+                    let mut size = 0;
+
+                    for playlist in &collection.playlists {
+                        size += playlist_size(playlist)
+                    }
+
+                    for subcollection in &collection.subcollections {
+                        size += collection_size(subcollection);
+                    }
+
+                    for video in &collection.videos {
+                        size += video_size(video)
+                    }
+
+                    size
+                }
+
+                collection_size(collection)
+            }
+            SiteContent::Playlist(playlist) => playlist_size(playlist),
+            SiteContent::Video(video) => video_size(video),
+            _ => 0
+        }
+    }
+
     pub fn title(&self) -> &str {
         match &self.content {
             SiteContent::Collection(collection) => collection.title.as_deref().unwrap_or("Hyper 8"),
