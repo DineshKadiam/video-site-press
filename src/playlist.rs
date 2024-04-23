@@ -162,6 +162,23 @@ impl Playlist {
         false
     }
 
+    /// Returns seconds
+    pub fn duration(&self) -> f32 {
+        self.videos
+            .iter()
+            .map(|video| {
+                video.versions
+                    .iter()
+                    .find_map(|version| {
+                        version.video_meta
+                            .as_ref()
+                            .map(|video_meta| video_meta.duration)
+                    })
+                    .unwrap_or(0.0)
+            })
+            .sum()
+    }
+
     /// Potentially returns a video at the given path.
     pub fn get_any(&self, path: &str) -> GetAnyResult {
         for video in &self.videos {

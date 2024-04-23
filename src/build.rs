@@ -14,7 +14,6 @@ use crate::util::{ensure_empty_dir, hard_link_or_copy};
 
 mod collection;
 mod playlist;
-mod render;
 mod scripts;
 mod styles;
 pub mod translations;

@@ -25,7 +25,6 @@ video {
 .center {
     margin: 0 auto;
     max-width: 33rem;
-    position: relative;
 }
 #copy-link {
     align-items: center;
@@ -62,6 +61,7 @@ header {
     align-items: center;
     column-gap: .7rem;
     display: flex;
+    font-size: .9rem;
     height: 2rem;
     padding: .5rem 0;
 }
@@ -362,16 +362,15 @@ svg {
 }
 
 @media (min-width: 80rem) {
-    .playlist_context {
-        left: calc(100% + 2rem);
-        position: absolute;
-        top: 3rem;
-        width: 24rem;
+    header {
+        position: fixed;
+        left: 1rem;
+        top: 0;
     }
-    .video_info {
-        right: calc(100% + 2rem);
+    .playlist_context {
+        right: 0;
         position: absolute;
-        top: 3rem;
+        top: 0;
         width: 24rem;
     }
 }

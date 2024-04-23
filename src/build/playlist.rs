@@ -4,8 +4,7 @@ use indoc::formatdoc;
 
 use crate::{Banner, Context, Playlist, Site};
 use crate::build::Breadcrumb;
-use crate::build::render::layout;
-use crate::build::widgets::thumbnail;
+use crate::build::widgets::{layout, thumbnail};
 
 pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {

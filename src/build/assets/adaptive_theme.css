@@ -28,10 +28,3 @@ body:not(.light) #theme-toggles.pinned #toggle-dark {
     background-color: var(--bg-3);
     color: var(--fg-1);
 }
-@media (min-width: 100rem) {
-    #theme-toggles {
-        position: fixed;
-        right: 1rem;
-        top: 1rem;
-    }
-}

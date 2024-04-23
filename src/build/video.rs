@@ -5,8 +5,7 @@ use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site, Video};
 use crate::build::Breadcrumb;
-use crate::build::render::layout;
-use crate::build::widgets::{copy_link, downloads, player, thumbnail};
+use crate::build::widgets::{copy_link, downloads, layout, player, thumbnail};
 use crate::util::casual_duration;
 
 pub fn video_html(
@@ -42,6 +41,20 @@ pub fn video_html(
                 let mut out = String::new();
 
                 out.push_str(r#"<div class="playlist_context">"#);
+
+                let label = playlist.label(context);
+                let playlist_duration = casual_duration(playlist.duration());
+                let t_videos = &site.language.translations.videos;
+                let video_count = listed_videos.len();
+                let header = formatdoc!(r#"
+                    <div class="playlist_header">
+                        {label}<br>
+                        {video_count} {t_videos}<br>
+                        {playlist_duration}
+                    </div>
+                "#);
+
+                out.push_str(&header);
 
                 let max_shown: usize = 20;
                 let max_window: usize = max_shown - 2;
@@ -130,19 +143,6 @@ pub fn video_html(
 
                     out.push_str(&more);
                 }
-
-                let label = playlist.label(context);
-                let t_videos = &site.language.translations.videos;
-                let video_count = listed_videos.len();
-                let header = formatdoc!(r#"
-                    <div class="playlist_header">
-                        {label}<br>
-                        {video_count} {t_videos}
-                    </div>
-                "#);
-
-                // TODO: Reactivate
-                // out.push_str(&header);
 
                 out.push_str("</div>");
 

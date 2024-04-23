@@ -5,8 +5,7 @@ use indoc::formatdoc;
 use crate::{Collection, Context, Site};
 use crate::build::Breadcrumb;
 use crate::build::playlist::banner_html;
-use crate::build::render::layout;
-use crate::build::widgets::thumbnail;
+use crate::build::widgets::{layout, thumbnail};
 
 pub fn collection_html(
     context: &Context,

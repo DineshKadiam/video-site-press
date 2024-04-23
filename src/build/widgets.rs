@@ -2,7 +2,8 @@ use std::path::Path;
 
 use indoc::formatdoc;
 
-use crate::{Site, Video};
+use crate::{Site, ThemeKind, Video};
+use crate::build::Breadcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
 
@@ -58,6 +59,83 @@ pub fn downloads(video: &Video) -> String {
         })
         .collect::<Vec<String>>()
         .join("<br>")
+}
+
+pub fn layout(
+    root_prefix: &str,
+    site: &Site,
+    body: &str,
+    title: &str,
+    breadcrumbs: &[Breadcrumb]
+) -> String {
+    // TODO: Hash assets (cache expiration)
+    let head = formatdoc!(r#"
+        <head>
+            <title>{title}</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <script defer src="{root_prefix}scripts.js"></script>
+            <link rel="stylesheet" href="{root_prefix}styles.css">
+        </head>
+    "#);
+
+    let breadcrumbs_rendered = breadcrumbs
+        .iter()
+        .enumerate()
+        .map(|(index, breadcrumb)| {
+            let href = "../".repeat(breadcrumbs.len() - 1 - index);
+            let label = breadcrumb.label();
+            format!(r#"<a href="{href}">{label}</a>"#)
+        })
+        .collect::<Vec<String>>()
+        .join(" › ");
+
+    let dark_icon = icons::dark(&site.language.translations.dark_color_scheme);
+    let light_icon = icons::light(&site.language.translations.light_color_scheme);
+    let theme_toggle = match &site.theme.kind {
+        ThemeKind::Adaptive { .. } => formatdoc!(r#"
+            <div id="theme-toggles">
+                <button class="theme_toggle" id="toggle-dark">{dark_icon}</button>
+                <button class="theme_toggle" id="toggle-light">{light_icon}</button>
+            </div>
+        "#),
+        ThemeKind::Static(_) => String::new()
+    };
+
+    let hyper8_version = env!("CARGO_PKG_VERSION");
+
+    let logo_icon = icons::logo(&site.language.translations.hyper8_logo);
+    let body = formatdoc!(r##"
+        <body>
+            <div class="layout">
+                <div class="growing">
+                    <div class="center">
+                        <header>
+                            {breadcrumbs_rendered}
+                        </header>
+                        {body}
+                    </div>
+                </div>
+                <footer>
+                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank" title="Hyper 8 Video System {hyper8_version}">
+                        {logo_icon} Hyper 8
+                    </a>
+                    {theme_toggle}
+                </footer>
+            </div>
+        </body>
+    "##);
+
+    let lang_code = &site.language.code;
+    let dir_attribute = if site.language.is_rtl() { r#"dir="rtl""# } else { "" };
+
+    formatdoc!(r#"
+        <!doctype html>
+        <html {dir_attribute} lang="{lang_code}">
+            {head}
+            {body}
+        </html>
+    "#)
 }
 
 pub fn player(site: &Site, video: &Video) -> String {
@@ -265,7 +343,6 @@ fn versions_ring(video: &Video) -> String {
         arc_angle: f32,
         begin_angle: f32,
         default: bool,
-        lightness: f32,
         src: &str,
         tab_index: usize,
         resolution: &str,
@@ -355,9 +432,6 @@ fn versions_ring(video: &Video) -> String {
             (*size as f32 / total_size as f32) * usable_angle
         };
 
-        let offset_fill = index as f32 / (sizes.len() - 1) as f32;
-        let lightness = 75.0 - offset_fill * 50.0;
-
         let size_humanized = human_size(*size);
 
         let default = index == sizes.len() - 1;
@@ -365,7 +439,6 @@ fn versions_ring(video: &Video) -> String {
             arc_angle,
             begin_angle,
             default,
-            lightness,
             src,
             index + 1,
             title,
