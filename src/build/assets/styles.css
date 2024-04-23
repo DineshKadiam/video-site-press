@@ -203,10 +203,9 @@ img { max-width: 100%; }
     fill: currentColor;
     font-size: 1.3rem;
 }
-.player_intro .versions_ring text.size {
-    color: var(--mg);
-    font-size: 1rem;
-}
+.player_intro .versions_ring text.size { font-size: 1rem; }
+.player_intro .versions_ring g:not(:focus-visible):not(:hover) text { color: var(--fg-2); }
+.player_intro .versions_ring g:not(:focus-visible):not(:hover) text.size { color: var(--mg); }
 .player_wrapper { position: relative; }
 .player_wrapper button { cursor: pointer; }
 .player_wrapper button:hover { color: var(--fg-1); }
