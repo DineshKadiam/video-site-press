@@ -52,7 +52,6 @@ if (video) {
 		}
 	}
 
-	const defaultPlayButton = document.querySelector('#default_play');
 	const intro = document.querySelector('.player_intro');
 	const playerControls = document.querySelector('.player_controls');
 	const playerWrapper = document.querySelector('.player_wrapper');
@@ -97,12 +96,12 @@ if (video) {
 		playerControls.style.display = null;
 	}
 
-	function selectResolution(event) {
+	function selectResolution(group) {
 		intro.style.display = 'none';
 
-		if (video.getAttribute('src') !== event.target.dataset.src) {
-			video.src = event.target.dataset.src;
-			selectResolutionButton.innerHTML = event.target.dataset.label;
+		if (video.getAttribute('src') !== group.dataset.src) {
+			video.src = group.dataset.src;
+			selectResolutionButton.innerHTML = group.dataset.label;
 		}
 
 		video.play();
@@ -124,11 +123,9 @@ if (video) {
 		}
 	}
 
-	for (const path of document.querySelectorAll('.versions_ring path[data-src]')) {
-		path.addEventListener('click', selectResolution);
+	for (const group of document.querySelectorAll('.versions_ring g[data-src]')) {
+		group.addEventListener('click', () =>  selectResolution(group));
 	}
-
-	defaultPlayButton.addEventListener('click', togglePlayback);
 
 	window.addEventListener('keydown', revealControls);
 	playerWrapper.addEventListener('mousemove', revealControls);

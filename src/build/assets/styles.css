@@ -1,5 +1,4 @@
 :root {
-    --green: #5bd217;
     --letterbox: #000;
 }
 a {
@@ -23,38 +22,10 @@ video {
     display: block;
     width: 100%;
 }
-.active { color: red; }
 .center {
     margin: 0 auto;
     max-width: 33rem;
     position: relative;
-}
-.chart {
-    align-items: center;
-    cursor: pointer;
-    display: flex;
-    column-gap: 1px;
-    margin-bottom: .5rem;
-    position: relative;
-}
-.bar {
-    height: 1.17rem;
-}
-.chart .emissions {
-    border: 1px solid var(--bg-mg);
-    border-right: none;
-    padding: 1px 0 1px 1px;
-}
-.chart .savings {
-    border: 1px solid var(--green);
-    border-left: none;
-    padding: 1px 1px 1px 0;
-}
-.chart .label {
-    color: var(--fg-1);
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
 }
 #copy-link {
     align-items: center;
@@ -79,7 +50,6 @@ video {
     color: var(--bg-1);
 }
 .current { background-color: var(--bg-3); }
-.emissions .bar { background-color: var(--bg-mg); }
 footer {
     align-items: center;
     display: flex;
@@ -185,7 +155,7 @@ img { max-width: 100%; }
 .player_intro {
     align-items: center;
     background-color: var(--bg-1-overlay);
-    bottom: 0;
+    bottom: 2.9rem;
     display: flex;
     justify-content: center;
     left: 0;
@@ -198,26 +168,45 @@ img { max-width: 100%; }
     border: none;
     z-index: 1;
 }
+.player_intro #default_play {
+    align-items: center;
+    background: none;
+    border-radius: 6rem;
+    border: none;
+    display: flex;
+    height: 6rem;
+    justify-content: center;
+    width: 6rem;
+    z-index: 1;
+}
 .player_intro #default_play svg {
-    height: 3rem;
-    width: 3rem;
+    height: 2.5rem;
+    left: .1rem;
+    position: relative;
+    width: 2.5rem;
 }
 .player_intro .versions_ring {
+    aspect-ratio: 1;
+    color: var(--fg-3);
+    height: min(20rem, 100%);
     position: absolute;
-    height: 20rem;
-    width: 20rem;
+    width: auto;
 }
-.player_intro .versions_ring path {
-    cursor: pointer;
-    fill: var(--fg-3);
-}
-.player_intro .versions_ring path:focus-visible,
-.player_intro .versions_ring path:hover {
-    fill: var(--fg-1);
+.player_intro .versions_ring path { fill: currentColor; }
+.player_intro .versions_ring g { cursor: pointer; }
+.player_intro .versions_ring g:focus-visible,
+.player_intro .versions_ring g:hover {
+    color: var(--fg-1);
     outline: none;
 }
-.player_intro .versions_ring text { font-size: .9rem; }
-.player_intro .versions_ring text.size { fill: var(--fg-1); }
+.player_intro .versions_ring text {
+    fill: currentColor;
+    font-size: 1.3rem;
+}
+.player_intro .versions_ring text.size {
+    color: var(--mg);
+    font-size: 1rem;
+}
 .player_wrapper { position: relative; }
 .player_wrapper button { cursor: pointer; }
 .player_wrapper button:hover { color: var(--fg-1); }
@@ -305,17 +294,6 @@ img { max-width: 100%; }
     padding: .8rem;
 }
 .release_date { color: var(--fg-3); }
-.savings .bar { background-color: var(--green); }
-.savings_percent {
-    color: var(--green);
-    position: absolute;
-    left: calc(100% + .5rem);
-}
-.size {
-    color: var(--bg-mg);
-    position: absolute;
-    right: calc(100% + .5rem);
-}
 .sidebar {
     display: flex;
     flex-direction: column;
