@@ -57,7 +57,7 @@ pub struct DeleteVersionForm {
 #[derive(Deserialize)]
 pub struct DownsizeForm {
     codec: String,
-    width: String
+    height: String
 }
 
 #[derive(Deserialize)]
@@ -181,10 +181,10 @@ pub async fn downsize(
 
     // TODO: Safety validation of these maybe
     let codec = &form.codec;
-    let width = &form.width;
+    let height = &form.height;
 
     // TODO: Build programmatically in code instead of parsing from format string
-    let video_format_string = format!("video:{codec}:mp4:speed:1.0:{width}");
+    let video_format_string = format!("video:{codec}:mp4:speed:1.0:{height}");
     let video_format = VideoFormat::parse(&video_format_string).unwrap();
 
     let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
@@ -215,7 +215,7 @@ fn downsize_form(context: &Context, video: &Video) -> String {
             };
 
             let option = formatdoc!(r#"
-                <option {selected} value="{width}">{width}×{height}</option>
+                <option {selected} value="{height}">{width}×{height}</option>
             "#);
             options.push(option);
         }
@@ -233,7 +233,7 @@ fn downsize_form(context: &Context, video: &Video) -> String {
     formatdoc!(r#"
         <form action="/downsize/{path}" method="post">
             <div class="button_group">
-                <select name="width">
+                <select name="height">
                     {options}
                 </select>
                 <select name="codec">

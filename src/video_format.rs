@@ -29,9 +29,9 @@ pub enum VideoFormat {
         codec: Codec,
         container: Container,
         encoding_approach: EncodingApproach,
+        height: usize,
         // TODO: Can we somehow type-enforce a range? Brittle right now.
-        quality: f32, // 0.0 (worst) to 1.0 (best)
-        width: usize
+        quality: f32 // 0.0 (worst) to 1.0 (best)
     }
 }
 
@@ -72,9 +72,9 @@ impl VideoFormat {
                 VideoFormat::Video { .. } => Ordering::Less,
                 VideoFormat::AudioOnly => Ordering::Equal
             }
-            VideoFormat::Video { width, .. } => match other {
+            VideoFormat::Video { height, .. } => match other {
                 VideoFormat::AudioOnly => Ordering::Greater,
-                VideoFormat::Video { width: other_width, .. } => width.cmp(other_width)
+                VideoFormat::Video { height: other_height, .. } => height.cmp(other_height)
             }
         }
     }
@@ -82,9 +82,9 @@ impl VideoFormat {
     pub fn encode(&self) -> String {
         match self {
             VideoFormat::AudioOnly => String::from("audio-only"),
-            VideoFormat::Video { codec, container, encoding_approach, quality, width } => {
+            VideoFormat::Video { codec, container, encoding_approach, height, quality } => {
                 format!(
-                    "video:{}:{}:{}:{quality}:{width}",
+                    "video:{}:{}:{}:{quality}:{height}",
                     codec.to_string(),
                     container.to_string(),
                     encoding_approach.to_string()
@@ -97,7 +97,7 @@ impl VideoFormat {
     pub fn label(&self) -> String {
         match self {
             VideoFormat::AudioOnly => "audio-only".to_string(),
-            VideoFormat::Video { width, .. } => width.to_string()
+            VideoFormat::Video { height, .. } => format!("{height}p")
         }
     }
 
@@ -136,9 +136,9 @@ impl VideoFormat {
                     None => return None
                 };
 
-                let width = match components.next() {
-                    Some(width_str) => match width_str.parse::<usize>() {
-                        Ok(width) => width,
+                let height = match components.next() {
+                    Some(height_str) => match height_str.parse::<usize>() {
+                        Ok(height) => height,
                         Err(_) => return None
                     }
                     None => return None
@@ -148,8 +148,8 @@ impl VideoFormat {
                     codec,
                     container,
                     encoding_approach,
-                    quality,
-                    width
+                    height,
+                    quality
                 })
             }
             _ => None
@@ -168,9 +168,9 @@ impl PartialEq for VideoFormat {
             VideoFormat::AudioOnly => {
                 if let VideoFormat::AudioOnly = other { return true; }
             }
-            VideoFormat::Video { width, .. } => {
-                if let VideoFormat::Video { width: other_width, .. } = &other {
-                    if width == other_width { return true; }
+            VideoFormat::Video { height, .. } => {
+                if let VideoFormat::Video { height: other_height, .. } = &other {
+                    if height == other_height { return true; }
                 }
             }
         }

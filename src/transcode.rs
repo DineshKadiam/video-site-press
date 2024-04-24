@@ -141,12 +141,12 @@ pub fn encode(
 
             (output_file, output_path)
         }
-        VideoFormat::Video { codec, container, encoding_approach, quality, width } => {
+        VideoFormat::Video { codec, container, encoding_approach, height, quality } => {
             // TODO: We need to encode WebM and h265 for browser compatibility reasons
             //       Consider that we also need to/could offer both for download
             // See also https://pixelpoint.io/blog/web-optimized-video-ffmpeg/
 
-            command.arg("-vf").arg(format!("scale={width}:-2"));
+            command.arg("-vf").arg(format!("scale=-2:{height}"));
 
             match codec {
                 Codec::H264 => {
@@ -221,7 +221,7 @@ pub fn encode(
             };
 
             let mut base_name = input_path.file_stem().unwrap().to_string_lossy().to_string();
-            base_name.push_str(&format!("_{width}_{}", codec.to_string()));
+            base_name.push_str(&format!("_{height}p_{}", codec.to_string()));
 
             // TODO: Eventually we should probably render to a temp dir and only move the finished file to the site_dir
             //       if the video and video dir at that later point in time stil exist. (and the job has not been cancelled,
