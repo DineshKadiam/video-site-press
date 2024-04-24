@@ -224,7 +224,7 @@ pub fn encode(
             let codec_suffix = codec.to_string();
             let approach_suffix = encoding_approach.to_string();
             let quality_suffix = format!("{:.0}", quality * 100.0);
-            base_name.push_str(&format!("_{height}p_{codec_suffix}_{quality_suffix}_{approach_suffix}"));
+            base_name.push_str(&format!("_{height}p_{codec_suffix}_q{quality_suffix}_{approach_suffix}"));
 
             // TODO: Eventually we should probably render to a temp dir and only move the finished file to the site_dir
             //       if the video and video dir at that later point in time stil exist. (and the job has not been cancelled,
