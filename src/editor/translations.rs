@@ -1,5 +1,6 @@
 #[derive(Clone, Debug)]
 pub struct EditorTranslations {
+	pub a_permalink_defines_under_which_url_text: String,
 	pub about: String,
 	pub adaptive: String,
 	pub available_formats: String,
@@ -11,6 +12,12 @@ pub struct EditorTranslations {
 	pub close: String,
 	pub codec: String,
 	pub collection: String,
+	pub convert_collection_to_playlist: String,
+	pub convert_collection_to_video: String,
+	pub convert_playlist_to_collection: String,
+	pub convert_playlist_to_video: String,
+	pub convert_to_video_in_collection: String,
+	pub convert_to_video_in_playlist: String,
 	pub create_playlist: String,
 	pub create_subcollection: String,
 	pub danger_zone: String,
@@ -83,6 +90,7 @@ pub struct EditorTranslations {
 impl EditorTranslations {
 	pub fn de() -> EditorTranslations {
 		EditorTranslations {
+			a_permalink_defines_under_which_url_text: String::from("Ein Permalink definiert unter welcher URL etwas öffentlich zugänglich ist, oder in anderen Worten, falls irgendwelche Links auf diese Resource verweisen, werden sie nicht mehr funktionieren nachdem du den Permalink geändert, und die Seite deployed hast."),
 			about: String::from("Über"),
 			adaptive: String::from("Adaptiv"),
 			available_formats: String::from("Verfügbare Formate"),
@@ -94,6 +102,12 @@ impl EditorTranslations {
 			close: String::from("Schliessen"),
 			codec: String::from("Codec"),
 			collection: String::from("Collection"),
+			convert_collection_to_playlist: String::from("Collection zu Playlist umwandeln"),
+			convert_collection_to_video: String::from("Collection zu Video umwandeln"),
+			convert_playlist_to_collection: String::from("Playlist zu Collection umwandeln"),
+			convert_playlist_to_video: String::from("Playlist zu Video umwandeln"),
+			convert_to_video_in_collection: String::from("Zu Video in Collection umwandeln"),
+			convert_to_video_in_playlist: String::from("Zu Video in Playlist umwandeln"),
 			create_playlist: String::from("Playlist erstellen"),
 			create_subcollection: String::from("Collection erstellen"),
 			danger_zone: String::from("Gefahrenzone"),
@@ -166,6 +180,7 @@ impl EditorTranslations {
 
 	pub fn en() -> EditorTranslations {
 		EditorTranslations {
+			a_permalink_defines_under_which_url_text: String::from("A permalink defines under which url something is publicly available on the web, or in other words, if there are links pointing to this right now, they will not work anymore after you changed the permalink and deployed your site."),
 			about: String::from("About"),
 			adaptive: String::from("Adaptive"),
 			available_formats: String::from("Available Formats"),
@@ -177,6 +192,12 @@ impl EditorTranslations {
 			close: String::from("Close"),
 			codec: String::from("Codec"),
 			collection: String::from("Collection"),
+			convert_collection_to_playlist: String::from("Convert collection to playlist"),
+			convert_collection_to_video: String::from("Convert collection to video"),
+			convert_playlist_to_collection: String::from("Convert playlist to collection"),
+			convert_playlist_to_video: String::from("Convert playlist to video"),
+			convert_to_video_in_collection: String::from("Convert to video in collection"),
+			convert_to_video_in_playlist: String::from("Convert to video to playlist"),
 			create_playlist: String::from("Create Playlist"),
 			create_subcollection: String::from("Create Subcollection"),
 			danger_zone: String::from("Danger Zone"),

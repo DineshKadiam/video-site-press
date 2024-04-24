@@ -239,13 +239,11 @@ pub fn edit_page(
             )
         };
 
+        let t_a_permalink_defines_under_which_url_text = &context.editor_translations.a_permalink_defines_under_which_url_text;
         let t_update_permalink = &context.editor_translations.update_permalink;
         formatdoc!(r#"
             <p>
-                Be aware that changing the slug/permalink of a collection changes
-                the url under which the collection is publicly available on the web,
-                or in other words, if there are links pointing to your collection
-                right now, they will not work anymore when you change the slug.
+                {t_a_permalink_defines_under_which_url_text}
             </p>
 
             <form action="/move-collection/{path}" method="post">
@@ -293,6 +291,7 @@ pub fn edit_page(
     };
 
     let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
+        let t_convert_collection_to_playlist = &context.editor_translations.convert_collection_to_playlist;
         formatdoc!(r#"
             <p>
                 This collection contains no playlists or subcollections and can therefore
@@ -300,7 +299,7 @@ pub fn edit_page(
             </p>
 
             <form action="/convert-to-playlist/{path}" method="post">
-                <button>Convert collection to playlist</button>
+                <button>{t_convert_collection_to_playlist}</button>
             </form>
         "#)
     } else {
@@ -317,11 +316,12 @@ pub fn edit_page(
             "This collection contains nothing can therefore seamlessly be converted to a video."
         };
 
+        let t_convert_collection_to_video = &context.editor_translations.convert_collection_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
             <form action="/convert-to-video/{path}" method="post">
-                <button>Convert collection to video</button>
+                <button>{t_convert_collection_to_video}</button>
             </form>
         "#)
     } else {

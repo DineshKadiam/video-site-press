@@ -215,13 +215,11 @@ pub fn edit_page(
             )
         };
 
+        let t_a_permalink_defines_under_which_url_text = &context.editor_translations.a_permalink_defines_under_which_url_text;
         let t_update_permalink = &context.editor_translations.update_permalink;
         formatdoc!(r#"
             <p>
-                Be aware that changing the slug/permalink of a playlist changes
-                the url under which the playlist is publicly available on the web,
-                or in other words, if there are links pointing to your playlist
-                right now, they will not work anymore when you change the slug.
+                {t_a_permalink_defines_under_which_url_text}
             </p>
 
             <form action="/move-playlist/{path}" method="post">
@@ -244,6 +242,7 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, path);
 
+    let t_convert_playlist_to_collection = &context.editor_translations.convert_playlist_to_collection;
     let convert_to_collection_form = formatdoc!(r#"
         <p>
             A playlist can seamlessly be converted to a collection, but note that the
@@ -251,7 +250,7 @@ pub fn edit_page(
         </p>
 
         <form action="/convert-to-collection/{path}" method="post">
-            <button>Convert playlist to collection</button>
+            <button>{t_convert_playlist_to_collection}</button>
         </form>
     "#);
 
@@ -262,11 +261,12 @@ pub fn edit_page(
             "This playlist contains a single video and can be converted to just a video, note however that playlist data will be removed or overwritten with data from the video where necessary."
         };
 
+        let t_convert_playlist_to_video = &context.editor_translations.convert_playlist_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
             <form action="/convert-to-video/{path}" method="post">
-                <button>Convert playlist to video</button>
+                <button>{t_convert_playlist_to_video}</button>
             </form>
         "#)
     } else {

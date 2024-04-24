@@ -476,13 +476,11 @@ pub fn edit_page(
             )
         };
 
+        let t_a_permalink_defines_under_which_url_text = &context.editor_translations.a_permalink_defines_under_which_url_text;
         let t_update_permalink = &context.editor_translations.update_permalink;
         formatdoc!(r#"
             <p>
-                Be aware that changing the slug/permalink of a video changes
-                the url under which the video is publicly available on the web,
-                or in other words, if there are links pointing to your video
-                right now, they will not work anymore when you change the slug.
+                {t_a_permalink_defines_under_which_url_text}
             </p>
 
             <form action="/move-video/{path}" method="post">
@@ -505,15 +503,16 @@ pub fn edit_page(
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_additional_format);
 
-    // TODO: This shows also on non-root/non-site videos (?) but that's not implemented
-    //       yet at all? (So therefore this needs to be implemented)
+    // TODO: Implement for non-root/non-site videos
+    let t_convert_to_video_in_collection = &context.editor_translations.convert_to_video_in_collection;
+    let t_convert_to_video_in_playlist = &context.editor_translations.convert_to_video_in_playlist;
     let convert_form = formatdoc!(r#"
         <p>
             A video can seamlessly be converted to a video in a collection.
         </p>
 
         <form action="/convert-to-collection/{path}" method="post">
-            <button>Convert video to a video in a collection</button>
+            <button>{t_convert_to_video_in_collection}</button>
         </form>
 
         <p>
@@ -521,7 +520,7 @@ pub fn edit_page(
         </p>
 
         <form action="/convert-to-playlist/{path}" method="post">
-            <button>Convert video to a video in a playlist</button>
+            <button>{t_convert_to_video_in_playlist}</button>
         </form>
     "#);
 
