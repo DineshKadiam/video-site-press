@@ -58,7 +58,8 @@ pub struct DeleteVersionForm {
 pub struct DownsizeForm {
     approach: String,
     codec: String,
-    height: String
+    height: String,
+    quality: String
 }
 
 #[derive(Deserialize)]
@@ -184,9 +185,10 @@ pub async fn downsize(
     let approach = &form.approach;
     let codec = &form.codec;
     let height = &form.height;
+    let quality = &form.quality;
 
     // TODO: Build programmatically in code instead of parsing from format string
-    let video_format_string = format!("video:{codec}:mp4:{approach}:1.0:{height}");
+    let video_format_string = format!("video:{codec}:mp4:{approach}:{quality}:{height}");
     let video_format = VideoFormat::parse(&video_format_string).unwrap();
 
     let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
@@ -196,7 +198,7 @@ pub async fn downsize(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
-fn downsize_form(context: &Context, video: &Video) -> String {
+fn additional_formats_form(context: &Context, video: &Video) -> String {
     let (aspect_ratio, tallest_height) = if let Some(version) = video.highest_resolution_version() {
         let video_meta = version.video_meta.as_ref().unwrap();
         (video_meta.width as f32 / video_meta.height as f32, video_meta.height)
@@ -204,7 +206,7 @@ fn downsize_form(context: &Context, video: &Video) -> String {
         return String::new();
     };
 
-    let mut options = Vec::new();
+    let mut height_options = Vec::new();
     let candidate_heights = [144, 240, 360, 480, 720, 1080];
     for height in candidate_heights {
         if height < tallest_height {
@@ -219,40 +221,64 @@ fn downsize_form(context: &Context, video: &Video) -> String {
             let option = formatdoc!(r#"
                 <option {selected} value="{height}">{width}×{height}</option>
             "#);
-            options.push(option);
+            height_options.push(option);
         }
     }
 
-    if options.is_empty() {
+    if height_options.is_empty() {
         return String::new();
     }
 
-    let options = options.join("\n");
+    let height_options = height_options.join("\n");
     let path = &video.path;
 
-    let t_default_codec = &context.editor_translations.default_codec;
-    let t_nice_but_slow = &context.editor_translations.nice_but_slow;
-    let t_quick_draft = &context.editor_translations.quick_draft;
+    let t_best = &context.editor_translations.best;
+    let t_codec = &context.editor_translations.codec;
+    let t_encoding_approach = &context.editor_translations.encoding_approach;
+    let t_maximum_efficiency_best_compression_through_slowest_encoding = &context.editor_translations.maximum_efficiency_best_compression_through_slowest_encoding;
+    let t_maximum_speed_fastest_encoding_through_worst_compression = &context.editor_translations.maximum_speed_fastest_encoding_through_worst_compression;
+    let t_quality = &context.editor_translations.quality;
+    let t_recommended_codec = &context.editor_translations.recommended_codec;
+    let t_render_additional_formats = &context.editor_translations.render_additional_formats;
     let t_request_version = &context.editor_translations.request_version;
+    let t_resolution = &context.editor_translations.resolution;
+    let t_worst = &context.editor_translations.worst;
     formatdoc!(r#"
-        <form action="/downsize/{path}" method="post">
-            <div class="button_group">
-                <select name="height">
-                    {options}
-                </select>
-                <select name="codec">
-                    <option value="h264">{t_default_codec}</option>
-                    <option value="h264">H264</option>
-                    <option value="hevc">HEVC</option>
-                    <option value="vp9">VP9</option>
-                </select>
-                <select name="approach">
-                    <option value="quality">{t_nice_but_slow}</option>
-                    <option value="speed">{t_quick_draft}</option>
-                </select>
+        <div class="form_group">
+            <h2>{t_render_additional_formats}</h2>
+            <form action="/downsize/{path}" method="post">
+                <div class="form_field">
+                    <label for="resolution">{t_resolution}</label>
+                    <select id="resolution" name="height">
+                        {height_options}
+                    </select>
+                </div>
+                <div class="form_field">
+                    <label for="quality">{t_quality}</label>
+                    <div style="align-items: center; column-gap: .3rem; display: flex;">
+                        <span>{t_worst}</span>
+                        <input id="quality" max="1.0" min="0.0" name="quality" step="any" style="flex: 1" type="range" value="0.8">
+                        <span>{t_best}</span>
+                    </div>
+                </div>
+                <div class="form_field">
+                    <label for="codec">{t_codec}</label>
+                    <select id="codec" name="codec">
+                        <option value="h264">H264 ({t_recommended_codec})</option>
+                        <option value="hevc">HEVC</option>
+                        <option value="vp9">VP9</option>
+                    </select>
+                </div>
+                <div class="form_field">
+                    <label for="approach">{t_encoding_approach}</label>
+                    <select id="approach" name="approach">
+                        <option value="efficiency">{t_maximum_efficiency_best_compression_through_slowest_encoding}</option>
+                        <option value="speed">{t_maximum_speed_fastest_encoding_through_worst_compression}</option>
+                    </select>
+                </div>
                 <button>{t_request_version}</button>
-            </div>
-        </form>
+            </form>
+        </div>
     "#)
 }
 
@@ -331,8 +357,6 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let downsize_form_rendered = downsize_form(context, video);
-
         let t_video_audio_versions = &context.editor_translations.video_audio_versions;
         formatdoc!(r#"
             <h2>{t_video_audio_versions}</h2>
@@ -340,8 +364,6 @@ pub fn edit_page(
             <ul class="versions">
                 {versions}
             </ul>
-
-            {downsize_form_rendered}
         "#)
     };
 
@@ -508,6 +530,8 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
+    let render_additional_formats = additional_formats_form(context, video);
+
     let t_danger_zone = &context.editor_translations.danger_zone;
     let t_delete_video = &context.editor_translations.delete_video;
     let t_poster_image = &context.editor_translations.poster_image;
@@ -537,6 +561,7 @@ pub fn edit_page(
             {video_upload_button}
         </div>
 
+        {render_additional_formats}
 
         <div class="form_group">
             <h2>{t_poster_image}</h2>

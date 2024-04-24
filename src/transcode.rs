@@ -154,7 +154,7 @@ pub fn encode(
                     command.arg("-c:v").arg("libx264");
 
                     match encoding_approach {
-                        EncodingApproach::Quality => command.arg("-preset").arg("veryslow"),
+                        EncodingApproach::Efficiency => command.arg("-preset").arg("veryslow"),
                         EncodingApproach::Speed => command.arg("-preset").arg("ultrafast")
                     };
 
@@ -176,7 +176,7 @@ pub fn encode(
                     command.arg("-c:v").arg("libx265");
 
                     match encoding_approach {
-                        EncodingApproach::Quality => command.arg("-preset").arg("veryslow"),
+                        EncodingApproach::Efficiency => command.arg("-preset").arg("veryslow"),
                         EncodingApproach::Speed => command.arg("-preset").arg("ultrafast")
                     };
 
@@ -200,7 +200,7 @@ pub fn encode(
                     command.arg("-c:v").arg("libvpx-vp9");
 
                     match encoding_approach {
-                        EncodingApproach::Quality => command.arg("-deadline").arg("best"),
+                        EncodingApproach::Efficiency => command.arg("-deadline").arg("best"),
                         EncodingApproach::Speed => command.arg("-deadline").arg("realtime")
                     };
 
@@ -221,7 +221,10 @@ pub fn encode(
             };
 
             let mut base_name = input_path.file_stem().unwrap().to_string_lossy().to_string();
-            base_name.push_str(&format!("_{height}p_{}", codec.to_string()));
+            let codec_suffix = codec.to_string();
+            let approach_suffix = encoding_approach.to_string();
+            let quality_suffix = format!("{:.0}", quality * 100.0);
+            base_name.push_str(&format!("_{height}p_{codec_suffix}_{quality_suffix}_{approach_suffix}"));
 
             // TODO: Eventually we should probably render to a temp dir and only move the finished file to the site_dir
             //       if the video and video dir at that later point in time stil exist. (and the job has not been cancelled,

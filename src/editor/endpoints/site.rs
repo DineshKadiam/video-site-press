@@ -84,21 +84,21 @@ fn edit_page(
     //     VideoFormat::Video {
     //         codec: Codec::H264,
     //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Quality,
+    //         encoding_approach: EncodingApproach::Efficiency,
     //         quality: 0.5,
     //         width: 480
     //     },
     //     VideoFormat::Video {
     //         codec: Codec::H264,
     //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Quality,
+    //         encoding_approach: EncodingApproach::Efficiency,
     //         quality: 0.75,
     //         width: 720
     //     },
     //     VideoFormat::Video {
     //         codec: Codec::H264,
     //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Quality,
+    //         encoding_approach: EncodingApproach::Efficiency,
     //         quality: 1.0,
     //         width: 1080
     //     }

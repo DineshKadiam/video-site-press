@@ -18,7 +18,7 @@ pub enum Container {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum EncodingApproach {
-    Quality,
+    Efficiency,
     Speed
 }
 
@@ -57,7 +57,7 @@ impl Container {
 impl EncodingApproach {
     pub fn to_string(&self) -> &str {
         match self {
-            EncodingApproach::Quality => "quality",
+            EncodingApproach::Efficiency => "efficiency",
             EncodingApproach::Speed => "speed"
         }
     }
@@ -123,7 +123,7 @@ impl VideoFormat {
                 };
 
                 let encoding_approach = match components.next() {
-                    Some("quality") => EncodingApproach::Quality,
+                    Some("efficiency") => EncodingApproach::Efficiency,
                     Some("speed") => EncodingApproach::Speed,
                     _ => return None
                 };
