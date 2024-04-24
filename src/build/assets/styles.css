@@ -44,6 +44,9 @@ h2 { font-size: 1.17rem; }
     color: var(--bg-1);
 }
 .current { background-color: var(--bg-3); }
+.flex { display: flex; }
+.flex.align { align-items: center; }
+.flex.space { column-gap: .3rem; }
 footer {
     align-items: center;
     display: flex;
@@ -93,11 +96,7 @@ img {
     position: absolute;
     width: 100%;
 }
-.player_controls button {
-    background: none;
-    border: none;
-    padding: .6rem;
-}
+.player_controls button { padding: .6rem; }
 .player_controls button svg {
     height: 1.4rem;
     width: 1.4rem;
@@ -155,7 +154,8 @@ img {
     width: 100%;
     z-index: 3;
 }
-.player_intro {
+.player_intro,
+.player_outro {
     align-items: center;
     background-color: var(--bg-1-overlay);
     bottom: 2.9rem;
@@ -170,7 +170,6 @@ img {
     aspect-ratio: 1;
     color: var(--fg-3);
     height: min(20rem, 100%);
-    position: absolute;
     width: auto;
 }
 .player_intro .versions_ring path { fill: currentColor; }
@@ -187,8 +186,14 @@ img {
 .player_intro .versions_ring text.size { font-size: 1rem; }
 .player_intro .versions_ring g:not(:focus-visible):not(:hover) text { color: var(--fg-2); }
 .player_intro .versions_ring g:not(:focus-visible):not(:hover) text.size { color: var(--mg); }
+.player_outro { column-gap: 2rem; }
+.player_outro:not(.active) { display: none; }
 .player_wrapper { position: relative; }
-.player_wrapper button { cursor: pointer; }
+.player_wrapper button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
 .player_wrapper button:hover { color: var(--fg-1); }
 .playlist > * {
     column-gap: 1rem;
@@ -273,6 +278,8 @@ img {
     background-color: var(--bg-1);
     padding: .8rem;
 }
+.playlist_header .duration { color: var(--fg-3); }
+.playlist_header .title { color: var(--fg-1); }
 .release_date { color: var(--fg-3); }
 .sidebar {
     display: flex;

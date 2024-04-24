@@ -1,8 +1,9 @@
 use std::path::Path;
+use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Site, ThemeKind, Video};
+use crate::{Context, Site, ThemeKind, Video};
 use crate::build::Breadcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
@@ -138,7 +139,9 @@ pub fn layout(
     "#)
 }
 
-pub fn player(site: &Site, video: &Video) -> String {
+pub fn player(context: &Context, site: &Site, video: &Video, next_video: Option<Arc<Video>>) -> String {
+    let index_suffix = context.index_suffix();
+
     if video.versions.is_empty() {
         // TODO: Should use poster assets (different sizes)
         let poster = match &video.poster {
@@ -215,6 +218,12 @@ pub fn player(site: &Site, video: &Video) -> String {
 
     let versions_ring_rendered = versions_ring(video);
 
+    let t_next_video = &site.language.translations.next_video;
+    let next_video_button = match next_video {
+        Some(video) => format!(r#"<a href="../{}{index_suffix}">{t_next_video}</a>"#, video.slug()),
+        None => String::new()
+    };
+
     let maximize_icon = icons::maximize(&site.language.translations.maximize);
     let minimize_icon = icons::minimize(&site.language.translations.minimize);
     let pause_icon = icons::pause(&site.language.translations.pause);
@@ -222,10 +231,18 @@ pub fn player(site: &Site, video: &Video) -> String {
     let volume_loud_icon = icons::volume_loud(&site.language.translations.loud_volume);
     let volume_medium_icon = icons::volume_medium(&site.language.translations.medium_volume);
     let volume_muted_icon = icons::volume_muted(&site.language.translations.sound_muted);
+    let t_replay = &site.language.translations.replay;
     formatdoc!(r#"
         <div class="player_wrapper">
             <div class="player_intro">
                 {versions_ring_rendered}
+            </div>
+            <div class="player_outro">
+                <button class="align flex space" id="replay">
+                    {play_icon}
+                    {t_replay}
+                </button>
+                {next_video_button}
             </div>
             <div class="player_controls">
                 <div class="timeline">
@@ -249,7 +266,7 @@ pub fn player(site: &Site, video: &Video) -> String {
                     </div>
                 </div>
             </div>
-            <video {poster} preload="none" src="{src}">
+            <video data-duration="{duration}" {poster} preload="none" src="{src}">
                 {subtitles}
             </video>
             <template id="maximize_icon">

@@ -32,6 +32,8 @@ const video = document.querySelector('video');
 
 // TODO: Potentially move in separate script file that only gets loaded on video pages
 if (video) {
+    // Before we even begin playback video.duration is NaN, so we use our own data throughout
+    const duration = parseFloat(video.dataset.duration);
     let playbackUpdateInterval;
 
     function formatTime(time) {
@@ -53,8 +55,10 @@ if (video) {
     }
 
     const intro = document.querySelector('.player_intro');
+    const outro = document.querySelector('.player_outro');
     const playerControls = document.querySelector('.player_controls');
     const playerWrapper = document.querySelector('.player_wrapper');
+    const replayButton = document.querySelector('#replay');
     const timelineInput = document.querySelector('.timeline input');
     const selectResolutionButton = document.querySelector('#select_resolution');
     const selectSubtitlesButton = document.querySelector('#select_subtitles');
@@ -84,7 +88,7 @@ if (video) {
         timelineInput.value = time;
         timelineInput.setAttribute('aria-valuenow', time);
         timelineInput.setAttribute('aria-valuetext', timeFormatted);
-        document.querySelector('.bar.progress').style.width = `${(time / video.duration) * 100}%`;
+        document.querySelector('.bar.progress').style.width = `${(time / duration) * 100}%`;
         document.querySelector('#time_current').innerHTML = timeFormatted;
 
         if (playerControls.dataset.hideBy && (new Date()).getTime() > playerControls.dataset.hideBy) {
@@ -107,7 +111,8 @@ if (video) {
 
         video.play();
         togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
-        playbackUpdateInterval = setInterval(playbackUpdate, 80);
+        playbackUpdateInterval = setInterval(playbackUpdate, 80); // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
+                                                                  //       Formula should/can take into account width of video on screen vs duration of video.
     }
 
     function togglePlayback() {
@@ -116,7 +121,6 @@ if (video) {
             video.play();
             togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
             playbackUpdateInterval = setInterval(playbackUpdate, 80);
-
         } else {
             video.pause();
             clearInterval(playbackUpdateInterval);
@@ -131,8 +135,16 @@ if (video) {
     window.addEventListener('keydown', revealControls);
     playerWrapper.addEventListener('mousemove', revealControls);
 
+    replayButton.addEventListener('click', () => {
+        outro.classList.remove('active');
+        video.play();
+        togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
+        playbackUpdateInterval = setInterval(playbackUpdate, 80);
+    });
+
     selectResolutionButton.addEventListener('click', () => {
         if (intro.style.display === 'none') {
+            outro.classList.remove('active');
             intro.style.display = null;
             if (!video.paused) {
                 video.pause();
@@ -226,6 +238,12 @@ if (video) {
             toggleVolumeButton.replaceChildren(document.querySelector('#volume_loud_icon').content.cloneNode(true));
             localStorage.setItem('hyper8Volume', '1');
         }
+    });
+
+    video.addEventListener('ended', () => {
+        outro.classList.add('active');
+        clearInterval(playbackUpdateInterval);
+        togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
     });
 
     video.addEventListener('click', togglePlayback);

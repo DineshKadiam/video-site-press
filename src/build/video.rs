@@ -18,12 +18,11 @@ pub fn video_html(
     let index_suffix = context.index_suffix();
     let description = if let Some(description) = &video.description { description } else { "" };
     let title = video.title.as_deref().unwrap_or(video.slug());
-    let player_rendered = player(site, video);
 
     let downloads_widget = downloads(video);
 
-    let playlist_context = if video.unlisted {
-        String::new()
+    let (playlist_context, next_video) = if video.unlisted {
+        (String::new(), None)
     } else {
         match playlist {
             Some(playlist) => {
@@ -38,6 +37,8 @@ pub fn video_html(
                     .position(|video_iterated| video_iterated.path == video.path)
                     .unwrap();
 
+                let next_video = listed_videos.iter().nth(active_position + 1).map(|video| Arc::clone(video));
+
                 let mut out = String::new();
 
                 out.push_str(r#"<div class="playlist_context">"#);
@@ -48,9 +49,8 @@ pub fn video_html(
                 let video_count = listed_videos.len();
                 let header = formatdoc!(r#"
                     <div class="playlist_header">
-                        {label}<br>
-                        {video_count} {t_videos}<br>
-                        {playlist_duration}
+                        <div class="title">{label}</div>
+                        {video_count} {t_videos} <span class="duration">{playlist_duration}</span>
                     </div>
                 "#);
 
@@ -146,11 +146,13 @@ pub fn video_html(
 
                 out.push_str("</div>");
 
-                out
+                (out, next_video)
             }
-            None => String::new()
+            None => (String::new(), None)
         }
     };
+
+    let player_rendered = player(context, site, video, next_video);
 
     let copy_link_widget = copy_link(site, &video.path);
 
