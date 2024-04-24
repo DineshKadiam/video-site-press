@@ -56,6 +56,7 @@ pub struct DeleteVersionForm {
 
 #[derive(Deserialize)]
 pub struct DownsizeForm {
+    approach: String,
     codec: String,
     height: String
 }
@@ -180,11 +181,12 @@ pub async fn downsize(
     };
 
     // TODO: Safety validation of these maybe
+    let approach = &form.approach;
     let codec = &form.codec;
     let height = &form.height;
 
     // TODO: Build programmatically in code instead of parsing from format string
-    let video_format_string = format!("video:{codec}:mp4:speed:1.0:{height}");
+    let video_format_string = format!("video:{codec}:mp4:{approach}:1.0:{height}");
     let video_format = VideoFormat::parse(&video_format_string).unwrap();
 
     let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
@@ -229,6 +231,8 @@ fn downsize_form(context: &Context, video: &Video) -> String {
     let path = &video.path;
 
     let t_default_codec = &context.editor_translations.default_codec;
+    let t_nice_but_slow = &context.editor_translations.nice_but_slow;
+    let t_quick_draft = &context.editor_translations.quick_draft;
     let t_request_version = &context.editor_translations.request_version;
     formatdoc!(r#"
         <form action="/downsize/{path}" method="post">
@@ -241,6 +245,10 @@ fn downsize_form(context: &Context, video: &Video) -> String {
                     <option value="h264">H264</option>
                     <option value="hevc">HEVC</option>
                     <option value="vp9">VP9</option>
+                </select>
+                <select name="approach">
+                    <option value="quality">{t_nice_but_slow}</option>
+                    <option value="speed">{t_quick_draft}</option>
                 </select>
                 <button>{t_request_version}</button>
             </div>
