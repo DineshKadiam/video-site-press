@@ -239,13 +239,13 @@ fn additional_formats_form(context: &Context, video: &Video) -> String {
     let t_maximum_speed_fastest_encoding_through_worst_compression = &context.editor_translations.maximum_speed_fastest_encoding_through_worst_compression;
     let t_quality = &context.editor_translations.quality;
     let t_recommended_codec = &context.editor_translations.recommended_codec;
-    let t_render_additional_formats = &context.editor_translations.render_additional_formats;
-    let t_request_version = &context.editor_translations.request_version;
+    let t_render_additional_format = &context.editor_translations.render_additional_format;
+    let t_render_format = &context.editor_translations.render_format;
     let t_resolution = &context.editor_translations.resolution;
     let t_worst = &context.editor_translations.worst;
     formatdoc!(r#"
         <div class="form_group">
-            <h2>{t_render_additional_formats}</h2>
+            <h2>{t_render_additional_format}</h2>
             <form action="/downsize/{path}" method="post">
                 <div class="form_field">
                     <label for="resolution">{t_resolution}</label>
@@ -276,7 +276,7 @@ fn additional_formats_form(context: &Context, video: &Video) -> String {
                         <option value="speed">{t_maximum_speed_fastest_encoding_through_worst_compression}</option>
                     </select>
                 </div>
-                <button>{t_request_version}</button>
+                <button>{t_render_format}</button>
             </form>
         </div>
     "#)
@@ -357,9 +357,9 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_video_audio_versions = &context.editor_translations.video_audio_versions;
+        let t_available_formats = &context.editor_translations.available_formats;
         formatdoc!(r#"
-            <h2>{t_video_audio_versions}</h2>
+            <h2>{t_available_formats}</h2>
 
             <ul class="versions">
                 {versions}
@@ -501,9 +501,9 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path);
 
-    let t_upload_new_version = &context.editor_translations.upload_new_version;
+    let t_upload_additional_format = &context.editor_translations.upload_additional_format;
     let upload_url = format!("/upload-video/{path}");
-    let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
+    let video_upload_button = upload_widget(&upload_url, t_upload_additional_format);
 
     // TODO: This shows also on non-root/non-site videos (?) but that's not implemented
     //       yet at all? (So therefore this needs to be implemented)

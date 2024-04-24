@@ -2,6 +2,7 @@
 pub struct EditorTranslations {
 	pub about: String,
 	pub adaptive: String,
+	pub available_formats: String,
 	pub back: String,
 	pub best: String,
 	pub banner_description: String,
@@ -57,8 +58,8 @@ pub struct EditorTranslations {
 	pub really_deploy: String,
 	pub recommended_codec: String,
 	pub release_date: String,
-	pub render_additional_formats: String,
-	pub request_version: String,
+	pub render_additional_format: String,
+	pub render_format: String,
 	pub resolution: String,
 	pub site_settings: String,
 	pub storage_usage: String,
@@ -70,13 +71,12 @@ pub struct EditorTranslations {
 	pub update_playlist: String,
 	pub update_site: String,
 	pub update_video: String,
+	pub upload_additional_format: String,
 	pub upload_banner: String,
-	pub upload_new_version: String,
 	pub upload_new_video: String,
 	pub upload_poster: String,
 	pub video: String,
 	pub videos: String,
-	pub video_audio_versions: String,
 	pub worst: String
 }
 
@@ -85,6 +85,7 @@ impl EditorTranslations {
 		EditorTranslations {
 			about: String::from("Über"),
 			adaptive: String::from("Adaptiv"),
+			available_formats: String::from("Verfügbare Formate"),
 			back: String::from("Banner Beschreibung"),
 			best: String::from("Beste"),
 			banner_description: String::from("Zurück"),
@@ -140,8 +141,8 @@ impl EditorTranslations {
 			really_deploy: String::from("Wirklich deployen?"),
 			recommended_codec: String::from("Empfohlener Codec"),
 			release_date: String::from("Veröffentlichungsdatum"),
-			render_additional_formats: String::from("Zusätzliche Formate rendern"),
-			request_version: String::from("Version anfordern"),
+			render_additional_format: String::from("Zusätzliches Format rendern"),
+			render_format: String::from("Format rendern"),
 			resolution: String::from("Auflösung"),
 			site_settings: String::from("Seiteneinstellungen"),
 			storage_usage: String::from("Speicherverbrauch"),
@@ -153,13 +154,12 @@ impl EditorTranslations {
 			update_playlist: String::from("Playlist speichern"),
 			update_site: String::from("Seite speichern"),
 			update_video: String::from("Video speichern"),
+			upload_additional_format: String::from("Zusätzliches Format hochladen"),
 			upload_banner: String::from("Banner hochladen"),
-			upload_new_version: String::from("Neue Version hochladen"),
 			upload_new_video: String::from("Neues Video hochladen"),
 			upload_poster: String::from("Poster hochladen"),
 			video: String::from("Video"),
 			videos: String::from("Videos"),
-			video_audio_versions: String::from("Video/Audio Versionen"),
 			worst: String::from("Schlechteste")
 		}
 	}
@@ -168,6 +168,7 @@ impl EditorTranslations {
 		EditorTranslations {
 			about: String::from("About"),
 			adaptive: String::from("Adaptive"),
+			available_formats: String::from("Available Formats"),
 			back: String::from("Back"),
 			best: String::from("Best"),
 			banner_description: String::from("Banner Description"),
@@ -223,8 +224,8 @@ impl EditorTranslations {
 			really_deploy: String::from("Really deploy?"),
 			recommended_codec: String::from("Recommended codec"),
 			release_date: String::from("Release Date"),
-			render_additional_formats: String::from("Render Additional Formats"),
-			request_version: String::from("Request Version"),
+			render_additional_format: String::from("Render Additional Format"),
+			render_format: String::from("Render Format"),
 			resolution: String::from("Resolution"),
 			site_settings: String::from("Site Settings"),
 			storage_usage: String::from("Storage Usage"),
@@ -236,13 +237,12 @@ impl EditorTranslations {
 			update_playlist: String::from("Update Playlist"),
 			update_site: String::from("Update Site"),
 			update_video: String::from("Update Video"),
+			upload_additional_format: String::from("Upload New Version"),
 			upload_banner: String::from("Upload Banner"),
-			upload_new_version: String::from("Upload New Version"),
 			upload_new_video: String::from("Upload New Video"),
 			upload_poster: String::from("Upload Poster"),
 			video: String::from("Video"),
 			videos: String::from("Videos"),
-			video_audio_versions: String::from("Video/Audio Versions"),
 			worst: String::from("Worst")
 		}
 	}
