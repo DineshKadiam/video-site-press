@@ -144,36 +144,38 @@ if (video) {
         }
     });
 
-    selectSubtitlesButton.addEventListener('click', () => {
-        const enableTrack = track => {
-            track.mode = 'showing';
-            const text = document.createElement('span');
-            text.textContent = ' ' + (track.language || track.label);
-            selectSubtitlesButton.replaceChildren(
-                document.querySelector('#subtitles_icon').content.cloneNode(true),
-                text
-            );
-        };
+    if (selectSubtitlesButton) {
+        selectSubtitlesButton.addEventListener('click', () => {
+            const enableTrack = track => {
+                track.mode = 'showing';
+                const text = document.createElement('span');
+                text.textContent = ' ' + (track.language || track.label);
+                selectSubtitlesButton.replaceChildren(
+                    document.querySelector('#subtitles_icon').content.cloneNode(true),
+                    text
+                );
+            };
 
-        let prevTrackDisabled = false;
-        for (const track of video.textTracks) {
-            if (prevTrackDisabled) {
-                enableTrack(track);
-                return;
-            } 
+            let prevTrackDisabled = false;
+            for (const track of video.textTracks) {
+                if (prevTrackDisabled) {
+                    enableTrack(track);
+                    return;
+                } 
 
-            if (track.mode === 'showing') {
-                track.mode = 'disabled';
-                prevTrackDisabled = true;
+                if (track.mode === 'showing') {
+                    track.mode = 'disabled';
+                    prevTrackDisabled = true;
+                }
             }
-        }
 
-        if (prevTrackDisabled) {
-              selectSubtitlesButton.replaceChildren(document.querySelector('#subtitles_icon').content.cloneNode(true));
-        } else {
-            enableTrack(video.textTracks[0]);
-        }
-    });
+            if (prevTrackDisabled) {
+                  selectSubtitlesButton.replaceChildren(document.querySelector('#subtitles_icon').content.cloneNode(true));
+            } else {
+                enableTrack(video.textTracks[0]);
+            }
+        });
+    }
 
     toggleFullscreenButton.addEventListener('click', () => {
         if (document.fullscreenElement) {
