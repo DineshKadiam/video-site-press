@@ -57,6 +57,7 @@ if (video) {
 	const playerWrapper = document.querySelector('.player_wrapper');
 	const timelineInput = document.querySelector('.timeline input');
 	const selectResolutionButton = document.querySelector('#select_resolution');
+	const selectSubtitlesButton = document.querySelector('#select_subtitles');
 	const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
 	const togglePlaybackButton = document.querySelector('#toggle_playback');
 	const toggleSpeedButton = document.querySelector('#toggle_speed');
@@ -141,6 +142,37 @@ if (video) {
 		} else {
 			intro.style.display = 'none';
 		}
+	});
+
+	selectSubtitlesButton.addEventListener('click', () => {
+		const enableTrack = track => {
+			track.mode = 'showing';
+			const text = document.createElement('span');
+			text.textContent = ' ' + (track.language || track.label);
+			selectSubtitlesButton.replaceChildren(
+                document.querySelector('#subtitles_icon').content.cloneNode(true),
+                text
+            );
+		};
+
+		let prevTrackDisabled = false;
+		for (const track of video.textTracks) {
+			if (prevTrackDisabled) {
+                enableTrack(track);
+				return;
+			} 
+
+            if (track.mode === 'showing') {
+				track.mode = 'disabled';
+				prevTrackDisabled = true;
+			}
+		}
+
+		if (prevTrackDisabled) {
+		      selectSubtitlesButton.replaceChildren(document.querySelector('#subtitles_icon').content.cloneNode(true));
+		} else {
+            enableTrack(video.textTracks[0]);
+        }
 	});
 
 	toggleFullscreenButton.addEventListener('click', () => {

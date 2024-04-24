@@ -120,6 +120,11 @@ img { max-width: 100%; }
     position: absolute;
     width: 100%;
 }
+.player_controls #select_subtitles {
+    align-items: center;
+    column-gap: .3rem;
+    display: flex;
+}
 .player_controls .timeline {
     height: .8rem;
     position: relative;
@@ -162,28 +167,6 @@ img { max-width: 100%; }
     position: absolute;
     right: 0;
     top: 0;
-}
-.player_intro #default_play {
-    background: none;
-    border: none;
-    z-index: 1;
-}
-.player_intro #default_play {
-    align-items: center;
-    background: none;
-    border-radius: 6rem;
-    border: none;
-    display: flex;
-    height: 6rem;
-    justify-content: center;
-    width: 6rem;
-    z-index: 1;
-}
-.player_intro #default_play svg {
-    height: 2.5rem;
-    left: .1rem;
-    position: relative;
-    width: 2.5rem;
 }
 .player_intro .versions_ring {
     aspect-ratio: 1;

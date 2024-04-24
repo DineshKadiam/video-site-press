@@ -13,6 +13,7 @@ pub struct Translations {
 	pub pause: String,
 	pub play: String,
 	pub sound_muted: String,
+	pub subtitles: String,
 	pub video_not_yet_available: String,
 	pub videos: String
 }
@@ -33,6 +34,7 @@ impl Translations {
 			pause: String::from("Pausieren"),
 			play: String::from("Abspielen"),
 			sound_muted: String::from("Ton stummgeschalten"),
+			subtitles: String::from("Untertitel"),
 			video_not_yet_available: String::from("Video noch nicht verfügbar."),
 			videos: String::from("Videos")
 		}
@@ -53,6 +55,7 @@ impl Translations {
 			pause: String::from("Pause"),
 			play: String::from("Play"),
 			sound_muted: String::from("Sound muted"),
+			subtitles: String::from("Subtitles"),
 			video_not_yet_available: String::from("Video not yet available."),
 			videos: String::from("Videos")
 		}

@@ -202,6 +202,12 @@ pub fn player(site: &Site, video: &Video) -> String {
         .collect::<Vec<String>>()
         .join("\n");
 
+    let subtitles_icon = icons::subtitles(&site.language.translations.subtitles);
+    let subtitle_select = match video.subtitles.is_empty() {
+        true => String::new(),
+        false => format!(r#"<button id="select_subtitles">{subtitles_icon}</button>"#)
+    };
+
     let duration = smallest_version.video_meta.as_ref().unwrap().duration;
     let duration_formatted = precise_duration(duration);
     let default_resolution_label = smallest_version.vertical_resolution_label();
@@ -238,6 +244,7 @@ pub fn player(site: &Site, video: &Video) -> String {
                     </div>
                     <div>
                         <button id="select_resolution">{default_resolution_label}</button>
+                        {subtitle_select}
                         <button id="toggle_fullscreen">{maximize_icon}</button>
                     </div>
                 </div>
@@ -256,6 +263,9 @@ pub fn player(site: &Site, video: &Video) -> String {
             </template>
             <template id="play_icon">
                 {play_icon}
+            </template>
+            <template id="subtitles_icon">
+                {subtitles_icon}
             </template>
             <template id="volume_loud_icon">
                 {volume_loud_icon}
