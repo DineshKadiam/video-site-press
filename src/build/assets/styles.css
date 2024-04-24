@@ -17,11 +17,6 @@ button {
 }
 h1 { font-size: 1.5rem; }
 h2 { font-size: 1.17rem; }
-video {
-    border-radius: .4rem;
-    display: block;
-    width: 100%;
-}
 .center {
     margin: 0 auto;
     max-width: 33rem;
@@ -75,7 +70,10 @@ header a:focus-visible,
 header a:hover {
     border-bottom-color: var(--fg-1);
 }
-img { max-width: 100%; }
+img {
+    display: block;
+    max-width: 100%;
+}
 .layout {
     display: flex;
     flex-direction: column;
@@ -313,16 +311,21 @@ svg {
 }
 .thumbnail_wrapper { position: relative; }
 .thumbnail_wrapper .duration {
-    background-color: hsla(0, 0%, 0%, .9);
+    background-color: var(--bg-1-overlay);
     border-radius: .2rem;
-    bottom: calc(var(--poster-aspect) * 5%);
+    bottom: calc(var(--poster-aspect) * 3%);
     color: var(--fg-1);
     font-size: .8rem;
-    padding: .2rem .4rem;
+    padding: .1rem .3rem;
     position: absolute;
-    right: 5%;
+    right: 3%;
 }
 #toggle_speed { font-weight: 500; }
+video {
+    border-radius: .4rem;
+    display: block;
+    width: 100%;
+}
 .video {
     color: var(--fg-2);
     display: flex;
