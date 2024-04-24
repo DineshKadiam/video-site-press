@@ -327,7 +327,7 @@ pub fn layout(
             // TODO: Instead of disabled link, offer "Configure Deployment" link
             // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
             let t_deploy_configuration_missing_required_fields = &context.editor_translations.deploy_configuration_missing_required_fields;
-            format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{t_deploy}*</button>"#)
+            format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{deploy_icon} {t_deploy}*</button>"#)
         }
     };
 
