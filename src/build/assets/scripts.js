@@ -240,6 +240,8 @@ if (video) {
         }
     });
 
+    togglePlaybackButton.addEventListener('click', togglePlayback);
+
     video.addEventListener('ended', () => {
         outro.classList.add('active');
         clearInterval(playbackUpdateInterval);
@@ -247,7 +249,14 @@ if (video) {
     });
 
     video.addEventListener('click', togglePlayback);
-    togglePlaybackButton.addEventListener('click', togglePlayback);
+
+    window.addEventListener('keydown', event => {
+        if (event.key === ' ') {
+            togglePlayback();
+            event.preventDefault();
+        }
+    });
+
 
     timelineInput.addEventListener('input', _ => {
         intro.style.display = 'none';
