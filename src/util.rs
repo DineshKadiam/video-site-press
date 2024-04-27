@@ -76,12 +76,32 @@ pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
+/// Takes bytes, formats them like "313 B", "256 kB", "3.4 MB", "13 MB", "1.4 GB"
 pub fn human_size(bytes: u64) -> String {
     match bytes {
         0..=999 => format!("{bytes} B"),
-        1000..=999999 => format!("{} kB", bytes / 1000),
-        1000000..=999999999 => format!("{:.1} MB", bytes as f64 / 1000000.0),
-        _ => format!("{:.2} GB", bytes as f64 / 1000000000.0),
+        1000..=999999 => {
+            let kilobytes = bytes / 1000;
+            format!("{kilobytes} kB")
+        }
+        1000000..=999999999 => {
+            let megabytes = bytes as f64 / 1000000.0;
+            if megabytes >= 10.0 || megabytes.fract() < 0.1 {
+                format!("{} MB", megabytes as u64)
+            } else {
+                format!("{megabytes:.1} MB")
+            }
+        },
+        _ => {
+            let gigabytes = bytes as f64 / 1000000000.0;
+            if gigabytes.fract() < 0.1 {
+                format!("{} GB", gigabytes as u64)
+            } else if gigabytes.fract() < 0.01 {
+                format!("{gigabytes:.1} GB")
+            } else {
+                format!("{gigabytes:.2} GB")
+            }
+        }
     }
 }
 
