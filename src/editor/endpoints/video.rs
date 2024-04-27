@@ -29,6 +29,7 @@ use crate::{
     VideoFormat,
     VideoParent
 };
+use crate::browser_support;
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     form_checkbox,
@@ -318,7 +319,7 @@ pub fn edit_page(
                         let size = human_size(version.file_meta.size);
                         let width = video_meta.width;
 
-                        let (browser_support, reasons) = match video_meta.browser_support.analysis() {
+                        let (browser_support, reasons) = match browser_support::analysis(video_meta) {
                             Some(Ok(message)) => (&context.editor_translations.good_browser_support, message),
                             Some(Err(message)) => (&context.editor_translations.not_support_by_browsers, message),
                             None => (&context.editor_translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))

@@ -32,7 +32,6 @@ mod workers;
 use args::Args;
 use banner::Banner;
 use build::translations::Translations;
-use browser_support::BrowserSupport;
 use cache::{Cache, CacheItem, FileMeta, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{Context, ContextPath, GetAnyResult};

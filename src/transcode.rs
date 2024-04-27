@@ -5,7 +5,6 @@ use std::time::Instant;
 use serde_derive::Deserialize;
 
 use crate::{
-    BrowserSupport,
     Codec,
     Container,
     Context,
@@ -289,10 +288,10 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
             if output.status.success() {
                 match serde_json::from_slice::<FFprobeResult>(&output.stdout) {
                     Ok(result) => {
-                        let mut browser_support = BrowserSupport::new();
+                        let mut audio_codec = None;
                         let mut duration = 0.0;
-                        let mut has_audio = false;
                         let mut height = None;
+                        let mut video_codec = None;
                         let mut width = None;
 
                         if let Ok(format_duration) = &result.format.duration.parse::<f32>() {
@@ -306,13 +305,14 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                                 }
                             }
 
+                            // TODO: Technically there could be multiple audio/video codecs?
+                            //       Not sure how this would be handled or how this would look.
                             match stream.codec_type.as_str() {
                                 "audio" => {
-                                    browser_support.consider_audio_codec_name(&stream.codec_name);
-                                    has_audio = true;
+                                    audio_codec = Some(stream.codec_name.clone());
                                 }
                                 "video" => {
-                                    browser_support.consider_video_codec_name(&stream.codec_name);
+                                    video_codec = Some(stream.codec_name.clone());
 
                                     if height.is_none() { height = stream.height; }
                                     if width.is_none() { width = stream.width; }
@@ -325,10 +325,10 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                         }
 
                         let metadata = VideoMeta::new(
-                            browser_support,
+                            audio_codec,
                             duration,
-                            has_audio,
                             height.unwrap(),
+                            video_codec,
                             width.unwrap()
                         );
 

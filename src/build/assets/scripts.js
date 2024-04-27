@@ -28,6 +28,10 @@ if (copyLink) {
     copyLink.addEventListener('click', event => copyToClipboard(event.target));
 }
 
+document.querySelector('#download').addEventListener('click', () => {
+    document.querySelector('#download_dialog').showModal();
+});
+
 const video = document.querySelector('video');
 
 // TODO: Potentially move in separate script file that only gets loaded on video pages

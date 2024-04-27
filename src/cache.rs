@@ -14,8 +14,8 @@ use crate::util;
 /// for site operators picking up the new version of hyper8.
 ///
 /// History:
-/// No updates so far!
-const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_1";
+/// 1->2 (2024-04-27): VideoMeta fields changed, but bincode did not pick it up, resulting in faulty decodes
+const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_2";
 
 pub struct Cache {
     pub poster_assets: Vec<PosterAssetsCached>,

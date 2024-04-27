@@ -45,6 +45,15 @@ pub fn deploy(label: &str) -> String {
     "#)
 }
 
+pub fn download(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m32.016 9.0254a3.4285 3.4285 0 0 0-3.418 3.4395l0.09961 30.846-8.8867-8.9121a3.4285 3.4285 0 0 0-2.4238-1.0078 3.4285 3.4285 0 0 0-2.4258 1.002 3.4285 3.4285 0 0 0-0.00586 4.8477l14.664 14.703a3.4288 3.4288 0 0 0 4.8555 0l14.6-14.633a3.4285 3.4285 0 0 0-0.00586-4.8477 3.4285 3.4285 0 0 0-4.8477 0.003906l-8.668 8.6875-0.097656-30.711a3.4285 3.4285 0 0 0-3.4395-3.418z"/>
+        </svg>
+    "#)
+}
+
 pub fn light(label: &str) -> String {
     formatdoc!(r#"
         <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

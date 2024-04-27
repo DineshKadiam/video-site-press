@@ -5,10 +5,26 @@ a {
     color: var(--fg-1);
     text-decoration: none;
 }
+.actions button {
+    align-items: center;
+    background: var(--bg-2);
+    border: none;
+    border-radius: .2rem;
+    color: var(--fg-1);
+    column-gap: .3rem;
+    cursor: pointer;
+    display: flex;
+    padding: .2rem .5rem .2rem .4rem;
+}
+.actions button:focus-visible,
+.actions button:hover {
+    background-color: var(--fg-1);
+    color: var(--bg-1);
+}
 body {
     background-color: var(--bg-1);
     color: var(--fg-2);
-    font-family: sans-serif;
+    font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
     margin: 0;
 }
 button {
@@ -21,31 +37,28 @@ h2 { font-size: 1.17rem; }
     margin: 0 auto;
     max-width: 33rem;
 }
-#copy-link {
-    align-items: center;
-    background: var(--bg-2);
-    border: none;
-    border-radius: .2rem;
-    color: var(--fg-1);
-    column-gap: .3rem;
-    cursor: pointer;
-    display: flex;
-    padding: .2rem .5rem .2rem .4rem;
-}
 #copy-link::after {
     color: var(--fg-2);
     padding-left: .5rem;
 }
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
-#copy-link:focus-visible,
-#copy-link:hover {
-    background-color: var(--fg-1);
-    color: var(--bg-1);
-}
 .current { background-color: var(--bg-3); }
+dialog {
+    background-color: var(--bg-1);
+    border: 1px solid var(--bg-2);
+    border-radius: .2rem;
+    width: min(calc(100vw - 2rem), 20rem);
+}
+dialog::backdrop {
+    /* This is not yet working in some browsers as of April 2024, but will, gradually.
+       see https://stackoverflow.com/questions/58818299/css-variables-not-working-in-dialogbackdrop) 
+       (TODO: This note can be removed ~2025 or so probably) */
+    background-color: var(--bg-1-overlay);
+}
 .flex { display: flex; }
 .flex.align { align-items: center; }
+.flex.apart { justify-content: space-between; }
 .flex.space { column-gap: .3rem; }
 footer {
     align-items: center;
@@ -77,6 +90,7 @@ img {
     display: block;
     max-width: 100%;
 }
+.large_font { font-size: 1.6rem; }
 .layout {
     display: flex;
     flex-direction: column;

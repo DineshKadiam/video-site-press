@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Context, Site, ThemeKind, Video};
+use crate::{Context, Site, ThemeKind, Video, VideoFile};
 use crate::build::Breadcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
@@ -21,45 +21,80 @@ pub fn copy_link(site: &Site, path: &str) -> String {
     let copy_link_icon = icons::copy_link(t_copy_link);
     format!(r#"
         <div>
-            <button {data_url} id="copy-link"><span class="icon">{copy_link_icon}</span> {t_copy_link}</button>
+            <button {data_url} id="copy-link">
+                <span class="icon">{copy_link_icon}</span> {t_copy_link}
+            </button>
         </div>
     "#)
 }
 
 
-pub fn downloads(video: &Video) -> String {
-    video.versions
+pub fn downloads(site: &Site, video: &Video) -> String {
+    if video.versions.is_empty() {
+        return String::new();
+    }
+
+    let mut versions_with_meta: Vec<&VideoFile> = video.versions
+        .iter()
+        .filter(|version| version.video_meta.is_some())
+        .collect();
+
+    versions_with_meta.sort_unstable_by(|a, b| {
+        a.video_meta.as_ref().unwrap().height.cmp(
+            &b.video_meta.as_ref().unwrap().height
+        )
+    });
+
+    let format_buttons = versions_with_meta
         .iter()
         .map(|version| {
             // TODO: Clean up/better/more complete concept for how to build file names (e.g. maybe hide original names altogether!)
             let file_name = version.file_name.as_str();
-            let (format_label, download_name) = if let Some(video_meta) = &version.video_meta {
-                let height = video_meta.height;
-                let width = video_meta.width;
+            let video_meta = &version.video_meta.as_ref().unwrap();
 
-                let slug = video.slug_opt().map(|slug| format!("{slug}_")).unwrap_or_else(|| format!("video_"));
-                let download_name = Path::new(file_name).with_file_name(format!("{slug}_{width}x{height}")).to_string_lossy().to_string();
+            let height = video_meta.height;
+            let width = video_meta.width;
 
-                (
-                    format!("{width}×{height}"),
-                    download_name
-                )
-            } else {
-                (
-                    String::new(),
-                    file_name.to_owned()
-                )
-            };
+            let slug = video.slug_opt().unwrap_or_else(|| "video");
+            let download_name = Path::new(file_name).with_file_name(format!("{slug}_{width}x{height}")).to_string_lossy().to_string();
+
+            let format_label = format!("{width}×{height}");
+            let vertical_resolution_label = format!("{height}p");
+
             let size = human_size(version.file_meta.size);
 
+            let t_no_audio = &site.language.translations.no_audio;
+            let audio_codec = video_meta.audio_codec.as_ref().unwrap_or(t_no_audio);
+
+            let t_no_video = &site.language.translations.no_video;
+            let video_codec = video_meta.video_codec.as_ref().unwrap_or(t_no_video);
+
             formatdoc!(r#"
-                <a download="{download_name}" href="{file_name}">
-                    Download {format_label} <small>{size}</small>
+                <a download="{download_name}" class="align apart flex" href="{file_name}">
+                    <div>
+                        <div class="large_font">{vertical_resolution_label}</div>
+                        <small>{format_label}, {audio_codec}, {video_codec}</small>
+                    </div>
+                    <div class="large_font">{size}</div>
                 </a>
             "#)
         })
         .collect::<Vec<String>>()
-        .join("<br>")
+        .join("<br>");
+
+    let t_download = &site.language.translations.download;
+    let download_icon = icons::download(t_download);
+    formatdoc!(r#"
+        <button id="download">
+            {download_icon} {t_download}
+        </button>
+        <dialog id="download_dialog">
+            {format_buttons}
+            <form method="dialog">
+                <button>Close</button>
+            </form>
+        </dialog>
+    "#)
 }
 
 pub fn layout(

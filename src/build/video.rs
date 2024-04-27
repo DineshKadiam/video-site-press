@@ -19,7 +19,7 @@ pub fn video_html(
     let description = if let Some(description) = &video.description { description } else { "" };
     let title = video.title.as_deref().unwrap_or(video.slug());
 
-    let downloads_widget = downloads(video);
+    let downloads_widget = downloads(site, video);
 
     let (playlist_context, next_video) = if video.unlisted {
         (String::new(), None)
@@ -176,15 +176,19 @@ pub fn video_html(
     let body = format!(r#"
         {player_rendered}
         <div class="video_info">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <h1 class="video_title">{title}</h1>
-                {copy_link_widget}
+            <div class="align apart flex" style="margin-top: 2rem;">
+                <div>
+                    <h1 class="video_title">{title}</h1>
+                    {release_date}
+                </div>
+                <div class="actions align flex space">
+                    {copy_link_widget}
+                    {downloads_widget}
+                </div>
             </div>
-            {release_date}
             <p>
                 {description}
             </p>
-            {downloads_widget}
         </div>
         {playlist_context}
     "#);

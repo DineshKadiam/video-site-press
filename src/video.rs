@@ -7,7 +7,6 @@ use enolib::{Element, SectionElement};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    BrowserSupport,
     CacheItem,
     Collection,
     Context,
@@ -71,11 +70,11 @@ pub struct VideoFile {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct VideoMeta {
-    pub browser_support: BrowserSupport,
+    pub audio_codec: Option<String>,
     /// Duration in seconds
     pub duration: f32,
-    pub has_audio: bool,
     pub height: usize,
+    pub video_codec: Option<String>,
     pub width: usize
 }
 
@@ -445,17 +444,17 @@ impl VideoFile {
 
 impl VideoMeta {
     pub fn new(
-        browser_support: BrowserSupport,
+        audio_codec: Option<String>,
         duration: f32,
-        has_audio: bool,
         height: usize,
+        video_codec: Option<String>,
         width: usize
     ) -> VideoMeta {
         VideoMeta {
-            browser_support,
+            audio_codec,
             duration,
-            has_audio,
             height,
+            video_codec,
             width
         }
     }
