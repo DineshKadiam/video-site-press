@@ -83,11 +83,16 @@ pub fn downloads(site: &Site, video: &Video) -> String {
             let t_no_video = &site.language.translations.no_video;
             let video_codec = video_meta.video_codec.as_ref().unwrap_or(t_no_video);
 
+            let extension = Path::new(&version.file_name)
+                .extension()
+                .unwrap_or(std::ffi::OsStr::new(""))
+                .to_string_lossy();
+
             formatdoc!(r#"
                 <a download="{download_name}" class="align apart flex" href="{file_name}">
                     <div>
                         <div class="large_font">{vertical_resolution_label}</div>
-                        <small>{format_label}, {audio_codec}, {video_codec}</small>
+                        <small>{format_label}, {audio_codec}, {video_codec}, {extension}</small>
                     </div>
                     <div class="large_font">{size}</div>
                 </a>
