@@ -166,6 +166,7 @@ impl Playlist {
     pub fn duration(&self) -> f32 {
         self.videos
             .iter()
+            .filter(|video| !video.unlisted)
             .map(|video| {
                 video.versions
                     .iter()
