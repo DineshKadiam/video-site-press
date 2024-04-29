@@ -35,8 +35,11 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             add_collection(collection, &mut videos);
 
 
-            let stats = storage_stats_html(&context, &videos);
-            stats
+            if videos.is_empty() {
+                String::new()
+            } else {
+                storage_stats_html(&context, &videos)
+            }
         }
         SiteContent::Empty => {
             let t_empty_site = &context.editor_translations.empty_site;
@@ -76,13 +79,15 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             "#)
         }
         SiteContent::Playlist(playlist) => {
-            let stats = storage_stats_html(&context, &playlist.videos);
-            stats
+            if playlist.videos.is_empty() {
+                String::new()
+            } else {
+                storage_stats_html(&context, &playlist.videos)
+            }
         }
         SiteContent::Video(video) => {
             let videos = vec![Arc::clone(video)];
-            let stats = storage_stats_html(&context, &videos);
-            stats
+            storage_stats_html(&context, &videos)
         }
     };
 
