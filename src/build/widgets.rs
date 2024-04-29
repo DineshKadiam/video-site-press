@@ -99,7 +99,30 @@ pub fn downloads(site: &Site, video: &Video) -> String {
             "#)
         })
         .collect::<Vec<String>>()
-        .join("<br>");
+        .join("\n");
+
+    let t_subtitles = &site.language.translations.subtitles;
+    let subtitle_buttons = video.subtitles
+        .iter()
+        .map(|subtitle_file| {
+            let file_name = &subtitle_file.file_name;
+            let language = match &subtitle_file.language {
+                Some(language_code) => format!(r#"<div class="large_font">{language_code}</div>"#),
+                None => String::new()
+            };
+
+            formatdoc!(r#"
+                <a download="{file_name}" class="align apart flex" href="{file_name}">
+                    <div>
+                        <div class="large_font">{file_name}</div>
+                        <small>{t_subtitles}</small>
+                    </div>
+                    {language}
+                </a>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
 
     let t_download = &site.language.translations.download;
     let download_icon = icons::download(t_download);
@@ -109,6 +132,7 @@ pub fn downloads(site: &Site, video: &Video) -> String {
         </button>
         <dialog id="download_dialog">
             {format_buttons}
+            {subtitle_buttons}
             <form method="dialog">
                 <button>Close</button>
             </form>
