@@ -324,10 +324,20 @@ pub fn layout(
             format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
         }
         false => {
-            // TODO: Instead of disabled link, offer "Configure Deployment" link
-            // (Site form + hash that goes directly to the relevant section, or dedicated page to clean up interface by area of concern?)
+            let action = match site.content {
+                SiteContent::Collection(_) => "/collection/",
+                SiteContent::Playlist(_) => "/playlist/",
+                SiteContent::Video(_) => "/video/",
+                // TODO: Is there any point to implementing a site form for an uninitialized site?
+                //       (at this point offering a link to configure deployment, when there is no
+                //       way to configure anything, is anyhow definitely wrong).
+                _ => "/"
+            };
+
+            // TODO: Hash that goes directly to the relevant section for editing site? (or dedicated page to clean up interface by area of concern?)
+            let t_configure = &context.editor_translations.configure;
             let t_deploy_configuration_missing_required_fields = &context.editor_translations.deploy_configuration_missing_required_fields;
-            format!(r#"<button disabled title="{t_deploy_configuration_missing_required_fields}">{deploy_icon} {t_deploy}*</button>"#)
+            format!(r#"<form action="{action}"><button title="{t_deploy_configuration_missing_required_fields}">{deploy_icon} {t_configure}</button></form>"#)
         }
     };
 
