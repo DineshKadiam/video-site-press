@@ -78,7 +78,7 @@ impl Theme {
 
 impl Default for Theme {
     fn default() -> Theme {
-        Theme::light()
+        Theme::adaptive()
     }
 }
 
