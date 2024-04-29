@@ -18,15 +18,7 @@ pub fn copy_link(label: &str) -> String {
     "#)
 }
 
-pub fn external(label: &str) -> String {
-    formatdoc!(r#"
-        <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <title>{label}</title>
-            <path d="m55.258 55.088v-21.334h-6.2832v15.074h-33.691v-33.697h15.066v-6.2832h-21.35v46.266zm0-46.24h-20.184v6.2832h9.6582l-19.932 19.932 4.4434 4.4453 19.73-19.73v9.2793h6.2832z"/>
-        </svg>
-    "#)
-}
-
+/// Visually represented as a crescent moon
 pub fn dark(label: &str) -> String {
     formatdoc!(r#"
         <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -45,6 +37,7 @@ pub fn deploy(label: &str) -> String {
     "#)
 }
 
+/// Visually represented as a downward arrow
 pub fn download(label: &str) -> String {
     formatdoc!(r#"
         <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -54,6 +47,26 @@ pub fn download(label: &str) -> String {
     "#)
 }
 
+pub fn external(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m55.258 55.088v-21.334h-6.2832v15.074h-33.691v-33.697h15.066v-6.2832h-21.35v46.266zm0-46.24h-20.184v6.2832h9.6582l-19.932 19.932 4.4434 4.4453 19.73-19.73v9.2793h6.2832z"/>
+        </svg>
+    "#)
+}
+
+/// Visually represented as a fully symetric X
+pub fn failure(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m16.25 9.1797-7.0703 7.0703 15.75 15.75-15.75 15.75 7.0703 7.0703 15.75-15.75 15.75 15.75 7.0703-7.0703-15.75-15.75 15.75-15.75-7.0703-7.0703-15.75 15.75z"/>
+        </svg>
+    "#)
+}
+
+/// Visually represented as a sun surrounded by outgoing rays
 pub fn light(label: &str) -> String {
     formatdoc!(r#"
         <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -142,6 +155,16 @@ pub fn subtitles(label: &str) -> String {
         <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m35.699 18.158q2.0133-3.322 5.587-4.379 1.963-0.55367 4.4294-0.55367 7.1977 0 12.835 1.661v5.5367t-0.40267-0.05033q-0.35234-0.05033-1.0067-0.10067-0.604-0.05033-1.4597-0.10067-0.85567-0.10067-1.9127-0.151-1.0067-0.10067-2.0133-0.151-2.3657-0.151-4.228-0.151t-2.9194 0.25167q-1.0067 0.20133-1.963 0.90601-0.95634 0.65434-1.4093 2.0133-1.0067 2.9194-1.0067 9.3117 0 6.3924 1.4597 9.2614 1.51 2.8187 5.6877 2.8187 4.7314 0 9.5634-0.302l1.6107-0.10067v5.4864q-4.53 1.4093-11.677 1.4093-0.55367 0-1.1577 0-6.7447-0.05033-9.6641-4.832-2.869-4.7817-2.869-14.194 0-9.4627 2.5167-13.59zm-27.734 0q2.0133-3.322 5.587-4.379 1.963-0.55367 4.4294-0.55367 7.1977 0 12.835 1.661v5.5367t-0.40267-0.05033q-0.35234-0.05033-1.0067-0.10067-0.604-0.05033-1.4597-0.10067-0.85567-0.10067-1.9127-0.151-1.0067-0.10067-2.0133-0.151-2.3657-0.151-4.228-0.151t-2.9194 0.25167q-1.0067 0.20133-1.963 0.90601-0.95634 0.65434-1.4093 2.0133-1.0067 2.9194-1.0067 9.3117 0 6.3924 1.4597 9.2614 1.51 2.8187 5.6877 2.8187 4.7314 0 9.5634-0.302l1.6107-0.10067v5.4864q-4.53 1.4093-11.677 1.4093-0.55367 0-1.1577 0-6.7447-0.05033-9.6641-4.832-2.869-4.7817-2.869-14.194 0-9.4627 2.5167-13.59z"/>
+        </svg>
+    "#)
+}
+
+/// Visually represented as a checkmark
+pub fn success(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m53.857 9.1797-31.5 31.5-12.215-12.215-7.0703 7.0703 19.285 19.285 38.57-38.57z"/>
         </svg>
     "#)
 }

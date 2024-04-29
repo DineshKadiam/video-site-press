@@ -9,12 +9,14 @@ if (copyLink) {
                 delete copyNotificationTimeouts[content];
             }
 
-            button.classList.toggle('confirmed', success);
-            button.classList.toggle('failed', !success);
+            const copyLinkIcon = document.querySelector('#copy_link_icon').content.cloneNode(true);
+            const feedbackIcon = document.querySelector(success ? '#success_icon' : '#failure_icon').content.cloneNode(true);
 
-            copyNotificationTimeouts[content] = setTimeout(() => {
-                button.classList.remove(success ? 'confirmed' : 'failed');
-            }, 3000);
+            const iconContainer = copyLink.querySelector('.icon');
+
+            iconContainer.replaceChildren(feedbackIcon);
+
+            copyNotificationTimeouts[content] = setTimeout(() => iconContainer.replaceChildren(copyLinkIcon), 3000);
         };
 
         const content = copyLink.dataset.url || window.location.href.split('#')[0]; // discard hash if present
@@ -25,7 +27,7 @@ if (copyLink) {
             .catch(_err => notify(false, content));
     };
 
-    copyLink.addEventListener('click', event => copyToClipboard(event.target));
+    copyLink.addEventListener('click', copyToClipboard);
 }
 
 document.querySelector('#download').addEventListener('click', () => {

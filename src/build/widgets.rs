@@ -17,13 +17,27 @@ pub fn copy_link(site: &Site, path: &str) -> String {
         None => String::new()
     };
 
+    let t_copied = &site.language.translations.copied;
     let t_copy_link = &site.language.translations.copy_link;
+    let t_failed = &site.language.translations.failed;
+
     let copy_link_icon = icons::copy_link(t_copy_link);
+    let failure_icon = icons::failure(t_failed);
+    let success_icon = icons::success(t_copied);
     format!(r#"
         <div>
             <button {data_url} id="copy-link">
                 <span class="icon">{copy_link_icon}</span> {t_copy_link}
             </button>
+            <template id="copy_link_icon">
+                {copy_link_icon}
+            </template>
+            <template id="failure_icon">
+                {failure_icon}
+            </template>
+            <template id="success_icon">
+                {success_icon}
+            </template>
         </div>
     "#)
 }

@@ -36,14 +36,10 @@ pub fn generate(context: &Context, site: &Site) {
     };
 
     let poster_aspect = site.poster_aspect.numeric();
-    let t_copied = &site.language.translations.copied;
-    let t_failed = &site.language.translations.failed;
 
     let css = formatdoc!(r#"
         :root {{
             --poster-aspect: {poster_aspect};
-            --t-copied: '{t_copied}';
-            --t-failed: '{t_failed}';
         }}
         {theme_vars}
         {static_css}
