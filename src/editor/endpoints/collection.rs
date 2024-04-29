@@ -64,7 +64,11 @@ pub async fn create_playlist(
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
-    let playlist_path = format!("{}/{slug_trimmed}", &path.path);
+    let playlist_path = if &path.path == "" {
+        slug_trimmed.to_string()
+    } else {
+        format!("{}/{slug_trimmed}", &path.path)
+    };
 
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
@@ -116,7 +120,11 @@ pub async fn create_subcollection(
 ) -> Either<Redirect, HttpResponse> {
     let slug_trimmed = form.slug.trim();
 
-    let subcollection_path = format!("{}/{slug_trimmed}", &path.path);
+    let subcollection_path = if &path.path == "" {
+        slug_trimmed.to_string()
+    } else {
+        format!("{}/{slug_trimmed}", &path.path)
+    };
 
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
