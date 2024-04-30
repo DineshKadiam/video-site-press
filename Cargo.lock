@@ -1141,6 +1141,7 @@ dependencies = [
  "nanoid",
  "notify",
  "pulldown-cmark",
+ "rand",
  "rsubs-lib",
  "serde",
  "serde_derive",

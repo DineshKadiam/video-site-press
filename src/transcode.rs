@@ -52,27 +52,34 @@ struct FFprobeStream {
     pub width: Option<usize>
 }
 
-pub fn compute_poster(context: &Context, video: &Video) -> Result<String, ()> {
+/// With seek_offset (0.0-1.0) we determine at which point in the video (start to end)
+/// we take the snapshot for the poster
+pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Result<String, ()> {
     if let Some(version) = &video.highest_resolution_version() {
-        // Compute from video
         let mut command = Command::new(FFMPEG);
 
         let input_path = context.site_dir.join(&video.path).join(&version.file_name);
-
-        let output_filename = if !context.site_dir.join(&video.path).join("poster.jpg").exists() {
-            "poster.jpg".to_string()
-        } else {
-            format!("poster_{}.jpg", nanoid())
-        };
-
-        let output_path = context.site_dir.join(&video.path).join(&output_filename);
 
         // If we know the duration (which conceptually speaking we should be guaranteed to know),
         // we take the poster snapshot at halftime, otherwise at the start
         let snapshot_seek_offset_seconds = version.video_meta
             .as_ref()
-            .map(|video_meta| format!("{}", &video_meta.duration / 2.0))
+            .map(|video_meta| format!("{}", &video_meta.duration * seek_offset))
             .unwrap_or("0".to_string());
+
+        let output_filename = if !context.site_dir.join(&video.path).join("poster.jpg").exists() {
+            "poster.jpg".to_string()
+        } else {
+            let timecoded = format!("poster_{}.jpg", snapshot_seek_offset_seconds);
+
+            if !context.site_dir.join(&video.path).join(&timecoded).exists() {
+                timecoded
+            } else {
+                format!("poster_{}.jpg", nanoid())
+            }
+        };
+
+        let output_path = context.site_dir.join(&video.path).join(&output_filename);
 
         command
             .arg("-y")

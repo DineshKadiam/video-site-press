@@ -100,6 +100,7 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
                 JobKind::PlaylistFastTasks(playlist) => playlist.label(&context),
                 JobKind::VideoFastTasks { video, .. } => video.label(&context),
                 JobKind::VideoFormat { video, .. } => video.label(&context),
+                JobKind::VideoRandomPoster { video, .. } => video.label(&context),
             };
             let status = if job.assigned { "assigned" } else { "idle" };
 

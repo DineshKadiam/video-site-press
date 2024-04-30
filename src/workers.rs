@@ -169,8 +169,8 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
     video
 }
 
-fn compute_poster(context: &Context, video: Arc<Video>) -> Arc<Video> {
-    if let Ok(file_name) = transcode::compute_poster(context, &video) {
+fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc<Video> {
+    if let Ok(file_name) = transcode::compute_poster(context, seek_offset, &video) {
         let file_path = context.site_dir.join(&video.path).join(&file_name);
         let file_meta = FileMeta::new(&file_path);
         let poster_file = PosterFile::new(None, None, file_meta, file_name);
@@ -345,7 +345,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                 }
                             }
                         } else {
-                            let video_with_poster = compute_poster(&context, video_with_metadata);
+                            let video_with_poster = compute_poster(&context, 0.5, video_with_metadata);
 
                             if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_poster) {
                                 context.processing_errors.lock().unwrap().push(err);
@@ -375,6 +375,21 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                 }
                                 Err(()) => context.processing_errors.lock().unwrap().push("Video could not be updated with newly computed version.".to_string())
                             }
+                        }
+
+                        context.processing.lock().unwrap().remove(process_id);
+                    }
+                    JobKind::VideoRandomPoster { poster_aspect, video } => {
+                        let label = format!("[Worker {worker_number}] Computing random poster for {}", &video.path);
+                        let process_id = context.processing.lock().unwrap().push(&video.path, label);
+
+                        let video_with_metadata = compute_metadata(&context, video);
+
+                        let seek_offset = rand::random::<f32>(); // Produces a value between 0.0-0.1
+                        let video_with_random_poster = compute_poster(&context, seek_offset, video_with_metadata);
+
+                        if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_random_poster) {
+                            context.processing_errors.lock().unwrap().push(err);
                         }
 
                         context.processing.lock().unwrap().remove(process_id);

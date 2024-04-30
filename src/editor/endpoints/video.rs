@@ -406,8 +406,8 @@ pub fn edit_page(
                             <button>{t_delete_poster}</button>
                         </div>
                     </form>
-                    <form action="/video-random-poster/{path}" method="post">
-                        <button onclick="alert("Not yet implemented">{t_random_poster}</button>
+                    <form action="/random-poster/{path}" method="post">
+                        <button>{t_random_poster}</button>
                     </form>
                 </div>
                 {poster_upload_button_error}
@@ -700,6 +700,28 @@ pub async fn r#move(
 
         Either::Right(
             edit_page(&context, Some(form_feedback), &video)
+        )
+    }
+}
+
+pub async fn random_poster(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    match context.get_video(&path.path) {
+        Some(video) => {
+            let site = context.get_site();
+            let job_kind = JobKind::VideoRandomPoster {
+                poster_aspect: site.poster_aspect.numeric(),
+                video: Arc::clone(&video)
+            };
+            context.push_job_queue(job_kind);
+
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        None => Either::Right(
+            not_found(&context, &format!("Video {} not found.", &path.path))
         )
     }
 }

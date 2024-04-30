@@ -24,6 +24,10 @@ pub enum JobKind {
     VideoFormat {
         format: VideoFormat,
         video: Arc<Video>
+    },
+    VideoRandomPoster {
+        poster_aspect: f32,
+        video: Arc<Video>
     }
 }
 
@@ -63,12 +67,14 @@ impl Job {
             JobKind::PlaylistFastTasks(_) => match other.kind {
                 JobKind::PlaylistFastTasks(_) => (),
                 JobKind::VideoFastTasks { .. } => (),
-                JobKind::VideoFormat { .. } => return Ordering::Greater
+                JobKind::VideoFormat { .. } => return Ordering::Greater,
+                JobKind::VideoRandomPoster { .. } => return Ordering::Greater
             }
             JobKind::VideoFastTasks { .. } => match other.kind {
                 JobKind::PlaylistFastTasks(_) => (),
                 JobKind::VideoFastTasks { .. } => (),
-                JobKind::VideoFormat { .. } => return Ordering::Greater
+                JobKind::VideoFormat { .. } => return Ordering::Greater,
+                JobKind::VideoRandomPoster { .. } => return Ordering::Greater
             }
             JobKind::VideoFormat { format, .. } => match &other.kind {
                 JobKind::PlaylistFastTasks(_) => return Ordering::Less,
@@ -76,7 +82,14 @@ impl Job {
                 JobKind::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
                     ordering => return ordering
-                }
+                },
+                JobKind::VideoRandomPoster { .. } => return Ordering::Less
+            }
+            JobKind::VideoRandomPoster { .. } => match other.kind {
+                JobKind::PlaylistFastTasks(_) => return Ordering::Less,
+                JobKind::VideoFastTasks { .. } => return Ordering::Less,
+                JobKind::VideoFormat { .. } => return Ordering::Greater,
+                JobKind::VideoRandomPoster { .. } => ()
             }
         }
 
@@ -99,6 +112,10 @@ impl PartialEq for JobKind {
             }
             JobKind::VideoFormat { video, .. } => match other {
                 JobKind::VideoFormat { video: other_video, .. } => video.path == other_video.path,
+                _ => false
+            }
+            JobKind::VideoRandomPoster { video, .. } => match other {
+                JobKind::VideoRandomPoster { video: other_video, .. } => video.path == other_video.path,
                 _ => false
             }
         }
