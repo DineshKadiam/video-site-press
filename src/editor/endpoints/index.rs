@@ -97,10 +97,10 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         .iter()
         .map(|job| {
             let label = match &job.kind {
-                JobKind::PlaylistFastTasks(playlist) => playlist.label(&context),
-                JobKind::VideoFastTasks { video, .. } => video.label(&context),
-                JobKind::VideoFormat { video, .. } => video.label(&context),
-                JobKind::VideoRandomPoster { video, .. } => video.label(&context),
+                JobKind::PlaylistFastTasks(playlist) => playlist.label_editor(&context),
+                JobKind::VideoFastTasks { video, .. } => video.label_editor(&context),
+                JobKind::VideoFormat { video, .. } => video.label_editor(&context),
+                JobKind::VideoRandomPoster { video, .. } => video.label_editor(&context)
             };
             let status = if job.assigned { "assigned" } else { "idle" };
 
@@ -153,7 +153,7 @@ fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
             let path = &video.path;
             let link = format!("/video/{path}");
             let size = version.file_meta.size;
-            let title = format!("{}: {}", video.label(&context), version.file_name);
+            let title = format!("{}: {}", video.label_editor(&context), version.file_name);
             sizes.push((size, link, title));
             total_size += size;
         }

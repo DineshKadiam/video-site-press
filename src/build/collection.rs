@@ -3,7 +3,7 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Collection, Context, Site};
-use crate::build::Breadcrumb;
+use crate::build::Smartcrumb;
 use crate::build::playlist::banner_html;
 use crate::build::widgets::{layout, thumbnail};
 
@@ -11,7 +11,7 @@ pub fn collection_html(
     context: &Context,
     collection: &Collection,
     site: &Site,
-    breadcrumbs: &Vec<Breadcrumb>
+    outline: &[Smartcrumb]
 ) {
     let mut body = String::new();
     let index_suffix = context.index_suffix();
@@ -49,7 +49,7 @@ pub fn collection_html(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_videos = &context.editor_translations.videos;
+        let t_videos = &site.language.translations.videos;
         let videos_rendered = formatdoc!(r#"
             <h2>{t_videos}</h2>
 
@@ -84,7 +84,7 @@ pub fn collection_html(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_playlists = &context.editor_translations.playlists;
+        let t_playlists = &site.language.translations.playlists;
         let playlists_rendered = formatdoc!(r#"
             <h2>{t_playlists}</h2>
 
@@ -133,18 +133,28 @@ pub fn collection_html(
 
             {videos}
 
-            TODO: Some selection of the collection's content.<br>
-            - If it's only a few items present them all<br>
-            - Otherwise: What's the algorithm/approach then?<br><br>
-
             <a href="{subcollection_slug}{index_suffix}">More from this collection</a>
         "#);
 
         body.push_str(&subcollection_rendered);
     }
 
+    if outline.len() > 1 {
+        let outline_items = outline
+            .iter()
+            .enumerate()
+            .map(|(index, smartcrumb)| {
+                let href = "../".repeat(outline.len() - 1 - index);
+                smartcrumb.label(&href, site)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
+    }
+
     let root_prefix = if collection.path == "" { "".to_string() } else { "../".repeat(collection.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title, breadcrumbs);
+    let html = layout(&root_prefix, site, &body, title, outline);
 
     let collection_dir = context.build_dir.join(&collection.path);
     fs::create_dir_all(&collection_dir).unwrap();

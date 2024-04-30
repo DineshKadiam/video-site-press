@@ -36,6 +36,7 @@ h2 { font-size: 1.17rem; }
 .center {
     margin: 0 auto;
     max-width: 33rem;
+    padding: 2rem 1rem;
 }
 #copy-link::after {
     color: var(--fg-2);
@@ -102,6 +103,17 @@ img {
     color: var(--bg-1);
     font-weight: 500;
     padding: .5rem;
+}
+.medium_font { font-size: 1.2rem; }
+.outline {
+    display: flex;
+    flex-direction: column;
+    row-gap: 1rem;
+}
+.outline > a {
+  border: 1px solid var(--bg-2);
+  border-radius: .2rem;
+  padding: 1rem;
 }
 .player_controls {
     bottom: 0;
@@ -293,7 +305,10 @@ img {
     padding: .8rem;
 }
 .playlist_header .duration { color: var(--fg-3); }
-.playlist_header .title { color: var(--fg-1); }
+.playlist_header .title {
+    color: var(--fg-1);
+    display: block;
+}
 .release_date { color: var(--fg-3); }
 .sidebar {
     display: flex;
@@ -374,10 +389,13 @@ video {
         left: 1rem;
         top: 0;
     }
-    .playlist_context {
-        right: 0;
+    .layout.with_sidebar { width: calc(100vw - 28rem); } /* width + padding of .outline */
+    .outline {
+        max-height: calc(100dvh - 4rem);
+        overflow-y: auto; /* TODO: Should be on a subelement such as the playlist container that holds the videos */
         position: absolute;
-        top: 0;
+        right: 2rem;
+        top: 2rem;
         width: 24rem;
     }
 }

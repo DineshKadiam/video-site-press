@@ -4,7 +4,7 @@ use std::sync::Arc;
 use indoc::formatdoc;
 
 use crate::{Context, Site, ThemeKind, Video, VideoFile};
-use crate::build::Breadcrumb;
+use crate::build::Smartcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
 
@@ -145,7 +145,7 @@ pub fn layout(
     site: &Site,
     body: &str,
     title: &str,
-    breadcrumbs: &[Breadcrumb]
+    outline: &[Smartcrumb]
 ) -> String {
     // TODO: Hash assets (cache expiration)
     let head = formatdoc!(r#"
@@ -158,13 +158,12 @@ pub fn layout(
         </head>
     "#);
 
-    let breadcrumbs_rendered = breadcrumbs
+    let outline_rendered = outline
         .iter()
         .enumerate()
-        .map(|(index, breadcrumb)| {
-            let href = "../".repeat(breadcrumbs.len() - 1 - index);
-            let label = breadcrumb.label();
-            format!(r#"<a href="{href}">{label}</a>"#)
+        .map(|(index, smartcrumb)| {
+            let href = "../".repeat(outline.len() - 1 - index);
+            smartcrumb.breadcrumb(&href, site)
         })
         .collect::<Vec<String>>()
         .join(" › ");
@@ -183,14 +182,16 @@ pub fn layout(
 
     let hyper8_version = env!("CARGO_PKG_VERSION");
 
+    let with_sidebar = if outline.len() > 1 { "with_sidebar" } else { "" };
+
     let logo_icon = icons::logo(&site.language.translations.hyper8_logo);
     let body = formatdoc!(r##"
         <body>
-            <div class="layout">
+            <div class="layout {with_sidebar}">
                 <div class="growing">
                     <div class="center">
                         <header>
-                            {breadcrumbs_rendered}
+                            {outline_rendered}
                         </header>
                         {body}
                     </div>

@@ -15,6 +15,7 @@ use crate::{
     Video,
     VideoParent
 };
+use crate::util::casual_duration;
 
 #[derive(Clone, Debug)]
 pub struct Collection {
@@ -283,13 +284,75 @@ impl Collection {
         None
     }
 
-    pub fn label<'a>(&'a self, context: &'a Context) -> &str {
+    pub fn label_build<'a>(&'a self, site: &'a Site) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
                 self.slug_opt()
-                    .unwrap_or(&context.editor_translations.collection)
+                    .unwrap_or(&site.language.translations.collection)
             )
+    }
+
+    pub fn outline_stats(&self) -> String {
+        fn collection_totals(collection: &Collection) -> (f32, usize) {
+            let mut total_duration = 0.0;
+            let mut total_videos = 0;
+
+            for playlist in &collection.playlists {
+                if playlist.unlisted { continue; }
+
+                for video in &playlist.videos {
+                    if video.unlisted { continue; }
+
+                    if let Some(duration) = video.versions
+                        .iter()
+                        .find_map(|version| {
+                            version.video_meta
+                                .as_ref()
+                                .map(|video_meta| video_meta.duration)
+                        }) {
+                        total_duration += duration;
+                    }
+                    total_videos += 1;
+                }
+            }
+
+            for subcollection in &collection.subcollections {
+                if subcollection.unlisted { continue; }
+
+                let (subtotal_duration, subtotal_videos) = collection_totals(subcollection);
+
+                total_duration += subtotal_duration;
+                total_videos += subtotal_videos;
+            }
+
+            for video in &collection.videos {
+                if video.unlisted { continue; }
+
+                if let Some(duration) = video.versions
+                    .iter()
+                    .find_map(|version| {
+                        version.video_meta
+                            .as_ref()
+                            .map(|video_meta| video_meta.duration)
+                    }) {
+                    total_duration += duration;
+                }
+                total_videos += 1;
+            }
+
+            (total_duration, total_videos)
+        }
+
+        let ( total_duration, total_videos ) = collection_totals(self);
+
+        if total_videos > 0 {
+            // TODO: Localize
+            format!("{total_videos} Videos, {}", casual_duration(total_duration))
+        } else {
+            // TODO: Localize
+            "Empty".to_string()
+        }
     }
 
     pub fn new(path: String) -> Collection {

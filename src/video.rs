@@ -18,7 +18,7 @@ use crate::{
     SubtitleFile,
     VideoMetaCached
 };
-use crate::util::{hash, human_size};
+use crate::util::hash;
 
 #[derive(Clone, Debug)]
 pub struct Video {
@@ -223,7 +223,16 @@ impl Video {
         version_candidate.map(|pixels_version| pixels_version.1)
     }
 
-    pub fn label<'a>(&'a self, context: &'a Context) -> &str {
+    pub fn label_build<'a>(&'a self, site: &'a Site) -> &str {
+        self.title
+            .as_deref()
+            .unwrap_or_else(||
+                self.slug_opt()
+                    .unwrap_or(&site.language.translations.video)
+            )
+    }
+
+    pub fn label_editor<'a>(&'a self, context: &'a Context) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
@@ -408,29 +417,6 @@ impl VideoFile {
             file_meta,
             file_name,
             video_meta
-        }
-    }
-
-    pub fn resolution_label(&self) -> String {
-        match &self.video_meta {
-            Some(video_meta) => {
-                let height = video_meta.height;
-                let width = video_meta.width;
-                format!("{width}×{height}")
-            }
-            None => String::new()
-        }
-    }
-
-    pub fn size_label(&self) -> String {
-        let size = human_size(self.file_meta.size);
-        match &self.video_meta {
-            Some(video_meta) => {
-                let height = video_meta.height;
-                let width = video_meta.width;
-                format!("{width}×{height} ({size})")
-            }
-            None => size
         }
     }
 

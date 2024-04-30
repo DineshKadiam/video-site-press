@@ -15,6 +15,7 @@ use crate::{
     Site,
     Video
 };
+use crate::util::casual_duration;
 
 #[derive(Clone, Debug)]
 pub struct Playlist {
@@ -202,7 +203,16 @@ impl Playlist {
         None
     }
 
-    pub fn label<'a>(&'a self, context: &'a Context) -> &str {
+    pub fn label_build<'a>(&'a self, site: &'a Site) -> &str {
+        self.title
+            .as_deref()
+            .unwrap_or_else(||
+                self.slug_opt()
+                    .unwrap_or(&site.language.translations.playlist)
+            )
+    }
+
+    pub fn label_editor<'a>(&'a self, context: &'a Context) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
@@ -223,6 +233,34 @@ impl Playlist {
             unlisted: false
         }
 	}
+
+    pub fn outline_stats(&self) -> String {
+        let mut total_duration = 0.0;
+        let mut total_videos = 0;
+
+        for video in &self.videos {
+            if video.unlisted { continue; }
+
+            if let Some(duration) = video.versions
+                .iter()
+                .find_map(|version| {
+                    version.video_meta
+                        .as_ref()
+                        .map(|video_meta| video_meta.duration)
+                }) {
+                total_duration += duration;
+            }
+            total_videos += 1;
+        }
+
+        if total_videos > 0 {
+            // TODO: Localize
+            format!("{total_videos} Videos, {}", casual_duration(total_duration))
+        } else {
+            // TODO: Localize
+            "Empty".to_string()
+        }
+    }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
         let mut playlist = Playlist::new(hyper_dir.site_path(context));

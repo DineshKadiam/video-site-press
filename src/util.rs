@@ -34,12 +34,21 @@ impl Field {
     }
 }
 
-/// Takes seconds, formats it like "25 min", "33 sec", "158 min"
+// TODO: Localize sec/min/hrs
+/// Takes seconds, formats it like "25 min", "33 sec", "158 min", "3.6 hrs", "11 hrs"
 pub fn casual_duration(seconds: f32) -> String {
     if seconds < 60.0 {
         format!("{} sec", seconds as u8)
-    } else {
+    } else if seconds < 240.0 * 60.0 {
         format!("{} min", (seconds / 60.0).round() as u32)
+    } else {
+        let hours = seconds / (10.0 * 60.0 * 60.0);
+
+        if hours >= 10.0 || hours.fract() < 0.1 {
+            format!("{} hrs", hours.round() as u32)
+        } else {
+            format!("{hours:.1} hrs")
+        }
     }
 }
 

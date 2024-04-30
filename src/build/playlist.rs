@@ -3,7 +3,7 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Banner, Context, Playlist, Site};
-use crate::build::Breadcrumb;
+use crate::build::Smartcrumb;
 use crate::build::widgets::{layout, thumbnail};
 
 pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
@@ -29,7 +29,7 @@ pub fn playlist_html(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
-    breadcrumbs: &Vec<Breadcrumb>
+    outline: &[Smartcrumb]
 ) {
     let mut body = String::new();
     let index_suffix = context.index_suffix();
@@ -60,7 +60,7 @@ pub fn playlist_html(
             .map(|(index, video)| {
                 let number = index + 1;
                 let slug = video.slug();
-                let label = video.label(context);
+                let label = video.label_build(site);
                 let video_prefix = format!("{slug}/");
                 let video_thumbnail = thumbnail(video, &video_prefix, true);
 
@@ -76,7 +76,7 @@ pub fn playlist_html(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_videos = &context.editor_translations.videos;
+        let t_videos = &site.language.translations.videos;
         let videos_rendered = formatdoc!(r#"
             <h2>{t_videos}</h2>
 
@@ -88,8 +88,22 @@ pub fn playlist_html(
         body.push_str(&videos_rendered);
     }
 
+    if !outline.is_empty() {
+        let outline_items = outline
+            .iter()
+            .enumerate()
+            .map(|(index, smartcrumb)| {
+                let href = "../".repeat(outline.len() - 1 - index);
+                smartcrumb.label(&href, site)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
+    }
+
     let root_prefix = if playlist.path == "" { "".to_string() } else { "../".repeat(playlist.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title, breadcrumbs);
+    let html = layout(&root_prefix, site, &body, title, outline);
 
     let playlist_dir = context.build_dir.join(&playlist.path);
     fs::create_dir_all(&playlist_dir).unwrap();

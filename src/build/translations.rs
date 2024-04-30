@@ -1,6 +1,7 @@
 #[derive(Clone, Debug)]
 pub struct Translations {
 	pub copied: String,
+	pub collection: String,
 	pub copy_link: String,
 	pub dark_color_scheme: String,
 	pub download: String,
@@ -16,10 +17,13 @@ pub struct Translations {
 	pub no_video: String,
 	pub pause: String,
 	pub play: String,
+	pub playlist: String,
+	pub playlists: String,
 	pub replay: String,
 	pub sound_muted: String,
 	pub subtitles: String,
 	pub video_not_yet_available: String,
+	pub video: String,
 	pub videos: String
 }
 
@@ -27,6 +31,7 @@ impl Translations {
 	pub fn de() -> Translations {
 		Translations {
 			copied: String::from("Kopiert"),
+			collection: String::from("Collection"),
 			copy_link: String::from("Link kopieren"),
 			dark_color_scheme: String::from("Dunkles Farbschema"),
 			download: String::from("Download"),
@@ -42,10 +47,13 @@ impl Translations {
 			no_video: String::from("Kein Video"),
 			pause: String::from("Pausieren"),
 			play: String::from("Abspielen"),
+			playlist: String::from("Playlist"),
+			playlists: String::from("Playlisten"),
 			replay: String::from("Erneut abspielen"),
 			sound_muted: String::from("Ton stummgeschalten"),
 			subtitles: String::from("Untertitel"),
 			video_not_yet_available: String::from("Video noch nicht verfügbar."),
+			video: String::from("Video"),
 			videos: String::from("Videos")
 		}
 	}
@@ -53,6 +61,7 @@ impl Translations {
 	pub fn en() -> Translations {
 		Translations {
 			copied: String::from("Copied"),
+			collection: String::from("Collection"),
 			copy_link: String::from("Copy Link"),
 			dark_color_scheme: String::from("Dark Color Scheme"),
 			download: String::from("Download"),
@@ -68,10 +77,13 @@ impl Translations {
 			no_video: String::from("No video"),
 			pause: String::from("Pause"),
 			play: String::from("Play"),
+			playlist: String::from("Playlist"),
+			playlists: String::from("Playlists"),
 			replay: String::from("Replay"),
 			sound_muted: String::from("Sound muted"),
 			subtitles: String::from("Subtitles"),
 			video_not_yet_available: String::from("Video not yet available."),
+			video: String::from("Video"),
 			videos: String::from("Videos")
 		}
 	}
