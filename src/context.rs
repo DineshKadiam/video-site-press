@@ -156,7 +156,7 @@ impl Context {
         } else if let SiteContent::Video(video) = &site_mut.content {
             let slug = match &video.title {
                 Some(title) => slugify(title),
-                None => match video.highest_resolution_version() {
+                None => match video.highest_quality_version() {
                     Some(version) => {
                         Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
                     }
@@ -239,7 +239,7 @@ impl Context {
         } else if let SiteContent::Video(video) = &site_mut.content {
             let slug = match &video.title {
                 Some(title) => slugify(title),
-                None => match video.highest_resolution_version() {
+                None => match video.highest_quality_version() {
                     Some(version) => {
                         Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
                     }

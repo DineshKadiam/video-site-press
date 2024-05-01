@@ -55,7 +55,7 @@ struct FFprobeStream {
 /// With seek_offset (0.0-1.0) we determine at which point in the video (start to end)
 /// we take the snapshot for the poster
 pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Result<String, ()> {
-    if let Some(version) = &video.highest_resolution_version() {
+    if let Some(version) = &video.highest_quality_version() {
         let mut command = Command::new(FFMPEG);
 
         let input_path = context.site_dir.join(&video.path).join(&version.file_name);
@@ -126,7 +126,7 @@ pub fn encode(
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");
 
-    let input_path = if let Some(version) = video.highest_resolution_version() {
+    let input_path = if let Some(version) = video.highest_quality_version() {
         context.site_dir.join(&video.path).join(&version.file_name)
     } else {
         return Err(());

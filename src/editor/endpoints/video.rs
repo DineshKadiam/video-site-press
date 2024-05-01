@@ -200,7 +200,7 @@ pub async fn downsize(
 }
 
 fn additional_formats_form(context: &Context, video: &Video) -> String {
-    let (aspect_ratio, tallest_height) = if let Some(version) = video.highest_resolution_version() {
+    let (aspect_ratio, tallest_height) = if let Some(version) = video.highest_quality_version() {
         let video_meta = version.video_meta.as_ref().unwrap();
         (video_meta.width as f32 / video_meta.height as f32, video_meta.height)
     } else {

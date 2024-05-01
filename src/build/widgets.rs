@@ -402,7 +402,7 @@ pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> Stri
                 return img;
             }
 
-            let duration = match &video.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
+            let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
                 Some(video_meta) => {
                     let duration = casual_duration(video_meta.duration);
                     formatdoc!(r#"<span class="duration">{duration}</span>"#)

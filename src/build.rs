@@ -85,7 +85,7 @@ impl<'a> Smartcrumb<'a> {
                             ("", format!("../{slug}{index_suffix}"))
                         };
 
-                        let duration = match &video_iterated.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
+                        let duration = match &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
                             Some(video_meta) => casual_duration(video_meta.duration),
                             None => String::new()
                         };
@@ -200,7 +200,7 @@ impl<'a> Smartcrumb<'a> {
                             ("", format!("../{slug}{index_suffix}"))
                         };
 
-                        let duration = match &video_iterated.highest_resolution_version().and_then(|version| version.video_meta.as_ref()) {
+                        let duration = match &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
                             Some(video_meta) => casual_duration(video_meta.duration),
                             None => String::new()
                         };
