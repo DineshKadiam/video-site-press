@@ -46,7 +46,7 @@ impl Codec {
 }
 
 impl Container {
-    pub fn to_string(&self) -> &str {
+    pub fn extension(&self) -> &str {
         match self {
             Container::Mkv => "mkv",
             Container::Mp4 => "mp4"
@@ -86,7 +86,7 @@ impl VideoFormat {
                 format!(
                     "video:{}:{}:{}:{quality}:{height}",
                     codec.to_string(),
-                    container.to_string(),
+                    container.extension(),
                     encoding_approach.to_string()
                 )
             }

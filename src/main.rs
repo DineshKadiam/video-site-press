@@ -47,7 +47,7 @@ use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};
 use util::Field;
 use video::{Video, VideoFile, VideoMeta, VideoParent};
-use video_format::{Codec, Container, EncodingApproach, VideoFormat};
+use video_format::{Codec, EncodingApproach, VideoFormat};
 
 fn main() {
     let args: Args = Args::parse();

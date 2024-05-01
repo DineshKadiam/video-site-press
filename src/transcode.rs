@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::Path;
 use std::process::Command;
 use std::time::Instant;
@@ -6,7 +7,6 @@ use serde_derive::Deserialize;
 
 use crate::{
     Codec,
-    Container,
     Context,
     EncodingApproach,
     FileMeta,
@@ -134,7 +134,7 @@ pub fn encode(
 
     command.arg("-i").arg(&input_path);
 
-    let (output_file, output_path) = match &format {
+    let extension = match &format {
         VideoFormat::AudioOnly => {
             command
                 .arg("-vn") // no video
@@ -142,10 +142,8 @@ pub fn encode(
                 .arg("-b:a").arg("96k");
 
             // TODO: We rather want mp3+opus (?)
-            let output_file = format!("{}.mp4", nanoid()); // TODO: mp4? Is there a merit to using a video-less mp4 over a pure audio format?
-            let output_path = context.site_dir.join(&video.path).join(&output_file);
-
-            (output_file, output_path)
+            // TODO: mp4? Is there a merit to using a video-less mp4 over a pure audio format?
+            "mp4"
         }
         VideoFormat::Video { codec, container, encoding_approach, height, quality } => {
             // TODO: We need to encode WebM and h265 for browser compatibility reasons
@@ -221,34 +219,14 @@ pub fn encode(
                 }
             }
 
-            let extension = match container {
-                Container::Mkv => "mkv",
-                Container::Mp4 => "mp4"
-            };
-
-            let mut base_name = input_path.file_stem().unwrap().to_string_lossy().to_string();
-            let codec_suffix = codec.to_string();
-            let approach_suffix = encoding_approach.to_string();
-            let quality_suffix = format!("{:.0}", quality * 100.0);
-            base_name.push_str(&format!("_{height}p_{codec_suffix}_q{quality_suffix}_{approach_suffix}"));
-
-            // TODO: Eventually we should probably render to a temp dir and only move the finished file to the site_dir
-            //       if the video and video dir at that later point in time stil exist. (and the job has not been cancelled,
-            //       suppose we implement something like that too)
-            let mut output_path = context.site_dir.join(&video.path).join(&base_name).with_extension(extension);
-
-            while output_path.exists() {
-                base_name.push_str("-duplicate");
-                output_path = context.site_dir.join(&video.path).join(&base_name).with_extension(extension);
-            }
-
-            let output_file = format!("{base_name}.{extension}");
-
-            (output_file, output_path)
+            container.extension()
         }
     };
 
-    command.arg(&output_path);
+    let temp_file = format!("{}.{extension}", nanoid());
+    let temp_path = context.cache_dir.join(&temp_file);
+
+    command.arg(&temp_path);
 
     let rendering_begin = Instant::now();
 
@@ -256,6 +234,49 @@ pub fn encode(
         Ok(output) => {
             if output.status.success() {
                 let _rendering_time = rendering_begin.elapsed().as_secs_f32();
+
+                // If the video directory disappeared (was moved/removed) while we were encoding
+                // we discard our encoding output as we don't know where to put it anymore.
+                if !context.site_dir.join(&video.path).exists() {
+                    return Err(())
+                }
+
+                let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
+
+                let base_name = match &format {
+                    VideoFormat::AudioOnly => {
+                        format!("{file_stem}_audio-only")
+                    }
+                    VideoFormat::Video { codec, encoding_approach, height, quality, .. } => {
+                        let approach_suffix = encoding_approach.to_string();
+                        let codec_suffix = codec.to_string();
+                        let quality_suffix = format!("{:.0}", quality * 100.0);
+
+                        format!("{file_stem}_{height}p_{codec_suffix}_q{quality_suffix}_{approach_suffix}")
+                    }
+                };
+
+                let mut iteration = 0;
+                let (output_file, output_path) = loop {
+                    let output_file = if iteration == 0 {
+                        format!("{base_name}.{extension}")
+                    } else {
+                        format!("{base_name}({iteration}).{extension}")
+                    };
+
+                    let output_path = context.site_dir.join(&video.path).join(&output_file);
+
+                    if output_path.exists() {
+                        iteration += 1;
+                        continue;
+                    }
+
+                    break (output_file, output_path);
+                };
+
+                // Move file from cache dir to video dir
+                fs::rename(&temp_path, &output_path).unwrap();
+
                 let file_meta = FileMeta::new(&output_path);
                 
                 let video_version = VideoFile {

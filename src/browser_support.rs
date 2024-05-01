@@ -4,7 +4,7 @@ use crate::VideoMeta;
 /// why the format was deemed (in)compatible.
 pub fn analysis(video_meta: &VideoMeta) -> Option<Result<String, String>> {
     let mut supported: Vec<String> = Vec::new();
-    let mut unsupported: Vec<String> = Vec::new();
+    let unsupported: Vec<String> = Vec::new();
 
     if video_meta.audio_codec.as_ref().is_some_and(|codec| codec == "aac") {
         supported.push("AAC audio codec is generally supported in browsers".to_string());
