@@ -258,7 +258,20 @@ fn additional_formats_form(context: &Context, video: &Video) -> String {
                     <label for="quality">{t_quality}</label>
                     <div style="align-items: center; column-gap: .3rem; display: flex;">
                         <span>{t_worst}</span>
-                        <input id="quality" max="1.0" min="0.0" name="quality" step="any" style="flex: 1" type="range" value="0.8">
+                        <div id="quality_wrapper" style="flex: 1; position: relative;">
+                            <span style="left: calc(0.95 * 80%); position: absolute; top: -1rem;">80%</span>
+                            <input
+                                aria-valuenow="80%"
+                                aria-valuetext="80%"
+                                id="quality"
+                                max="1.0"
+                                min="0.0"
+                                name="quality"
+                                step=".01"
+                                style="width: 100%;"
+                                type="range"
+                                value="0.8">
+                        </div>
                         <span>{t_best}</span>
                     </div>
                 </div>

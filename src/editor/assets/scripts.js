@@ -75,6 +75,19 @@ document.addEventListener('click', event => {
     }
 });
 
+const qualityInput = document.querySelector('input#quality');
+
+if (qualityInput) {
+    qualityInput.addEventListener('input', () => {
+        const qualityLabel = document.querySelector('#quality_wrapper span');
+        const percent = Math.trunc(qualityInput.value * 100);
+        qualityLabel.setAttribute('aria-valuenow', percent);
+        qualityLabel.setAttribute('aria-valuetext', `${percent}%`);
+        qualityLabel.style.left = `${percent * 0.95}%`;
+        qualityLabel.textContent = `${percent}%`;
+    });
+}
+
 if (splashWrapper) {
     const version = document.body.dataset.version;
     if (localStorage.getItem('hyper8SplashSeen') !== version) {

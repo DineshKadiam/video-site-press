@@ -263,7 +263,6 @@ if (video) {
         }
     });
 
-
     timelineInput.addEventListener('input', _ => {
         intro.style.display = 'none';
         video.currentTime = timelineInput.value;
