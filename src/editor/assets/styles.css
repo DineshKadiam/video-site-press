@@ -213,7 +213,7 @@ pre.error {
     padding: 1rem;
     white-space: normal;
 }
-.processing { color: orange; }
+.processing.active { color: orange; }
 select {
     background-color: var(--bg-2);
     border: none;

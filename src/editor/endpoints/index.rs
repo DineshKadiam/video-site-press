@@ -5,14 +5,14 @@ use actix_web::http::header::ContentType;
 use actix_web::web::Data;
 use indoc::formatdoc;
 
-use crate::{Collection, Context, JobKind, SiteContent, Video};
+use crate::{Collection, Context, SiteContent, Video};
 use crate::editor::widgets::layout;
 use crate::util::human_size;
 
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     let site = context.get_site();
 
-    let mut body = match &site.content {
+    let body = match &site.content {
         SiteContent::Collection(collection) => {
             let mut videos = Vec::new();
 
@@ -90,45 +90,6 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             storage_stats_html(&context, &videos)
         }
     };
-
-    let job_info = context.job_queue
-        .lock()
-        .unwrap()
-        .iter()
-        .map(|job| {
-            let label = match &job.kind {
-                JobKind::PlaylistFastTasks(playlist) => playlist.label_editor(&context),
-                JobKind::VideoFastTasks { video, .. } => video.label_editor(&context),
-                JobKind::VideoFormat { video, .. } => video.label_editor(&context),
-                JobKind::VideoRandomPoster { video, .. } => video.label_editor(&context)
-            };
-            let status = if job.assigned { "assigned" } else { "idle" };
-
-            format!("{label} {status}")
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-
-    body.push_str(&job_info);
-
-    if let Ok(processing_errors) = context.processing_errors.lock() {
-        if !processing_errors.is_empty() {
-            let errors = processing_errors
-                .iter()
-                .map(|err| format!("- {err}<br>"))
-                .collect::<Vec<String>>()
-                .join("\n");
-
-            let wrapped = formatdoc!(r#"
-                <div>
-                    Processing errors:<br>
-                    {errors}
-                </div>
-            "#);
-
-            body.push_str(&wrapped);
-        }
-    }
 
     let html = layout(&context, None, &site, &body, site.title());
 

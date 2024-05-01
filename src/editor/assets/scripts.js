@@ -8,22 +8,26 @@ function fetchProcessing() {
         .then(response => {
             if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
                 const processingElement = document.querySelector('.processing');
+                const processingIcon = document.querySelector('#processing_icon');
+                const text = document.createElement('span');
 
                 if (response.operations.length) {
-                    const text = document.createElement('span');
+                    // TODO: This should also give feedback how many jobs are waiting to be processed (?)
                     // TODO: Localize
                     text.textContent = `${response.operations.length} Processing`;
-
-                    // TODO: This should also give feedback how many jobs are waiting to be processed (?)
-                    processingElement.replaceChildren(
-                        document.querySelector('#processing_icon').content.cloneNode(true),
-                        text
-                    );
+                    processingElement.classList.add('active');
                     processingElement.setAttribute('title', response.operations.map(op => op.label).join(', '));
                 } else {
-                    processingElement.innerHTML = '';
+                    // TODO: Localize
+                    text.textContent = 'Idle';
+                    processingElement.classList.remove('active');
                     processingElement.removeAttribute('title', null);
                 }
+
+                processingElement.replaceChildren(
+                    processingIcon.content.cloneNode(true),
+                    text
+                );
 
                 processing.lastUpdate = response.lastUpdate;
             }

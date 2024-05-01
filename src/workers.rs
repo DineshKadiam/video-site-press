@@ -307,6 +307,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
             let high_priority_only = worker_number == 1;
 
             println!("[Worker {worker_number}] Started");
+
             loop {
                 let job = context.take_processing_job(high_priority_only);
 
@@ -359,21 +360,26 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Computing version {format_label} for {}", video.path);
                         let process_id = context.processing.lock().unwrap().push(&video.path, label);
 
-                        if let Ok(version) = transcode::encode(&context, format, &video) {
-                            let mutation = |video_mut: &mut Video| {
-                                video_mut.versions.push(version);
-                            };
+                        match transcode::encode(&context, format, &video) {
+                            Ok(version) => {
+                                let mutation = |video_mut: &mut Video| {
+                                    video_mut.versions.push(version);
+                                };
 
-                            match context.update_video(mutation, &video.path) {
-                                Ok(video_updated) => {
-                                    let site = context.get_site();
-                                    let job_kind = JobKind::VideoFastTasks {
-                                        poster_aspect: site.poster_aspect.numeric(),
-                                        video: Arc::clone(&video_updated)
-                                    };
-                                    context.push_job_queue(job_kind);
+                                match context.update_video(mutation, &video.path) {
+                                    Ok(video_updated) => {
+                                        let site = context.get_site();
+                                        let job_kind = JobKind::VideoFastTasks {
+                                            poster_aspect: site.poster_aspect.numeric(),
+                                            video: Arc::clone(&video_updated)
+                                        };
+                                        context.push_job_queue(job_kind);
+                                    }
+                                    Err(()) => context.processing_errors.lock().unwrap().push("Video could not be updated with newly computed version.".to_string())
                                 }
-                                Err(()) => context.processing_errors.lock().unwrap().push("Video could not be updated with newly computed version.".to_string())
+                            }
+                            Err(()) => {
+                                context.processing_errors.lock().unwrap().push("Encoding a new version failed for an unknown reason.".to_string())
                             }
                         }
 

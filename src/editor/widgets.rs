@@ -343,6 +343,7 @@ pub fn layout(
 
     let storage_usage = human_size(site.storage_usage());
     let logo_icon = icons::logo(&context.editor_translations.hyper8_logo);
+    let t_idle = &context.editor_translations.idle;
     let t_preview = &context.editor_translations.preview;
     let t_processing = &context.editor_translations.processing;
     let preview_icon = icons::preview(t_preview);
@@ -353,7 +354,7 @@ pub fn layout(
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
-                    <form action="/"><button class="processing"></button></form>
+                    <form action="/jobs"><button class="processing">{processing_icon} {t_idle}</button></form>
                     <form action="/"><button>{storage_icon} {storage_usage}</button></form>
                     <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
                     {deploy_button}

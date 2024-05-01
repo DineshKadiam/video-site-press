@@ -9,6 +9,7 @@ pub mod convert;
 mod build;
 mod deploy;
 pub mod index;
+pub mod jobs;
 pub mod playlist;
 mod processing;
 pub mod site;
@@ -16,6 +17,7 @@ pub mod video;
 
 pub use build::build;
 pub use deploy::deploy;
+pub use jobs::jobs;
 pub use processing::processing;
 
 use crate::{Context, ThemeKind};

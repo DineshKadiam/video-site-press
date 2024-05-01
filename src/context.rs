@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 
 use serde_derive::Deserialize;
 use slug::slugify;
@@ -35,6 +36,7 @@ pub struct Context {
     pub editor_theme: Theme,
     pub editor_translations: EditorTranslations,
     pub job_queue: Mutex<Vec<Job>>,
+    pub jobs_completed: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
     pub processing_errors: Mutex<Vec<String>>,
     pub site: Mutex<Arc<Site>>,
@@ -55,12 +57,19 @@ pub enum GetAnyResult {
 
 impl Context {
     pub fn complete_job(&self, id: &str) {
-        let mut job_queue = self.job_queue.lock().unwrap();
+        let completed_job = {
+            let mut job_queue = self.job_queue.lock().unwrap();
 
-        job_queue
-            .iter()
-            .position(|job| job.id == id)
-            .map(|index| job_queue.swap_remove(index));
+            job_queue
+                .iter()
+                .position(|job| job.id == id)
+                .map(|index| job_queue.swap_remove(index))
+        };
+
+        if let Some(mut completed_job) = completed_job {
+            completed_job.completed_at = Some(SystemTime::now());
+            self.jobs_completed.lock().unwrap().push(completed_job);
+        }
     }
 
     /// When we construct site-internal linking urls, we always
@@ -583,6 +592,7 @@ impl Context {
             editor_theme: Theme::adaptive(),
             editor_translations: EditorTranslations::from_code(editor_language),
             job_queue: Mutex::new(Vec::new()),
+            jobs_completed: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),
             processing_errors: Mutex::new(Vec::new()),
             site: Mutex::new(site),
@@ -695,9 +705,7 @@ impl Context {
                     }
                 }
 
-                if job.assigned { return false; }
-
-                true
+                job.assigned_at.is_none()
             })
             .reduce(|selected, iterated|
                 match iterated.cmp_priority(selected) { 
@@ -706,7 +714,7 @@ impl Context {
                 } 
             )
             .map(|job| {
-                job.assigned = true;
+                job.assigned_at = Some(SystemTime::now());
                 job.clone()
             })
     }

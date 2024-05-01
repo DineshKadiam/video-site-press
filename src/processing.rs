@@ -1,19 +1,22 @@
 use std::cmp::Ordering;
 use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
 use serde_derive::Serialize;
 
-use crate::{Playlist, Video, VideoFormat};
+use crate::{Context, Playlist, Video, VideoFormat};
 use crate::util::{nanoid, timestamp};
 
 #[derive(Clone, Debug)]
 pub struct Job {
-    pub assigned: bool,
+    pub assigned_at: Option<SystemTime>,
+    pub completed_at: Option<SystemTime>,
     pub created: u128,
     pub id: String,
     pub kind: JobKind
 }
 
+// This specifies what needs to be done in a processing job
 #[derive(Clone, Debug)]
 pub enum JobKind {
     PlaylistFastTasks(Arc<Playlist>),
@@ -31,6 +34,7 @@ pub enum JobKind {
     }
 }
 
+/// Used for the /processing JSON endpoint
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Operation {
@@ -39,6 +43,7 @@ pub struct Operation {
     pub path: String
 }
 
+/// Used for the /processing JSON endpoint
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Processing {
@@ -47,9 +52,24 @@ pub struct Processing {
 }
 
 impl Job {
+    // How long the job took
+    pub fn duration(&self) -> Option<Duration> {
+        match self.assigned_at {
+            Some(assigned_at) => match self.completed_at {
+                Some(completed_at) => match completed_at.duration_since(assigned_at) {
+                    Ok(duration) => Some(duration),
+                    Err(_) => None
+                }
+                None => None
+            }
+            None => None
+        }
+    }
+
     pub fn new(kind: JobKind) -> Job {
         Job {
-            assigned: false,
+            assigned_at: None,
+            completed_at: None,
             created: timestamp(),
             id: nanoid(),
             kind
@@ -94,6 +114,17 @@ impl Job {
         }
 
         self.created.cmp(&other.created).reverse()
+    }
+}
+
+impl JobKind {
+    pub fn representation(&self, context: &Context) -> String {
+        match self {
+            JobKind::PlaylistFastTasks(playlist) => format!("Compute banner for playlist '{}'", playlist.label_editor(context)),
+            JobKind::VideoFastTasks { video, .. } => format!("Compute metadata and/or poster for video '{}'", video.label_editor(context)),
+            JobKind::VideoFormat { video, .. } => format!("Compute additional format for video '{}'", video.label_editor(context)),
+            JobKind::VideoRandomPoster { video, .. } => format!("Compute random poster for video '{}'", video.label_editor(context))
+        }
     }
 }
 

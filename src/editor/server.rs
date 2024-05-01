@@ -13,6 +13,7 @@ use crate::editor::endpoints::{
     favicon,
     font,
     index,
+    jobs,
     playlist,
     processing,
     scripts,
@@ -60,6 +61,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/downsize/{path:.*}", post().to(video::downsize))
                 .route("/favicon.png", get().to(favicon))
                 // .route("/formats", post().to(settings::formats))
+                .route("/jobs", get().to(jobs))
                 .route("/move-collection/{path:.*}", post().to(collection::r#move))
                 .route("/move-playlist/{path:.*}", post().to(playlist::r#move))
                 .route("/move-video/{path:.*}", post().to(video::r#move))
