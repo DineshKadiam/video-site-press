@@ -210,7 +210,7 @@ fn additional_formats_form(context: &Context, video: &Video) -> String {
     let mut height_options = Vec::new();
     let candidate_heights = [144, 240, 360, 480, 720, 1080];
     for height in candidate_heights {
-        if height < tallest_height {
+        if height <= tallest_height {
             let width = (height as f32 * aspect_ratio) as usize;
 
             let selected = if (tallest_height < 720 && height == 480) || height == 720 {
