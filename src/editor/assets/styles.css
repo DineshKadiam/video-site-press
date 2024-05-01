@@ -90,16 +90,13 @@ button:hover {
     font-size: 1.17rem;
 }
 .controls {
-    align-items: center;
     display: flex;
-    flex-direction: column;
     position: fixed;
     right: 0.5rem;
     row-gap: 1rem;
     top: 0.5rem;
 }
-.controls .buttons { display: flex; }
-.controls .buttons button {
+.controls button {
     align-items: center;
     background: none;
     border-radius: .2rem;
@@ -108,11 +105,11 @@ button:hover {
     outline: none;
     padding: .3rem .6rem;
 }
-.controls .buttons button:focus-visible,
-.controls .buttons button:hover {
+.controls button:focus-visible,
+.controls button:hover {
     background-color: var(--bg-2);
 }
-.controls .buttons svg {
+.controls svg {
     height: 1rem;
     width: 1rem;
 }

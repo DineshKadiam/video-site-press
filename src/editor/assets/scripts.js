@@ -10,8 +10,15 @@ function fetchProcessing() {
                 const processingElement = document.querySelector('.processing');
 
                 if (response.operations.length) {
+                    const text = document.createElement('span');
+                    // TODO: Localize
+                    text.textContent = `${response.operations.length} Processing`;
+
                     // TODO: This should also give feedback how many jobs are waiting to be processed (?)
-                    processingElement.innerHTML = `${response.operations.length} active background jobs`;
+                    processingElement.replaceChildren(
+                        document.querySelector('#processing_icon').content.cloneNode(true),
+                        text
+                    );
                     processingElement.setAttribute('title', response.operations.map(op => op.label).join(', '));
                 } else {
                     processingElement.innerHTML = '';

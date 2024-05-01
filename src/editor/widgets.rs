@@ -344,20 +344,20 @@ pub fn layout(
     let storage_usage = human_size(site.storage_usage());
     let logo_icon = icons::logo(&context.editor_translations.hyper8_logo);
     let t_preview = &context.editor_translations.preview;
+    let t_processing = &context.editor_translations.processing;
     let preview_icon = icons::preview(t_preview);
+    let processing_icon = icons::processing(t_processing);
     let storage_icon = icons::storage(&context.editor_translations.storage_usage);
     let t_about = &context.editor_translations.about;
     let t_filter = &context.editor_translations.filter;
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
-                    <div class="buttons">
-                        <form action="/"><button>{storage_icon} {storage_usage}</button></form>
-                        <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
-                        {deploy_button}
-                        <button id="toggle-splash">{logo_icon} {t_about}</button>
-                    </div>
-                    <span class="processing"></span>
+                    <form action="/"><button class="processing"></button></form>
+                    <form action="/"><button>{storage_icon} {storage_usage}</button></form>
+                    <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
+                    {deploy_button}
+                    <button id="toggle-splash">{logo_icon} {t_about}</button>
                 </div>
                 <div class="split">
                     <nav>
@@ -370,6 +370,9 @@ pub fn layout(
                     </main>
                 </div>
                 {splash}
+                <template id="processing_icon">
+                    {processing_icon}
+                </template>
             </body>
         "#
     );
