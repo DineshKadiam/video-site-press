@@ -30,9 +30,13 @@ if (copyLink) {
     copyLink.addEventListener('click', copyToClipboard);
 }
 
-document.querySelector('#download').addEventListener('click', () => {
-    document.querySelector('#download_dialog').showModal();
-});
+const downloadLink = document.querySelector('#download');
+
+if (downloadLink) {
+    downloadLink.addEventListener('click', () => {
+        document.querySelector('#download_dialog').showModal();
+    });
+}
 
 const video = document.querySelector('video');
 
