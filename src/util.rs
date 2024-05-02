@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use chrono::{Locale as ChronoLocale, NaiveDate};
 use nanoid::nanoid;
 use slug::slugify;
 
@@ -50,6 +51,36 @@ pub fn casual_duration(seconds: f32) -> String {
             format!("{hours:.1} hrs")
         }
     }
+}
+
+pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
+    use chrono::format::{Fixed, Item, Numeric, Pad};
+
+    let format = [
+        Item::Numeric(Numeric::Day, Pad::None),
+        Item::Space(" "),
+        Item::Fixed(Fixed::LongMonthName),
+        Item::Space(" "),
+        Item::Numeric(Numeric::Year, Pad::None)
+    ];
+
+    date
+        .format_localized_with_items(format.iter(), chrono_locale)
+        .to_string()
+}
+
+pub fn localized_date_mmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
+    use chrono::format::{Fixed, Item, Numeric, Pad};
+
+    let format = [
+        Item::Fixed(Fixed::ShortMonthName),
+        Item::Space(" "),
+        Item::Numeric(Numeric::Year, Pad::None)
+    ];
+
+    date
+        .format_localized_with_items(format.iter(), chrono_locale)
+        .to_string()
 }
 
 pub fn ensure_dir(dir: &Path) {

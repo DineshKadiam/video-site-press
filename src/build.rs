@@ -16,6 +16,7 @@ use crate::build::widgets::thumbnail;
 use crate::util::{casual_duration, ensure_empty_dir, hard_link_or_copy};
 
 mod collection;
+mod outline;
 mod playlist;
 mod scripts;
 mod styles;
@@ -24,6 +25,7 @@ mod video;
 mod widgets;
 
 use collection::collection_html;
+use outline::OutlineStats;
 use playlist::playlist_html;
 use video::video_html;
 
@@ -106,11 +108,12 @@ impl<'a> Smartcrumb<'a> {
                     .join("\n");
 
                 let label = collection.label_build(site);
-                let outline_stats = collection.outline_stats();
+                let outline_stats = OutlineStats::for_collection(collection).render(site);
+
                 let header = formatdoc!(r#"
                     <div class="playlist_header">
                         <a class="medium_font title" href="../">{label}</a>
-                        {outline_stats}
+                        <small>{outline_stats}</small>
                     </div>
                 "#);
 
@@ -139,7 +142,7 @@ impl<'a> Smartcrumb<'a> {
         match self {
             Smartcrumb::Collection(collection) => {
                 let label = collection.label_build(site);
-                let outline_stats = collection.outline_stats();
+                let outline_stats = OutlineStats::for_collection(collection).render(site);
 
                 formatdoc!(r#"
                     <a href="{href}">
@@ -150,7 +153,7 @@ impl<'a> Smartcrumb<'a> {
             }
             Smartcrumb::Playlist(playlist) => {
                 let label = playlist.label_build(site);
-                let outline_stats = playlist.outline_stats();
+                let outline_stats = OutlineStats::for_playlist(playlist).render(site);
 
                 formatdoc!(r#"
                     <a href="{href}">
@@ -223,13 +226,11 @@ impl<'a> Smartcrumb<'a> {
                     .join("\n");
 
                 let label = playlist.label_build(site);
-                let playlist_duration = casual_duration(playlist.duration());
-                let t_videos = &site.language.translations.videos;
-                let video_count = listed_videos.len();
+                let outline_stats = OutlineStats::for_playlist(playlist).render(site);
                 let header = formatdoc!(r#"
                     <div class="playlist_header">
                         <a class="medium_font title" href="../">{label}</a>
-                        {video_count} {t_videos} <span class="duration">{playlist_duration}</span>
+                        <small>{outline_stats}</small>
                     </div>
                 "#);
 

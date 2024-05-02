@@ -6,6 +6,7 @@ use indoc::formatdoc;
 use crate::{Context, Playlist, Site, Video};
 use crate::build::Smartcrumb;
 use crate::build::widgets::{copy_link, downloads, layout, player};
+use crate::util::localized_date_d_mmmm_yyyy;
 
 pub fn video_html(
     context: &Context,
@@ -78,17 +79,8 @@ pub fn video_html(
 
     let release_date = match video.release_date {
         Some(release_date) => {
-            use chrono::format::{Fixed, Item, Numeric, Pad};
-
-            let format = [
-                Item::Numeric(Numeric::Day, Pad::None),
-                Item::Space(" "),
-                Item::Fixed(Fixed::LongMonthName),
-                Item::Space(" "),
-                Item::Numeric(Numeric::Year, Pad::None)
-            ];
-            let formatted = release_date.format_localized_with_items(format.iter(), site.language.chrono_locale);
-            format!(r#"<span class="release_date">{formatted}</span>"#)
+            let formatted_date = localized_date_d_mmmm_yyyy(release_date, site.language.chrono_locale);
+            format!(r#"<span class="release_date">{formatted_date}</span>"#)
         }
         None => String::new()
     };

@@ -15,7 +15,6 @@ use crate::{
     Site,
     Video
 };
-use crate::util::casual_duration;
 
 #[derive(Clone, Debug)]
 pub struct Playlist {
@@ -163,24 +162,6 @@ impl Playlist {
         false
     }
 
-    /// Returns seconds
-    pub fn duration(&self) -> f32 {
-        self.videos
-            .iter()
-            .filter(|video| !video.unlisted)
-            .map(|video| {
-                video.versions
-                    .iter()
-                    .find_map(|version| {
-                        version.video_meta
-                            .as_ref()
-                            .map(|video_meta| video_meta.duration)
-                    })
-                    .unwrap_or(0.0)
-            })
-            .sum()
-    }
-
     /// Potentially returns a video at the given path.
     pub fn get_any(&self, path: &str) -> GetAnyResult {
         for video in &self.videos {
@@ -233,34 +214,6 @@ impl Playlist {
             unlisted: false
         }
 	}
-
-    pub fn outline_stats(&self) -> String {
-        let mut total_duration = 0.0;
-        let mut total_videos = 0;
-
-        for video in &self.videos {
-            if video.unlisted { continue; }
-
-            if let Some(duration) = video.versions
-                .iter()
-                .find_map(|version| {
-                    version.video_meta
-                        .as_ref()
-                        .map(|video_meta| video_meta.duration)
-                }) {
-                total_duration += duration;
-            }
-            total_videos += 1;
-        }
-
-        if total_videos > 0 {
-            // TODO: Localize
-            format!("{total_videos} Videos, {}", casual_duration(total_duration))
-        } else {
-            // TODO: Localize
-            "Empty".to_string()
-        }
-    }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
         let mut playlist = Playlist::new(hyper_dir.site_path(context));
