@@ -4,7 +4,7 @@ use std::sync::Arc;
 use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site, Video};
-use crate::build::Smartcrumb;
+use crate::build::outline::Smartcrumb;
 use crate::build::widgets::{copy_link, downloads, layout, player};
 use crate::util::localized_date_d_mmmm_yyyy;
 
@@ -50,19 +50,8 @@ pub fn video_html(
         .filter(|smartcrumb| !smartcrumb.is_video(video))
         .enumerate()
         .map(|(index, smartcrumb)| {
-            let href = "../".repeat(outline.len() - 1 - index);
-
-            if let Some(playlist_context) = smartcrumb.playlist_context(context, site, video) {
-                playlist_context
-            } else if outline.len() > 1 && index == outline.len() - 2 {
-                if let Some(collection_context) = smartcrumb.collection_context(context, site, video) {
-                    collection_context
-                } else {
-                    smartcrumb.label(&href, site)
-                }
-            } else {
-                smartcrumb.label(&href, site)
-            }
+            let prefix = "../".repeat(outline.len() - 1 - index);
+            smartcrumb.context_for_video(context, &prefix, site, video)
         })
         .collect::<Vec<String>>()
         .join("\n");

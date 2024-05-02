@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Context, Site, ThemeKind, Video, VideoFile};
-use crate::build::Smartcrumb;
+use crate::{Context, PosterFile, Site, ThemeKind, Video, VideoFile};
+use crate::build::outline::Smartcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
 
@@ -374,6 +374,27 @@ pub fn player(context: &Context, site: &Site, video: &Video, next_video: Option<
             </template>
         </div>
     "#)
+}
+
+pub fn poster_html(poster: &PosterFile, video_prefix: &str) -> String {
+    let alt = if let Some(description) = &poster.description {
+        format!(r#"alt="{description}""#)
+    } else {
+        String::new()
+    };
+
+    match &poster.assets {
+        Some(poster_assets) => {
+            let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
+            let src = image_attributes.src;
+            let srcset = image_attributes.srcset;
+
+            format!(r#"<img {alt} src="{src}" srcset="{srcset}">"#)
+        }
+        None => {
+            format!(r#"<img {alt} src="{video_prefix}poster.jpg">"#)
+        }
+    }
 }
 
 pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> String {

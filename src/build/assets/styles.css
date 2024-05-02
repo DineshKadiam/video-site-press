@@ -111,9 +111,22 @@ img {
     row-gap: 1rem;
 }
 .outline > a {
-  border: 1px solid var(--bg-2);
-  border-radius: .2rem;
-  padding: 1rem;
+    border: 1px solid var(--bg-2);
+    border-radius: .6rem;
+    position: relative;
+}
+.outline > a > img {
+    border-radius: .6rem;
+}
+.outline .text {
+    background-color: var(--bg-1-overlay);
+    border-bottom-left-radius: .6rem;
+    border-bottom-right-radius: .6rem;
+    bottom: 0;
+    left: 0;
+    padding: 1rem;
+    position: absolute;
+    right: 0;
 }
 .player_controls {
     bottom: 0;

@@ -3,7 +3,7 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Banner, Context, Playlist, Site};
-use crate::build::Smartcrumb;
+use crate::build::outline::Smartcrumb;
 use crate::build::widgets::{layout, thumbnail};
 
 pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
@@ -91,10 +91,11 @@ pub fn playlist_html(
     if !outline.is_empty() {
         let outline_items = outline
             .iter()
+            .filter(|smartcrumb| !smartcrumb.is_playlist())
             .enumerate()
             .map(|(index, smartcrumb)| {
-                let href = "../".repeat(outline.len() - 1 - index);
-                smartcrumb.label(&href, site)
+                let prefix = "../".repeat(outline.len() - 1 - index);
+                smartcrumb.context_for_playlist(context, playlist, &prefix, site)
             })
             .collect::<Vec<String>>()
             .join("\n");
