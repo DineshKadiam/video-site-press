@@ -9,6 +9,7 @@ pub struct Translations {
     pub banner_image: &'static str,
     pub best: &'static str,
     pub browser_support_unclear: &'static str,
+    pub check_the_docs_for_more_information: &'static str,
     pub close: &'static str,
     pub codec: &'static str,
     pub collection: &'static str,
@@ -113,6 +114,10 @@ pub struct Translations {
 }
 
 impl Translations {
+    pub fn check_the_docs_for_more_information(&self, external_icon: &str) -> String {
+        self.check_the_docs_for_more_information.replace("{external_icon}", external_icon)
+    }
+
     pub fn de() -> Translations {
         Translations {
             a_permalink_defines_under_which_url_text: "Ein Permalink definiert unter welcher URL etwas öffentlich zugänglich ist, oder in anderen Worten, falls irgendwelche Links auf diese Resource verweisen, werden sie nicht mehr funktionieren nachdem du den Permalink geändert, und die Seite deployed hast.",
@@ -124,6 +129,7 @@ impl Translations {
             banner_image: "Banner",
             best: "Beste",
             browser_support_unclear: "Browserunterstützung unklar",
+            check_the_docs_for_more_information: r#"Für mehr Information schau in die <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} Dokumentation</a>"#,
             close: "Schliessen",
             codec: "Codec",
             collection: "Collection",
@@ -239,6 +245,7 @@ impl Translations {
             banner_image: "Banner Image",
             best: "Best",
             browser_support_unclear: "Browser support unclear",
+            check_the_docs_for_more_information: r#"Check the <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} docs</a> for more information"#,
             close: "Close",
             codec: "Codec",
             collection: "Collection",
@@ -341,5 +348,17 @@ impl Translations {
             videos: "Videos",
             worst: "Worst"
         }
+    }
+}
+
+#[test]
+fn check_translations() {
+    let locales = [
+        Translations::de(),
+        Translations::en()
+    ];
+
+    for translations in &locales {
+        assert!(&translations.check_the_docs_for_more_information.contains("{external_icon}"));
     }
 }

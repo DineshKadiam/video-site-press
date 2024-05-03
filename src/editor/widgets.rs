@@ -346,6 +346,7 @@ pub fn layout(
         .join("\n");
 
     let external_icon = icons::external(language.translations.external_link);
+    let t_check_the_docs_for_more_information = language.translations.check_the_docs_for_more_information(&external_icon);
     let t_close = language.translations.close;
     let t_language = language.translations.language;
     let splash = formatdoc!(r#"
@@ -354,10 +355,10 @@ pub fn layout(
                 <img src="/splash.jpg?{hyper8_version}">
                 <div class="pad">
                     <ul autofocus>
-                        <li>Navigate the site's content in the left sidebar</li>
+                        <!--li>Navigate the site's content in the left sidebar</li>
                         <li>Make changes in the main area of the page</li>
-                        <li>Use the controls top-right to preview/deploy</li>
-                        <li>Check the <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} docs</a> for more information</li>
+                        <li>Use the controls top-right to preview/deploy</li-->
+                        <li>{t_check_the_docs_for_more_information}</li>
                     </ul>
                     <form action="/change-editor-language" method="post">
                         <input name="redirect" type="hidden">
