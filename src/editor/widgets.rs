@@ -360,6 +360,7 @@ pub fn layout(
                         <li>Check the <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} docs</a> for more information</li>
                     </ul>
                     <form action="/change-editor-language" method="post">
+                        <input name="redirect" type="hidden">
                         <label for="change_editor_language">{t_language}</label>
                         <select id="change_editor_language" name="language">
                             {language_options}

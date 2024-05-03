@@ -26,7 +26,8 @@ use crate::editor;
 
 #[derive(Deserialize)]
 pub struct LanguageForm {
-    language: String
+    language: String,
+    redirect: String
 }
 
 pub async fn change_editor_language(
@@ -36,7 +37,7 @@ pub async fn change_editor_language(
     *context.editor_language.lock().unwrap() = Language::from_code(&form.language);
     editor::persist_config(&form.language);
 
-    Redirect::to("/").see_other()
+    Redirect::to(form.redirect.clone()).see_other()
 }
 
 pub async fn favicon() -> HttpResponse {

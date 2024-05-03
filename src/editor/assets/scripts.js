@@ -104,6 +104,7 @@ const changeEditorLanguage = document.querySelector('#change_editor_language');
 if (changeEditorLanguage) {
     changeEditorLanguage.addEventListener('change', () => {
         localStorage.removeItem('hyper8SplashSeen');
+        changeEditorLanguage.form.redirect.value = location.pathname;
         changeEditorLanguage.form.submit();
     });
 }
