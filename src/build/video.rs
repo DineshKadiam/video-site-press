@@ -5,7 +5,7 @@ use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site, Video};
 use crate::build::outline::Smartcrumb;
-use crate::build::widgets::{copy_link, downloads, layout, player};
+use crate::build::widgets::{copy_link, downloads, layout, player, unlisted_badge};
 use crate::util::localized_date_d_mmmm_yyyy;
 
 pub fn video_html(
@@ -25,18 +25,14 @@ pub fn video_html(
     } else {
         match playlist {
             Some(playlist) => {
-                let listed_videos: Vec<Arc<Video>> = playlist.videos
-                    .iter()
-                    .filter(|video| !video.unlisted)
-                    .map(|video| Arc::clone(video))
-                    .collect();
+                let videos = playlist.public_videos_asc_by_release_date();
 
-                let active_position = listed_videos
+                let active_position = videos
                     .iter()
                     .position(|video_iterated| video_iterated.path == video.path)
                     .unwrap();
 
-                listed_videos
+                videos
                     .iter()
                     .nth(active_position + 1)
                     .map(|video| Arc::clone(video))
@@ -74,12 +70,14 @@ pub fn video_html(
         None => String::new()
     };
 
+    let unlisted = unlisted_badge(video.unlisted, site);
+
     let body = format!(r#"
         {player_rendered}
         <div class="video_info">
             <div class="align apart flex" style="margin-top: 2rem;">
                 <div>
-                    <h1 class="video_title">{title}</h1>
+                    <h1 class="video_title">{title} {unlisted}</h1>
                     {release_date}
                 </div>
                 <div class="actions align flex space">

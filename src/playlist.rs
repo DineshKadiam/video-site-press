@@ -1,9 +1,11 @@
+use std::cmp;
 use std::fs;
 use std::iter::Peekable;
 use std::path::Path;
 use std::str::Split;
 use std::sync::Arc;
 
+use chrono::NaiveDate;
 use enolib::{Element, SectionElement};
 
 use crate::{
@@ -26,11 +28,7 @@ pub struct Playlist {
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
     pub unlisted: bool,
-	pub videos: Vec<Arc<Video>>,
-    // TODO: We could potentially drop this and follow up with the plan of
-    //       making video order simply a sorting matter, i.e. based on video release_date
-    //       and/or a user-assigned video "number" respectively.
-    pub videos_virtual: Vec<String>
+	pub videos: Vec<Arc<Video>>
 }
 
 impl Playlist {
@@ -202,6 +200,21 @@ impl Playlist {
             )
     }
 
+    pub fn latest_release_date(&self) -> Option<NaiveDate> {
+        self.public_videos()
+            .fold(None, |latest_release_date, video| {
+                if let Some(release_date) = video.release_date {
+                    if let Some(latest_release_date) = latest_release_date {
+                        Some(cmp::min(latest_release_date, release_date))
+                    } else {
+                        Some(release_date)
+                    }
+                } else {
+                    latest_release_date
+                }
+            })
+    }
+
 	pub fn new(path: String) -> Playlist {
 		Playlist {
             banner: None,
@@ -210,10 +223,19 @@ impl Playlist {
             path,
             title: None,
             videos: Vec::new(),
-            videos_virtual: Vec::new(),
             unlisted: false
         }
 	}
+
+    pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
+        self.videos.iter().filter(|video| !video.unlisted)
+    }
+
+    pub fn public_videos_asc_by_release_date(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b| b.release_date.cmp(&a.release_date));
+        videos
+    }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
         let mut playlist = Playlist::new(hyper_dir.site_path(context));

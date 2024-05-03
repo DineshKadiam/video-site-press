@@ -442,6 +442,15 @@ pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> Stri
     }
 }
 
+pub fn unlisted_badge(unlisted: bool, site: &Site) -> String {
+    if unlisted {
+        let t_not_public = &site.language.translations.not_public;
+        format!(r#"<span class="unlisted_badge">{t_not_public}</span>"#)
+    } else {
+        String::new()
+    }
+}
+
 fn versions_ring(video: &Video) -> String {
     let radius = 190.0;
     let diameter = radius * 2.0;

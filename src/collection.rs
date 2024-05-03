@@ -1,9 +1,11 @@
+use std::cmp;
 use std::fs;
 use std::iter::Peekable;
 use std::path::Path;
 use std::str::Split;
 use std::sync::Arc;
 
+use chrono::NaiveDate;
 use enolib::SectionElement;
 
 use crate::{
@@ -292,6 +294,52 @@ impl Collection {
             )
     }
 
+    pub fn latest_release_date(&self) -> Option<NaiveDate> {
+        let latest_in_playlists = self.public_playlists()
+            .fold(None, |latest_release_date, playlist| {
+                if let Some(release_date) = playlist.latest_release_date() {
+                    if let Some(latest_release_date) = latest_release_date {
+                        Some(cmp::min(latest_release_date, release_date))
+                    } else {
+                        Some(release_date)
+                    }
+                } else {
+                    latest_release_date
+                }
+            });
+
+        let latest_in_subcollections = self.public_subcollections()
+            .fold(None, |latest_release_date, subcollection| {
+                if let Some(release_date) = subcollection.latest_release_date() {
+                    if let Some(latest_release_date) = latest_release_date {
+                        Some(cmp::min(latest_release_date, release_date))
+                    } else {
+                        Some(release_date)
+                    }
+                } else {
+                    latest_release_date
+                }
+            });
+
+        let latest_in_videos = self.public_videos()
+            .fold(None, |latest_release_date, video| {
+                if let Some(release_date) = video.release_date {
+                    if let Some(latest_release_date) = latest_release_date {
+                        Some(cmp::min(latest_release_date, release_date))
+                    } else {
+                        Some(release_date)
+                    }
+                } else {
+                    latest_release_date
+                }
+            });
+
+        *[latest_in_playlists, latest_in_subcollections, latest_in_videos]
+            .iter()
+            .min()
+            .unwrap()
+    }
+
     pub fn new(path: String) -> Collection {
         Collection {
             description: None,
@@ -305,29 +353,35 @@ impl Collection {
         }
     }
 
-    // /// Returns the public videos in the given playlist, in correct playlist order.
-    // pub fn public_videos_in_playlist(&self, playlist: &Playlist) -> Vec<Video> {
-    //     let mut videos: Vec<(usize, Video)> = self.videos
-    //         .lock()
-    //         .unwrap()
-    //         .iter()
-    //         .filter_map(|video| {
-    //             if video.unlisted { return None; }
+    pub fn public_playlists(&self) -> impl Iterator<Item = &Arc<Playlist>> {
+        self.playlists.iter().filter(|playlist| !playlist.unlisted)
+    }
 
-    //             playlist.videos
-    //                 .iter()
-    //                 .position(|slug| slug == &video.slug)
-    //                 .map(|index| (index, video.clone()))
-    //         })
-    //         .collect();
+    pub fn public_playlists_desc_by_release_date(&self) -> Vec<Arc<Playlist>> {
+        let mut playlists: Vec<Arc<Playlist>> = self.public_playlists().cloned().collect();
+        playlists.sort_unstable_by(|a, b| a.latest_release_date().cmp(&b.latest_release_date()));
+        playlists
+    }
 
-    //     videos.sort_by(|a, b| a.0.cmp(&b.0));
+    pub fn public_subcollections(&self) -> impl Iterator<Item = &Arc<Collection>> {
+        self.subcollections.iter().filter(|subcollection| !subcollection.unlisted)
+    }
 
-    //     videos
-    //         .into_iter()
-    //         .map(|(_index, video)| video)
-    //         .collect()
-    // }
+    pub fn public_subcollections_desc_by_release_date(&self) -> Vec<Arc<Collection>> {
+        let mut subcollections: Vec<Arc<Collection>> = self.public_subcollections().cloned().collect();
+        subcollections.sort_unstable_by(|a, b| a.latest_release_date().cmp(&b.latest_release_date()));
+        subcollections
+    }
+
+    pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
+        self.videos.iter().filter(|video| !video.unlisted)
+    }
+
+    pub fn public_videos_desc_by_release_date(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b| a.release_date.cmp(&b.release_date));
+        videos
+    }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Collection> {
         let mut collection = Collection::new(hyper_dir.site_path(context));

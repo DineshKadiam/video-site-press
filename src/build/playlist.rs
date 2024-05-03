@@ -4,7 +4,7 @@ use indoc::formatdoc;
 
 use crate::{Banner, Context, Playlist, Site};
 use crate::build::outline::Smartcrumb;
-use crate::build::widgets::{layout, thumbnail};
+use crate::build::widgets::{layout, thumbnail, unlisted_badge};
 
 pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
@@ -46,16 +46,19 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    body.push_str(&format!("<h1>{title}</h1>\n\n"));
+    let unlisted = unlisted_badge(playlist.unlisted, site);
+
+    body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
 
     if let Some(description) = &playlist.description {
         body.push_str(&format!("<p>{description}</p>\n\n"));
     }
 
-    if !playlist.videos.is_empty() {
-        let videos = playlist.videos
+    let videos = playlist.public_videos_asc_by_release_date();
+
+    if !videos.is_empty() {
+        let videos = videos
             .iter()
-            .filter(|video| !video.unlisted)
             .enumerate()
             .map(|(index, video)| {
                 let number = index + 1;

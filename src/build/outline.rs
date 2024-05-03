@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use chrono::{Datelike, NaiveDate};
 use indoc::formatdoc;
 
@@ -86,30 +84,22 @@ impl OutlineStats {
     }
 
     fn register_collection(&mut self, collection: &Collection) {
-        for playlist in &collection.playlists {
-            if !playlist.unlisted {
-                self.register_playlist(playlist);
-            }
+        for playlist in collection.public_playlists() {
+            self.register_playlist(playlist);
         }
 
-        for subcollection in &collection.subcollections {
-            if !subcollection.unlisted {
+        for subcollection in collection.public_subcollections() {
                 self.register_collection(subcollection);
-            }
         }
 
-        for video in &collection.videos {
-            if !video.unlisted {
-                self.register_video(video);
-            }
+        for video in collection.public_videos() {
+            self.register_video(video);
         }
     }
 
     fn register_playlist(&mut self, playlist: &Playlist) {
-        for video in &playlist.videos {
-            if !video.unlisted {
-                self.register_video(video);
-            }
+        for video in playlist.public_videos() {
+            self.register_video(video);
         }
     }
 
@@ -266,15 +256,12 @@ impl<'a> Smartcrumb<'a> {
         site: &Site
     ) -> String {
         // TODO: Fall back to playlist/subcollection banner if no poster on video
-        let banner = if let Some(video) = &collection.videos
-            .iter()
-            .filter(|video| !video.unlisted)
-            .find(|video| video.poster.is_some()) {
+        let banner = if let Some(video) = &collection.public_videos().find(|video| video.poster.is_some()) {
             let video_prefix = format!("{prefix}{}/", video.slug());
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
-            // TODO: Fall back to stock graphic thing that inhabits similar space as image
-            String::new()
+            // TODO: Something graphically interesting instead (that also conveys "collection" somehow?)
+            format!(r#"<div class="placeholder"></div>"#)
         };
         let label = collection.label_build(site);
         let outline_stats = OutlineStats::for_collection(collection).render(site);
@@ -298,175 +285,170 @@ impl<'a> Smartcrumb<'a> {
     ) -> String {
         let index_suffix = context.index_suffix();
 
-        let listed_subcollections: Vec<Arc<Collection>> = collection.subcollections
-            .iter()
-            .filter(|subcollection| !subcollection.unlisted)
-            .map(|subcollection| Arc::clone(subcollection))
-            .collect();
+        let subcollections = collection.public_subcollections_desc_by_release_date();
 
-        let rendered_subcollections = listed_subcollections
-            .iter()
-            .map(|subcollection| {
-                let label = subcollection.label_build(site);
-                let slug = subcollection.slug();
+        let subcollections_context = if subcollections.is_empty() {
+            String::new()
+        } else {
+            let rendered_subcollections = subcollections
+                .iter()
+                .map(|subcollection| {
+                    let label = subcollection.label_build(site);
+                    let slug = subcollection.slug();
 
-                let subcollection_prefix = if current_page.is_collection(collection) {
-                    String::new()
-                } else {
-                    format!("../{slug}/")
-                };
+                    let subcollection_prefix = if current_page.is_collection(collection) {
+                        String::new()
+                    } else {
+                        format!("../{slug}/")
+                    };
 
-                // TODO: Implement further, we could take a banner from this subcollection,
-                // a banner from a playlist, a poster from a video, etc.
-                let thumbnail_rendered = if let Some(video) = subcollection.videos
-                    .iter()
-                    .filter(|video| !video.unlisted)
-                    .find(|video| video.poster.is_some()) {
-                    let video_prefix = format!("{subcollection_prefix}{}/", video.slug());
-                    thumbnail(video, &video_prefix, false)
-                } else {
-                    String::new()
-                };
+                    // TODO: Implement further, we could take a banner from this subcollection,
+                    // a banner from a playlist, a poster from a video, etc.
+                    let thumbnail_rendered = if let Some(video) = subcollection.public_videos().find(|video| video.poster.is_some()) {
+                        let video_prefix = format!("{subcollection_prefix}{}/", video.slug());
+                        thumbnail(video, &video_prefix, false)
+                    } else {
+                        String::new()
+                    };
 
-                let (current, href) = if current_page.is_collection(subcollection) {
-                    ("current", String::new())
-                } else {
-                    ("", format!("../{slug}{index_suffix}"))
-                };
+                    let (current, href) = if current_page.is_collection(subcollection) {
+                        ("current", String::new())
+                    } else {
+                        ("", format!("../{slug}{index_suffix}"))
+                    };
 
-                let outline_stats = OutlineStats::for_collection(subcollection).render(site);
+                    let outline_stats = OutlineStats::for_collection(subcollection).render(site);
 
-                formatdoc!(r#"
-                    <a class="{current}" href="{href}">
-                        {thumbnail_rendered}
-                        <div class="description">
-                            <span class="label">{label}</span>
-                            <span class="details">
-                                {outline_stats}
-                            </span>
-                        </div>
-                    </a>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
+                    formatdoc!(r#"
+                        <a class="{current}" href="{href}">
+                            {thumbnail_rendered}
+                            <div class="description">
+                                <span class="label">{label}</span>
+                                <span class="details">
+                                    {outline_stats}
+                                </span>
+                            </div>
+                        </a>
+                    "#)
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
 
-        let subcollections_context = formatdoc!(r#"
-            <div class="playlist_context">
-                {rendered_subcollections}
-            </div>
-        "#);
+            formatdoc!(r#"
+                <div class="playlist_context">
+                    {rendered_subcollections}
+                </div>
+            "#)
+        };
 
-        let listed_playlists: Vec<Arc<Playlist>> = collection.playlists
-            .iter()
-            .filter(|playlist| !playlist.unlisted)
-            .map(|playlist| Arc::clone(playlist))
-            .collect();
+        let playlists = collection.public_playlists_desc_by_release_date();
 
-        let rendered_playlists = listed_playlists
-            .iter()
-            .map(|playlist| {
-                let label = playlist.label_build(site);
-                let slug = playlist.slug();
+        let playlists_context = if playlists.is_empty() {
+            String::new()
+        } else {
+            let rendered_playlists = playlists
+                .iter()
+                .map(|playlist| {
+                    let label = playlist.label_build(site);
+                    let slug = playlist.slug();
 
-                let playlist_prefix = if current_page.is_playlist(playlist) {
-                    String::new()
-                } else {
-                    format!("../{slug}/")
-                };
+                    let playlist_prefix = if current_page.is_playlist(playlist) {
+                        String::new()
+                    } else {
+                        format!("../{slug}/")
+                    };
 
-                // TODO: playlist.listed_videos() helper method everywhere? (also listed_collections/playlists etc.)
-                let thumbnail_rendered = if let Some(video) = playlist.videos
-                    .iter()
-                    .filter(|video| !video.unlisted)
-                    .find(|video| video.poster.is_some()) {
-                    let video_prefix = format!("{playlist_prefix}{}/", video.slug());
-                    thumbnail(video, &video_prefix, false)
-                } else {
-                    // TODO: Decide what condition this even is and handle
-                    String::new()
-                };
+                    let thumbnail_rendered = if let Some(video) = playlist
+                        .public_videos()
+                        .find(|video| video.poster.is_some()) {
+                        let video_prefix = format!("{playlist_prefix}{}/", video.slug());
+                        thumbnail(video, &video_prefix, false)
+                    } else {
+                        // TODO: Decide what condition this even is and handle
+                        String::new()
+                    };
 
-                let (current, href) = if current_page.is_playlist(playlist) {
-                    ("current", String::new())
-                } else {
-                    ("", format!("../{slug}{index_suffix}"))
-                };
+                    let (current, href) = if current_page.is_playlist(playlist) {
+                        ("current", String::new())
+                    } else {
+                        ("", format!("../{slug}{index_suffix}"))
+                    };
 
-                let outline_stats = OutlineStats::for_playlist(playlist).render(site);
+                    let outline_stats = OutlineStats::for_playlist(playlist).render(site);
 
-                formatdoc!(r#"
-                    <a class="{current}" href="{href}">
-                        {thumbnail_rendered}
-                        <div class="description">
-                            <span class="label">{label}</span>
-                            <span class="details">
-                                {outline_stats}
-                            </span>
-                        </div>
-                    </a>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
+                    formatdoc!(r#"
+                        <a class="{current}" href="{href}">
+                            {thumbnail_rendered}
+                            <div class="description">
+                                <span class="label">{label}</span>
+                                <span class="details">
+                                    {outline_stats}
+                                </span>
+                            </div>
+                        </a>
+                    "#)
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
 
-        let playlists_context = formatdoc!(r#"
-            <div class="playlist_context">
-                {rendered_playlists}
-            </div>
-        "#);
+            formatdoc!(r#"
+                <div class="playlist_context">
+                    {rendered_playlists}
+                </div>
+            "#)
+        };
 
-        let listed_videos: Vec<Arc<Video>> = collection.videos
-            .iter()
-            .filter(|video| !video.unlisted)
-            .map(|video| Arc::clone(video))
-            .collect();
+        let videos = collection.public_videos_desc_by_release_date();
 
-        let rendered_videos = listed_videos
-            .iter()
-            .map(|video| {
-                let label = video.label_build(site);
-                let slug = video.slug();
+        let videos_context = if videos.is_empty() {
+            String::new()
+        } else {
+            let rendered_videos = videos
+                .iter()
+                .map(|video| {
+                    let label = video.label_build(site);
+                    let slug = video.slug();
 
-                let video_prefix = if current_page.is_video(video) {
-                    String::new()
-                } else {
-                    format!("../{slug}/")
-                };
+                    let video_prefix = if current_page.is_video(video) {
+                        String::new()
+                    } else {
+                        format!("../{slug}/")
+                    };
 
-                let thumbnail_rendered = thumbnail(video, &video_prefix, false);
+                    let thumbnail_rendered = thumbnail(video, &video_prefix, false);
 
-                let (current, href) = if current_page.is_video(video) {
-                    ("current", String::new())
-                } else {
-                    ("", format!("../{slug}{index_suffix}"))
-                };
+                    let (current, href) = if current_page.is_video(video) {
+                        ("current", String::new())
+                    } else {
+                        ("", format!("../{slug}{index_suffix}"))
+                    };
 
-                let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
-                    Some(video_meta) => casual_duration(video_meta.duration),
-                    None => String::new()
-                };
+                    let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+                        Some(video_meta) => casual_duration(video_meta.duration),
+                        None => String::new()
+                    };
 
-                formatdoc!(r#"
-                    <a class="{current}" href="{href}">
-                        {thumbnail_rendered}
-                        <div class="description">
-                            <span class="label">{label}</span>
-                            <span class="details">
-                                <span class="duration">{duration}</span>
-                            </span>
-                        </div>
-                    </a>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
+                    formatdoc!(r#"
+                        <a class="{current}" href="{href}">
+                            {thumbnail_rendered}
+                            <div class="description">
+                                <span class="label">{label}</span>
+                                <span class="details">
+                                    <span class="duration">{duration}</span>
+                                </span>
+                            </div>
+                        </a>
+                    "#)
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
 
-        let videos_context = formatdoc!(r#"
-            <div class="playlist_context">
-                {rendered_videos}
-            </div>
-        "#);
+            formatdoc!(r#"
+                <div class="playlist_context">
+                    {rendered_videos}
+                </div>
+            "#)
+        };
 
         formatdoc!(r#"
             {subcollections_context}
@@ -484,15 +466,12 @@ impl<'a> Smartcrumb<'a> {
     ) -> String {
         let banner = if let Some(banner) = &playlist.banner {
             banner_html(banner, prefix)
-        } else if let Some(video) = &playlist.videos
-            .iter()
-            .filter(|video| !video.unlisted)
+        } else if let Some(video) = &playlist.public_videos()
             .find(|video| video.poster.is_some()) {
             let video_prefix = format!("{prefix}{}/", video.slug());
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
-            // TODO: Fall back to stock graphic thing that inhabits similar space as image
-            String::new()
+            format!(r#"<div class="placeholder"></div>"#)
         };
         let label = playlist.label_build(site);
         let outline_stats = OutlineStats::for_playlist(playlist).render(site);
@@ -510,25 +489,16 @@ impl<'a> Smartcrumb<'a> {
         if let Some(video) = video {
             let index_suffix = context.index_suffix();
 
-            let listed_videos: Vec<Arc<Video>> = playlist.videos
-                .iter()
-                .filter(|video| !video.unlisted)
-                .map(|video| Arc::clone(video))
-                .collect();
+            let videos = playlist.public_videos_asc_by_release_date();
 
-            let active_position = listed_videos
-                .iter()
-                .position(|video_iterated| video_iterated.path == video.path)
-                .unwrap();
-
-            let items = listed_videos
+            let items = videos
                 .iter()
                 .enumerate()
                 .map(|(index, video_iterated)| {
                     let label = video_iterated.label_build(site);
                     let slug = video_iterated.slug();
 
-                    let video_prefix = if index == active_position {
+                    let video_prefix = if video_iterated.path == video.path {
                         String::new()
                     } else {
                         format!("../{slug}/")
@@ -536,7 +506,7 @@ impl<'a> Smartcrumb<'a> {
 
                     let thumbnail_rendered = thumbnail(video_iterated, &video_prefix, false);
 
-                    let (current, href) = if index == active_position {
+                    let (current, href) = if video_iterated.path == video.path {
                         ("current", String::new())
                     } else {
                         ("", format!("../{slug}{index_suffix}"))

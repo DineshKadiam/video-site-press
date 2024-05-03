@@ -49,11 +49,6 @@ pub enum PlaylistFormFeedback<'a> {
     }
 }
 
-// #[derive(Deserialize)]
-// pub struct PlaylistCreateForm {
-//     title: String
-// }
-
 #[derive(Deserialize)]
 pub struct PlaylistMoveForm {
     slug: String
@@ -64,11 +59,6 @@ pub struct PlaylistUpdateForm {
     description: String,
     title: String,
     unlisted: Option<String>
-}
-
-#[derive(Deserialize)]
-pub struct VideoForm {
-    slug: String
 }
 
 pub async fn delete(
@@ -403,37 +393,6 @@ pub async fn edit(
     };
 
     edit_page(&context, None, &playlist)
-}
-
-pub async fn remove_video(
-    context: Data<Arc<Context>>,
-    form: Form<VideoForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    if !form.slug.is_empty() {
-        let mutation = |playlist: &mut Playlist| {
-            if let Some(index) = playlist.videos_virtual
-                .iter()
-                .position(|slug| slug == &form.slug) {
-                playlist.videos_virtual.remove(index);
-                playlist.write_manifest(&context.site_dir);
-            }
-        };
-
-        let playlist = match context.update_playlist(mutation, &path.path) {
-            Ok(playlist) => playlist,
-            Err(()) => return Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path)))
-        };
-
-        let redirect_url = format!("/playlist/{}", playlist.path);
-
-        Either::Left(
-            Redirect::to(redirect_url).see_other()
-        )
-    } else {
-        // TODO: Implement the entire thing properly
-        panic!()
-    }
 }
 
 pub async fn r#move(

@@ -115,8 +115,13 @@ img {
     border-radius: .6rem;
     position: relative;
 }
-.outline > a > img {
+.outline > a > img,
+.outline > a > .placeholder {
     border-radius: .6rem;
+}
+.outline > a > .placeholder {
+    background-color: var(--bg-2);
+    height: 12rem;
 }
 .outline .text {
     background-color: var(--bg-1-overlay);
@@ -370,6 +375,11 @@ svg {
     right: 3%;
 }
 #toggle_speed { font-weight: 500; }
+.unlisted_badge {
+    background-color: var(--bg-2);
+    border-radius: .2rem;
+    padding: .3rem;
+}
 video {
     border-radius: .4rem;
     display: block;

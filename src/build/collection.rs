@@ -5,7 +5,7 @@ use indoc::formatdoc;
 use crate::{Collection, Context, Site};
 use crate::build::outline::Smartcrumb;
 use crate::build::playlist::banner_html;
-use crate::build::widgets::{layout, thumbnail};
+use crate::build::widgets::{layout, thumbnail, unlisted_badge};
 
 pub fn collection_html(
     context: &Context,
@@ -22,16 +22,19 @@ pub fn collection_html(
         collection.title.as_deref().unwrap_or_else(|| collection.slug())
     };
 
-    body.push_str(&format!("<h1>{title}</h1>\n\n"));
+    let unlisted = unlisted_badge(collection.unlisted, site);
+
+    body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
 
     if let Some(description) = &collection.description {
         body.push_str(&format!("<p>{description}</p>\n\n"));
     }
 
-    if !collection.videos.is_empty() {
-        let videos = collection.videos
+    let videos = collection.public_videos_desc_by_release_date();
+
+    if !videos.is_empty() {
+        let videos = videos
             .iter()
-            .filter(|video| !video.unlisted)
             .map(|video| {
                 let slug = &video.slug();
                 let title = video.title.as_deref().unwrap_or_else(|| video.slug());
@@ -61,8 +64,10 @@ pub fn collection_html(
         body.push_str(&videos_rendered);
     }
 
-    if !collection.playlists.is_empty() {
-        let playlists = collection.playlists
+    let playlists = collection.public_playlists_desc_by_release_date();
+
+    if !playlists.is_empty() {
+        let playlists = playlists
             .iter()
             .map(|playlist| {
                 let slug = playlist.slug();
@@ -96,47 +101,53 @@ pub fn collection_html(
         body.push_str(&playlists_rendered);
     }
 
-    for subcollection in &collection.subcollections {
-        let subcollection_slug = subcollection.slug();
-        let title = &subcollection.title.as_deref().unwrap_or_else(|| subcollection.slug());
+    let subcollections = collection.public_subcollections_desc_by_release_date();
 
-        let videos = if !subcollection.videos.is_empty() {
-            let videos = subcollection.videos
-                .iter()
-                .map(|video| {
-                    let slug = &video.slug();
-                    let title = video.title.as_deref().unwrap_or_else(|| video.slug());
-                    let video_prefix = format!("{subcollection_slug}/{slug}/");
-                    let video_thumbnail = thumbnail(video, &video_prefix, true);
+    if !subcollections.is_empty() {
+        for subcollection in &subcollections {
+            let subcollection_slug = subcollection.slug();
+            let title = &subcollection.title.as_deref().unwrap_or_else(|| subcollection.slug());
 
-                    formatdoc!(r#"
-                        <a href="{subcollection_slug}/{slug}{index_suffix}">
-                            {video_thumbnail}
-                            <div>{title}</div>
-                        </a>
-                    "#)
-                })
-                .collect::<Vec<String>>()
-                .join("\n");
+            let videos = subcollection.public_videos_desc_by_release_date();
 
-            formatdoc!(r#"
-                <div>
-                    {videos}
-                </div>
-            "#)
-        } else {
-            String::new()
-        };
+            let videos_rendered = if !videos.is_empty() {
+                let videos = videos
+                    .iter()
+                    .map(|video| {
+                        let slug = &video.slug();
+                        let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+                        let video_prefix = format!("{subcollection_slug}/{slug}/");
+                        let video_thumbnail = thumbnail(video, &video_prefix, true);
 
-        let subcollection_rendered = formatdoc!(r#"
-            <h2>{title}</h2>
+                        formatdoc!(r#"
+                            <a href="{subcollection_slug}/{slug}{index_suffix}">
+                                {video_thumbnail}
+                                <div>{title}</div>
+                            </a>
+                        "#)
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
 
-            {videos}
+                formatdoc!(r#"
+                    <div>
+                        {videos}
+                    </div>
+                "#)
+            } else {
+                String::new()
+            };
 
-            <a href="{subcollection_slug}{index_suffix}">More from this collection</a>
-        "#);
+            let subcollection_rendered = formatdoc!(r#"
+                <h2>{title}</h2>
 
-        body.push_str(&subcollection_rendered);
+                {videos_rendered}
+
+                <a href="{subcollection_slug}{index_suffix}">More from this collection</a>
+            "#);
+
+            body.push_str(&subcollection_rendered);
+        }
     }
 
     if outline.len() > 1 {

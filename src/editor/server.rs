@@ -53,7 +53,6 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/delete-banner/{path:.*}", post().to(playlist::delete_banner))
                 .route("/delete-collection/{path:.*}", post().to(collection::delete))
                 .route("/delete-playlist/{path:.*}", post().to(playlist::delete))
-                .route("/delete-playlist-video/{path:.*}", post().to(playlist::remove_video))
                 .route("/delete-poster/{path:.*}", post().to(video::delete_poster))
                 .route("/delete-version/{path:.*}", post().to(video::delete_version))
                 .route("/delete-video/{path:.*}", post().to(video::delete))
