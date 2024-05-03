@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Context, PosterFile, Site, ThemeKind, Video, VideoFile};
+use crate::{Context, PosterFile, Site, ThemeKind, Translations, Video, VideoFile};
 use crate::build::outline::Smartcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
@@ -17,9 +17,9 @@ pub fn copy_link(site: &Site, path: &str) -> String {
         None => String::new()
     };
 
-    let t_copied = &site.language.translations.copied;
-    let t_copy_link = &site.language.translations.copy_link;
-    let t_failed = &site.language.translations.failed;
+    let t_copied = site.language.translations.copied;
+    let t_copy_link = site.language.translations.copy_link;
+    let t_failed = site.language.translations.failed;
 
     let copy_link_icon = icons::copy_link(t_copy_link);
     let failure_icon = icons::failure(t_failed);
@@ -77,11 +77,11 @@ pub fn downloads(site: &Site, video: &Video) -> String {
 
             let size = human_size(version.file_meta.size);
 
-            let t_no_audio = &site.language.translations.no_audio;
-            let audio_codec = video_meta.audio_codec.as_ref().unwrap_or(t_no_audio);
+            let t_no_audio = site.language.translations.no_audio;
+            let audio_codec = video_meta.audio_codec.as_deref().unwrap_or(t_no_audio);
 
-            let t_no_video = &site.language.translations.no_video;
-            let video_codec = video_meta.video_codec.as_ref().unwrap_or(t_no_video);
+            let t_no_video = site.language.translations.no_video;
+            let video_codec = video_meta.video_codec.as_deref().unwrap_or(t_no_video);
 
             let extension = Path::new(&version.file_name)
                 .extension()
@@ -101,7 +101,7 @@ pub fn downloads(site: &Site, video: &Video) -> String {
         .collect::<Vec<String>>()
         .join("\n");
 
-    let t_subtitles = &site.language.translations.subtitles;
+    let t_subtitles = site.language.translations.subtitles;
     let subtitle_buttons = video.subtitles
         .iter()
         .map(|subtitle_file| {
@@ -124,7 +124,7 @@ pub fn downloads(site: &Site, video: &Video) -> String {
         .collect::<Vec<String>>()
         .join("\n");
 
-    let t_download = &site.language.translations.download;
+    let t_download = site.language.translations.download;
     let download_icon = icons::download(t_download);
     formatdoc!(r#"
         <button id="download">
@@ -168,8 +168,8 @@ pub fn layout(
         .collect::<Vec<String>>()
         .join(" › ");
 
-    let dark_icon = icons::dark(&site.language.translations.dark_color_scheme);
-    let light_icon = icons::light(&site.language.translations.light_color_scheme);
+    let dark_icon = icons::dark(site.language.translations.dark_color_scheme);
+    let light_icon = icons::light(site.language.translations.light_color_scheme);
     let theme_toggle = match &site.theme.kind {
         ThemeKind::Adaptive { .. } => formatdoc!(r#"
             <div id="theme-toggles">
@@ -184,7 +184,7 @@ pub fn layout(
 
     let with_sidebar = if outline.len() > 1 { "with_sidebar" } else { "" };
 
-    let logo_icon = icons::logo(&site.language.translations.hyper8_logo);
+    let logo_icon = icons::logo(site.language.translations.hyper8_logo);
     let body = formatdoc!(r##"
         <body>
             <div class="layout {with_sidebar}">
@@ -236,7 +236,7 @@ pub fn player(context: &Context, site: &Site, video: &Video, next_video: Option<
             None => String::new()
         };
 
-        let t_video_not_yet_available = &site.language.translations.video_not_yet_available;
+        let t_video_not_yet_available = site.language.translations.video_not_yet_available;
 
         return formatdoc!(r#"
             <div style="border: 1px solid red; height: 12.8rem; width: 19.2rem;">
@@ -284,7 +284,7 @@ pub fn player(context: &Context, site: &Site, video: &Video, next_video: Option<
         .collect::<Vec<String>>()
         .join("\n");
 
-    let subtitles_icon = icons::subtitles(&site.language.translations.subtitles);
+    let subtitles_icon = icons::subtitles(site.language.translations.subtitles);
     let subtitle_select = match video.subtitles.is_empty() {
         true => String::new(),
         false => format!(r#"<button id="select_subtitles">{subtitles_icon}</button>"#)
@@ -297,20 +297,20 @@ pub fn player(context: &Context, site: &Site, video: &Video, next_video: Option<
 
     let versions_ring_rendered = versions_ring(video);
 
-    let t_next_video = &site.language.translations.next_video;
+    let t_next_video = site.language.translations.next_video;
     let next_video_button = match next_video {
         Some(video) => format!(r#"<a href="../{}{index_suffix}">{t_next_video}</a>"#, video.slug()),
         None => String::new()
     };
 
-    let maximize_icon = icons::maximize(&site.language.translations.maximize);
-    let minimize_icon = icons::minimize(&site.language.translations.minimize);
-    let pause_icon = icons::pause(&site.language.translations.pause);
-    let play_icon = icons::play(&site.language.translations.play);
-    let volume_loud_icon = icons::volume_loud(&site.language.translations.loud_volume);
-    let volume_medium_icon = icons::volume_medium(&site.language.translations.medium_volume);
-    let volume_muted_icon = icons::volume_muted(&site.language.translations.sound_muted);
-    let t_replay = &site.language.translations.replay;
+    let maximize_icon = icons::maximize(site.language.translations.maximize);
+    let minimize_icon = icons::minimize(site.language.translations.minimize);
+    let pause_icon = icons::pause(site.language.translations.pause);
+    let play_icon = icons::play(site.language.translations.play);
+    let volume_loud_icon = icons::volume_loud(site.language.translations.loud_volume);
+    let volume_medium_icon = icons::volume_medium(site.language.translations.medium_volume);
+    let volume_muted_icon = icons::volume_muted(site.language.translations.sound_muted);
+    let t_replay = site.language.translations.replay;
     formatdoc!(r#"
         <div class="player_wrapper">
             <div class="player_intro">
@@ -442,9 +442,9 @@ pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> Stri
     }
 }
 
-pub fn unlisted_badge(unlisted: bool, site: &Site) -> String {
+pub fn unlisted_badge(unlisted: bool, translations: &Translations) -> String {
     if unlisted {
-        let t_not_public = &site.language.translations.not_public;
+        let t_not_public = translations.not_public;
         format!(r#"<span class="unlisted_badge">{t_not_public}</span>"#)
     } else {
         String::new()

@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime};
 
 use serde_derive::Serialize;
 
-use crate::{Context, Playlist, Video, VideoFormat};
+use crate::{Playlist, Translations, Video, VideoFormat};
 use crate::util::{nanoid, timestamp};
 
 #[derive(Clone, Debug)]
@@ -118,12 +118,12 @@ impl Job {
 }
 
 impl JobKind {
-    pub fn representation(&self, context: &Context) -> String {
+    pub fn representation(&self, translations: &Translations) -> String {
         match self {
-            JobKind::PlaylistFastTasks(playlist) => format!("Compute banner for playlist '{}'", playlist.label_editor(context)),
-            JobKind::VideoFastTasks { video, .. } => format!("Compute metadata and/or poster for video '{}'", video.label_editor(context)),
-            JobKind::VideoFormat { video, .. } => format!("Compute additional format for video '{}'", video.label_editor(context)),
-            JobKind::VideoRandomPoster { video, .. } => format!("Compute random poster for video '{}'", video.label_editor(context))
+            JobKind::PlaylistFastTasks(playlist) => format!("Compute banner for playlist '{}'", playlist.label(translations)),
+            JobKind::VideoFastTasks { video, .. } => format!("Compute metadata and/or poster for video '{}'", video.label(translations)),
+            JobKind::VideoFormat { video, .. } => format!("Compute additional format for video '{}'", video.label(translations)),
+            JobKind::VideoRandomPoster { video, .. } => format!("Compute random poster for video '{}'", video.label(translations))
         }
     }
 }

@@ -99,6 +99,15 @@ if (qualityInput) {
     });
 }
 
+const changeEditorLanguage = document.querySelector('#change_editor_language');
+
+if (changeEditorLanguage) {
+    changeEditorLanguage.addEventListener('change', () => {
+        localStorage.removeItem('hyper8SplashSeen');
+        changeEditorLanguage.form.submit();
+    });
+}
+
 if (splashWrapper) {
     const version = document.body.dataset.version;
     if (localStorage.getItem('hyper8SplashSeen') !== version) {

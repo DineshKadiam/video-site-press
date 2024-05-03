@@ -13,7 +13,8 @@ use crate::{
     Language,
     Site,
     SiteContent,
-    Theme
+    Theme,
+    Translations
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::form_field;
@@ -40,9 +41,9 @@ pub struct SiteFormFeedback {
 }
 
 fn edit_page(
-    context: &Context,
     form_feedback: Option<&SiteFormFeedback>,
-    site: &Site
+    site: &Site,
+    translations: &Translations
 ) -> String {
     let errors = if site.errors.is_empty() {
         String::new()
@@ -139,13 +140,13 @@ fn edit_page(
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
     //       that give very clear indication about what base url, deployment path/server/user etc. are and
     //       what to pay attention to.
-    let t_deployment_path_label = &context.editor_translations.deployment_path_label;
-    let t_deployment_server_label = &context.editor_translations.deployment_server_label;
-    let t_deployment_user_label = &context.editor_translations.deployment_user_label;
-    let t_language_label = &context.editor_translations.language_label;
-    let t_not_saved = &context.editor_translations.not_saved;
-    let t_poster_aspect_label = &context.editor_translations.poster_aspect_label;
-    let t_public_address_label = &context.editor_translations.public_address_label;
+    let t_deployment_path_label = translations.deployment_path_label;
+    let t_deployment_server_label = translations.deployment_server_label;
+    let t_deployment_user_label = translations.deployment_user_label;
+    let t_language_label = translations.language_label;
+    let t_not_saved = translations.not_saved;
+    let t_poster_aspect_label = translations.poster_aspect_label;
+    let t_public_address_label = translations.public_address_label;
     let (
         theme_key,
         input_base_url,
@@ -206,12 +207,12 @@ fn edit_page(
         "#)
     };
 
-    let radio_button_adaptive = radio_button(theme_key, "adaptive", &context.editor_translations.adaptive);
-    let radio_button_dark = radio_button(theme_key, "dark", &context.editor_translations.dark);
-    let radio_button_light = radio_button(theme_key, "light", &context.editor_translations.light);
+    let radio_button_adaptive = radio_button(theme_key, "adaptive", translations.adaptive);
+    let radio_button_dark = radio_button(theme_key, "dark", translations.dark);
+    let radio_button_light = radio_button(theme_key, "light", translations.light);
 
-    let t_site_settings = &context.editor_translations.site_settings;
-    let t_update_site = &context.editor_translations.update_site;
+    let t_site_settings = translations.site_settings;
+    let t_update_site = translations.update_site;
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_site_settings}</h2>
@@ -242,10 +243,15 @@ fn edit_page(
     "#)
 }
 
-pub fn edit(context: &Context, form_feedback: Option<&SiteFormFeedback>, path: &str) -> String {
+pub fn edit(
+    context: &Context,
+    form_feedback: Option<&SiteFormFeedback>,
+    path: &str,
+    translations: &Translations
+) -> String {
     if path == "" {
         let site = context.get_site();
-        edit_page(context, form_feedback, &site)
+        edit_page(form_feedback, &site, translations)
     } else {
         String::new()
     }
@@ -277,6 +283,8 @@ pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<SiteForm>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let base_url_trimmed = form.base_url.trim();
     let deployment_path_trimmed = form.deployment_path.trim();
     let deployment_server_trimmed = form.deployment_server.trim();
@@ -317,15 +325,15 @@ pub async fn update(
         let http_response = match &site.content {
             SiteContent::Collection(collection) => {
                 let form_feedback = endpoints::collection::CollectionFormFeedback::Site(site_form_feedback);
-                endpoints::collection::edit_page(collection, &context, Some(form_feedback))
+                endpoints::collection::edit_page(collection, &context, Some(form_feedback), &language)
             }
             SiteContent::Playlist(playlist) => {
                 let form_feedback = endpoints::playlist::PlaylistFormFeedback::Site(site_form_feedback);
-                endpoints::playlist::edit_page(&context, Some(form_feedback), playlist)
+                endpoints::playlist::edit_page(&context, Some(form_feedback), &language, playlist)
             }
             SiteContent::Video(video) => {
                 let form_feedback = endpoints::video::VideoFormFeedback::Site(site_form_feedback);
-                endpoints::video::edit_page(&context, Some(form_feedback), video)
+                endpoints::video::edit_page(&context, Some(form_feedback), &language, video)
             }
             // TODO: At best a time of check/time of use edge case possibility?
             _ => unreachable!()

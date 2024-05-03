@@ -18,6 +18,7 @@ use crate::{
     Field,
     FileMeta,
     JobKind,
+    Language,
     Playlist
 };
 use crate::editor::endpoints;
@@ -66,7 +67,8 @@ pub async fn delete(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_playlist(&path.path) {
-        return Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path)))
+        let language = context.get_editor_language();
+        return Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path)))
     };
 
     let redirect_url = if &path.path == "" {
@@ -96,18 +98,20 @@ pub async fn delete_banner(
             let redirect_url = format!("/playlist/{}", playlist.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => Either::Right(
-            not_found(&context, &format!("Playlist {} not found.", &path.path))
-        )
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path)))
+        }
     }
 }
 
 pub fn edit_page(
     context: &Context,
     form_feedback: Option<PlaylistFormFeedback>,
+    language: &Language,
     playlist: &Playlist
 ) -> HttpResponse {
-    let t_not_saved = &context.editor_translations.not_saved;
+    let t_not_saved = language.translations.not_saved;
 
     let errors = if playlist.errors.is_empty() {
         String::new()
@@ -125,8 +129,8 @@ pub fn edit_page(
 
     let path = &playlist.path;
 
-    let t_delete_banner = &context.editor_translations.delete_banner;
-    let t_upload_banner = &context.editor_translations.upload_banner;
+    let t_delete_banner = language.translations.delete_banner;
+    let t_upload_banner = language.translations.upload_banner;
     let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), t_upload_banner);
     let banner_form = match &playlist.banner {
         Some(banner) => {
@@ -144,10 +148,10 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let t_banner_description = &context.editor_translations.banner_description;
+            let t_banner_description = language.translations.banner_description;
             let description = form_textarea("description", t_banner_description, banner.description.as_deref());
 
-            let t_update_description = &context.editor_translations.update_description;
+            let t_update_description = language.translations.update_description;
             format!(r#"
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
@@ -165,9 +169,9 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
-    let t_description = &context.editor_translations.description;
-    let t_title = &context.editor_translations.title;
-    let t_unlisted = &context.editor_translations.unlisted;
+    let t_description = language.translations.description;
+    let t_title = language.translations.title;
+    let t_unlisted = language.translations.unlisted;
     let (
         feedback_update,
         input_description,
@@ -205,8 +209,8 @@ pub fn edit_page(
             )
         };
 
-        let t_a_permalink_defines_under_which_url_text = &context.editor_translations.a_permalink_defines_under_which_url_text;
-        let t_update_permalink = &context.editor_translations.update_permalink;
+        let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
+        let t_update_permalink = language.translations.update_permalink;
         formatdoc!(r#"
             <p>
                 {t_a_permalink_defines_under_which_url_text}
@@ -222,7 +226,7 @@ pub fn edit_page(
         "#)
     };
 
-    let t_upload_new_video = &context.editor_translations.upload_new_video;
+    let t_upload_new_video = language.translations.upload_new_video;
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
@@ -230,9 +234,9 @@ pub fn edit_page(
         Some(PlaylistFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, path);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
 
-    let t_convert_playlist_to_collection = &context.editor_translations.convert_playlist_to_collection;
+    let t_convert_playlist_to_collection = language.translations.convert_playlist_to_collection;
     let convert_to_collection_form = formatdoc!(r#"
         <p>
             A playlist can seamlessly be converted to a collection, but note that the
@@ -251,7 +255,7 @@ pub fn edit_page(
             "This playlist contains a single video and can be converted to just a video, note however that playlist data will be removed or overwritten with data from the video where necessary."
         };
 
-        let t_convert_playlist_to_video = &context.editor_translations.convert_playlist_to_video;
+        let t_convert_playlist_to_video = language.translations.convert_playlist_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
@@ -268,13 +272,13 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
-    let t_banner_image = &context.editor_translations.banner_image;
-    let t_danger_zone = &context.editor_translations.danger_zone;
-    let t_delete_playlist = &context.editor_translations.delete_playlist;
-    let t_new_video = &context.editor_translations.new_video;
-    let t_playlist = &context.editor_translations.playlist;
-    let t_really_delete = &context.editor_translations.really_delete;
-    let t_update_playlist = &context.editor_translations.update_playlist;
+    let t_banner_image = language.translations.banner_image;
+    let t_danger_zone = language.translations.danger_zone;
+    let t_delete_playlist = language.translations.delete_playlist;
+    let t_new_video = language.translations.new_video;
+    let t_playlist = language.translations.playlist;
+    let t_really_delete = language.translations.really_delete;
+    let t_update_playlist = language.translations.update_playlist;
     let body = formatdoc!(r#"
         {errors}
 
@@ -330,7 +334,7 @@ pub fn edit_page(
 
     let site = context.get_site();
     let head_title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
-    let html = layout(context, Some(path), &site, &body, head_title);
+    let html = layout(context, language, Some(path), &site, &body, head_title);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -386,13 +390,16 @@ pub async fn edit(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
 ) -> HttpResponse {
+    let language = context.get_editor_language();
+
     // TODO: Should be cloned because the returned one is mut and locking?
     let playlist = match context.get_playlist(&path.path) {
         Some(playlist) => playlist,
-        None => return not_found(&context, &format!("Playlist {} not found.", &path.path))
+        // TODO: Localize
+        None => return not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
     };
 
-    edit_page(&context, None, &playlist)
+    edit_page(&context, None, &language, &playlist)
 }
 
 pub async fn r#move(
@@ -400,6 +407,8 @@ pub async fn r#move(
     form: Form<PlaylistMoveForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let slug_trimmed = form.slug.trim();
 
     let new_path = Path::new(&path.path)
@@ -429,7 +438,7 @@ pub async fn r#move(
         let playlist = match context.update_playlist(mutation, &path.path) {
             Ok(playlist) => playlist,
             Err(()) => return Either::Right(
-                not_found(&context, &format!("Playlist {} not found.", &path.path))
+                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
             )
         };
 
@@ -439,7 +448,7 @@ pub async fn r#move(
         let playlist = match context.get_playlist(&path.path) {
             Some(playlist) => playlist,
             None => return Either::Right(
-                not_found(&context, &format!("Playlist {} not found.", &path.path))
+                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
             )
         };
 
@@ -448,7 +457,7 @@ pub async fn r#move(
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &playlist)
+            edit_page(&context, Some(form_feedback), &language, &playlist)
         )
     }
 }
@@ -458,6 +467,8 @@ pub async fn update(
     form: Form<PlaylistUpdateForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let description_trimmed = form.description.trim();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
@@ -474,7 +485,7 @@ pub async fn update(
         let playlist = match context.update_playlist(mutation, &path.path) {
             Ok(playlist) => playlist,
             Err(()) => return Either::Right(
-                not_found(&context, &format!("Playlist {} not found.", &path.path))
+                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
             )
         };
 
@@ -484,7 +495,7 @@ pub async fn update(
         let playlist = match context.get_playlist(&path.path) {
             Some(playlist) => playlist,
             None => return Either::Right(
-                not_found(&context, &format!("Playlist {} not found.", &path.path))
+                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
             )
         };
 
@@ -495,7 +506,7 @@ pub async fn update(
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &playlist)
+            edit_page(&context, Some(form_feedback), &language, &playlist)
         )
     }
 }
@@ -517,9 +528,10 @@ pub async fn update_banner(
             let redirect_url = format!("/playlist/{}", playlist.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => return Either::Right(
-            not_found(&context, &format!("Playlist {} not found.", &path.path))
-        )
+        Err(()) => {
+            let language = context.get_editor_language();
+            return Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path)))
+        }
     }
 }
 
@@ -528,6 +540,8 @@ pub async fn upload_banner(
     mut payload: Multipart,
     path: ActixPath<ContextPath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
+    let language = context.get_editor_language();
+
     while let Some(mut field) = payload.try_next().await? {
         let content_disposition = field.content_disposition();
 
@@ -570,7 +584,7 @@ pub async fn upload_banner(
                 }
                 Err(()) => {
                     let _ = fs::remove_file(&storage_path);
-                    let http_response = not_found(&context, &format!("Playlist {} not found.", &path.path));
+                    let http_response = not_found(&context, &language, &format!("Playlist {} not found.", &path.path));
                     return Ok(Either::Right(http_response));
                 }
             }

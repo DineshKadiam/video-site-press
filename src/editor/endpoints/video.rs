@@ -22,8 +22,10 @@ use crate::{
     GetAnyResult,
     HyperDir,
     JobKind,
+    Language,
     Playlist,
     PosterFile,
+    Translations,
     Video,
     VideoFile,
     VideoFormat,
@@ -103,7 +105,10 @@ pub async fn delete(
 ) -> Either<Redirect, HttpResponse> {
     let video_parent = match context.delete_video(&path.path) {
         Ok(video_parent) => video_parent,
-        Err(()) => return Either::Right(not_found(&context, &format!("Video {} not found.", &path.path)))
+        Err(()) => {
+            let language = context.get_editor_language();
+            return Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+        }
     };
 
     let redirect_url = match video_parent {
@@ -137,9 +142,10 @@ pub async fn delete_poster(
             let redirect_url = format!("/video/{}", video.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => Either::Right(
-            not_found(&context, &format!("Video {} not found.", &path.path))
-        )
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+        }
     }
 }
 
@@ -166,9 +172,10 @@ pub async fn delete_version(
             let redirect_url = format!("/video/{}", video.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => Either::Right(
-            not_found(&context, &format!("Video {} not found.", &path.path))
-        )
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+        }
     }
 }
 
@@ -179,7 +186,10 @@ pub async fn downsize(
 ) -> Either<Redirect, HttpResponse> {
     let video = match context.get_video(&path.path) {
         Some(video) => video,
-        None => return Either::Right(not_found(&context, &format!("Video {} not found.", &path.path)))
+        None => {
+            let language = context.get_editor_language();
+            return Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+        }
     };
 
     // TODO: Safety validation of these maybe
@@ -199,7 +209,7 @@ pub async fn downsize(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
-fn additional_formats_form(context: &Context, video: &Video) -> String {
+fn additional_formats_form(translations: &Translations, video: &Video) -> String {
     let (aspect_ratio, tallest_height) = if let Some(version) = video.highest_quality_version() {
         let video_meta = version.video_meta.as_ref().unwrap();
         (video_meta.width as f32 / video_meta.height as f32, video_meta.height)
@@ -233,17 +243,17 @@ fn additional_formats_form(context: &Context, video: &Video) -> String {
     let height_options = height_options.join("\n");
     let path = &video.path;
 
-    let t_best = &context.editor_translations.best;
-    let t_codec = &context.editor_translations.codec;
-    let t_encoding_approach = &context.editor_translations.encoding_approach;
-    let t_maximum_efficiency_best_compression_through_slowest_encoding = &context.editor_translations.maximum_efficiency_best_compression_through_slowest_encoding;
-    let t_maximum_speed_fastest_encoding_through_worst_compression = &context.editor_translations.maximum_speed_fastest_encoding_through_worst_compression;
-    let t_quality = &context.editor_translations.quality;
-    let t_recommended_codec = &context.editor_translations.recommended_codec;
-    let t_render_additional_format = &context.editor_translations.render_additional_format;
-    let t_render_format = &context.editor_translations.render_format;
-    let t_resolution = &context.editor_translations.resolution;
-    let t_worst = &context.editor_translations.worst;
+    let t_best = translations.best;
+    let t_codec = translations.codec;
+    let t_encoding_approach = translations.encoding_approach;
+    let t_maximum_efficiency_best_compression_through_slowest_encoding = translations.maximum_efficiency_best_compression_through_slowest_encoding;
+    let t_maximum_speed_fastest_encoding_through_worst_compression = translations.maximum_speed_fastest_encoding_through_worst_compression;
+    let t_quality = translations.quality;
+    let t_recommended_codec = translations.recommended_codec;
+    let t_render_additional_format = translations.render_additional_format;
+    let t_render_format = translations.render_format;
+    let t_resolution = translations.resolution;
+    let t_worst = translations.worst;
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_render_additional_format}</h2>
@@ -299,9 +309,10 @@ fn additional_formats_form(context: &Context, video: &Video) -> String {
 pub fn edit_page(
     context: &Context,
     form_feedback: Option<VideoFormFeedback>,
+    language: &Language,
     video: &Video
 ) -> HttpResponse {
-    let t_not_saved = &context.editor_translations.not_saved;
+    let t_not_saved = language.translations.not_saved;
 
     let errors = if video.errors.is_empty() {
         String::new()
@@ -333,9 +344,9 @@ pub fn edit_page(
                         let width = video_meta.width;
 
                         let (browser_support, reasons) = match browser_support::analysis(video_meta) {
-                            Some(Ok(message)) => (&context.editor_translations.good_browser_support, message),
-                            Some(Err(message)) => (&context.editor_translations.not_support_by_browsers, message),
-                            None => (&context.editor_translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
+                            Some(Ok(message)) => (language.translations.good_browser_support, message),
+                            Some(Err(message)) => (language.translations.not_support_by_browsers, message),
+                            None => (language.translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
                         };
 
                         (
@@ -351,7 +362,7 @@ pub fn edit_page(
 
                 let file_name = &version.file_name;
 
-                let t_really_delete = &context.editor_translations.really_delete;
+                let t_really_delete = language.translations.really_delete;
                 let delete_form = formatdoc!(r#"
                     <form action="/delete-version/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
                         <input name="file_name" type="hidden" value="{file_name}">
@@ -371,7 +382,7 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_available_formats = &context.editor_translations.available_formats;
+        let t_available_formats = language.translations.available_formats;
         formatdoc!(r#"
             <h2>{t_available_formats}</h2>
 
@@ -381,7 +392,7 @@ pub fn edit_page(
         "#)
     };
 
-    let t_upload_poster = &context.editor_translations.upload_poster;
+    let t_upload_poster = language.translations.upload_poster;
     let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), t_upload_poster);
     let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
         format!(r#"<span class="error">{error}</span>"#)
@@ -404,12 +415,12 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let t_poster_description = &context.editor_translations.poster_description;
+            let t_poster_description = language.translations.poster_description;
             let description = form_textarea("description", t_poster_description, poster.description.as_deref());
 
-            let t_delete_poster = &context.editor_translations.delete_poster;
-            let t_random_poster = &context.editor_translations.random_poster;
-            let t_update_description = &context.editor_translations.update_description;
+            let t_delete_poster = language.translations.delete_poster;
+            let t_random_poster = language.translations.random_poster;
+            let t_update_description = language.translations.update_description;
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
                 <div class="button_group">
@@ -441,10 +452,10 @@ pub fn edit_page(
         }
     };
 
-    let t_description = &context.editor_translations.description;
-    let t_release_date = &context.editor_translations.release_date;
-    let t_title = &context.editor_translations.title;
-    let t_unlisted = &context.editor_translations.unlisted;
+    let t_description = language.translations.description;
+    let t_release_date = language.translations.release_date;
+    let t_title = language.translations.title;
+    let t_unlisted = language.translations.unlisted;
     let (
         feedback_update,
         input_description,
@@ -490,8 +501,8 @@ pub fn edit_page(
             )
         };
 
-        let t_a_permalink_defines_under_which_url_text = &context.editor_translations.a_permalink_defines_under_which_url_text;
-        let t_update_permalink = &context.editor_translations.update_permalink;
+        let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
+        let t_update_permalink = language.translations.update_permalink;
         formatdoc!(r#"
             <p>
                 {t_a_permalink_defines_under_which_url_text}
@@ -511,15 +522,15 @@ pub fn edit_page(
         Some(VideoFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path, &language.translations);
 
-    let t_upload_additional_format = &context.editor_translations.upload_additional_format;
+    let t_upload_additional_format = language.translations.upload_additional_format;
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_additional_format);
 
     // TODO: Implement for non-root/non-site videos
-    let t_convert_to_video_in_collection = &context.editor_translations.convert_to_video_in_collection;
-    let t_convert_to_video_in_playlist = &context.editor_translations.convert_to_video_in_playlist;
+    let t_convert_to_video_in_collection = language.translations.convert_to_video_in_collection;
+    let t_convert_to_video_in_playlist = language.translations.convert_to_video_in_playlist;
     let convert_form = formatdoc!(r#"
         <p>
             A video can seamlessly be converted to a video in a collection.
@@ -543,14 +554,14 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
-    let render_additional_formats = additional_formats_form(context, video);
+    let render_additional_formats = additional_formats_form(&language.translations, video);
 
-    let t_danger_zone = &context.editor_translations.danger_zone;
-    let t_delete_video = &context.editor_translations.delete_video;
-    let t_poster_image = &context.editor_translations.poster_image;
-    let t_really_delete = &context.editor_translations.really_delete;
-    let t_video = &context.editor_translations.video;
-    let t_update_video = &context.editor_translations.update_video;
+    let t_danger_zone = language.translations.danger_zone;
+    let t_delete_video = language.translations.delete_video;
+    let t_poster_image = language.translations.poster_image;
+    let t_really_delete = language.translations.really_delete;
+    let t_video = language.translations.video;
+    let t_update_video = language.translations.update_video;
     let body = formatdoc!(r#"
         {errors}
 
@@ -606,20 +617,25 @@ pub fn edit_page(
 
     let site = context.get_site();
     let head_title = video.title.as_deref().unwrap_or(video.slug());
-    let html = layout(context, Some(path), &site, &body, head_title);
+    let html = layout(context, language, Some(path), &site, &body, head_title);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
 }
 
-pub async fn edit(context: Data<Arc<Context>>, path: ActixPath<ContextPath>) -> HttpResponse {
+pub async fn edit(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> HttpResponse {
+    let language = context.get_editor_language();
+
     let video = match context.get_video(&path.path) {
         Some(video) => video,
-        None => return not_found(&context, &format!("Video {} not found.", &path.path))
+        None => return not_found(&context, &language, &format!("Video {} not found.", &path.path))
     };
 
-    edit_page(&context, None, &video)
+    edit_page(&context, None, &language, &video)
 }
 
 // TODO: We currently go through the video endpoint for poster for all posters
@@ -664,6 +680,8 @@ pub async fn r#move(
     form: Form<VideoMoveForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let slug_trimmed = form.slug.trim();
 
     let new_path = Path::new(&path.path)
@@ -693,7 +711,7 @@ pub async fn r#move(
         let video = match context.update_video(mutation, &path.path) {
             Ok(video) => video,
             Err(()) => return Either::Right(
-                not_found(&context, &format!("Video {} not found.", &path.path))
+                not_found(&context, &language, &format!("Video {} not found.", &path.path))
             )
         };
 
@@ -703,7 +721,7 @@ pub async fn r#move(
         let video = match context.get_video(&path.path) {
             Some(video) => video,
             None => return Either::Right(
-                not_found(&context, &format!("Video {} not found.", &path.path))
+                not_found(&context, &language, &format!("Video {} not found.", &path.path))
             )
         };
 
@@ -712,7 +730,7 @@ pub async fn r#move(
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &video)
+            edit_page(&context, Some(form_feedback), &language, &video)
         )
     }
 }
@@ -733,9 +751,10 @@ pub async fn random_poster(
             let redirect_url = format!("/video/{}", video.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        None => Either::Right(
-            not_found(&context, &format!("Video {} not found.", &path.path))
-        )
+        None => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+        }
     }
 }
 
@@ -744,6 +763,8 @@ pub async fn update(
     form: Form<VideoUpdateForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let description_trimmed = form.description.trim();
     let release_date = if form.release_date.is_empty() {
         None
@@ -762,7 +783,7 @@ pub async fn update(
         let video = match context.get_video(&path.path) {
             Some(video) => video,
             None => return Either::Right(
-                not_found(&context, &format!("Video {} not found.", &path.path))
+                not_found(&context, &language, &format!("Video {} not found.", &path.path))
             )
         };
 
@@ -774,7 +795,7 @@ pub async fn update(
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &video)
+            edit_page(&context, Some(form_feedback), &language, &video)
         )
     } else {
         let mutation = |video_mut: &mut Video| {
@@ -788,7 +809,7 @@ pub async fn update(
         let video = match context.update_video(mutation, &path.path) {
             Ok(video) => video,
             Err(()) => return Either::Right(
-                not_found(&context, &format!("Video {} not found.", &path.path))
+                not_found(&context, &language, &format!("Video {} not found.", &path.path))
             )
         };
 
@@ -814,9 +835,10 @@ pub async fn update_poster(
             let redirect_url = format!("/video/{}", video.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => Either::Right(
-            not_found(&context, &format!("Video {} not found.", &path.path))
-        )
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+        }
     }
 }
 
@@ -825,6 +847,8 @@ pub async fn upload_poster(
     mut payload: Multipart,
     path: ActixPath<ContextPath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
+    let language = context.get_editor_language();
+
     while let Some(mut field) = payload.try_next().await? {
         let content_disposition = field.content_disposition();
 
@@ -834,11 +858,11 @@ pub async fn upload_poster(
                     Some(video) => {
                         let error = format!("Unsupported file extension in {filename}");
                         let form_feedback = VideoFormFeedback::UploadPoster { error };
-                        let http_response = edit_page(&context, Some(form_feedback), &video);
+                        let http_response = edit_page(&context, Some(form_feedback), &language, &video);
                         return Ok(Either::Right(http_response))
                     }
                     None => {
-                        let http_response = not_found(&context, &format!("Video {} not found.", &path.path));
+                        let http_response = not_found(&context, &language, &format!("Video {} not found.", &path.path));
                         return Ok(Either::Right(http_response));
                     }
                 }
@@ -876,7 +900,7 @@ pub async fn upload_poster(
                 Ok(video) => video,
                 Err(()) => {
                     let _ = fs::remove_file(&storage_path);
-                    let http_response = not_found(&context, &format!("Video {} not found.", &path.path));
+                    let http_response = not_found(&context, &language, &format!("Video {} not found.", &path.path));
                     return Ok(Either::Right(http_response));
                 }
             };
@@ -902,10 +926,12 @@ pub async fn upload_video(
     path: ActixPath<ContextPath>,
     mut payload: Multipart
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
+    let language = context.get_editor_language();
+
     let container = context.get_any(&path.path);
 
     if let GetAnyResult::None = container {
-        let http_response = not_found(&context, &format!("No collection, playlist or video found at path {}", &path.path));
+        let http_response = not_found(&context, &language, &format!("No collection, playlist or video found at path {}", &path.path));
         return Ok(Either::Right(http_response));
     }
 
@@ -971,7 +997,7 @@ pub async fn upload_video(
 
                         if context.update_collection(mutation, &path.path).is_err() {
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            return Ok(Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path))));
+                            return Ok(Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path))));
                         }
 
                         video
@@ -987,7 +1013,7 @@ pub async fn upload_video(
 
                         if context.update_playlist(mutation, &path.path).is_err() {
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            return Ok(Either::Right(not_found(&context, &format!("Playlist {} not found.", &path.path))));
+                            return Ok(Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path))));
                         }
 
                         video
@@ -1003,7 +1029,7 @@ pub async fn upload_video(
                         match context.update_video(mutation, &path.path) {
                             Ok(video) => video,
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            Err(()) => return Ok(Either::Right(not_found(&context, &format!("Video {} not found.", &path.path))))
+                            Err(()) => return Ok(Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path))))
                         }
                     }
                     GetAnyResult::None => unreachable!()
@@ -1021,6 +1047,6 @@ pub async fn upload_video(
         }
     }
 
-    let http_response = not_found(&context, "No actionable payload found in request");
+    let http_response = not_found(&context, &language, "No actionable payload found in request");
     Ok(Either::Right(http_response))
 }

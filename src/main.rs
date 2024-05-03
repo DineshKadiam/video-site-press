@@ -23,6 +23,7 @@ mod site;
 mod subtitles;
 mod theme;
 mod transcode;
+mod translations;
 mod video;
 mod video_format;
 mod util;
@@ -31,11 +32,9 @@ mod workers;
 
 use args::Args;
 use banner::Banner;
-use build::translations::Translations;
 use cache::{Cache, CacheItem, FileMeta, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{Context, ContextPath, GetAnyResult};
-use editor::translations::EditorTranslations;
 use hyper_dir::HyperDir;
 use image_processor::{ImageProcessor, ResizeMode};
 use language::Language;
@@ -45,6 +44,7 @@ use processing::{Job, JobKind, Processing};
 use site::{AspectRatio, BaseUrl, Site, SiteContent};
 use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};
+use translations::Translations;
 use util::Field;
 use video::{Video, VideoFile, VideoMeta, VideoParent};
 use video_format::{Codec, EncodingApproach, VideoFormat};
@@ -84,9 +84,16 @@ fn main() {
 
     let editor_language = args.editor_language
         .unwrap_or_else(|| {
-            get_locale()
-                .map(|locale| locale.split('-').next().unwrap().to_string())
-                .unwrap_or_else(|| String::from("en"))
+            match editor::retrieve_config() {
+                Some(editor_config) => {
+                    editor_config.language
+                }
+                None => {
+                    get_locale()
+                        .map(|locale| locale.split('-').next().unwrap().to_string())
+                        .unwrap_or_else(|| String::from("en"))
+                }
+            }
         });
 
     let context = Context::new(

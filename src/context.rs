@@ -10,10 +10,10 @@ use slug::slugify;
 use crate::{
     Cache,
     Collection,
-    EditorTranslations,
     HyperDir,
     Job,
     JobKind,
+    Language,
     Playlist,
     Processing,
     Site,
@@ -34,7 +34,7 @@ pub struct Context {
     //       because context is immutable (with interior mutability on some things))
     pub clean_urls: bool,
     pub editor_theme: Theme,
-    pub editor_translations: EditorTranslations,
+    pub editor_language: Mutex<Language>,
     pub job_queue: Mutex<Vec<Job>>,
     pub jobs_completed: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
@@ -551,6 +551,12 @@ impl Context {
         self.site.lock().unwrap().get_collection(path)
     }
 
+    /// Returns cloned `Language`, allowing subsequent read-only usage
+    /// of the language without keeping a lock on it.
+    pub fn get_editor_language(&self) -> Language {
+        self.editor_language.lock().unwrap().clone()
+    }
+
     /// Returns the playlist at the given path.
     pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
         self.site.lock().unwrap().get_playlist(path)
@@ -590,7 +596,7 @@ impl Context {
             clean_urls: true,
             // TODO: Eventually make this customizable via CLI option
             editor_theme: Theme::adaptive(),
-            editor_translations: EditorTranslations::from_code(editor_language),
+            editor_language: Mutex::new(Language::from_code(editor_language)),
             job_queue: Mutex::new(Vec::new()),
             jobs_completed: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),

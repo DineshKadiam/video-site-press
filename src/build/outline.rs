@@ -167,15 +167,15 @@ impl<'a> Smartcrumb<'a> {
     pub fn breadcrumb(&self, href: &str, site: &Site) -> String {
         match self {
             Smartcrumb::Collection(collection) => {
-                let label = collection.label_build(site);
+                let label = collection.label(&site.language.translations);
                 format!(r#"<a href="{href}">{label}</a>"#)
             }
             Smartcrumb::Playlist(playlist) => {
-                let label = playlist.label_build(site);
+                let label = playlist.label(&site.language.translations);
                 format!(r#"<a href="{href}">{label}</a>"#)
             }
             Smartcrumb::Video(video) => {
-                let label = video.label_build(site);
+                let label = video.label(&site.language.translations);
                 format!(r#"<a href="{href}">{label}</a>"#)
             }
         }
@@ -263,7 +263,7 @@ impl<'a> Smartcrumb<'a> {
             // TODO: Something graphically interesting instead (that also conveys "collection" somehow?)
             format!(r#"<div class="placeholder"></div>"#)
         };
-        let label = collection.label_build(site);
+        let label = collection.label(&site.language.translations);
         let outline_stats = OutlineStats::for_collection(collection).render(site);
 
         formatdoc!(r#"
@@ -293,7 +293,7 @@ impl<'a> Smartcrumb<'a> {
             let rendered_subcollections = subcollections
                 .iter()
                 .map(|subcollection| {
-                    let label = subcollection.label_build(site);
+                    let label = subcollection.label(&site.language.translations);
                     let slug = subcollection.slug();
 
                     let subcollection_prefix = if current_page.is_collection(collection) {
@@ -349,7 +349,7 @@ impl<'a> Smartcrumb<'a> {
             let rendered_playlists = playlists
                 .iter()
                 .map(|playlist| {
-                    let label = playlist.label_build(site);
+                    let label = playlist.label(&site.language.translations);
                     let slug = playlist.slug();
 
                     let playlist_prefix = if current_page.is_playlist(playlist) {
@@ -406,7 +406,7 @@ impl<'a> Smartcrumb<'a> {
             let rendered_videos = videos
                 .iter()
                 .map(|video| {
-                    let label = video.label_build(site);
+                    let label = video.label(&site.language.translations);
                     let slug = video.slug();
 
                     let video_prefix = if current_page.is_video(video) {
@@ -473,7 +473,7 @@ impl<'a> Smartcrumb<'a> {
         } else {
             format!(r#"<div class="placeholder"></div>"#)
         };
-        let label = playlist.label_build(site);
+        let label = playlist.label(&site.language.translations);
         let outline_stats = OutlineStats::for_playlist(playlist).render(site);
 
         let header_crumb = formatdoc!(r#"
@@ -495,7 +495,7 @@ impl<'a> Smartcrumb<'a> {
                 .iter()
                 .enumerate()
                 .map(|(index, video_iterated)| {
-                    let label = video_iterated.label_build(site);
+                    let label = video_iterated.label(&site.language.translations);
                     let slug = video_iterated.slug();
 
                     let video_prefix = if video_iterated.path == video.path {

@@ -22,7 +22,7 @@ pub fn collection_html(
         collection.title.as_deref().unwrap_or_else(|| collection.slug())
     };
 
-    let unlisted = unlisted_badge(collection.unlisted, site);
+    let unlisted = unlisted_badge(collection.unlisted, &site.language.translations);
 
     body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
 

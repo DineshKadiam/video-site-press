@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
-use actix_web::web::Data;
+use actix_web::web::{Data, Form, Redirect};
 use indoc::formatdoc;
+use serde_derive::Deserialize;
 
 pub mod collection;
 pub mod convert;
@@ -20,7 +21,23 @@ pub use deploy::deploy;
 pub use jobs::jobs;
 pub use processing::processing;
 
-use crate::{Context, ThemeKind};
+use crate::{Context, Language, ThemeKind};
+use crate::editor;
+
+#[derive(Deserialize)]
+pub struct LanguageForm {
+    language: String
+}
+
+pub async fn change_editor_language(
+    context: Data<Arc<Context>>,
+    form: Form<LanguageForm>,
+) -> Redirect {
+    *context.editor_language.lock().unwrap() = Language::from_code(&form.language);
+    editor::persist_config(&form.language);
+
+    Redirect::to("/").see_other()
+}
 
 pub async fn favicon() -> HttpResponse {
     HttpResponse::Ok()

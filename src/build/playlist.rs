@@ -46,7 +46,7 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(playlist.unlisted, site);
+    let unlisted = unlisted_badge(playlist.unlisted, &site.language.translations);
 
     body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
 
@@ -63,7 +63,7 @@ pub fn playlist_html(
             .map(|(index, video)| {
                 let number = index + 1;
                 let slug = video.slug();
-                let label = video.label_build(site);
+                let label = video.label(&site.language.translations);
                 let video_prefix = format!("{slug}/");
                 let video_thumbnail = thumbnail(video, &video_prefix, true);
 

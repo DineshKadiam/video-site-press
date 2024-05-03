@@ -70,7 +70,7 @@ pub fn video_html(
         None => String::new()
     };
 
-    let unlisted = unlisted_badge(video.unlisted, site);
+    let unlisted = unlisted_badge(video.unlisted, &site.language.translations);
 
     let body = format!(r#"
         {player_rendered}

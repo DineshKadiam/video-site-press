@@ -15,6 +15,7 @@ use crate::{
     GetAnyResult,
     HyperDir,
     Site,
+    Translations,
     Video
 };
 
@@ -182,21 +183,12 @@ impl Playlist {
         None
     }
 
-    pub fn label_build<'a>(&'a self, site: &'a Site) -> &str {
+    pub fn label(&self, translations: &Translations) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
                 self.slug_opt()
-                    .unwrap_or(&site.language.translations.playlist)
-            )
-    }
-
-    pub fn label_editor<'a>(&'a self, context: &'a Context) -> &str {
-        self.title
-            .as_deref()
-            .unwrap_or_else(||
-                self.slug_opt()
-                    .unwrap_or(&context.editor_translations.playlist)
+                    .unwrap_or(translations.playlist)
             )
     }
 

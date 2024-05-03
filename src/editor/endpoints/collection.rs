@@ -13,6 +13,7 @@ use crate::{
     Context,
     ContextPath,
     Field,
+    Language,
     Playlist
 };
 use crate::editor::endpoints;
@@ -62,6 +63,8 @@ pub async fn create_playlist(
     form: Form<SlugForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let slug_trimmed = form.slug.trim();
 
     let playlist_path = if &path.path == "" {
@@ -90,7 +93,7 @@ pub async fn create_playlist(
         };
 
         if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path)));
+            return Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path)));
         }
 
         playlist.write_manifest(&context.site_dir);
@@ -101,7 +104,7 @@ pub async fn create_playlist(
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
             None => return Either::Right(
-                not_found(&context, &format!("Collection {} not found.", &path.path))
+                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
             )
         };
 
@@ -109,7 +112,7 @@ pub async fn create_playlist(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback)))
+        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
     }
 }
 
@@ -118,6 +121,8 @@ pub async fn create_subcollection(
     form: Form<SlugForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let slug_trimmed = form.slug.trim();
 
     let subcollection_path = if &path.path == "" {
@@ -146,7 +151,7 @@ pub async fn create_subcollection(
         };
 
         if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path)));
+            return Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path)));
         }
 
         subcollection.write_manifest(&context);
@@ -157,7 +162,7 @@ pub async fn create_subcollection(
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
             None => return Either::Right(
-                not_found(&context, &format!("Collection {} not found.", &path.path))
+                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
             )
         };
 
@@ -165,7 +170,7 @@ pub async fn create_subcollection(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback)))
+        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
     }
 }
 
@@ -174,7 +179,8 @@ pub async fn delete(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_collection(&path.path) {
-        return Either::Right(not_found(&context, &format!("Collection {} not found.", &path.path)))
+        let language = context.get_editor_language();
+        return Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path)))
     };
 
     let redirect_url = if &path.path == "" {
@@ -190,9 +196,10 @@ pub fn edit_page(
     collection: &Collection,
     context: &Context,
     form_feedback: Option<CollectionFormFeedback>,
+    language: &Language
 ) -> HttpResponse {
     let path = &collection.path;
-    let t_not_saved = &context.editor_translations.not_saved;
+    let t_not_saved = language.translations.not_saved;
 
     let errors = if collection.errors.is_empty() {
         String::new()
@@ -208,9 +215,9 @@ pub fn edit_page(
             .join("")
     };
 
-    let t_description = &context.editor_translations.description;
-    let t_title = &context.editor_translations.title;
-    let t_unlisted = &context.editor_translations.unlisted;
+    let t_description = language.translations.description;
+    let t_title = language.translations.title;
+    let t_unlisted = language.translations.unlisted;
     let (
         feedback_update,
         input_description,
@@ -247,8 +254,8 @@ pub fn edit_page(
             )
         };
 
-        let t_a_permalink_defines_under_which_url_text = &context.editor_translations.a_permalink_defines_under_which_url_text;
-        let t_update_permalink = &context.editor_translations.update_permalink;
+        let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
+        let t_update_permalink = language.translations.update_permalink;
         formatdoc!(r#"
             <p>
                 {t_a_permalink_defines_under_which_url_text}
@@ -264,7 +271,7 @@ pub fn edit_page(
         "#)
     };
 
-    let t_upload_new_video = &context.editor_translations.upload_new_video;
+    let t_upload_new_video = language.translations.upload_new_video;
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
@@ -272,7 +279,7 @@ pub fn edit_page(
         Some(CollectionFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, path);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
 
     let (input_slug_create_playlist, feedback_create_playlist) = if let Some(CollectionFormFeedback::CreatePlaylist { slug }) = &form_feedback {
         (
@@ -299,7 +306,7 @@ pub fn edit_page(
     };
 
     let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
-        let t_convert_collection_to_playlist = &context.editor_translations.convert_collection_to_playlist;
+        let t_convert_collection_to_playlist = language.translations.convert_collection_to_playlist;
         formatdoc!(r#"
             <p>
                 This collection contains no playlists or subcollections and can therefore
@@ -324,7 +331,7 @@ pub fn edit_page(
             "This collection contains nothing can therefore seamlessly be converted to a video."
         };
 
-        let t_convert_collection_to_video = &context.editor_translations.convert_collection_to_video;
+        let t_convert_collection_to_video = language.translations.convert_collection_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
@@ -341,16 +348,16 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
-    let t_collection = &context.editor_translations.collection;
-    let t_create_playlist = &context.editor_translations.create_playlist;
-    let t_create_subcollection = &context.editor_translations.create_subcollection;
-    let t_danger_zone = &context.editor_translations.danger_zone;
-    let t_delete_collection = &context.editor_translations.delete_collection;
-    let t_new_playlist = &context.editor_translations.new_playlist;
-    let t_new_subcollection = &context.editor_translations.new_subcollection;
-    let t_new_video = &context.editor_translations.new_video;
-    let t_really_delete = &context.editor_translations.really_delete;
-    let t_update_collection = &context.editor_translations.update_collection;
+    let t_collection = language.translations.collection;
+    let t_create_playlist = language.translations.create_playlist;
+    let t_create_subcollection = language.translations.create_subcollection;
+    let t_danger_zone = language.translations.danger_zone;
+    let t_delete_collection = language.translations.delete_collection;
+    let t_new_playlist = language.translations.new_playlist;
+    let t_new_subcollection = language.translations.new_subcollection;
+    let t_new_video = language.translations.new_video;
+    let t_really_delete = language.translations.really_delete;
+    let t_update_collection = language.translations.update_collection;
     let body = formatdoc!(r#"
         {errors}
 
@@ -423,7 +430,7 @@ pub fn edit_page(
 
     let site = context.get_site();
     let head_title = collection.title.as_deref().unwrap_or_else(|| collection.slug());
-    let html = layout(context, Some(path), &site, &body, head_title);
+    let html = layout(context, &language, Some(path), &site, &body, head_title);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -434,9 +441,11 @@ pub async fn edit(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
 ) -> HttpResponse {
+    let language = context.get_editor_language();
+
     match context.get_collection(&path.path) {
-        Some(collection) => edit_page(&collection, &context, None),
-        None => not_found(&context, &format!("Collection {} not found.", &path.path))
+        Some(collection) => edit_page(&collection, &context, None, &language),
+        None => not_found(&context, &language, &format!("Collection {} not found.", &path.path))
     }
 }
 
@@ -445,6 +454,8 @@ pub async fn r#move(
     form: Form<SlugForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let slug_trimmed = form.slug.trim();
 
     let new_path = Path::new(&path.path)
@@ -474,7 +485,7 @@ pub async fn r#move(
         let collection = match context.update_collection(mutation, &path.path) {
             Ok(collection) => collection,
             Err(()) => return Either::Right(
-                not_found(&context, &format!("Collection {} not found.", &path.path))
+                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
             )
         };
 
@@ -485,7 +496,7 @@ pub async fn r#move(
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
             None => return Either::Right(
-                not_found(&context, &format!("Collection {} not found.", &path.path))
+                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
             )
         };
 
@@ -493,7 +504,7 @@ pub async fn r#move(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback)))
+        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
     }
 }
 
@@ -502,6 +513,8 @@ pub async fn update(
     form: Form<UpdateForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
     let description_trimmed = form.description.trim();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
@@ -517,7 +530,7 @@ pub async fn update(
         let collection = match context.update_collection(mutation, &path.path) {
             Ok(collection) => collection,
             Err(()) => return Either::Right(
-                not_found(&context, &format!("Collection {} not found.", &path.path))
+                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
             )
         };
 
@@ -530,7 +543,7 @@ pub async fn update(
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
             None => return Either::Right(
-                not_found(&context, &format!("Collection {} not found.", &path.path))
+                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
             )
         };
 
@@ -540,6 +553,6 @@ pub async fn update(
             unlisted
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback)))
+        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
     }
 }

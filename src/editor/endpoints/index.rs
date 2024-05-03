@@ -5,11 +5,12 @@ use actix_web::http::header::ContentType;
 use actix_web::web::Data;
 use indoc::formatdoc;
 
-use crate::{Collection, Context, SiteContent, Video};
+use crate::{Collection, Context, SiteContent, Translations, Video};
 use crate::editor::widgets::layout;
 use crate::util::human_size;
 
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
+    let language = context.get_editor_language();
     let site = context.get_site();
 
     let body = match &site.content {
@@ -38,14 +39,14 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             if videos.is_empty() {
                 String::new()
             } else {
-                storage_stats_html(&context, &videos)
+                storage_stats_html(&language.translations, &videos)
             }
         }
         SiteContent::Empty => {
-            let t_empty_site = &context.editor_translations.empty_site;
-            let t_initialize_site_as_collection = &context.editor_translations.initialize_site_as_collection;
-            let t_initialize_site_as_playlist = &context.editor_translations.initialize_site_as_playlist;
-            let t_initialize_site_as_video = &context.editor_translations.initialize_site_as_video;
+            let t_empty_site = language.translations.empty_site;
+            let t_initialize_site_as_collection = language.translations.initialize_site_as_collection;
+            let t_initialize_site_as_playlist = language.translations.initialize_site_as_playlist;
+            let t_initialize_site_as_video = language.translations.initialize_site_as_video;
             formatdoc!(r#"
                 <div class="form_group">
                     <h2>{t_empty_site}</h2>
@@ -82,23 +83,23 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             if playlist.videos.is_empty() {
                 String::new()
             } else {
-                storage_stats_html(&context, &playlist.videos)
+                storage_stats_html(&language.translations, &playlist.videos)
             }
         }
         SiteContent::Video(video) => {
             let videos = vec![Arc::clone(video)];
-            storage_stats_html(&context, &videos)
+            storage_stats_html(&language.translations, &videos)
         }
     };
 
-    let html = layout(&context, None, &site, &body, site.title());
+    let html = layout(&context, &language, None, &site, &body, site.title());
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
 }
 
-fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
+fn storage_stats_html(translations: &Translations, videos: &Vec<Arc<Video>>) -> String {
     // TODO: Group entries by collection/playlist/video (maybe multiple rings? or multiple charts?)
     // TODO: Wire up chart hover with tabular row hover and vice versa
     // TODO: Tweak values/readability for pie chart further (e.g. colors too as additional for those who see it)
@@ -114,7 +115,7 @@ fn storage_stats_html(context: &Context, videos: &Vec<Arc<Video>>) -> String {
             let path = &video.path;
             let link = format!("/video/{path}");
             let size = version.file_meta.size;
-            let title = format!("{}: {}", video.label_editor(&context), version.file_name);
+            let title = format!("{}: {}", video.label(translations), version.file_name);
             sizes.push((size, link, title));
             total_size += size;
         }

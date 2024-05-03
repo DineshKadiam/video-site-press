@@ -18,7 +18,6 @@ mod outline;
 mod playlist;
 mod scripts;
 mod styles;
-pub mod translations;
 mod video;
 mod widgets;
 

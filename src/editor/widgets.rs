@@ -10,9 +10,11 @@ use crate::{
     Collection,
     Context,
     Field,
+    Language,
     Playlist,
     Site,
     SiteContent,
+    Translations,
     Video
 };
 use crate::icons;
@@ -22,11 +24,12 @@ fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
     context: &Context,
-    path: Option<&str>
+    path: Option<&str>,
+    translations: &Translations
 ) -> String {
-    let collection_icon = icons::collection(&context.editor_translations.collection);
-    let playlist_icon = icons::playlist(&context.editor_translations.playlist);
-    let video_icon = icons::video(&context.editor_translations.video);
+    let collection_icon = icons::collection(translations.collection);
+    let playlist_icon = icons::playlist(translations.playlist);
+    let video_icon = icons::video(translations.video);
     let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.to_vec();
 
     subcollections_sorted.sort_unstable_by(|a, b| {
@@ -47,12 +50,12 @@ fn collection_tree(
             let href = format!("/collection/{collection_path}");
             let node = tree_node(
                 active,
-                context,
                 &collection.errors,
                 &href,
                 &collection_icon,
                 collection.slug(),
                 collection.title.as_deref(),
+                translations,
                 collection.unlisted
             );
 
@@ -66,7 +69,7 @@ fn collection_tree(
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
             }
 
-            let collection_content = collection_tree(breadcrumbs, collection, context, path);
+            let collection_content = collection_tree(breadcrumbs, collection, context, path, translations);
 
             formatdoc!(r#"
                 <li>
@@ -98,12 +101,12 @@ fn collection_tree(
             let href = format!("/playlist/{playlist_path}");
             let node = tree_node(
                 active,
-                context,
                 &playlist.errors,
                 &href,
                 &playlist_icon,
                 playlist.slug(),
                 playlist.title.as_deref(),
+                translations,
                 playlist.unlisted
             );
 
@@ -129,12 +132,12 @@ fn collection_tree(
                         let href = format!("/video/{video_path}");
                         let node = tree_node(
                             active,
-                            context,
                             &video.errors,
                             &href,
                             &video_icon,
                             video.slug(),
                             video.title.as_deref(),
+                            translations,
                             video.unlisted
                         );
 
@@ -189,12 +192,12 @@ fn collection_tree(
             let href = format!("/video/{video_path}");
             let node = tree_node(
                 active,
-                context,
                 &video.errors,
                 &href,
                 &video_icon,
                 video.slug(),
                 video.title.as_deref(),
+                translations,
                 video.unlisted
             );
 
@@ -310,12 +313,13 @@ pub fn form_textarea(
 /// If it's None we are on some auxillary page such as the dashboard or 404 page.
 pub fn layout(
     context: &Context,
+    language: &Language,
     path: Option<&str>,
     site: &Site,
     body: &str,
     title: &str
 ) -> String {
-    let (breadcrumbs, tree) = site_tree(context, path, site, &context.site_dir);
+    let (breadcrumbs, tree) = site_tree(context, path, site, &context.site_dir, &language.translations);
 
     // TODO: Possibly hash scripts/styles
     let head = formatdoc!(r#"
@@ -332,8 +336,18 @@ pub fn layout(
 
     let hyper8_version = env!("CARGO_PKG_VERSION");
 
-    let external_icon = icons::external(&context.editor_translations.external_link);
-    let t_close = &context.editor_translations.close;
+    let language_options = [("de", "Deutsch"), ("en", "English")]
+        .into_iter()
+        .map(|(code, label)| {
+            let selected = if code == &language.code { "selected" } else { "" };
+            format!(r#"<option {selected} value="{code}">{label}</option>"#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let external_icon = icons::external(language.translations.external_link);
+    let t_close = language.translations.close;
+    let t_language = language.translations.language;
     let splash = formatdoc!(r#"
         <dialog class="splash_wrapper">
             <div class="splash">
@@ -345,6 +359,12 @@ pub fn layout(
                         <li>Use the controls top-right to preview/deploy</li>
                         <li>Check the <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} docs</a> for more information</li>
                     </ul>
+                    <form action="/change-editor-language" method="post">
+                        <label for="change_editor_language">{t_language}</label>
+                        <select id="change_editor_language" name="language">
+                            {language_options}
+                        </select>
+                    </form>
                     <div class="hsplit">
                         <a href="https://simonrepp.com/hyper8" target="_blank">
                             {external_icon}
@@ -359,11 +379,11 @@ pub fn layout(
         </dialog>
     "#);
 
-    let t_deploy = &context.editor_translations.deploy;
+    let t_deploy = language.translations.deploy;
     let deploy_icon = icons::deploy(t_deploy);
     let deploy_button = match site.deploy_config.complete() {
         true => {
-            let t_really_deploy = &context.editor_translations.really_deploy;
+            let t_really_deploy = language.translations.really_deploy;
             format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
         }
         false => {
@@ -378,22 +398,22 @@ pub fn layout(
             };
 
             // TODO: Hash that goes directly to the relevant section for editing site? (or dedicated page to clean up interface by area of concern?)
-            let t_configure = &context.editor_translations.configure;
-            let t_deploy_configuration_missing_required_fields = &context.editor_translations.deploy_configuration_missing_required_fields;
+            let t_configure = language.translations.configure;
+            let t_deploy_configuration_missing_required_fields = language.translations.deploy_configuration_missing_required_fields;
             format!(r#"<form action="{action}"><button title="{t_deploy_configuration_missing_required_fields}">{deploy_icon} {t_configure}</button></form>"#)
         }
     };
 
     let storage_usage = human_size(site.storage_usage());
-    let logo_icon = icons::logo(&context.editor_translations.hyper8_logo);
-    let t_idle = &context.editor_translations.idle;
-    let t_preview = &context.editor_translations.preview;
-    let t_processing = &context.editor_translations.processing;
+    let logo_icon = icons::logo(language.translations.hyper8_logo);
+    let t_idle = language.translations.idle;
+    let t_preview = language.translations.preview;
+    let t_processing = language.translations.processing;
     let preview_icon = icons::preview(t_preview);
     let processing_icon = icons::processing(t_processing);
-    let storage_icon = icons::storage(&context.editor_translations.storage_usage);
-    let t_about = &context.editor_translations.about;
-    let t_filter = &context.editor_translations.filter;
+    let storage_icon = icons::storage(language.translations.storage_usage);
+    let t_about = language.translations.about;
+    let t_filter = language.translations.filter;
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
@@ -430,8 +450,12 @@ pub fn layout(
     "#)
 }
 
-pub fn not_found(context: &Context, message: &str) -> HttpResponse {
-    let t_back = &context.editor_translations.back;
+pub fn not_found(
+    context: &Context,
+    language: &Language,
+    message: &str
+) -> HttpResponse {
+    let t_back = language.translations.back;
     let body = formatdoc!(r#"
         <div>
             {message}
@@ -441,7 +465,7 @@ pub fn not_found(context: &Context, message: &str) -> HttpResponse {
     "#);
 
     let site = &context.get_site();
-    let html = layout(context, None, site, &body, "Not Found");
+    let html = layout(context, language, None, site, &body, "Not Found");
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -452,7 +476,8 @@ pub fn site_tree(
     context: &Context,
     path: Option<&str>,
     site: &Site,
-    site_dir: &Path
+    site_dir: &Path,
+    translations: &Translations
 ) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
@@ -462,7 +487,7 @@ pub fn site_tree(
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
-            let t_collection = &context.editor_translations.collection;
+            let t_collection = translations.collection;
             let collection_icon = icons::collection(t_collection);
 
             if path.is_some() {
@@ -471,17 +496,17 @@ pub fn site_tree(
                 breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
             }
 
-            let collection_content = collection_tree(&mut breadcrumbs, collection, context, path);
+            let collection_content = collection_tree(&mut breadcrumbs, collection, context, path, translations);
 
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
             let node = tree_node(
                 root_active,
-                context,
                 errors,
                 "/collection/",
                 &collection_icon,
                 site_dir,
                 collection.title.as_deref(),
+                translations,
                 collection.unlisted
             );
 
@@ -492,7 +517,7 @@ pub fn site_tree(
         }
         SiteContent::Empty |
         SiteContent::Invalid => {
-            let t_empty_site = &context.editor_translations.empty_site;
+            let t_empty_site = translations.empty_site;
             // TODO: Dedicated icon for empty site?
             let collection_icon = icons::collection(t_empty_site);
 
@@ -502,17 +527,17 @@ pub fn site_tree(
 
             tree_node(
                 root_active,
-                context,
                 &Vec::new(),
                 "/",
                 &collection_icon,
                 site_dir,
                 Some(t_empty_site),
+                translations,
                 false
             )
         }
         SiteContent::Playlist(playlist) => {
-            let t_playlist = &context.editor_translations.playlist;
+            let t_playlist = translations.playlist;
             let playlist_icon = icons::playlist(t_playlist);
 
             if path.is_some() {
@@ -528,7 +553,7 @@ pub fn site_tree(
                     </li>
                 "#)
             } else {
-                let video_icon = icons::video(&context.editor_translations.video);
+                let video_icon = icons::video(translations.video);
 
                 let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
 
@@ -556,12 +581,12 @@ pub fn site_tree(
 
                         let node = tree_node(
                             active,
-                            context,
                             &video.errors,
                             &href,
                             &video_icon,
                             slug,
                             video.title.as_deref(),
+                            translations,
                             video.unlisted
                         );
 
@@ -577,12 +602,12 @@ pub fn site_tree(
 
             let node = tree_node(
                 root_active,
-                context,
                 &playlist.errors,
                 "/playlist/",
                 &playlist_icon,
                 site_dir,
                 playlist.title.as_deref(),
+                translations,
                 playlist.unlisted
             );
 
@@ -594,7 +619,7 @@ pub fn site_tree(
             "#)
         }
         SiteContent::Video(video) => {
-            let t_video = &context.editor_translations.video;
+            let t_video = translations.video;
             let video_icon = icons::video(t_video);
 
             if path.is_some() {
@@ -605,12 +630,12 @@ pub fn site_tree(
 
             tree_node(
                 root_active,
-                context,
                 &video.errors,
                 "/video/",
                 &video_icon,
                 site_dir,
                 video.title.as_deref(),
+                translations,
                 video.unlisted
             )
         }
@@ -632,12 +657,12 @@ pub fn site_tree(
 
 fn tree_node(
     active: bool,
-    context: &Context,
     errors: &[String],
     href: &str,
     icon: &str,
     slug: &str,
     title_option: Option<&str>,
+    translations: &Translations,
     unlisted: bool
 ) -> String {
     let active = if active { r#" class="active""# } else { "" };
@@ -651,13 +676,13 @@ fn tree_node(
             </span>
         "#)
     };
-    let t_no_title = &context.editor_translations.no_title;
+    let t_no_title = translations.no_title;
     let title = title_option
         .map(|title| title.to_string())
         .unwrap_or(format!(r#"<span class="muted">{t_no_title}</span>"#));
 
     let title_with_unlisted_badge = if unlisted {
-        let t_unlisted = &context.editor_translations.unlisted;
+        let t_unlisted = translations.unlisted;
         format!(r#"<div>{title} <span class="unlisted_badge">{t_unlisted}</span></div>"#)
     } else {
         title

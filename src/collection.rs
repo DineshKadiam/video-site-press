@@ -14,6 +14,7 @@ use crate::{
     HyperDir,
     Playlist,
     Site,
+    Translations,
     Video,
     VideoParent
 };
@@ -285,12 +286,12 @@ impl Collection {
         None
     }
 
-    pub fn label_build<'a>(&'a self, site: &'a Site) -> &str {
+    pub fn label(&self, translations: &Translations) -> &str {
         self.title
             .as_deref()
             .unwrap_or_else(||
                 self.slug_opt()
-                    .unwrap_or(&site.language.translations.collection)
+                    .unwrap_or(translations.collection)
             )
     }
 

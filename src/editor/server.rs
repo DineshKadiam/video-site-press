@@ -7,6 +7,7 @@ use actix_web::web::{Data, get, post, resource};
 use crate::Context;
 use crate::editor::endpoints::{
     build,
+    change_editor_language,
     collection,
     convert,
     deploy,
@@ -43,6 +44,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/convert-to-collection/{path:.*}", post().to(convert::to_collection))
                 .route("/convert-to-playlist/{path:.*}", post().to(convert::to_playlist))
                 .route("/convert-to-video/{path:.*}", post().to(convert::to_video))
+                .route("/change-editor-language", post().to(change_editor_language))
                 .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
                 .route("/create-playlist/{path:.*}", post().to(collection::create_playlist))
                 .service(

@@ -10,6 +10,8 @@ use crate::editor::widgets::layout;
 use crate::util::precise_duration;
 
 pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
+    let language = context.get_editor_language();
+
     let site = context.get_site();
 
     let mut body = String::new();
@@ -44,7 +46,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
         .unwrap()
         .iter()
         .map(|job| {
-            let label = job.kind.representation(&context);
+            let label = job.kind.representation(&language.translations);
             // TODO: Localize
             let status = match job.assigned_at {
                 Some(assigned_at) => format!("Started {:?}", assigned_at),
@@ -68,7 +70,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
         .unwrap()
         .iter()
         .map(|job| {
-            let label = job.kind.representation(&context);
+            let label = job.kind.representation(&language.translations);
             // TODO: Localize
             let status = match job.duration() {
                 Some(duration) => format!("Completed in {}", precise_duration(duration.as_secs_f32())),
@@ -89,7 +91,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
 
     body.push_str("</ul>");
 
-    let html = layout(&context, None, &site, &body, site.title());
+    let html = layout(&context, &language, None, &site, &body, site.title());
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
