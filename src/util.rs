@@ -222,7 +222,8 @@ pub fn supported_video_extension(filename: &str) -> bool {
             extension.eq_ignore_ascii_case("m4v") ||
             extension.eq_ignore_ascii_case("mp4") ||
             extension.eq_ignore_ascii_case("mkv") ||
-            extension.eq_ignore_ascii_case("mov")
+            extension.eq_ignore_ascii_case("mov") ||
+            extension.eq_ignore_ascii_case("webm")
         }
         None => false
     }

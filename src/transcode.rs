@@ -44,9 +44,9 @@ struct FFprobeStream {
     pub codec_long_name: String,
     pub codec_name: String,
     pub codec_type: String,
-    pub duration: String, // float
+    pub duration: Option<String>, // float
     pub height: Option<usize>,
-    pub nb_frames: String, // int
+    pub nb_frames: Option<String>, // int
     pub pix_fmt: Option<String>,
     pub sample_rate: Option<String>, // int
     pub width: Option<usize>
@@ -327,9 +327,11 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                         }
 
                         for stream in &result.streams {
-                            if let Ok(stream_duration) = stream.duration.parse::<f32>() {
-                                if stream_duration > duration {
-                                    duration = stream_duration;
+                            if let Some(stream_duration) = &stream.duration {
+                                if let Ok(stream_duration) = stream_duration.parse::<f32>() {
+                                    if stream_duration > duration {
+                                        duration = stream_duration;
+                                    }
                                 }
                             }
 
