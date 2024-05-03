@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -29,10 +30,12 @@ fn collection_tree(
     let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.to_vec();
 
     subcollections_sorted.sort_unstable_by(|a, b| {
-        let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
-        let b_criteria = b.title.as_deref().unwrap_or_else(|| b.slug());
-
-        a_criteria.cmp(b_criteria)
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => a.slug().cmp(&b.slug())
+        }
     });
 
     let subcollections = subcollections_sorted
@@ -42,7 +45,16 @@ fn collection_tree(
 
             let active = path.is_some_and(|path| path == collection_path);
             let href = format!("/collection/{collection_path}");
-            let node = tree_node(active, context, &collection.errors, &href, &collection_icon, collection.slug(), collection.title.as_deref());
+            let node = tree_node(
+                active,
+                context,
+                &collection.errors,
+                &href,
+                &collection_icon,
+                collection.slug(),
+                collection.title.as_deref(),
+                collection.unlisted
+            );
 
             if active || path.is_some_and(|path|
                 path
@@ -69,10 +81,12 @@ fn collection_tree(
     let mut playlists_sorted: Vec<Arc<Playlist>> = collection.playlists.to_vec();
 
     playlists_sorted.sort_unstable_by(|a, b| {
-        let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
-        let b_criteria = b.title.as_deref().unwrap_or_else(|| b.slug());
-
-        a_criteria.cmp(b_criteria)
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => a.slug().cmp(&b.slug())
+        }
     });
 
     let playlists = playlists_sorted
@@ -82,7 +96,16 @@ fn collection_tree(
 
             let active = path.is_some_and(|path| path == playlist_path);
             let href = format!("/playlist/{playlist_path}");
-            let node = tree_node(active, context, &playlist.errors, &href, &playlist_icon, playlist.slug(), playlist.title.as_deref());
+            let node = tree_node(
+                active,
+                context,
+                &playlist.errors,
+                &href,
+                &playlist_icon,
+                playlist.slug(),
+                playlist.title.as_deref(),
+                playlist.unlisted
+            );
 
             if active || path.is_some_and(|path| 
                 path
@@ -104,7 +127,16 @@ fn collection_tree(
 
                         let active = path.is_some_and(|path| path == video_path);
                         let href = format!("/video/{video_path}");
-                        let node = tree_node(active, context, &video.errors, &href, &video_icon, video.slug(), video.title.as_deref());
+                        let node = tree_node(
+                            active,
+                            context,
+                            &video.errors,
+                            &href,
+                            &video_icon,
+                            video.slug(),
+                            video.title.as_deref(),
+                            video.unlisted
+                        );
 
                         if active {
                             let label = video.title.as_deref().unwrap_or_else(|| video.slug());
@@ -140,10 +172,12 @@ fn collection_tree(
     let mut videos_sorted: Vec<Arc<Video>> = collection.videos.to_vec();
 
     videos_sorted.sort_unstable_by(|a, b| {
-        let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
-        let b_criteria = b.title.as_deref().unwrap_or_else(|| b.slug());
-
-        a_criteria.cmp(b_criteria)
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => a.slug().cmp(&b.slug())
+        }
     });
 
     let videos = videos_sorted
@@ -153,7 +187,16 @@ fn collection_tree(
 
             let active = path.is_some_and(|path| path == video_path);
             let href = format!("/video/{video_path}");
-            let node = tree_node(active, context, &video.errors, &href, &video_icon, video.slug(), video.title.as_deref());
+            let node = tree_node(
+                active,
+                context,
+                &video.errors,
+                &href,
+                &video_icon,
+                video.slug(),
+                video.title.as_deref(),
+                video.unlisted
+            );
 
             if active {
                 let label = video.title.as_deref().unwrap_or_else(|| video.slug());
@@ -431,7 +474,16 @@ pub fn site_tree(
             let collection_content = collection_tree(&mut breadcrumbs, collection, context, path);
 
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
-            let node = tree_node(root_active, context, errors, "/collection/", &collection_icon, site_dir, collection.title.as_deref());
+            let node = tree_node(
+                root_active,
+                context,
+                errors,
+                "/collection/",
+                &collection_icon,
+                site_dir,
+                collection.title.as_deref(),
+                collection.unlisted
+            );
 
             formatdoc!(r#"
                 {node}
@@ -448,7 +500,16 @@ pub fn site_tree(
                 breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
             }
 
-            tree_node(root_active, context, &Vec::new(), "/", &collection_icon, site_dir, Some(t_empty_site))
+            tree_node(
+                root_active,
+                context,
+                &Vec::new(),
+                "/",
+                &collection_icon,
+                site_dir,
+                Some(t_empty_site),
+                false
+            )
         }
         SiteContent::Playlist(playlist) => {
             let t_playlist = &context.editor_translations.playlist;
@@ -472,10 +533,12 @@ pub fn site_tree(
                 let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
 
                 videos_sorted.sort_unstable_by(|a, b| {
-                    let a_criteria = a.title.as_deref().unwrap_or_else(|| a.slug());
-                    let b_criteria = b.title.as_deref().unwrap_or_else(|| b.slug());
-
-                    a_criteria.cmp(b_criteria)
+                    match (&a.title, &b.title) {
+                        (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+                        (Some(_), None) => Ordering::Greater,
+                        (None, Some(_)) => Ordering::Less,
+                        (None, None) => a.slug().cmp(&b.slug())
+                    }
                 });
 
                 videos_sorted
@@ -491,7 +554,16 @@ pub fn site_tree(
                             breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {slug}</a>"#));
                         }
 
-                        let node = tree_node(active, context, &video.errors, &href, &video_icon, slug, video.title.as_deref());
+                        let node = tree_node(
+                            active,
+                            context,
+                            &video.errors,
+                            &href,
+                            &video_icon,
+                            slug,
+                            video.title.as_deref(),
+                            video.unlisted
+                        );
 
                         formatdoc!(r#"
                             <li>
@@ -503,7 +575,16 @@ pub fn site_tree(
                     .join("")
             };
 
-            let node = tree_node(root_active, context, &playlist.errors, "/playlist/", &playlist_icon, site_dir, playlist.title.as_deref());
+            let node = tree_node(
+                root_active,
+                context,
+                &playlist.errors,
+                "/playlist/",
+                &playlist_icon,
+                site_dir,
+                playlist.title.as_deref(),
+                playlist.unlisted
+            );
 
             formatdoc!(r#"
                 {node}
@@ -522,7 +603,16 @@ pub fn site_tree(
                 breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
             }
 
-            tree_node(root_active, context, &video.errors, "/video/", &video_icon, site_dir, video.title.as_deref())
+            tree_node(
+                root_active,
+                context,
+                &video.errors,
+                "/video/",
+                &video_icon,
+                site_dir,
+                video.title.as_deref(),
+                video.unlisted
+            )
         }
     };
 
@@ -547,7 +637,8 @@ fn tree_node(
     href: &str,
     icon: &str,
     slug: &str,
-    title_option: Option<&str>
+    title_option: Option<&str>,
+    unlisted: bool
 ) -> String {
     let active = if active { r#" class="active""# } else { "" };
     let icon_container = if errors.is_empty() {
@@ -565,6 +656,13 @@ fn tree_node(
         .map(|title| title.to_string())
         .unwrap_or(format!(r#"<span class="muted">{t_no_title}</span>"#));
 
+    let title_with_unlisted_badge = if unlisted {
+        let t_unlisted = &context.editor_translations.unlisted;
+        format!(r#"<div>{title} <span class="unlisted_badge">{t_unlisted}</span></div>"#)
+    } else {
+        title
+    };
+
     let depth = if href.ends_with('/') { 0 } else { href.split('/').count() - 2 };
     let padding_left_rem = match depth {
         0 => 0.4,
@@ -577,7 +675,7 @@ fn tree_node(
         <a{active} href="{href}" style="padding-left: {padding_left};">
             {icon_container}
             <div class="labels">
-                <span class="title">{title}</span>
+                <span class="title">{title_with_unlisted_badge}</span>
                 <span class="path">{slug}</span>
             </div>
         </a>

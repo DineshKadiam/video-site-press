@@ -326,6 +326,12 @@ svg { fill: currentColor; }
     width: 100%;
 }
 #toggle-splash svg { pointer-events: none; }
+.unlisted_badge {
+    background-color: var(--fg-2);
+    border-radius: .2rem;
+    color: var(--bg-1);
+    padding: .2rem .3rem .1rem;
+}
 .updates { color: red; }
 .versions {
     list-style: none;
