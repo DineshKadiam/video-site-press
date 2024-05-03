@@ -128,6 +128,7 @@ if (video) {
     function togglePlayback() {
         if (video.paused) {
             intro.style.display = 'none';
+            outro.classList.remove('active');
             video.play();
             togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
             playbackUpdateInterval = setInterval(playbackUpdate, 80);
