@@ -11,7 +11,7 @@ use crate::util::{nanoid, timestamp};
 pub struct Job {
     pub assigned_at: Option<SystemTime>,
     pub completed_at: Option<SystemTime>,
-    pub created: u128,
+    pub created: SystemTime,
     pub id: String,
     pub kind: JobKind
 }
@@ -70,7 +70,7 @@ impl Job {
         Job {
             assigned_at: None,
             completed_at: None,
-            created: timestamp(),
+            created: SystemTime::now(),
             id: nanoid(),
             kind
         }
