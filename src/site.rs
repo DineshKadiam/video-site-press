@@ -16,6 +16,7 @@ use crate::{
     Theme,
     Video
 };
+use crate::util::supported_font_extension;
 
 #[derive(Clone, Debug)]
 pub enum AspectRatio {
@@ -200,9 +201,17 @@ impl Site {
         match document.optional_field("font") {
             Ok(Some(field)) => {
                 match field.required_value::<String>() {
-                    Ok(value) => {
-                        // TODO: Verify existance, check extension, report errors, etc.
-                        self.font = Font::Custom(value);
+                    Ok(file_name) => {
+                        let path_absolute = manifest_path.parent().unwrap().join(&file_name);
+                        if path_absolute.exists() {
+                            if supported_font_extension(&file_name) {
+                                self.font = Font::Custom(file_name);
+                            } else {
+                                self.errors.push(format!("Error in {}:{} (Font file extension is not supported, only woff and woff2 are)", manifest_path.display(), field.line_number()));
+                            }
+                        } else {
+                            self.errors.push(format!("Error in {}:{} (Path to font is invalid, file not found)", manifest_path.display(), field.line_number()));
+                        }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }

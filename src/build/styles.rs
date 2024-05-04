@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::Path;
 
 use indoc::formatdoc;
 
@@ -9,9 +10,12 @@ const FONT_ELEMENTS_SELECTOR: &str = "body, button";
 pub fn generate(context: &Context, site: &Site) {
     let fonts_css = match &site.font {
         Font::Custom(file_name) => {
+            let extension = Path::new(file_name).extension().unwrap().to_string_lossy().to_string();
+            let target_file_name = format!("custom.{extension}");
+
             fs::copy(
                 context.site_dir.join(file_name),
-                context.build_dir.join("custom.woff2")
+                context.build_dir.join(&target_file_name)
             ).unwrap();
 
             let family = site.font.family();
@@ -21,7 +25,7 @@ pub fn generate(context: &Context, site: &Site) {
                     font-family: 'Custom';
                     font-style: normal;
                     font-weight: 400;
-                    src: url('custom.woff2') format('woff2');
+                    src: url('{target_file_name}') format('{extension}');
                 }}
                 {FONT_ELEMENTS_SELECTOR} {{
                     font-family: {family};

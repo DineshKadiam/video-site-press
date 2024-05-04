@@ -193,6 +193,16 @@ pub fn supported_audio_extension(filename: &str) -> bool {
     }
 }
 
+pub fn supported_font_extension(filename: &str) -> bool {
+    match Path::new(filename).extension() {
+        Some(extension) => {
+            extension.eq_ignore_ascii_case("woff") ||
+            extension.eq_ignore_ascii_case("woff2")
+        }
+        None => false
+    }
+}
+
 pub fn supported_image_extension(filename: &str) -> bool {
     match Path::new(filename).extension() {
         Some(extension) => {

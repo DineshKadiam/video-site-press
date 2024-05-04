@@ -5,6 +5,7 @@ use slug::slugify;
 use crate::Context;
 use crate::util::{
     supported_audio_extension,
+    supported_font_extension,
     supported_image_extension,
     supported_subtitle_extension,
     supported_video_extension
@@ -18,6 +19,7 @@ pub struct HyperDir {
     pub collection_manifest: Option<PathBuf>,
     pub dirs: Vec<PathBuf>,
     pub errors: Vec<String>,
+    pub font_files: Vec<PathBuf>,
     pub image_files: Vec<PathBuf>,
     pub path: PathBuf,
     pub playlist_manifest: Option<PathBuf>,
@@ -34,6 +36,7 @@ impl HyperDir {
             collection_manifest: None,
             dirs: Vec::new(),
             errors: Vec::new(),
+            font_files: Vec::new(),
             image_files: Vec::new(),
             path: path.to_owned(),
             playlist_manifest: None,
@@ -89,6 +92,8 @@ impl HyperDir {
                                         hyper_dir.audio_files.push(dir_entry.path());
                                     } else if supported_subtitle_extension(filename) {
                                         hyper_dir.subtitle_files.push(dir_entry.path());
+                                    } else if supported_font_extension(filename) {
+                                        hyper_dir.font_files.push(dir_entry.path());
                                     } else if filename.ends_with(".eno") {
                                         let error = format!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", filename);
                                         hyper_dir.errors.push(error);
