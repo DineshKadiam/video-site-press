@@ -2,9 +2,43 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Context, Site, ThemeKind};
+use crate::{Context, Font, Site, ThemeKind};
+
+const FONT_ELEMENTS_SELECTOR: &str = "body, button";
 
 pub fn generate(context: &Context, site: &Site) {
+    let fonts_css = match &site.font {
+        Font::Custom(file_name) => {
+            fs::copy(
+                context.site_dir.join(file_name),
+                context.build_dir.join("custom.woff2")
+            ).unwrap();
+
+            let family = site.font.family();
+
+            formatdoc!(r#"
+                @font-face {{
+                    font-family: 'Custom';
+                    font-style: normal;
+                    font-weight: 400;
+                    src: url('custom.woff2') format('woff2');
+                }}
+                {FONT_ELEMENTS_SELECTOR} {{
+                    font-family: {family};
+                }}
+            "#)
+        }
+        Font::Default => {
+            let family = site.font.family();
+
+            formatdoc!(r#"
+                {FONT_ELEMENTS_SELECTOR} {{
+                    font-family: {family};
+                }}
+            "#)
+        }
+    };
+
     let static_css = include_str!("assets/styles.css");
 
     let theme_vars = match &site.theme.kind {
@@ -41,6 +75,7 @@ pub fn generate(context: &Context, site: &Site) {
         :root {{
             --poster-aspect: {poster_aspect};
         }}
+        {fonts_css}
         {theme_vars}
         {static_css}
     "#);

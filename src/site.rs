@@ -8,6 +8,7 @@ use url::Url;
 use crate::{
     Context,
     Collection,
+    Font,
     GetAnyResult,
     HyperDir,
     Language,
@@ -49,6 +50,7 @@ pub struct Site {
     pub content: SiteContent,
     pub deploy_config: DeployConfig,
     pub errors: Vec<String>,
+    pub font: Font,
     pub language: Language,
     pub poster_aspect: AspectRatio,
     pub theme: Theme
@@ -186,6 +188,20 @@ impl Site {
             _ => ()
         }
 
+        match document.optional_field("font") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(value) => {
+                        // TODO: Verify existance, check extension, report errors, etc.
+                        self.font = Font::Custom(value);
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
         match document.optional_field("language") {
             Ok(Some(field)) => {
                 match field.required_value::<String>() {
@@ -315,6 +331,7 @@ impl Site {
             content: SiteContent::Empty,
             deploy_config: DeployConfig::new(),
             errors: Vec::new(),
+            font: Font::Default,
             language: Language::default(),
             poster_aspect: AspectRatio::Default,
             theme: Theme::default()
@@ -434,6 +451,10 @@ impl Site {
             if let Some(user) = &self.deploy_config.user {
                 eno.push_str(&format!("user = {}\n", user));
             }
+        }
+
+        if let Font::Custom(file_name) = &self.font {
+            eno.push_str(&format!("font: {}\n", file_name));
         }
 
         if !self.language.default {

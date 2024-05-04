@@ -1,0 +1,15 @@
+#[derive(Clone, Debug)]
+pub enum Font {
+	/// Wraps a file name
+	Custom(String),
+	Default
+}
+
+impl Font {
+	pub fn family(&self) -> &str {
+		match self {
+			Font::Custom(_) => "'Custom'",
+			Font::Default => "Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif"
+		}
+	}
+}
