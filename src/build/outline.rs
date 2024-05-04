@@ -1,7 +1,7 @@
 use chrono::{Datelike, NaiveDate};
 use indoc::formatdoc;
 
-use crate::{Collection, Context, Playlist, Site, Video};
+use crate::{Collection, Playlist, Site, Video};
 use crate::build::playlist::banner_html;
 use crate::build::thumbnail;
 use crate::build::widgets::poster_html;
@@ -184,7 +184,6 @@ impl<'a> Smartcrumb<'a> {
     pub fn context_for_collection(
         &self,
         collection_viewed: &Collection,
-        context: &Context,
         prefix: &str,
         site: &Site
     ) -> String {
@@ -193,7 +192,7 @@ impl<'a> Smartcrumb<'a> {
                 let header = Smartcrumb::crumb_collection_header(collection, prefix, site);
 
                 if prefix == "../" {
-                    let list = Smartcrumb::crumb_collection_context(collection, context, site, CurrentPage::Collection(collection_viewed));
+                    let list = Smartcrumb::crumb_collection_context(collection, site, CurrentPage::Collection(collection_viewed));
                     format!("{header}\n{list}")
                 } else {
                     header
@@ -206,7 +205,6 @@ impl<'a> Smartcrumb<'a> {
 
     pub fn context_for_playlist(
         &self,
-        context: &Context,
         playlist: &Playlist,
         prefix: &str,
         site: &Site
@@ -216,7 +214,7 @@ impl<'a> Smartcrumb<'a> {
                 let header = Smartcrumb::crumb_collection_header(collection, prefix, site);
 
                 if prefix == "../" {
-                    let list = Smartcrumb::crumb_collection_context(collection, context, site, CurrentPage::Playlist(playlist));
+                    let list = Smartcrumb::crumb_collection_context(collection, site, CurrentPage::Playlist(playlist));
                     format!("{header}\n{list}")
                 } else {
                     header
@@ -229,7 +227,6 @@ impl<'a> Smartcrumb<'a> {
 
     pub fn context_for_video(
         &self,
-        context: &Context,
         prefix: &str,
         site: &Site,
         video: &Video
@@ -239,13 +236,13 @@ impl<'a> Smartcrumb<'a> {
                 let header = Smartcrumb::crumb_collection_header(collection, prefix, site);
 
                 if prefix == "../" {
-                    let list = Smartcrumb::crumb_collection_context(collection, context, site, CurrentPage::Video(video));
+                    let list = Smartcrumb::crumb_collection_context(collection, site, CurrentPage::Video(video));
                     format!("{header}\n{list}")
                 } else {
                     header
                 }
             }
-            Smartcrumb::Playlist(playlist) => Smartcrumb::crumb_playlist(context, playlist, prefix, site, Some(video)),
+            Smartcrumb::Playlist(playlist) => Smartcrumb::crumb_playlist(playlist, prefix, site, Some(video)),
             Smartcrumb::Video(_) => unimplemented!()
         }
     }
@@ -279,11 +276,10 @@ impl<'a> Smartcrumb<'a> {
 
     fn crumb_collection_context(
         collection: &Collection,
-        context: &Context,
         site: &Site,
         current_page: CurrentPage
     ) -> String {
-        let index_suffix = context.index_suffix();
+        let index_suffix = site.index_suffix();
 
         let subcollections = collection.public_subcollections_desc_by_release_date();
 
@@ -458,7 +454,6 @@ impl<'a> Smartcrumb<'a> {
     }
 
     fn crumb_playlist(
-        context: &Context,
         playlist: &Playlist,
         prefix: &str,
         site: &Site,
@@ -487,7 +482,7 @@ impl<'a> Smartcrumb<'a> {
         "#);
 
         if let Some(video) = video {
-            let index_suffix = context.index_suffix();
+            let index_suffix = site.index_suffix();
 
             let videos = playlist.public_videos_asc_by_release_date();
 

@@ -47,7 +47,7 @@ pub fn video_html(
         .enumerate()
         .map(|(index, smartcrumb)| {
             let prefix = "../".repeat(outline.len() - 1 - index);
-            smartcrumb.context_for_video(context, &prefix, site, video)
+            smartcrumb.context_for_video(&prefix, site, video)
         })
         .collect::<Vec<String>>()
         .join("\n");
@@ -58,7 +58,7 @@ pub fn video_html(
         </div>
     "#);
 
-    let player_rendered = player(context, site, video, next_video);
+    let player_rendered = player(site, video, next_video);
 
     let copy_link_widget = copy_link(site, &video.path);
 

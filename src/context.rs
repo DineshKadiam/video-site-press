@@ -28,11 +28,6 @@ pub struct Context {
     pub build_dir: PathBuf,
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
-    // TODO: This is currently statically set to true
-    //       Make this configurable, and possibly at runtime.
-    //       (in which case it needs to go e.g. in/on site,
-    //       because context is immutable (with interior mutability on some things))
-    pub clean_urls: bool,
     pub editor_theme: Theme,
     pub editor_language: Mutex<Language>,
     pub job_queue: Mutex<Vec<Job>>,
@@ -69,18 +64,6 @@ impl Context {
         if let Some(mut completed_job) = completed_job {
             completed_job.completed_at = Some(SystemTime::now());
             self.jobs_completed.lock().unwrap().push(completed_job);
-        }
-    }
-
-    /// When we construct site-internal linking urls, we always
-    /// append an index suffix. For instance we might build this:
-    /// root_prefix ("../") + permalink ("foo") + index_suffix ("/") = "../foo/"
-    /// If clean_urls is disabled however, we always append an index_suffix "/index.html",
-    /// so that above example would result in "../foo/index.html".
-    pub fn index_suffix(&self) -> &str {
-        match self.clean_urls {
-            true => "/",
-            false => "/index.html"
         }
     }
 
@@ -593,8 +576,7 @@ impl Context {
             build_dir,
             cache,
             cache_dir,
-            clean_urls: true,
-            // TODO: Eventually make this customizable via CLI option
+            // TODO: Eventually make this customizable via CLI option or editor dropdown
             editor_theme: Theme::adaptive(),
             editor_language: Mutex::new(Language::from_code(editor_language)),
             job_queue: Mutex::new(Vec::new()),

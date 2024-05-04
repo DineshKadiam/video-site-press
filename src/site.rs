@@ -47,6 +47,7 @@ pub struct DeployConfig {
 #[derive(Clone, Debug)]
 pub struct Site {
     pub base_url: Option<BaseUrl>,
+    pub clean_urls: bool,
     pub content: SiteContent,
     pub deploy_config: DeployConfig,
     pub errors: Vec<String>,
@@ -156,6 +157,14 @@ impl Site {
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_flag("disable_clean_urls") {
+            Ok(Some(_)) => {
+                self.clean_urls = false;
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
             _ => ()
@@ -325,10 +334,23 @@ impl Site {
         None
     }
 
+    /// When we construct site-internal linking urls, we always
+    /// append an index suffix. For instance we might build this:
+    /// root_prefix ("../") + permalink ("foo") + index_suffix ("/") = "../foo/"
+    /// If clean_urls is disabled however, we always append an index_suffix "/index.html",
+    /// so that above example would result in "../foo/index.html".
+    pub fn index_suffix(&self) -> &str {
+        match self.clean_urls {
+            true => "/",
+            false => "/index.html"
+        }
+    }
+
     pub fn new() -> Site {
         Site {
             base_url: None,
             content: SiteContent::Empty,
+            clean_urls: true,
             deploy_config: DeployConfig::new(),
             errors: Vec::new(),
             font: Font::Default,
@@ -451,6 +473,10 @@ impl Site {
             if let Some(user) = &self.deploy_config.user {
                 eno.push_str(&format!("user = {}\n", user));
             }
+        }
+
+        if !self.clean_urls {
+            eno.push_str("disable_clean_urls\n");
         }
 
         if let Font::Custom(file_name) = &self.font {

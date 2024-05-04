@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Context, PosterFile, Site, ThemeKind, Translations, Video, VideoFile};
+use crate::{PosterFile, Site, ThemeKind, Translations, Video, VideoFile};
 use crate::build::outline::Smartcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
@@ -218,8 +218,12 @@ pub fn layout(
     "#)
 }
 
-pub fn player(context: &Context, site: &Site, video: &Video, next_video: Option<Arc<Video>>) -> String {
-    let index_suffix = context.index_suffix();
+pub fn player(
+    site: &Site,
+    video: &Video,
+    next_video: Option<Arc<Video>>
+) -> String {
+    let index_suffix = site.index_suffix();
 
     if video.versions.is_empty() {
         // TODO: Should use poster assets (different sizes)

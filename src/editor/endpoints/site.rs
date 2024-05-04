@@ -17,11 +17,12 @@ use crate::{
     Translations
 };
 use crate::editor::endpoints;
-use crate::editor::widgets::form_field;
+use crate::editor::widgets::{form_checkbox, form_field};
 
 #[derive(Deserialize)]
 pub struct SiteForm {
     base_url: String,
+    clean_urls: Option<String>,
     deployment_path: String,
     deployment_server: String,
     deployment_user: String,
@@ -32,6 +33,7 @@ pub struct SiteForm {
 
 pub struct SiteFormFeedback {
     pub base_url: Field,
+    pub clean_urls: bool,
     pub deployment_path: Field,
     pub deployment_server: Field,
     pub deployment_user: Field,
@@ -58,20 +60,6 @@ fn edit_page(
             .collect::<Vec<String>>()
             .join("")
     };
-
-    // let active_formats = site.formats
-    //     .iter()
-    //     .map(|format| {
-    //         let format_encoded = format.encode();
-    //         formatdoc!(r#"
-    //             <div>
-    //                 <input checked id="{format_encoded}" name="{format_encoded}" type="checkbox">
-    //                 <label for="{format_encoded}">{format_encoded}</label>
-    //             </div>
-    //         "#)
-    //     })
-    //     .collect::<Vec<String>>()
-    //     .join("\n");
 
     // let proposed_formats = [
     //     VideoFormat::AudioOnly,
@@ -104,38 +92,6 @@ fn edit_page(
     //         width: 1080
     //     }
     // ]
-    //     .into_iter()
-    //     .filter(|proposed| !settings.formats.iter().any(|format| format == proposed))
-    //     .map(|format| {
-    //         let format_encoded = format.encode();
-    //         formatdoc!(r#"
-    //             <div>
-    //                 <input id="{format_encoded}" name="{format_encoded}" type="checkbox">
-    //                 <label for="{format_encoded}">{format_encoded}</label>
-    //             </div>
-    //         "#)
-    //     })
-    //     .collect::<Vec<String>>()
-    //     .join("\n");
-
-    // <h2>Video formats to render for new videos</h2>
-
-    // <p>
-    //     When a new video gets uploaded, hyper8 will automatically
-    //     encode it in the formats specified below. These settings, and
-    //     any changes you are making to them now, do not retroactively
-    //     apply to videos that were already added in the past. To
-    //     re-encode existing videos in these formats, either request the
-    //     re-encoding for specific videos from their own page, or use
-    //     the batch re-encoding button/feature/page (not yet implemented).
-    // </p>
-
-    // <form action="/formats" method="post">
-    //     {{active_formats}}
-    //     {{proposed_formats}}
-    //     <br>
-    //     <button>Update formats</button>
-    // </form>
 
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
     //       that give very clear indication about what base url, deployment path/server/user etc. are and
@@ -148,6 +104,7 @@ fn edit_page(
     let t_poster_aspect_label = translations.poster_aspect_label;
     let t_public_address_label = translations.public_address_label;
     let (
+        clean_urls,
         theme_key,
         input_base_url,
         input_deployment_path,
@@ -158,6 +115,7 @@ fn edit_page(
         feedback
     ) = if let Some(SiteFormFeedback {
         base_url,
+        clean_urls,
         deployment_path,
         deployment_server,
         deployment_user,
@@ -166,6 +124,7 @@ fn edit_page(
         theme
     }) = &form_feedback {
         (
+            *clean_urls,
             &theme.key,
             form_field(base_url, "base_url", t_public_address_label),
             form_field(deployment_path, "deployment_path", t_deployment_path_label),
@@ -187,6 +146,7 @@ fn edit_page(
         };
 
         (
+            site.clean_urls,
             &site.theme.key,
             form_field(&Field::valid(site.base_url.as_ref().map(|url| url.representation.as_str()).unwrap_or("")), "base_url", t_public_address_label),
             form_field(&Field::valid(site.deploy_config.path.as_ref().map(|path| path.as_str()).unwrap_or("")), "deployment_path", t_deployment_path_label),
@@ -211,6 +171,9 @@ fn edit_page(
     let radio_button_dark = radio_button(theme_key, "dark", translations.dark);
     let radio_button_light = radio_button(theme_key, "light", translations.light);
 
+    let t_clean_urls_label = translations.clean_urls_label;
+    let clean_urls_checkbox = form_checkbox(clean_urls, "clean_urls", t_clean_urls_label);
+
     let t_site_settings = translations.site_settings;
     let t_update_site = translations.update_site;
     formatdoc!(r#"
@@ -234,6 +197,7 @@ fn edit_page(
                         {radio_button_light}
                     </div>
                 </div>
+                {clean_urls_checkbox}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>{t_update_site}</button> {feedback}
@@ -286,6 +250,7 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let base_url_trimmed = form.base_url.trim();
+    let clean_urls = form.clean_urls.is_some();
     let deployment_path_trimmed = form.deployment_path.trim();
     let deployment_server_trimmed = form.deployment_server.trim();
     let deployment_user_trimmed = form.deployment_user.trim();
@@ -314,6 +279,7 @@ pub async fn update(
 
         let site_form_feedback = SiteFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()))),
+            clean_urls,
             deployment_path: Field::valid(deployment_path_trimmed),
             deployment_server: Field::valid(deployment_server_trimmed),
             deployment_user: Field::valid(deployment_user_trimmed),
@@ -367,6 +333,7 @@ pub async fn update(
 
         let mutation = |site_mut: &mut Site| {
             site_mut.base_url = base_url.map(|base_url| base_url.unwrap());
+            site_mut.clean_urls = clean_urls;
             site_mut.deploy_config.path = deployment_path;
             site_mut.deploy_config.server = deployment_server;
             site_mut.deploy_config.user = deployment_user;

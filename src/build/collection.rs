@@ -14,7 +14,7 @@ pub fn collection_html(
     outline: &[Smartcrumb]
 ) {
     let mut body = String::new();
-    let index_suffix = context.index_suffix();
+    let index_suffix = site.index_suffix();
 
     let title = if collection.path == "" {
         collection.title.as_deref().unwrap_or("Hyper 8")
@@ -157,7 +157,7 @@ pub fn collection_html(
             .enumerate()
             .map(|(index, smartcrumb)| {
                 let prefix = "../".repeat(outline.len() - 1 - index);
-                smartcrumb.context_for_collection(collection, context, &prefix, site)
+                smartcrumb.context_for_collection(collection, &prefix, site)
             })
             .collect::<Vec<String>>()
             .join("\n");

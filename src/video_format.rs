@@ -90,10 +90,6 @@ impl VideoFormat {
         }
     }
 
-    pub fn new_audio() -> VideoFormat {
-        VideoFormat::AudioOnly
-    }
-
     pub fn new_video(
         codec: &str,
         container: &str,

@@ -11,6 +11,7 @@ Manifest for configuring the site.
 
 ```eno
 base_url: https://example.com
+disable_clean_urls
 language: es
 poster_aspect: 16:9
 theme: dark
@@ -60,3 +61,12 @@ at `deploy_config.path` are already accessible through the public `base_url`.
 (On deploment, Hyper 8 will do a test upload of a text file to the remote
 path and check if it's accessible through the public url - if it isn't, the
 file is removed and the deployment aborted).
+
+With `disable_clean_urls` Hyper 8 can be instructed to create a build with
+fullly verbose internal (file) linking, meaning that each link on the site
+ends on `/index.html` instead of just `/` (e.g. `https://example.com/collection/index.html`
+instead of `https://example.com/collection/`). Although this arguably looks
+a little more raw, it has the advantage of links working in the widest range
+of environments - especially it enables the build to be browseable directly
+from disk without any webserver inbetween, which makes a lot of sense if
+you're planning to archive your page somewhere offline.

@@ -114,15 +114,6 @@ impl PosterAssets {
         result
     }
 
-    pub fn img_attributes_up_to_320(&self, base_name: &str, prefix: &str) -> ImgAttributes {
-        let assets = match &self.max_320 {
-            Some(max_320) => vec![&self.max_160, max_320],
-            None => vec![&self.max_160]
-        };
-
-        ImgAttributes::new(assets, base_name, prefix)
-    }
-
     pub fn img_attributes_up_to_480(&self, base_name: &str, prefix: &str) -> ImgAttributes {
         let assets = match &self.max_320 {
             Some(max_320) => match &self.max_480 {
