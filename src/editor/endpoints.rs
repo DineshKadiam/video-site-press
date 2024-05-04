@@ -52,10 +52,30 @@ pub async fn font() -> HttpResponse {
         .body(include_bytes!("assets/roboto-v30-latin_latin-ext-regular.woff2").as_slice())
 }
 
-pub async fn scripts() -> HttpResponse {
+pub async fn scripts(context: Data<Arc<Context>>) -> HttpResponse {
+    let static_js = include_str!("assets/scripts.js");
+
+    let translations = context.get_editor_language().translations;
+
+    // We selectively provide only those translations to the runtime js code
+    // that are absolutely required, handpicking them here.
+    let t_idle = translations.idle;
+    let t_processing = translations.processing;
+    let translations_js = formatdoc!(r#"
+        const t = {{
+            idle: '{t_idle}',
+            processing: '{t_processing}'
+        }};
+    "#);
+
+    let js = formatdoc!(r#"
+        {translations_js}
+        {static_js}
+    "#);
+
     HttpResponse::Ok()
         .content_type("text/javascript")
-        .body(include_str!("assets/scripts.js"))
+        .body(js)
 }
 
 pub async fn splash_image() -> HttpResponse {

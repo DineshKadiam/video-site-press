@@ -14,12 +14,12 @@ function fetchProcessing() {
                 if (response.operations.length) {
                     // TODO: This should also give feedback how many jobs are waiting to be processed (?)
                     // TODO: Localize
-                    text.textContent = `${response.operations.length} Processing`;
+                    text.textContent = `${response.operations.length} ${t.processing}`;
                     processingElement.classList.add('active');
                     processingElement.setAttribute('title', response.operations.map(op => op.label).join(', '));
                 } else {
                     // TODO: Localize
-                    text.textContent = 'Idle';
+                    text.textContent = t.idle;
                     processingElement.classList.remove('active');
                     processingElement.removeAttribute('title', null);
                 }
