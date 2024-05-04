@@ -34,6 +34,8 @@ pub struct Video {
     /// Unlisted videos are not linked from the site anywhere,
     /// one needs to know the link to access them.
     pub unlisted: bool,
+    // TODO: We cannot actually represent an audio only version here?
+    //       (or only in an odd way - height/width are e.g. always present on VideoFile)
     pub versions: Vec<VideoFile>
 }
 
@@ -76,6 +78,7 @@ pub struct VideoMeta {
     pub duration: f32,
     pub height: usize,
     pub video_codec: Option<String>,
+    pub video_frame_rate: f32,
     pub width: usize
 }
 
@@ -429,6 +432,7 @@ impl VideoMeta {
         duration: f32,
         height: usize,
         video_codec: Option<String>,
+        video_frame_rate: f32,
         width: usize
     ) -> VideoMeta {
         VideoMeta {
@@ -436,6 +440,7 @@ impl VideoMeta {
             duration,
             height,
             video_codec,
+            video_frame_rate,
             width
         }
     }

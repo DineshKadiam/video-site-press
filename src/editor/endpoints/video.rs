@@ -61,6 +61,7 @@ pub struct DeleteVersionForm {
 pub struct DownsizeForm {
     approach: String,
     codec: String,
+    frame_rate: String,
     height: String,
     quality: String
 }
@@ -192,15 +193,20 @@ pub async fn downsize(
         }
     };
 
-    // TODO: Safety validation of these maybe
-    let approach = &form.approach;
-    let codec = &form.codec;
-    let height = &form.height;
-    let quality = &form.quality;
+    let frame_rate = if form.frame_rate.is_empty() {
+        None
+    } else {
+        Some(form.frame_rate.as_str())
+    };
 
-    // TODO: Build programmatically in code instead of parsing from format string
-    let video_format_string = format!("video:{codec}:mp4:{approach}:{quality}:{height}");
-    let video_format = VideoFormat::parse(&video_format_string).unwrap();
+    let video_format = VideoFormat::new_video(
+        &form.codec,
+        "mp4",
+        &form.approach,
+        frame_rate,
+        &form.height,
+        &form.quality,
+    ).unwrap();
 
     let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
     context.push_job_queue(job_kind);
@@ -210,9 +216,13 @@ pub async fn downsize(
 }
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
-    let (aspect_ratio, tallest_height) = if let Some(version) = video.highest_quality_version() {
+    let (aspect_ratio, highest_frame_rate, tallest_height) = if let Some(version) = video.highest_quality_version() {
         let video_meta = version.video_meta.as_ref().unwrap();
-        (video_meta.width as f32 / video_meta.height as f32, video_meta.height)
+        (
+            video_meta.width as f32 / video_meta.height as f32,
+            video_meta.video_frame_rate,
+            video_meta.height
+        )
     } else {
         return String::new();
     };
@@ -236,16 +246,43 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
         }
     }
 
+    let t_unmodified = translations.unmodified;
+    let mut frame_rate_options = Vec::new();
+    let candidate_frame_rates = [12.0, 24.0, 25.0, 30.0, 48.0, 60.0];
+    let known_frame_rate = candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate);
+    if !known_frame_rate {
+        let unknown_frame_rate_option = formatdoc!(r#"
+            <option selected value="">{highest_frame_rate} fps ({t_unmodified})</option>
+        "#);
+        frame_rate_options.push(unknown_frame_rate_option);
+    }
+    for frame_rate in candidate_frame_rates {
+        if frame_rate <= highest_frame_rate {
+            let (selected, value, unmodified) = if known_frame_rate && frame_rate == highest_frame_rate {
+                ("selected", String::new(), format!(" ({t_unmodified})"))
+            } else {
+                ("", frame_rate.to_string(), String::new())
+            };
+
+            let option = formatdoc!(r#"
+                <option {selected} value="{value}">{frame_rate} fps {unmodified}</option>
+            "#);
+            frame_rate_options.push(option);
+        }
+    }
+
     if height_options.is_empty() {
         return String::new();
     }
 
+    let frame_rate_options = frame_rate_options.join("\n");
     let height_options = height_options.join("\n");
     let path = &video.path;
 
     let t_best = translations.best;
     let t_codec = translations.codec;
     let t_encoding_approach = translations.encoding_approach;
+    let t_frame_rate = translations.frame_rate;
     let t_maximum_efficiency_best_compression_through_slowest_encoding = translations.maximum_efficiency_best_compression_through_slowest_encoding;
     let t_maximum_speed_fastest_encoding_through_worst_compression = translations.maximum_speed_fastest_encoding_through_worst_compression;
     let t_quality = translations.quality;
@@ -262,6 +299,12 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                     <label for="resolution">{t_resolution}</label>
                     <select id="resolution" name="height">
                         {height_options}
+                    </select>
+                </div>
+                <div class="form_field">
+                    <label for="frame_rate">{t_frame_rate}</label>
+                    <select id="frame_rate" name="frame_rate">
+                        {frame_rate_options}
                     </select>
                 </div>
                 <div class="form_field">
@@ -336,9 +379,10 @@ pub fn edit_page(
         let versions = video.versions
             .iter()
             .map(|version| {
-                let (browser_support, video_meta) = match &version.video_meta {
+                let (browser_support, vertical_resolution, video_meta) = match &version.video_meta {
                     Some(video_meta) => {
                         let duration = precise_duration(video_meta.duration);
+                        let frame_rate = video_meta.video_frame_rate;
                         let height = video_meta.height;
                         let size = human_size(version.file_meta.size);
                         let width = video_meta.width;
@@ -351,10 +395,12 @@ pub fn edit_page(
 
                         (
                             format!(r#"<div class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></div>"#),
-                            format!("{width}×{height} {duration} {size}")
+                            format!("{height}p"),
+                            format!("{width}×{height} {duration} {frame_rate}fps {size}")
                         )
                     }
                     None => (
+                        String::new(),
                         String::new(),
                         String::from("Metadata pending")
                     )
@@ -373,7 +419,7 @@ pub fn edit_page(
                 formatdoc!(r#"
                     <li>
                         <div>
-                            <span class="file_name">{file_name}</span> <span class="metadata">{video_meta}</span> {delete_form}
+                            {vertical_resolution} <span class="file_name">{file_name}</span> <span class="metadata">{video_meta}</span> {delete_form}
                         </div>
                         {browser_support}
                     </li>

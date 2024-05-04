@@ -15,7 +15,8 @@ use crate::util;
 ///
 /// History:
 /// 1->2 (2024-04-27): VideoMeta fields changed, but bincode did not pick it up, resulting in faulty decodes
-const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_2";
+/// 2->3 (2024-05-4): VideoMeta fields changed, likely faulty decodes from bincode
+const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_3";
 
 pub struct Cache {
     pub poster_assets: Vec<PosterAssetsCached>,

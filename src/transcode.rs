@@ -145,12 +145,23 @@ pub fn encode(
             // TODO: mp4? Is there a merit to using a video-less mp4 over a pure audio format?
             "mp4"
         }
-        VideoFormat::Video { codec, container, encoding_approach, height, quality } => {
+        VideoFormat::Video { codec, container, encoding_approach, frame_rate, height, quality } => {
             // TODO: We need to encode WebM and h265 for browser compatibility reasons
             //       Consider that we also need to/could offer both for download
             // See also https://pixelpoint.io/blog/web-optimized-video-ffmpeg/
 
-            command.arg("-vf").arg(format!("scale=-2:{height}"));
+            let mut video_filters = Vec::new();
+
+            if let Some(frame_rate) = frame_rate {
+                video_filters.push(format!("fps={frame_rate}"));
+            }
+
+            // TODO: Omit this argument if we don't do any resizing - either by checking against
+            //       original resolution here, or by implementing a "keep original" VideoFormat
+            //       enum-like indication.
+            video_filters.push(format!("scale=-2:{height}"));
+
+            command.arg("-vf").arg(video_filters.join(", "));
 
             match codec {
                 Codec::H264 => {
@@ -320,6 +331,7 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                         let mut duration = 0.0;
                         let mut height = None;
                         let mut video_codec = None;
+                        let mut video_frame_rate = 0.0;
                         let mut width = None;
 
                         if let Ok(format_duration) = &result.format.duration.parse::<f32>() {
@@ -343,6 +355,7 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                                 }
                                 "video" => {
                                     video_codec = Some(stream.codec_name.clone());
+                                    video_frame_rate = parse_frame_rate(&stream.avg_frame_rate);
 
                                     if height.is_none() { height = stream.height; }
                                     if width.is_none() { width = stream.width; }
@@ -359,6 +372,7 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                             duration,
                             height.unwrap(),
                             video_codec,
+                            video_frame_rate,
                             width.unwrap()
                         );
 
@@ -377,4 +391,13 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
             Err(())
         }
     }
+}
+
+fn parse_frame_rate(representation: &str) -> f32 {
+    let mut components = representation.split('/');
+
+    let dividend = components.next().unwrap().parse::<f32>().unwrap();
+    let divisor = components.next().unwrap().parse::<f32>().unwrap();
+
+    dividend / divisor
 }

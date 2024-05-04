@@ -29,9 +29,12 @@ pub enum VideoFormat {
         codec: Codec,
         container: Container,
         encoding_approach: EncodingApproach,
+        /// Represents fps
+        frame_rate: Option<f32>,
         height: usize,
         // TODO: Can we somehow type-enforce a range? Brittle right now.
-        quality: f32 // 0.0 (worst) to 1.0 (best)
+        /// 0.0 (worst) to 1.0 (best)
+        quality: f32
     }
 }
 
@@ -79,20 +82,6 @@ impl VideoFormat {
         }
     }
 
-    pub fn encode(&self) -> String {
-        match self {
-            VideoFormat::AudioOnly => String::from("audio-only"),
-            VideoFormat::Video { codec, container, encoding_approach, height, quality } => {
-                format!(
-                    "video:{}:{}:{}:{quality}:{height}",
-                    codec.to_string(),
-                    container.extension(),
-                    encoding_approach.to_string()
-                )
-            }
-        }
-    }
-
     // TODO: Should we output encoding approach, quality etc. (probably yes but check contexts of usage)
     pub fn label(&self) -> String {
         match self {
@@ -101,59 +90,63 @@ impl VideoFormat {
         }
     }
 
-    pub fn parse(string: &str) -> Option<VideoFormat> {
-        let mut components = string.split(':');
+    pub fn new_audio() -> VideoFormat {
+        VideoFormat::AudioOnly
+    }
 
-        match components.next() {
-            Some("audio-only") => {
-                Some(VideoFormat::AudioOnly)
+    pub fn new_video(
+        codec: &str,
+        container: &str,
+        encoding_approach: &str,
+        frame_rate: Option<&str>,
+        height: &str,
+        quality: &str,
+    ) -> Option<VideoFormat> {
+        let codec = match codec {
+           "h264" => Codec::H264,
+           "hevc" => Codec::Hevc,
+           "vp9" => Codec::Vp9,
+            _ => return None
+        };
+
+        let container = match container {
+           "mkv" => Container::Mkv,
+           "mp4" => Container::Mp4,
+            _ => return None
+        };
+
+        let encoding_approach = match encoding_approach {
+           "efficiency" => EncodingApproach::Efficiency,
+           "speed" => EncodingApproach::Speed,
+            _ => return None
+        };
+
+        let frame_rate = match frame_rate {
+            Some(frame_rate) => match frame_rate.parse::<f32>() {
+                Ok(frame_rate) => Some(frame_rate),
+                Err(_) => return None
             }
-            Some("video") => {
-                let codec = match components.next() {
-                    Some("h264") => Codec::H264,
-                    Some("hevc") => Codec::Hevc,
-                    Some("vp9") => Codec::Vp9,
-                    _ => return None
-                };
+            None => None
+        };
 
-                let container = match components.next() {
-                    Some("mkv") => Container::Mkv,
-                    Some("mp4") => Container::Mp4,
-                    _ => return None
-                };
+        let quality = match quality.parse::<f32>() {
+            Ok(quality) => quality,
+            Err(_) => return None
+        };
 
-                let encoding_approach = match components.next() {
-                    Some("efficiency") => EncodingApproach::Efficiency,
-                    Some("speed") => EncodingApproach::Speed,
-                    _ => return None
-                };
+        let height = match height.parse::<usize>() {
+            Ok(height) => height,
+            Err(_) => return None
+        };
 
-                let quality = match components.next() {
-                    Some(quality_str) => match quality_str.parse::<f32>() {
-                        Ok(quality) => quality,
-                        Err(_) => return None
-                    }
-                    None => return None
-                };
-
-                let height = match components.next() {
-                    Some(height_str) => match height_str.parse::<usize>() {
-                        Ok(height) => height,
-                        Err(_) => return None
-                    }
-                    None => return None
-                };
-
-                Some(VideoFormat::Video {
-                    codec,
-                    container,
-                    encoding_approach,
-                    height,
-                    quality
-                })
-            }
-            _ => None
-        }
+        Some(VideoFormat::Video {
+            codec,
+            container,
+            encoding_approach,
+            frame_rate,
+            height,
+            quality
+        })
     }
 }
 
