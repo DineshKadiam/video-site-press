@@ -180,8 +180,6 @@ impl Processing {
             .map(|operation| operation.id + 1)
             .unwrap_or(1);
 
-        println!("{label}");
-
         let operation = Operation {
             path: path.to_owned(),
             id,

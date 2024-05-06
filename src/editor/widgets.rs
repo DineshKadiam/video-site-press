@@ -406,20 +406,27 @@ pub fn layout(
         }
     };
 
+    let t_processing = language.translations.processing;
+    let processing_icon = icons::processing(t_processing);
+    let operations = context.processing.lock().unwrap().operations.len();
+    let processing_button = if operations == 0 {
+        let t_idle = language.translations.idle;
+        format!(r#"<button class="processing">{processing_icon} {t_idle}</button>"#)
+    } else {
+        format!(r#"<button class="active processing">{processing_icon} {operations} {t_processing}</button>"#)
+    };
+
     let storage_usage = human_size(site.storage_usage());
     let logo_icon = icons::logo(language.translations.hyper8_logo);
-    let t_idle = language.translations.idle;
     let t_preview = language.translations.preview;
-    let t_processing = language.translations.processing;
     let preview_icon = icons::preview(t_preview);
-    let processing_icon = icons::processing(t_processing);
     let storage_icon = icons::storage(language.translations.storage_usage);
     let t_about = language.translations.about;
     let t_filter = language.translations.filter;
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
-                    <form action="/jobs"><button class="processing">{processing_icon} {t_idle}</button></form>
+                    <form action="/jobs">{processing_button}</form>
                     <form action="/"><button>{storage_icon} {storage_usage}</button></form>
                     <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
                     {deploy_button}
