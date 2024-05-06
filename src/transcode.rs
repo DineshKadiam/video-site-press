@@ -306,12 +306,16 @@ pub fn encode(
                     VideoFormat::AudioOnly => {
                         format!("{file_stem}_audio-only")
                     }
-                    VideoFormat::Video { codec, encoding_approach, height, quality, .. } => {
+                    VideoFormat::Video { codec, encoding_approach, frame_rate, height, quality, .. } => {
                         let approach_suffix = encoding_approach.to_string();
                         let codec_suffix = codec.to_string();
+                        let frame_rate_suffix = match frame_rate {
+                            Some(frame_rate) => format!("_{frame_rate}fps"),
+                            None => String::new()
+                        };
                         let quality_suffix = format!("{:.0}", quality * 100.0);
 
-                        format!("{file_stem}_{height}p_{codec_suffix}_q{quality_suffix}_{approach_suffix}")
+                        format!("{file_stem}_{height}p{frame_rate_suffix}_{codec_suffix}_q{quality_suffix}_{approach_suffix}")
                     }
                 };
 
