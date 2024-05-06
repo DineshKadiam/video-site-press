@@ -2,6 +2,16 @@ const splashWrapper = document.querySelector('.splash_wrapper');
 
 const processing = {};
 
+function formatTime(seconds) {
+    if (seconds < 60) {
+        return `0:${Math.floor(seconds).toString().padStart(2, '0')}`;
+    } else if (seconds < 3600) {
+        return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+    } else {
+        return `${Math.floor(seconds / 3600)}:${Math.floor((seconds % 3600) / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+    }
+}
+
 function fetchProcessing() {
     fetch('/processing')
         .then(response => response.json())
@@ -10,30 +20,50 @@ function fetchProcessing() {
             if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
                 const processingElement = document.querySelector('.processing');
                 const processingIcon = document.querySelector('#processing_icon');
-                const text = document.createElement('span');
+
+                let content = [processingIcon.content.cloneNode(true)];
 
                 if (response.operations.length) {
+                    text = document.createElement('div');
+
                     processingElement.classList.add('active');
                     // TODO: This should also give feedback how many jobs are waiting to be processed
-                    const progress = response.operations
-                        .map(op => {
-                            if (op.lastProgress) {
-                                return `${Math.min(100, Math.trunc(op.lastProgress.frame / op.lastProgress.estimatedTotalFrames * 100))}%`;
-                            } else {
-                                return '--%'
-                            }
-                        })
-                        .join(' | ');
-                    text.textContent = `${t.processing} ${progress}`;
+                    for (const operation of response.operations) {
+                        const badge = document.createElement('div');
+
+                        badge.classList.add('processing_badge');
+
+                        if (operation.lastProgress) {
+                            const progress = Math.min(1, operation.lastProgress.frame / operation.lastProgress.estimatedTotalFrames);
+                            const percent = Math.trunc(progress * 100);
+                            const secondsRemaining = Math.trunc(operation.lastProgress.duration * (1 / progress));
+
+                            const left = document.createElement('span');
+                            left.textContent = percent.toString() + '%';
+
+                            const right = document.createElement('span');
+                            right.classList.add('inverted');
+                            right.textContent = '-' + formatTime(secondsRemaining);
+
+                            badge.append(left, right);
+                        } else {
+                            const text = document.createElement('span');
+                            text.textContent = 'MISC';
+                            badge.append(text);
+                        }
+
+                        content.push(badge);
+                    }
                 } else {
                     processingElement.classList.remove('active');
+
+                    const text = document.createElement('span');
                     text.textContent = t.idle;
+
+                    content.push(text);
                 }
 
-                processingElement.replaceChildren(
-                    processingIcon.content.cloneNode(true),
-                    text
-                );
+                processingElement.replaceChildren(...content);
 
                 processing.lastUpdate = response.lastUpdate;
             }

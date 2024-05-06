@@ -214,6 +214,21 @@ pre.error {
     white-space: normal;
 }
 .processing.active { color: orange; }
+.processing_badge {
+    /* TODO: Solve/rethink coloring properly, consider white theme too */
+    --fg-1: orange;
+    border: 1px solid orange;
+    border-radius: .2rem;
+    display: flex;
+    font-size: .8rem;
+}
+.processing_badge span { padding: .15rem .3rem; }
+.processing_badge span.inverted {
+    background-color: orange;
+    border-bottom-right-radius: .2rem;
+    border-top-right-radius: .2rem;
+    color: var(--bg-1);
+}
 select {
     background-color: var(--bg-2);
     border: none;

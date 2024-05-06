@@ -18,7 +18,7 @@ use crate::{
     Video
 };
 use crate::icons;
-use crate::util::human_size;
+use crate::util::{human_size, precise_duration};
 
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
@@ -408,12 +408,47 @@ pub fn layout(
 
     let t_processing = language.translations.processing;
     let processing_icon = icons::processing(t_processing);
-    let operations = context.processing.lock().unwrap().operations.len();
-    let processing_button = if operations == 0 {
-        let t_idle = language.translations.idle;
-        format!(r#"<button class="processing">{processing_icon} {t_idle}</button>"#)
-    } else {
-        format!(r#"<button class="active processing">{processing_icon} {operations} {t_processing}</button>"#)
+    let processing_button = {
+        let processing = &context.processing.lock().unwrap();
+        if processing.operations.is_empty() {
+            let t_idle = language.translations.idle;
+            format!(r#"<button class="processing">{processing_icon} {t_idle}</button>"#)
+        } else {
+            let operations = processing.operations
+                .iter()
+                .map(|operation| {
+                    match &operation.last_progress {
+                        Some(last_progress) => {
+                            let progress = (last_progress.frame as f32 / last_progress.estimated_total_frames as f32).min(1.0);
+                            let percent = (progress * 100.0) as usize;
+                            let seconds_remaining = last_progress.duration * (1.0 / progress);
+                            let time_remaining = precise_duration(seconds_remaining);
+
+                            formatdoc!(r#"
+                                <div class="processing_badge">
+                                    <span>{percent}%</span>
+                                    <span class="inverted">-{time_remaining}</span>
+                                </div>
+                            "#)
+                        }
+                        None => {
+                            formatdoc!(r#"
+                                <div class="processing_badge">
+                                    MISC
+                                </div>
+                            "#)
+                        }
+                    }
+                })
+                .collect::<Vec<String>>()
+                .join("");
+
+            formatdoc!(r#"
+                <button class="active processing">
+                    {processing_icon} {operations}
+                </button>
+            "#)
+        }
     };
 
     let storage_usage = human_size(site.storage_usage());

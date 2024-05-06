@@ -58,6 +58,7 @@ pub struct Processing {
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Progress {
+    pub duration: f32,
     pub estimated_total_frames: usize,
     pub frame: usize
 }
@@ -226,8 +227,9 @@ impl Progress {
     }
 
     /// Parses a line like "frame=   1 fps=23 ..." coming from ffmpeg
-    pub fn new(estimated_total_frames: usize, line: &str) -> Progress {
+    pub fn new(duration: f32, estimated_total_frames: usize, line: &str) -> Progress {
         let mut progress = Progress {
+            duration,
             estimated_total_frames,
             frame: 0
         };

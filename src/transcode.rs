@@ -277,7 +277,8 @@ pub fn encode(
                 for result in stderr_reader.split(b'\r') {
                     if let Ok(bytes) = result {
                         if let Ok(line) = std::str::from_utf8(&bytes) {
-                            let progress = Progress::new(estimated_total_frames, line);
+                            let rendering_duration = rendering_begin.elapsed().as_secs_f32();
+                            let progress = Progress::new(rendering_duration, estimated_total_frames, line);
                             context.processing.lock().unwrap().update_progress(process_id, progress);
                         }
                     }
@@ -293,8 +294,6 @@ pub fn encode(
             };
 
             if exit_status.success() {
-                let _rendering_time = rendering_begin.elapsed().as_secs_f32();
-
                 // If the video directory disappeared (was moved/removed) while we were encoding
                 // we discard our encoding output as we don't know where to put it anymore.
                 if !context.site_dir.join(&video.path).exists() {
