@@ -10,6 +10,8 @@ use chrono::{Locale as ChronoLocale, NaiveDate};
 use nanoid::nanoid;
 use slug::slugify;
 
+use crate::Translations;
+
 pub struct Field {
     pub error: Option<String>,
     pub value: String
@@ -35,20 +37,22 @@ impl Field {
     }
 }
 
-// TODO: Localize sec/min/hrs
 /// Takes seconds, formats it like "25 min", "33 sec", "158 min", "3.6 hrs", "11 hrs"
-pub fn casual_duration(seconds: f32) -> String {
+pub fn casual_duration(seconds: f32, translations: &Translations) -> String {
     if seconds < 60.0 {
-        format!("{} sec", seconds as u8)
+        let t_sec = translations.sec;
+        format!("{} {t_sec}", seconds as u8)
     } else if seconds < 240.0 * 60.0 {
-        format!("{} min", (seconds / 60.0).round() as u32)
+        let t_min = translations.min;
+        format!("{} {t_min}", (seconds / 60.0).round() as u32)
     } else {
         let hours = seconds / (10.0 * 60.0 * 60.0);
 
+        let t_hrs = translations.hrs;
         if hours >= 10.0 || hours.fract() < 0.1 {
-            format!("{} hrs", hours.round() as u32)
+            format!("{} {t_hrs}", hours.round() as u32)
         } else {
-            format!("{hours:.1} hrs")
+            format!("{hours:.1} {t_hrs}")
         }
     }
 }

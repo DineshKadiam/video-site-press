@@ -154,8 +154,10 @@ impl OutlineStats {
                 (None, None) => String::new()
             };
 
+            let total_duration = casual_duration(self.total_duration, &site.language.translations);
+            let total_videos = self.total_videos;
             let t_videos = &site.language.translations.videos;
-            format!("{date_range}{} {t_videos}, {}", self.total_videos, casual_duration(self.total_duration))
+            format!("{date_range}{total_videos} {t_videos}, {total_duration}")
         } else {
             let t_empty = &site.language.translations.empty;
             t_empty.to_string()
@@ -302,7 +304,7 @@ impl<'a> Smartcrumb<'a> {
                     // a banner from a playlist, a poster from a video, etc.
                     let thumbnail_rendered = if let Some(video) = subcollection.public_videos().find(|video| video.poster.is_some()) {
                         let video_prefix = format!("{subcollection_prefix}{}/", video.slug());
-                        thumbnail(video, &video_prefix, false)
+                        thumbnail(&site.language.translations, video, &video_prefix, false)
                     } else {
                         String::new()
                     };
@@ -358,7 +360,7 @@ impl<'a> Smartcrumb<'a> {
                         .public_videos()
                         .find(|video| video.poster.is_some()) {
                         let video_prefix = format!("{playlist_prefix}{}/", video.slug());
-                        thumbnail(video, &video_prefix, false)
+                        thumbnail(&site.language.translations, video, &video_prefix, false)
                     } else {
                         // TODO: Decide what condition this even is and handle
                         String::new()
@@ -411,7 +413,7 @@ impl<'a> Smartcrumb<'a> {
                         format!("../{slug}/")
                     };
 
-                    let thumbnail_rendered = thumbnail(video, &video_prefix, false);
+                    let thumbnail_rendered = thumbnail(&site.language.translations, video, &video_prefix, false);
 
                     let (current, href) = if current_page.is_video(video) {
                         ("current", String::new())
@@ -420,7 +422,7 @@ impl<'a> Smartcrumb<'a> {
                     };
 
                     let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
-                        Some(video_meta) => casual_duration(video_meta.duration),
+                        Some(video_meta) => casual_duration(video_meta.duration, &site.language.translations),
                         None => String::new()
                     };
 
@@ -499,7 +501,7 @@ impl<'a> Smartcrumb<'a> {
                         format!("../{slug}/")
                     };
 
-                    let thumbnail_rendered = thumbnail(video_iterated, &video_prefix, false);
+                    let thumbnail_rendered = thumbnail(&site.language.translations, video_iterated, &video_prefix, false);
 
                     let (current, href) = if video_iterated.path == video.path {
                         ("current", String::new())
@@ -508,7 +510,7 @@ impl<'a> Smartcrumb<'a> {
                     };
 
                     let duration = match &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
-                        Some(video_meta) => casual_duration(video_meta.duration),
+                        Some(video_meta) => casual_duration(video_meta.duration, &site.language.translations),
                         None => String::new()
                     };
 

@@ -401,7 +401,12 @@ pub fn poster_html(poster: &PosterFile, video_prefix: &str) -> String {
     }
 }
 
-pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> String {
+pub fn thumbnail(
+    translations: &Translations,
+    video: &Video,
+    video_prefix: &str,
+    with_duration: bool
+) -> String {
     match &video.poster {
         Some(poster) => {
             let alt = if let Some(description) = &poster.description {
@@ -429,7 +434,7 @@ pub fn thumbnail(video: &Video, video_prefix: &str, with_duration: bool) -> Stri
 
             let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
                 Some(video_meta) => {
-                    let duration = casual_duration(video_meta.duration);
+                    let duration = casual_duration(video_meta.duration, translations);
                     formatdoc!(r#"<span class="duration">{duration}</span>"#)
                 }
                 None => String::new()
