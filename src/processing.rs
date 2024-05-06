@@ -58,6 +58,7 @@ pub struct Processing {
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Progress {
+    pub estimated_total_frames: usize,
     pub frame: usize
 }
 
@@ -225,10 +226,13 @@ impl Progress {
     }
 
     /// Parses a line like "frame=   1 fps=23 ..." coming from ffmpeg
-    pub fn from_str(line: &str) -> Progress {
-        let mut remainder = line.trim();
+    pub fn new(estimated_total_frames: usize, line: &str) -> Progress {
+        let mut progress = Progress {
+            estimated_total_frames,
+            frame: 0
+        };
 
-        let mut progress = Progress::new();
+        let mut remainder = line.trim();
 
         loop {
             if let Some((key, padding_value_next_remainder)) = remainder.split_once('=') {
@@ -244,11 +248,5 @@ impl Progress {
         }
 
         progress
-    }
-
-    fn new() -> Progress {
-        Progress {
-            frame: 0
-        }
     }
 }

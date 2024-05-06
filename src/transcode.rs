@@ -136,11 +136,12 @@ pub fn encode(
         .arg("-stats")
         .arg("-stats_period").arg("2");
 
-    let input_path = if let Some(version) = video.highest_quality_version() {
-        context.site_dir.join(&video.path).join(&version.file_name)
-    } else {
-        return Err(());
+    let highest_quality_version = match video.highest_quality_version() {
+        Some(version) => version,
+        None => return Err(())
     };
+
+    let input_path = context.site_dir.join(&video.path).join(&highest_quality_version.file_name);
 
     command.arg("-i").arg(&input_path);
 
@@ -255,21 +256,30 @@ pub fn encode(
 
     match command.spawn() {
         Ok(mut child) => {
-            let stderr = match child.stderr.take() {
-                Some(stderr) => stderr,
-                None => {
-                    eprint!("Could not capture stderr for ffmpeg child process.");
-                    return Err(())
-                }
-            };
+            if let Some(video_meta) = &highest_quality_version.video_meta {
+                let estimated_total_frames = match &format {
+                    VideoFormat::Video { frame_rate: Some(target_frame_rate), .. } => {
+                        (target_frame_rate * video_meta.duration) as usize
+                    }
+                    _ => (video_meta.video_frame_rate * video_meta.duration) as usize
+                };
 
-            let stderr_reader = BufReader::new(stderr);
+                let stderr = match child.stderr.take() {
+                    Some(stderr) => stderr,
+                    None => {
+                        eprint!("Could not capture stderr for ffmpeg child process.");
+                        return Err(())
+                    }
+                };
 
-            for result in stderr_reader.split(b'\r') {
-                if let Ok(bytes) = result {
-                    if let Ok(line) = std::str::from_utf8(&bytes) {
-                        let progress = Progress::from_str(line);
-                        context.processing.lock().unwrap().update_progress(process_id, progress);
+                let stderr_reader = BufReader::new(stderr);
+
+                for result in stderr_reader.split(b'\r') {
+                    if let Ok(bytes) = result {
+                        if let Ok(line) = std::str::from_utf8(&bytes) {
+                            let progress = Progress::new(estimated_total_frames, line);
+                            context.processing.lock().unwrap().update_progress(process_id, progress);
+                        }
                     }
                 }
             }

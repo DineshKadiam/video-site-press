@@ -306,8 +306,6 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
             let worker_number = index + 1;
             let high_priority_only = worker_number == 1;
 
-            println!("[Worker {worker_number}] Started");
-
             loop {
                 let job = context.take_processing_job(high_priority_only);
 

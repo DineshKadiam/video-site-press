@@ -13,17 +13,21 @@ function fetchProcessing() {
                 const text = document.createElement('span');
 
                 if (response.operations.length) {
-                    let summary = response.operations
-                        .map(op => `${op.label} ${op.lastProgress ? op.lastProgress.frame : ''}`)
-                        .join(', ')
-                    // TODO: This should also give feedback how many jobs are waiting to be processed (?)
-                    text.textContent = `${response.operations.length} ${t.processing}`;
                     processingElement.classList.add('active');
-                    processingElement.setAttribute('title', summary);
+                    // TODO: This should also give feedback how many jobs are waiting to be processed
+                    const progress = response.operations
+                        .map(op => {
+                            if (op.lastProgress) {
+                                return `${Math.min(100, Math.trunc(op.lastProgress.frame / op.lastProgress.estimatedTotalFrames * 100))}%`;
+                            } else {
+                                return '--%'
+                            }
+                        })
+                        .join(' | ');
+                    text.textContent = `${t.processing} ${progress}`;
                 } else {
-                    text.textContent = t.idle;
                     processingElement.classList.remove('active');
-                    processingElement.removeAttribute('title', null);
+                    text.textContent = t.idle;
                 }
 
                 processingElement.replaceChildren(
