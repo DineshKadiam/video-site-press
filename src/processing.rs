@@ -40,6 +40,7 @@ pub enum JobKind {
 pub struct Operation {
     pub id: usize,
     pub label: String,
+    pub last_progress: Option<Progress>,
     pub path: String
 }
 
@@ -49,6 +50,15 @@ pub struct Operation {
 pub struct Processing {
     pub last_update: u128,
     pub operations: Vec<Operation>
+}
+
+// We could also (but currently don't) use the following progress fields that
+// ffmpeg reports: fps, q, size, time, bitrate, speed
+// These can easily be added in Progress:from_str if needed.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Progress {
+    pub frame: usize
 }
 
 impl Job {
@@ -175,7 +185,8 @@ impl Processing {
         let operation = Operation {
             path: path.to_owned(),
             id,
-            label
+            label,
+            last_progress: None
         };
 
         self.last_update = timestamp();
@@ -192,6 +203,54 @@ impl Processing {
         if let Some(index) = index_option {
             self.last_update = timestamp();
             self.operations.remove(index);
+        }
+    }
+
+    pub fn update_progress(&mut self, id: usize, progress: Progress) {
+        if let Some(operation) = self.operations
+            .iter_mut()
+            .find(|operation| operation.id == id) {
+            self.last_update = timestamp();
+            operation.last_progress = Some(progress);
+        }
+    }
+}
+
+impl Progress {
+    fn apply(&mut self, key: &str, value: &str) {
+        match key {
+            "frame" => if let Ok(number) = value.parse::<usize>() {
+                self.frame = number;
+            }
+            _ => ()
+        }
+    }
+
+    /// Parses a line like "frame=   1 fps=23 ..." coming from ffmpeg
+    pub fn from_str(line: &str) -> Progress {
+        let mut remainder = line.trim();
+
+        let mut progress = Progress::new();
+
+        loop {
+            if let Some((key, padding_value_next_remainder)) = remainder.split_once('=') {
+                let value_next_remainder = padding_value_next_remainder.trim_start();
+                if let Some((value, next_remainder)) = value_next_remainder.split_once(' ') {
+                    progress.apply(key, value);
+                    remainder = next_remainder;
+                } else {
+                    progress.apply(key, value_next_remainder);
+                    break
+                }
+            }
+        }
+
+        progress
+    }
+
+    fn new() -> Progress {
+        Progress {
+            frame: 0
         }
     }
 }

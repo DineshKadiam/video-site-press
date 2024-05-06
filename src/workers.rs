@@ -360,7 +360,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Computing version {format_label} for {}", video.path);
                         let process_id = context.processing.lock().unwrap().push(&video.path, label);
 
-                        match transcode::encode(&context, format, &video) {
+                        match transcode::encode(&context, format, process_id, &video) {
                             Ok(version) => {
                                 let mutation = |video_mut: &mut Video| {
                                     video_mut.versions.push(version);

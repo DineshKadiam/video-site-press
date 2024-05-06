@@ -610,44 +610,6 @@ impl Context {
         }
     }
 
-    // fn queue_version_jobs(&self, video: &Arc<Video>, queue: &mut Vec<Job>) {
-    //     let metadata = video.assets.metadata.as_ref().unwrap();
-
-    //     let settings = self.collection.get_settings();
-
-    //     let mut target_formats = Vec::new();
-
-    //     for format in &settings.formats {
-    //         match format {
-    //             // TODO: This would actually make more sense as a singleton prop?
-    //             //       May have settings, but only one audio format is probably enough.
-    //             VideoFormat::AudioOnly => {
-    //                 if metadata.has_audio {
-    //                     target_formats.push(VideoFormat::AudioOnly);
-    //                 }
-    //             }
-    //             VideoFormat::Video { width, .. } => {
-    //                 if metadata.width >= *width {
-    //                     target_formats.push(format.clone());
-    //                 } 
-    //             }
-    //         }
-    //     }
-
-    //     // TODO: If the video is smaller than the smallest video format
-    //     //       we don't get any single video version - how do we model
-    //     //       our format list differently so we can nicely prevent
-    //     //       even getting in that kind of a problem space?
-    //     //       (Should the formats be more kind of suggestions/hints?)
-
-    //     let version_jobs = target_formats
-    //         .into_iter()
-    //         .filter(|format| !video.has_format(format))
-    //         .map(|format| Job::new(JobKind::Format(format), video.clone()));
-
-    //     queue.extend(version_jobs);
-    // }
-
     /// Determine what needs to be computed for this video and append the
     /// required jobs to the passed queue.
     fn queue_video_jobs(&self, video: &Arc<Video>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {

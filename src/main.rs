@@ -42,7 +42,7 @@ use image_processor::{ImageProcessor, ResizeMode};
 use language::Language;
 use playlist::Playlist;
 use poster::{PosterAsset, PosterAssets, PosterFile};
-use processing::{Job, JobKind, Processing};
+use processing::{Job, JobKind, Processing, Progress};
 use site::{AspectRatio, BaseUrl, Site, SiteContent};
 use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};

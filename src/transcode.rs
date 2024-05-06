@@ -1,6 +1,7 @@
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::time::Instant;
 
 use serde_derive::Deserialize;
@@ -10,6 +11,7 @@ use crate::{
     Context,
     EncodingApproach,
     FileMeta,
+    Progress,
     Video,
     VideoFile,
     VideoFormat,
@@ -119,12 +121,20 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
 pub fn encode(
     context: &Context,
     format: VideoFormat,
+    process_id: usize,
     video: &Video
 ) -> Result<VideoFile, ()> {
     let mut command = Command::new(FFMPEG);
 
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");
+
+    // Suppress all output but explicitly re-enable periodic printing
+    // of progress (which we parse and process further).
+    command
+        .arg("-v").arg("quiet")
+        .arg("-stats")
+        .arg("-stats_period").arg("2");
 
     let input_path = if let Some(version) = video.highest_quality_version() {
         context.site_dir.join(&video.path).join(&version.file_name)
@@ -239,11 +249,40 @@ pub fn encode(
 
     command.arg(&temp_path);
 
+    command.stderr(Stdio::piped());
+
     let rendering_begin = Instant::now();
 
-    match command.output() {
-        Ok(output) => {
-            if output.status.success() {
+    match command.spawn() {
+        Ok(mut child) => {
+            let stderr = match child.stderr.take() {
+                Some(stderr) => stderr,
+                None => {
+                    eprint!("Could not capture stderr for ffmpeg child process.");
+                    return Err(())
+                }
+            };
+
+            let stderr_reader = BufReader::new(stderr);
+
+            for result in stderr_reader.split(b'\r') {
+                if let Ok(bytes) = result {
+                    if let Ok(line) = std::str::from_utf8(&bytes) {
+                        let progress = Progress::from_str(line);
+                        context.processing.lock().unwrap().update_progress(process_id, progress);
+                    }
+                }
+            }
+
+            let exit_status = match child.wait() {
+                Ok(exit_status) => exit_status,
+                Err(_) => {
+                    eprint!("The ffmpeg child process could not be waited for.");
+                    return Err(())
+                }
+            };
+
+            if exit_status.success() {
                 let _rendering_time = rendering_begin.elapsed().as_secs_f32();
 
                 // If the video directory disappeared (was moved/removed) while we were encoding
@@ -296,14 +335,18 @@ pub fn encode(
                     video_meta: None
                 };
 
-            	return Ok(video_version);
+                Ok(video_version)
+            } else {
+                let error_code = match exit_status.code() {
+                    Some(code) => format!("error code {code}"),
+                    None => String::from("probably signal-terminated")
+                };
+                eprint!("The ffmpeg child process terminated unsuccessfully ({error_code})");
+                Err(())
             }
-
-            eprint!("{output:?}");
-            Err(())
         }
         Err(err) => {
-            eprint!("The ffmpeg child process could not be executed.");
+            eprint!("The ffmpeg child process could not be spawned.");
             eprint!("{err}");
             Err(())
         }

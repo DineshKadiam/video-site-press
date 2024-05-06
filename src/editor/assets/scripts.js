@@ -6,19 +6,21 @@ function fetchProcessing() {
     fetch('/processing')
         .then(response => response.json())
         .then(response => {
+            // TODO: This lastUpdate check is maybe not really needed anymore (what purpose does it serve now?)
             if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
                 const processingElement = document.querySelector('.processing');
                 const processingIcon = document.querySelector('#processing_icon');
                 const text = document.createElement('span');
 
                 if (response.operations.length) {
+                    let summary = response.operations
+                        .map(op => `${op.label} ${op.lastProgress ? op.lastProgress.frame : ''}`)
+                        .join(', ')
                     // TODO: This should also give feedback how many jobs are waiting to be processed (?)
-                    // TODO: Localize
                     text.textContent = `${response.operations.length} ${t.processing}`;
                     processingElement.classList.add('active');
-                    processingElement.setAttribute('title', response.operations.map(op => op.label).join(', '));
+                    processingElement.setAttribute('title', summary);
                 } else {
-                    // TODO: Localize
                     text.textContent = t.idle;
                     processingElement.classList.remove('active');
                     processingElement.removeAttribute('title', null);

@@ -22,6 +22,34 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     body.push_str(r#"<h2>Background processing dashboard</h2>"#);
     body.push_str(r#"<p>This lists active/failed/pending/complete background jobs, if any, in this session</p>"#);
 
+    if let Ok(processing) = context.processing.lock() {
+        if !processing.operations.is_empty() {
+            let operations = processing.operations
+                .iter()
+                .map(|operation| {
+                    let label = &operation.label;
+                    let last_progress = match &operation.last_progress {
+                        Some(progress) => format!("(Frame {})", progress.frame),
+                        None => String::from("(No progress information yet)")
+                    };
+                    format!("<li>{label} {last_progress}</li>")
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            let wrapped = formatdoc!(r#"
+                <div>
+                    Active processing:
+                    <ul>
+                        {operations}
+                    </ul>
+                </div>
+            "#);
+
+            body.push_str(&wrapped);
+        }
+    }
+
     if let Ok(processing_errors) = context.processing_errors.lock() {
         if !processing_errors.is_empty() {
             let errors = processing_errors
