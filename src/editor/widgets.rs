@@ -455,19 +455,22 @@ pub fn layout(
 pub fn not_found(
     context: &Context,
     language: &Language,
-    message: &str
+    path: &str
 ) -> HttpResponse {
     let t_back = language.translations.back;
+    let t_message = language.translations.the_resource_xxx_was_not_found_message(path);
     let body = formatdoc!(r#"
         <div>
-            {message}
+            {t_message}
         </div>
 
         <a href="/">{t_back}</a>
     "#);
 
     let site = &context.get_site();
-    let html = layout(context, language, None, site, &body, "Not Found");
+
+    let t_resource_not_found = language.translations.resource_not_found;
+    let html = layout(context, language, None, site, &body, t_resource_not_found);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

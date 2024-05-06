@@ -93,7 +93,7 @@ pub async fn create_playlist(
         };
 
         if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path)));
+            return Either::Right(not_found(&context, &language, &path.path));
         }
 
         playlist.write_manifest(&context.site_dir);
@@ -103,9 +103,7 @@ pub async fn create_playlist(
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = CollectionFormFeedback::CreatePlaylist {
@@ -151,7 +149,7 @@ pub async fn create_subcollection(
         };
 
         if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path)));
+            return Either::Right(not_found(&context, &language, &path.path));
         }
 
         subcollection.write_manifest(&context);
@@ -161,9 +159,7 @@ pub async fn create_subcollection(
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = CollectionFormFeedback::CreateSubcollection {
@@ -180,7 +176,7 @@ pub async fn delete(
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_collection(&path.path) {
         let language = context.get_editor_language();
-        return Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path)))
+        return Either::Right(not_found(&context, &language, &path.path))
     };
 
     let redirect_url = if &path.path == "" {
@@ -445,7 +441,7 @@ pub async fn edit(
 
     match context.get_collection(&path.path) {
         Some(collection) => edit_page(&collection, &context, None, &language),
-        None => not_found(&context, &language, &format!("Collection {} not found.", &path.path))
+        None => not_found(&context, &language, &path.path)
     }
 }
 
@@ -484,9 +480,7 @@ pub async fn r#move(
 
         let collection = match context.update_collection(mutation, &path.path) {
             Ok(collection) => collection,
-            Err(()) => return Either::Right(
-                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
-            )
+            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let redirect_url = format!("/collection/{}", &collection.path);
@@ -495,9 +489,7 @@ pub async fn r#move(
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = CollectionFormFeedback::Move {
@@ -529,9 +521,7 @@ pub async fn update(
 
         let collection = match context.update_collection(mutation, &path.path) {
             Ok(collection) => collection,
-            Err(()) => return Either::Right(
-                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
-            )
+            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         collection.write_manifest(&context);
@@ -542,9 +532,7 @@ pub async fn update(
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Collection {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = CollectionFormFeedback::Update {

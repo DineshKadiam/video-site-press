@@ -9,7 +9,7 @@ pub struct Translations {
     pub banner_image: &'static str,
     pub best: &'static str,
     pub browser_support_unclear: &'static str,
-    pub check_the_docs_for_more_information: &'static str,
+    check_the_docs_for_more_information: &'static str,
     pub clean_urls_label: &'static str,
     pub close: &'static str,
     pub codec: &'static str,
@@ -95,11 +95,13 @@ pub struct Translations {
     pub render_format: &'static str,
     pub replay: &'static str,
     pub resolution: &'static str,
+    pub resource_not_found: &'static str,
     pub sec: &'static str,
     pub site_settings: &'static str,
     pub sound_muted: &'static str,
     pub storage_usage: &'static str,
     pub subtitles: &'static str,
+    the_resource_xxx_was_not_found_message: &'static str,
     pub title: &'static str,
     pub unlisted: &'static str,
     pub unmodified: &'static str,
@@ -221,11 +223,13 @@ impl Translations {
             render_format: "Format rendern",
             replay: "Erneut abspielen",
             resolution: "Auflösung",
+            resource_not_found: "Resource nicht gefunden",
             sec: "sek",
             site_settings: "Seiteneinstellungen",
             sound_muted: "Ton stummgeschalten",
             storage_usage: "Speicherverbrauch",
             subtitles: "Untertitel",
+            the_resource_xxx_was_not_found_message: "Die Resource {path} wurde nicht gefunden, vielleicht wurde sie umbenannt, verschoben oder gelöscht?",
             title: "Titel",
             unlisted: "Ungelistet",
             unmodified: "Unverändert",
@@ -343,11 +347,13 @@ impl Translations {
             render_format: "Render Format",
             replay: "Replay",
             resolution: "Resolution",
+            resource_not_found: "Resource not found",
             sec: "sec",
             site_settings: "Site Settings",
             sound_muted: "Sound muted",
             storage_usage: "Storage Usage",
             subtitles: "Subtitles",
+            the_resource_xxx_was_not_found_message: "The resource {path} was not found, maybe it has been renamed, moved, or deleted?",
             title: "Title",
             unlisted: "Unlisted",
             unmodified: "Unmodified",
@@ -367,6 +373,10 @@ impl Translations {
             worst: "Worst"
         }
     }
+
+    pub fn the_resource_xxx_was_not_found_message(&self, path: &str) -> String {
+        self.the_resource_xxx_was_not_found_message.replace("{path}", path)
+    }
 }
 
 #[test]
@@ -378,5 +388,6 @@ fn check_translations() {
 
     for translations in &locales {
         assert!(&translations.check_the_docs_for_more_information.contains("{external_icon}"));
+        assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
     }
 }

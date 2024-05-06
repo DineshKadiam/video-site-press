@@ -108,7 +108,7 @@ pub async fn delete(
         Ok(video_parent) => video_parent,
         Err(()) => {
             let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+            return Either::Right(not_found(&context, &language, &path.path))
         }
     };
 
@@ -145,7 +145,7 @@ pub async fn delete_poster(
         }
         Err(()) => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+            Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }
@@ -175,7 +175,7 @@ pub async fn delete_version(
         }
         Err(()) => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+            Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }
@@ -189,7 +189,7 @@ pub async fn downsize(
         Some(video) => video,
         None => {
             let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+            return Either::Right(not_found(&context, &language, &path.path))
         }
     };
 
@@ -678,7 +678,7 @@ pub async fn edit(
 
     let video = match context.get_video(&path.path) {
         Some(video) => video,
-        None => return not_found(&context, &language, &format!("Video {} not found.", &path.path))
+        None => return not_found(&context, &language, &path.path)
     };
 
     edit_page(&context, None, &language, &video)
@@ -756,9 +756,7 @@ pub async fn r#move(
 
         let video = match context.update_video(mutation, &path.path) {
             Ok(video) => video,
-            Err(()) => return Either::Right(
-                not_found(&context, &language, &format!("Video {} not found.", &path.path))
-            )
+            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let redirect_url = format!("/video/{}", video.path);
@@ -766,9 +764,7 @@ pub async fn r#move(
     } else {
         let video = match context.get_video(&path.path) {
             Some(video) => video,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Video {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = VideoFormFeedback::Move {
@@ -799,7 +795,7 @@ pub async fn random_poster(
         }
         None => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+            Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }
@@ -828,9 +824,7 @@ pub async fn update(
     if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) {
         let video = match context.get_video(&path.path) {
             Some(video) => video,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Video {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = VideoFormFeedback::Update {
@@ -854,9 +848,7 @@ pub async fn update(
 
         let video = match context.update_video(mutation, &path.path) {
             Ok(video) => video,
-            Err(()) => return Either::Right(
-                not_found(&context, &language, &format!("Video {} not found.", &path.path))
-            )
+            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let redirect_url = format!("/video/{}", video.path);
@@ -883,7 +875,7 @@ pub async fn update_poster(
         }
         Err(()) => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path)))
+            Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }
@@ -908,7 +900,7 @@ pub async fn upload_poster(
                         return Ok(Either::Right(http_response))
                     }
                     None => {
-                        let http_response = not_found(&context, &language, &format!("Video {} not found.", &path.path));
+                        let http_response = not_found(&context, &language, &path.path);
                         return Ok(Either::Right(http_response));
                     }
                 }
@@ -946,7 +938,7 @@ pub async fn upload_poster(
                 Ok(video) => video,
                 Err(()) => {
                     let _ = fs::remove_file(&storage_path);
-                    let http_response = not_found(&context, &language, &format!("Video {} not found.", &path.path));
+                    let http_response = not_found(&context, &language, &path.path);
                     return Ok(Either::Right(http_response));
                 }
             };
@@ -977,7 +969,7 @@ pub async fn upload_video(
     let container = context.get_any(&path.path);
 
     if let GetAnyResult::None = container {
-        let http_response = not_found(&context, &language, &format!("No collection, playlist or video found at path {}", &path.path));
+        let http_response = not_found(&context, &language, &path.path);
         return Ok(Either::Right(http_response));
     }
 
@@ -1043,7 +1035,7 @@ pub async fn upload_video(
 
                         if context.update_collection(mutation, &path.path).is_err() {
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            return Ok(Either::Right(not_found(&context, &language, &format!("Collection {} not found.", &path.path))));
+                            return Ok(Either::Right(not_found(&context, &language, &path.path)));
                         }
 
                         video
@@ -1059,7 +1051,7 @@ pub async fn upload_video(
 
                         if context.update_playlist(mutation, &path.path).is_err() {
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            return Ok(Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path))));
+                            return Ok(Either::Right(not_found(&context, &language, &path.path)));
                         }
 
                         video
@@ -1075,7 +1067,7 @@ pub async fn upload_video(
                         match context.update_video(mutation, &path.path) {
                             Ok(video) => video,
                             // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            Err(()) => return Ok(Either::Right(not_found(&context, &language, &format!("Video {} not found.", &path.path))))
+                            Err(()) => return Ok(Either::Right(not_found(&context, &language, &path.path)))
                         }
                     }
                     GetAnyResult::None => unreachable!()
@@ -1093,6 +1085,5 @@ pub async fn upload_video(
         }
     }
 
-    let http_response = not_found(&context, &language, "No actionable payload found in request");
-    Ok(Either::Right(http_response))
+    unimplemented!()
 }

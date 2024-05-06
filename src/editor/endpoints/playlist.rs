@@ -68,7 +68,7 @@ pub async fn delete(
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_playlist(&path.path) {
         let language = context.get_editor_language();
-        return Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path)))
+        return Either::Right(not_found(&context, &language, &path.path))
     };
 
     let redirect_url = if &path.path == "" {
@@ -100,7 +100,7 @@ pub async fn delete_banner(
         }
         Err(()) => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path)))
+            Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }
@@ -392,14 +392,10 @@ pub async fn edit(
 ) -> HttpResponse {
     let language = context.get_editor_language();
 
-    // TODO: Should be cloned because the returned one is mut and locking?
-    let playlist = match context.get_playlist(&path.path) {
-        Some(playlist) => playlist,
-        // TODO: Localize
-        None => return not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
-    };
-
-    edit_page(&context, None, &language, &playlist)
+    match context.get_playlist(&path.path) {
+        Some(playlist) => edit_page(&context, None, &language, &playlist),
+        None => not_found(&context, &language, &path.path)
+    }
 }
 
 pub async fn r#move(
@@ -437,9 +433,7 @@ pub async fn r#move(
 
         let playlist = match context.update_playlist(mutation, &path.path) {
             Ok(playlist) => playlist,
-            Err(()) => return Either::Right(
-                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
-            )
+            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let redirect_url = format!("/playlist/{}", playlist.path);
@@ -447,9 +441,7 @@ pub async fn r#move(
     } else {
         let playlist = match context.get_playlist(&path.path) {
             Some(playlist) => playlist,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = PlaylistFormFeedback::Move {
@@ -484,9 +476,7 @@ pub async fn update(
 
         let playlist = match context.update_playlist(mutation, &path.path) {
             Ok(playlist) => playlist,
-            Err(()) => return Either::Right(
-                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
-            )
+            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let redirect_url = format!("/playlist/{}", playlist.path);
@@ -494,9 +484,7 @@ pub async fn update(
     } else {
         let playlist = match context.get_playlist(&path.path) {
             Some(playlist) => playlist,
-            None => return Either::Right(
-                not_found(&context, &language, &format!("Playlist {} not found.", &path.path))
-            )
+            None => return Either::Right(not_found(&context, &language, &path.path))
         };
 
         let form_feedback = PlaylistFormFeedback::Update {
@@ -530,7 +518,7 @@ pub async fn update_banner(
         }
         Err(()) => {
             let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &format!("Playlist {} not found.", &path.path)))
+            return Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }
@@ -584,7 +572,7 @@ pub async fn upload_banner(
                 }
                 Err(()) => {
                     let _ = fs::remove_file(&storage_path);
-                    let http_response = not_found(&context, &language, &format!("Playlist {} not found.", &path.path));
+                    let http_response = not_found(&context, &language, &path.path);
                     return Ok(Either::Right(http_response));
                 }
             }
