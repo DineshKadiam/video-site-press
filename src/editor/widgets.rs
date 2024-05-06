@@ -421,7 +421,7 @@ pub fn layout(
                         Some(last_progress) => {
                             let progress = (last_progress.frame as f32 / last_progress.estimated_total_frames as f32).min(1.0);
                             let percent = (progress * 100.0) as usize;
-                            let seconds_remaining = last_progress.duration * (1.0 / progress);
+                            let seconds_remaining = (1.0 - progress) * (last_progress.duration / progress);
                             let time_remaining = precise_duration(seconds_remaining);
 
                             formatdoc!(r#"

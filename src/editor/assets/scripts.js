@@ -36,7 +36,7 @@ function fetchProcessing() {
                         if (operation.lastProgress) {
                             const progress = Math.min(1, operation.lastProgress.frame / operation.lastProgress.estimatedTotalFrames);
                             const percent = Math.trunc(progress * 100);
-                            const secondsRemaining = Math.trunc(operation.lastProgress.duration * (1 / progress));
+                            const secondsRemaining = Math.trunc((1 - progress) * (operation.lastProgress.duration / progress));
 
                             const left = document.createElement('span');
                             left.textContent = percent.toString() + '%';
