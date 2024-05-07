@@ -250,7 +250,7 @@ pub fn player(
         "#);
     }
 
-    let smallest_version = video.lowest_resolution_version().unwrap();
+    let recommended_version = video.recommended_version().unwrap();
 
     let poster = match &video.poster {
         Some(poster) => match &poster.assets {
@@ -294,12 +294,12 @@ pub fn player(
         false => format!(r#"<button id="select_subtitles">{subtitles_icon}</button>"#)
     };
 
-    let duration = smallest_version.video_meta.as_ref().unwrap().duration;
+    let duration = recommended_version.video_meta.as_ref().unwrap().duration;
     let duration_formatted = precise_duration(duration);
-    let default_resolution_label = smallest_version.vertical_resolution_label();
-    let src = &smallest_version.file_name;
+    let default_resolution_label = recommended_version.vertical_resolution_label();
+    let src = &recommended_version.file_name;
 
-    let versions_ring_rendered = versions_ring(video);
+    let versions_ring_rendered = versions_ring(recommended_version, video);
 
     let t_next_video = site.language.translations.next_video;
     let next_video_button = match next_video {
@@ -460,7 +460,7 @@ pub fn unlisted_badge(unlisted: bool, translations: &Translations) -> String {
     }
 }
 
-fn versions_ring(video: &Video) -> String {
+fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
     let radius = 190.0;
     let diameter = radius * 2.0;
 
@@ -579,7 +579,7 @@ fn versions_ring(video: &Video) -> String {
 
         let size_humanized = human_size(*size);
 
-        let default = index == sizes.len() - 1;
+        let default = &recommended_version.file_name == *src;
         let slice_rendered = slice(
             arc_angle,
             begin_angle,

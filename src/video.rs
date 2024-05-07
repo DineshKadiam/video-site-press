@@ -240,19 +240,27 @@ impl Video {
             )
     }
 
-    pub fn lowest_resolution_version(&self) -> Option<&VideoFile> {
-        let mut version_candidate: Option<(usize, &VideoFile)> = None;
+    /// Applies a simple heuristic to determine the "most recommended"
+    /// version to watch. Roughly speaking, something that is not too
+    /// high-res, not too low-res, but a nice balance between resource
+    /// consumption and visual fidelity.
+    pub fn recommended_version(&self) -> Option<&VideoFile> {
+        // (fps_distance, height_distance, version)
+        let mut version_candidate: Option<(f32, i32, &VideoFile)> = None;
 
         for version in &self.versions {
             if let Some(video_meta) = &version.video_meta {
-                let pixels = video_meta.width * video_meta.height;
-                if version_candidate.is_none() || version_candidate.is_some_and(|pixels_version| pixels < pixels_version.0) {
-                    version_candidate = Some((pixels, version));
+                let fps_distance = (27.0 - video_meta.video_frame_rate).abs();
+                let height_distance = (720 - video_meta.height as i32).abs();
+                if version_candidate.is_none() || version_candidate.is_some_and(|version_tuple| {
+                    fps_distance < version_tuple.0 || height_distance < version_tuple.1
+                }) {
+                    version_candidate = Some((fps_distance, height_distance, version));
                 }
             }
         }
 
-        version_candidate.map(|pixels_version| pixels_version.1)
+        version_candidate.map(|version_tuple| version_tuple.2)
     }
 
     fn new(path: String) -> Video {
