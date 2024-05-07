@@ -400,11 +400,9 @@ impl Site {
             let video = Video::read_dir(context, &hyper_dir, &site);
             site.content = SiteContent::Video(video);
         } else if !hyper_dir.dirs.is_empty() {
-            eprintln!("No manifest in the site directory. Going forward, a collection is assumed (because there are folders inside).");
             let collection = Collection::read_dir(context, &hyper_dir, &site);
             site.content = SiteContent::Collection(collection);
         } else if !hyper_dir.video_files.is_empty() {
-            eprintln!("No manifest in the site directory. Going forward, a video is assumed (because there is a/are video file(s) inside).");
             let video = Video::read_dir(context, &hyper_dir, &site);
             site.content = SiteContent::Video(video);
         }

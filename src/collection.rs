@@ -450,11 +450,9 @@ impl Collection {
             let video = Video::read_dir(context, hyper_subdir, site);
             self.videos.push(video);
         } else if !hyper_subdir.dirs.is_empty() {
-            eprintln!("No manifest in the collection subdirectory. Going forward, a collection is assumed (because there are folders inside).");
             let subcollection = Collection::read_dir(context, hyper_subdir, site);
             self.subcollections.push(subcollection);
         } else if !hyper_subdir.video_files.is_empty() {
-            eprintln!("No manifest in the collection subdirectory. Going forward, a video is assumed (because there is a/are video file(s) inside).");
             let video = Video::read_dir(context, hyper_subdir, site);
             self.videos.push(video);
         } else {
