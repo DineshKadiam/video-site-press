@@ -113,6 +113,17 @@ button:hover {
     height: 1rem;
     width: 1rem;
 }
+.delete_button {
+    align-items: center;
+    border-radius: 50%;
+    display: inline-flex;
+    justify-content: center;
+    padding: .5rem;
+}
+.delete_button svg {
+    height: 1rem;
+    width: 1rem;
+}
 .duration_info svg {
     height: 1rem;
     width: 1rem;

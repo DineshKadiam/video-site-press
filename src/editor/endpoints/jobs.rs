@@ -18,8 +18,10 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
 
     let mut body = String::new();
 
+    let t_background_jobs = language.translations.background_jobs;
+    body.push_str(&format!("<h2>{t_background_jobs}</h2>"));
+
     // TODO: Localize
-    body.push_str(r#"<h2>Background processing dashboard</h2>"#);
     body.push_str(r#"<p>This lists active/failed/pending/complete background jobs, if any, in this session</p>"#);
 
     if let Ok(processing) = context.processing.lock() {

@@ -349,6 +349,7 @@ pub fn edit_page(
     let t_create_subcollection = language.translations.create_subcollection;
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_collection = language.translations.delete_collection;
+    let t_deleting_the_collection_text = language.translations.deleting_the_collection_text;
     let t_new_playlist = language.translations.new_playlist;
     let t_new_subcollection = language.translations.new_subcollection;
     let t_new_video = language.translations.new_video;
@@ -412,10 +413,7 @@ pub fn edit_page(
             {convert_to_video_form}
 
             <p>
-                Deleting the collection removes the collection manifest, all videos,
-                playlists and subcollections. It does not remove the site manifest and
-                the site itself, so the site can afterwards be reinitialized again as
-                a collection, playlist or video.
+                {t_deleting_the_collection_text}
             </p>
 
             <form action="/delete-collection/{path}" method="post">

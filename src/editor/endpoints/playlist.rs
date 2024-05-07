@@ -275,6 +275,7 @@ pub fn edit_page(
     let t_banner_image = language.translations.banner_image;
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_playlist = language.translations.delete_playlist;
+    let t_deleting_the_playlist_text = language.translations.deleting_the_playlist_text;
     let t_new_video = language.translations.new_video;
     let t_playlist = language.translations.playlist;
     let t_really_delete = language.translations.really_delete;
@@ -318,12 +319,8 @@ pub fn edit_page(
 
             {convert_to_video_form}
 
-           <p>
-                Deleting the playlist removes the playlist manifest, banner image,
-                and all videos contained in the playlist. If the playlist lies at the
-                site root it does not remove the site manifest and the site itself,
-                so the site can afterwards be reinitialized again as a collection,
-                playlist or video.
+            <p>
+                {t_deleting_the_playlist_text}
             </p>
 
             <form action="/delete-playlist/{path}" method="post">

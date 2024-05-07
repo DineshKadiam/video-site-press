@@ -241,7 +241,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
             };
 
             let option = formatdoc!(r#"
-                <option {selected} value="{height}">{width}×{height}</option>
+                <option {selected} value="{height}">{height}p ({width}×{height})</option>
             "#);
             height_options.push(option);
         }
@@ -403,16 +403,21 @@ pub fn edit_page(
         }
 
         let duration_info = if let Some((shortest_version, longest_version)) = duration_range {
-            // TODO: Localize
             if longest_version - shortest_version < 1.0 {
                 let duration = precise_duration(longest_version);
-                let success_icon = icons::success("Ok");
-                format!(r#"<div class="duration_info">{success_icon} All formats/versions are the same length: {duration}</div>"#)
+
+                let t_all_formats_are_the_same_length = language.translations.all_formats_are_the_same_length;
+                let t_ok = language.translations.ok;
+                let success_icon = icons::success(t_ok);
+                format!(r#"<div class="duration_info">{success_icon} {t_all_formats_are_the_same_length} ({duration})</div>"#)
             } else {
                 let longest = precise_duration(longest_version);
                 let shortest = precise_duration(shortest_version);
-                let failure_icon = icons::failure("Warning");
-                format!(r#"<div class="duration_info">{failure_icon} The length of all formats/versions diverges between {shortest} and {longest}</div>"#)
+
+                let t_not_ok = language.translations.not_ok;
+                let t_length_diverges_between_different_formats = language.translations.length_diverges_between_different_formats;
+                let failure_icon = icons::failure(t_not_ok);
+                format!(r#"<div class="duration_info">{failure_icon} {t_length_diverges_between_different_formats} ({shortest} - {longest})</div>"#)
             }
         } else {
             String::new()
@@ -436,7 +441,7 @@ pub fn edit_page(
                         };
 
                         (
-                            format!(r#"<div class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></div>"#),
+                            format!(r#"<small class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></small>"#),
                             format!("{height}p {frame_rate}fps {size}"),
                             format!("{width}×{height} {duration}")
                         )
@@ -450,11 +455,13 @@ pub fn edit_page(
 
                 let file_name = &version.file_name;
 
+                let t_delete = language.translations.delete;
                 let t_really_delete = language.translations.really_delete;
+                let delete_icon = icons::failure(t_delete);
                 let delete_form = formatdoc!(r#"
                     <form action="/delete-version/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
                         <input name="file_name" type="hidden" value="{file_name}">
-                        <button style="display: inline;">×</button>
+                        <button class="delete_button">{delete_icon}</button>
                     </form>
                 "#);
 
@@ -620,21 +627,20 @@ pub fn edit_page(
     let video_upload_button = upload_widget(&upload_url, t_upload_additional_format);
 
     // TODO: Implement for non-root/non-site videos
+    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
+    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
     let t_convert_to_video_in_collection = language.translations.convert_to_video_in_collection;
     let t_convert_to_video_in_playlist = language.translations.convert_to_video_in_playlist;
     let convert_form = formatdoc!(r#"
         <p>
-            A video can seamlessly be converted to a video in a collection.
+            {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
         </p>
-
         <form action="/convert-to-collection/{path}" method="post">
             <button>{t_convert_to_video_in_collection}</button>
         </form>
-
         <p>
-            A video can seamlessly be converted to a video in a playlist.
+            {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist}
         </p>
-
         <form action="/convert-to-playlist/{path}" method="post">
             <button>{t_convert_to_video_in_playlist}</button>
         </form>
@@ -649,6 +655,7 @@ pub fn edit_page(
 
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_video = language.translations.delete_video;
+    let t_deleting_the_video_text = language.translations.deleting_the_video_text;
     let t_poster_image = language.translations.poster_image;
     let t_really_delete = language.translations.really_delete;
     let t_video = language.translations.video;
@@ -693,11 +700,7 @@ pub fn edit_page(
             {convert_form}
 
             <p>
-                Deleting the video removes the video manifest, poster image,
-                and all versions of the video. If the video lies at the
-                site root it does not remove the site manifest and the site itself,
-                so the site can afterwards be reinitialized again as a collection,
-                playlist or video.
+                {t_deleting_the_video_text}
             </p>
 
             <form action="/delete-video/{path}" method="post">
