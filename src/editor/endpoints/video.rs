@@ -280,12 +280,13 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
     let height_options = height_options.join("\n");
     let path = &video.path;
 
+    let t_average_compression_and_speed_reasonable_for_temporarily_used_media = translations.average_compression_and_speed_reasonable_for_temporarily_used_media;
     let t_best = translations.best;
     let t_codec = translations.codec;
-    let t_encoding_approach = translations.encoding_approach;
+    let t_encoding_approach_label = translations.encoding_approach_label;
     let t_frame_rate = translations.frame_rate;
-    let t_maximum_efficiency_best_compression_through_slowest_encoding = translations.maximum_efficiency_best_compression_through_slowest_encoding;
-    let t_maximum_speed_fastest_encoding_through_worst_compression = translations.maximum_speed_fastest_encoding_through_worst_compression;
+    let t_highest_compression_recommended_but_takes_a_long_time = translations.highest_compression_recommended_but_takes_a_long_time;
+    let t_highest_speed_only_use_if_you_need_results_as_soon_as_possible = translations.highest_speed_only_use_if_you_need_results_as_soon_as_possible;
     let t_quality = translations.quality;
     let t_recommended_codec = translations.recommended_codec;
     let t_render_additional_format = translations.render_additional_format;
@@ -338,10 +339,11 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                     </select>
                 </div>
                 <div class="form_field">
-                    <label for="approach">{t_encoding_approach}</label>
+                    <label for="approach">{t_encoding_approach_label}</label>
                     <select id="approach" name="approach">
-                        <option value="efficiency">{t_maximum_efficiency_best_compression_through_slowest_encoding}</option>
-                        <option value="speed">{t_maximum_speed_fastest_encoding_through_worst_compression}</option>
+                        <option selected value="compression">{t_highest_compression_recommended_but_takes_a_long_time}</option>
+                        <option value="average">{t_average_compression_and_speed_reasonable_for_temporarily_used_media}</option>
+                        <option value="speed">{t_highest_speed_only_use_if_you_need_results_as_soon_as_possible}</option>
                     </select>
                 </div>
                 <button>{t_render_format}</button>

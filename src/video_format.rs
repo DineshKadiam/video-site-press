@@ -60,8 +60,9 @@ impl Container {
 impl EncodingApproach {
     pub fn to_string(&self) -> &str {
         match self {
-            EncodingApproach::Efficiency => "efficiency",
-            EncodingApproach::Speed => "speed"
+            EncodingApproach::AverageResults => "average",
+            EncodingApproach::HighestCompression => "compression",
+            EncodingApproach::HighestSpeed => "speed"
         }
     }
 }
@@ -112,8 +113,9 @@ impl VideoFormat {
         };
 
         let encoding_approach = match encoding_approach {
-           "efficiency" => EncodingApproach::Efficiency,
-           "speed" => EncodingApproach::Speed,
+           "average" => EncodingApproach::AverageResults,
+           "compression" => EncodingApproach::HighestCompression,
+           "speed" => EncodingApproach::HighestSpeed,
             _ => return None
         };
 

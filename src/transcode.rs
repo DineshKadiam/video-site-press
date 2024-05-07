@@ -180,8 +180,9 @@ pub fn encode(
                     command.arg("-c:v").arg("libx264");
 
                     match encoding_approach {
-                        EncodingApproach::Efficiency => command.arg("-preset").arg("veryslow"),
-                        EncodingApproach::Speed => command.arg("-preset").arg("ultrafast")
+                        EncodingApproach::AverageResults => command.arg("-preset").arg("medium"),
+                        EncodingApproach::HighestCompression => command.arg("-preset").arg("veryslow"),
+                        EncodingApproach::HighestSpeed => command.arg("-preset").arg("ultrafast")
                     };
 
                     // "The range of the CRF scale is 0–51, where 0 is lossless (for 8 bit only,
@@ -202,8 +203,9 @@ pub fn encode(
                     command.arg("-c:v").arg("libx265");
 
                     match encoding_approach {
-                        EncodingApproach::Efficiency => command.arg("-preset").arg("veryslow"),
-                        EncodingApproach::Speed => command.arg("-preset").arg("ultrafast")
+                        EncodingApproach::AverageResults => command.arg("-preset").arg("medium"),
+                        EncodingApproach::HighestCompression => command.arg("-preset").arg("veryslow"),
+                        EncodingApproach::HighestSpeed => command.arg("-preset").arg("ultrafast")
                     };
 
                     // "Choose a CRF. CRF affects the quality. The default is
@@ -226,8 +228,9 @@ pub fn encode(
                     command.arg("-c:v").arg("libvpx-vp9");
 
                     match encoding_approach {
-                        EncodingApproach::Efficiency => command.arg("-deadline").arg("best"),
-                        EncodingApproach::Speed => command.arg("-deadline").arg("realtime")
+                        EncodingApproach::AverageResults => command.arg("-deadline").arg("good"),
+                        EncodingApproach::HighestCompression => command.arg("-deadline").arg("best"),
+                        EncodingApproach::HighestSpeed => command.arg("-deadline").arg("realtime")
                     };
 
                     // "The CRF value can be from 0–63. Lower values mean
