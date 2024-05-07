@@ -135,13 +135,23 @@ if (qualityInput) {
     });
 }
 
-const changeEditorLanguage = document.querySelector('#change_editor_language');
+const changeEditorLanguage = document.querySelector('#language_code');
 
 if (changeEditorLanguage) {
     changeEditorLanguage.addEventListener('change', () => {
         localStorage.removeItem('hyper8SplashSeen');
         changeEditorLanguage.form.redirect.value = location.pathname;
         changeEditorLanguage.form.submit();
+    });
+}
+
+const changeEditorTheme = document.querySelector('#theme_key');
+
+if (changeEditorTheme) {
+    changeEditorTheme.addEventListener('change', () => {
+        localStorage.removeItem('hyper8SplashSeen');
+        changeEditorTheme.form.redirect.value = location.pathname;
+        changeEditorTheme.form.submit();
     });
 }
 

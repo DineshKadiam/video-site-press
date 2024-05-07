@@ -38,7 +38,17 @@ pub struct ThemeVars {
 	/// Foreground 3 (close)
 	pub fg_3: String,
 	/// Middleground  (in between)
-	pub mg: String
+	pub mg: String,
+	/// Splash gradient blend mode
+	pub splash_blend: String,
+	/// Splash Northeast corner gradient color
+	pub splash_ne: String,
+	/// Splash Northwest corner gradient color
+	pub splash_nw: String,
+	/// Splash Southeast corner gradient color
+	pub splash_se: String,
+	/// Splash Southwest corner gradient color
+	pub splash_sw: String
 }
 
 impl Theme {
@@ -94,7 +104,12 @@ impl ThemeVars {
 			fg_1: String::from("#fff"),
 			fg_2: String::from("#c9c9c9"),
 			fg_3: String::from("#b2b2b2"),
-			mg: String::from("#888")
+			mg: String::from("#888"),
+			splash_blend: String::from("color"),
+			splash_ne: String::from("#43437d"),
+			splash_nw: String::from("#cc0a2e"),
+			splash_se: String::from("#9b0000"),
+			splash_sw: String::from("#f7dc00")
 		}
     }
 
@@ -109,7 +124,12 @@ impl ThemeVars {
 			fg_1: String::from("#000"),
 			fg_2: String::from("#272727"),
 			fg_3: String::from("#444"),
-			mg: String::from("#888")
+			mg: String::from("#888"),
+			splash_blend: String::from("overlay"),
+			splash_ne: String::from("#444468"),
+			splash_nw: String::from("#ff4848"),
+			splash_se: String::from("#0072b7"),
+			splash_sw: String::from("#f9f97e")
 		}
     }
 
@@ -124,6 +144,11 @@ impl ThemeVars {
 	    let fg_2 = &self.fg_2;
 	    let fg_3 = &self.fg_3;
 	    let mg = &self.mg;
+	    let splash_blend = &self.splash_blend;
+	    let splash_ne = &self.splash_ne;
+	    let splash_nw = &self.splash_nw;
+	    let splash_se = &self.splash_se;
+	    let splash_sw = &self.splash_sw;
 
 	    formatdoc!(r#"
             --accent: {accent};
@@ -136,6 +161,11 @@ impl ThemeVars {
             --fg-2: {fg_2};
             --fg-3: {fg_3};
             --mg: {mg};
+            --splash-blend: {splash_blend};
+            --splash-ne: {splash_ne};
+            --splash-nw: {splash_nw};
+            --splash-se: {splash_se};
+            --splash-sw: {splash_sw};
 	    "#)
     }
 }

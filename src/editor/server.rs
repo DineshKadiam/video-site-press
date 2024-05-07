@@ -7,7 +7,7 @@ use actix_web::web::{Data, get, post, resource};
 use crate::Context;
 use crate::editor::endpoints::{
     build,
-    change_editor_language,
+    change_editor_config,
     collection,
     convert,
     deploy,
@@ -18,7 +18,7 @@ use crate::editor::endpoints::{
     playlist,
     processing,
     scripts,
-    splash_image,
+    splash_logo,
     styles,
     site,
     video
@@ -44,7 +44,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/convert-to-collection/{path:.*}", post().to(convert::to_collection))
                 .route("/convert-to-playlist/{path:.*}", post().to(convert::to_playlist))
                 .route("/convert-to-video/{path:.*}", post().to(convert::to_video))
-                .route("/change-editor-language", post().to(change_editor_language))
+                .route("/change-editor-config", post().to(change_editor_config))
                 .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
                 .route("/create-playlist/{path:.*}", post().to(collection::create_playlist))
                 .service(
@@ -86,7 +86,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/roboto-v30-latin_latin-ext-regular.woff2", get().to(font))
                 .route("/site", post().to(site::update))
                 .route("/scripts.js", get().to(scripts))
-                .route("/splash.jpg", get().to(splash_image))
+                .route("/splash_logo.svg", get().to(splash_logo))
                 .route("/styles.css", get().to(styles))
                 .service(
                     resource("/video/{path:.*}")

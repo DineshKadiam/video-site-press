@@ -270,7 +270,12 @@ select {
     font-size: .9rem;
 }
 .splash img {
-    border: 1px solid var(--bg-3);
+    background:
+        radial-gradient(ellipse at top left, var(--splash-nw), transparent),
+        radial-gradient(ellipse at top right, var(--splash-ne), transparent),
+        radial-gradient(ellipse at bottom right, var(--splash-se), transparent),
+        radial-gradient(ellipse at bottom left, var(--splash-sw), transparent);
+    background-blend-mode: var(--splash-blend);
     border-top-left-radius: .5rem;
     border-top-right-radius: .5rem;
     box-sizing: border-box;

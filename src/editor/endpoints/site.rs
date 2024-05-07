@@ -175,6 +175,7 @@ fn edit_page(
     let clean_urls_checkbox = form_checkbox(clean_urls, "clean_urls", t_clean_urls_label);
 
     let t_site_settings = translations.site_settings;
+    let t_theme = translations.theme;
     let t_update_site = translations.update_site;
     formatdoc!(r#"
         <div class="form_group">
@@ -190,7 +191,7 @@ fn edit_page(
                 {input_poster_aspect}
                 {input_language}
                 <div class="form_field">
-                    <span>Theme</span>
+                    <span>{t_theme}</span>
                     <div>
                         {radio_button_adaptive}
                         {radio_button_dark}

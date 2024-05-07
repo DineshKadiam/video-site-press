@@ -345,14 +345,30 @@ pub fn layout(
         .collect::<Vec<String>>()
         .join("\n");
 
+    let theme = context.get_editor_theme();
+
+    let theme_options = [
+        ("adaptive", language.translations.adaptive),
+        ("dark", language.translations.dark),
+        ("light", language.translations.light)
+    ]
+        .into_iter()
+        .map(|(key, label)| {
+            let selected = if &key == &theme.key { "selected" } else { "" };
+            format!(r#"<option {selected} value="{key}">{label}</option>"#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
     let external_icon = icons::external(language.translations.external_link);
     let t_check_the_docs_for_more_information = language.translations.check_the_docs_for_more_information(&external_icon);
     let t_close = language.translations.close;
     let t_language = language.translations.language;
+    let t_theme = language.translations.theme;
     let splash = formatdoc!(r#"
         <dialog class="splash_wrapper">
             <div class="splash">
-                <img src="/splash.jpg?{hyper8_version}">
+                <img alt="Hyper 8 Video System" src="/splash_logo.svg?{hyper8_version}">
                 <div class="pad">
                     <ul autofocus>
                         <!--li>Navigate the site's content in the left sidebar</li>
@@ -360,12 +376,17 @@ pub fn layout(
                         <li>Use the controls top-right to preview/deploy</li-->
                         <li>{t_check_the_docs_for_more_information}</li>
                     </ul>
-                    <form action="/change-editor-language" method="post">
+                    <form action="/change-editor-config" method="post">
                         <input name="redirect" type="hidden">
-                        <label for="change_editor_language">{t_language}</label>
-                        <select id="change_editor_language" name="language">
-                            {language_options}
-                        </select>
+                            <label for="language_code">{t_language}</label>
+                            <select id="language_code" name="language_code">
+                                {language_options}
+                            </select>
+                            <span style="display: inline-block; width: 1rem;"></span>
+                            <label for="theme_key">{t_theme}</label>
+                            <select id="theme_key" name="theme_key">
+                                {theme_options}
+                            </select>
                     </form>
                     <div class="hsplit">
                         <a href="https://simonrepp.com/hyper8" target="_blank">

@@ -36,6 +36,7 @@ use banner::Banner;
 use cache::{Cache, CacheItem, FileMeta, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{Context, ContextPath, GetAnyResult};
+use editor::EditorConfig;
 use font::Font;
 use hyper_dir::HyperDir;
 use image_processor::{ImageProcessor, ResizeMode};
@@ -53,6 +54,7 @@ use video_format::{Codec, EncodingApproach, VideoFormat};
 
 fn main() {
     let args: Args = Args::parse();
+    let editor_config = EditorConfig::retrieve();
 
     if !args.site_dir.exists() {
         eprintln!(
@@ -86,15 +88,11 @@ fn main() {
 
     let editor_language = args.editor_language
         .unwrap_or_else(|| {
-            match editor::retrieve_config() {
-                Some(editor_config) => {
-                    editor_config.language
-                }
-                None => {
-                    get_locale()
-                        .map(|locale| locale.split('-').next().unwrap().to_string())
-                        .unwrap_or_else(|| String::from("en"))
-                }
+            match &editor_config {
+                Some(editor_config) => editor_config.language_code.clone(),
+                None => get_locale()
+                    .map(|locale| locale.split('-').next().unwrap().to_string())
+                    .unwrap_or_else(|| String::from("en"))
             }
         });
 
@@ -103,6 +101,7 @@ fn main() {
         cache,
         cache_dir,
         &editor_language,
+        &editor_config.as_ref().map(|config| config.theme_key.as_str()).unwrap_or("adaptive"),
         Arc::new(Site::new()),
         site_dir.clone()
     );

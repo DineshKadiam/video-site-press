@@ -28,7 +28,7 @@ pub struct Context {
     pub build_dir: PathBuf,
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
-    pub editor_theme: Theme,
+    pub editor_theme: Mutex<Theme>,
     pub editor_language: Mutex<Language>,
     pub job_queue: Mutex<Vec<Job>>,
     pub jobs_completed: Mutex<Vec<Job>>,
@@ -540,6 +540,12 @@ impl Context {
         self.editor_language.lock().unwrap().clone()
     }
 
+    /// Returns cloned `Theme`, allowing subsequent read-only usage
+    /// of the theme without keeping a lock on it.
+    pub fn get_editor_theme(&self) -> Theme {
+        self.editor_theme.lock().unwrap().clone()
+    }
+
     /// Returns the playlist at the given path.
     pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
         self.site.lock().unwrap().get_playlist(path)
@@ -569,6 +575,7 @@ impl Context {
         cache: Mutex<Cache>,
         cache_dir: PathBuf,
         editor_language: &str,
+        editor_theme: &str,
         site: Arc<Site>,
         site_dir: PathBuf
     ) -> Context {
@@ -576,8 +583,7 @@ impl Context {
             build_dir,
             cache,
             cache_dir,
-            // TODO: Eventually make this customizable via CLI option or editor dropdown
-            editor_theme: Theme::adaptive(),
+            editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::adaptive())),
             editor_language: Mutex::new(Language::from_code(editor_language)),
             job_queue: Mutex::new(Vec::new()),
             jobs_completed: Mutex::new(Vec::new()),

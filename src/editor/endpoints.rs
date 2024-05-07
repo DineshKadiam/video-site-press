@@ -21,21 +21,25 @@ pub use deploy::deploy;
 pub use jobs::jobs;
 pub use processing::processing;
 
-use crate::{Context, Language, ThemeKind};
-use crate::editor;
+use crate::{Context, EditorConfig, Language, Theme, ThemeKind};
 
 #[derive(Deserialize)]
-pub struct LanguageForm {
-    language: String,
-    redirect: String
+pub struct EditorConfigForm {
+    language_code: String,
+    redirect: String,
+    theme_key: String
 }
 
-pub async fn change_editor_language(
+pub async fn change_editor_config(
     context: Data<Arc<Context>>,
-    form: Form<LanguageForm>,
+    form: Form<EditorConfigForm>,
 ) -> Redirect {
-    *context.editor_language.lock().unwrap() = Language::from_code(&form.language);
-    editor::persist_config(&form.language);
+    *context.editor_language.lock().unwrap() = Language::from_code(&form.language_code);
+    *context.editor_theme.lock().unwrap() = Theme::from_key(&form.theme_key).unwrap_or_else(|_| Theme::adaptive());
+
+    let editor_config = EditorConfig::new(&form.language_code, &form.theme_key);
+
+    editor_config.persist();
 
     Redirect::to(form.redirect.clone()).see_other()
 }
@@ -78,14 +82,16 @@ pub async fn scripts(context: Data<Arc<Context>>) -> HttpResponse {
         .body(js)
 }
 
-pub async fn splash_image() -> HttpResponse {
+pub async fn splash_logo() -> HttpResponse {
     HttpResponse::Ok()
-        .content_type("image/jpeg")
-        .body(include_bytes!("assets/splash.jpg").as_slice())
+        .content_type("image/svg+xml")
+        .body(include_bytes!("assets/splash_logo.svg").as_slice())
 }
 
 pub async fn styles(context: Data<Arc<Context>>) -> HttpResponse {
-    let theme_vars = match &context.editor_theme.kind {
+    let theme = context.get_editor_theme();
+
+    let theme_vars = match &theme.kind {
         ThemeKind::Adaptive { dark, light } => {
             let dark_vars = dark.print();
             let light_vars = light.print();

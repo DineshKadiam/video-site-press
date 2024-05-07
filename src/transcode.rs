@@ -134,7 +134,7 @@ pub fn encode(
     command
         .arg("-v").arg("quiet")
         .arg("-stats")
-        .arg("-stats_period").arg("2");
+        .arg("-stats_period").arg("1");
 
     let highest_quality_version = match video.highest_quality_version() {
         Some(version) => version,
