@@ -153,8 +153,9 @@ impl PartialEq for JobKind {
                 }
                 _ => false
             }
-            JobKind::VideoFormat { video, .. } => match other {
-                JobKind::VideoFormat { video: other_video, .. } => video.path == other_video.path,
+            JobKind::VideoFormat { format, video } => match other {
+                JobKind::VideoFormat { format: other_format, video: other_video } =>
+                    video.path == other_video.path && format == other_format,
                 _ => false
             }
             JobKind::VideoRandomPoster { video, .. } => match other {

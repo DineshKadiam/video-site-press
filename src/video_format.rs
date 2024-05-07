@@ -1,28 +1,28 @@
-use serde_derive::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 // TODO: Research state of AV1 encoding (ffmpeg etc.), future outlook for support
 //       https://en.wikipedia.org/wiki/AV1
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Codec {
     H264,
     Hevc,
     Vp9
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Container {
     Mkv,
     Mp4
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum EncodingApproach {
-    Efficiency,
-    Speed
+    AverageResults,
+    HighestCompression,
+    HighestSpeed
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VideoFormat {
     AudioOnly,
     Video {
@@ -145,27 +145,3 @@ impl VideoFormat {
         })
     }
 }
-
-impl PartialEq for VideoFormat {
-    /// We currently ignore encoding_approach and quality to determine
-    /// equality. There is a trade-off to make between having all material in
-    /// exactly the formats the user wants, and causing lots and lots of lengthy
-    /// video recomputation ... The idea is currently that the user can always
-    /// request a re-encoding if they want better quality on a video.
-    fn eq(&self, other: &VideoFormat) -> bool {
-        match self {
-            VideoFormat::AudioOnly => {
-                if let VideoFormat::AudioOnly = other { return true; }
-            }
-            VideoFormat::Video { height, .. } => {
-                if let VideoFormat::Video { height: other_height, .. } = &other {
-                    if height == other_height { return true; }
-                }
-            }
-        }
-
-        false
-    }
-}
-
-impl Eq for VideoFormat {}

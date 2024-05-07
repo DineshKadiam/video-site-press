@@ -123,7 +123,7 @@ impl Cache {
         for (filename, usage_counter) in artifact_registry {
             if usage_counter == 0 {
                 eprintln!(
-                    "Removing orphaned cache artifact ({}) - it was probably created with a different version of hyper8.",
+                    "Removing orphaned cache artifact ({}) - it was probably created with a different version of hyper8 or stems from a cancelled background job.",
                     filename
                 );
                 let _ = fs::remove_file(&cache_dir.join(filename));

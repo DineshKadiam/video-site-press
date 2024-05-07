@@ -40,31 +40,6 @@ pub struct Video {
     pub versions: Vec<VideoFile>
 }
 
-// #[derive(Clone, Debug, Deserialize, Serialize)]
-// pub struct VideoAssets {
-    // pub requested: Vec<VideoJob>
-// }
-
-// pub enum <T>Foo {
-//     Unavailable,
-//     Processing { process_id: usize },
-//     Available(T)
-// }
-
-// #[derive(Clone, Debug, Deserialize, Serialize)]
-// pub struct VideoJob {
-//     pub assigned: bool,
-//     pub format: VideoFormat,
-//     pub success: Option<Result<(), String>>
-// }
-
-// #[derive(Clone, Debug, Deserialize, Serialize)]
-// pub struct VideoJobType {
-//     pub assigned: bool,
-//     pub format: VideoFormat,
-//     pub success: Option<Result<(), String>>
-// }
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct VideoFile {
     pub file_meta: FileMeta,
@@ -206,12 +181,6 @@ impl Video {
             }
         }
     }
-
-    // pub fn has_format(&self, format: &VideoFormat) -> bool {
-    //     self.assets.versions
-    //         .iter()
-    //         .any(|version| &version.format == format)
-    // }
 
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
         let mut version_candidate: Option<(usize, &VideoFile)> = None;
