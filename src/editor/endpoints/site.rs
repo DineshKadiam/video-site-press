@@ -174,6 +174,7 @@ fn edit_page(
     let t_clean_urls_label = translations.clean_urls_label;
     let clean_urls_checkbox = form_checkbox(clean_urls, "clean_urls", t_clean_urls_label);
 
+    let t_deployment_is_currently_supported_text = translations.deployment_is_currently_supported_text;
     let t_site_settings = translations.site_settings;
     let t_theme = translations.theme;
     let t_update_site = translations.update_site;
@@ -182,6 +183,8 @@ fn edit_page(
             <h2>{t_site_settings}</h2>
 
             {errors}
+
+            <p>{t_deployment_is_currently_supported_text}</p>
             
             <form action="/site" method="post">
                 {input_base_url}

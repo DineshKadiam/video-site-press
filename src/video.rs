@@ -347,8 +347,7 @@ impl Video {
         }
     }
 
-    // TODO: It could happen that we delete a file while it is being transcoded.
-    //       How do we handle/prevent this?
+    // TODO: Terminate any scheduled/running background jobs associated with the video?
     pub fn unpersist(&self, context: &Context) {
         if self.path == "" {
             let manifest_path = context.site_dir.join("video.eno");

@@ -402,11 +402,11 @@ pub fn layout(
         </dialog>
     "#);
 
-    let t_deploy = language.translations.deploy;
-    let deploy_icon = icons::deploy(t_deploy);
     let deploy_button = match site.deploy_config.complete() {
         true => {
+            let t_deploy = language.translations.deploy;
             let t_really_deploy = language.translations.really_deploy;
+            let deploy_icon = icons::deploy(t_deploy);
             format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
         }
         false => {
@@ -421,9 +421,9 @@ pub fn layout(
             };
 
             // TODO: Hash that goes directly to the relevant section for editing site? (or dedicated page to clean up interface by area of concern?)
-            let t_configure = language.translations.configure;
-            let t_deploy_configuration_missing_required_fields = language.translations.deploy_configuration_missing_required_fields;
-            format!(r#"<form action="{action}"><button title="{t_deploy_configuration_missing_required_fields}">{deploy_icon} {t_configure}</button></form>"#)
+            let t_configure_deployment = language.translations.configure_deployment;
+            let configure_icon = icons::configure(language.translations.configure);
+            format!(r#"<form action="{action}"><button>{configure_icon} {t_configure_deployment}</button></form>"#)
         }
     };
 
