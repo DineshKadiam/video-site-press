@@ -125,6 +125,16 @@ if (video) {
                                                                   //       Formula should/can take into account width of video on screen vs duration of video.
     }
 
+    function toggleFullscreen() {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+            toggleFullscreenButton.replaceChildren(document.querySelector('#maximize_icon').content.cloneNode(true));
+        } else {
+            document.querySelector('.player_wrapper').requestFullscreen();
+            toggleFullscreenButton.replaceChildren(document.querySelector('#minimize_icon').content.cloneNode(true));
+        }
+    }
+
     function togglePlayback() {
         if (video.paused) {
             intro.style.display = 'none';
@@ -141,6 +151,12 @@ if (video) {
 
     for (const group of document.querySelectorAll('.versions_ring g[data-src]')) {
         group.addEventListener('click', () =>  selectResolution(group));
+        group.addEventListener('keypress', event =>  {
+            if (event.key === 'Enter' || event.key === ' ') {
+                selectResolution(group);
+                event.preventDefault();
+            }
+        });
     }
 
     window.addEventListener('keydown', revealControls);
@@ -200,15 +216,7 @@ if (video) {
         });
     }
 
-    toggleFullscreenButton.addEventListener('click', () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-            toggleFullscreenButton.replaceChildren(document.querySelector('#maximize_icon').content.cloneNode(true));
-        } else {
-            document.querySelector('.player_wrapper').requestFullscreen();
-            toggleFullscreenButton.replaceChildren(document.querySelector('#minimize_icon').content.cloneNode(true));
-        }
-    });
+    toggleFullscreenButton.addEventListener('click', toggleFullscreen);
 
     toggleSpeedButton.addEventListener('click', () => {
         if (toggleSpeedButton.innerHTML === '1×') {
@@ -265,6 +273,20 @@ if (video) {
         if (event.key === ' ') {
             togglePlayback();
             event.preventDefault();
+        } else if (event.key === 'f') {
+            toggleFullscreen();
+        } else if (event.key === 'ArrowLeft') {
+            if (video.currentTime - 5 < 0) {
+                video.currentTime = 0;
+            } else {
+                video.currentTime -= 5;
+            }
+        } else if (event.key === 'ArrowRight') {
+            if (video.currentTime + 5 > duration) {
+                video.currentTime = duration;
+            } else {
+                video.currentTime += 5;
+            }
         }
     });
 
