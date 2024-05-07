@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -368,6 +369,25 @@ impl Video {
             let video_dir = context.site_dir.join(&self.path);
             let _ = fs::remove_dir_all(video_dir);
         }
+    }
+
+    pub fn versions_desc_by_quality(&self) -> Vec<VideoFile> {
+        let mut versions: Vec<VideoFile> = self.versions.iter().cloned().collect();
+        versions.sort_unstable_by(|a, b| {
+            match (&a.video_meta, &b.video_meta) {
+                (Some(a_video_meta), Some(b_video_meta)) => {
+                    if a_video_meta.height == b_video_meta.height {
+                        b_video_meta.video_frame_rate.partial_cmp(&a_video_meta.video_frame_rate).unwrap_or(Ordering::Equal)
+                    } else {
+                        b_video_meta.height.cmp(&a_video_meta.height)
+                    }
+                }
+                (Some(_), None) => Ordering::Greater,
+                (None, Some(_)) => Ordering::Less,
+                (None, None) => b.file_meta.size.cmp(&a.file_meta.size)
+            }
+        });
+        versions
     }
 
     pub fn write_manifest(&self, context: &Context) {

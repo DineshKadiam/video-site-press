@@ -113,6 +113,10 @@ button:hover {
     height: 1rem;
     width: 1rem;
 }
+.duration_info svg {
+    height: 1rem;
+    width: 1rem;
+}
 .error { background-color: var(--error); }
 .errors_badge {
     background-color: var(--error);
@@ -359,8 +363,10 @@ svg { fill: currentColor; }
 }
 .versions li {}
 .versions li:not(:first-child) { margin-top: .5rem; }
-.versions .file_name { color: var(--fg-1); }
-.versions .metadata { color: var(--fg-3); }
+.versions .basics {
+    color: var(--fg-1);
+    font-size: 1.2rem;
+}
 .versions .reasons {
     color: var(--fg-1);
     cursor: help;

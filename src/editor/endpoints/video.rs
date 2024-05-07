@@ -43,6 +43,7 @@ use crate::editor::widgets::{
     not_found,
     upload_widget
 };
+use crate::icons;
 use crate::util::{
     precise_duration,
     human_size,
@@ -376,10 +377,51 @@ pub fn edit_page(
     let versions = if video.versions.is_empty() {
         String::new()
     } else {
-        let versions = video.versions
+        let versions = video.versions_desc_by_quality();
+
+        let mut duration_range = None;
+
+        if versions.len() > 1 {
+            for version in &versions {
+                if let Some(video_meta) = &version.video_meta {
+                    match &mut duration_range {
+                        Some((shortest_version, longest_version)) => {
+                            if video_meta.duration > *longest_version {
+                                *longest_version = video_meta.duration;
+                            }
+
+                            if video_meta.duration > *shortest_version {
+                                *shortest_version = video_meta.duration;
+                            }
+                        }
+                        None => {
+                            duration_range = Some((video_meta.duration, video_meta.duration));
+                        }
+                    }
+                }
+            }
+        }
+
+        let duration_info = if let Some((shortest_version, longest_version)) = duration_range {
+            // TODO: Localize
+            if longest_version - shortest_version < 1.0 {
+                let duration = precise_duration(longest_version);
+                let success_icon = icons::success("Ok");
+                format!(r#"<div class="duration_info">{success_icon} All formats/versions are the same length: {duration}</div>"#)
+            } else {
+                let longest = precise_duration(longest_version);
+                let shortest = precise_duration(shortest_version);
+                let failure_icon = icons::failure("Warning");
+                format!(r#"<div class="duration_info">{failure_icon} The length of all formats/versions diverges between {shortest} and {longest}</div>"#)
+            }
+        } else {
+            String::new()
+        };
+
+        let versions_rendered = versions
             .iter()
             .map(|version| {
-                let (browser_support, vertical_resolution, video_meta) = match &version.video_meta {
+                let (browser_support, label, video_meta) = match &version.video_meta {
                     Some(video_meta) => {
                         let duration = precise_duration(video_meta.duration);
                         let frame_rate = video_meta.video_frame_rate;
@@ -395,8 +437,8 @@ pub fn edit_page(
 
                         (
                             format!(r#"<div class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></div>"#),
-                            format!("{height}p"),
-                            format!("{width}×{height} {duration} {frame_rate}fps {size}")
+                            format!("{height}p {frame_rate}fps {size}"),
+                            format!("{width}×{height} {duration}")
                         )
                     }
                     None => (
@@ -419,7 +461,8 @@ pub fn edit_page(
                 formatdoc!(r#"
                     <li>
                         <div>
-                            {vertical_resolution} <span class="file_name">{file_name}</span> <span class="metadata">{video_meta}</span> {delete_form}
+                            <div class="basics">{label} {delete_form}</div>
+                            <small>{video_meta} {file_name}</small>
                         </div>
                         {browser_support}
                     </li>
@@ -432,8 +475,10 @@ pub fn edit_page(
         formatdoc!(r#"
             <h2>{t_available_formats}</h2>
 
+            {duration_info}
+
             <ul class="versions">
-                {versions}
+                {versions_rendered}
             </ul>
         "#)
     };
