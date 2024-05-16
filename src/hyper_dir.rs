@@ -54,11 +54,11 @@ impl HyperDir {
             for dir_entry_result in dir_entries {
                 if let Ok(dir_entry) = dir_entry_result {
                     if let Ok(file_type) = dir_entry.file_type() {
+                        let file_name = dir_entry.file_name().to_string_lossy().to_string();
+
+                        if file_name.starts_with('.') { continue }
+
                         if file_type.is_dir() {
-                            let file_name = dir_entry.file_name().to_string_lossy().to_string();
-
-                            if file_name.starts_with('.') { continue }
-
                             let slugified = slugify(&file_name);
 
                             // TODO: Revisit whether slugify(...) actually imposes the sort of dir name constraints
@@ -70,7 +70,7 @@ impl HyperDir {
                                 hyper_dir.errors.push(error);
                             }
                         } else if file_type.is_file() {
-                            match dir_entry.file_name().to_string_lossy().as_ref() {
+                            match file_name.as_ref() {
                                 "collection.eno" => {
                                     hyper_dir.collection_manifest = Some(path.join("collection.eno"));
                                 }
@@ -83,22 +83,22 @@ impl HyperDir {
                                 "video.eno" => {
                                     hyper_dir.video_manifest = Some(path.join("video.eno"));
                                 }
-                                filename => {
-                                    if supported_video_extension(filename) {
+                                file_name => {
+                                    if supported_video_extension(file_name) {
                                         hyper_dir.video_files.push(dir_entry.path());
-                                    } else if supported_image_extension(filename) {
+                                    } else if supported_image_extension(file_name) {
                                         hyper_dir.image_files.push(dir_entry.path());
-                                    } else if supported_audio_extension(filename) {
+                                    } else if supported_audio_extension(file_name) {
                                         hyper_dir.audio_files.push(dir_entry.path());
-                                    } else if supported_subtitle_extension(filename) {
+                                    } else if supported_subtitle_extension(file_name) {
                                         hyper_dir.subtitle_files.push(dir_entry.path());
-                                    } else if supported_font_extension(filename) {
+                                    } else if supported_font_extension(file_name) {
                                         hyper_dir.font_files.push(dir_entry.path());
-                                    } else if filename.ends_with(".eno") {
-                                        let error = format!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", filename);
+                                    } else if file_name.ends_with(".eno") {
+                                        let error = format!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", file_name);
                                         hyper_dir.errors.push(error);
                                     } else {
-                                        let error = format!("Ignoring unsupported file {} (unsupported extension)", filename);
+                                        let error = format!("Ignoring unsupported file {} (unsupported extension)", file_name);
                                         hyper_dir.errors.push(error);
                                     }
                                 }
