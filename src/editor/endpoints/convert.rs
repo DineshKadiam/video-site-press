@@ -9,14 +9,10 @@ use crate::{Context, ContextPath};
 pub async fn to_collection(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    match context.convert_to_collection(&path.path) {
-        Ok(()) => Either::Left(Redirect::to("/collection/").see_other()),
-        Err(err) => {
-            // TODO: Return error gracefully in context of originating page (collection/video/empty)
-            Either::Right(HttpResponse::Ok().content_type(ContentType::html()).body(err))
-        }
-    }
+) -> Redirect {
+    context.convert_to_collection(&path.path);
+    let redirect_url = format!("/collection/{}", path.path);
+    Redirect::to(redirect_url).see_other()
 }
 
 pub async fn to_playlist(
@@ -24,7 +20,10 @@ pub async fn to_playlist(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     match context.convert_to_playlist(&path.path) {
-        Ok(()) => Either::Left(Redirect::to("/playlist/").see_other()),
+        Ok(()) => {
+            let redirect_url = format!("/playlist/{}", path.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
         Err(err) => {
             // TODO: Return error gracefully in context of originating page (collection/video/empty)
             Either::Right(HttpResponse::Ok().content_type(ContentType::html()).body(err))
@@ -37,7 +36,10 @@ pub async fn to_video(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     match context.convert_to_video(&path.path) {
-        Ok(()) => Either::Left(Redirect::to("/video/").see_other()),
+        Ok(()) => {
+            let redirect_url = format!("/video/{}", path.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
         Err(err) => {
             // TODO: Return error gracefully in context of originating page (collection/playlist/empty)
             Either::Right(HttpResponse::Ok().content_type(ContentType::html()).body(err))

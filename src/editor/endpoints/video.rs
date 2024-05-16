@@ -628,23 +628,22 @@ pub fn edit_page(
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_additional_format);
 
-    // TODO: Implement for non-root/non-site videos
     let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
     let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
-    let t_convert_to_video_in_collection = language.translations.convert_to_video_in_collection;
-    let t_convert_to_video_in_playlist = language.translations.convert_to_video_in_playlist;
+    let t_move_into_new_collection = language.translations.move_into_new_collection;
+    let t_move_into_new_playlist = language.translations.move_into_new_playlist;
     let convert_form = formatdoc!(r#"
         <p>
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
         </p>
         <form action="/convert-to-collection/{path}" method="post">
-            <button>{t_convert_to_video_in_collection}</button>
+            <button>{t_move_into_new_collection}</button>
         </form>
         <p>
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist}
         </p>
         <form action="/convert-to-playlist/{path}" method="post">
-            <button>{t_convert_to_video_in_playlist}</button>
+            <button>{t_move_into_new_playlist}</button>
         </form>
     "#);
 

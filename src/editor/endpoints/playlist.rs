@@ -236,7 +236,7 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
 
-    let t_convert_playlist_to_collection = language.translations.convert_playlist_to_collection;
+    let t_convert_to_collection = language.translations.convert_to_collection;
     let convert_to_collection_form = formatdoc!(r#"
         <p>
             A playlist can seamlessly be converted to a collection, but note that the
@@ -244,7 +244,7 @@ pub fn edit_page(
         </p>
 
         <form action="/convert-to-collection/{path}" method="post">
-            <button>{t_convert_playlist_to_collection}</button>
+            <button>{t_convert_to_collection}</button>
         </form>
     "#);
 
@@ -255,12 +255,12 @@ pub fn edit_page(
             "This playlist contains a single video and can be converted to just a video, note however that playlist data will be removed or overwritten with data from the video where necessary."
         };
 
-        let t_convert_playlist_to_video = language.translations.convert_playlist_to_video;
+        let t_convert_to_video = language.translations.convert_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
             <form action="/convert-to-video/{path}" method="post">
-                <button>{t_convert_playlist_to_video}</button>
+                <button>{t_convert_to_video}</button>
             </form>
         "#)
     } else {

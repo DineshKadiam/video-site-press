@@ -302,7 +302,7 @@ pub fn edit_page(
     };
 
     let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
-        let t_convert_collection_to_playlist = language.translations.convert_collection_to_playlist;
+        let t_convert_to_playlist = language.translations.convert_to_playlist;
         formatdoc!(r#"
             <p>
                 This collection contains no playlists or subcollections and can therefore
@@ -310,7 +310,7 @@ pub fn edit_page(
             </p>
 
             <form action="/convert-to-playlist/{path}" method="post">
-                <button>{t_convert_collection_to_playlist}</button>
+                <button>{t_convert_to_playlist}</button>
             </form>
         "#)
     } else {
@@ -327,12 +327,12 @@ pub fn edit_page(
             "This collection contains nothing can therefore seamlessly be converted to a video."
         };
 
-        let t_convert_collection_to_video = language.translations.convert_collection_to_video;
+        let t_convert_to_video = language.translations.convert_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
             <form action="/convert-to-video/{path}" method="post">
-                <button>{t_convert_collection_to_video}</button>
+                <button>{t_convert_to_video}</button>
             </form>
         "#)
     } else {
