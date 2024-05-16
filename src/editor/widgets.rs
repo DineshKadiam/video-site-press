@@ -304,7 +304,7 @@ pub fn form_textarea(
     formatdoc!(r#"
         <div class="form_field">
             <label for="{key}">{label}</label>
-            <textarea id="{key}" name="{key}">{value}</textarea>
+            <textarea id="{key}" name="{key}" rows="5">{value}</textarea>
         </div>
     "#)
 }
