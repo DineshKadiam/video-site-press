@@ -250,6 +250,7 @@ pub fn player(
         "#);
     }
 
+    // TODO: This fails on preview build if we don't have metadata yet (or something like that)
     let recommended_version = video.recommended_version().unwrap();
 
     let poster = match &video.poster {

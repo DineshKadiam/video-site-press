@@ -10,6 +10,7 @@ use slug::slugify;
 use crate::{
     Cache,
     Collection,
+    DeploymentState,
     HyperDir,
     Job,
     JobKind,
@@ -28,6 +29,7 @@ pub struct Context {
     pub build_dir: PathBuf,
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
+    pub deploying: Mutex<DeploymentState>,
     pub editor_theme: Mutex<Theme>,
     pub editor_language: Mutex<Language>,
     pub job_queue: Mutex<Vec<Job>>,
@@ -583,6 +585,7 @@ impl Context {
             build_dir,
             cache,
             cache_dir,
+            deploying: Mutex::new(DeploymentState::new()),
             editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::adaptive())),
             editor_language: Mutex::new(Language::from_code(editor_language)),
             job_queue: Mutex::new(Vec::new()),

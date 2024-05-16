@@ -11,6 +11,7 @@ use crate::editor::endpoints::{
     collection,
     convert,
     deploy,
+    deployment,
     favicon,
     font,
     index,
@@ -59,6 +60,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/delete-version/{path:.*}", post().to(video::delete_version))
                 .route("/delete-video/{path:.*}", post().to(video::delete))
                 .route("/deploy", post().to(deploy))
+                .route("/deployment", get().to(deployment))
                 .route("/downsize/{path:.*}", post().to(video::downsize))
                 .route("/favicon.png", get().to(favicon))
                 // .route("/formats", post().to(settings::formats))

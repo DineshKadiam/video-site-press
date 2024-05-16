@@ -36,6 +36,7 @@ use banner::Banner;
 use cache::{Cache, CacheItem, FileMeta, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{Context, ContextPath, GetAnyResult};
+use deploy::DeploymentState;
 use editor::EditorConfig;
 use font::Font;
 use hyper_dir::HyperDir;

@@ -1,8 +1,13 @@
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::sync::Arc;
+use std::thread;
+use std::time::SystemTime;
 
 use crate::{Context, Site};
+use crate::build::perform_build;
 use crate::util::nanoid;
 
 const PROBE_FILE_NAME: &str = ".hyper8_config_probe.txt";
@@ -15,15 +20,52 @@ further purpose anymore and may safely be deleted.\
 /// Windows = Dummy implementation - we need a packaged rsync for this, which is not so trivial
 pub const RSYNC: &str = if cfg!(windows) { "rsync.exe" } else { "rsync" };
 
+pub struct DeploymentState {
+    pub completed_at: Option<SystemTime>,
+    pub feedback: String,
+    pub started_at: Option<SystemTime>
+}
+
+impl DeploymentState {
+    pub fn active(&self) -> bool {
+        self.completed_at.is_none() && self.started_at.is_some()
+    }
+
+    pub fn complete(&mut self) {
+        self.completed_at = Some(SystemTime::now());
+    }
+
+    pub fn new() -> DeploymentState {
+        DeploymentState {
+            completed_at: None,
+            feedback: String::new(),
+            started_at: None
+        }
+    }
+
+    pub fn report(&mut self, line: &str) {
+        if !self.feedback.is_empty() {
+            self.feedback.push('\n');
+        }
+
+        self.feedback.push_str(line);
+    }
+
+    pub fn start(&mut self) {
+        self.completed_at = None;
+        self.feedback.clear();
+        self.started_at = Some(SystemTime::now());
+    }
+}
+
 /// Uploads a file named ".hyper8_config_probe.txt", which also contains a random token,
 /// to the remote, thereby first verifying that the deployment configuration is actually
 /// correct and working. Then, right next, tries to fetch that same file through the public
 /// url of the website (e.g. https://example.com/.hyper8_config_probe.txt), thereby confirming
 /// that the website is set up correctly (although that is a side effect), but more importantly
 /// ensuring that no other website (or remote content of any kind) is accidentally wiped if the
-/// remote path has been accidentally set incorrectly. If the probe fails in any way, the probe
-/// file is removed from the remote again, leaving a clean state. If the probe succeeds the probe
-/// file is left, as it is anyway removed through the consecutive deployment operation.
+/// remote path has been accidentally set incorrectly. Regardless of failure or success of the
+/// check, the probe file is removed from the remote again, leaving a clean state.
 fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
     let probe_signature = nanoid();
     let probe_content = format!("{PROBE_TEXT}\n\n{probe_signature}");
@@ -61,32 +103,30 @@ fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
 
     match minreq::get(public_probe_url.clone()).send() {
         Ok(response) => {
+            let remote_deploy_path = format!(
+                "{user}@{server}:{path}",
+                path = Path::new(site.deploy_config.path.as_ref().unwrap()).join("./").to_string_lossy(),
+                server = site.deploy_config.server.as_ref().unwrap(),
+                user = site.deploy_config.user.as_ref().unwrap()
+            );
+
+            let mut remove_probe_command = Command::new(RSYNC);
+
+            // We're creatively combining rsync's options here to sync a single file to
+            // the remote which does not exist locally anymore, it therefore is removed.
+            remove_probe_command
+                .arg("--delete")
+                .arg("--dirs")
+                .arg(&format!("--include={PROBE_FILE_NAME}")) // must appear before --exclude (!) otherwise removal does not happen
+                .arg("--exclude=*")
+                .arg(&context.build_dir.join("./"))
+                .arg(&remote_deploy_path);
+
+            let _ = remove_probe_command.output();
+
             if response.as_str().is_ok_and(|body| body == probe_content) {
-                // Note that we are not removing the probe on the remote here - we already removed it locally
-                // in the build dir and the following deploy operation will take care of the removal on the remote.
                 Ok(())
             } else {
-                let remote_deploy_path = format!(
-                    "{user}@{server}:{path}",
-                    path = Path::new(site.deploy_config.path.as_ref().unwrap()).join("./").to_string_lossy(),
-                    server = site.deploy_config.server.as_ref().unwrap(),
-                    user = site.deploy_config.user.as_ref().unwrap()
-                );
-
-                let mut remove_probe_command = Command::new(RSYNC);
-
-                // We're creatively combining rsync's options here to sync a single file to
-                // the remote which does not exist locally anymore, it therefore is removed.
-                remove_probe_command
-                    .arg("--delete")
-                    .arg("--dirs")
-                    .arg(&format!("--include={PROBE_FILE_NAME}")) // must appear before --exclude (!) otherwise removal does not happen
-                    .arg("--exclude=*")
-                    .arg(&context.build_dir.join("./"))
-                    .arg(&remote_deploy_path);
-
-                let _ = remove_probe_command.output();
-
                 Err(format!("The config probe was successfully uploaded to {remote_probe_path} but its presence could not be verified through the public interface {public_probe_url}. (Double-check that both the base url and the deployment configuration are correct)"))
             }
         }
@@ -94,10 +134,19 @@ fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
     }
 }
 
-pub fn perform_deploy(context: &Context) {    
-    let site = context.get_site();
+pub fn perform_deploy(context_ref: &Arc<Context>) {
+    let site = context_ref.get_site();
 
     // TODO: All of these errors (currently: panics) should be gracefully communicated through the browser interface
+
+    {
+        let mut deployment = context_ref.deploying.lock().unwrap();
+        if deployment.active() {
+            panic!("Already deploying, can only deploy again when the first deploy is finished.");
+        } else {
+            deployment.start();
+        }
+    }
 
     if !site.base_url.is_some() {
         panic!("Base url is not set, therefore the deploy config cannot be probed, therefore deploying is not permitted for safety reasons.");
@@ -107,34 +156,72 @@ pub fn perform_deploy(context: &Context) {
         panic!("Deploy config is not complete, can not deploy.");
     }
 
-    if let Err(err) = config_probe(context, &site) {
+    if let Err(err) = config_probe(context_ref, &site) {
         panic!("The deployment configuration could not be verified: {err}");
     }
 
-    let remote_deploy_path = format!(
-        "{user}@{server}:{path}",
-        path = Path::new(site.deploy_config.path.as_ref().unwrap()).join("./").to_string_lossy(),
-        server = site.deploy_config.server.as_ref().unwrap(),
-        user = site.deploy_config.user.as_ref().unwrap()
-    );
+    perform_build(context_ref);
 
-    let mut command = Command::new(RSYNC);
+    let context = Arc::clone(context_ref);
 
-    command.arg("-avP");
-    command.arg("--delete");
-    command.arg(context.build_dir.join("./"));
-    command.arg(remote_deploy_path);
+    thread::spawn(move || {
+        let remote_deploy_path = format!(
+            "{user}@{server}:{path}",
+            path = Path::new(site.deploy_config.path.as_ref().unwrap()).join("./").to_string_lossy(),
+            server = site.deploy_config.server.as_ref().unwrap(),
+            user = site.deploy_config.user.as_ref().unwrap()
+        );
 
-    // TODO: Pass errors back to interface and user
-    match command.output() {
-        Ok(output) => {
-            if !output.status.success() {
-                eprint!("{output:?}");
+        let mut command = Command::new(RSYNC);
+
+        command.arg("-avP");
+        command.arg("--delete");
+        command.arg(context.build_dir.join("./"));
+        command.arg(remote_deploy_path);
+
+        command.stdout(Stdio::piped());
+
+        // TODO: Pass errors back to interface and user
+        match command.spawn() {
+            Ok(mut child) => {
+                let stdout = match child.stdout.take() {
+                    Some(stdout) => stdout,
+                    None => {
+                        eprint!("Could not capture stdout for rsync child process.");
+                        return;
+                    }
+                };
+
+                let stdout_reader = BufReader::new(stdout);
+
+                for result in stdout_reader.lines() {
+                    if let Ok(line) = result {
+                        context.deploying.lock().unwrap().report(&line);
+                    }
+                }
+
+                let exit_status = match child.wait() {
+                    Ok(exit_status) => exit_status,
+                    Err(_) => {
+                        eprint!("The rsync child process could not be waited for.");
+                        return;
+                    }
+                };
+
+                if !exit_status.success() {
+                    let error_code = match exit_status.code() {
+                        Some(code) => format!("error code {code}"),
+                        None => String::from("probably signal-terminated")
+                    };
+                    eprint!("The rsync child process terminated unsuccessfully ({error_code})");
+                }
+            }
+            Err(err) => {
+                eprint!("The rsync child process could not be executed.");
+                eprint!("{err}");
             }
         }
-        Err(err) => {
-            eprint!("The rsync child process could not be executed.");
-            eprint!("{err}");
-        }
-    }
+
+        context.deploying.lock().unwrap().complete();
+    });
 }

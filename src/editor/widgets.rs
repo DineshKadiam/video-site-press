@@ -404,10 +404,18 @@ pub fn layout(
 
     let deploy_button = match site.deploy_config.complete() {
         true => {
-            let t_deploy = language.translations.deploy;
-            let t_really_deploy = language.translations.really_deploy;
-            let deploy_icon = icons::deploy(t_deploy);
-            format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
+            let deployment = &context.deploying.lock().unwrap();
+            if deployment.active() {
+                let t_deploying  = language.translations.deploying;
+                let deploy_icon = icons::deploy(t_deploying);
+                let duration = precise_duration(deployment.started_at.unwrap().elapsed().map(|duration| duration.as_secs_f32()).unwrap_or(0.0));
+                format!(r#"<form action="/deployment"><button>{deploy_icon} {t_deploying} ({duration})</button></form>"#)
+            } else {
+                let t_deploy = language.translations.deploy;
+                let t_really_deploy = language.translations.really_deploy;
+                let deploy_icon = icons::deploy(t_deploy);
+                format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
+            }
         }
         false => {
             let action = match site.content {

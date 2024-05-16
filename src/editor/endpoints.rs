@@ -9,6 +9,7 @@ pub mod collection;
 pub mod convert;
 mod build;
 mod deploy;
+pub mod deployment;
 pub mod index;
 pub mod jobs;
 pub mod playlist;
@@ -18,6 +19,7 @@ pub mod video;
 
 pub use build::build;
 pub use deploy::deploy;
+pub use deployment::deployment;
 pub use jobs::jobs;
 pub use processing::processing;
 
