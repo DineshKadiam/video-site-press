@@ -30,6 +30,25 @@ pub fn collection_html(
         body.push_str(&format!("<p>{description}</p>\n\n"));
     }
 
+    if !collection.links.is_empty() {
+        let links = collection.links
+            .iter()
+            .map(|link| {
+                let label = &link.label;
+                let url = &link.url;
+
+                formatdoc!(r#"
+                    <div>
+                        <a href="{url}">{label}</a>
+                    </div>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        body.push_str(&links);
+    }
+
     let videos = collection.public_videos_desc_by_release_date();
 
     if !videos.is_empty() {

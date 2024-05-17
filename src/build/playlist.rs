@@ -54,6 +54,25 @@ pub fn playlist_html(
         body.push_str(&format!("<p>{description}</p>\n\n"));
     }
 
+    if !playlist.links.is_empty() {
+        let links = playlist.links
+            .iter()
+            .map(|link| {
+                let label = &link.label;
+                let url = &link.url;
+
+                formatdoc!(r#"
+                    <div>
+                        <a href="{url}">{label}</a>
+                    </div>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        body.push_str(&links);
+    }
+
     let videos = playlist.public_videos_asc_by_release_date();
 
     if !videos.is_empty() {

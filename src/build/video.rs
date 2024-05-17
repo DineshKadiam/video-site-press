@@ -72,6 +72,21 @@ pub fn video_html(
 
     let unlisted = unlisted_badge(video.unlisted, &site.language.translations);
 
+    let links = video.links
+        .iter()
+        .map(|link| {
+            let label = &link.label;
+            let url = &link.url;
+
+            formatdoc!(r#"
+                <div>
+                    <a href="{url}">{label}</a>
+                </div>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
     let body = format!(r#"
         {player_rendered}
         <div class="video_info">
@@ -87,6 +102,8 @@ pub fn video_html(
             </div>
             <p>
                 {description}
+
+                {links}
             </p>
         </div>
         {outline_rendered}
