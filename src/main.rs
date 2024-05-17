@@ -122,7 +122,13 @@ fn main() {
         
         if args.deploy {
             let site = context.get_site();
-            deploy::perform_deploy(&context, &site);
+
+            // TODO: Deployment is async now (this call immediately returns).
+            //       Need to switch to a blocking version that also reports output to the console (?)
+            match deploy::perform_deploy(&context, &site) {
+                Ok(()) => (),
+                Err(err) => eprintln!("{err}")
+            };
         }
     } else {
         context.compute_job_queue();

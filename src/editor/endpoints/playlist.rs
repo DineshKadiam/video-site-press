@@ -23,6 +23,7 @@ use crate::{
 };
 use crate::editor::endpoints;
 use crate::editor::widgets::{
+    error_page,
     form_checkbox,
     form_field,
     form_field_pattern,
@@ -530,13 +531,13 @@ pub async fn upload_banner(
     while let Some(mut field) = payload.try_next().await? {
         let content_disposition = field.content_disposition();
 
-        if let Some(filename) = content_disposition.get_filename() {
-            if !supported_image_extension(filename) {
-                // TODO: Implement without panicking - return something instead
-                panic!("Unsupported file extension in {filename}");
+        if let Some(file_name) = content_disposition.get_filename() {
+            if !supported_image_extension(file_name) {
+                let message = language.translations.unsupported_file_extension_in_xxx(file_name);
+                return Ok(Either::Right(error_page(&context, &language, &message)))
             }
 
-            let original_filename = filename.to_string();
+            let original_filename = file_name.to_string();
             // TODO: Generate a prettier filename - this goes into the site_dir!
             //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
             let storage_filename = format!("{}_{original_filename}", nanoid());

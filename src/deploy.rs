@@ -133,12 +133,11 @@ pub fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
     }
 }
 
-pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) {
+pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) -> Result<(), String> {
     {
         let mut deployment = context_ref.deploying.lock().unwrap();
         if deployment.active() {
-            // TODO: Gracefully report through proper page
-            panic!("Already deploying, can only deploy again when the first deploy is finished.");
+            return Err(format!("Already deploying, can only deploy again when the first deploy is finished."));
         } else {
             deployment.start();
         }
@@ -206,4 +205,6 @@ pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) {
 
         context.deploying.lock().unwrap().complete();
     });
+
+    Ok(())
 }

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use actix_web::{Either, HttpResponse};
-use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
 use crate::{Context, ContextPath};
+use crate::editor::widgets::error_page;
 
 pub async fn to_collection(
     context: Data<Arc<Context>>,
@@ -25,8 +25,9 @@ pub async fn to_playlist(
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(err) => {
-            // TODO: Return error gracefully in context of originating page (collection/video/empty)
-            Either::Right(HttpResponse::Ok().content_type(ContentType::html()).body(err))
+            let language = context.get_editor_language();
+            // TODO: Return error in context of originating page (collection/video/empty)
+            Either::Right(error_page(&context, &language, &err))
         }
     }
 }
@@ -41,8 +42,9 @@ pub async fn to_video(
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(err) => {
-            // TODO: Return error gracefully in context of originating page (collection/playlist/empty)
-            Either::Right(HttpResponse::Ok().content_type(ContentType::html()).body(err))
+            let language = context.get_editor_language();
+            // TODO: Return error in context of originating page (collection/playlist/empty)
+            Either::Right(error_page(&context, &language, &err))
         }
     }
 }

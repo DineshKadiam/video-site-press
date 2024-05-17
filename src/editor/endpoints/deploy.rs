@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
-use actix_web::web::{Data, Redirect};
+use actix_web::HttpResponse;
+use actix_web::web::{Data, Either, Redirect};
 
 use crate::{Context, SiteContent};
 use crate::build::perform_build;
 use crate::deploy::{config_probe, perform_deploy};
+use crate::editor::widgets::error_page;
 
 pub async fn configure(context: Data<Arc<Context>>) -> Redirect {
     let site = context.get_site();
@@ -22,25 +24,31 @@ pub async fn configure(context: Data<Arc<Context>>) -> Redirect {
     Redirect::to(redirect_url).see_other()
 }
 
-pub async fn deploy(context: Data<Arc<Context>>) -> Redirect {
+pub async fn deploy(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
     let site = context.get_site();
 
-    // TODO: All of these errors (currently: panics) should be gracefully communicated through the browser interface
-
     if !site.base_url.is_some() {
-        panic!("Base url is not set, therefore the deploy config cannot be probed, therefore deploying is not permitted for safety reasons.");
+        // TODO: Localize
+        let message = "Base url is not set, therefore the deploy config cannot be probed, therefore deploying is not permitted for safety reasons.";
+        return Either::Right(error_page(&context, &language, message));
     }
 
     if !site.deploy_config.complete() {
-        panic!("Deploy config is not complete, can not deploy.");
+        let t_deployment_configuration_is_incomplete_can_not_deploy = language.translations.deployment_configuration_is_incomplete_can_not_deploy;
+        return Either::Right(error_page(&context, &language, t_deployment_configuration_is_incomplete_can_not_deploy));
     }
 
     if let Err(err) = config_probe(&context, &site) {
-        panic!("The deployment configuration could not be verified: {err}");
+        let t_deployment_configuration_could_not_be_verified = language.translations.deployment_configuration_could_not_be_verified;
+        let message = format!("{t_deployment_configuration_could_not_be_verified} {err}");
+        return Either::Right(error_page(&context, &language, &message));
     }
 
     perform_build(&context);
-    perform_deploy(&context, &site);
 
-    Redirect::to("/").see_other()
+    match perform_deploy(&context, &site) {
+        Ok(()) => Either::Left(Redirect::to("/deployment").see_other()),
+        Err(err) => Either::Right(error_page(&context, &language, &err))
+    }
 }

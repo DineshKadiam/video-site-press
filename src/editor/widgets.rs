@@ -224,6 +224,30 @@ fn collection_tree(
     "#)
 }
 
+pub fn error_page(
+    context: &Context,
+    language: &Language,
+    message: &str
+) -> HttpResponse {
+    let t_back = language.translations.back;
+    let body = formatdoc!(r#"
+        <div>
+            {message}
+        </div>
+
+        <a href="/">{t_back}</a>
+    "#);
+
+    let site = &context.get_site();
+
+    let t_error = language.translations.error;
+    let html = layout(context, language, None, site, &body, t_error);
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
+}
+
 pub fn form_checkbox(checked: bool, key: &str, label: &str) -> String {
     let checked_attribute = if checked { "checked " } else { "" };
 

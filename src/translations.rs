@@ -41,6 +41,8 @@ pub struct Translations {
     pub deploy: &'static str,
     pub deploying: &'static str,
     pub deployment: &'static str,
+    pub deployment_configuration_could_not_be_verified: &'static str,
+    pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
     pub deployment_is_currently_supported_text: &'static str,
     pub deployment_path_label: &'static str,
     pub deployment_server_label: &'static str,
@@ -50,6 +52,7 @@ pub struct Translations {
     pub empty: &'static str,
     pub empty_site: &'static str,
     pub encoding_approach_label: &'static str,
+    pub error: &'static str,
     pub external_link: &'static str,
     pub failed: &'static str,
     pub filter: &'static str,
@@ -120,6 +123,7 @@ pub struct Translations {
     pub title: &'static str,
     pub unlisted: &'static str,
     pub unmodified: &'static str,
+    unsupported_file_extension_in_xxx: &'static str,
     pub update_collection: &'static str,
     pub update_description: &'static str,
     pub update_permalink: &'static str,
@@ -184,6 +188,8 @@ impl Translations {
             deploy: "Deployen",
             deploying: "Am Deployen",
             deployment: "Deployment",
+            deployment_configuration_could_not_be_verified: "Die Deployment Konfiguration konnte nicht verifiziert werden.",
+            deployment_configuration_is_incomplete_can_not_deploy: "Die Deployment Konfiguration ist nicht vollständig, deshalb kann nicht deployed werden.",
             deployment_is_currently_supported_text: "Deployment wird aktuell nur durch SSH Keyfile-basierte rsync Hintergrundsynchronisation unterstützt. Vor dem ersten Deployment sollte ein manueller Login durchgeführt werden um interaktive Prompts wie das Bestätigen der Server Identität zu erledigen. Zuletzt, der Deployment Ordner am Server muss manuell erstellt werden und die öffentliche Adresse der Seite gesetzt sein - das hat Sicherheitsgründe, damit Hyper 8 ein Testdeployment zum Bestätigen der Einstellungen durchführen kann bevor die eigentliche Filesynchronisierung erfolgt.",
             deployment_path_label: "Deployment Pfad (z.b. /data/web/customer123/html",
             deployment_server_label: "Deployment Server (z.b. ssh-customer123.example.com)",
@@ -193,6 +199,7 @@ impl Translations {
             empty: "Leer",
             empty_site: "Leere Seite",
             encoding_approach_label: "Encoding Ansatz (Wähle den langsamsten für den du Zeit hast)",
+            error: "Fehler",
             external_link: "Externer Link",
             failed: "Fehlgeschlagen",
             filter: "Filtern",
@@ -263,6 +270,7 @@ impl Translations {
             title: "Titel",
             unlisted: "Ungelistet",
             unmodified: "Unverändert",
+            unsupported_file_extension_in_xxx: "Nicht unterstützte Dateiendung in {file_name}",
             update_collection: "Collection speichern",
             update_description: "Beschreibung speichern",
             update_permalink: "Permalink speichern",
@@ -323,6 +331,8 @@ impl Translations {
             deploy: "Deploy",
             deploying: "Deploying",
             deployment: "Deployment",
+            deployment_configuration_could_not_be_verified: "The deployment configuration could not be verified.",
+            deployment_configuration_is_incomplete_can_not_deploy: "The deployment configuration is not complete, therefore deployment is not possible.",
             deployment_is_currently_supported_text: "Deployment is currently supported only through ssh keyfile-authenticated rsync in the background. Before the first deployment a manual login should be performed to complete interactive prompts such as trusting the authenticity of the server. Lastly, the remote folder needs to created manually and the public site adress configured - this is for safety reasons so Hyper 8 can do a test deploy to verify correctness of your settings before performing actual file synchronization.",
             deployment_path_label: "Deployment Path (e.g. /data/web/customer123/html",
             deployment_server_label: "Deployment Server (e.g. ssh-customer123.example.com)",
@@ -332,6 +342,7 @@ impl Translations {
             empty: "Empty",
             empty_site: "Empty Site",
             encoding_approach_label: "Encoding Approach (Use the slowest one you have time for)",
+            error: "Error",
             external_link: "External Link",
             failed: "Failed",
             filter: "Filter",
@@ -402,6 +413,7 @@ impl Translations {
             title: "Title",
             unlisted: "Unlisted",
             unmodified: "Unmodified",
+            unsupported_file_extension_in_xxx: "Unsupported file extension in {file_name}",
             update_collection: "Update Collection",
             update_description: "Update Description",
             update_permalink: "Update Permalink",
@@ -422,6 +434,10 @@ impl Translations {
     pub fn the_resource_xxx_was_not_found_message(&self, path: &str) -> String {
         self.the_resource_xxx_was_not_found_message.replace("{path}", path)
     }
+
+    pub fn unsupported_file_extension_in_xxx(&self, file_name: &str) -> String {
+        self.unsupported_file_extension_in_xxx.replace("{file_name}", file_name)
+    }
 }
 
 #[test]
@@ -434,5 +450,6 @@ fn check_translations() {
     for translations in &locales {
         assert!(&translations.check_the_docs_for_more_information.contains("{external_icon}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
+        assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
     }
 }
