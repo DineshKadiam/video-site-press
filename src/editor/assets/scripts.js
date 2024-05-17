@@ -84,7 +84,6 @@ function fetchProcessing() {
                     text = document.createElement('div');
 
                     processingElement.classList.add('active');
-                    // TODO: This should also give feedback how many jobs are waiting to be processed
                     for (const lastProgress of response.operations) {
                         const badge = document.createElement('div');
 

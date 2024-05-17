@@ -14,8 +14,9 @@ pub async fn deployment(context: Data<Arc<Context>>) -> HttpResponse {
 
     let mut body = String::new();
 
+    let t_deployment = language.translations.deployment;
+    body.push_str(&format!("<h2>{t_deployment}</h2>"));
     // TODO: Localize
-    body.push_str(&format!("<h2>Deployment progress</h2>"));
     body.push_str(r#"<p>This lists the output from the deployment background process, if there's any.</p>"#);
 
     if let Ok(deployment) = context.deploying.lock() {

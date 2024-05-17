@@ -451,7 +451,6 @@ pub fn layout(
             }
         }
         false => {
-            // TODO: Hash that goes directly to the relevant section for editing site? (or dedicated page to clean up interface by area of concern?)
             formatdoc!(r#"
                 <a href="/configure-deployment">
                     {configure_icon} {t_configure_deployment}

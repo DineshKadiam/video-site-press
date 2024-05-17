@@ -80,9 +80,10 @@ pub async fn add_link(
     let url = match Url::parse(&form.url) {
         Ok(url) => url,
         Err(err) => {
-            // TODO: Localize (= add our own message to/instead of the parsing error from Url crate)
             let language = context.get_editor_language();
-            return Either::Right(error_page(&context, &language, &err.to_string()))
+            let t_invalid_url = language.translations.invalid_url;
+            let message = format!("{t_invalid_url} ({err})");
+            return Either::Right(error_page(&context, &language, &message))
         }
     };
 

@@ -12,8 +12,7 @@ pub async fn build(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse
 
     if pending_deployment {
         let language = context.get_editor_language();
-        // TODO: Localize
-        let message = "Currently deploying, can only build and preview when the deployment is finished.";
+        let message = language.translations.preview_is_only_available_again_after_the_current_deployment_is_finished;
         return Either::Right(error_page(&context, &language, message));
     }
 
