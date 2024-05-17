@@ -37,7 +37,7 @@ pub fn dark(label: &str) -> String {
     "#)
 }
 
-pub fn deploy(label: &str) -> String {
+pub fn deployment(label: &str) -> String {
     formatdoc!(r#"
         <svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>

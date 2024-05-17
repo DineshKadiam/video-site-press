@@ -180,6 +180,7 @@ fn edit_page(
     let t_update_site = translations.update_site;
     formatdoc!(r#"
         <div class="form_group">
+            <a id="edit-site"></a>
             <h2>{t_site_settings}</h2>
 
             {errors}

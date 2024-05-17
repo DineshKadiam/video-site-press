@@ -402,46 +402,47 @@ pub fn layout(
         </dialog>
     "#);
 
-    let deploy_button = match site.deploy_config.complete() {
+    let t_configure_deployment = language.translations.configure_deployment;
+    let configure_icon = icons::configure(language.translations.configure);
+    let deployment_icon = icons::deployment(language.translations.deployment);
+    let deployment_button = match site.deploy_config.complete() {
         true => {
             let deployment = &context.deploying.lock().unwrap();
             if deployment.active() {
                 let t_deploying  = language.translations.deploying;
-                let deploy_icon = icons::deploy(t_deploying);
                 let duration = precise_duration(deployment.started_at.unwrap().elapsed().map(|duration| duration.as_secs_f32()).unwrap_or(0.0));
-                format!(r#"<form action="/deployment"><button>{deploy_icon} {t_deploying} ({duration})</button></form>"#)
+                formatdoc!(r#"
+                    <a href="/deployment">
+                        {deployment_icon} {t_deploying} ({duration})
+                    </a>
+                "#)
             } else {
                 let t_deploy = language.translations.deploy;
                 let t_really_deploy = language.translations.really_deploy;
-                let deploy_icon = icons::deploy(t_deploy);
-                format!(r#"<form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');"><button>{deploy_icon} {t_deploy}</button></form>"#)
+                formatdoc!(r#"
+                    <form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');">
+                        <button>{deployment_icon} {t_deploy}</button>
+                    </form>
+                "#)
             }
         }
         false => {
-            let action = match site.content {
-                SiteContent::Collection(_) => "/collection/",
-                SiteContent::Playlist(_) => "/playlist/",
-                SiteContent::Video(_) => "/video/",
-                // TODO: Is there any point to implementing a site form for an uninitialized site?
-                //       (at this point offering a link to configure deployment, when there is no
-                //       way to configure anything, is anyhow definitely wrong).
-                _ => "/"
-            };
-
             // TODO: Hash that goes directly to the relevant section for editing site? (or dedicated page to clean up interface by area of concern?)
-            let t_configure_deployment = language.translations.configure_deployment;
-            let configure_icon = icons::configure(language.translations.configure);
-            format!(r#"<form action="{action}"><button>{configure_icon} {t_configure_deployment}</button></form>"#)
+            formatdoc!(r#"
+                <a href="/configure-deployment">
+                    {configure_icon} {t_configure_deployment}
+                </a>
+            "#)
         }
     };
 
     let t_processing = language.translations.processing;
     let processing_icon = icons::processing(t_processing);
-    let processing_button = {
+    let processing_link = {
         let processing = &context.processing.lock().unwrap();
         if processing.operations.is_empty() {
             let t_idle = language.translations.idle;
-            format!(r#"<button class="processing">{processing_icon} {t_idle}</button>"#)
+            format!(r#"<a class="processing" href="/jobs">{processing_icon} {t_idle}</a>"#)
         } else {
             let operations = processing.operations
                 .iter()
@@ -473,9 +474,9 @@ pub fn layout(
                 .join("");
 
             formatdoc!(r#"
-                <button class="active processing">
+                <a class="active processing" href="/jobs">
                     {processing_icon} {operations}
-                </button>
+                </a>
             "#)
         }
     };
@@ -490,10 +491,10 @@ pub fn layout(
     let body = formatdoc!(r#"
             <body data-version="{hyper8_version}">
                 <div class="controls">
-                    <form action="/jobs">{processing_button}</form>
-                    <form action="/"><button>{storage_icon} {storage_usage}</button></form>
+                    {processing_link}
+                    <a href="/">{storage_icon} {storage_usage}</a>
                     <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
-                    {deploy_button}
+                    <div id="deployment">{deployment_button}</div>
                     <button id="toggle-splash">{logo_icon} {t_about}</button>
                 </div>
                 <div class="split">
@@ -507,6 +508,12 @@ pub fn layout(
                     </main>
                 </div>
                 {splash}
+                <template id="configure_icon">
+                    {configure_icon}
+                </template>
+                <template id="deployment_icon">
+                    {deployment_icon}
+                </template>
                 <template id="processing_icon">
                     {processing_icon}
                 </template>

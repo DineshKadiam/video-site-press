@@ -46,6 +46,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/convert-to-playlist/{path:.*}", post().to(convert::to_playlist))
                 .route("/convert-to-video/{path:.*}", post().to(convert::to_video))
                 .route("/change-editor-config", post().to(change_editor_config))
+                .route("/configure-deployment", get().to(deploy::configure))
                 .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
                 .route("/create-playlist/{path:.*}", post().to(collection::create_playlist))
                 .service(
@@ -59,7 +60,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/delete-poster/{path:.*}", post().to(video::delete_poster))
                 .route("/delete-version/{path:.*}", post().to(video::delete_version))
                 .route("/delete-video/{path:.*}", post().to(video::delete))
-                .route("/deploy", post().to(deploy))
+                .route("/deploy", post().to(deploy::deploy))
                 .route("/deployment", get().to(deployment))
                 .route("/downsize/{path:.*}", post().to(video::downsize))
                 .route("/favicon.png", get().to(favicon))

@@ -7,7 +7,6 @@ use std::thread;
 use std::time::SystemTime;
 
 use crate::{Context, Site};
-use crate::build::perform_build;
 use crate::util::nanoid;
 
 const PROBE_FILE_NAME: &str = ".hyper8_config_probe.txt";
@@ -66,7 +65,7 @@ impl DeploymentState {
 /// ensuring that no other website (or remote content of any kind) is accidentally wiped if the
 /// remote path has been accidentally set incorrectly. Regardless of failure or success of the
 /// check, the probe file is removed from the remote again, leaving a clean state.
-fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
+pub fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
     let probe_signature = nanoid();
     let probe_content = format!("{PROBE_TEXT}\n\n{probe_signature}");
 
@@ -134,53 +133,36 @@ fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
     }
 }
 
-pub fn perform_deploy(context_ref: &Arc<Context>) {
-    let site = context_ref.get_site();
-
-    // TODO: All of these errors (currently: panics) should be gracefully communicated through the browser interface
-
+pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) {
     {
         let mut deployment = context_ref.deploying.lock().unwrap();
         if deployment.active() {
+            // TODO: Gracefully report through proper page
             panic!("Already deploying, can only deploy again when the first deploy is finished.");
         } else {
             deployment.start();
         }
     }
 
-    if !site.base_url.is_some() {
-        panic!("Base url is not set, therefore the deploy config cannot be probed, therefore deploying is not permitted for safety reasons.");
-    }
-
-    if !site.deploy_config.complete() {
-        panic!("Deploy config is not complete, can not deploy.");
-    }
-
-    if let Err(err) = config_probe(context_ref, &site) {
-        panic!("The deployment configuration could not be verified: {err}");
-    }
-
-    perform_build(context_ref);
-
     let context = Arc::clone(context_ref);
 
+    let remote_deploy_path = format!(
+        "{user}@{server}:{path}",
+        path = Path::new(site.deploy_config.path.as_ref().unwrap()).join("./").to_string_lossy(),
+        server = site.deploy_config.server.as_ref().unwrap(),
+        user = site.deploy_config.user.as_ref().unwrap()
+    );
+
+    let mut command = Command::new(RSYNC);
+
+    command.arg("-avP");
+    command.arg("--delete");
+    command.arg(context.build_dir.join("./"));
+    command.arg(remote_deploy_path);
+
+    command.stdout(Stdio::piped());
+
     thread::spawn(move || {
-        let remote_deploy_path = format!(
-            "{user}@{server}:{path}",
-            path = Path::new(site.deploy_config.path.as_ref().unwrap()).join("./").to_string_lossy(),
-            server = site.deploy_config.server.as_ref().unwrap(),
-            user = site.deploy_config.user.as_ref().unwrap()
-        );
-
-        let mut command = Command::new(RSYNC);
-
-        command.arg("-avP");
-        command.arg("--delete");
-        command.arg(context.build_dir.join("./"));
-        command.arg(remote_deploy_path);
-
-        command.stdout(Stdio::piped());
-
         // TODO: Pass errors back to interface and user
         match command.spawn() {
             Ok(mut child) => {

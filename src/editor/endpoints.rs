@@ -8,7 +8,7 @@ use serde_derive::Deserialize;
 pub mod collection;
 pub mod convert;
 mod build;
-mod deploy;
+pub mod deploy;
 pub mod deployment;
 pub mod index;
 pub mod jobs;
@@ -18,7 +18,6 @@ pub mod site;
 pub mod video;
 
 pub use build::build;
-pub use deploy::deploy;
 pub use deployment::deployment;
 pub use jobs::jobs;
 pub use processing::processing;
@@ -65,12 +64,18 @@ pub async fn scripts(context: Data<Arc<Context>>) -> HttpResponse {
 
     // We selectively provide only those translations to the runtime js code
     // that are absolutely required, handpicking them here.
+    let t_configure_deployment = translations.configure_deployment;
+    let t_deploy = translations.deploy;
+    let t_deploying = translations.deploying;
     let t_idle = translations.idle;
-    let t_processing = translations.processing;
+    let t_really_deploy = translations.really_deploy;
     let translations_js = formatdoc!(r#"
         const t = {{
+            configureDeployment: '{t_configure_deployment}',
+            deploy: '{t_deploy}',
+            deploying: '{t_deploying}',
             idle: '{t_idle}',
-            processing: '{t_processing}'
+            reallyDeploy: '{t_really_deploy}'
         }};
     "#);
 

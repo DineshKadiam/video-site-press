@@ -121,7 +121,8 @@ fn main() {
         build::perform_build(&context);
         
         if args.deploy {
-            deploy::perform_deploy(&context);
+            let site = context.get_site();
+            deploy::perform_deploy(&context, &site);
         }
     } else {
         context.compute_job_queue();

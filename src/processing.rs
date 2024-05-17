@@ -34,9 +34,7 @@ pub enum JobKind {
     }
 }
 
-/// Used for the /processing JSON endpoint
 #[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Operation {
     pub id: usize,
     pub label: String,
@@ -44,9 +42,7 @@ pub struct Operation {
     pub path: String
 }
 
-/// Used for the /processing JSON endpoint
 #[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Processing {
     pub last_update: u128,
     pub operations: Vec<Operation>

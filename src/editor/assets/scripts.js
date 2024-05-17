@@ -1,3 +1,8 @@
+const configureIcon = document.querySelector('#configure_icon');
+const deploymentElement = document.querySelector('#deployment');
+const deploymentIcon = document.querySelector('#deployment_icon');
+const processingElement = document.querySelector('.processing');
+const processingIcon = document.querySelector('#processing_icon');
 const splashWrapper = document.querySelector('.splash_wrapper');
 
 const processing = {};
@@ -16,10 +21,62 @@ function fetchProcessing() {
     fetch('/processing')
         .then(response => response.json())
         .then(response => {
+            if (response.deploying === null) {
+                const a = document.createElement('a');
+                a.href = '/configure-deployment';
+
+                a.append(configureIcon.content.cloneNode(true));
+
+                const text = document.createElement('span');
+                text.textContent = t.configureDeployment;
+                a.append(text);
+
+                deploymentElement.replaceChildren(a);
+            } else {
+                const [isDeploying, duration] = response.deploying;
+
+                if (isDeploying) {
+                    const a = document.createElement('a');
+                    a.href = '/deployment';
+
+                    a.append(deploymentIcon.content.cloneNode(true));
+
+                    const text = document.createElement('span');
+                    text.textContent = t.deploying;
+                    a.append(text);
+
+                    const durationText = document.createElement('span');
+                    durationText.textContent = formatTime(duration);
+                    a.append(durationText);
+
+                    deploymentElement.replaceChildren(a);
+                } else {
+                    const form = document.createElement('form');
+                    form.action = '/deploy';
+                    form.method = 'post';
+
+                    form.addEventListener('submit', event => {
+                        if (!confirm(t.reallyDeploy)) {
+                            event.preventDefault();
+                        }
+                    });
+
+                    const button = document.createElement('button');
+
+                    button.append(deploymentIcon.content.cloneNode(true));
+
+                    const text = document.createElement('span');
+                    text.textContent = t.deploy;
+                    button.append(text);
+
+                    form.append(button);
+
+                    deploymentElement.replaceChildren(form);
+                }
+            }
+
             // TODO: This lastUpdate check is maybe not really needed anymore (what purpose does it serve now?)
             if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
-                const processingElement = document.querySelector('.processing');
-                const processingIcon = document.querySelector('#processing_icon');
 
                 let content = [processingIcon.content.cloneNode(true)];
 
@@ -28,15 +85,15 @@ function fetchProcessing() {
 
                     processingElement.classList.add('active');
                     // TODO: This should also give feedback how many jobs are waiting to be processed
-                    for (const operation of response.operations) {
+                    for (const lastProgress of response.operations) {
                         const badge = document.createElement('div');
 
                         badge.classList.add('processing_badge');
 
-                        if (operation.lastProgress) {
-                            const progress = Math.min(1, operation.lastProgress.frame / operation.lastProgress.estimatedTotalFrames);
+                        if (lastProgress) {
+                            const progress = Math.min(1, lastProgress.frame / lastProgress.estimatedTotalFrames);
                             const percent = Math.trunc(progress * 100);
-                            const secondsRemaining = Math.trunc((1 - progress) * (operation.lastProgress.duration / progress));
+                            const secondsRemaining = Math.trunc((1 - progress) * (lastProgress.duration / progress));
 
                             const left = document.createElement('span');
                             left.textContent = percent.toString() + '%';
@@ -60,6 +117,12 @@ function fetchProcessing() {
                     const text = document.createElement('span');
                     text.textContent = t.idle;
 
+                    content.push(text);
+                }
+
+                if (response.pendingCount > 0) {
+                    const text = document.createElement('span');
+                    text.textContent = `+${response.pendingCount}`;
                     content.push(text);
                 }
 
