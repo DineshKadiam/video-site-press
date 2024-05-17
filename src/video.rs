@@ -377,10 +377,13 @@ impl Video {
         versions.sort_unstable_by(|a, b| {
             match (&a.video_meta, &b.video_meta) {
                 (Some(a_video_meta), Some(b_video_meta)) => {
-                    if a_video_meta.height == b_video_meta.height {
-                        b_video_meta.video_frame_rate.partial_cmp(&a_video_meta.video_frame_rate).unwrap_or(Ordering::Equal)
-                    } else {
+                    if a_video_meta.height != b_video_meta.height {
                         b_video_meta.height.cmp(&a_video_meta.height)
+                    } else if a_video_meta.video_frame_rate != b_video_meta.video_frame_rate {
+                        b_video_meta.video_frame_rate.partial_cmp(&a_video_meta.video_frame_rate)
+                            .unwrap_or_else(|| b.file_meta.size.cmp(&a.file_meta.size))
+                    } else {
+                        b.file_meta.size.cmp(&a.file_meta.size)
                     }
                 }
                 (Some(_), None) => Ordering::Greater,
