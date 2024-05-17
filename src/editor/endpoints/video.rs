@@ -12,6 +12,7 @@ use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
 use slug::slugify;
+use url::Url;
 
 use crate::{
     Collection,
@@ -23,6 +24,7 @@ use crate::{
     HyperDir,
     JobKind,
     Language,
+    Link,
     Playlist,
     PosterFile,
     Translations,
@@ -34,6 +36,7 @@ use crate::{
 use crate::browser_support;
 use crate::editor::endpoints;
 use crate::editor::widgets::{
+    error_page,
     form_checkbox,
     form_field_date,
     form_field,
@@ -65,6 +68,12 @@ pub struct DownsizeForm {
     frame_rate: String,
     height: String,
     quality: String
+}
+
+#[derive(Deserialize)]
+pub struct LinkForm {
+    label: String,
+    url: String
 }
 
 #[derive(Deserialize)]
@@ -101,6 +110,38 @@ pub struct VideoUpdateForm {
     unlisted: Option<String>
 }
 
+pub async fn add_link(
+    context: Data<Arc<Context>>,
+    form: Form<LinkForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let url = match Url::parse(&form.url) {
+        Ok(url) => url,
+        Err(err) => {
+            // TODO: Localize (= add our own message to/instead of the parsing error from Url crate)
+            let language = context.get_editor_language();
+            return Either::Right(error_page(&context, &language, &err.to_string()))
+        }
+    };
+
+    let mutation = |video_mut: &mut Video| {
+        let link = Link::new(form.label.clone(), url);
+        video_mut.links.push(link);
+        video_mut.write_manifest(&context);
+    };
+
+    match context.update_video(mutation, &path.path) {
+        Ok(video) => {
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
 pub async fn delete(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
@@ -126,15 +167,44 @@ pub async fn delete(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
+pub async fn delete_link(
+    context: Data<Arc<Context>>,
+    form: Form<LinkForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |video_mut: &mut Video| {
+        if let Ok(url) = Url::parse(&form.url) {
+            if video_mut.links
+                .iter()
+                .position(|link| link.label == form.label && link.url == url)
+                .map(|index| video_mut.links.remove(index))
+                .is_some() {
+                video_mut.write_manifest(&context);
+            }
+        }
+    };
+
+    match context.update_video(mutation, &path.path) {
+        Ok(video) => {
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
 pub async fn delete_poster(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
-    let mutation = |video: &mut Video| {
-        if let Some(poster) = &video.poster {
-            let poster_path = context.site_dir.join(&video.path).join(&poster.file_name);
-            video.poster = None;
-            video.write_manifest(&context);
+    let mutation = |video_mut: &mut Video| {
+        if let Some(poster) = &video_mut.poster {
+            let poster_path = context.site_dir.join(&video_mut.path).join(&poster.file_name);
+            video_mut.poster = None;
+            video_mut.write_manifest(&context);
             let _ = fs::remove_file(poster_path);
         }
     };
@@ -654,9 +724,60 @@ pub fn edit_page(
 
     let render_additional_formats = additional_formats_form(&language.translations, video);
 
+    // TODO: Placeholder-only indication of which is the label vs. url field is possibly
+    //       not accessible. Check and address.
+    let t_add = language.translations.add;
+    let t_label = language.translations.label;
+    let t_url = language.translations.url;
+    let create_link_form = formatdoc!(r#"
+        <form action="/add-video-link/{path}" method="post">
+            <div class="button_group">
+                <input name="label" placeholder="{t_label}">
+                <input name="url" placeholder="{t_url}">
+                <button>{t_add}</button>
+            </div>
+        </form>
+    "#);
+    let links_form = if video.links.is_empty() {
+        create_link_form
+    } else {
+        let links_rendered = video.links
+            .iter()
+            .map(|link| {
+                let label = &link.label;
+                let url = &link.url;
+
+                let t_delete = language.translations.delete;
+                let t_really_delete = language.translations.really_delete;
+                let delete_icon = icons::failure(t_delete);
+                let delete_form = formatdoc!(r#"
+                    <form action="/delete-video-link/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
+                        <input name="label" type="hidden" value="{label}">
+                        <input name="url" type="hidden" value="{url}">
+                        <button class="delete_button">{delete_icon}</button>
+                    </form>
+                "#);
+
+                formatdoc!(r#"
+                    <div class="button_group">
+                        <input value="{label}">
+                        <input value="{url}">
+                        {delete_form}
+                    </div>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        formatdoc!(r#"
+            {links_rendered}
+            {create_link_form}
+        "#)
+    };
+
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_video = language.translations.delete_video;
     let t_deleting_the_video_text = language.translations.deleting_the_video_text;
+    let t_links = language.translations.links;
     let t_poster_image = language.translations.poster_image;
     let t_really_delete = language.translations.really_delete;
     let t_video = language.translations.video;
@@ -678,7 +799,12 @@ pub fn edit_page(
                 </div>
             </form>
         </div>
-        
+
+        <div class="form_group">
+            <h2>{t_links}</h2>
+            {links_form}
+        </div>
+
         <div class="form_group">
             {versions}
             {video_upload_button}

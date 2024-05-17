@@ -6,6 +6,7 @@ use std::sync::Arc;
 use chrono::NaiveDate;
 use enolib::{Element, SectionElement};
 use serde_derive::{Deserialize, Serialize};
+use url::Url;
 
 use crate::{
     CacheItem,
@@ -13,6 +14,7 @@ use crate::{
     Context,
     FileMeta,
     HyperDir,
+    Link,
     Playlist,
     PosterFile,
     Site,
@@ -26,6 +28,7 @@ use crate::util::hash;
 pub struct Video {
     pub description: Option<String>,
     pub errors: Vec<String>,
+    pub links: Vec<Link>,
     /// Relative to site dir, always without leading/trailing slashes
     pub path: String,
     pub poster: Option<PosterFile>,
@@ -82,6 +85,27 @@ impl Video {
                         self.description = Some(value);
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_field("links") {
+            Ok(Some(field)) => {
+                match field.attributes() {
+                    Ok(attributes) => {
+                        for attribute in attributes {
+                            match attribute.required_value::<String>() {
+                                Ok(value) => match Url::parse(&value) {
+                                    Ok(url) => self.links.push(Link::new(attribute.key().into(), url)),
+                                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), attribute.line_number(), err))
+                                }
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                            }
+                        }
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
                 }
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
@@ -236,6 +260,7 @@ impl Video {
         Video {
             description: None,
             errors: Vec::new(),
+            links: Vec::new(),
             path,
             poster: None,
             release_date: None,
@@ -368,6 +393,14 @@ impl Video {
 
     pub fn write_manifest(&self, context: &Context) {
         let mut eno = String::new();
+
+        if !self.links.is_empty() {
+            eno.push_str("links:\n");
+
+            for link in &self.links {
+                eno.push_str(&format!("{} = {}\n", link.label, link.url));
+            }
+        }
 
         if let Some(poster) = &self.poster {
             eno.push_str("poster:\n");

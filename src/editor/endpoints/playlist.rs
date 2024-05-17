@@ -10,6 +10,7 @@ use actix_web::web::{self, Data, Form, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
+use url::Url;
 
 use crate::{
     Banner,
@@ -19,6 +20,7 @@ use crate::{
     FileMeta,
     JobKind,
     Language,
+    Link,
     Playlist
 };
 use crate::editor::endpoints;
@@ -32,11 +34,18 @@ use crate::editor::widgets::{
     not_found,
     upload_widget
 };
+use crate::icons;
 use crate::util::{nanoid, supported_image_extension, validate_slug};
 
 #[derive(Deserialize)]
 pub struct BannerUpdateForm {
     description: String
+}
+
+#[derive(Deserialize)]
+pub struct LinkForm {
+    label: String,
+    url: String
 }
 
 pub enum PlaylistFormFeedback<'a> {
@@ -63,6 +72,38 @@ pub struct PlaylistUpdateForm {
     unlisted: Option<String>
 }
 
+pub async fn add_link(
+    context: Data<Arc<Context>>,
+    form: Form<LinkForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let url = match Url::parse(&form.url) {
+        Ok(url) => url,
+        Err(err) => {
+            // TODO: Localize (= add our own message to/instead of the parsing error from Url crate)
+            let language = context.get_editor_language();
+            return Either::Right(error_page(&context, &language, &err.to_string()))
+        }
+    };
+
+    let mutation = |playlist_mut: &mut Playlist| {
+        let link = Link::new(form.label.clone(), url);
+        playlist_mut.links.push(link);
+        playlist_mut.write_manifest(&context);
+    };
+
+    match context.update_playlist(mutation, &path.path) {
+        Ok(playlist) => {
+            let redirect_url = format!("/playlist/{}", playlist.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
 pub async fn delete(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
@@ -81,6 +122,35 @@ pub async fn delete(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
+pub async fn delete_link(
+    context: Data<Arc<Context>>,
+    form: Form<LinkForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |playlist_mut: &mut Playlist| {
+        if let Ok(url) = Url::parse(&form.url) {
+            if playlist_mut.links
+                .iter()
+                .position(|link| link.label == form.label && link.url == url)
+                .map(|index| playlist_mut.links.remove(index))
+                .is_some() {
+                playlist_mut.write_manifest(&context);
+            }
+        }
+    };
+
+    match context.update_playlist(mutation, &path.path) {
+        Ok(playlist) => {
+            let redirect_url = format!("/playlist/{}", playlist.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
 pub async fn delete_banner(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
@@ -89,7 +159,7 @@ pub async fn delete_banner(
         if let Some(banner) = &playlist.banner {
             let banner_path = context.site_dir.join(&playlist.path).join(&banner.file_name);
             playlist.banner = None;
-            playlist.write_manifest(&context.site_dir);
+            playlist.write_manifest(&context);
             let _ = fs::remove_file(banner_path);
         }
     };
@@ -273,10 +343,61 @@ pub fn edit_page(
         _ => input_unlisted
     };
 
+    // TODO: Placeholder-only indication of which is the label vs. url field is possibly
+    //       not accessible. Check and address.
+    let t_add = language.translations.add;
+    let t_label = language.translations.label;
+    let t_url = language.translations.url;
+    let create_link_form = formatdoc!(r#"
+        <form action="/add-playlist-link/{path}" method="post">
+            <div class="button_group">
+                <input name="label" placeholder="{t_label}">
+                <input name="url" placeholder="{t_url}">
+                <button>{t_add}</button>
+            </div>
+        </form>
+    "#);
+    let links_form = if playlist.links.is_empty() {
+        create_link_form
+    } else {
+        let links_rendered = playlist.links
+            .iter()
+            .map(|link| {
+                let label = &link.label;
+                let url = &link.url;
+
+                let t_delete = language.translations.delete;
+                let t_really_delete = language.translations.really_delete;
+                let delete_icon = icons::failure(t_delete);
+                let delete_form = formatdoc!(r#"
+                    <form action="/delete-playlist-link/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
+                        <input name="label" type="hidden" value="{label}">
+                        <input name="url" type="hidden" value="{url}">
+                        <button class="delete_button">{delete_icon}</button>
+                    </form>
+                "#);
+
+                formatdoc!(r#"
+                    <div class="button_group">
+                        <input value="{label}">
+                        <input value="{url}">
+                        {delete_form}
+                    </div>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        formatdoc!(r#"
+            {links_rendered}
+            {create_link_form}
+        "#)
+    };
+
     let t_banner_image = language.translations.banner_image;
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_playlist = language.translations.delete_playlist;
     let t_deleting_the_playlist_text = language.translations.deleting_the_playlist_text;
+    let t_links = language.translations.links;
     let t_new_video = language.translations.new_video;
     let t_playlist = language.translations.playlist;
     let t_really_delete = language.translations.really_delete;
@@ -296,6 +417,11 @@ pub fn edit_page(
                     <button>{t_update_playlist}</button> {feedback_update}
                 </div>
             </form>
+        </div>
+
+        <div class="form_group">
+            <h2>{t_links}</h2>
+            {links_form}
         </div>
 
         <div class="form_group">
@@ -469,7 +595,7 @@ pub async fn update(
             playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             playlist.unlisted = unlisted;
-            playlist.write_manifest(&context.site_dir);
+            playlist.write_manifest(&context);
         };
 
         let playlist = match context.update_playlist(mutation, &path.path) {
@@ -506,7 +632,7 @@ pub async fn update_banner(
         if let Some(banner) = &mut playlist.banner {
             banner.description = Some(form.description.clone());
         }
-        playlist.write_manifest(&context.site_dir);
+        playlist.write_manifest(&context);
     };
 
     match context.update_playlist(mutation, &path.path) {
@@ -560,7 +686,7 @@ pub async fn upload_banner(
 
             let mutation = |playlist: &mut Playlist| {
                 playlist.banner = Some(banner);
-                playlist.write_manifest(&context.site_dir);
+                playlist.write_manifest(&context);
             };
 
             match context.update_playlist(mutation, &path.path) {

@@ -49,7 +49,7 @@ use site::{AspectRatio, BaseUrl, Site, SiteContent};
 use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};
 use translations::Translations;
-use util::Field;
+use util::{Field, Link};
 use video::{Video, VideoFile, VideoMeta, VideoParent};
 use video_format::{Codec, EncodingApproach, VideoFormat};
 

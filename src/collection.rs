@@ -6,12 +6,14 @@ use std::str::Split;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
-use enolib::SectionElement;
+use enolib::{Element, SectionElement};
+use url::Url;
 
 use crate::{
     Context,
     GetAnyResult,
     HyperDir,
+    Link,
     Playlist,
     Site,
     Translations,
@@ -23,6 +25,7 @@ use crate::{
 pub struct Collection {
     pub description: Option<String>,
     pub errors: Vec<String>,
+    pub links: Vec<Link>,
     pub path: String,
     pub playlists: Vec<Arc<Playlist>>,
     pub subcollections: Vec<Arc<Collection>>,
@@ -50,6 +53,27 @@ impl Collection {
                         self.description = Some(value);
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_field("links") {
+            Ok(Some(field)) => {
+                match field.attributes() {
+                    Ok(attributes) => {
+                        for attribute in attributes {
+                            match attribute.required_value::<String>() {
+                                Ok(value) => match Url::parse(&value) {
+                                    Ok(url) => self.links.push(Link::new(attribute.key().into(), url)),
+                                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), attribute.line_number(), err))
+                                }
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                            }
+                        }
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
                 }
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
@@ -345,6 +369,7 @@ impl Collection {
         Collection {
             description: None,
             errors: Vec::new(),
+            links: Vec::new(),
             path,
             playlists: Vec::new(),
             subcollections: Vec::new(),
@@ -671,6 +696,14 @@ impl Collection {
 
         if self.unlisted {
             eno.push_str("unlisted\n");
+        }
+
+        if !self.links.is_empty() {
+            eno.push_str("links:\n");
+
+            for link in &self.links {
+                eno.push_str(&format!("{} = {}\n", link.label, link.url));
+            }
         }
 
         if let Some(description) = &self.description {

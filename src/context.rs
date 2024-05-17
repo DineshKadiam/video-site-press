@@ -259,7 +259,7 @@ impl Context {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
-                playlist.write_manifest(&self.site_dir);
+                playlist.write_manifest(self);
                 site_mut.content = SiteContent::Playlist(playlist);
                 self.replace_site(site_mut);
             } else if let SiteContent::Collection(collection) = &site_mut.content {
@@ -285,7 +285,7 @@ impl Context {
                     }
                 };
 
-                playlist.write_manifest(&self.site_dir);
+                playlist.write_manifest(self);
                 site_mut.content = SiteContent::Playlist(playlist);
                 self.replace_site(site_mut);
             } else if let SiteContent::Video(video) = &site_mut.content {
@@ -320,7 +320,7 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
 
-                playlist.write_manifest(&self.site_dir);
+                playlist.write_manifest(self);
                 site_mut.content = SiteContent::Playlist(playlist);
                 self.replace_site(site_mut);
             } 
@@ -352,7 +352,7 @@ impl Context {
                     }
                 };
 
-                playlist.write_manifest(&self.site_dir);
+                playlist.write_manifest(self);
 
                 self.update_from_filesystem(&dir_converting, &site_mut);
             } else if let GetAnyResult::Video(video) = node {
@@ -389,7 +389,7 @@ impl Context {
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
 
-                playlist.write_manifest(&self.site_dir);
+                playlist.write_manifest(self);
 
                 self.update_from_filesystem(&dir_converting, &site_mut);
             }

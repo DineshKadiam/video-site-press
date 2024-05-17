@@ -345,7 +345,7 @@ pub async fn update(
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
             site_mut.theme = theme;
-            site_mut.write_manifest(&context.site_dir);
+            site_mut.write_manifest(&context);
         };
 
         let site = context.update_site(mutation);

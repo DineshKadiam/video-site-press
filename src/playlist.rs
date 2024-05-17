@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 use enolib::{Element, SectionElement};
+use url::Url;
 
 use crate::{
     Banner,
@@ -14,6 +15,7 @@ use crate::{
     FileMeta,
     GetAnyResult,
     HyperDir,
+    Link,
     Site,
     Translations,
     Video
@@ -24,6 +26,7 @@ pub struct Playlist {
 	pub banner: Option<Banner>,
 	pub description: Option<String>,
     pub errors: Vec<String>,
+    pub links: Vec<Link>,
     pub path: String,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
@@ -98,6 +101,27 @@ impl Playlist {
                                 }
                             }
                             Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                        }
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_field("links") {
+            Ok(Some(field)) => {
+                match field.attributes() {
+                    Ok(attributes) => {
+                        for attribute in attributes {
+                            match attribute.required_value::<String>() {
+                                Ok(value) => match Url::parse(&value) {
+                                    Ok(url) => self.links.push(Link::new(attribute.key().into(), url)),
+                                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), attribute.line_number(), err))
+                                }
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                            }
                         }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
@@ -212,6 +236,7 @@ impl Playlist {
             banner: None,
             description: None,
             errors: Vec::new(),
+            links: Vec::new(),
             path,
             title: None,
             videos: Vec::new(),
@@ -385,7 +410,7 @@ impl Playlist {
         Err(())
     }
 
-    pub fn write_manifest(&self, site_dir: &Path) {
+    pub fn write_manifest(&self, context: &Context) {
         let mut eno = String::new();
 
         if let Some(banner) = &self.banner {
@@ -396,6 +421,14 @@ impl Playlist {
             }
 
             eno.push_str(&format!("file = {}\n", banner.file_name));
+        }
+
+        if !self.links.is_empty() {
+            eno.push_str("links:\n");
+
+            for link in &self.links {
+                eno.push_str(&format!("{} = {}\n", link.label, link.url));
+            }
         }
 
         if let Some(title) = &self.title {
@@ -411,7 +444,7 @@ impl Playlist {
             eno.push_str(&format!("-- description\n{}\n--description\n", description));
         }
 
-        let path = site_dir.join(&self.path).join("playlist.eno");
+        let path = context.site_dir.join(&self.path).join("playlist.eno");
         fs::write(path, eno).unwrap();
     }
 }

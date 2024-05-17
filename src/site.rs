@@ -458,7 +458,7 @@ impl Site {
     }
 
     /// Writes `site.eno` in the site directory
-    pub fn write_manifest(&self, site_dir: &Path) {
+    pub fn write_manifest(&self, context: &Context) {
         let mut eno = String::new();
 
         if let Some(base_url) = &self.base_url {
@@ -500,7 +500,7 @@ impl Site {
 
         eno.push_str(&format!("theme: {}\n", self.theme.key));
 
-        let path = site_dir.join("site.eno");
+        let path = context.site_dir.join("site.eno");
         fs::write(path, eno).unwrap();
     }
 }
