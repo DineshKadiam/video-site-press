@@ -24,5 +24,5 @@ available via the browser interface, while other functionality is only
 available through putting content in the site directory in the file
 browser and text editor. It is strongly recommended to read the rest
 of the docs (which can be done in just a few minutes anyway) to get
-a clearer picture of what is there, and how things work. This will
-benefit understanding of the browser interface as well, greatly.
+a deeper picture of what is there, and how things work. This will
+benefit understanding of the browser interface as well.

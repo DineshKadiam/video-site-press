@@ -1,6 +1,6 @@
 # Hyper 8 Video System
 
-A static site generator for video content
+A static site generator for video
 
 <img src="https://simonrepp.com/hyper8/readme.png?1" alt="Screenshot showing the Hyper 8 browser editor and a built page (alpha version)"/>
 
