@@ -23,7 +23,7 @@ use crate::{
     Video,
     VideoParent
 };
-use crate::util::nanoid;
+use crate::util::{checked_remove_dir_all, nanoid};
 
 pub struct Context {
     pub build_dir: PathBuf,
@@ -439,7 +439,7 @@ impl Context {
                                 // one in the parent directory.
                                 if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
                                     if metadata.file_type().is_dir() {
-                                        fs::remove_dir_all(&relocation_target_in_parent).unwrap();
+                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
                                     } else {
                                         fs::remove_file(&relocation_target_in_parent).unwrap();
                                     }
@@ -450,7 +450,7 @@ impl Context {
                         }
                     }
 
-                    let _ = fs::remove_dir_all(&temp_dir);
+                    let _ = checked_remove_dir_all(self, &temp_dir);
                 }
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
@@ -500,7 +500,7 @@ impl Context {
                                 // one in the parent directory.
                                 if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
                                     if metadata.file_type().is_dir() {
-                                        fs::remove_dir_all(&relocation_target_in_parent).unwrap();
+                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
                                     } else {
                                         fs::remove_file(&relocation_target_in_parent).unwrap();
                                     }
@@ -511,7 +511,7 @@ impl Context {
                         }
                     }
 
-                    let _ = fs::remove_dir_all(&temp_dir);
+                    let _ = checked_remove_dir_all(self, &temp_dir);
                 }
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
@@ -571,7 +571,7 @@ impl Context {
                                 // one in the parent directory.
                                 if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
                                     if metadata.file_type().is_dir() {
-                                        fs::remove_dir_all(&relocation_target_in_parent).unwrap();
+                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
                                     } else {
                                         fs::remove_file(&relocation_target_in_parent).unwrap();
                                     }
@@ -582,7 +582,7 @@ impl Context {
                         }
                     }
 
-                    let _ = fs::remove_dir_all(&temp_dir);
+                    let _ = checked_remove_dir_all(self, &temp_dir);
                 }
 
                 let hyper_dir = HyperDir::read(&dir_converting);
@@ -632,7 +632,7 @@ impl Context {
                                 // one in the parent directory.
                                 if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
                                     if metadata.file_type().is_dir() {
-                                        fs::remove_dir_all(&relocation_target_in_parent).unwrap();
+                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
                                     } else {
                                         fs::remove_file(&relocation_target_in_parent).unwrap();
                                     }
@@ -643,7 +643,7 @@ impl Context {
                         }
                     }
 
-                    let _ = fs::remove_dir_all(&temp_dir);
+                    let _ = checked_remove_dir_all(self, &temp_dir);
                 }
 
                 let hyper_dir = HyperDir::read(&dir_converting);

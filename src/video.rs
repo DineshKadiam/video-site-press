@@ -22,7 +22,7 @@ use crate::{
     Translations,
     VideoMetaCached
 };
-use crate::util::hash;
+use crate::util::{checked_remove_dir_all, hash};
 
 #[derive(Clone, Debug)]
 pub struct Video {
@@ -365,10 +365,8 @@ impl Video {
                 let _ = fs::remove_file(&version_path);
             }
         } else {
-            // Guard against disastrous recursive folder removal from concatenating absolute paths
-            assert!(!self.path.starts_with('/'), "Recursive folder removal aborted due to dangerous circumstances");
             let video_dir = context.site_dir.join(&self.path);
-            let _ = fs::remove_dir_all(video_dir);
+            let _ = checked_remove_dir_all(context, &video_dir);
         }
     }
 

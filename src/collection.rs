@@ -20,6 +20,7 @@ use crate::{
     Video,
     VideoParent
 };
+use crate::util::checked_remove_dir_all;
 
 #[derive(Clone, Debug)]
 pub struct Collection {
@@ -507,23 +508,21 @@ impl Collection {
 
             for subcollection in &self.subcollections {
                 let subcollection_path = context.site_dir.join(subcollection.slug());
-                let _ = fs::remove_dir_all(&subcollection_path);
+                let _ = checked_remove_dir_all(context, &subcollection_path);
             }
 
             for playlist in &self.playlists {
                 let playlist_path = context.site_dir.join(playlist.slug());
-                let _ = fs::remove_dir_all(&playlist_path);
+                let _ = checked_remove_dir_all(context, &playlist_path);
             }
 
             for video in &self.videos {
                 let video_path = context.site_dir.join(video.slug());
-                let _ = fs::remove_dir_all(&video_path);
+                let _ = checked_remove_dir_all(context, &video_path);
             }
         } else {
-            // Guard against disastrous recursive folder removal from concatenating absolute paths
-            assert!(!self.path.starts_with('/'), "Recursive folder removal aborted due to dangerous circumstances");
             let collection_dir = context.site_dir.join(&self.path);
-            let _ = fs::remove_dir_all(collection_dir);
+            let _ = checked_remove_dir_all(context, &collection_dir);
         }
     }
 

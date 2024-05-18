@@ -1,6 +1,6 @@
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::io::ErrorKind;
+use std::io::{Error, ErrorKind};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -11,7 +11,7 @@ use nanoid::nanoid;
 use slug::slugify;
 use url::Url;
 
-use crate::Translations;
+use crate::{Context, Translations};
 
 pub struct Field {
     pub error: Option<String>,
@@ -73,34 +73,16 @@ pub fn casual_duration(seconds: f32, translations: &Translations) -> String {
     }
 }
 
-pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
-    use chrono::format::{Fixed, Item, Numeric, Pad};
+pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Error> {
+    if !path.starts_with(&context.site_dir) {
+        panic!(
+            "[CRITICAL, PLEASE READ] Aborted recursive directory removal of '{}', which was determined to be outside of the site directory '{}'.\nThis is a highly critical error and should be reported to https://codeberg.org/simonrepp/hyper8/issues (alongside a short description after which action the error occurred).\nYour bug report will crucially help to avoid data loss in the future, thank you!",
+            path.display(),
+            context.site_dir.display()
+        );
+    }
 
-    let format = [
-        Item::Numeric(Numeric::Day, Pad::None),
-        Item::Space(" "),
-        Item::Fixed(Fixed::LongMonthName),
-        Item::Space(" "),
-        Item::Numeric(Numeric::Year, Pad::None)
-    ];
-
-    date
-        .format_localized_with_items(format.iter(), chrono_locale)
-        .to_string()
-}
-
-pub fn localized_date_mmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
-    use chrono::format::{Fixed, Item, Numeric, Pad};
-
-    let format = [
-        Item::Fixed(Fixed::ShortMonthName),
-        Item::Space(" "),
-        Item::Numeric(Numeric::Year, Pad::None)
-    ];
-
-    date
-        .format_localized_with_items(format.iter(), chrono_locale)
-        .to_string()
+    fs::remove_dir_all(path)
 }
 
 pub fn ensure_dir(dir: &Path) {
@@ -108,7 +90,11 @@ pub fn ensure_dir(dir: &Path) {
 }
 
 pub fn ensure_empty_dir(dir: &Path) {
-    remove_dir(dir);
+    match fs::remove_dir_all(dir) {
+        Ok(()) => (),
+        Err(ref err) if err.kind() == ErrorKind::NotFound => (), // just what we want anyway \o/
+        Err(err) => panic!("{}", err)
+    };
     fs::create_dir_all(dir).unwrap();
 }
 
@@ -165,6 +151,36 @@ pub fn human_size(bytes: u64) -> String {
     }
 }
 
+pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
+    use chrono::format::{Fixed, Item, Numeric, Pad};
+
+    let format = [
+        Item::Numeric(Numeric::Day, Pad::None),
+        Item::Space(" "),
+        Item::Fixed(Fixed::LongMonthName),
+        Item::Space(" "),
+        Item::Numeric(Numeric::Year, Pad::None)
+    ];
+
+    date
+        .format_localized_with_items(format.iter(), chrono_locale)
+        .to_string()
+}
+
+pub fn localized_date_mmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
+    use chrono::format::{Fixed, Item, Numeric, Pad};
+
+    let format = [
+        Item::Fixed(Fixed::ShortMonthName),
+        Item::Space(" "),
+        Item::Numeric(Numeric::Year, Pad::None)
+    ];
+
+    date
+        .format_localized_with_items(format.iter(), chrono_locale)
+        .to_string()
+}
+
 pub fn nanoid() -> String {
     nanoid!(8)
 }
@@ -187,14 +203,6 @@ pub fn precise_duration(seconds: f32) -> String {
             seconds as u16 % 60
         )
     }
-}
-
-pub fn remove_dir(dir: &Path) {
-    match fs::remove_dir_all(dir) {
-        Ok(()) => (),
-        Err(ref err) if err.kind() == ErrorKind::NotFound => (), // just what we want anyway \o/
-        Err(err) => panic!("{}", err)
-    };
 }
 
 pub fn supported_audio_extension(filename: &str) -> bool {
