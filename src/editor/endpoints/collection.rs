@@ -119,7 +119,8 @@ pub async fn create_playlist(
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
     } else if context.site_dir.join(&playlist_path).exists() {
-        Some("Already used by another collection, playlist or video".to_string())
+        let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
+        Some(message.to_string())
     } else {
         None
     };
@@ -175,7 +176,8 @@ pub async fn create_subcollection(
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
     } else if context.site_dir.join(&subcollection_path).exists() {
-        Some("Already used by another collection, playlist or video".to_string())
+        let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
+        Some(message.to_string())
     } else {
         None
     };

@@ -137,7 +137,9 @@ pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) -> Result<(), Str
     {
         let mut deployment = context_ref.deploying.lock().unwrap();
         if deployment.active() {
-            return Err(format!("Already deploying, can only deploy again when the first deploy is finished."));
+            let language = context_ref.get_editor_language();
+            let message = language.translations.already_deploying_can_only_deploy_again_when_current_deployment_is_finished;
+            return Err(message.to_string());
         } else {
             deployment.start();
         }
