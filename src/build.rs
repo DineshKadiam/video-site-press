@@ -1,6 +1,6 @@
 use std::fs;
 
-use rsubs_lib::srt;
+use rsubs_lib::SRT;
 
 use crate::{
     Collection,
@@ -153,11 +153,9 @@ fn build_video(
             // communicated as early as possible, e.g. checking the integrity
             // of the subtitle format right when we try to attach it to the video
             // on read_dir invocation.
-            srt::parse(source_path.to_string_lossy().to_string())
-                .unwrap()
-                .to_vtt()
-                .to_file(&target_path.to_string_lossy())
-                .unwrap();
+            let srt_content = fs::read_to_string(source_path).unwrap();
+            let vtt = SRT::parse(srt_content).unwrap().to_vtt();
+            fs::write(target_path, vtt.to_string()).unwrap();
         }
     }
 
