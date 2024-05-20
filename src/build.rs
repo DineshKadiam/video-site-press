@@ -54,6 +54,28 @@ fn build_collection(
     let mut outline_extended = outline.to_owned();
     outline_extended.push(Smartcrumb::Collection(collection));
 
+    if let Some(banner) = &collection.banner {
+        let collection_build_dir = context.build_dir.join(&collection.path);
+
+        if &collection.path != "" {
+            fs::create_dir_all(&collection_build_dir).unwrap();
+        }
+
+        if let Some(banner_assets) = &banner.assets {
+            for asset in &banner_assets.all() {
+                hard_link_or_copy(
+                    context.cache_dir.join(&asset.file_name),
+                    collection_build_dir.join(format!("banner_{}x{}.jpg", asset.width, asset.height))
+                );
+            }
+        } else {
+            hard_link_or_copy(
+                context.site_dir.join(&collection.path).join(&banner.file_name),
+                collection_build_dir.join("banner.jpg")
+            );
+        }
+    }
+
     for subcollection in &collection.subcollections {
         build_collection(context, subcollection, site, &outline_extended);
     }
@@ -80,7 +102,10 @@ fn build_playlist(
 
     if let Some(banner) = &playlist.banner {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
-        fs::create_dir_all(&playlist_build_dir).unwrap();
+
+        if &playlist.path != "" {
+            fs::create_dir_all(&playlist_build_dir).unwrap();
+        }
 
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
@@ -115,7 +140,10 @@ fn build_video(
     outline_extended.push(Smartcrumb::Video(video));
 
     let video_build_dir = context.build_dir.join(&video.path);
-    fs::create_dir_all(&video_build_dir).unwrap();
+
+    if &video.path != "" {
+        fs::create_dir_all(&video_build_dir).unwrap();
+    }
 
     for version in &video.versions {
         hard_link_or_copy(

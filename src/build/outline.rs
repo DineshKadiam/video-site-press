@@ -254,8 +254,9 @@ impl<'a> Smartcrumb<'a> {
         prefix: &str,
         site: &Site
     ) -> String {
-        // TODO: Fall back to playlist/subcollection banner if no poster on video
-        let banner = if let Some(video) = &collection.public_videos().find(|video| video.poster.is_some()) {
+        let banner = if let Some(banner) = &collection.banner {
+            banner_html(banner, prefix)
+        } else if let Some(video) = &collection.public_videos().find(|video| video.poster.is_some()) { // TODO: Fall back to playlist/subcollection banner if no poster on video
             let video_prefix = format!("{prefix}{}/", video.slug());
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
@@ -300,9 +301,9 @@ impl<'a> Smartcrumb<'a> {
                         format!("../{slug}/")
                     };
 
-                    // TODO: Implement further, we could take a banner from this subcollection,
-                    // a banner from a playlist, a poster from a video, etc.
-                    let thumbnail_rendered = if let Some(video) = subcollection.public_videos().find(|video| video.poster.is_some()) {
+                    let thumbnail_rendered = if let Some(banner) = &subcollection.banner {
+                        banner_html(banner, &subcollection_prefix)
+                    } else if let Some(video) = subcollection.public_videos().find(|video| video.poster.is_some()) { // TODO: Take a banner from a present playlist or sub-subcollection too as alternative
                         let video_prefix = format!("{subcollection_prefix}{}/", video.slug());
                         thumbnail(&site.language.translations, video, &video_prefix, false)
                     } else {
@@ -356,7 +357,9 @@ impl<'a> Smartcrumb<'a> {
                         format!("../{slug}/")
                     };
 
-                    let thumbnail_rendered = if let Some(video) = playlist
+                    let thumbnail_rendered = if let Some(banner) = &playlist.banner {
+                        banner_html(banner, &playlist_prefix)
+                    } else if let Some(video) = playlist
                         .public_videos()
                         .find(|video| video.poster.is_some()) {
                         let video_prefix = format!("{playlist_prefix}{}/", video.slug());

@@ -266,12 +266,12 @@ img {
     border-top-left-radius: .4rem;
     border-top-right-radius: .4rem;
 }
-.playlist_context > a:first-child .thumbnail { border-top-left-radius: .4rem }
+.playlist_context > a:first-child img { border-top-left-radius: .4rem }
 .playlist_context > a:last-child {
     border-bottom-left-radius: .4rem;
     border-bottom-right-radius: .4rem;
 }
-.playlist_context > a:last-child .thumbnail { border-bottom-left-radius: .4rem }
+.playlist_context > a:last-child img { border-bottom-left-radius: .4rem }
 .playlist_context > a:focus-visible,
 .playlist_context > a:hover { background-color: var(--bg-2); }
 .playlist_context > a:not(:last-child) {
@@ -312,10 +312,14 @@ img {
     right: 0;
     top: 0;
 }
-.playlist_context .thumbnail {
+.playlist_context img {
+    aspect-ratio: var(--poster-aspect);
+    background-color: var(--letterbox);
     border-radius: 0;
     display: block;
+    flex-shrink: 0;
     height: 4rem;
+    object-fit: contain;
 }
 .playlist_header {
     background-color: var(--bg-1);
@@ -357,7 +361,7 @@ svg {
 .thumbnail {
     aspect-ratio: var(--poster-aspect);
     background-color: var(--letterbox);
-    border-radius: 0.4rem;
+    border-radius: .4rem;
     flex-shrink: 0;
     height: 9rem;
     object-fit: contain;
