@@ -1,5 +1,6 @@
 const configureIcon = document.querySelector('#configure_icon');
 const deploymentElement = document.querySelector('#deployment');
+const deploymentFeedback = document.querySelector('#deployment_feedback');
 const deploymentIcon = document.querySelector('#deployment_icon');
 const processingElement = document.querySelector('.processing');
 const processingIcon = document.querySelector('#processing_icon');
@@ -21,7 +22,9 @@ function fetchProcessing() {
     fetch('/processing')
         .then(response => response.json())
         .then(response => {
-            if (response.deploying === null) {
+            const { deploymentInfo } = response;
+
+            if (!deploymentInfo.configured) {
                 const a = document.createElement('a');
                 a.href = '/configure-deployment';
 
@@ -32,47 +35,47 @@ function fetchProcessing() {
                 a.append(text);
 
                 deploymentElement.replaceChildren(a);
+            } else if (deploymentInfo.deployingSince !== null) {
+                const a = document.createElement('a');
+                a.href = '/deployment';
+
+                a.append(deploymentIcon.content.cloneNode(true));
+
+                const text = document.createElement('span');
+                text.textContent = t.deploying;
+                a.append(text);
+
+                const durationText = document.createElement('span');
+                durationText.textContent = formatTime(deploymentInfo.deployingSince);
+                a.append(durationText);
+
+                deploymentElement.replaceChildren(a);
             } else {
-                const [isDeploying, duration] = response.deploying;
+                const form = document.createElement('form');
+                form.action = '/deploy';
+                form.method = 'post';
 
-                if (isDeploying) {
-                    const a = document.createElement('a');
-                    a.href = '/deployment';
+                form.addEventListener('submit', event => {
+                    if (!confirm(t.reallyDeploy)) {
+                        event.preventDefault();
+                    }
+                });
 
-                    a.append(deploymentIcon.content.cloneNode(true));
+                const button = document.createElement('button');
 
-                    const text = document.createElement('span');
-                    text.textContent = t.deploying;
-                    a.append(text);
+                button.append(deploymentIcon.content.cloneNode(true));
 
-                    const durationText = document.createElement('span');
-                    durationText.textContent = formatTime(duration);
-                    a.append(durationText);
+                const text = document.createElement('span');
+                text.textContent = t.deploy;
+                button.append(text);
 
-                    deploymentElement.replaceChildren(a);
-                } else {
-                    const form = document.createElement('form');
-                    form.action = '/deploy';
-                    form.method = 'post';
+                form.append(button);
 
-                    form.addEventListener('submit', event => {
-                        if (!confirm(t.reallyDeploy)) {
-                            event.preventDefault();
-                        }
-                    });
+                deploymentElement.replaceChildren(form);
+            }
 
-                    const button = document.createElement('button');
-
-                    button.append(deploymentIcon.content.cloneNode(true));
-
-                    const text = document.createElement('span');
-                    text.textContent = t.deploy;
-                    button.append(text);
-
-                    form.append(button);
-
-                    deploymentElement.replaceChildren(form);
-                }
+            if (deploymentFeedback) {
+                deploymentFeedback.replaceChildren(deploymentInfo.feedback);
             }
 
             // TODO: This lastUpdate check is maybe not really needed anymore (what purpose does it serve now?)

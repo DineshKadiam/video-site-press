@@ -22,7 +22,7 @@ pub async fn deployment(context: Data<Arc<Context>>) -> HttpResponse {
     if let Ok(deployment) = context.deploying.lock() {
         let feedback = &deployment.feedback;
         let wrapped = formatdoc!(r#"
-            <pre>
+            <pre id="deployment_feedback">
                 {feedback}
             </pre>
         "#);
