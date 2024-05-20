@@ -23,7 +23,7 @@ use crate::editor::widgets::{
     error_page,
     form_checkbox,
     form_field,
-    form_field_pattern,
+    form_field_permalink,
     form_textarea,
     layout,
     not_found,
@@ -314,12 +314,12 @@ pub fn edit_page(
     } else {
         let (input, feedback) = if let Some(CollectionFormFeedback::Move { slug }) = &form_feedback {
             (
-                form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                form_field_permalink(slug, &language, "collection"),
                 format!(r#"<span class="feedback">{t_not_saved}</span>"#)
             )
         } else {
             (
-                form_field_pattern(&Field::valid(collection.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                form_field_permalink(&Field::valid(collection.slug()), &language, "collection"),
                 String::new()
             )
         };
@@ -353,24 +353,24 @@ pub fn edit_page(
 
     let (input_slug_create_playlist, feedback_create_playlist) = if let Some(CollectionFormFeedback::CreatePlaylist { slug }) = &form_feedback {
         (
-            form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+            form_field_permalink(slug, &language, "playlist"),
             format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         )
     } else {
         (
-            form_field_pattern(&Field::valid(""), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+            form_field_permalink(&Field::valid(""), &language, "playlist"),
             String::new()
         )
     };
     
     let (input_slug_create_subcollection, feedback_create_subcollection) = if let Some(CollectionFormFeedback::CreateSubcollection { slug }) = &form_feedback {
         (
-            form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+            form_field_permalink(slug, &language, "subcollection"),
             format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         )
     } else {
         (
-            form_field_pattern(&Field::valid(""), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+            form_field_permalink(&Field::valid(""), &language, "subcollection"),
             String::new()
         )
     };

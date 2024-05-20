@@ -297,12 +297,14 @@ pub fn form_field_date(
     "#)
 }
 
-pub fn form_field_pattern(
+/// Permalink inputs may occur multiple times on a page, therefore the `scope`
+/// parameter is used to make the id of the input unique. Pass something like
+/// "collection", "playlist", etc. to identify what object the permalink pertains
+/// to.
+pub fn form_field_permalink(
     field: &Field,
-    key: &str,
-    label: &str,
-    placeholder: &str,
-    pattern: &str
+    language: &Language,
+    scope: &str
 ) -> String {
     let error = field.error
         .as_deref()
@@ -310,10 +312,13 @@ pub fn form_field_pattern(
         .unwrap_or(String::new());
     let value = &field.value;
 
+    // TODO: Double-check pattern (and elsewhere checks from start to end ($^?))
+
+    let t_permalink = language.translations.permalink;
     formatdoc!(r#"
         <div class="form_field">
-            <label for="{key}">{label}</label>
-            <input id="{key}" name="{key}" placeholder="{placeholder}" pattern="{pattern}" value="{value}">
+            <label for="{scope}_slug">{t_permalink}</label>
+            <input autocomplete="off" id="{scope}_slug" name="slug" pattern="[A-Za-z0-9\-]+" value="{value}">
             {error}
         </div>
     "#)

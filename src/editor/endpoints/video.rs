@@ -40,7 +40,7 @@ use crate::editor::widgets::{
     form_checkbox,
     form_field_date,
     form_field,
-    form_field_pattern,
+    form_field_permalink,
     form_textarea,
     layout,
     not_found,
@@ -661,13 +661,12 @@ pub fn edit_page(
     } else {
         let (input, feedback) = if let Some(VideoFormFeedback::Move { slug }) = &form_feedback {
             (
-                // TODO: Double-check this pattern (and elsewhere checks from start to end ($^?))
-                form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                form_field_permalink(slug, &language, "video"),
                 format!(r#"<span class="feedback">{t_not_saved}</span>"#)
             )
         } else {
             (
-                form_field_pattern(&Field::valid(video.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                form_field_permalink(&Field::valid(video.slug()), &language, "video"),
                 String::new()
             )
         };

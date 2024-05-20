@@ -28,7 +28,7 @@ use crate::editor::widgets::{
     error_page,
     form_checkbox,
     form_field,
-    form_field_pattern,
+    form_field_permalink,
     form_textarea,
     layout,
     not_found,
@@ -270,13 +270,12 @@ pub fn edit_page(
     } else {
         let (input, feedback) = if let Some(PlaylistFormFeedback::Move { slug }) = &form_feedback {
             (
-                // TODO: Double-check this pattern (and elsewhere checks from start to end ($^?))
-                form_field_pattern(slug, "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                form_field_permalink(slug, &language, "playlist"),
                 format!(r#"<span class="feedback">{t_not_saved}</span>"#)
             )
         } else {
             (
-                form_field_pattern(&Field::valid(playlist.slug()), "slug", "Permalink", "Permalink", r#"[A-Za-z0-9\-]+"#),
+                form_field_permalink(&Field::valid(playlist.slug()), &language, "playlist"),
                 String::new()
             )
         };
@@ -538,6 +537,10 @@ pub async fn r#move(
         .into_string()
         .unwrap();
 
+    // TODO: Here and elsewhere: If a playlist already has a permalink (say "example"),
+    //       and we try to save it with exactly the same/unchanged permalink "example",
+    //       we get an error that *another* playlist is already using that permalink.
+    //       Need to make an exception for this in the validation check.
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
     } else if context.site_dir.join(&new_path).exists() {
