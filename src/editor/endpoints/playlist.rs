@@ -6,7 +6,8 @@ use std::sync::Arc;
 use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::http::header::ContentType;
-use actix_web::web::{self, Data, Form, Path as ActixPath, Redirect};
+use actix_web::web;
+use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
@@ -156,11 +157,11 @@ pub async fn delete_banner(
     context: Data<Arc<Context>>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
-    let mutation = |playlist: &mut Playlist| {
-        if let Some(banner) = &playlist.banner {
-            let banner_path = context.site_dir.join(&playlist.path).join(&banner.file_name);
-            playlist.banner = None;
-            playlist.write_manifest(&context);
+    let mutation = |playlist_mut: &mut Playlist| {
+        if let Some(banner) = &playlist_mut.banner {
+            let banner_path = context.site_dir.join(&playlist_mut.path).join(&banner.file_name);
+            playlist_mut.banner = None;
+            playlist_mut.write_manifest(&context);
             let _ = fs::remove_file(banner_path);
         }
     };
@@ -203,7 +204,7 @@ pub fn edit_page(
 
     let t_delete_banner = language.translations.delete_banner;
     let t_upload_banner = language.translations.upload_banner;
-    let banner_upload_button = upload_widget(&format!("/upload-banner/{path}"), t_upload_banner);
+    let banner_upload_button = upload_widget(&format!("/upload-playlist-banner/{path}"), t_upload_banner);
     let banner_form = match &playlist.banner {
         Some(banner) => {
             let alt = if let Some(description) = &banner.description {
@@ -228,11 +229,11 @@ pub fn edit_page(
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
                     {banner_upload_button}
-                    <form action="/delete-banner/{path}" method="post">
+                    <form action="/delete-playlist-banner/{path}" method="post">
                         <button>{t_delete_banner}</button>
                     </form>
                 </div>
-                <form action="/update-banner/{path}" method="post">
+                <form action="/update-playlist-banner/{path}" method="post">
                     {description}
                     <button>{t_update_description}</button>
                 </form>
@@ -310,8 +311,7 @@ pub fn edit_page(
     let t_convert_to_collection = language.translations.convert_to_collection;
     let convert_to_collection_form = formatdoc!(r#"
         <p>
-            A playlist can seamlessly be converted to a collection, but note that the
-            banner will be deleted, because collections don't have one.
+            A playlist can seamlessly be converted to a collection
         </p>
 
         <form action="/convert-to-collection/{path}" method="post">
@@ -632,11 +632,11 @@ pub async fn update_banner(
     form: Form<BannerUpdateForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
-    let mutation = |playlist: &mut Playlist| {
-        if let Some(banner) = &mut playlist.banner {
+    let mutation = |playlist_mut: &mut Playlist| {
+        if let Some(banner) = &mut playlist_mut.banner {
             banner.description = Some(form.description.clone());
         }
-        playlist.write_manifest(&context);
+        playlist_mut.write_manifest(&context);
     };
 
     match context.update_playlist(mutation, &path.path) {
@@ -688,9 +688,9 @@ pub async fn upload_banner(
 
             let banner = Banner::new(None, None, file_meta, storage_filename);
 
-            let mutation = |playlist: &mut Playlist| {
-                playlist.banner = Some(banner);
-                playlist.write_manifest(&context);
+            let mutation = |playlist_mut: &mut Playlist| {
+                playlist_mut.banner = Some(banner);
+                playlist_mut.write_manifest(&context);
             };
 
             match context.update_playlist(mutation, &path.path) {

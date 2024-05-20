@@ -1,19 +1,26 @@
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 
-use actix_web::HttpResponse;
+use actix_multipart::Multipart;
+use actix_web::{Error, HttpResponse};
 use actix_web::http::header::ContentType;
+use actix_web::web;
 use actix_web::web::{Data, Either, Form, Path as ActixPath, Redirect};
+use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
 use url::Url;
 
 use crate::{
+    Banner,
     Collection,
     Context,
     ContextPath,
     Field,
+    FileMeta,
+    JobKind,
     Language,
     Link,
     Playlist
@@ -30,7 +37,12 @@ use crate::editor::widgets::{
     upload_widget
 };
 use crate::icons;
-use crate::util::validate_slug;
+use crate::util::{nanoid, supported_image_extension, validate_slug};
+
+#[derive(Deserialize)]
+pub struct BannerUpdateForm {
+    description: String
+}
 
 pub enum CollectionFormFeedback<'a> {
     CreatePlaylist {
@@ -233,6 +245,31 @@ pub async fn delete(
     Either::Left(Redirect::to(redirect_url).see_other())
 }
 
+pub async fn delete_banner(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |collection_mut: &mut Collection| {
+        if let Some(banner) = &collection_mut.banner {
+            let banner_path = context.site_dir.join(&collection_mut.path).join(&banner.file_name);
+            collection_mut.banner = None;
+            collection_mut.write_manifest(&context);
+            let _ = fs::remove_file(banner_path);
+        }
+    };
+
+    match context.update_collection(mutation, &path.path) {
+        Ok(collection) => {
+            let redirect_url = format!("/collection/{}", collection.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
 pub async fn delete_link(
     context: Data<Arc<Context>>,
     form: Form<LinkForm>,
@@ -283,6 +320,46 @@ pub fn edit_page(
             })
             .collect::<Vec<String>>()
             .join("")
+    };
+
+    let t_delete_banner = language.translations.delete_banner;
+    let t_upload_banner = language.translations.upload_banner;
+    let banner_upload_button = upload_widget(&format!("/upload-collection-banner/{path}"), t_upload_banner);
+    let banner_form = match &collection.banner {
+        Some(banner) => {
+            let alt = if let Some(description) = &banner.description {
+                format!(r#"alt="{description}""#)
+            } else {
+                String::new()
+            };
+
+            // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
+            let file_name = &banner.file_name;
+            let src = if path == "" {
+                format!("/poster/{file_name}")
+            } else {
+                format!("/poster/{path}/{file_name}")
+            };
+
+            let t_banner_description = language.translations.banner_description;
+            let description = form_textarea("description", t_banner_description, banner.description.as_deref());
+
+            let t_update_description = language.translations.update_description;
+            format!(r#"
+                <img {alt} class="thumbnail" src="{src}">
+                <div class="button_group">
+                    {banner_upload_button}
+                    <form action="/delete-collection-banner/{path}" method="post">
+                        <button>{t_delete_banner}</button>
+                    </form>
+                </div>
+                <form action="/update-collection-banner/{path}" method="post">
+                    {description}
+                    <button>{t_update_description}</button>
+                </form>
+            "#)
+        }
+        None => banner_upload_button
     };
 
     let t_description = language.translations.description;
@@ -468,6 +545,7 @@ pub fn edit_page(
         "#)
     };
 
+    let t_banner_image = language.translations.banner_image;
     let t_collection = language.translations.collection;
     let t_create_playlist = language.translations.create_playlist;
     let t_create_subcollection = language.translations.create_subcollection;
@@ -529,6 +607,11 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_new_video}</h2>
             {video_upload_button}
+        </div>
+
+        <div class="form_group">
+            <h2>{t_banner_image}</h2>
+            {banner_form}
         </div>
 
         {site_edit}
@@ -671,4 +754,89 @@ pub async fn update(
 
         Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
     }
+}
+
+pub async fn update_banner(
+    context: Data<Arc<Context>>,
+    form: Form<BannerUpdateForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |collection_mut: &mut Collection| {
+        if let Some(banner) = &mut collection_mut.banner {
+            banner.description = Some(form.description.clone());
+        }
+        collection_mut.write_manifest(&context);
+    };
+
+    match context.update_collection(mutation, &path.path) {
+        Ok(collection) => {
+            let redirect_url = format!("/collection/{}", collection.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            return Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
+pub async fn upload_banner(
+    context: Data<Arc<Context>>,
+    mut payload: Multipart,
+    path: ActixPath<ContextPath>
+) -> Result<Either<Redirect, HttpResponse>, Error> {
+    let language = context.get_editor_language();
+
+    while let Some(mut field) = payload.try_next().await? {
+        let content_disposition = field.content_disposition();
+
+        if let Some(file_name) = content_disposition.get_filename() {
+            if !supported_image_extension(file_name) {
+                let message = language.translations.unsupported_file_extension_in_xxx(file_name);
+                return Ok(Either::Right(error_page(&context, &language, &message)))
+            }
+
+            let original_filename = file_name.to_string();
+            // TODO: Generate a prettier filename - this goes into the site_dir!
+            //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
+            let storage_filename = format!("{}_{original_filename}", nanoid());
+            let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
+            let storage_path_moving = storage_path.clone();
+
+            // File::create is blocking operation, use threadpool
+            let mut f = web::block(|| File::create(storage_path_moving)).await??;
+
+            while let Some(chunk) = field.try_next().await? {
+                f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
+            }
+
+            let file_meta = FileMeta::new(&storage_path);
+
+            // TODO: Although unlikely to result in anything, most of the time,
+            //       we could fetch assets from the cache, just in case?
+
+            let banner = Banner::new(None, None, file_meta, storage_filename);
+
+            let mutation = |collection_mut: &mut Collection| {
+                collection_mut.banner = Some(banner);
+                collection_mut.write_manifest(&context);
+            };
+
+            match context.update_collection(mutation, &path.path) {
+                Ok(collection) => {
+                    let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection));
+                    context.push_job_queue(job_kind);
+                }
+                Err(()) => {
+                    let _ = fs::remove_file(&storage_path);
+                    let http_response = not_found(&context, &language, &path.path);
+                    return Ok(Either::Right(http_response));
+                }
+            }
+        }
+    }
+
+    let redirect_url = format!("/collection/{}", path.path);
+
+    Ok(Either::Left(Redirect::to(redirect_url).see_other()))
 }

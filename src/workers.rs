@@ -4,6 +4,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::{
+    Collection,
     Context,
     FileMeta,
     ImageProcessor,
@@ -19,7 +20,157 @@ use crate::{
 };
 use crate::transcode;
 
-fn compute_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(), String> {
+fn compute_collection_banner_assets(context: &Context, collection: Arc<Collection>) -> Result<(), String> {
+    if let Some(banner) = &collection.banner {
+        let source_path = context.site_dir.join(&collection.path).join(&banner.file_name);
+
+        match ImageProcessor::open(&source_path) {
+            Ok(source_processor) => {
+                let min_overshoot = 1.1;
+
+                let cover_rectangle_160 = ResizeMode::CoverCroppedRectangle { max_width: 160, min_aspect: 2.39 };
+                let max_160 = compute_poster_asset(context, &source_processor, cover_rectangle_160)?;
+
+                let max_320 = if source_processor.source_width as f32 > 160.0 * min_overshoot {
+                    let cover_rectangle_320 = ResizeMode::CoverCroppedRectangle { max_width: 320, min_aspect: 2.39 };
+                    Some(compute_poster_asset(context, &source_processor, cover_rectangle_320)?)
+                } else {
+                    None
+                };
+
+                let max_480 = if source_processor.source_width as f32 > 320.0 * min_overshoot {
+                    let cover_rectangle_480 = ResizeMode::CoverCroppedRectangle { max_width: 480, min_aspect: 2.39 };
+                    Some(compute_poster_asset(context, &source_processor, cover_rectangle_480)?)
+                } else {
+                    None
+                };
+
+                let max_800 = if source_processor.source_width as f32 > 480.0 * min_overshoot {
+                    let cover_rectangle_800 = ResizeMode::CoverCroppedRectangle { max_width: 800, min_aspect: 2.39 };
+                    Some(compute_poster_asset(context, &source_processor, cover_rectangle_800)?)
+                } else {
+                    None
+                };
+
+                let max_1280 = if source_processor.source_width as f32 > 800.0 * min_overshoot {
+                    let cover_rectangle_1280 = ResizeMode::CoverCroppedRectangle { max_width: 1280, min_aspect: 2.39 };
+                    Some(compute_poster_asset(context, &source_processor, cover_rectangle_1280)?)
+                } else {
+                    None
+                };
+
+                let banner_assets = PosterAssets {
+                    max_160,
+                    max_320,
+                    max_480,
+                    max_800,
+                    max_1280,
+                    // TODO: For banners there is no configurable aspect, we could/should model this
+                    //       more cleanly in the future by using separate types for banner/poster assets
+                    poster_aspect: 0.0
+                };
+
+                // TODO: This internally allocates a PosterAssetsCached which it then serializes,
+                //       but this could actually be re-used below (if we were to merge the two somehow would be good?)
+                banner_assets.write_cache_manifest(context, &banner.file_meta, &banner.file_name, &collection.path);
+
+                // Add/update poster assets in in-memory cache
+                // TODO: This looks vaguely in need of encapsulation
+                if let Ok(mut cache) = context.cache.lock() {
+                    let banner_path = format!("{}/{}", collection.path, banner.file_name);
+
+                    if let Some(poster_assets_cache) = cache.poster_assets
+                        .iter_mut()
+                        .find(|cached| cached.path == banner_path) {
+                        poster_assets_cache.assets = banner_assets.clone();
+                        // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                        poster_assets_cache.file_meta = banner.file_meta.clone();
+                    } else {
+                        let poster_assets_cache = PosterAssetsCached {
+                            assets: banner_assets.clone(),
+                            file_meta: banner.file_meta.clone(),
+                            path: banner_path
+                        };
+
+                        cache.poster_assets.push(poster_assets_cache);
+                    }
+                }
+
+                let mutation = |collection_mut: &mut Collection| {
+                    // Note that we expect the banner to be Some(), virtually always.
+                    // If it's missing that is an edge case with (likely) user interaction.
+                    if let Some(banner) = &mut collection_mut.banner {
+                        banner.assets = Some(banner_assets);
+                    }
+                };
+
+                if let Err(()) = context.update_collection(mutation, &collection.path) {
+                    return Err("Banner assets could not be assigned in the site tree as the collection has meanwhile changed path.".to_string());
+                }
+            }
+            Err(err) => return Err(err)
+        }
+    }
+
+    Ok(())
+}
+
+fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
+    let mut versions_mut = video.versions.clone();
+
+    let mut made_changes = false;
+
+    for version in versions_mut.iter_mut() {
+        if version.video_meta.is_some() { continue }
+
+        if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(&video.path).join(&version.file_name)) {
+            video_meta.write_cache_manifest(context, &version.file_meta, &version.file_name, &video.path);
+
+            // Add/update video meta in in-memory cache
+            // TODO: This looks vaguely in need of encapsulation
+            if let Ok(mut cache) = context.cache.lock() {
+                let version_path = format!("{}/{}", &video.path, version.file_name);
+
+                if let Some(video_meta_cached) = cache.video_meta
+                    .iter_mut()
+                    .find(|cached| cached.path == version_path) {
+                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                    video_meta_cached.file_meta = version.file_meta.clone();
+                    video_meta_cached.video_meta = video_meta.clone();
+
+                } else {
+                    let video_meta_cached = VideoMetaCached {
+                        file_meta: version.file_meta.clone(),
+                        path: version_path,
+                        video_meta: video_meta.clone()
+                    };
+
+                    cache.video_meta.push(video_meta_cached);
+                }
+            }
+
+            version.video_meta = Some(video_meta);
+
+            made_changes = true;
+        }
+    }
+
+    if made_changes {
+        let mutation = |video_mut: &mut Video| {
+            video_mut.versions = versions_mut;
+        };
+
+        if let Ok(video_updated) = context.update_video(mutation, &video.path) {
+            // TODO: Reactivate
+            // context.create_version_jobs(&video);
+            return video_updated;
+        }
+    }
+
+    video
+}
+
+fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(), String> {
     if let Some(banner) = &playlist.banner {
         let source_path = context.site_dir.join(&playlist.path).join(&banner.file_name);
 
@@ -95,10 +246,10 @@ fn compute_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(
                     }
                 }
 
-                let mutation = |playlist: &mut Playlist| {
+                let mutation = |playlist_mut: &mut Playlist| {
                     // Note that we expect the banner to be Some(), virtually always.
                     // If it's missing that is an edge case with (likely) user interaction.
-                    if let Some(banner) = &mut playlist.banner {
+                    if let Some(banner) = &mut playlist_mut.banner {
                         banner.assets = Some(banner_assets);
                     }
                 };
@@ -112,61 +263,6 @@ fn compute_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(
     }
 
     Ok(())
-}
-
-fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
-    let mut versions_mut = video.versions.clone();
-
-    let mut made_changes = false;
-
-    for version in versions_mut.iter_mut() {
-        if version.video_meta.is_some() { continue }
-
-        if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(&video.path).join(&version.file_name)) {
-            video_meta.write_cache_manifest(context, &version.file_meta, &version.file_name, &video.path);
-
-            // Add/update video meta in in-memory cache
-            // TODO: This looks vaguely in need of encapsulation
-            if let Ok(mut cache) = context.cache.lock() {
-                let version_path = format!("{}/{}", &video.path, version.file_name);
-
-                if let Some(video_meta_cached) = cache.video_meta
-                    .iter_mut()
-                    .find(|cached| cached.path == version_path) {
-                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
-                    video_meta_cached.file_meta = version.file_meta.clone();
-                    video_meta_cached.video_meta = video_meta.clone();
-
-                } else {
-                    let video_meta_cached = VideoMetaCached {
-                        file_meta: version.file_meta.clone(),
-                        path: version_path,
-                        video_meta: video_meta.clone()
-                    };
-
-                    cache.video_meta.push(video_meta_cached);
-                }
-            }
-
-            version.video_meta = Some(video_meta);
-
-            made_changes = true;
-        }
-    }
-
-    if made_changes {
-        let mutation = |video_mut: &mut Video| {
-            video_mut.versions = versions_mut;
-        };
-
-        if let Ok(video_updated) = context.update_video(mutation, &video.path) {
-            // TODO: Reactivate
-            // context.create_version_jobs(&video);
-            return video_updated;
-        }
-    }
-
-    video
 }
 
 fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc<Video> {
@@ -317,13 +413,26 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                 let job = job.unwrap();
 
                 match job.kind {
+                    JobKind::CollectionFastTasks(collection) => {
+                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &collection.path);
+                        let process_id = context.processing.lock().unwrap().push(&collection.path, label);
+                        if let Some(banner) = &collection.banner {
+                            if banner.assets.is_none() {
+                                if let Err(err) = compute_collection_banner_assets(&context, collection) {
+                                    context.processing_errors.lock().unwrap().push(err);
+                                }
+                            }
+                        }
+
+                        context.processing.lock().unwrap().remove(process_id);
+                    }
                     JobKind::PlaylistFastTasks(playlist) => {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &playlist.path);
                         let process_id = context.processing.lock().unwrap().push(&playlist.path, label);
 
                         if let Some(banner) = &playlist.banner {
                             if banner.assets.is_none() {
-                                if let Err(err) = compute_banner_assets(&context, playlist) {
+                                if let Err(err) = compute_playlist_banner_assets(&context, playlist) {
                                     context.processing_errors.lock().unwrap().push(err);
                                 }
                             }

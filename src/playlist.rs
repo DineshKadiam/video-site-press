@@ -56,19 +56,6 @@ impl Playlist {
             }
         };
 
-        match document.optional_embed("description") {
-            Ok(Some(field)) => {
-                match field.required_value() {
-                    Ok(value) => {
-                        self.description = Some(value);
-                    }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
-
         match document.optional_field("banner") {
             Ok(Some(field)) => {
                 match field.required_attribute("file") {
@@ -105,6 +92,19 @@ impl Playlist {
                         }
                     }
                     Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
+        match document.optional_embed("description") {
+            Ok(Some(field)) => {
+                match field.required_value() {
+                    Ok(value) => {
+                        self.description = Some(value);
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
             }
             Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),

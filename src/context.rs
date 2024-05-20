@@ -122,16 +122,14 @@ impl Context {
                 let manifest_path = self.site_dir.join("playlist.eno");
                 let _ = fs::remove_file(&manifest_path);
 
-                if let Some(banner) = &playlist.banner {
-                    let banner_path = self.site_dir.join(&banner.file_name);
-                    let _ = fs::remove_file(&banner_path);
-                }
-
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
 
                 // This always succeeds, as the Arc is guaranteed single-owner at this point.
                 if let Some(collection) = Arc::<Collection>::get_mut(&mut collection) {
+                    if let Some(banner) = &playlist.banner {
+                        collection.banner = Some(banner.clone());
+                    }
                     if let Some(description) = &playlist.description {
                         collection.description = Some(description.clone());
                     }
@@ -188,18 +186,14 @@ impl Context {
                 let manifest_path = dir_converting.join("playlist.eno");
                 let _ = fs::remove_file(&manifest_path);
 
-                // TODO: Here and elsewhere: This should be removed soon, as we want
-                //       banners for collections too.
-                if let Some(banner) = &playlist.banner {
-                    let banner_path = dir_converting.join(&banner.file_name);
-                    let _ = fs::remove_file(&banner_path);
-                }
-
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
 
                 // This always succeeds, as the Arc is guaranteed single-owner at this point.
                 if let Some(collection) = Arc::<Collection>::get_mut(&mut collection) {
+                    if let Some(banner) = &playlist.banner {
+                        collection.banner = Some(banner.clone());
+                    }
                     if let Some(description) = &playlist.description {
                         collection.description = Some(description.clone());
                     }
@@ -277,6 +271,9 @@ impl Context {
 
                 // This always succeeds, as the Arc is guaranteed single-owner at this point.
                 if let Some(playlist) = Arc::<Playlist>::get_mut(&mut playlist) {
+                    if let Some(banner) = &collection.banner {
+                        playlist.banner = Some(banner.clone());
+                    }
                     if let Some(description) = &collection.description {
                         playlist.description = Some(description.clone());
                     }
@@ -344,6 +341,9 @@ impl Context {
 
                 // This always succeeds, as the Arc is guaranteed single-owner at this point.
                 if let Some(playlist) = Arc::<Playlist>::get_mut(&mut playlist) {
+                    if let Some(banner) = &collection.banner {
+                        playlist.banner = Some(banner.clone());
+                    }
                     if let Some(description) = &collection.description {
                         playlist.description = Some(description.clone());
                     }
@@ -854,6 +854,10 @@ impl Context {
     }
 
     fn queue_collection_jobs(&self, collection: &Arc<Collection>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
+        if collection.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
+            job_kinds.push(JobKind::CollectionFastTasks(Arc::clone(collection)));
+        }
+
         for subcollection in &collection.subcollections {
             self.queue_collection_jobs(subcollection, site, job_kinds);
         }

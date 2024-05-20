@@ -10,7 +10,9 @@ use enolib::{Element, SectionElement};
 use url::Url;
 
 use crate::{
+    Banner,
     Context,
+    FileMeta,
     GetAnyResult,
     HyperDir,
     Link,
@@ -24,6 +26,7 @@ use crate::util::checked_remove_dir_all;
 
 #[derive(Clone, Debug)]
 pub struct Collection {
+    pub banner: Option<Banner>,
     pub description: Option<String>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
@@ -36,7 +39,7 @@ pub struct Collection {
 }
 
 impl Collection {
-    fn apply_manifest(&mut self, manifest_path: &Path) {
+    fn apply_manifest(&mut self, context: &Context, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
         let document = match enolib::parse(&content) {
@@ -46,6 +49,48 @@ impl Collection {
                 return
             }
         };
+
+        match document.optional_field("banner") {
+            Ok(Some(field)) => {
+                match field.required_attribute("file") {
+                    Ok(attribute) => {
+                        match attribute.required_value::<String>() {
+                            Ok(file_name) => {
+                                let path_absolute = manifest_path.parent().unwrap().join(&file_name);
+                                if path_absolute.exists() {
+                                    let file_meta = FileMeta::new(&path_absolute);
+
+                                    // TODO: Errors
+                                    let description = match field.required_attribute("description") {
+                                        Ok(attribute) => match attribute.required_value() {
+                                            Ok(description) => Some(description),
+                                            _ => None
+                                        }
+                                        _ => None
+                                    };
+
+                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                                        &file_meta,
+                                        &file_name,
+                                        &self.path,
+                                        0.0 // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                    );
+
+                                    let banner = Banner::new(assets, description, file_meta, file_name);
+                                    self.banner = Some(banner);
+                                } else {
+                                    self.errors.push(format!("Error in {}:{} (Path to banner is invalid, file not found)", manifest_path.display(), attribute.line_number()));
+                                }
+                            }
+                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                        }
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
 
         match document.optional_embed("description") {
             Ok(Some(field)) => {
@@ -368,6 +413,7 @@ impl Collection {
 
     pub fn new(path: String) -> Collection {
         Collection {
+            banner: None,
             description: None,
             errors: Vec::new(),
             links: Vec::new(),
@@ -414,7 +460,7 @@ impl Collection {
         let mut collection = Collection::new(hyper_dir.site_path(context));
 
         if let Some(manifest) = &hyper_dir.collection_manifest {
-            collection.apply_manifest(manifest);
+            collection.apply_manifest(context, manifest);
         }
 
         for subdir in &hyper_dir.dirs {
@@ -422,14 +468,23 @@ impl Collection {
             collection.read_subdir(context, &hyper_subdir, site);
         }
 
-        if !hyper_dir.image_files.is_empty() {
-            let mut error = "Image files in a collection directory are not supported/used, maybe you wanted to put them in a subfolder instead?".to_string();
+        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable banner, use additional ones, etc.)
+        if !hyper_dir.image_files.is_empty() && collection.banner.is_none() {
+            let first_image = hyper_dir.image_files.first().unwrap();
 
-            for image_file in &hyper_dir.image_files {
-                error.push_str(&format!("\n- {}", image_file.display()));
-            }
+            let file_meta = FileMeta::new(first_image);
+            let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
-            collection.errors.push(error);
+            let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                &file_meta,
+                &file_name,
+                &collection.path,
+                0.0
+            );
+
+            let banner = Banner::new(assets, None, file_meta, file_name);
+
+            collection.banner = Some(banner);
         }
 
         if !hyper_dir.video_files.is_empty() {
@@ -443,7 +498,7 @@ impl Collection {
         }
 
         if !hyper_dir.errors.is_empty() {
-            let mut error = "Directories and/or files inside this playlist directory have issues:".to_string();
+            let mut error = "Directories and/or files inside this collection directory have issues:".to_string();
 
             for message in &hyper_dir.errors {
                 error.push_str(&format!("\n- {}", message));
@@ -506,14 +561,19 @@ impl Collection {
             let manifest_path = context.site_dir.join("collection.eno");
             let _ = fs::remove_file(&manifest_path);
 
-            for subcollection in &self.subcollections {
-                let subcollection_path = context.site_dir.join(subcollection.slug());
-                let _ = checked_remove_dir_all(context, &subcollection_path);
+            if let Some(banner) = &self.banner {
+                let banner_path = context.site_dir.join(&banner.file_name);
+                let _ = fs::remove_file(&banner_path);
             }
 
             for playlist in &self.playlists {
                 let playlist_path = context.site_dir.join(playlist.slug());
                 let _ = checked_remove_dir_all(context, &playlist_path);
+            }
+
+            for subcollection in &self.subcollections {
+                let subcollection_path = context.site_dir.join(subcollection.slug());
+                let _ = checked_remove_dir_all(context, &subcollection_path);
             }
 
             for video in &self.videos {
@@ -688,6 +748,16 @@ impl Collection {
 
     pub fn write_manifest(&self, context: &Context) {
         let mut eno = String::new();
+
+        if let Some(banner) = &self.banner {
+            eno.push_str("banner:\n");
+
+            if let Some(description) = &banner.description {
+                eno.push_str(&format!("description = {}\n", description));
+            }
+
+            eno.push_str(&format!("file = {}\n", banner.file_name));
+        }
 
         if let Some(title) = &self.title {
             eno.push_str(&format!("title: {}\n", title));

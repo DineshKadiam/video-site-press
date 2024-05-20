@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime};
 
 use serde_derive::Serialize;
 
-use crate::{Playlist, Translations, Video, VideoFormat};
+use crate::{Collection, Playlist, Translations, Video, VideoFormat};
 use crate::util::{nanoid, timestamp};
 
 #[derive(Clone, Debug)]
@@ -19,6 +19,7 @@ pub struct Job {
 // This specifies what needs to be done in a processing job
 #[derive(Clone, Debug)]
 pub enum JobKind {
+    CollectionFastTasks(Arc<Collection>),
     PlaylistFastTasks(Arc<Playlist>),
     VideoFastTasks {
         poster_aspect: f32,
@@ -92,20 +93,30 @@ impl Job {
     /// relevant), the one that exists longer is prioritized.
     pub fn cmp_priority(&self, other: &Job) -> Ordering {
         match &self.kind {
+            JobKind::CollectionFastTasks(_) => match other.kind {
+                JobKind::CollectionFastTasks(_) |
+                JobKind::PlaylistFastTasks(_) |
+                JobKind::VideoFastTasks { .. } => (),
+                JobKind::VideoFormat { .. } => return Ordering::Greater,
+                JobKind::VideoRandomPoster { .. } => return Ordering::Greater
+            }
             JobKind::PlaylistFastTasks(_) => match other.kind {
-                JobKind::PlaylistFastTasks(_) => (),
+                JobKind::CollectionFastTasks(_) |
+                JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
                 JobKind::VideoRandomPoster { .. } => return Ordering::Greater
             }
             JobKind::VideoFastTasks { .. } => match other.kind {
-                JobKind::PlaylistFastTasks(_) => (),
+                JobKind::CollectionFastTasks(_) |
+                JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
                 JobKind::VideoRandomPoster { .. } => return Ordering::Greater
             }
             JobKind::VideoFormat { format, .. } => match &other.kind {
-                JobKind::PlaylistFastTasks(_) => return Ordering::Less,
+                JobKind::CollectionFastTasks(_) |
+                JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => return Ordering::Less,
                 JobKind::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
@@ -114,7 +125,8 @@ impl Job {
                 JobKind::VideoRandomPoster { .. } => return Ordering::Less
             }
             JobKind::VideoRandomPoster { .. } => match other.kind {
-                JobKind::PlaylistFastTasks(_) => return Ordering::Less,
+                JobKind::CollectionFastTasks(_) |
+                JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => return Ordering::Less,
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
                 JobKind::VideoRandomPoster { .. } => ()
@@ -128,6 +140,7 @@ impl Job {
 impl JobKind {
     pub fn representation(&self, translations: &Translations) -> String {
         match self {
+            JobKind::CollectionFastTasks(collection) => format!("Compute banner for collection '{}'", collection.label(translations)),
             JobKind::PlaylistFastTasks(playlist) => format!("Compute banner for playlist '{}'", playlist.label(translations)),
             JobKind::VideoFastTasks { video, .. } => format!("Compute metadata and/or poster for video '{}'", video.label(translations)),
             JobKind::VideoFormat { video, .. } => format!("Compute additional format for video '{}'", video.label(translations)),
@@ -139,6 +152,10 @@ impl JobKind {
 impl PartialEq for JobKind {
     fn eq(&self, other: &JobKind) -> bool {
         match self {
+            JobKind::CollectionFastTasks(collection) => match other {
+                JobKind::CollectionFastTasks(other_collection) => collection.path == other_collection.path,
+                _ => false
+            }
             JobKind::PlaylistFastTasks(playlist) => match other {
                 JobKind::PlaylistFastTasks(other_playlist) => playlist.path == other_playlist.path,
                 _ => false
