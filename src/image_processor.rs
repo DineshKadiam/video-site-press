@@ -64,9 +64,15 @@ impl ImageProcessor {
 
     pub fn open(path: &Path) -> Result<ImageProcessor, String> {
         image::open(path)
-            .map(|source_image| {
-                let source_height = source_image.height();
-                let source_width = source_image.width();
+            .map(|unknown_representation| {
+                let source_height = unknown_representation.height();
+                let source_width = unknown_representation.width();
+
+                // We transcode everything to jpeg for our deliverables, so we never need
+                // an alpha channel (in fact, the image crate panics on trying to export to
+                // jpeg with alpha channel present), so we right away drop any alpha information
+                // if present.
+                let source_image = DynamicImage::ImageRgb8(unknown_representation.into_rgb8());
 
                 ImageProcessor {
                     source_height,
