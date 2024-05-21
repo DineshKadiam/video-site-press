@@ -108,6 +108,8 @@ impl Context {
         }
     }
 
+    /// Take the playlist or video at the given path (or if the site is still empty,
+    /// the empty site itself) and convert it to a collection. This never fails.
     pub fn convert_to_collection(&self, path: &str) {
         let mut site_mut = self.get_site_mut();
 
@@ -132,6 +134,9 @@ impl Context {
                     }
                     if let Some(description) = &playlist.description {
                         collection.description = Some(description.clone());
+                    }
+                    if !playlist.links.is_empty() {
+                        collection.links = playlist.links.clone();
                     }
                     if let Some(title) = &playlist.title {
                         collection.title = Some(title.clone());
@@ -197,6 +202,9 @@ impl Context {
                     if let Some(description) = &playlist.description {
                         collection.description = Some(description.clone());
                     }
+                    if !playlist.links.is_empty() {
+                        collection.links = playlist.links.clone();
+                    }
                     if let Some(title) = &playlist.title {
                         collection.title = Some(title.clone());
                     }
@@ -246,6 +254,10 @@ impl Context {
         }
     }
 
+    /// Take the collection or video at the given path (or if the site is still empty,
+    /// the empty site itself) and convert it to a playlist. This may fail if we're
+    /// converting from a collection and that collection happens to contain playlists
+    /// or subcollections, which a playlist can not contain.
     pub fn convert_to_playlist(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
@@ -276,6 +288,9 @@ impl Context {
                     }
                     if let Some(description) = &collection.description {
                         playlist.description = Some(description.clone());
+                    }
+                    if !collection.links.is_empty() {
+                        playlist.links = collection.links.clone();
                     }
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
@@ -347,6 +362,9 @@ impl Context {
                     if let Some(description) = &collection.description {
                         playlist.description = Some(description.clone());
                     }
+                    if !collection.links.is_empty() {
+                        playlist.links = collection.links.clone();
+                    }
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
                     }
@@ -398,6 +416,9 @@ impl Context {
         Ok(())
     }
 
+    /// Take the collection or playlist at the given path (or if the site is still empty,
+    /// the empty site itself) and convert it to a video. This only succeeds if we're
+    /// converting from a collection or playlist that contains exactly one video (or none).
     pub fn convert_to_video(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
@@ -459,8 +480,12 @@ impl Context {
                 if collection.videos.is_empty() {
                     // This always succeeds, as the Arc is guaranteed single-owner at this point.
                     if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                        // TODO: We could consider copying a collection banner to be the new video poster here
                         if let Some(description) = &collection.description {
                             video.description = Some(description.clone());
+                        }
+                        if !collection.links.is_empty() {
+                            video.links = collection.links.clone();
                         }
                         if let Some(title) = &collection.title {
                             video.title = Some(title.clone());
@@ -520,8 +545,12 @@ impl Context {
                 if playlist.videos.is_empty() {
                     // This always succeeds, as the Arc is guaranteed single-owner at this point.
                     if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                        // TODO: We could consider copying a playlist banner to be the new video poster here
                         if let Some(description) = &playlist.description {
                             video.description = Some(description.clone());
+                        }
+                        if !playlist.links.is_empty() {
+                            video.links = playlist.links.clone();
                         }
                         if let Some(title) = &playlist.title {
                             video.title = Some(title.clone());
@@ -591,8 +620,12 @@ impl Context {
                 if collection.videos.is_empty() {
                     // This always succeeds, as the Arc is guaranteed single-owner at this point.
                     if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                        // TODO: We could consider copying a collection banner to be the new video poster here
                         if let Some(description) = &collection.description {
                             video.description = Some(description.clone());
+                        }
+                        if !collection.links.is_empty() {
+                            video.links = collection.links.clone();
                         }
                         if let Some(title) = &collection.title {
                             video.title = Some(title.clone());
@@ -652,8 +685,12 @@ impl Context {
                 if playlist.videos.is_empty() {
                     // This always succeeds, as the Arc is guaranteed single-owner at this point.
                     if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                        // TODO: We could consider copying a playlist banner to be the new video poster here
                         if let Some(description) = &playlist.description {
                             video.description = Some(description.clone());
+                        }
+                        if !playlist.links.is_empty() {
+                            video.links = playlist.links.clone();
                         }
                         if let Some(title) = &playlist.title {
                             video.title = Some(title.clone());
