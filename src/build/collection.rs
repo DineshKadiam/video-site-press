@@ -5,7 +5,7 @@ use indoc::formatdoc;
 use crate::{Collection, Context, Site};
 use crate::build::outline::Smartcrumb;
 use crate::build::playlist::banner_html;
-use crate::build::widgets::{layout, thumbnail, unlisted_badge};
+use crate::build::widgets::{layout, links, thumbnail, unlisted_badge};
 
 pub fn collection_html(
     context: &Context,
@@ -31,22 +31,8 @@ pub fn collection_html(
     }
 
     if !collection.links.is_empty() {
-        let links = collection.links
-            .iter()
-            .map(|link| {
-                let label = &link.label;
-                let url = &link.url;
-
-                formatdoc!(r#"
-                    <div>
-                        <a href="{url}">{label}</a>
-                    </div>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        body.push_str(&links);
+        let links_rendered = links(&site.language, &collection.links);
+        body.push_str(&links_rendered);
     }
 
     let videos = collection.public_videos_desc_by_release_date();

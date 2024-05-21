@@ -5,7 +5,7 @@ use indoc::formatdoc;
 
 use crate::{Context, Playlist, Site, Video};
 use crate::build::outline::Smartcrumb;
-use crate::build::widgets::{copy_link, downloads, layout, player, unlisted_badge};
+use crate::build::widgets::{copy_link, downloads, layout, links, player, unlisted_badge};
 use crate::util::localized_date_d_mmmm_yyyy;
 
 pub fn video_html(
@@ -72,20 +72,7 @@ pub fn video_html(
 
     let unlisted = unlisted_badge(video.unlisted, &site.language.translations);
 
-    let links = video.links
-        .iter()
-        .map(|link| {
-            let label = &link.label;
-            let url = &link.url;
-
-            formatdoc!(r#"
-                <div>
-                    <a href="{url}">{label}</a>
-                </div>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    let links_rendered = links(&site.language, &video.links);
 
     let body = format!(r#"
         {player_rendered}
@@ -103,7 +90,7 @@ pub fn video_html(
             <p>
                 {description}
 
-                {links}
+                {links_rendered}
             </p>
         </div>
         {outline_rendered}

@@ -4,7 +4,7 @@ use indoc::formatdoc;
 
 use crate::{Banner, Context, Playlist, Site};
 use crate::build::outline::Smartcrumb;
-use crate::build::widgets::{layout, thumbnail, unlisted_badge};
+use crate::build::widgets::{layout, links, thumbnail, unlisted_badge};
 
 pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
@@ -55,22 +55,8 @@ pub fn playlist_html(
     }
 
     if !playlist.links.is_empty() {
-        let links = playlist.links
-            .iter()
-            .map(|link| {
-                let label = &link.label;
-                let url = &link.url;
-
-                formatdoc!(r#"
-                    <div>
-                        <a href="{url}">{label}</a>
-                    </div>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        body.push_str(&links);
+        let links_rendered = links(&site.language, &playlist.links);
+        body.push_str(&links_rendered);
     }
 
     let videos = playlist.public_videos_asc_by_release_date();

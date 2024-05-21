@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{PosterFile, Site, ThemeKind, Translations, Video, VideoFile};
+use crate::{Language, Link, PosterFile, Site, ThemeKind, Translations, Video, VideoFile};
 use crate::build::outline::Smartcrumb;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
@@ -216,6 +216,28 @@ pub fn layout(
             {body}
         </html>
     "#)
+}
+
+pub fn links(language: &Language, links: &[Link]) -> String {
+    if links.is_empty() {
+        return String::new();
+    }
+
+    let external_icon = icons::external(language.translations.external_link);
+    links
+        .iter()
+        .map(|link| {
+            let label = &link.label;
+            let url = &link.url;
+
+            formatdoc!(r#"
+                <div>
+                    <a class="link" href="{url}">{external_icon} <span>{label}</span></a>
+                </div>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 pub fn player(

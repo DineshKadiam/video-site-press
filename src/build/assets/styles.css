@@ -97,6 +97,21 @@ img {
     height: 100dvh;
 }
 .layout .growing { flex-grow: 1; }
+.link {
+    align-items: center;
+    border: 1px solid var(--fg-1);
+    border-radius: .2rem;
+    color: var(--fg-1);
+    column-gap: .3rem;
+    display: inline-flex;
+    padding: .2rem .5rem .2rem .4rem;
+}
+.link:not(:first-child) { margin-left: .5rem; }
+.link:focus-visible,
+.link:hover {
+    background-color: var(--fg-1);
+    color: var(--bg-1);
+}
 .logo {
     background-color: var(--fg-2);
     color: var(--bg-1);
