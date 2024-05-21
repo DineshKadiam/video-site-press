@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Context, Playlist, Site, Video};
+use crate::{Context, MarkdownSubset, Playlist, Site, Video};
 use crate::build::outline::Smartcrumb;
 use crate::build::widgets::{copy_link, downloads, layout, links, player, unlisted_badge};
 use crate::util::localized_date_d_mmmm_yyyy;
@@ -15,7 +15,12 @@ pub fn video_html(
     site: &Site,
     outline: &[Smartcrumb]
 ) {
-    let description = if let Some(description) = &video.description { description } else { "" };
+    let description = if let Some(description) = &video.description {
+        let description_html = MarkdownSubset::to_html(description);
+        format!(r#"<p class="description">{description_html}</p>"#)
+    } else {
+        String::new()
+    };
     let title = video.title.as_deref().unwrap_or(video.slug());
 
     let downloads_widget = downloads(site, video);
@@ -89,9 +94,8 @@ pub fn video_html(
             </div>
             <p>
                 {description}
-
-                {links_rendered}
             </p>
+            {links_rendered}
         </div>
         {outline_rendered}
     "#);

@@ -364,6 +364,17 @@ select {
     width: .8rem;
 }
 svg { fill: currentColor; }
+.textarea_with_hint {
+    display: flex;
+    flex-direction: column-reverse;
+    row-gap: .2rem;
+}
+.textarea_with_hint span {
+    align-self: flex-end;
+    color: var(--fg-3);
+    font-size: .8rem;
+    text-align: right;
+}
 .thumbnail {
     aspect-ratio: 1.78;
     background-color: var(--bg-3);

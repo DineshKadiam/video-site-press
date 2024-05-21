@@ -32,6 +32,7 @@ use crate::editor::widgets::{
     form_field,
     form_field_permalink,
     form_textarea,
+    form_textarea_markdown_subset,
     layout,
     not_found,
     upload_widget
@@ -373,14 +374,14 @@ pub fn edit_page(
     ) = if let Some(CollectionFormFeedback::Update { description, title, unlisted }) = &form_feedback {
         (
             format!(r#"<span class="feedback">{t_not_saved}</span>"#),
-            form_textarea("description", t_description, Some(description)),
+            form_textarea_markdown_subset("description", t_description, language, Some(description)),
             form_field(title, "title", t_title),
             form_checkbox(*unlisted, "unlisted", t_unlisted)
         )
     } else {
         (
             String::new(),
-            form_textarea("description", t_description, collection.description.as_deref()),
+            form_textarea_markdown_subset("description", t_description, language, collection.description.as_deref()),
             form_field(&Field::valid(collection.title.as_deref().unwrap_or("")), "title", t_title),
             form_checkbox(collection.unlisted, "unlisted", t_unlisted)
         )

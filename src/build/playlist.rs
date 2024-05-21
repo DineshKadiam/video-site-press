@@ -2,7 +2,7 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Banner, Context, Playlist, Site};
+use crate::{Banner, Context, MarkdownSubset, Playlist, Site};
 use crate::build::outline::Smartcrumb;
 use crate::build::widgets::{layout, links, thumbnail, unlisted_badge};
 
@@ -51,7 +51,8 @@ pub fn playlist_html(
     body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
 
     if let Some(description) = &playlist.description {
-        body.push_str(&format!("<p>{description}</p>\n\n"));
+        let description_html = MarkdownSubset::to_html(description);
+        body.push_str(&format!(r#"<p class="description">{description_html}</p>"#));
     }
 
     if !playlist.links.is_empty() {

@@ -122,6 +122,14 @@ pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
+/// Escape e.g. "love>hate" so it can be rendered into the page,
+/// e.g. as <span>love&gt;hate</span>
+pub fn html_escape_outside_attribute(string: &str) -> String {
+    string.replace('&', "&amp;")
+          .replace('<', "&lt;")
+          .replace('>', "&gt;")
+}
+
 /// Takes bytes, formats them like "313 B", "256 kB", "3.4 MB", "13 MB", "1.4 GB"
 pub fn human_size(bytes: u64) -> String {
     match bytes {

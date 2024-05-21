@@ -37,6 +37,11 @@ h2 { font-size: 1.17rem; }
     max-width: 33rem;
     padding: 2rem 1rem;
 }
+.center .description a {
+    text-decoration: underline;
+    text-underline-offset: 0.3rem;
+}
+.center .description a:hover { text-decoration: none; }
 #copy-link::after {
     color: var(--fg-2);
     padding-left: .5rem;
