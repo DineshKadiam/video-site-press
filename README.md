@@ -14,11 +14,17 @@ Follow this [thread on the fediverse](https://post.lurk.org/@freebliss/112043777
 
 ## Hyper 8 is in Alpha
 
-Hyper 8 can mostly be stably built and run from the main branch, however, some
-things are still in flux, some are just make-shift implementations, and a few
-things may not actually work yet. Hyper 8's browser interface performs
-destructive file operations on your behalf and pending wider testing the
-program should be handled with caution, on a well back-upped system.
+Hyper 8 can be stably built and run from the main branch. Note that some
+things are in flux, some are make-shift implementations, and some may not
+work yet. Making backups of your Hyper 8 site directory is recommended while
+Hyper 8 is still in its early days.
+
+### Known issues
+
+- The cache system (which by default puts its data in a hidden `.hyper8_cache` folder in your site directory)
+  removes some, but not all, stale data it creates. Until this is fully implemented it makes sense to occasionally delete
+  the cache to clear out stale data (Note that these are not large amounts of data though, just transcoded images and
+  serialized video metadata).
 
 ## Documentation
 
