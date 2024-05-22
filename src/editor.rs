@@ -2,9 +2,14 @@ use std::fs;
 
 use serde_derive::{Deserialize, Serialize};
 
+mod checkbox;
 mod endpoints;
+mod input;
 pub mod server;
 mod widgets;
+
+use checkbox::Checkbox;
+use input::Input;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EditorConfig {

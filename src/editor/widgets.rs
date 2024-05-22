@@ -9,7 +9,6 @@ use indoc::formatdoc;
 use crate::{
     Collection,
     Context,
-    Field,
     Language,
     Playlist,
     Site,
@@ -246,82 +245,6 @@ pub fn error_page(
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
-}
-
-pub fn form_checkbox(checked: bool, key: &str, label: &str) -> String {
-    let checked_attribute = if checked { "checked " } else { "" };
-
-    formatdoc!(r#"
-        <div class="form_field">
-            <div>
-                <input {checked_attribute}id="{key}" name="{key}" type="checkbox">
-                <label for="{key}">{label}</label>
-            </div>
-        </div>
-    "#)
-}
-
-pub fn form_field(field: &Field, key: &str, label: &str) -> String {
-    let error = field.error
-        .as_deref()
-        .map(|message| format!(r#"<span class="error">{message}</span>"#))
-        .unwrap_or(String::new());
-    let value = &field.value;
-
-    formatdoc!(r#"
-        <div class="form_field">
-            <label for="{key}">{label}</label>
-            <input id="{key}" name="{key}" value="{value}">
-            {error}
-        </div>
-    "#)
-}
-
-pub fn form_field_date(
-    field: &Field,
-    key: &str,
-    label: &str
-) -> String {
-    let error = field.error
-        .as_deref()
-        .map(|message| format!(r#"<span class="error">{message}</span>"#))
-        .unwrap_or(String::new());
-    let value = &field.value;
-
-    formatdoc!(r#"
-        <div class="form_field">
-            <label for="{key}">{label}</label>
-            <input id="{key}" name="{key}" type="date" value="{value}">
-            {error}
-        </div>
-    "#)
-}
-
-/// Permalink inputs may occur multiple times on a page, therefore the `scope`
-/// parameter is used to make the id of the input unique. Pass something like
-/// "collection", "playlist", etc. to identify what object the permalink pertains
-/// to.
-pub fn form_field_permalink(
-    field: &Field,
-    language: &Language,
-    scope: &str
-) -> String {
-    let error = field.error
-        .as_deref()
-        .map(|message| format!(r#"<span class="error">{message}</span>"#))
-        .unwrap_or(String::new());
-    let value = &field.value;
-
-    // TODO: Double-check pattern (and elsewhere checks from start to end ($^?))
-
-    let t_permalink = language.translations.permalink;
-    formatdoc!(r#"
-        <div class="form_field">
-            <label for="{scope}_slug">{t_permalink}</label>
-            <input autocomplete="off" id="{scope}_slug" name="slug" pattern="[A-Za-z0-9\-]+" value="{value}">
-            {error}
-        </div>
-    "#)
 }
 
 pub fn form_textarea(

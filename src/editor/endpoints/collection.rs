@@ -25,12 +25,10 @@ use crate::{
     Link,
     Playlist
 };
+use crate::editor::{Checkbox, Input};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     error_page,
-    form_checkbox,
-    form_field,
-    form_field_permalink,
     form_textarea,
     form_textarea_markdown_subset,
     layout,
@@ -55,6 +53,7 @@ pub enum CollectionFormFeedback<'a> {
     Move {
         slug: Field
     },
+    None,
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
@@ -172,7 +171,7 @@ pub async fn create_playlist(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     }
 }
 
@@ -229,7 +228,7 @@ pub async fn create_subcollection(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     }
 }
 
@@ -314,7 +313,7 @@ pub async fn delete_link(
 pub fn edit_page(
     collection: &Collection,
     context: &Context,
-    form_feedback: Option<CollectionFormFeedback>,
+    form_feedback: CollectionFormFeedback,
     language: &Language
 ) -> HttpResponse {
     let path = &collection.path;
@@ -374,43 +373,47 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
+    let mut input_title = Input::new("title", language.translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
+
     let t_description = language.translations.description;
-    let t_title = language.translations.title;
-    let t_unlisted = language.translations.unlisted;
     let (
         feedback_update,
         input_description,
-        input_title,
-        input_unlisted,
-    ) = if let Some(CollectionFormFeedback::Update { description, title, unlisted }) = &form_feedback {
+    ) = if let CollectionFormFeedback::Update { description, title, unlisted } = &form_feedback {
+        input_title.validated_value(title);
+        input_unlisted.checked(*unlisted);
+
         (
             format!(r#"<span class="feedback">{t_not_saved}</span>"#),
-            form_textarea_markdown_subset("description", t_description, language, Some(description)),
-            form_field(title, "title", t_title),
-            form_checkbox(*unlisted, "unlisted", t_unlisted)
+            form_textarea_markdown_subset("description", t_description, language, Some(description))
         )
     } else {
+        input_title.value_option(&collection.title);
+        input_unlisted.checked(collection.unlisted);
+
         (
             String::new(),
-            form_textarea_markdown_subset("description", t_description, language, collection.description.as_deref()),
-            form_field(&Field::valid(collection.title.as_deref().unwrap_or("")), "title", t_title),
-            form_checkbox(collection.unlisted, "unlisted", t_unlisted)
+            form_textarea_markdown_subset("description", t_description, language, collection.description.as_deref())
         )
     };
 
     let slug_form = if path == "" {
         String::new()
     } else {
-        let (input, feedback) = if let Some(CollectionFormFeedback::Move { slug }) = &form_feedback {
-            (
-                form_field_permalink(slug, &language, "collection"),
-                format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-            )
+        let mut input_permalink = Input::new("slug", language.translations.permalink);
+
+        input_permalink
+            .id("slug_collection")
+            .permalink_type()
+            .required();
+
+        let feedback = if let CollectionFormFeedback::Move { slug } = &form_feedback {
+            input_permalink.validated_value(slug);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         } else {
-            (
-                form_field_permalink(&Field::valid(collection.slug()), &language, "collection"),
-                String::new()
-            )
+            input_permalink.value(collection.slug());
+            String::new()
         };
 
         let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
@@ -421,7 +424,7 @@ pub fn edit_page(
             </p>
 
             <form action="/move-collection/{path}" method="post">
-                {input}
+                {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>{t_update_permalink}</button> {feedback}
@@ -435,33 +438,37 @@ pub fn edit_page(
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
     let site_form_feedback = match &form_feedback {
-        Some(CollectionFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
+        CollectionFormFeedback::Site(site_form_feedback) => Some(site_form_feedback),
         _ => None
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
 
-    let (input_slug_create_playlist, feedback_create_playlist) = if let Some(CollectionFormFeedback::CreatePlaylist { slug }) = &form_feedback {
-        (
-            form_field_permalink(slug, &language, "playlist"),
-            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-        )
+    let mut input_slug_create_playlist = Input::new("slug", language.translations.permalink);
+
+    input_slug_create_playlist
+        .id("slug_playlist")
+        .permalink_type()
+        .required();
+
+    let feedback_create_playlist = if let CollectionFormFeedback::CreatePlaylist { slug } = &form_feedback {
+        input_slug_create_playlist.validated_value(slug);
+        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
-        (
-            form_field_permalink(&Field::valid(""), &language, "playlist"),
-            String::new()
-        )
+        String::new()
     };
-    
-    let (input_slug_create_subcollection, feedback_create_subcollection) = if let Some(CollectionFormFeedback::CreateSubcollection { slug }) = &form_feedback {
-        (
-            form_field_permalink(slug, &language, "subcollection"),
-            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-        )
+
+    let mut input_slug_create_subcollection = Input::new("slug", language.translations.permalink);
+
+    input_slug_create_subcollection
+        .id("slug_subcollection")
+        .permalink_type()
+        .required();
+
+    let feedback_create_subcollection = if let CollectionFormFeedback::CreateSubcollection { slug } = &form_feedback {
+        input_slug_create_subcollection.validated_value(slug);
+        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
-        (
-            form_field_permalink(&Field::valid(""), &language, "subcollection"),
-            String::new()
-        )
+        String::new()
     };
 
     let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
@@ -504,7 +511,7 @@ pub fn edit_page(
 
     let input_unlisted_conditionally_hidden = match collection.path.as_str() {
         "" => if collection.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
-        _ => input_unlisted
+        _ => input_unlisted.to_string()
     };
 
     // TODO: Placeholder-only indication of which is the label vs. url field is possibly
@@ -663,7 +670,7 @@ pub async fn edit(
     let language = context.get_editor_language();
 
     match context.get_collection(&path.path) {
-        Some(collection) => edit_page(&collection, &context, None, &language),
+        Some(collection) => edit_page(&collection, &context, CollectionFormFeedback::None, &language),
         None => not_found(&context, &language, &path.path)
     }
 }
@@ -719,7 +726,7 @@ pub async fn r#move(
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     }
 }
 
@@ -764,7 +771,7 @@ pub async fn update(
             unlisted
         };
 
-        Either::Right(edit_page(&collection, &context, Some(form_feedback), &language))
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     }
 }
 

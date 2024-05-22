@@ -16,8 +16,8 @@ use crate::{
     Theme,
     Translations
 };
+use crate::editor::{Checkbox, Input};
 use crate::editor::endpoints;
-use crate::editor::widgets::{form_checkbox, form_field};
 
 #[derive(Deserialize)]
 pub struct SiteForm {
@@ -93,69 +93,44 @@ fn edit_page(
     //     }
     // ]
 
+    let mut clean_urls_checkbox = Checkbox::new("clean_urls", translations.clean_urls_label);
+    let mut input_base_url = Input::new("base_url", translations.public_address_label);
+    let mut input_deployment_path = Input::new("deployment_path", translations.deployment_path_label);
+    let mut input_deployment_server = Input::new("deployment_server", translations.deployment_server_label);
+    let mut input_deployment_user = Input::new("deployment_user", translations.deployment_user_label);
+    let mut input_language = Input::new("language", translations.language_label);
+    let mut input_poster_aspect = Input::new("poster_aspect", translations.poster_aspect_label);
+
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
     //       that give very clear indication about what base url, deployment path/server/user etc. are and
     //       what to pay attention to.
-    let t_deployment_path_label = translations.deployment_path_label;
-    let t_deployment_server_label = translations.deployment_server_label;
-    let t_deployment_user_label = translations.deployment_user_label;
-    let t_language_label = translations.language_label;
     let t_not_saved = translations.not_saved;
-    let t_poster_aspect_label = translations.poster_aspect_label;
-    let t_public_address_label = translations.public_address_label;
-    let (
-        clean_urls,
-        theme_key,
-        input_base_url,
-        input_deployment_path,
-        input_deployment_server,
-        input_deployment_user,
-        input_language,
-        input_poster_aspect,
-        feedback
-    ) = if let Some(SiteFormFeedback {
-        base_url,
-        clean_urls,
-        deployment_path,
-        deployment_server,
-        deployment_user,
-        language,
-        poster_aspect,
-        theme
-    }) = &form_feedback {
-        (
-            *clean_urls,
-            &theme.key,
-            form_field(base_url, "base_url", t_public_address_label),
-            form_field(deployment_path, "deployment_path", t_deployment_path_label),
-            form_field(deployment_server, "deployment_server", t_deployment_server_label),
-            form_field(deployment_user, "deployment_user", t_deployment_user_label),
-            form_field(language, "language", t_language_label),
-            form_field(poster_aspect, "poster_aspect", t_poster_aspect_label),
-            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-        )
+    let (theme_key, feedback) = if let Some(unsaved) = &form_feedback {
+        clean_urls_checkbox.checked(unsaved.clean_urls);
+        input_base_url.validated_value(&unsaved.base_url);
+        input_deployment_path.validated_value(&unsaved.deployment_path);
+        input_deployment_server.validated_value(&unsaved.deployment_server);
+        input_deployment_user.validated_value(&unsaved.deployment_user);
+        input_language.validated_value(&unsaved.language);
+        input_poster_aspect.validated_value(&unsaved.poster_aspect);
+
+        (&unsaved.theme.key, format!(r#"<span class="feedback">{t_not_saved}</span>"#))
     } else {
-        let language = match site.language.default {
-            true => "",
-            false => &site.language.code
-        };
-
+        let language = if site.language.default { None } else { Some(&site.language.code) };
         let poster_aspect = match &site.poster_aspect {
-            AspectRatio::Custom { representation, .. } => representation,
-            AspectRatio::Default => ""
+            AspectRatio::Custom { representation, .. } => Some(representation),
+            AspectRatio::Default => None
         };
 
-        (
-            site.clean_urls,
-            &site.theme.key,
-            form_field(&Field::valid(site.base_url.as_ref().map(|url| url.representation.as_str()).unwrap_or("")), "base_url", t_public_address_label),
-            form_field(&Field::valid(site.deploy_config.path.as_ref().map(|path| path.as_str()).unwrap_or("")), "deployment_path", t_deployment_path_label),
-            form_field(&Field::valid(site.deploy_config.server.as_ref().map(|server| server.as_str()).unwrap_or("")), "deployment_server", t_deployment_server_label),
-            form_field(&Field::valid(site.deploy_config.user.as_ref().map(|user| user.as_str()).unwrap_or("")), "deployment_user", t_deployment_user_label),
-            form_field(&Field::valid(language), "language", t_language_label),
-            form_field(&Field::valid(poster_aspect), "poster_aspect", t_poster_aspect_label),
-            String::new()
-        )
+        clean_urls_checkbox.checked(site.clean_urls);
+        input_base_url.value_option(&site.base_url.as_ref().map(|url| url.representation.clone()));
+        input_deployment_path.value_option(&site.deploy_config.path);
+        input_deployment_server.value_option(&site.deploy_config.server);
+        input_deployment_user.value_option(&site.deploy_config.user);
+        input_language.value_option(&language);
+        input_poster_aspect.value_option(&poster_aspect);
+
+        (&site.theme.key, String::new())
     };
 
     let radio_button = |checked_key: &str, key: &str, label: &str| -> String {
@@ -170,9 +145,6 @@ fn edit_page(
     let radio_button_adaptive = radio_button(theme_key, "adaptive", translations.adaptive);
     let radio_button_dark = radio_button(theme_key, "dark", translations.dark);
     let radio_button_light = radio_button(theme_key, "light", translations.light);
-
-    let t_clean_urls_label = translations.clean_urls_label;
-    let clean_urls_checkbox = form_checkbox(clean_urls, "clean_urls", t_clean_urls_label);
 
     let t_deployment_is_currently_supported_text = translations.deployment_is_currently_supported_text;
     let t_site_settings = translations.site_settings;
@@ -296,7 +268,7 @@ pub async fn update(
         let http_response = match &site.content {
             SiteContent::Collection(collection) => {
                 let form_feedback = endpoints::collection::CollectionFormFeedback::Site(site_form_feedback);
-                endpoints::collection::edit_page(collection, &context, Some(form_feedback), &language)
+                endpoints::collection::edit_page(collection, &context, form_feedback, &language)
             }
             SiteContent::Playlist(playlist) => {
                 let form_feedback = endpoints::playlist::PlaylistFormFeedback::Site(site_form_feedback);

@@ -24,12 +24,10 @@ use crate::{
     Link,
     Playlist
 };
+use crate::editor::{Checkbox, Input};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     error_page,
-    form_checkbox,
-    form_field,
-    form_field_permalink,
     form_textarea,
     form_textarea_markdown_subset,
     layout,
@@ -254,43 +252,46 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
+    let mut input_title = Input::new("title", language.translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
+
     let t_description = language.translations.description;
-    let t_title = language.translations.title;
-    let t_unlisted = language.translations.unlisted;
     let (
         feedback_update,
         input_description,
-        input_title,
-        input_unlisted,
     ) = if let Some(PlaylistFormFeedback::Update { description, title, unlisted }) = &form_feedback {
+        input_title.validated_value(title);
+        input_unlisted.checked(*unlisted);
+
         (
             format!(r#"<span class="feedback">{t_not_saved}</span>"#),
-            form_textarea_markdown_subset("description", t_description, language, Some(description)),
-            form_field(title, "title", t_title),
-            form_checkbox(*unlisted, "unlisted", t_unlisted)
+            form_textarea_markdown_subset("description", t_description, language, Some(description))
         )
     } else {
+        input_title.value_option(&playlist.title);
+        input_unlisted.checked(playlist.unlisted);
+
         (
             String::new(),
-            form_textarea_markdown_subset("description", t_description, language, playlist.description.as_deref()),
-            form_field(&Field::valid(playlist.title.as_deref().unwrap_or("")), "title", t_title),
-            form_checkbox(playlist.unlisted, "unlisted", t_unlisted)
+            form_textarea_markdown_subset("description", t_description, language, playlist.description.as_deref())
         )
     };
 
     let slug_form = if path == "" {
         String::new()
     } else {
-        let (input, feedback) = if let Some(PlaylistFormFeedback::Move { slug }) = &form_feedback {
-            (
-                form_field_permalink(slug, &language, "playlist"),
-                format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-            )
+        let mut input_permalink = Input::new("slug", language.translations.permalink);
+
+        input_permalink
+            .permalink_type()
+            .required();
+
+        let feedback = if let Some(PlaylistFormFeedback::Move { slug }) = &form_feedback {
+            input_permalink.validated_value(slug);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         } else {
-            (
-                form_field_permalink(&Field::valid(playlist.slug()), &language, "playlist"),
-                String::new()
-            )
+            input_permalink.value(playlist.slug());
+            String::new()
         };
 
         let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
@@ -301,7 +302,7 @@ pub fn edit_page(
             </p>
 
             <form action="/move-playlist/{path}" method="post">
-                {input}
+                {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>{t_update_permalink}</button> {feedback}
@@ -352,7 +353,7 @@ pub fn edit_page(
 
     let input_unlisted_conditionally_hidden = match playlist.path.as_str() {
         "" => if playlist.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
-        _ => input_unlisted
+        _ => input_unlisted.to_string()
     };
 
     // TODO: Placeholder-only indication of which is the label vs. url field is possibly

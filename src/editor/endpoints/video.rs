@@ -34,13 +34,10 @@ use crate::{
     VideoParent
 };
 use crate::browser_support;
+use crate::editor::{Checkbox, Input};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     error_page,
-    form_checkbox,
-    form_field_date,
-    form_field,
-    form_field_permalink,
     form_textarea,
     form_textarea_markdown_subset,
     layout,
@@ -635,52 +632,49 @@ pub fn edit_page(
         }
     };
 
+    let mut input_release_date = Input::new("release_date", language.translations.release_date);
+    let mut input_title = Input::new("title", language.translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
+
+    input_release_date.date_type();
+
     let t_description = language.translations.description;
-    let t_release_date = language.translations.release_date;
-    let t_title = language.translations.title;
-    let t_unlisted = language.translations.unlisted;
-    let (
-        feedback_update,
-        input_description,
-        input_release_date,
-        input_title,
-        input_unlisted,
-    ) = if let Some(VideoFormFeedback::Update { description, title, release_date, unlisted }) = &form_feedback {
+    let (feedback_update, input_description) = if let Some(VideoFormFeedback::Update { description, release_date, title, unlisted }) = &form_feedback {
+        input_release_date.validated_value(release_date);
+        input_title.validated_value(title);
+        input_unlisted.checked(*unlisted);
+
         (
             format!(r#"<span class="feedback">{t_not_saved}</span>"#),
             form_textarea_markdown_subset("description", t_description, language, Some(description)),
-            form_field_date(release_date, "release_date", t_release_date),
-            form_field(title, "title", t_title),
-            form_checkbox(*unlisted, "unlisted", t_unlisted)
         )
     } else {
-        let release_date = video.release_date
-            .as_ref()
-            .map(|date| date.to_string())
-            .unwrap_or(String::new());
+        let release_date = video.release_date.as_ref().map(|date| date.to_string());
+
+        input_release_date.value_option(&release_date);
+        input_title.value_option(&video.title);
+        input_unlisted.checked(video.unlisted);
 
         (
             String::new(),
             form_textarea_markdown_subset("description", t_description, language, video.description.as_deref()),
-            form_field_date(&Field::valid(release_date), "release_date", t_release_date),
-            form_field(&Field::valid(video.title.as_deref().unwrap_or("")), "title", t_title),
-            form_checkbox(video.unlisted, "unlisted", t_unlisted)
         )
     };
 
     let slug_form = if path == "" {
         String::new()
     } else {
-        let (input, feedback) = if let Some(VideoFormFeedback::Move { slug }) = &form_feedback {
-            (
-                form_field_permalink(slug, &language, "video"),
-                format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-            )
+        let mut input_permalink = Input::new("slug", language.translations.permalink);
+
+        input_permalink.permalink_type();
+        input_permalink.required();
+
+        let feedback = if let Some(VideoFormFeedback::Move { slug }) = &form_feedback {
+            input_permalink.validated_value(slug);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         } else {
-            (
-                form_field_permalink(&Field::valid(video.slug()), &language, "video"),
-                String::new()
-            )
+            input_permalink.value(video.slug());
+            String::new()
         };
 
         let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
@@ -691,7 +685,7 @@ pub fn edit_page(
             </p>
 
             <form action="/move-video/{path}" method="post">
-                {input}
+                {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button>{t_update_permalink}</button> {feedback}
@@ -731,7 +725,7 @@ pub fn edit_page(
 
     let input_unlisted_conditionally_hidden = match video.path.as_str() {
         "" => if video.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
-        _ => input_unlisted
+        _ => input_unlisted.to_string()
     };
 
     let render_additional_formats = additional_formats_form(&language.translations, video);

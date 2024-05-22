@@ -106,6 +106,16 @@ pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
 }
 
+/// Escape e.g. "me&you" so it can be rendered into an attribute,
+/// e.g. as <img alt="me&quot;you" src="...">
+pub fn html_escape_inside_attribute(string: &str) -> String {
+    string.replace('&', "&amp;")
+          .replace('<', "&lt;")
+          .replace('>', "&gt;")
+          .replace('"', "&quot;")
+          .replace('\'', "&#39;")
+}
+
 /// Escape e.g. "love>hate" so it can be rendered into the page,
 /// e.g. as <span>love&gt;hate</span>
 pub fn html_escape_outside_attribute(string: &str) -> String {
