@@ -33,9 +33,25 @@ Manifest for tagging and configuring a collection.
 title: Awesome clickbaitz videos
 unlisted
 
+link:
+label = My Website
+url = https://example.com
+
+link:
+label = My Social Media
+url = https://social.example.com
+verification = rel-me
+
 -- description
 New videos are released every tuesday!
 
 Also check us out on the [fediverse](https://social.example.com/)
 -- description
 ```
+
+Any number of `link` fields can be given. The `label` for a link is optional.
+The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,
+its value can be either `rel-me` to add the `rel="me"` attribute to the link or `rel-me-hidden` to add
+the attribute and additionally hide the link from the site, thereby making it only visible to servers
+that want to verify you are the owner of the site through this attribute.
+

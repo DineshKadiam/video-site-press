@@ -35,8 +35,23 @@ file = my_poster.jpg
 title: All episodes from the show
 unlisted
 
+link:
+label = My Website
+url = https://example.com
+
+link:
+label = My Social Media
+url = https://social.example.com
+verification = rel-me
+
 -- description
 This playlist includes all episodes from the show,
 including the long-lost original three pilots.
 -- description
 ```
+
+Any number of `link` fields can be given. The `label` for a link is optional.
+The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,
+its value can be either `rel-me` to add the `rel="me"` attribute to the link or `rel-me-hidden` to add
+the attribute and additionally hide the link from the site, thereby making it only visible to servers
+that want to verify you are the owner of the site through this attribute.

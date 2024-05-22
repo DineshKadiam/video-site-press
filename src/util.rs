@@ -9,19 +9,12 @@ use base64::Engine;
 use chrono::{Locale as ChronoLocale, NaiveDate};
 use nanoid::nanoid;
 use slug::slugify;
-use url::Url;
 
 use crate::{Context, Translations};
 
 pub struct Field {
     pub error: Option<String>,
     pub value: String
-}
-
-#[derive(Clone, Debug)]
-pub struct Link {
-    pub label: String,
-    pub url: Url
 }
 
 impl Field {
@@ -40,15 +33,6 @@ impl Field {
         Field {
             error: error.map(|message| message.into()),
             value: value.into()
-        }
-    }
-}
-
-impl Link {
-    pub fn new(label: String, url: Url) -> Link {
-        Link {
-            label,
-            url
         }
     }
 }

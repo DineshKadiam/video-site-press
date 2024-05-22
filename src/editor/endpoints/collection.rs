@@ -86,6 +86,11 @@ pub async fn add_link(
     form: Form<LinkForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let label_trimmed = form.label.trim();
+    let label = match label_trimmed.is_empty() {
+        true => None,
+        false => Some(label_trimmed.to_string())
+    };
     let url = match Url::parse(&form.url) {
         Ok(url) => url,
         Err(err) => {
@@ -97,7 +102,7 @@ pub async fn add_link(
     };
 
     let mutation = |collection_mut: &mut Collection| {
-        let link = Link::new(form.label.clone(), url);
+        let link = Link::new(false, label, false, url);
         collection_mut.links.push(link);
         collection_mut.write_manifest(&context);
     };
@@ -280,7 +285,13 @@ pub async fn delete_link(
         if let Ok(url) = Url::parse(&form.url) {
             if collection.links
                 .iter()
-                .position(|link| link.label == form.label && link.url == url)
+                .position(|link|
+                    if form.label.is_empty()  {
+                        link.label.is_none() && link.url == url
+                    } else {
+                        link.label.as_ref().is_some_and(|label| label == &form.label) && link.url == url
+                    }
+                )
                 .map(|index| collection.links.remove(index))
                 .is_some() {
                 collection.write_manifest(&context);
@@ -516,7 +527,7 @@ pub fn edit_page(
         let links_rendered = collection.links
             .iter()
             .map(|link| {
-                let label = &link.label;
+                let label = &link.label.as_deref().unwrap_or("");
                 let url = &link.url;
 
                 let t_delete = language.translations.delete;

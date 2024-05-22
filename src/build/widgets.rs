@@ -227,12 +227,14 @@ pub fn links(language: &Language, links: &[Link]) -> String {
     links
         .iter()
         .map(|link| {
-            let label = &link.label;
+            let label = link.label.as_ref().map(|label| label.clone()).unwrap_or_else(|| link.url.to_string());
+            let rel_me = if link.rel_me { r#"rel="me""# } else { "" };
+            let style_hidden = if link.hidden { r#"style="display: none;""# } else { "" };
             let url = &link.url;
 
             formatdoc!(r#"
                 <div>
-                    <a class="link" href="{url}">{external_icon} <span>{label}</span></a>
+                    <a class="link" href="{url}" {rel_me} {style_hidden}>{external_icon} <span>{label}</span></a>
                 </div>
             "#)
         })

@@ -91,25 +91,51 @@ impl Video {
             _ => ()
         }
 
-        match document.optional_field("links") {
-            Ok(Some(field)) => {
-                match field.attributes() {
-                    Ok(attributes) => {
-                        for attribute in attributes {
+        // TODO: Encapsulate in link.rs maybe?
+        // TODO: Would benefit from a .fields() iterator (then again errors for inaccurately typed errors would be harder to give)
+        for element in document.elements() {
+            if element.key() == "link" {
+                if let Some(field) = element.as_field() {
+                    match field.required_attribute("url") {
+                        Ok(attribute) => {
                             match attribute.required_value::<String>() {
                                 Ok(value) => match Url::parse(&value) {
-                                    Ok(url) => self.links.push(Link::new(attribute.key().into(), url)),
-                                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), attribute.line_number(), err))
+                                    Ok(url) => {
+                                        // TODO: Errors, optional_attribute does not exist in enolib?
+                                        let label = match field.required_attribute("label") {
+                                            Ok(attribute) => match attribute.required_value() {
+                                                Ok(label) => Some(label),
+                                                Err(_) => None
+                                            }
+                                            Err(_) => None
+                                        };
+
+                                        let (hidden, rel_me) = match field.required_attribute("verification") {
+                                            Ok(attribute) => match attribute.required_value::<String>() {
+                                                Ok(value) => match value.as_str() {
+                                                    "rel-me" => (false, true),
+                                                    "rel-me-hidden" => (true, true),
+                                                    _ => (false, false)
+                                                }
+                                                Err(_) => (false, false)
+                                            }
+                                            Err(_) => (false, false)
+                                        };
+
+                                        let link = Link::new(hidden, label, rel_me, url);
+                                        self.links.push(link);
+                                    }
+                                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), attribute.line_number()))
                                 }
-                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                                Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
                             }
                         }
+                        Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                } else {
+                    self.errors.push(format!("Error in {}:{} (Links must be provided as fields with attributes)", manifest_path.display(), element.line_number()))
                 }
             }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
         }
 
         match document.optional_field("poster") {
@@ -395,12 +421,8 @@ impl Video {
     pub fn write_manifest(&self, context: &Context) {
         let mut eno = String::new();
 
-        if !self.links.is_empty() {
-            eno.push_str("links:\n");
-
-            for link in &self.links {
-                eno.push_str(&format!("{} = {}\n", link.label, link.url));
-            }
+        for link in &self.links {
+            eno.push_str(&link.to_eno());
         }
 
         if let Some(poster) = &self.poster {
