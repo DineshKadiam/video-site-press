@@ -10,14 +10,51 @@ use crate::{
     Collection,
     Context,
     Language,
+    Link,
     Playlist,
     Site,
     SiteContent,
     Translations,
     Video
 };
+use crate::editor::Input;
 use crate::icons;
 use crate::util::{human_size, precise_duration};
+
+/// Generic add link form, submit_url should be something like "/add-playlist-link/path/to/playlist"
+pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
+    let input_label = Input::text("label", translations.label_optional);
+    let mut input_url = Input::url("url", translations.url);
+
+    input_url.required();
+
+    let t_add = translations.add;
+    let t_hidden_link_with_rel_me_attribute = translations.hidden_link_with_rel_me_attribute;
+    let t_just_a_regular_link_recommended_default = translations.just_a_regular_link_recommended_default;
+    let t_link_type = translations.link_type;
+    let t_link_with_rel_me_attribute = translations.link_with_rel_me_attribute;
+    let t_new_link = translations.new_link;
+
+    formatdoc!(r#"
+        <div class="form_group">
+            <h2>{t_new_link}</h2>
+
+            <form action="{submit_url}" method="post">
+                {input_url}
+                {input_label}
+                <div class="form_field">
+                    <label for="verification">{t_link_type}</label>
+                    <select id="verification" name="verification">
+                        <option selected>{t_just_a_regular_link_recommended_default}</option>
+                        <option value="rel-me">{t_link_with_rel_me_attribute}</option>
+                        <option value="rel-me-hidden">{t_hidden_link_with_rel_me_attribute}</option>
+                    </select>
+                </div>
+                <button>{t_add}</button>
+            </form>
+        </div>
+    "#)
+}
 
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
@@ -497,6 +534,53 @@ pub fn layout(
             {head}
             {body}
         </html>
+    "#)
+}
+
+/// Generic links listing with possibility to delete items, submit_url should be something like "/delete-playlist-link/path/to/playlist"
+pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> String {
+    if links.is_empty() {
+        return String::new();
+    }
+
+    let t_delete = translations.delete;
+    let t_hidden = translations.hidden;
+    let t_really_delete = translations.really_delete;
+    let delete_icon = icons::failure(t_delete);
+
+    let links_rendered = links
+        .iter()
+        .map(|link| {
+            let label = &link.label.as_deref().unwrap_or("");
+            let url = &link.url;
+
+            let delete_form = formatdoc!(r#"
+                <form action="{submit_url}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
+                    <input name="label" type="hidden" value="{label}">
+                    <input name="url" type="hidden" value="{url}">
+                    <button class="delete_button">{delete_icon}</button>
+                </form>
+            "#);
+
+            let hidden = if link.hidden { format!("[{t_hidden}]") } else { String::new() };
+            let rel_me = if link.rel_me { r#"[rel="me"]"# } else { "" };
+
+            formatdoc!(r#"
+                <div class="button_group">
+                    <span>{label} {rel_me} {hidden}<br>{url}</span>
+                    {delete_form}
+                </div>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let t_links = translations.links;
+    formatdoc!(r#"
+        <div class="form_group">
+            <h2>{t_links}</h2>
+            {links_rendered}
+        </div>
     "#)
 }
 

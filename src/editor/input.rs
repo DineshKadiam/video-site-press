@@ -19,13 +19,14 @@ pub struct Input<'a> {
 enum InputType {
     Date,
     Permalink,
-    Text
+    Text,
+    Url
 }
 
 impl<'a> Input<'a> {
-    pub fn date_type(&mut self) -> &mut Input<'a> {
-        self.r#type = InputType::Date;
-        self
+    /// Initialize an input for a date
+    pub fn date(key: &'a str, label: &'a str) -> Input<'a> {
+        Input::new(key, label, InputType::Date)
     }
 
     pub fn id(&mut self, id: &'a str) -> &mut Input<'a> {
@@ -33,26 +34,36 @@ impl<'a> Input<'a> {
         self
     }
 
-    pub fn new(key: &'a str, label: &'a str) -> Input<'a> {
+    fn new(key: &'a str, label: &'a str, r#type: InputType) -> Input<'a> {
         Input {
             error: String::new(),
             id: None,
             key,
             label,
             required: false,
-            r#type: InputType::Text,
+            r#type,
             value: String::new()
         }
     }
 
-    pub fn permalink_type(&mut self) -> &mut Input<'a> {
-        self.r#type = InputType::Permalink;
-        self
+    /// Initialize an input for a permalink
+    pub fn permalink(key: &'a str, label: &'a str) -> Input<'a> {
+        Input::new(key, label, InputType::Permalink)
     }
 
     pub fn required(&mut self) -> &mut Input<'a> {
         self.required = true;
         self
+    }
+
+    /// Initialize an input for text
+    pub fn text(key: &'a str, label: &'a str) -> Input<'a> {
+        Input::new(key, label, InputType::Text)
+    }
+
+    /// Initialize an input for a url
+    pub fn url(key: &'a str, label: &'a str) -> Input<'a> {
+        Input::new(key, label, InputType::Url)
     }
 
     pub fn validated_value(&mut self, field: &Field) {
@@ -85,7 +96,12 @@ impl<'a> Display for Input<'a> {
         let label = self.label;
         let pattern = if self.r#type == InputType::Permalink { r#"pattern="[A-Za-z0-9\-]+""# } else { "" };
         let required = if self.required { "required" } else { "" };
-        let r#type = if self.r#type == InputType::Date { r#"type="date""# } else { "" };
+        let r#type = match self.r#type {
+            InputType::Date => r#"type="date""#,
+            InputType::Permalink => "",
+            InputType::Text => "",
+            InputType::Url => r#"type="url""#
+        };
         let value = &self.value;
 
         let html = formatdoc!(r#"

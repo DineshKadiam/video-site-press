@@ -37,10 +37,12 @@ use crate::browser_support;
 use crate::editor::{Checkbox, Input};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
+    add_link_form,
     error_page,
     form_textarea,
     form_textarea_markdown_subset,
     layout,
+    links,
     not_found,
     upload_widget
 };
@@ -55,6 +57,19 @@ use crate::util::{
 };
 
 #[derive(Deserialize)]
+pub struct AddLinkForm {
+    label: String,
+    url: String,
+    verification: String
+}
+
+#[derive(Deserialize)]
+pub struct DeleteLinkForm {
+    label: String,
+    url: String
+}
+
+#[derive(Deserialize)]
 pub struct DeleteVersionForm {
     file_name: String
 }
@@ -66,12 +81,6 @@ pub struct DownsizeForm {
     frame_rate: String,
     height: String,
     quality: String
-}
-
-#[derive(Deserialize)]
-pub struct LinkForm {
-    label: String,
-    url: String
 }
 
 #[derive(Deserialize)]
@@ -110,9 +119,14 @@ pub struct VideoUpdateForm {
 
 pub async fn add_link(
     context: Data<Arc<Context>>,
-    form: Form<LinkForm>,
+    form: Form<AddLinkForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let (hidden, rel_me) = match form.verification.as_str() {
+        "rel-me" => (false, true),
+        "rel-me-hidden" => (true, true),
+        _ => (false, false)
+    };
     let label_trimmed = form.label.trim();
     let label = match label_trimmed.is_empty() {
         true => None,
@@ -129,7 +143,7 @@ pub async fn add_link(
     };
 
     let mutation = |video_mut: &mut Video| {
-        let link = Link::new(false, label, false, url);
+        let link = Link::new(hidden, label, rel_me, url);
         video_mut.links.push(link);
         video_mut.write_manifest(&context);
     };
@@ -173,7 +187,7 @@ pub async fn delete(
 
 pub async fn delete_link(
     context: Data<Arc<Context>>,
-    form: Form<LinkForm>,
+    form: Form<DeleteLinkForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |video_mut: &mut Video| {
@@ -632,11 +646,9 @@ pub fn edit_page(
         }
     };
 
-    let mut input_release_date = Input::new("release_date", language.translations.release_date);
-    let mut input_title = Input::new("title", language.translations.title);
+    let mut input_release_date = Input::date("release_date", language.translations.release_date);
+    let mut input_title = Input::text("title", language.translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
-
-    input_release_date.date_type();
 
     let t_description = language.translations.description;
     let (feedback_update, input_description) = if let Some(VideoFormFeedback::Update { description, release_date, title, unlisted }) = &form_feedback {
@@ -664,9 +676,8 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::new("slug", language.translations.permalink);
+        let mut input_permalink = Input::permalink("slug", language.translations.permalink);
 
-        input_permalink.permalink_type();
         input_permalink.required();
 
         let feedback = if let Some(VideoFormFeedback::Move { slug }) = &form_feedback {
@@ -730,60 +741,12 @@ pub fn edit_page(
 
     let render_additional_formats = additional_formats_form(&language.translations, video);
 
-    // TODO: Placeholder-only indication of which is the label vs. url field is possibly
-    //       not accessible. Check and address.
-    let t_add = language.translations.add;
-    let t_label = language.translations.label;
-    let t_url = language.translations.url;
-    let create_link_form = formatdoc!(r#"
-        <form action="/add-video-link/{path}" method="post">
-            <div class="button_group">
-                <input name="label" placeholder="{t_label}">
-                <input name="url" placeholder="{t_url}">
-                <button>{t_add}</button>
-            </div>
-        </form>
-    "#);
-    let links_form = if video.links.is_empty() {
-        create_link_form
-    } else {
-        let links_rendered = video.links
-            .iter()
-            .map(|link| {
-                let label = &link.label.as_deref().unwrap_or("");
-                let url = &link.url;
-
-                let t_delete = language.translations.delete;
-                let t_really_delete = language.translations.really_delete;
-                let delete_icon = icons::failure(t_delete);
-                let delete_form = formatdoc!(r#"
-                    <form action="/delete-video-link/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
-                        <input name="label" type="hidden" value="{label}">
-                        <input name="url" type="hidden" value="{url}">
-                        <button class="delete_button">{delete_icon}</button>
-                    </form>
-                "#);
-
-                formatdoc!(r#"
-                    <div class="button_group">
-                        <input value="{label}">
-                        <input value="{url}">
-                        {delete_form}
-                    </div>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-        formatdoc!(r#"
-            {links_rendered}
-            {create_link_form}
-        "#)
-    };
+    let create_link_form = add_link_form(&format!("/add-video-link/{path}"), &language.translations);
+    let links_form = links(&video.links, &format!("/delete-video-link/{path}"), &language.translations);
 
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_video = language.translations.delete_video;
     let t_deleting_the_video_text = language.translations.deleting_the_video_text;
-    let t_links = language.translations.links;
     let t_poster_image = language.translations.poster_image;
     let t_really_delete = language.translations.really_delete;
     let t_video = language.translations.video;
@@ -806,10 +769,9 @@ pub fn edit_page(
             </form>
         </div>
 
-        <div class="form_group">
-            <h2>{t_links}</h2>
-            {links_form}
-        </div>
+        {links_form}
+
+        {create_link_form}
 
         <div class="form_group">
             {versions}

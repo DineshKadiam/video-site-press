@@ -94,12 +94,12 @@ fn edit_page(
     // ]
 
     let mut clean_urls_checkbox = Checkbox::new("clean_urls", translations.clean_urls_label);
-    let mut input_base_url = Input::new("base_url", translations.public_address_label);
-    let mut input_deployment_path = Input::new("deployment_path", translations.deployment_path_label);
-    let mut input_deployment_server = Input::new("deployment_server", translations.deployment_server_label);
-    let mut input_deployment_user = Input::new("deployment_user", translations.deployment_user_label);
-    let mut input_language = Input::new("language", translations.language_label);
-    let mut input_poster_aspect = Input::new("poster_aspect", translations.poster_aspect_label);
+    let mut input_base_url = Input::url("base_url", translations.public_address_label);
+    let mut input_deployment_path = Input::text("deployment_path", translations.deployment_path_label);
+    let mut input_deployment_server = Input::text("deployment_server", translations.deployment_server_label);
+    let mut input_deployment_user = Input::text("deployment_user", translations.deployment_user_label);
+    let mut input_language = Input::text("language", translations.language_label);
+    let mut input_poster_aspect = Input::text("poster_aspect", translations.poster_aspect_label);
 
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
     //       that give very clear indication about what base url, deployment path/server/user etc. are and

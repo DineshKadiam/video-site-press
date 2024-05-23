@@ -28,14 +28,15 @@ use crate::{
 use crate::editor::{Checkbox, Input};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
+    add_link_form,
     error_page,
     form_textarea,
     form_textarea_markdown_subset,
     layout,
+    links,
     not_found,
     upload_widget
 };
-use crate::icons;
 use crate::util::{nanoid, supported_image_extension, validate_slug};
 
 #[derive(Deserialize)]
@@ -63,7 +64,14 @@ pub enum CollectionFormFeedback<'a> {
 }
 
 #[derive(Deserialize)]
-pub struct LinkForm {
+pub struct AddLinkForm {
+    label: String,
+    url: String,
+    verification: String
+}
+
+#[derive(Deserialize)]
+pub struct DeleteLinkForm {
     label: String,
     url: String
 }
@@ -82,9 +90,14 @@ pub struct UpdateForm {
 
 pub async fn add_link(
     context: Data<Arc<Context>>,
-    form: Form<LinkForm>,
+    form: Form<AddLinkForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
+    let (hidden, rel_me) = match form.verification.as_str() {
+        "rel-me" => (false, true),
+        "rel-me-hidden" => (true, true),
+        _ => (false, false)
+    };
     let label_trimmed = form.label.trim();
     let label = match label_trimmed.is_empty() {
         true => None,
@@ -101,7 +114,7 @@ pub async fn add_link(
     };
 
     let mutation = |collection_mut: &mut Collection| {
-        let link = Link::new(false, label, false, url);
+        let link = Link::new(hidden, label, rel_me, url);
         collection_mut.links.push(link);
         collection_mut.write_manifest(&context);
     };
@@ -277,7 +290,7 @@ pub async fn delete_banner(
 
 pub async fn delete_link(
     context: Data<Arc<Context>>,
-    form: Form<LinkForm>,
+    form: Form<DeleteLinkForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |collection: &mut Collection| {
@@ -373,7 +386,7 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
-    let mut input_title = Input::new("title", language.translations.title);
+    let mut input_title = Input::text("title", language.translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
 
     let t_description = language.translations.description;
@@ -401,11 +414,10 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::new("slug", language.translations.permalink);
+        let mut input_permalink = Input::permalink("slug", language.translations.permalink);
 
         input_permalink
             .id("slug_collection")
-            .permalink_type()
             .required();
 
         let feedback = if let CollectionFormFeedback::Move { slug } = &form_feedback {
@@ -443,11 +455,10 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
 
-    let mut input_slug_create_playlist = Input::new("slug", language.translations.permalink);
+    let mut input_slug_create_playlist = Input::permalink("slug", language.translations.permalink);
 
     input_slug_create_playlist
         .id("slug_playlist")
-        .permalink_type()
         .required();
 
     let feedback_create_playlist = if let CollectionFormFeedback::CreatePlaylist { slug } = &form_feedback {
@@ -457,11 +468,10 @@ pub fn edit_page(
         String::new()
     };
 
-    let mut input_slug_create_subcollection = Input::new("slug", language.translations.permalink);
+    let mut input_slug_create_subcollection = Input::permalink("slug", language.translations.permalink);
 
     input_slug_create_subcollection
         .id("slug_subcollection")
-        .permalink_type()
         .required();
 
     let feedback_create_subcollection = if let CollectionFormFeedback::CreateSubcollection { slug } = &form_feedback {
@@ -514,55 +524,8 @@ pub fn edit_page(
         _ => input_unlisted.to_string()
     };
 
-    // TODO: Placeholder-only indication of which is the label vs. url field is possibly
-    //       not accessible. Check and address.
-    let t_add = language.translations.add;
-    let t_label = language.translations.label;
-    let t_url = language.translations.url;
-    let create_link_form = formatdoc!(r#"
-        <form action="/add-collection-link/{path}" method="post">
-            <div class="button_group">
-                <input name="label" placeholder="{t_label}">
-                <input name="url" placeholder="{t_url}">
-                <button>{t_add}</button>
-            </div>
-        </form>
-    "#);
-    let links_form = if collection.links.is_empty() {
-        create_link_form
-    } else {
-        let links_rendered = collection.links
-            .iter()
-            .map(|link| {
-                let label = &link.label.as_deref().unwrap_or("");
-                let url = &link.url;
-
-                let t_delete = language.translations.delete;
-                let t_really_delete = language.translations.really_delete;
-                let delete_icon = icons::failure(t_delete);
-                let delete_form = formatdoc!(r#"
-                    <form action="/delete-collection-link/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
-                        <input name="label" type="hidden" value="{label}">
-                        <input name="url" type="hidden" value="{url}">
-                        <button class="delete_button">{delete_icon}</button>
-                    </form>
-                "#);
-
-                formatdoc!(r#"
-                    <div class="button_group">
-                        <input value="{label}">
-                        <input value="{url}">
-                        {delete_form}
-                    </div>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-        formatdoc!(r#"
-            {links_rendered}
-            {create_link_form}
-        "#)
-    };
+    let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), &language.translations);
+    let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), &language.translations);
 
     let t_banner_image = language.translations.banner_image;
     let t_collection = language.translations.collection;
@@ -571,7 +534,6 @@ pub fn edit_page(
     let t_danger_zone = language.translations.danger_zone;
     let t_delete_collection = language.translations.delete_collection;
     let t_deleting_the_collection_text = language.translations.deleting_the_collection_text;
-    let t_links = language.translations.links;
     let t_new_playlist = language.translations.new_playlist;
     let t_new_subcollection = language.translations.new_subcollection;
     let t_new_video = language.translations.new_video;
@@ -594,10 +556,9 @@ pub fn edit_page(
             </form>
         </div>
 
-        <div class="form_group">
-            <h2>{t_links}</h2>
-            {links_form}
-        </div>
+        {links_form}
+
+        {create_link_form}
 
         <div class="form_group">
             <h2>{t_new_subcollection}</h2>

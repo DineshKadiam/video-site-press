@@ -224,19 +224,23 @@ pub fn links(language: &Language, links: &[Link]) -> String {
     }
 
     let external_icon = icons::external(language.translations.external_link);
+
     links
         .iter()
         .map(|link| {
-            let label = link.label.as_ref().map(|label| label.clone()).unwrap_or_else(|| link.url.to_string());
             let rel_me = if link.rel_me { r#"rel="me""# } else { "" };
-            let style_hidden = if link.hidden { r#"style="display: none;""# } else { "" };
             let url = &link.url;
 
-            formatdoc!(r#"
-                <div>
-                    <a class="link" href="{url}" {rel_me} {style_hidden}>{external_icon} <span>{label}</span></a>
-                </div>
-            "#)
+            if link.hidden {
+                format!(r#"<a href="{url}" {rel_me} style="display: none;">hidden</a>"#)
+            } else {
+                let label = link.label.as_ref().map(|label| label.clone()).unwrap_or_else(|| link.url.to_string());
+                formatdoc!(r#"
+                    <div>
+                        <a class="link" href="{url}" {rel_me}>{external_icon} <span>{label}</span></a>
+                    </div>
+                "#)
+            }
         })
         .collect::<Vec<String>>()
         .join("\n")
