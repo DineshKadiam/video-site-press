@@ -49,9 +49,12 @@ Also check us out on the [fediverse](https://social.example.com/)
 -- description
 ```
 
+Stand-alone URLs inside the `description` field are automatically converted to links, and you can
+additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
+the text of a link (Note that no other markdown syntax is supported inside `description` though).
+
 Any number of `link` fields can be given. The `label` for a link is optional.
 The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,
 its value can be either `rel-me` to add the `rel="me"` attribute to the link or `rel-me-hidden` to add
 the attribute and additionally hide the link from the site, thereby making it only visible to servers
 that want to verify you are the owner of the site through this attribute.
-
