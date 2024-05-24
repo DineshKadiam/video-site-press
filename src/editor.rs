@@ -6,10 +6,12 @@ mod checkbox;
 mod endpoints;
 mod input;
 pub mod server;
+mod textarea;
 mod widgets;
 
 use checkbox::Checkbox;
 use input::Input;
+use textarea::Textarea;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EditorConfig {

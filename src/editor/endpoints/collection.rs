@@ -25,13 +25,11 @@ use crate::{
     Link,
     Playlist
 };
-use crate::editor::{Checkbox, Input};
+use crate::editor::{Checkbox, Input, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
     error_page,
-    form_textarea,
-    form_textarea_markdown_subset,
     layout,
     links,
     not_found,
@@ -365,8 +363,11 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let t_banner_description = language.translations.banner_description;
-            let description = form_textarea("description", t_banner_description, banner.description.as_deref());
+            let mut description = Textarea::image_description("description", language.translations.banner_description);
+
+            description
+                .id("banner_description")
+                .value_option(&banner.description);
 
             let t_update_description = language.translations.update_description;
             format!(r#"
@@ -388,27 +389,22 @@ pub fn edit_page(
 
     let mut input_title = Input::text("title", language.translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
+    let mut textarea_description = Textarea::markdown_subset(language, "description", language.translations.description);
 
-    let t_description = language.translations.description;
-    let (
-        feedback_update,
-        input_description,
-    ) = if let CollectionFormFeedback::Update { description, title, unlisted } = &form_feedback {
+    textarea_description.id("collection_description");
+
+    let feedback_update = if let CollectionFormFeedback::Update { description, title, unlisted } = &form_feedback {
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        textarea_description.value(description);
 
-        (
-            format!(r#"<span class="feedback">{t_not_saved}</span>"#),
-            form_textarea_markdown_subset("description", t_description, language, Some(description))
-        )
+        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted);
+        textarea_description.value_option(&collection.description);
 
-        (
-            String::new(),
-            form_textarea_markdown_subset("description", t_description, language, collection.description.as_deref())
-        )
+        String::new()
     };
 
     let slug_form = if path == "" {
@@ -547,7 +543,7 @@ pub fn edit_page(
 
             <form action="/collection/{path}" method="post">
                 {input_title}
-                {input_description}
+                {textarea_description}
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">

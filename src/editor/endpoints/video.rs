@@ -34,13 +34,11 @@ use crate::{
     VideoParent
 };
 use crate::browser_support;
-use crate::editor::{Checkbox, Input};
+use crate::editor::{Checkbox, Input, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
     error_page,
-    form_textarea,
-    form_textarea_markdown_subset,
     layout,
     links,
     not_found,
@@ -609,8 +607,11 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let t_poster_description = language.translations.poster_description;
-            let description = form_textarea("description", t_poster_description, poster.description.as_deref());
+            let mut description = Textarea::image_description("description", language.translations.poster_description);
+
+            description
+                .id("poster_description")
+                .value_option(&poster.description);
 
             let t_delete_poster = language.translations.delete_poster;
             let t_random_poster = language.translations.random_poster;
@@ -649,28 +650,26 @@ pub fn edit_page(
     let mut input_release_date = Input::date("release_date", language.translations.release_date);
     let mut input_title = Input::text("title", language.translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
+    let mut textarea_description = Textarea::markdown_subset(language, "description", language.translations.description);
 
-    let t_description = language.translations.description;
-    let (feedback_update, input_description) = if let Some(VideoFormFeedback::Update { description, release_date, title, unlisted }) = &form_feedback {
+    textarea_description.id("video_description");
+
+    let feedback_update = if let Some(VideoFormFeedback::Update { description, release_date, title, unlisted }) = &form_feedback {
         input_release_date.validated_value(release_date);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        textarea_description.value(description);
 
-        (
-            format!(r#"<span class="feedback">{t_not_saved}</span>"#),
-            form_textarea_markdown_subset("description", t_description, language, Some(description)),
-        )
+        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         let release_date = video.release_date.as_ref().map(|date| date.to_string());
 
         input_release_date.value_option(&release_date);
         input_title.value_option(&video.title);
         input_unlisted.checked(video.unlisted);
+        textarea_description.value_option(&video.description);
 
-        (
-            String::new(),
-            form_textarea_markdown_subset("description", t_description, language, video.description.as_deref()),
-        )
+        String::new()
     };
 
     let slug_form = if path == "" {
@@ -759,7 +758,7 @@ pub fn edit_page(
 
             <form action="/video/{path}" method="post">
                 {input_title}
-                {input_description}
+                {textarea_description}
                 {input_release_date}
                 {input_unlisted_conditionally_hidden}
 

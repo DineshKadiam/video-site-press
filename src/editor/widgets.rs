@@ -284,39 +284,6 @@ pub fn error_page(
         .body(html)
 }
 
-pub fn form_textarea(
-    key: &str,
-    label: &str,
-    value: Option<&str>
-) -> String {
-    let value = value.unwrap_or("");
-    formatdoc!(r#"
-        <div class="form_field">
-            <label for="{key}">{label}</label>
-            <textarea id="{key}" name="{key}" rows="5">{value}</textarea>
-        </div>
-    "#)
-}
-
-pub fn form_textarea_markdown_subset(
-    key: &str,
-    label: &str,
-    language: &Language,
-    value: Option<&str>
-) -> String {
-    let hint = language.translations.markdown_inline_links_are_supported_standalone_urls_are_automatically_linked;
-    let value = value.unwrap_or("");
-    formatdoc!(r#"
-        <div class="form_field">
-            <label for="{key}">{label}</label>
-            <div class="textarea_with_hint">
-                <span>{hint}</span>
-                <textarea id="{key}" name="{key}" rows="5">{value}</textarea>
-            </div>
-        </div>
-    "#)
-}
-
 /// When path is Some() that signifies we are viewing some node in the site tree.
 /// If it's None we are on some auxillary page such as the dashboard or 404 page.
 pub fn layout(
