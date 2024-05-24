@@ -1,4 +1,4 @@
-use url::Url;
+use crate::HyperUrl;
 
 #[derive(Clone, Debug)]
 pub struct Link {
@@ -8,7 +8,7 @@ pub struct Link {
     pub label: Option<String>,
     /// Indicates rel="me" linking (https://microformats.org/wiki/rel-me)
     pub rel_me: bool,
-    pub url: Url
+    pub url: HyperUrl
 }
 
 impl Link {
@@ -16,13 +16,27 @@ impl Link {
         hidden: bool,
         label: Option<String>,
         rel_me: bool,
-        url: Url
+        url: HyperUrl
     ) -> Link {
         Link {
             hidden,
             label,
             rel_me,
             url
+        }
+    }
+
+    /// Returns either the label itself, or as a fallback the url
+    /// without the http(s):// part and without trailing slash.
+    pub fn pretty_label(&self) -> String {
+        match &self.label {
+            Some(label) => label.clone(),
+            None => self.url.representation
+                .split_once("://")
+                .unwrap()
+                .1
+                .trim_end_matches('/')
+                .to_string()
         }
     }
 

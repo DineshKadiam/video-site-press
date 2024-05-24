@@ -83,6 +83,6 @@ impl<'a> Display for Textarea<'a> {
             </div>
         "#);
 
-        write!(formatter, "{}", html)
+        write!(formatter, "{html}")
     }
 }

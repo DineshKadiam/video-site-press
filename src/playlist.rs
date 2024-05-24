@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 use enolib::{Element, SectionElement};
-use url::Url;
 
 use crate::{
     Banner,
@@ -15,6 +14,7 @@ use crate::{
     FileMeta,
     GetAnyResult,
     HyperDir,
+    HyperUrl,
     Link,
     Site,
     Translations,
@@ -119,7 +119,7 @@ impl Playlist {
                     match field.required_attribute("url") {
                         Ok(attribute) => {
                             match attribute.required_value::<String>() {
-                                Ok(value) => match Url::parse(&value) {
+                                Ok(value) => match HyperUrl::parse(&value) {
                                     Ok(url) => {
                                         // TODO: Errors, optional_attribute does not exist in enolib?
                                         let label = match field.required_attribute("label") {

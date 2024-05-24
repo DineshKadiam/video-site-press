@@ -7,7 +7,7 @@ use serde_derive::Deserialize;
 
 use crate::{
     AspectRatio,
-    BaseUrl,
+    HyperUrl,
     Context,
     Field,
     Language,
@@ -241,7 +241,7 @@ pub async fn update(
     let base_url = if base_url_trimmed.is_empty() {
         None
     } else {
-        Some(BaseUrl::parse(&base_url_trimmed))
+        Some(HyperUrl::parse(&base_url_trimmed))
     };
 
     let poster_aspect = if poster_aspect_trimmed.is_empty() {

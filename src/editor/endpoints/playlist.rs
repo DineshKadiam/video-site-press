@@ -11,7 +11,6 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
-use url::Url;
 
 use crate::{
     Banner,
@@ -19,6 +18,7 @@ use crate::{
     ContextPath,
     Field,
     FileMeta,
+    HyperUrl,
     JobKind,
     Language,
     Link,
@@ -93,7 +93,7 @@ pub async fn add_link(
         true => None,
         false => Some(label_trimmed.to_string())
     };
-    let url = match Url::parse(&form.url) {
+    let url = match HyperUrl::parse(&form.url) {
         Ok(url) => url,
         Err(err) => {
             let language = context.get_editor_language();
@@ -145,20 +145,18 @@ pub async fn delete_link(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |playlist_mut: &mut Playlist| {
-        if let Ok(url) = Url::parse(&form.url) {
-            if playlist_mut.links
-                .iter()
-                .position(|link|
-                    if form.label.is_empty()  {
-                        link.label.is_none() && link.url == url
-                    } else {
-                        link.label.as_ref().is_some_and(|label| label == &form.label) && link.url == url
-                    }
-                )
-                .map(|index| playlist_mut.links.remove(index))
-                .is_some() {
-                playlist_mut.write_manifest(&context);
-            }
+        if playlist_mut.links
+            .iter()
+            .position(|link|
+                if form.label.is_empty()  {
+                    link.label.is_none() && link.url.representation == form.url
+                } else {
+                    link.label.as_ref().is_some_and(|label| label == &form.label) && link.url.representation == form.url
+                }
+            )
+            .map(|index| playlist_mut.links.remove(index))
+            .is_some() {
+            playlist_mut.write_manifest(&context);
         }
     };
 

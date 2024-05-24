@@ -37,6 +37,6 @@ impl<'a> Display for Checkbox<'a> {
             </div>
         "#);
 
-        write!(formatter, "{}", html)
+        write!(formatter, "{html}")
     }
 }

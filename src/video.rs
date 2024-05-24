@@ -6,7 +6,6 @@ use std::sync::Arc;
 use chrono::NaiveDate;
 use enolib::{Element, SectionElement};
 use serde_derive::{Deserialize, Serialize};
-use url::Url;
 
 use crate::{
     CacheItem,
@@ -14,6 +13,7 @@ use crate::{
     Context,
     FileMeta,
     HyperDir,
+    HyperUrl,
     Link,
     Playlist,
     PosterFile,
@@ -99,7 +99,7 @@ impl Video {
                     match field.required_attribute("url") {
                         Ok(attribute) => {
                             match attribute.required_value::<String>() {
-                                Ok(value) => match Url::parse(&value) {
+                                Ok(value) => match HyperUrl::parse(&value) {
                                     Ok(url) => {
                                         // TODO: Errors, optional_attribute does not exist in enolib?
                                         let label = match field.required_attribute("label") {

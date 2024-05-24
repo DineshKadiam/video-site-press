@@ -3,7 +3,6 @@ use std::path::Path;
 use std::sync::Arc;
 
 use enolib::{Element, SectionElement};
-use url::Url;
 
 use crate::{
     Context,
@@ -11,6 +10,7 @@ use crate::{
     Font,
     GetAnyResult,
     HyperDir,
+    HyperUrl,
     Language,
     Playlist,
     Theme,
@@ -27,17 +27,6 @@ pub enum AspectRatio {
     Default
 }
 
-/// Base url can be user-provided with or without trailing slash
-/// ("https://example.com/subdir" "https://example.com/subdir/"), but for
-/// further url construction through the url crate the trailing slash is
-/// significant (https://docs.rs/url/latest/url/struct.Url.html#method.join),
-/// hence we store both representation and a working copy of the parsed url.
-#[derive(Clone, Debug)]
-pub struct BaseUrl {
-    pub representation: String,
-    pub value: Url
-}
-
 #[derive(Clone, Debug)]
 pub struct DeployConfig {
     pub path: Option<String>,
@@ -47,7 +36,7 @@ pub struct DeployConfig {
 
 #[derive(Clone, Debug)]
 pub struct Site {
-    pub base_url: Option<BaseUrl>,
+    pub base_url: Option<HyperUrl>,
     pub clean_urls: bool,
     pub content: SiteContent,
     pub deploy_config: DeployConfig,
@@ -102,27 +91,6 @@ impl AspectRatio {
     }
 }
 
-impl BaseUrl {
-    /// Delegates parsing to the url crate but beforehand ensures a trailing
-    /// slash so further url construction is performed correctly.
-    pub fn parse(url: &str) -> Result<BaseUrl, String> {
-        let parsed_url = match url.ends_with('/') {
-            true => Url::parse(url),
-            false => Url::parse(&format!("{url}/"))
-        };
-
-        match parsed_url {
-            Ok(value) => {
-                Ok(BaseUrl {
-                    representation: url.to_owned(),
-                    value
-                })
-            }
-            Err(err) => Err(err.to_string())
-        }
-    }
-}
-
 impl DeployConfig {
     pub fn complete(&self) -> bool {
         self.path.is_some() && self.server.is_some() && self.user.is_some()
@@ -152,7 +120,7 @@ impl Site {
         match document.optional_field("base_url") {
             Ok(Some(field)) => {
                 match field.required_value::<String>() {
-                    Ok(value) => match BaseUrl::parse(&value) {
+                    Ok(value) => match HyperUrl::parse(&value) {
                         Ok(url) => self.base_url = Some(url),
                         Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), field.line_number(), err))
                     }

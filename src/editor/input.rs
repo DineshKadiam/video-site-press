@@ -112,6 +112,6 @@ impl<'a> Display for Input<'a> {
             </div>
         "#);
 
-        write!(formatter, "{}", html)
+        write!(formatter, "{html}")
     }
 }
