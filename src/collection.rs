@@ -494,7 +494,8 @@ impl Collection {
             collection.read_subdir(context, &hyper_subdir, site);
         }
 
-        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable banner, use additional ones, etc.)
+        // TODO: Some strategy what we do with multiple images (e.g. heuristic* to pick most probable banner, use additional ones, etc.)
+        //       (*) largest image? image that best fits the aspect ratio? name convention? etc.
         if !hyper_dir.image_files.is_empty() && collection.banner.is_none() {
             let first_image = hyper_dir.image_files.first().unwrap();
 

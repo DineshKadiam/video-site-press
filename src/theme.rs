@@ -37,6 +37,8 @@ pub struct ThemeVars {
 	pub fg_2: String,
 	/// Foreground 3 (close)
 	pub fg_3: String,
+	/// Between foreground and middleground
+	pub fg_mg: String,
 	/// Middleground  (in between)
 	pub mg: String,
 	/// Splash gradient blend mode
@@ -104,6 +106,7 @@ impl ThemeVars {
 			fg_1: String::from("#fff"),
 			fg_2: String::from("#c9c9c9"),
 			fg_3: String::from("#b2b2b2"),
+			fg_mg: String::from("#989898"),
 			mg: String::from("#888"),
 			splash_blend: String::from("color"),
 			splash_ne: String::from("#43437d"),
@@ -124,6 +127,7 @@ impl ThemeVars {
 			fg_1: String::from("#000"),
 			fg_2: String::from("#272727"),
 			fg_3: String::from("#444"),
+			fg_mg: String::from("#666"),
 			mg: String::from("#888"),
 			splash_blend: String::from("overlay"),
 			splash_ne: String::from("#444468"),
@@ -143,6 +147,7 @@ impl ThemeVars {
 	    let fg_1 = &self.fg_1;
 	    let fg_2 = &self.fg_2;
 	    let fg_3 = &self.fg_3;
+	    let fg_mg = &self.fg_mg;
 	    let mg = &self.mg;
 	    let splash_blend = &self.splash_blend;
 	    let splash_ne = &self.splash_ne;
@@ -160,6 +165,7 @@ impl ThemeVars {
             --fg-1: {fg_1};
             --fg-2: {fg_2};
             --fg-3: {fg_3};
+            --fg-mg: {fg_mg};
             --mg: {mg};
             --splash-blend: {splash_blend};
             --splash-ne: {splash_ne};

@@ -2,12 +2,16 @@ use chrono::{Datelike, NaiveDate};
 use indoc::formatdoc;
 
 use crate::{Collection, Playlist, Site, Video};
-use crate::build::playlist::banner_html;
 use crate::build::thumbnail;
-use crate::build::widgets::poster_html;
+use crate::build::widgets::{banner_html, poster_html};
 use crate::util::{casual_duration, localized_date_mmm_yyyy};
 
-// TODO: Consider the similarity to Smartcrumb here (!) This indicates
+pub struct Breadcrumb<'a> {
+    pub href: String,
+    pub step: &'a TraversalStep<'a>
+}
+
+// TODO: Consider the similarity to TraversalStep here (!) This indicates
 //       we should really have a generic item of that sort for representing both?
 pub enum CurrentPage<'a> {
     Collection(&'a Collection),
@@ -24,10 +28,27 @@ pub struct OutlineStats {
 }
 
 #[derive(Clone)]
-pub enum Smartcrumb<'a> {
+pub enum TraversalStep<'a> {
     Collection(&'a Collection),
     Playlist(&'a Playlist),
     Video(&'a Video)
+}
+
+/// Represents a traversal through the site tree, i.e. the steps taken to get
+/// from the root of the site to a leaf node such as a collection, playlist
+/// or video at any arbitrary level in the tree. We need this to render
+/// hierarchy representations such as breadcrumbs and the likes.
+#[derive(Clone)]
+pub struct Traversal<'a> {
+    /// Steps we have peeked through, i.e. in a context where we render a page,
+    /// we know that these steps still lie below/ahead of us, i.e. we need to
+    /// descend to them from our current location.
+    peeked_steps: Vec<TraversalStep<'a>>,
+    // TODO: Aim towards making this private again in the near future (probably makes sense to encapsulate access somehow)
+    /// Steps we have actually traversed, i.e. in a context where we render a page,
+    /// we know that these steps lie behind/above us, i.e. we need to ascend to them
+    /// from our current location.
+    pub steps: Vec<TraversalStep<'a>>
 }
 
 impl<'a> CurrentPage<'a> {
@@ -165,18 +186,18 @@ impl OutlineStats {
     }
 }
 
-impl<'a> Smartcrumb<'a> {
+impl<'a> TraversalStep<'a> {
     pub fn breadcrumb(&self, href: &str, site: &Site) -> String {
         match self {
-            Smartcrumb::Collection(collection) => {
+            TraversalStep::Collection(collection) => {
                 let label = collection.label(&site.language.translations);
                 format!(r#"<a href="{href}">{label}</a>"#)
             }
-            Smartcrumb::Playlist(playlist) => {
+            TraversalStep::Playlist(playlist) => {
                 let label = playlist.label(&site.language.translations);
                 format!(r#"<a href="{href}">{label}</a>"#)
             }
-            Smartcrumb::Video(video) => {
+            TraversalStep::Video(video) => {
                 let label = video.label(&site.language.translations);
                 format!(r#"<a href="{href}">{label}</a>"#)
             }
@@ -190,18 +211,18 @@ impl<'a> Smartcrumb<'a> {
         site: &Site
     ) -> String {
         match self {
-            Smartcrumb::Collection(collection) => {
-                let header = Smartcrumb::crumb_collection_header(collection, prefix, site);
+            TraversalStep::Collection(collection) => {
+                let header = TraversalStep::crumb_collection_header(collection, prefix, site);
 
                 if prefix == "../" {
-                    let list = Smartcrumb::crumb_collection_context(collection, site, CurrentPage::Collection(collection_viewed));
+                    let list = TraversalStep::crumb_collection_context(collection, site, CurrentPage::Collection(collection_viewed));
                     format!("{header}\n{list}")
                 } else {
                     header
                 }
             }
-            Smartcrumb::Playlist(_) => unimplemented!(),
-            Smartcrumb::Video(_) => unimplemented!()
+            TraversalStep::Playlist(_) => unimplemented!(),
+            TraversalStep::Video(_) => unimplemented!()
         }
     }
 
@@ -212,18 +233,18 @@ impl<'a> Smartcrumb<'a> {
         site: &Site
     ) -> String {
         match self {
-            Smartcrumb::Collection(collection) => {
-                let header = Smartcrumb::crumb_collection_header(collection, prefix, site);
+            TraversalStep::Collection(collection) => {
+                let header = TraversalStep::crumb_collection_header(collection, prefix, site);
 
                 if prefix == "../" {
-                    let list = Smartcrumb::crumb_collection_context(collection, site, CurrentPage::Playlist(playlist));
+                    let list = TraversalStep::crumb_collection_context(collection, site, CurrentPage::Playlist(playlist));
                     format!("{header}\n{list}")
                 } else {
                     header
                 }
             }
-            Smartcrumb::Playlist(_) => unimplemented!(),
-            Smartcrumb::Video(_) => unimplemented!()
+            TraversalStep::Playlist(_) => unimplemented!(),
+            TraversalStep::Video(_) => unimplemented!()
         }
     }
 
@@ -234,18 +255,18 @@ impl<'a> Smartcrumb<'a> {
         video: &Video
     ) -> String {
         match self {
-            Smartcrumb::Collection(collection) => {
-                let header = Smartcrumb::crumb_collection_header(collection, prefix, site);
+            TraversalStep::Collection(collection) => {
+                let header = TraversalStep::crumb_collection_header(collection, prefix, site);
 
                 if prefix == "../" {
-                    let list = Smartcrumb::crumb_collection_context(collection, site, CurrentPage::Video(video));
+                    let list = TraversalStep::crumb_collection_context(collection, site, CurrentPage::Video(video));
                     format!("{header}\n{list}")
                 } else {
                     header
                 }
             }
-            Smartcrumb::Playlist(playlist) => Smartcrumb::crumb_playlist(playlist, prefix, site, Some(video)),
-            Smartcrumb::Video(_) => unimplemented!()
+            TraversalStep::Playlist(playlist) => TraversalStep::crumb_playlist(playlist, prefix, site, Some(video)),
+            TraversalStep::Video(_) => unimplemented!()
         }
     }
 
@@ -254,6 +275,8 @@ impl<'a> Smartcrumb<'a> {
         prefix: &str,
         site: &Site
     ) -> String {
+        let index_suffix = site.index_suffix();
+
         let banner = if let Some(banner) = &collection.banner {
             banner_html(banner, prefix)
         } else if let Some(video) = &collection.public_videos().find(|video| video.poster.is_some()) { // TODO: Fall back to playlist/subcollection banner if no poster on video
@@ -267,7 +290,7 @@ impl<'a> Smartcrumb<'a> {
         let outline_stats = OutlineStats::for_collection(collection).render(site);
 
         formatdoc!(r#"
-            <a href="{prefix}">
+            <a href="{prefix}{index_suffix}">
                 {banner}
                 <div class="text">
                     <div class="medium_font">{label}</div>
@@ -550,7 +573,7 @@ impl<'a> Smartcrumb<'a> {
     }
 
     pub fn is_collection(&self, collection: &Collection) -> bool {
-        if let Smartcrumb::Collection(subcollection) = self {
+        if let TraversalStep::Collection(subcollection) = self {
             subcollection.path == collection.path
         } else {
             false
@@ -558,7 +581,7 @@ impl<'a> Smartcrumb<'a> {
     }
 
     pub fn is_playlist(&self) -> bool {
-        if let Smartcrumb::Playlist(_) = self {
+        if let TraversalStep::Playlist(_) = self {
             true
         } else {
             false
@@ -566,10 +589,128 @@ impl<'a> Smartcrumb<'a> {
     }
 
     pub fn is_video(&self, video: &Video) -> bool {
-        if let Smartcrumb::Video(contained_video) = self {
+        if let TraversalStep::Video(contained_video) = self {
             contained_video.path == video.path
         } else {
             false
         }
+    }
+
+    pub fn path(&self) -> &str {
+        match self {
+            TraversalStep::Collection(collection) => &collection.path,
+            TraversalStep::Playlist(playlist) => &playlist.path,
+            TraversalStep::Video(video) => &video.path
+        }
+    }
+}
+
+impl<'a> Traversal<'a> {
+    /// Url path to the index (page) at the peeked traversal.
+    pub fn file_prefix_desc(&self) -> String {
+        let prefix = self.prefix_desc();
+
+        if prefix.is_empty() {
+            prefix
+        } else {
+            format!("{prefix}/")
+        }
+    }
+
+    /// Url path to the index (page) at the peeked traversal.
+    pub fn index_desc(&self, site: &Site) -> String {
+        let prefix = self.prefix_desc();
+
+        if prefix.is_empty() {
+            prefix
+        } else if site.clean_urls {
+            format!("{prefix}/")
+        } else {
+            format!("{prefix}/index.html")
+        }
+    }
+
+    pub fn new() -> Traversal<'a> {
+        Traversal {
+            peeked_steps: Vec::new(),
+            steps: Vec::new()
+        }
+    }
+
+    pub fn parents(&self, site: &Site) -> Vec<Breadcrumb> {
+        let parents_len = self.steps.len() - 1;
+        self.steps[..parents_len]
+            .iter()
+            .enumerate()
+            .map(|(index, step)| {
+                let levels_upwards = parents_len - index;
+                let href = site.upwards_href(levels_upwards);
+                Breadcrumb { href, step }
+            })
+            .collect()
+    }
+
+    pub fn peek_collection(&self, collection: &'a Collection) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.peeked_steps.push(TraversalStep::Collection(collection));
+        clone
+    }
+
+    pub fn peek_playlist(&self, playlist: &'a Playlist) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.peeked_steps.push(TraversalStep::Playlist(playlist));
+        clone
+    }
+
+    pub fn peek_video(&self, video: &'a Video) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.peeked_steps.push(TraversalStep::Video(video));
+        clone
+    }
+
+    /// Relative url path to go "back up" the hierarchy up to the root,
+    /// following the "taken steps".
+    pub fn prefix_asc(&self) -> String {
+        "../".repeat(self.steps.len() - 1)
+    }
+
+    /// Url path to go "down" to the leaf node (= page) we're peeking at,
+    /// relative to where are now (rather than to the site root).
+    fn prefix_desc(&self) -> String {
+        self.peeked_steps
+            .iter()
+            .last()
+            .map(|peeked_step| {
+                self.steps
+                    .iter()
+                    .last()
+                    .map(|visited_step| {
+                        peeked_step.path()
+                            .strip_prefix(visited_step.path())
+                            .unwrap()
+                            .trim_start_matches('/')
+                            .to_string()
+                    })
+                    .unwrap_or(peeked_step.path().to_string())
+            })
+            .unwrap_or_else(|| String::new())
+    }
+
+    pub fn with_collection(&self, collection: &'a Collection) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Collection(collection));
+        clone
+    }
+
+    pub fn with_playlist(&self, playlist: &'a Playlist) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Playlist(playlist));
+        clone
+    }
+
+    pub fn with_video(&self, video: &'a Video) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Video(video));
+        clone
     }
 }

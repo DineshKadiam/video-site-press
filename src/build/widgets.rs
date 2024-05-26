@@ -3,10 +3,40 @@ use std::sync::Arc;
 
 use indoc::formatdoc;
 
-use crate::{Language, Link, PosterFile, Site, ThemeKind, Translations, Video, VideoFile};
-use crate::build::outline::Smartcrumb;
+use crate::{
+    Banner,
+    Language,
+    Link,
+    PosterFile,
+    Site,
+    ThemeKind,
+    Translations,
+    Video,
+    VideoFile
+};
+use crate::build::outline::Traversal;
 use crate::icons;
 use crate::util::{casual_duration, human_size, precise_duration};
+
+pub fn banner_html(banner: &Banner, prefix: &str) -> String {
+    let alt = if let Some(description) = &banner.description {
+        format!(r#"alt="{description}""#)
+    } else {
+        String::new()
+    };
+
+    if let Some(poster_assets) = &banner.assets {
+        // TODO: Adjust up_to_xxx (depends on final content width we're using)
+        let image_attributes = poster_assets.img_attributes_up_to_1280("banner", prefix);
+        let src = image_attributes.src;
+        let srcset = image_attributes.srcset;
+
+        formatdoc!(r#"<img {alt} class="banner" src="{src}" srcset="{srcset}">"#)
+    } else {
+        formatdoc!(r#"<img {alt} class="banner" src="{prefix}banner.jpg">"#)
+    }
+}
+
 
 pub fn copy_link(site: &Site, path: &str) -> String {
     let data_url = match &site.base_url {
@@ -141,13 +171,13 @@ pub fn downloads(site: &Site, video: &Video) -> String {
 }
 
 pub fn layout(
-    root_prefix: &str,
-    site: &Site,
     body: &str,
+    site: &Site,
     title: &str,
-    outline: &[Smartcrumb]
+    traversal: &Traversal
 ) -> String {
     // TODO: Hash assets (cache expiration)
+    let root_prefix = traversal.prefix_asc();
     let head = formatdoc!(r#"
         <head>
             <title>{title}</title>
@@ -158,15 +188,14 @@ pub fn layout(
         </head>
     "#);
 
-    let outline_rendered = outline
+    let breadcrumbs = traversal.parents(site)
         .iter()
-        .enumerate()
-        .map(|(index, smartcrumb)| {
-            let href = "../".repeat(outline.len() - 1 - index);
-            smartcrumb.breadcrumb(&href, site)
+        .map(|breadcrumb| {
+            let breadcrumb_rendered = breadcrumb.step.breadcrumb(&breadcrumb.href, site);
+            format!(r#"{breadcrumb_rendered} <span style="font-size: 1.6rem; position: relative; top: -.2rem;">›</span> "#)
         })
         .collect::<Vec<String>>()
-        .join(" › ");
+        .join("");
 
     let dark_icon = icons::dark(site.language.translations.dark_color_scheme);
     let light_icon = icons::light(site.language.translations.light_color_scheme);
@@ -182,23 +211,22 @@ pub fn layout(
 
     let hyper8_version = env!("CARGO_PKG_VERSION");
 
-    let with_sidebar = if outline.len() > 1 { "with_sidebar" } else { "" };
+    let with_sidebar = if traversal.steps.len() > 1 { "with_sidebar" } else { "" };
 
-    let logo_icon = icons::logo(site.language.translations.hyper8_logo);
     let body = formatdoc!(r##"
         <body>
             <div class="layout {with_sidebar}">
                 <div class="growing">
                     <div class="center">
                         <header>
-                            {outline_rendered}
+                            {breadcrumbs}
                         </header>
                         {body}
                     </div>
                 </div>
                 <footer>
                     <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank" title="Hyper 8 Video System {hyper8_version}">
-                        {logo_icon} Hyper 8
+                        Hyper 8 Video System
                     </a>
                     {theme_toggle}
                 </footer>
@@ -225,7 +253,7 @@ pub fn links(language: &Language, links: &[Link]) -> String {
 
     let external_icon = icons::external(language.translations.external_link);
 
-    links
+    let items = links
         .iter()
         .map(|link| {
             let rel_me = if link.rel_me { r#"rel="me""# } else { "" };
@@ -234,16 +262,16 @@ pub fn links(language: &Language, links: &[Link]) -> String {
             if link.hidden {
                 format!(r#"<a href="{url}" {rel_me} style="display: none;">hidden</a>"#)
             } else {
-                let label = link.label.as_ref().map(|label| label.clone()).unwrap_or_else(|| link.url.to_string());
+                let label = link.pretty_label();
                 formatdoc!(r#"
-                    <div>
-                        <a class="link" href="{url}" {rel_me}>{external_icon} <span>{label}</span></a>
-                    </div>
+                    <a class="link" href="{url}" {rel_me}>{external_icon} <span>{label}</span></a>
                 "#)
             }
         })
         .collect::<Vec<String>>()
-        .join("\n")
+        .join("\n");
+
+    format!(r#"<div class="links">{items}</div>"#)
 }
 
 pub fn player(

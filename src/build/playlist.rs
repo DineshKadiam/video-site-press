@@ -2,43 +2,32 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Banner, Context, MarkdownSubset, Playlist, Site};
-use crate::build::outline::Smartcrumb;
-use crate::build::widgets::{layout, links, thumbnail, unlisted_badge};
-
-pub fn banner_html(banner: &Banner, playlist_prefix: &str) -> String {
-    let alt = if let Some(description) = &banner.description {
-        format!(r#"alt="{description}" "#)
-    } else {
-        String::new()
-    };
-
-    if let Some(poster_assets) = &banner.assets {
-        // TODO: Adjust up_to_xxx (depends on final content width we're using)
-        let image_attributes = poster_assets.img_attributes_up_to_1280("banner", playlist_prefix);
-        let src = image_attributes.src;
-        let srcset = image_attributes.srcset;
-
-        formatdoc!(r#"<img {alt}src="{src}" srcset="{srcset}">"#)
-    } else {
-        formatdoc!(r#"<img {alt}src="{playlist_prefix}banner.jpg">"#)
-    }
-}
+use crate::{Context, MarkdownSubset, Playlist, Site};
+use crate::build::outline::Traversal;
+use crate::build::widgets::{
+    banner_html,
+    layout,
+    links,
+    thumbnail,
+    unlisted_badge
+};
 
 pub fn playlist_html(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
-    outline: &[Smartcrumb]
+    traversal: &Traversal
 ) {
     let mut body = String::new();
-    let index_suffix = site.index_suffix();
 
     let title = if playlist.path == "" {
         playlist.title.as_deref().unwrap_or("Hyper 8")
     } else {
         playlist.title.as_deref().unwrap_or_else(|| playlist.slug())
     };
+
+    // TODO: Hack to get margin to come out beneath header - replace with something proper soon
+    body.push_str(r#"<div style="margin-top: 4rem;"></div>"#);
 
     if let Some(banner) = &playlist.banner {
         let playlist_prefix = "";
@@ -67,14 +56,16 @@ pub fn playlist_html(
             .iter()
             .enumerate()
             .map(|(index, video)| {
-                let number = index + 1;
-                let slug = video.slug();
-                let label = video.label(&site.language.translations);
-                let video_prefix = format!("{slug}/");
-                let video_thumbnail = thumbnail(&site.language.translations, video, &video_prefix, true);
+                let traversal_with_video = traversal.peek_video(video);
+                let traversal_with_video_prefix = traversal_with_video.file_prefix_desc();
 
+                let number = index + 1;
+                let label = video.label(&site.language.translations);
+                let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
+
+                let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"
-                    <a href="{slug}{index_suffix}">
+                    <a href="{video_href}">
                         <div>{video_thumbnail}</div>
                         <div class="description">
                             {number} {label}
@@ -85,10 +76,7 @@ pub fn playlist_html(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_videos = &site.language.translations.videos;
         let videos_rendered = formatdoc!(r#"
-            <h2>{t_videos}</h2>
-
             <div class="playlist">
                 {videos}
             </div>
@@ -97,23 +85,22 @@ pub fn playlist_html(
         body.push_str(&videos_rendered);
     }
 
-    if !outline.is_empty() {
-        let outline_items = outline
-            .iter()
-            .filter(|smartcrumb| !smartcrumb.is_playlist())
-            .enumerate()
-            .map(|(index, smartcrumb)| {
-                let prefix = "../".repeat(outline.len() - 1 - index);
-                smartcrumb.context_for_playlist(playlist, &prefix, site)
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
+    // if !traversal.steps.is_empty() {
+    //     let outline_items = traversal.steps
+    //         .iter()
+    //         .filter(|step| !step.is_playlist())
+    //         .enumerate()
+    //         .map(|(index, step)| {
+    //             let prefix = "../".repeat(traversal.steps.len() - 1 - index);
+    //             step.context_for_playlist(playlist, &prefix, site)
+    //         })
+    //         .collect::<Vec<String>>()
+    //         .join("\n");
 
-        body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
-    }
+    //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
+    // }
 
-    let root_prefix = if playlist.path == "" { "".to_string() } else { "../".repeat(playlist.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title, outline);
+    let html = layout(&body, site, title, traversal);
 
     let playlist_dir = context.build_dir.join(&playlist.path);
     fs::create_dir_all(&playlist_dir).unwrap();

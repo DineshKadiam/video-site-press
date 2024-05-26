@@ -22,7 +22,7 @@ mod video;
 mod widgets;
 
 use collection::collection_html;
-use outline::Smartcrumb;
+use outline::Traversal;
 use playlist::playlist_html;
 use video::video_html;
 
@@ -31,12 +31,12 @@ pub fn perform_build(context: &Context) {
     
     ensure_empty_dir(&context.build_dir);
 
-    let outline = Vec::new();
+    let traversal = Traversal::new();
 
     match &site.content {
-        SiteContent::Collection(collection) => build_collection(context, collection, &site, &outline),
-        SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site, &outline),
-        SiteContent::Video(video) => build_video(context, None, video, &site, &outline),
+        SiteContent::Collection(collection) => build_collection(context, collection, &site, &traversal),
+        SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site, &traversal),
+        SiteContent::Video(video) => build_video(context, None, video, &site, &traversal),
         SiteContent::Empty => (),
         SiteContent::Invalid => todo!()
     }
@@ -49,10 +49,9 @@ fn build_collection(
     context: &Context,
     collection: &Collection,
     site: &Site,
-    outline: &[Smartcrumb]
+    traversal_previous: &Traversal
 ) {
-    let mut outline_extended = outline.to_owned();
-    outline_extended.push(Smartcrumb::Collection(collection));
+    let traversal = traversal_previous.with_collection(collection);
 
     if let Some(banner) = &collection.banner {
         let collection_build_dir = context.build_dir.join(&collection.path);
@@ -76,29 +75,28 @@ fn build_collection(
         }
     }
 
+    collection_html(context, collection, site, &traversal);
+
     for subcollection in &collection.subcollections {
-        build_collection(context, subcollection, site, &outline_extended);
+        build_collection(context, subcollection, site, &traversal);
     }
 
     for playlist in &collection.playlists {
-        build_playlist(context, playlist, site, &outline_extended);
+        build_playlist(context, playlist, site, &traversal);
     }
 
     for video in &collection.videos {
-        build_video(context, None, video, site, &outline_extended);
+        build_video(context, None, video, site, &traversal);
     }
-
-    collection_html(context, collection, site, &outline_extended);
 }
 
 fn build_playlist(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
-    outline: &[Smartcrumb]
+    traversal_previous: &Traversal
 ) {
-    let mut outline_extended = outline.to_owned();
-    outline_extended.push(Smartcrumb::Playlist(playlist));
+    let traversal = traversal_previous.with_playlist(playlist);
 
     if let Some(banner) = &playlist.banner {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
@@ -122,10 +120,11 @@ fn build_playlist(
         }
     }
 
-    playlist_html(context, playlist, site, &outline_extended);
+    playlist_html(context, playlist, site, &traversal);
+
 
     for video in &playlist.videos {
-        build_video(context, Some(playlist), video, site, &outline_extended);
+        build_video(context, Some(playlist), video, site, &traversal);
     }
 }
 
@@ -134,10 +133,9 @@ fn build_video(
     playlist: Option<&Playlist>,
     video: &Video,
     site: &Site,
-    outline: &[Smartcrumb]
+    traversal_previous: &Traversal
 ) {
-    let mut outline_extended = outline.to_owned();
-    outline_extended.push(Smartcrumb::Video(video));
+    let traversal = traversal_previous.with_video(video);
 
     let video_build_dir = context.build_dir.join(&video.path);
 
@@ -187,5 +185,5 @@ fn build_video(
         }
     }
 
-    video_html(context, playlist, video, site, &outline_extended);
+    video_html(context, playlist, video, site, &traversal);
 }

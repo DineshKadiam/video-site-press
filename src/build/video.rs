@@ -4,7 +4,7 @@ use std::sync::Arc;
 use indoc::formatdoc;
 
 use crate::{Context, MarkdownSubset, Playlist, Site, Video};
-use crate::build::outline::Smartcrumb;
+use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_link, downloads, layout, links, player, unlisted_badge};
 use crate::util::localized_date_d_mmmm_yyyy;
 
@@ -13,7 +13,7 @@ pub fn video_html(
     playlist: Option<&Playlist>,
     video: &Video,
     site: &Site,
-    outline: &[Smartcrumb]
+    traversal: &Traversal
 ) {
     let description = if let Some(description) = &video.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -46,13 +46,13 @@ pub fn video_html(
         }
     };
 
-    let outline_items = outline
+    let outline_items = traversal.steps
         .iter()
-        .filter(|smartcrumb| !smartcrumb.is_video(video))
+        .filter(|step| !step.is_video(video))
         .enumerate()
-        .map(|(index, smartcrumb)| {
-            let prefix = "../".repeat(outline.len() - 1 - index);
-            smartcrumb.context_for_video(&prefix, site, video)
+        .map(|(index, step)| {
+            let prefix = "../".repeat(traversal.steps.len() - 1 - index);
+            step.context_for_video(&prefix, site, video)
         })
         .collect::<Vec<String>>()
         .join("\n");
@@ -70,7 +70,7 @@ pub fn video_html(
     let release_date = match video.release_date {
         Some(release_date) => {
             let formatted_date = localized_date_d_mmmm_yyyy(release_date, site.language.chrono_locale);
-            format!(r#"<span class="release_date">{formatted_date}</span>"#)
+            format!(r#"<div class="release_date">{formatted_date}</div>"#)
         }
         None => String::new()
     };
@@ -100,8 +100,7 @@ pub fn video_html(
         {outline_rendered}
     "#);
 
-    let root_prefix = if video.path == "" { "".to_string() } else { "../".repeat(video.path.split('/').count()) };
-    let html = layout(&root_prefix, site, &body, title, outline);
+    let html = layout(&body, site, title, traversal);
 
     let video_dir = context.build_dir.join(&video.path);
     fs::create_dir_all(&video_dir).unwrap();
