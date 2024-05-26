@@ -157,9 +157,18 @@ pub fn encode(
             "mp4"
         }
         VideoFormat::Video { codec, container, encoding_approach, frame_rate, height, quality } => {
-            // TODO: We need to encode WebM and h265 for browser compatibility reasons
-            //       Consider that we also need to/could offer both for download
-            // See also https://pixelpoint.io/blog/web-optimized-video-ffmpeg/
+            // TODO: Right now the best supported video format is H.264, but VP9 is now also supported across
+            //       all browsers (since March 2024), so as soon as old Safari versions leave
+            //       the playing field we can transition to VP9 as recommended default.
+            //       See https://caniuse.com/webm
+            //
+            //       HEVC as default is hardly an outlook given its support is very sparse and has been
+            //       for a long time - https://caniuse.com/hevc - and probably not going to change anytime
+            //       soon (also because it is not royalty free).
+            //
+            //       Support for AV1 is already quite decent - https://caniuse.com/av1 - although
+            //       not omnipresent due to Safari's unreliable support, but this is possibly a long-term
+            //       perspective for a future default.
 
             let mut video_filters = Vec::new();
 
