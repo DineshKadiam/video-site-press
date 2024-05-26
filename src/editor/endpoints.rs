@@ -98,6 +98,8 @@ pub async fn splash_logo() -> HttpResponse {
 pub async fn styles(context: Data<Arc<Context>>) -> HttpResponse {
     let theme = context.get_editor_theme();
 
+    let splash_vars = theme.print_splash_vars();
+
     let theme_vars = match &theme.kind {
         ThemeKind::Adaptive { dark, light } => {
             let dark_vars = dark.print();
@@ -127,6 +129,7 @@ pub async fn styles(context: Data<Arc<Context>>) -> HttpResponse {
 
     let static_css = include_str!("assets/styles.css");
     let css = formatdoc!(r#"
+        {splash_vars}
         {theme_vars}
         {static_css}
     "#);

@@ -40,20 +40,31 @@ pub struct ThemeVars {
 	/// Between foreground and middleground
 	pub fg_mg: String,
 	/// Middleground  (in between)
-	pub mg: String,
-	/// Splash gradient blend mode
-	pub splash_blend: String,
-	/// Splash Northeast corner gradient color
-	pub splash_ne: String,
-	/// Splash Northwest corner gradient color
-	pub splash_nw: String,
-	/// Splash Southeast corner gradient color
-	pub splash_se: String,
-	/// Splash Southwest corner gradient color
-	pub splash_sw: String
+	pub mg: String
 }
 
 impl Theme {
+	/// Splash gradient blend mode
+	const SPLASH_BLEND: &'static str = "color";
+
+	/// Splash background (furthest away/bottom layer)
+	const SPLASH_BG: &'static str = "#9d1a57";
+
+	/// Splash foreground (closest/top layer)
+	const SPLASH_FG: &'static str = "#fff";
+
+	/// Splash Northeast corner gradient color
+	const SPLASH_NE: &'static str = "#43437d";
+
+	/// Splash Northwest corner gradient color
+	const SPLASH_NW: &'static str = "#cc0a2e";
+
+	/// Splash Southeast corner gradient color
+	const SPLASH_SE: &'static str = "#9b0000";
+
+	/// Splash Southwest corner gradient color
+	const SPLASH_SW: &'static str = "#f7dc00";
+
 	pub fn adaptive() -> Theme {
 		Theme {
 			key: "adaptive",
@@ -86,6 +97,28 @@ impl Theme {
 			kind: ThemeKind::Static(ThemeVars::light())
 		}
     }
+
+    pub fn print_splash_vars(&self) -> String {
+	    let splash_blend = Theme::SPLASH_BLEND;
+	    let splash_bg = Theme::SPLASH_BG;
+	    let splash_fg = Theme::SPLASH_FG;
+	    let splash_ne = Theme::SPLASH_NE;
+	    let splash_nw = Theme::SPLASH_NW;
+	    let splash_se = Theme::SPLASH_SE;
+	    let splash_sw = Theme::SPLASH_SW;
+
+	    formatdoc!(r#"
+	    	body {{
+	            --splash-blend: {splash_blend};
+	            --splash-bg: {splash_bg};
+	            --splash-fg: {splash_fg};
+	            --splash-ne: {splash_ne};
+	            --splash-nw: {splash_nw};
+	            --splash-se: {splash_se};
+	            --splash-sw: {splash_sw};
+	        }}
+	    "#)
+    }
 }
 
 impl Default for Theme {
@@ -107,12 +140,7 @@ impl ThemeVars {
 			fg_2: String::from("#c9c9c9"),
 			fg_3: String::from("#b2b2b2"),
 			fg_mg: String::from("#989898"),
-			mg: String::from("#888"),
-			splash_blend: String::from("color"),
-			splash_ne: String::from("#43437d"),
-			splash_nw: String::from("#cc0a2e"),
-			splash_se: String::from("#9b0000"),
-			splash_sw: String::from("#f7dc00")
+			mg: String::from("#888")
 		}
     }
 
@@ -128,12 +156,7 @@ impl ThemeVars {
 			fg_2: String::from("#272727"),
 			fg_3: String::from("#444"),
 			fg_mg: String::from("#666"),
-			mg: String::from("#888"),
-			splash_blend: String::from("overlay"),
-			splash_ne: String::from("#444468"),
-			splash_nw: String::from("#ff4848"),
-			splash_se: String::from("#0072b7"),
-			splash_sw: String::from("#f9f97e")
+			mg: String::from("#888")
 		}
     }
 
@@ -149,11 +172,6 @@ impl ThemeVars {
 	    let fg_3 = &self.fg_3;
 	    let fg_mg = &self.fg_mg;
 	    let mg = &self.mg;
-	    let splash_blend = &self.splash_blend;
-	    let splash_ne = &self.splash_ne;
-	    let splash_nw = &self.splash_nw;
-	    let splash_se = &self.splash_se;
-	    let splash_sw = &self.splash_sw;
 
 	    formatdoc!(r#"
             --accent: {accent};
@@ -167,11 +185,6 @@ impl ThemeVars {
             --fg-3: {fg_3};
             --fg-mg: {fg_mg};
             --mg: {mg};
-            --splash-blend: {splash_blend};
-            --splash-ne: {splash_ne};
-            --splash-nw: {splash_nw};
-            --splash-se: {splash_se};
-            --splash-sw: {splash_sw};
 	    "#)
     }
 }
