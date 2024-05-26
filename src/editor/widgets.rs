@@ -336,22 +336,25 @@ pub fn layout(
         .join("\n");
 
     let external_icon = icons::external(language.translations.external_link);
-    let t_check_the_docs_for_more_information = language.translations.check_the_docs_for_more_information(&external_icon);
+    let t_documentation = language.translations.documentation;
     let t_close = language.translations.close;
     let t_language = language.translations.language;
+    let t_report_a_bug = language.translations.report_a_bug;
     let t_theme = language.translations.theme;
+    let t_version = language.translations.version;
+    let t_website = language.translations.website;
     let splash = formatdoc!(r#"
         <dialog class="splash_wrapper">
             <div class="splash">
-                <img alt="Hyper 8 Video System" src="/splash_logo.svg?{hyper8_version}">
+                <div class="image_wrapper">
+                    <img alt="Hyper 8 Video System" src="/splash_logo.svg?{hyper8_version}">
+                    <a class="version" href="https://codeberg.org/simonrepp/hyper8/src/branch/main/CHANGELOG.md" target="_blank">
+                        {external_icon}
+                        <span>{t_version} {hyper8_version}</span>
+                    </a>
+                </div>
                 <div class="pad">
-                    <ul autofocus>
-                        <!--li>Navigate the site's content in the left sidebar</li>
-                        <li>Make changes in the main area of the page</li>
-                        <li>Use the controls top-right to preview/deploy</li-->
-                        <li>{t_check_the_docs_for_more_information}</li>
-                    </ul>
-                    <form action="/change-editor-config" method="post">
+                    <form action="/change-editor-config" class="editor_config" method="post">
                         <input name="redirect" type="hidden">
                             <label for="language_code">{t_language}</label>
                             <select id="language_code" name="language_code">
@@ -363,15 +366,36 @@ pub fn layout(
                                 {theme_options}
                             </select>
                     </form>
-                    <div class="hsplit">
-                        <a href="https://simonrepp.com/hyper8" target="_blank">
-                            {external_icon}
-                            <span>Hyper 8 Video System {hyper8_version}</span>
-                        </a>
-                        <form method="dialog">
-                            <button autofocus>{t_close}</button>
-                        </form>
-                    </div>
+                    <ul autofocus>
+                        <li>
+                            <a href="https://simonrepp.com/hyper8" target="_blank">
+                                {external_icon} {t_website}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://simonrepp.com/hyper8/docs" target="_blank">
+                                {external_icon} {t_documentation}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://codeberg.org/simonrepp/hyper8/issues" target="_blank">
+                                {external_icon} {t_report_a_bug}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://liberapay.com/simonrepp" target="_blank">
+                                {external_icon} Liberapay
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://ko-fi.com/simonrepp" target="_blank">
+                                {external_icon} Ko-fi
+                            </a>
+                        </li>
+                    </ul>
+                    <form class="close" method="dialog">
+                        <button autofocus>{t_close}</button>
+                    </form>
                 </div>
             </div>
         </dialog>

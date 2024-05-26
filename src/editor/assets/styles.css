@@ -42,7 +42,7 @@ body {
     outline: none;
     padding: .3rem .6rem;
 }
-.breadcrumbs a:first-child { margin-left: -0.6rem; }
+.breadcrumbs a:first-child { margin-left: -.6rem; }
 .breadcrumbs a:focus-visible,
 .breadcrumbs a:hover {
     background-color: var(--bg-2);
@@ -92,9 +92,9 @@ button:hover {
 .controls {
     display: flex;
     position: fixed;
-    right: 0.5rem;
+    right: .5rem;
     row-gap: 1rem;
-    top: 0.5rem;
+    top: .5rem;
 }
 .controls a {
     align-items: center;
@@ -274,27 +274,13 @@ select {
     position: fixed;
     z-index: 13;
 }
-.splash .hsplit {
-    align-items: flex-end;
+.splash .close {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
 }
-.splash .hsplit a {
-    align-items: center;
-    color: var(--fg-3);
-    column-gap: .2rem;
-    display: flex;
-}
-.splash .hsplit a svg {
-    fill: var(--fg-3);
-    height: .9rem;
-    top: .05rem;
-    width: .9rem;
-}
-.splash .hsplit a,
-.splash .hsplit button {
-    font-size: .9rem;
-}
+.splash .close button { font-size: .9rem; }
+.splash .editor_config { columns: 2; }
+.splash .image_wrapper { position: relative; }
 .splash img {
     background:
         radial-gradient(ellipse at top left, var(--splash-nw), transparent),
@@ -308,13 +294,17 @@ select {
     display: block;
     max-width: 100%;
 }
+.splash li:not(:last-child) { margin-bottom: .5rem; }
 .splash .pad {
     border: 1px solid var(--bg-3);
     border-bottom-left-radius: .5rem;
     border-bottom-right-radius: .5rem;
     border-top-width: 0;
-    padding: 1.2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 2.5rem 1.5rem;
 }
+.splash select { margin-left: .5rem; }
 .splash svg {
     height: 1rem;
     position: relative;
@@ -322,9 +312,37 @@ select {
     width: 1rem;
 }
 .splash ul {
-    margin-top: 0;
+    columns: 2;
+    margin-bottom: 0;
     padding: 0;
     list-style: none;
+}
+.splash ul a:focus-visible,
+.splash ul a:hover {
+    color: var(--fg-3);
+}
+.splash .version {
+    align-items: center;
+    border: 1px solid #fff;
+    border-radius: .2rem;
+    bottom: .8rem;
+    color: #fff;
+    column-gap: .2rem;
+    display: flex;
+    font-size: .9rem;
+    padding: .2rem .4rem;
+    position: absolute;
+    right: .8rem;
+}
+.splash .version:focus-visible,
+.splash .version:hover {
+    background-color: #fff;
+    color: #000;
+}
+.splash .version svg {
+    height: .9rem;
+    top: 0;
+    width: .9rem;
 }
 .splash_wrapper {
     align-items: center;

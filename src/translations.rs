@@ -14,7 +14,6 @@ pub struct Translations {
     pub banner_image: &'static str,
     pub best: &'static str,
     pub browser_support_unclear: &'static str,
-    check_the_docs_for_more_information: &'static str,
     pub clean_urls_label: &'static str,
     pub close: &'static str,
     pub codec: &'static str,
@@ -50,6 +49,7 @@ pub struct Translations {
     pub deployment_server_label: &'static str,
     pub deployment_user_label: &'static str,
     pub description: &'static str,
+    pub documentation: &'static str,
     pub download: &'static str,
     pub empty: &'static str,
     pub empty_site: &'static str,
@@ -125,6 +125,7 @@ pub struct Translations {
     pub render_additional_format: &'static str,
     pub render_format: &'static str,
     pub replay: &'static str,
+    pub report_a_bug: &'static str,
     pub resolution: &'static str,
     pub resource_not_found: &'static str,
     pub sec: &'static str,
@@ -151,17 +152,15 @@ pub struct Translations {
     pub upload_new_video: &'static str,
     pub upload_poster: &'static str,
     pub url: &'static str,
+    pub version: &'static str,
     pub video: &'static str,
     pub video_not_yet_available: &'static str,
     pub videos: &'static str,
+    pub website: &'static str,
     pub worst: &'static str
 }
 
 impl Translations {
-    pub fn check_the_docs_for_more_information(&self, external_icon: &str) -> String {
-        self.check_the_docs_for_more_information.replace("{external_icon}", external_icon)
-    }
-
     pub fn de() -> Translations {
         Translations {
             a_permalink_defines_under_which_url_text: "Ein Permalink definiert unter welcher URL etwas öffentlich zugänglich ist, oder in anderen Worten, falls irgendwelche Links auf diese Resource verweisen, werden sie nicht mehr funktionieren nachdem du den Permalink geändert, und die Seite deployed hast.",
@@ -178,7 +177,6 @@ impl Translations {
             banner_image: "Banner",
             best: "Beste",
             browser_support_unclear: "Browserunterstützung unklar",
-            check_the_docs_for_more_information: r#"Für mehr Information schau in die <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} Dokumentation</a>"#,
             clean_urls_label: "Dekorative URLs (example.com/xyz/ statt example.com/xyz/index.html)",
             close: "Schließen",
             codec: "Codec",
@@ -214,6 +212,7 @@ impl Translations {
             deployment_server_label: "Deployment Server (z.b. ssh-customer123.example.com)",
             deployment_user_label: "Deployment Benutzername (z.b. customer123)",
             description: "Beschreibung",
+            documentation: "Dokumentation",
             download: "Download",
             empty: "Leer",
             empty_site: "Leere Seite",
@@ -289,6 +288,7 @@ impl Translations {
             render_additional_format: "Zusätzliches Format rendern",
             render_format: "Format rendern",
             replay: "Erneut abspielen",
+            report_a_bug: "Problem melden",
             resolution: "Auflösung",
             resource_not_found: "Resource nicht gefunden",
             sec: "sek",
@@ -315,9 +315,11 @@ impl Translations {
             upload_new_video: "Neues Video hochladen",
             upload_poster: "Poster hochladen",
             url: "URL",
+            version: "Version",
             video: "Video",
             video_not_yet_available: "Video noch nicht verfügbar.",
             videos: "Videos",
+            website: "Website",
             worst: "Schlechteste"
         }
     }
@@ -338,7 +340,6 @@ impl Translations {
             banner_image: "Banner Image",
             best: "Best",
             browser_support_unclear: "Browser support unclear",
-            check_the_docs_for_more_information: r#"Check the <a href="https://simonrepp.com/hyper8/docs" target="_blank">{external_icon} docs</a> for more information"#,
             clean_urls_label: "Clean URLs (example.com/xyz/ instead of example.com/xyz/index.html)",
             close: "Close",
             codec: "Codec",
@@ -374,6 +375,7 @@ impl Translations {
             deployment_server_label: "Deployment Server (e.g. ssh-customer123.example.com)",
             deployment_user_label: "Deployment User (e.g. customer123)",
             description: "Description",
+            documentation: "Documentation",
             download: "Download",
             empty: "Empty",
             empty_site: "Empty Site",
@@ -449,6 +451,7 @@ impl Translations {
             render_additional_format: "Render Additional Format",
             render_format: "Render Format",
             replay: "Replay",
+            report_a_bug: "Report a bug",
             resolution: "Resolution",
             resource_not_found: "Resource not found",
             sec: "sec",
@@ -475,9 +478,11 @@ impl Translations {
             upload_new_video: "Upload New Video",
             upload_poster: "Upload Poster",
             url: "URL",
+            version: "Version",
             video: "Video",
             video_not_yet_available: "Video not yet available.",
             videos: "Videos",
+            website: "Website",
             worst: "Worst"
         }
     }
@@ -499,7 +504,6 @@ fn check_translations() {
     ];
 
     for translations in &locales {
-        assert!(&translations.check_the_docs_for_more_information.contains("{external_icon}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
     }
