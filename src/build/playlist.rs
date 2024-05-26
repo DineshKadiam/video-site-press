@@ -11,6 +11,7 @@ use crate::build::widgets::{
     thumbnail,
     unlisted_badge
 };
+use crate::util::localized_date_d_mmmm_yyyy;
 
 pub fn playlist_html(
     context: &Context,
@@ -59,6 +60,13 @@ pub fn playlist_html(
                 let traversal_with_video = traversal.peek_video(video);
                 let traversal_with_video_prefix = traversal_with_video.file_prefix_desc();
 
+                let release_date = match video.release_date {
+                    Some(release_date) => {
+                        let formatted_date = localized_date_d_mmmm_yyyy(release_date, site.language.chrono_locale);
+                        format!(r#"<span class="release_date">{formatted_date}</span>"#)
+                    }
+                    None => String::new()
+                };
                 let number = index + 1;
                 let label = video.label(&site.language.translations);
                 let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
@@ -67,8 +75,9 @@ pub fn playlist_html(
                 formatdoc!(r#"
                     <a href="{video_href}">
                         <div>{video_thumbnail}</div>
-                        <div class="description">
-                            {number} {label}
+                        <div>
+                            <div class="caption">{label}</div>
+                            {release_date} <span class="number"># {number}</span>
                         </div>
                     </a>
                 "#)

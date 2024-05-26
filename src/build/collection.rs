@@ -256,7 +256,7 @@ fn render_playlist(
             formatdoc!(r#"
                 <a href="{video_href}">
                     {video_thumbnail}
-                    <div class="caption"> {title}</div>
+                    <div class="caption">{title}</div>
                     {release_date} <span class="number"># {number}</span>
                 </a>
             "#)
