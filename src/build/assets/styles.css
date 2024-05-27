@@ -151,7 +151,6 @@ img {
     padding: .5rem;
 }
 .medium_font { font-size: 1.2rem; }
-.outline { display: none; }
 /*.outline {
     display: flex;
     flex-direction: column;
@@ -229,6 +228,11 @@ img {
     width: 100%;
     z-index: 1;
 }
+.player_controls .timeline .bar.outline {
+    width: 100%;
+    z-index: 3;
+}
+.player_controls .timeline input:focus-visible + .bar.outline { outline: 1px solid var(--fg-1); }
 .player_controls .timeline .bar.progress {
     background-color: var(--fg-1);
     width: 0;

@@ -389,6 +389,7 @@ pub fn player(
                     <div class="bar backdrop"></div>
                     <div class="bar progress"></div>
                     <input aria-valuenow="0" aria-valuetext="00:00" max="{duration}" min="0" step="any" type="range" value="0">
+                    <div class="bar outline"></div>
                 </div>
                 <div class="control_pane">
                     <div>
@@ -546,7 +547,6 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
         begin_angle: f32,
         default: bool,
         src: &str,
-        tab_index: usize,
         resolution: &str,
         size: &str
     | -> String {
@@ -603,7 +603,7 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
                 <g
                     data-label="{resolution}"
                     data-src="{src}"
-                    tabindex="{tab_index}">
+                    tabindex="0">
                     {play_button}
                     <path d="M {segment_outer_begin_x},{segment_outer_begin_y}
                            A {outer_radius} {outer_radius} 0 {large_arc_flag} 1 {segment_outer_end_x},{segment_outer_end_y}
@@ -627,7 +627,7 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
     let usable_angle = 360.0 - sizes.len() as f32 * gap_angle;
     let mut begin_angle = gap_angle * 0.5;
 
-    for (index, (size, src, title)) in sizes.iter().enumerate() {
+    for (size, src, title) in sizes.iter() {
         let arc_angle = if sizes.len() == 1 {
             usable_angle
         } else {
@@ -642,7 +642,6 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
             begin_angle,
             default,
             src,
-            index + 1,
             title,
             &size_humanized
         );

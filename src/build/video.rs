@@ -46,22 +46,22 @@ pub fn video_html(
         }
     };
 
-    let outline_items = traversal.steps
-        .iter()
-        .filter(|step| !step.is_video(video))
-        .enumerate()
-        .map(|(index, step)| {
-            let prefix = "../".repeat(traversal.steps.len() - 1 - index);
-            step.context_for_video(&prefix, site, video)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    // let outline_items = traversal.steps
+    //     .iter()
+    //     .filter(|step| !step.is_video(video))
+    //     .enumerate()
+    //     .map(|(index, step)| {
+    //         let prefix = "../".repeat(traversal.steps.len() - 1 - index);
+    //         step.context_for_video(&prefix, site, video)
+    //     })
+    //     .collect::<Vec<String>>()
+    //     .join("\n");
 
-    let outline_rendered = formatdoc!(r#"
-        <div class="outline">
-            {outline_items}
-        </div>
-    "#);
+    // let outline_rendered = formatdoc!(r#"
+    //     <div class="outline">
+    //         {outline_items}
+    //     </div>
+    // "#);
 
     let player_rendered = player(site, video, next_video);
 
@@ -97,7 +97,6 @@ pub fn video_html(
             </p>
             {links_rendered}
         </div>
-        {outline_rendered}
     "#);
 
     let html = layout(&body, site, title, traversal);
