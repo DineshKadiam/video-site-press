@@ -76,6 +76,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     let mut jobs_sorted = Vec::new();
 
     for job in &*context.job_queue.lock().unwrap() {
+        // TODO: Html-escape user content (title), generally across this file (jobs.rs)
         let label = job.kind.representation(&language.translations);
         // TODO: Localize
         let status = match job.assigned_at {

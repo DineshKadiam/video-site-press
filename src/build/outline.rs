@@ -4,7 +4,11 @@ use indoc::formatdoc;
 use crate::{Collection, Playlist, Site, Video};
 use crate::build::thumbnail;
 use crate::build::widgets::{banner_html, poster_html};
-use crate::util::{casual_duration, localized_date_mmm_yyyy};
+use crate::util::{
+    casual_duration,
+    html_escape_outside_attribute,
+    localized_date_mmm_yyyy
+};
 
 pub struct Breadcrumb<'a> {
     pub href: String,
@@ -191,15 +195,18 @@ impl<'a> TraversalStep<'a> {
         match self {
             TraversalStep::Collection(collection) => {
                 let label = collection.label(&site.language.translations);
-                format!(r#"<a href="{href}">{label}</a>"#)
+                let e_label = html_escape_outside_attribute(label);
+                format!(r#"<a href="{href}">{e_label}</a>"#)
             }
             TraversalStep::Playlist(playlist) => {
                 let label = playlist.label(&site.language.translations);
-                format!(r#"<a href="{href}">{label}</a>"#)
+                let e_label = html_escape_outside_attribute(label);
+                format!(r#"<a href="{href}">{e_label}</a>"#)
             }
             TraversalStep::Video(video) => {
                 let label = video.label(&site.language.translations);
-                format!(r#"<a href="{href}">{label}</a>"#)
+                let e_label = html_escape_outside_attribute(label);
+                format!(r#"<a href="{href}">{e_label}</a>"#)
             }
         }
     }

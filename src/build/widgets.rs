@@ -16,7 +16,12 @@ use crate::{
 };
 use crate::build::outline::Traversal;
 use crate::icons;
-use crate::util::{casual_duration, human_size, precise_duration};
+use crate::util::{
+    casual_duration,
+    html_escape_outside_attribute,
+    human_size,
+    precise_duration
+};
 
 pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
@@ -263,8 +268,9 @@ pub fn links(language: &Language, links: &[Link]) -> String {
                 format!(r#"<a href="{url}" {rel_me} style="display: none;">hidden</a>"#)
             } else {
                 let label = link.pretty_label();
+                let e_label = html_escape_outside_attribute(&label);
                 formatdoc!(r#"
-                    <a class="link" href="{url}" {rel_me}>{external_icon} <span>{label}</span></a>
+                    <a class="link" href="{url}" {rel_me}>{external_icon} <span>{e_label}</span></a>
                 "#)
             }
         })

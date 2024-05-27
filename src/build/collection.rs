@@ -18,6 +18,7 @@ use crate::build::widgets::{
     thumbnail,
     unlisted_badge
 };
+use crate::util::html_escape_outside_attribute;
 
 pub fn collection_html(
     context: &Context,
@@ -25,13 +26,15 @@ pub fn collection_html(
     site: &Site,
     traversal: &Traversal
 ) {
+    let translations = &site.language.translations;
+
     let mut body = String::new();
 
-    let title = if collection.path == "" {
-        collection.title.as_deref().unwrap_or("Hyper 8")
-    } else {
-        collection.title.as_deref().unwrap_or_else(|| collection.slug())
+    let title = match &collection.title {
+        Some(title) => title,
+        None => if collection.path == "" { "Hyper 8" } else { collection.slug() }
     };
+    let e_title = html_escape_outside_attribute(title);
 
     // TODO: Hack to get margin to come out beneath header - replace with something proper soon
     body.push_str(r#"<div style="margin-top: 4rem;"></div>"#);
@@ -42,9 +45,9 @@ pub fn collection_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(collection.unlisted, &site.language.translations);
+    let unlisted = unlisted_badge(collection.unlisted, &translations);
 
-    body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
+    body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
     if let Some(description) = &collection.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -72,15 +75,18 @@ pub fn collection_html(
                     }
                     None => String::new()
                 };
-                let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+                let e_title = match &video.title {
+                    Some(title) => html_escape_outside_attribute(title),
+                    None => video.slug().to_string()
+                };
 
-                let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
+                let video_thumbnail = thumbnail(&translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"
                     <a href="{video_href}">
                         {video_thumbnail}
-                        <div class="caption">{title}</div>
+                        <div class="caption">{e_title}</div>
                         {release_date}
                     </a>
                 "#)
@@ -144,6 +150,7 @@ fn render_collection(
 
     let collection_href = traversal_with_collection.index_desc(site);
 
+    // TODO: Here and elsewhere - are we using the alt text already here? Probably not?
     if let Some(banner) = &collection.banner {
         let banner = banner_html(banner, &traversal_with_collection_prefix);
 
@@ -151,8 +158,6 @@ fn render_collection(
 
         output.push_str(&wrapped);
     }
-
-    let title = &collection.title.as_deref().unwrap_or_else(|| collection.slug());
 
     let videos = collection.public_videos_desc_by_release_date();
 
@@ -170,14 +175,17 @@ fn render_collection(
                     }
                     None => String::new()
                 };
-                let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+                let e_title = match &video.title {
+                    Some(title) => html_escape_outside_attribute(title),
+                    None => video.slug().to_string()
+                };
                 let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"
                     <a href="{video_href}">
                         {video_thumbnail}
-                        <div class="caption">{title}</div>
+                        <div class="caption">{e_title}</div>
                         {release_date}
                     </a>
                 "#)
@@ -206,10 +214,14 @@ fn render_collection(
         output.push_str(&rendered);
     }
 
+    let e_title = match &collection.title {
+        Some(title) => html_escape_outside_attribute(title),
+        None => collection.slug().to_string()
+    };
     formatdoc!(r#"
         <h2>
             <a href="{collection_href}">
-                {title}
+                {e_title}
             </a>
         </h2>
 
@@ -222,8 +234,6 @@ fn render_playlist(
     site: &Site,
     traversal: &Traversal
 ) -> String {
-    let title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
-
     let traversal_with_playlist = traversal.peek_playlist(playlist);
     let traversal_with_playlist_prefix = traversal_with_playlist.file_prefix_desc();
 
@@ -248,7 +258,10 @@ fn render_playlist(
                 None => String::new()
             };
             let number = index + 1;
-            let title = video.title.as_deref().unwrap_or_else(|| video.slug());
+            let e_title = match &video.title {
+                Some(title) => html_escape_outside_attribute(title),
+                None => video.slug().to_string()
+            };
 
             let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
 
@@ -256,7 +269,7 @@ fn render_playlist(
             formatdoc!(r#"
                 <a href="{video_href}">
                     {video_thumbnail}
-                    <div class="caption">{title}</div>
+                    <div class="caption">{e_title}</div>
                     {release_date} <span class="number"># {number}</span>
                 </a>
             "#)
@@ -270,9 +283,13 @@ fn render_playlist(
         </div>
     "#);
 
+    let e_title = match &playlist.title {
+        Some(title) => html_escape_outside_attribute(title),
+        None => playlist.slug().to_string()
+    };
     let playlist_href = traversal_with_playlist.index_desc(site);
     formatdoc!(r#"
-        <h2><a href="{playlist_href}">{title}</a></h2>
+        <h2><a href="{playlist_href}">{e_title}</a></h2>
         <a href="{playlist_href}">{banner}</a>
         {videos_rendered}
     "#)

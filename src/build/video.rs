@@ -6,7 +6,10 @@ use indoc::formatdoc;
 use crate::{Context, MarkdownSubset, Playlist, Site, Video};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_link, downloads, layout, links, player, unlisted_badge};
-use crate::util::localized_date_d_mmmm_yyyy;
+use crate::util::{
+    html_escape_outside_attribute,
+    localized_date_d_mmmm_yyyy
+};
 
 pub fn video_html(
     context: &Context,
@@ -21,7 +24,12 @@ pub fn video_html(
     } else {
         String::new()
     };
-    let title = video.title.as_deref().unwrap_or(video.slug());
+
+    let title = match &video.title {
+        Some(title) => title,
+        None => if video.path == "" { "Hyper 8" } else { video.slug() }
+    };
+    let e_title = html_escape_outside_attribute(title);
 
     let downloads_widget = downloads(site, video);
 
@@ -84,7 +92,7 @@ pub fn video_html(
         <div class="video_info">
             <div class="align apart flex" style="margin-top: 2rem;">
                 <div>
-                    <h1 class="video_title">{title} {unlisted}</h1>
+                    <h1 class="video_title">{e_title} {unlisted}</h1>
                     {release_date}
                 </div>
                 <div class="actions align flex space">

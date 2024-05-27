@@ -7,7 +7,7 @@ use indoc::formatdoc;
 
 use crate::{Collection, Context, SiteContent, Translations, Video};
 use crate::editor::widgets::layout;
-use crate::util::human_size;
+use crate::util::{html_escape_outside_attribute, human_size};
 
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     let language = context.get_editor_language();
@@ -116,7 +116,8 @@ fn storage_stats_html(translations: &Translations, videos: &Vec<Arc<Video>>) -> 
             let link = format!("/video/{path}");
             let size = version.file_meta.size;
             let title = format!("{}: {}", video.label(translations), version.file_name);
-            sizes.push((size, link, title));
+            let e_title = html_escape_outside_attribute(&title);
+            sizes.push((size, link, e_title));
             total_size += size;
         }
     }

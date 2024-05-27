@@ -11,7 +11,10 @@ use crate::build::widgets::{
     thumbnail,
     unlisted_badge
 };
-use crate::util::localized_date_d_mmmm_yyyy;
+use crate::util::{
+    html_escape_outside_attribute,
+    localized_date_d_mmmm_yyyy
+};
 
 pub fn playlist_html(
     context: &Context,
@@ -19,13 +22,15 @@ pub fn playlist_html(
     site: &Site,
     traversal: &Traversal
 ) {
+    let translations = &site.language.translations;
+
     let mut body = String::new();
 
-    let title = if playlist.path == "" {
-        playlist.title.as_deref().unwrap_or("Hyper 8")
-    } else {
-        playlist.title.as_deref().unwrap_or_else(|| playlist.slug())
+    let title = match &playlist.title {
+        Some(title) => title,
+        None => if playlist.path == "" { "Hyper 8" } else { playlist.slug() }
     };
+    let e_title = html_escape_outside_attribute(title);
 
     // TODO: Hack to get margin to come out beneath header - replace with something proper soon
     body.push_str(r#"<div style="margin-top: 4rem;"></div>"#);
@@ -36,9 +41,9 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(playlist.unlisted, &site.language.translations);
+    let unlisted = unlisted_badge(playlist.unlisted, &translations);
 
-    body.push_str(&format!("<h1>{title} {unlisted}</h1>\n\n"));
+    body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
     if let Some(description) = &playlist.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -68,8 +73,8 @@ pub fn playlist_html(
                     None => String::new()
                 };
                 let number = index + 1;
-                let label = video.label(&site.language.translations);
-                let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
+                let label = video.label(&translations);
+                let video_thumbnail = thumbnail(&translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"

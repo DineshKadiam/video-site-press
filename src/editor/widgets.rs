@@ -14,12 +14,18 @@ use crate::{
     Playlist,
     Site,
     SiteContent,
+    Theme,
     Translations,
     Video
 };
 use crate::editor::Input;
 use crate::icons;
-use crate::util::{human_size, precise_duration};
+use crate::util::{
+    html_escape_inside_attribute,
+    html_escape_outside_attribute,
+    human_size,
+    precise_duration
+};
 
 /// Generic add link form, submit_url should be something like "/add-playlist-link/path/to/playlist"
 pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
@@ -101,8 +107,9 @@ fn collection_tree(
                     .is_some_and(|rest| rest.starts_with('/'))
             ) {
                 let label = collection.title.as_deref().unwrap_or_else(|| collection.slug());
+                let e_label = html_escape_outside_attribute(label);
                 let (icon, space) = if active { (collection_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{e_label}</a>"#));
             }
 
             let collection_content = collection_tree(breadcrumbs, collection, context, path, translations);
@@ -152,8 +159,9 @@ fn collection_tree(
                     .is_some_and(|rest| rest.starts_with('/'))
             ) {
                 let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
+                let e_label = html_escape_outside_attribute(label);
                 let (icon, space) = if active { (playlist_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{label}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{e_label}</a>"#));
             }
 
             let children = if playlist.videos.is_empty() {
@@ -179,7 +187,8 @@ fn collection_tree(
 
                         if active {
                             let label = video.title.as_deref().unwrap_or_else(|| video.slug());
-                            breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {label}</a>"#));
+                            let e_label = html_escape_outside_attribute(label);
+                            breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {e_label}</a>"#));
                         }
 
                         formatdoc!(r#"
@@ -239,7 +248,8 @@ fn collection_tree(
 
             if active {
                 let label = video.title.as_deref().unwrap_or_else(|| video.slug());
-                breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {label}</a>"#));
+                let e_label = html_escape_outside_attribute(label);
+                breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {e_label}</a>"#));
             }
 
             formatdoc!(r#"
@@ -297,9 +307,10 @@ pub fn layout(
     let (breadcrumbs, tree) = site_tree(context, path, site, &context.site_dir, &language.translations);
 
     // TODO: Possibly hash scripts/styles
+    let e_title = html_escape_outside_attribute(title);
     let head = formatdoc!(r#"
         <head>
-            <title>{title}</title>
+            <title>{e_title}</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <link href="/favicon.png" rel="icon" type="image/png">
@@ -309,97 +320,7 @@ pub fn layout(
         </head>
     "#);
 
-    let hyper8_version = env!("CARGO_PKG_VERSION");
-
-    let language_options = [("de", "Deutsch"), ("en", "English")]
-        .into_iter()
-        .map(|(code, label)| {
-            let selected = if code == &language.code { "selected" } else { "" };
-            format!(r#"<option {selected} value="{code}">{label}</option>"#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-
-    let theme = context.get_editor_theme();
-
-    let theme_options = [
-        ("adaptive", language.translations.adaptive),
-        ("dark", language.translations.dark),
-        ("light", language.translations.light)
-    ]
-        .into_iter()
-        .map(|(key, label)| {
-            let selected = if &key == &theme.key { "selected" } else { "" };
-            format!(r#"<option {selected} value="{key}">{label}</option>"#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-
-    let external_icon = icons::external(language.translations.external_link);
-    let t_documentation = language.translations.documentation;
-    let t_close = language.translations.close;
-    let t_language = language.translations.language;
-    let t_report_a_bug = language.translations.report_a_bug;
-    let t_theme = language.translations.theme;
-    let t_version = language.translations.version;
-    let t_website = language.translations.website;
-    let splash = formatdoc!(r#"
-        <dialog class="splash_wrapper">
-            <div class="splash">
-                <div class="image_wrapper">
-                    <img alt="Hyper 8 Video System" src="/splash_logo.svg?{hyper8_version}">
-                    <a class="version" href="https://codeberg.org/simonrepp/hyper8/src/branch/main/CHANGELOG.md" target="_blank">
-                        {external_icon}
-                        <span>{t_version} {hyper8_version}</span>
-                    </a>
-                </div>
-                <div class="pad">
-                    <form action="/change-editor-config" class="editor_config" method="post">
-                        <input name="redirect" type="hidden">
-                            <label for="language_code">{t_language}</label>
-                            <select id="language_code" name="language_code">
-                                {language_options}
-                            </select>
-                            <span style="display: inline-block; width: 1rem;"></span>
-                            <label for="theme_key">{t_theme}</label>
-                            <select id="theme_key" name="theme_key">
-                                {theme_options}
-                            </select>
-                    </form>
-                    <ul autofocus>
-                        <li>
-                            <a href="https://simonrepp.com/hyper8" target="_blank">
-                                {external_icon} {t_website}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://simonrepp.com/hyper8/docs" target="_blank">
-                                {external_icon} {t_documentation}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://codeberg.org/simonrepp/hyper8/issues" target="_blank">
-                                {external_icon} {t_report_a_bug}
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://liberapay.com/simonrepp" target="_blank">
-                                {external_icon} Liberapay
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://ko-fi.com/simonrepp" target="_blank">
-                                {external_icon} Ko-fi
-                            </a>
-                        </li>
-                    </ul>
-                    <form class="close" method="dialog">
-                        <button autofocus>{t_close}</button>
-                    </form>
-                </div>
-            </div>
-        </dialog>
-    "#);
+    let splash_screen_rendered = splash_screen(language, context.get_editor_theme());
 
     let t_configure_deployment = language.translations.configure_deployment;
     let configure_icon = icons::configure(language.translations.configure);
@@ -480,6 +401,7 @@ pub fn layout(
     };
 
     let storage_usage = human_size(site.storage_usage());
+    let hyper8_version = env!("CARGO_PKG_VERSION");
     let logo_icon = icons::logo(language.translations.hyper8_logo);
     let t_preview = language.translations.preview;
     let preview_icon = icons::preview(t_preview);
@@ -505,7 +427,7 @@ pub fn layout(
                         {body}
                     </main>
                 </div>
-                {splash}
+                {splash_screen_rendered}
                 <template id="configure_icon">
                     {configure_icon}
                 </template>
@@ -542,12 +464,18 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
     let links_rendered = links
         .iter()
         .map(|link| {
-            let label = &link.label.as_deref().unwrap_or("");
-            let url = &link.url;
+            let (e_label, label_value) = match &link.label {
+                Some(label) => (
+                    html_escape_outside_attribute(label),
+                    format!(r#"value="{}""#, html_escape_inside_attribute(label))
+                ),
+                None => (String::new(), String::new())
+            };
+            let url = html_escape_inside_attribute(&link.url.to_string());
 
             let delete_form = formatdoc!(r#"
                 <form action="{submit_url}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
-                    <input name="label" type="hidden" value="{label}">
+                    <input name="label" type="hidden" {label_value}>
                     <input name="url" type="hidden" value="{url}">
                     <button class="delete_button">{delete_icon}</button>
                 </form>
@@ -558,7 +486,7 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
 
             formatdoc!(r#"
                 <div class="button_group">
-                    <span>{label} {rel_me} {hidden}<br>{url}</span>
+                    <span>{e_label} {rel_me} {hidden}<br>{url}</span>
                     {delete_form}
                 </div>
             "#)
@@ -620,8 +548,9 @@ pub fn site_tree(
 
             if path.is_some() {
                 let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
+                let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 let (icon, space) = if root_active { (collection_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{breadcrumb_title}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{e_breadcrumb_title}</a>"#));
             }
 
             let collection_content = collection_tree(&mut breadcrumbs, collection, context, path, translations);
@@ -670,11 +599,13 @@ pub fn site_tree(
 
             if path.is_some() {
                 let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
+                let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 let (icon, space) = if root_active { (playlist_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{breadcrumb_title}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{e_breadcrumb_title}</a>"#));
             }
 
             let videos = if playlist.videos.is_empty() {
+                // TODO: Debug this state/logic, not really wanted/finished
                 formatdoc!(r#"
                     <li>
                         <span class="muted">Empty</span>
@@ -752,8 +683,9 @@ pub fn site_tree(
 
             if path.is_some() {
                 let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
+                let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 let (icon, space) = if root_active { (video_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{breadcrumb_title}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{e_breadcrumb_title}</a>"#));
             }
 
             tree_node(
@@ -783,6 +715,99 @@ pub fn site_tree(
     (breadcrumbs, site_content)
 }
 
+pub fn splash_screen(language: &Language, theme: Theme) -> String {
+    let translations = &language.translations;
+
+    let language_options = [("de", "Deutsch"), ("en", "English")]
+        .into_iter()
+        .map(|(code, label)| {
+            let selected = if code == &language.code { "selected" } else { "" };
+            format!(r#"<option {selected} value="{code}">{label}</option>"#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let theme_options = [
+        ("adaptive", translations.adaptive),
+        ("dark", translations.dark),
+        ("light", translations.light)
+    ]
+        .into_iter()
+        .map(|(key, label)| {
+            let selected = if &key == &theme.key { "selected" } else { "" };
+            format!(r#"<option {selected} value="{key}">{label}</option>"#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let external_icon = icons::external(translations.external_link);
+    let hyper8_version = env!("CARGO_PKG_VERSION");
+    let t_documentation = translations.documentation;
+    let t_close = translations.close;
+    let t_language = translations.language;
+    let t_report_a_bug = translations.report_a_bug;
+    let t_theme = translations.theme;
+    let t_version = translations.version;
+    let t_website = translations.website;
+    formatdoc!(r#"
+        <dialog class="splash_wrapper">
+            <div class="splash">
+                <div class="image_wrapper">
+                    <img alt="Hyper 8 Video System" src="/splash_logo.svg?{hyper8_version}">
+                    <a class="version" href="https://codeberg.org/simonrepp/hyper8/src/branch/main/CHANGELOG.md" target="_blank">
+                        {external_icon}
+                        <span>{t_version} {hyper8_version}</span>
+                    </a>
+                </div>
+                <div class="pad">
+                    <form action="/change-editor-config" class="editor_config" method="post">
+                        <input name="redirect" type="hidden">
+                            <label for="language_code">{t_language}</label>
+                            <select id="language_code" name="language_code">
+                                {language_options}
+                            </select>
+                            <span style="display: inline-block; width: 1rem;"></span>
+                            <label for="theme_key">{t_theme}</label>
+                            <select id="theme_key" name="theme_key">
+                                {theme_options}
+                            </select>
+                    </form>
+                    <ul autofocus>
+                        <li>
+                            <a href="https://simonrepp.com/hyper8" target="_blank">
+                                {external_icon} {t_website}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://simonrepp.com/hyper8/docs" target="_blank">
+                                {external_icon} {t_documentation}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://codeberg.org/simonrepp/hyper8/issues" target="_blank">
+                                {external_icon} {t_report_a_bug}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://liberapay.com/simonrepp" target="_blank">
+                                {external_icon} Liberapay
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://ko-fi.com/simonrepp" target="_blank">
+                                {external_icon} Ko-fi
+                            </a>
+                        </li>
+                    </ul>
+                    <form class="close" method="dialog">
+                        <button autofocus>{t_close}</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+    "#)
+}
+
 fn tree_node(
     active: bool,
     errors: &[String],
@@ -805,15 +830,15 @@ fn tree_node(
         "#)
     };
     let t_no_title = translations.no_title;
-    let title = title_option
-        .map(|title| title.to_string())
+    let e_title = title_option
+        .map(|title| html_escape_outside_attribute(title))
         .unwrap_or(format!(r#"<span class="muted">{t_no_title}</span>"#));
 
     let title_with_unlisted_badge = if unlisted {
         let t_unlisted = translations.unlisted;
-        format!(r#"<div>{title} <span class="unlisted_badge">{t_unlisted}</span></div>"#)
+        format!(r#"<div>{e_title} <span class="unlisted_badge">{t_unlisted}</span></div>"#)
     } else {
-        title
+        e_title
     };
 
     let depth = if href.ends_with('/') { 0 } else { href.split('/').count() - 2 };
