@@ -310,7 +310,7 @@ pub fn edit_page(
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_update_permalink}</button> {feedback}
+                    <button class="danger">{t_update_permalink}</button> {feedback}
                 </div>
             </form>
         "#)
@@ -333,7 +333,7 @@ pub fn edit_page(
         </p>
 
         <form action="/convert-to-collection/{path}" method="post">
-            <button>{t_convert_to_collection}</button>
+            <button class="danger">{t_convert_to_collection}</button>
         </form>
     "#);
 
@@ -349,7 +349,7 @@ pub fn edit_page(
             <p>{message}</p>
 
             <form action="/convert-to-video/{path}" method="post">
-                <button>{t_convert_to_video}</button>
+                <button class="danger">{t_convert_to_video}</button>
             </form>
         "#)
     } else {
@@ -366,6 +366,7 @@ pub fn edit_page(
 
     let t_banner_image = language.translations.banner_image;
     let t_danger_zone = language.translations.danger_zone;
+    let t_delete = language.translations.delete;
     let t_delete_playlist = language.translations.delete_playlist;
     let t_deleting_the_playlist_text = language.translations.deleting_the_playlist_text;
     let t_new_video = language.translations.new_video;
@@ -419,8 +420,13 @@ pub fn edit_page(
                 {t_deleting_the_playlist_text}
             </p>
 
-            <form action="/delete-playlist/{path}" method="post">
-                <button onclick="if (!confirm('{t_really_delete}')) {{ return false; }}">{t_delete_playlist}</button>
+            <form
+                action="/delete-playlist/{path}"
+                data-confirm
+                data-confirm-label="{t_delete}"
+                data-confirm-text="{t_really_delete}"
+                method="post">
+                <button class="danger">{t_delete_playlist}</button>
             </form>
         </div>
     "#);

@@ -31,6 +31,12 @@ pub struct ThemeVars {
 	pub bg_3: String,
 	/// Between background and middleground
 	pub bg_mg: String,
+	/// Indicate dangerous action, e.g. button background (practically speaking: dark-red)
+	pub danger_bg: String,
+	/// Indicate dangerous action, e.g. button foreground (practically speaking: white)
+	pub danger_fg: String,
+	/// Indicate dangerous action, e.g. button middleground/hover (practically speaking: bright-red)
+	pub danger_mg: String,
 	/// Foreground 1 (closest/top layer)
 	pub fg_1: String,
 	/// Foreground 2 (closer)
@@ -136,6 +142,9 @@ impl ThemeVars {
 			bg_2: String::from("#262626"),
 			bg_3: String::from("#333"),
 			bg_mg: String::from("#444"),
+			danger_bg: String::from("hsl(350, 55%, 40.5%)"),
+			danger_fg: String::from("var(--fg-1)"),
+			danger_mg: String::from("hsl(350, 55%, 50.5%)"),
 			fg_1: String::from("#fff"),
 			fg_2: String::from("#c9c9c9"),
 			fg_3: String::from("#b2b2b2"),
@@ -152,6 +161,9 @@ impl ThemeVars {
 			bg_2: String::from("#eee"),
 			bg_3: String::from("#ddd"),
 			bg_mg: String::from("#ccc"),
+			danger_bg: String::from("hsl(350, 55%, 40.5%)"),
+			danger_fg: String::from("var(--bg-1)"),
+			danger_mg: String::from("hsl(350, 55%, 50.5%)"),
 			fg_1: String::from("#000"),
 			fg_2: String::from("#272727"),
 			fg_3: String::from("#444"),
@@ -167,6 +179,9 @@ impl ThemeVars {
 	    let bg_2 = &self.bg_2;
 	    let bg_3 = &self.bg_3;
 	    let bg_mg = &self.bg_mg;
+	    let danger_bg = &self.danger_bg;
+	    let danger_fg = &self.danger_fg;
+	    let danger_mg = &self.danger_mg;
 	    let fg_1 = &self.fg_1;
 	    let fg_2 = &self.fg_2;
 	    let fg_3 = &self.fg_3;
@@ -180,6 +195,9 @@ impl ThemeVars {
             --bg-2: {bg_2};
             --bg-3: {bg_3};
             --bg-mg: {bg_mg};
+            --danger-bg: {danger_bg};
+            --danger-fg: {danger_fg};
+            --danger-mg: {danger_mg};
             --fg-1: {fg_1};
             --fg-2: {fg_2};
             --fg-3: {fg_3};

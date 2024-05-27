@@ -433,7 +433,7 @@ pub fn edit_page(
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_update_permalink}</button> {feedback}
+                    <button class="danger">{t_update_permalink}</button> {feedback}
                 </div>
             </form>
         "#)
@@ -484,7 +484,7 @@ pub fn edit_page(
             </p>
 
             <form action="/convert-to-playlist/{path}" method="post">
-                <button>{t_convert_to_playlist}</button>
+                <button class="danger">{t_convert_to_playlist}</button>
             </form>
         "#)
     } else {
@@ -506,7 +506,7 @@ pub fn edit_page(
             <p>{message}</p>
 
             <form action="/convert-to-video/{path}" method="post">
-                <button>{t_convert_to_video}</button>
+                <button class="danger">{t_convert_to_video}</button>
             </form>
         "#)
     } else {
@@ -526,6 +526,7 @@ pub fn edit_page(
     let t_create_playlist = language.translations.create_playlist;
     let t_create_subcollection = language.translations.create_subcollection;
     let t_danger_zone = language.translations.danger_zone;
+    let t_delete = language.translations.delete;
     let t_delete_collection = language.translations.delete_collection;
     let t_deleting_the_collection_text = language.translations.deleting_the_collection_text;
     let t_new_playlist = language.translations.new_playlist;
@@ -603,8 +604,13 @@ pub fn edit_page(
                 {t_deleting_the_collection_text}
             </p>
 
-            <form action="/delete-collection/{path}" method="post">
-                <button onclick="if (!confirm('{t_really_delete}')) {{ return false; }}">{t_delete_collection}</button>
+            <form
+                action="/delete-collection/{path}"
+                data-confirm
+                data-confirm-label="{t_delete}"
+                data-confirm-text="{t_really_delete}"
+                method="post">
+                <button class="danger">{t_delete_collection}</button>
             </form>
         </div>
     "#);

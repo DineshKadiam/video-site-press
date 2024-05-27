@@ -551,7 +551,13 @@ pub fn edit_page(
                 let t_really_delete = language.translations.really_delete;
                 let delete_icon = icons::failure(t_delete);
                 let delete_form = formatdoc!(r#"
-                    <form action="/delete-version/{path}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
+                    <form
+                    action="/delete-version/{path}"
+                    data-confirm
+                    data-confirm-label="{t_delete}"
+                    data-confirm-text="{t_really_delete}"
+                    method="post"
+                    style="display: inline;">
                         <input name="file_name" type="hidden" value="{file_name}">
                         <button class="delete_button">{delete_icon}</button>
                     </form>
@@ -696,7 +702,7 @@ pub fn edit_page(
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_update_permalink}</button> {feedback}
+                    <button class="danger">{t_update_permalink}</button> {feedback}
                 </div>
             </form>
         "#)
@@ -721,13 +727,13 @@ pub fn edit_page(
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
         </p>
         <form action="/convert-to-collection/{path}" method="post">
-            <button>{t_move_into_new_collection}</button>
+            <button class="danger">{t_move_into_new_collection}</button>
         </form>
         <p>
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist}
         </p>
         <form action="/convert-to-playlist/{path}" method="post">
-            <button>{t_move_into_new_playlist}</button>
+            <button class="danger">{t_move_into_new_playlist}</button>
         </form>
     "#);
 
@@ -742,6 +748,7 @@ pub fn edit_page(
     let links_form = links(&video.links, &format!("/delete-video-link/{path}"), &language.translations);
 
     let t_danger_zone = language.translations.danger_zone;
+    let t_delete = language.translations.delete;
     let t_delete_video = language.translations.delete_video;
     let t_deleting_the_video_text = language.translations.deleting_the_video_text;
     let t_poster_image = language.translations.poster_image;
@@ -795,8 +802,13 @@ pub fn edit_page(
                 {t_deleting_the_video_text}
             </p>
 
-            <form action="/delete-video/{path}" method="post">
-                <button onclick="if (!confirm('{t_really_delete}')) {{ return false; }}">{t_delete_video}</button>
+            <form
+                action="/delete-video/{path}"
+                data-confirm
+                data-confirm-label="{t_delete}"
+                data-confirm-text="{t_really_delete}"
+                method="post">
+                <button class="danger">{t_delete_video}</button>
             </form>
         </div>
     "#);

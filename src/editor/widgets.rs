@@ -323,6 +323,7 @@ pub fn layout(
     let splash_screen_rendered = splash_screen(language, context.get_editor_theme());
 
     let t_configure_deployment = language.translations.configure_deployment;
+    let t_deploy = language.translations.deploy;
     let configure_icon = icons::configure(language.translations.configure);
     let deployment_icon = icons::deployment(language.translations.deployment);
     let deployment_button = match site.deploy_config.complete() {
@@ -337,10 +338,19 @@ pub fn layout(
                     </a>
                 "#)
             } else {
+                let base_url = match &site.base_url {
+                    Some(base_url) => format!(" ({base_url})"),
+                    None => String::new()
+                };
                 let t_deploy = language.translations.deploy;
                 let t_really_deploy = language.translations.really_deploy;
                 formatdoc!(r#"
-                    <form action="/deploy" method="post" onsubmit="return confirm('{t_really_deploy}');">
+                    <form
+                        action="/deploy"
+                        data-confirm
+                        data-confirm-label="{t_deploy}"
+                        data-confirm-text="{t_really_deploy}{base_url}"
+                        method="post"">
                         <button>{deployment_icon} {t_deploy}</button>
                     </form>
                 "#)
@@ -400,6 +410,10 @@ pub fn layout(
         }
     };
 
+    let data_base_url = match &site.base_url {
+        Some(base_url) => format!(r#"data-base-url="{base_url}""#),
+        None => String::new()
+    };
     let storage_usage = human_size(site.storage_usage());
     let hyper8_version = env!("CARGO_PKG_VERSION");
     let logo_icon = icons::logo(language.translations.hyper8_logo);
@@ -407,9 +421,10 @@ pub fn layout(
     let preview_icon = icons::preview(t_preview);
     let storage_icon = icons::storage(language.translations.storage_usage);
     let t_about = language.translations.about;
+    let t_cancel = language.translations.cancel;
     let t_filter = language.translations.filter;
     let body = formatdoc!(r#"
-            <body data-version="{hyper8_version}">
+            <body {data_base_url} data-version="{hyper8_version}">
                 <div class="controls">
                     {processing_link}
                     <a href="/">{storage_icon} {storage_usage}</a>
@@ -430,6 +445,15 @@ pub fn layout(
                 {splash_screen_rendered}
                 <template id="configure_icon">
                     {configure_icon}
+                </template>
+                <template id="confirmation_dialog">
+                    <dialog class="confirmation_wrapper">
+                        <div class="text"></div>
+                        <div class="buttons">
+                            <button autofocus class="cancel">{t_cancel}</button>
+                            <button class="confirm danger"></button>
+                        </div>
+                    </dialog>
                 </template>
                 <template id="deployment_icon">
                     {deployment_icon}
@@ -460,7 +484,6 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
     let t_hidden = translations.hidden;
     let t_really_delete = translations.really_delete;
     let delete_icon = icons::failure(t_delete);
-
     let links_rendered = links
         .iter()
         .map(|link| {
@@ -474,7 +497,13 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
             let url = html_escape_inside_attribute(&link.url.to_string());
 
             let delete_form = formatdoc!(r#"
-                <form action="{submit_url}" method="post" onsubmit="return confirm('{t_really_delete}');" style="display: inline;">
+                <form
+                    action="{submit_url}"
+                    data-confirm
+                    data-confirm-label="{t_delete}"
+                    data-confirm-text="{t_really_delete}"
+                    method="post"
+                    style="display: inline;">
                     <input name="label" type="hidden" {label_value}>
                     <input name="url" type="hidden" value="{url}">
                     <button class="delete_button">{delete_icon}</button>

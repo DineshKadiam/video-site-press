@@ -80,6 +80,14 @@ button:hover {
     background-color: var(--bg-3);
     outline: none;
 }
+button.danger {
+    background-color: var(--danger-bg);
+    color: var(--danger-fg);
+}
+button.danger:focus-visible,
+button.danger:hover {
+    background-color: var(--danger-mg);
+}
 .button_group {
     column-gap: .5rem;
     display: flex;
@@ -88,6 +96,27 @@ button:hover {
 .collection_title {
     color: var(--bg-1);
     font-size: 1.17rem;
+}
+.confirmation_wrapper {
+    background-color: var(--bg-1);
+    border-radius: .5rem;
+    border: 1px solid var(--bg-3);
+    color: var(--fg-2);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    row-gap: 2rem;
+}
+.confirmation_wrapper::backdrop {
+    /* This is not yet working in some browsers as of April 2024, but will, gradually.
+       see https://stackoverflow.com/questions/58818299/css-variables-not-working-in-dialogbackdrop) 
+       (TODO: This note can be removed ~2025 or so probably) */
+    background-color: var(--bg-1-overlay);
+}
+.confirmation_wrapper .buttons {
+    column-gap: .5rem;
+    display: flex;
+    justify-content: flex-end;
 }
 .controls {
     display: flex;

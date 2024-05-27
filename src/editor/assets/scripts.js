@@ -1,4 +1,5 @@
 const configureIcon = document.querySelector('#configure_icon');
+const confirmationDialog = document.querySelector('#confirmation_dialog');
 const deploymentElement = document.querySelector('#deployment');
 const deploymentFeedback = document.querySelector('#deployment_feedback');
 const deploymentIcon = document.querySelector('#deployment_icon');
@@ -56,9 +57,9 @@ function fetchProcessing() {
                 form.method = 'post';
 
                 form.addEventListener('submit', event => {
-                    if (!confirm(t.reallyDeploy)) {
-                        event.preventDefault();
-                    }
+                    event.preventDefault();
+                    const baseUrl = document.body.dataset.baseUrl;
+                    hyperConfirm(() => form.submit(), t.deploy, `${t.reallyDeploy} (${baseUrl})`);
                 });
 
                 const button = document.createElement('button');
@@ -133,6 +134,39 @@ function fetchProcessing() {
                 processing.lastUpdate = response.lastUpdate;
             }
         });
+}
+
+function hyperConfirm(callback, label, text) {
+    const dialog = confirmationDialog.content.cloneNode(true);
+
+    dialog.querySelector('.confirm').textContent = label;
+    dialog.querySelector('.text').textContent = text;
+
+    document.body.appendChild(dialog);
+
+    // For some reason .showModal and .remove would not work on dialog itself,
+    // so we "re-query" the element from the DOM after having appended it.
+    // Possibly follow up at some point why this happens.
+    const appendedDialog = document.querySelector('.confirmation_wrapper')
+
+    appendedDialog.querySelector('.cancel').addEventListener('click', () => appendedDialog.remove());
+    appendedDialog.querySelector('.confirm').addEventListener('click', () => {
+        appendedDialog.remove();
+        callback();
+    });
+
+    appendedDialog.showModal();
+}
+
+for (const form of document.querySelectorAll('form[data-confirm]')) {
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const label = form.dataset.confirmLabel;
+        const text = form.dataset.confirmText;
+
+        hyperConfirm(() => form.submit(), label, text);
+    });
 }
 
 fetchProcessing();
