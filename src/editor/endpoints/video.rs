@@ -768,7 +768,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_video}</h2>
 
-            <form action="/video/{path}" method="post">
+            <form action="/video/{path}" autocomplete="off" method="post">
                 {input_title}
                 {textarea_description}
                 {input_release_date}

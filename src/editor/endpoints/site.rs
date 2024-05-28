@@ -159,7 +159,7 @@ fn edit_page(
 
             <p>{t_deployment_is_currently_supported_text}</p>
             
-            <form action="/site" method="post">
+            <form action="/site" autocomplete="off" method="post">
                 {input_base_url}
                 {input_deployment_path}
                 {input_deployment_server}

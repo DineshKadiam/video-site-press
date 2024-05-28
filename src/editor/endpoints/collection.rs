@@ -540,7 +540,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_collection}</h2>
 
-            <form action="/collection/{path}" method="post">
+            <form action="/collection/{path}" autocomplete="off" method="post">
                 {input_title}
                 {textarea_description}
                 {input_unlisted_conditionally_hidden}

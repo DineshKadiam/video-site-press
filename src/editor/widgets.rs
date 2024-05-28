@@ -45,7 +45,7 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
         <div class="form_group">
             <h2>{t_new_link}</h2>
 
-            <form action="{submit_url}" method="post">
+            <form action="{submit_url}" autocomplete="off" method="post">
                 <div class="form_split">
                     {input_url}
                     {input_label}
