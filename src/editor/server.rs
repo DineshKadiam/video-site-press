@@ -13,7 +13,6 @@ use crate::editor::endpoints::{
     deploy,
     deployment,
     favicon,
-    font,
     index,
     jobs,
     playlist,
@@ -93,7 +92,6 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 )
                 .route("/processing", get().to(processing))
                 .route("/random-poster/{path:.*}", post().to(video::random_poster))
-                .route("/roboto-v30-latin_latin-ext-regular.woff2", get().to(font))
                 .route("/site", post().to(site::update))
                 .route("/scripts.js", get().to(scripts))
                 .route("/splash_logo.svg", get().to(splash_logo))

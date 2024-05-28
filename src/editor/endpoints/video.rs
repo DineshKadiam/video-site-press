@@ -318,45 +318,48 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
         return String::new();
     };
 
+    let t_original = translations.original;
+
     let mut height_options = Vec::new();
-    let candidate_heights = [144, 240, 360, 480, 720, 1080];
+    let candidate_heights = [1080, 720, 480, 360, 240, 144];
+    let padding_len = tallest_height.to_string().len();
     for height in candidate_heights {
         if height <= tallest_height {
             let width = (height as f32 * aspect_ratio) as usize;
 
-            let selected = if (tallest_height < 720 && height == 480) || height == 720 {
-                "selected"
+            let original = if height == tallest_height {
+                format!("({t_original})")
             } else {
-                ""
+                String::new()
             };
 
+            let padding = "&nbsp;".repeat(2 * (padding_len - height.to_string().len()));
             let option = formatdoc!(r#"
-                <option {selected} value="{height}">{height}p ({width}×{height})</option>
+                <option value="{height}"><wbr>{padding}{height}p – {width}×{height} {original}</option>
             "#);
             height_options.push(option);
         }
     }
 
-    let t_unmodified = translations.unmodified;
     let mut frame_rate_options = Vec::new();
-    let candidate_frame_rates = [12.0, 24.0, 25.0, 30.0, 48.0, 60.0];
+    let candidate_frame_rates = [60.0, 48.0, 30.0, 25.0, 24.0, 12.0];
     let known_frame_rate = candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate);
     if !known_frame_rate {
         let unknown_frame_rate_option = formatdoc!(r#"
-            <option selected value="">{highest_frame_rate} fps ({t_unmodified})</option>
+            <option selected value="">{highest_frame_rate} fps ({t_original})</option>
         "#);
         frame_rate_options.push(unknown_frame_rate_option);
     }
     for frame_rate in candidate_frame_rates {
         if frame_rate <= highest_frame_rate {
-            let (selected, value, unmodified) = if known_frame_rate && frame_rate == highest_frame_rate {
-                ("selected", String::new(), format!(" ({t_unmodified})"))
+            let (selected, value, original) = if known_frame_rate && frame_rate == highest_frame_rate {
+                ("selected", String::new(), format!("({t_original})"))
             } else {
                 ("", frame_rate.to_string(), String::new())
             };
 
             let option = formatdoc!(r#"
-                <option {selected} value="{value}">{frame_rate} fps {unmodified}</option>
+                <option {selected} value="{value}">{frame_rate} fps {original}</option>
             "#);
             frame_rate_options.push(option);
         }
@@ -375,29 +378,33 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
     let t_codec = translations.codec;
     let t_encoding_approach_label = translations.encoding_approach_label;
     let t_frame_rate = translations.frame_rate;
+    let t_h264_supported_in_all_browsers_recommended = translations.h264_supported_in_all_browsers_recommended;
+    let t_hevc_h265_missing_browser_support_not_recommended = translations.hevc_h265_missing_browser_support_not_recommended;
     let t_highest_compression_recommended_but_takes_a_long_time = translations.highest_compression_recommended_but_takes_a_long_time;
     let t_highest_speed_only_use_if_you_need_results_as_soon_as_possible = translations.highest_speed_only_use_if_you_need_results_as_soon_as_possible;
     let t_quality = translations.quality;
-    let t_recommended_codec = translations.recommended_codec;
     let t_render_additional_format = translations.render_additional_format;
     let t_render_format = translations.render_format;
     let t_resolution = translations.resolution;
+    let t_vp9_missing_browser_support_not_recommended = translations.vp9_missing_browser_support_not_recommended;
     let t_worst = translations.worst;
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_render_additional_format}</h2>
             <form action="/downsize/{path}" method="post">
-                <div class="form_field">
-                    <label for="resolution">{t_resolution}</label>
-                    <select id="resolution" name="height">
-                        {height_options}
-                    </select>
-                </div>
-                <div class="form_field">
-                    <label for="frame_rate">{t_frame_rate}</label>
-                    <select id="frame_rate" name="frame_rate">
-                        {frame_rate_options}
-                    </select>
+                <div class="form_split">
+                    <div class="form_field">
+                        <label for="resolution">{t_resolution}</label>
+                        <select id="resolution" name="height">
+                            {height_options}
+                        </select>
+                    </div>
+                    <div class="form_field">
+                        <label for="frame_rate">{t_frame_rate}</label>
+                        <select id="frame_rate" name="frame_rate">
+                            {frame_rate_options}
+                        </select>
+                    </div>
                 </div>
                 <div class="form_field">
                     <label for="quality">{t_quality}</label>
@@ -423,9 +430,9 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                 <div class="form_field">
                     <label for="codec">{t_codec}</label>
                     <select id="codec" name="codec">
-                        <option value="h264">H264 ({t_recommended_codec})</option>
-                        <option value="hevc">HEVC</option>
-                        <option value="vp9">VP9</option>
+                        <option value="h264">{t_h264_supported_in_all_browsers_recommended}</option>
+                        <option value="hevc">{t_hevc_h265_missing_browser_support_not_recommended}</option>
+                        <option value="vp9">{t_vp9_missing_browser_support_not_recommended}</option>
                     </select>
                 </div>
                 <div class="form_field">

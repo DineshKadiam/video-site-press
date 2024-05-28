@@ -1,3 +1,5 @@
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use indoc::formatdoc;
 
 #[derive(Clone, Debug)]
@@ -134,6 +136,22 @@ impl Default for Theme {
 }
 
 impl ThemeVars {
+	fn checkerboard_base64(&self) -> String {
+		let bg_2 = &self.bg_2;
+		let bg_3 = &self.bg_3;
+
+		let svg = formatdoc!(r#"
+			<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+	            <rect fill="{bg_2}" height="32" width="32" x="0" y="0"/>
+	            <rect fill="{bg_2}" height="32" width="32" x="32" y="32"/>
+	            <rect fill="{bg_3}" height="32" width="32" x="0" y="32"/>
+	            <rect fill="{bg_3}" height="32" width="32" x="32" y="0"/>
+	        </svg>
+	    "#);
+
+		BASE64_STANDARD.encode(svg)
+	}
+
     pub fn dark() -> ThemeVars {
         ThemeVars {
 			accent: String::from("#fbdf46"),
@@ -179,6 +197,7 @@ impl ThemeVars {
 	    let bg_2 = &self.bg_2;
 	    let bg_3 = &self.bg_3;
 	    let bg_mg = &self.bg_mg;
+	    let checkerboard_base64 = self.checkerboard_base64();
 	    let danger_bg = &self.danger_bg;
 	    let danger_fg = &self.danger_fg;
 	    let danger_mg = &self.danger_mg;
@@ -195,6 +214,7 @@ impl ThemeVars {
             --bg-2: {bg_2};
             --bg-3: {bg_3};
             --bg-mg: {bg_mg};
+            --checkerboard: url("data:image/svg+xml;base64,{checkerboard_base64}");
             --danger-bg: {danger_bg};
             --danger-fg: {danger_fg};
             --danger-mg: {danger_mg};

@@ -34,9 +34,9 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
 
     input_url.required();
 
-    let t_add = translations.add;
+    let t_add_link = translations.add_link;
     let t_hidden_link_with_rel_me_attribute = translations.hidden_link_with_rel_me_attribute;
-    let t_just_a_regular_link_recommended_default = translations.just_a_regular_link_recommended_default;
+    let t_regular_link = translations.regular_link;
     let t_link_type = translations.link_type;
     let t_link_with_rel_me_attribute = translations.link_with_rel_me_attribute;
     let t_new_link = translations.new_link;
@@ -46,17 +46,19 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
             <h2>{t_new_link}</h2>
 
             <form action="{submit_url}" method="post">
-                {input_url}
-                {input_label}
+                <div class="form_split">
+                    {input_url}
+                    {input_label}
+                </div>
                 <div class="form_field">
                     <label for="verification">{t_link_type}</label>
                     <select id="verification" name="verification">
-                        <option selected>{t_just_a_regular_link_recommended_default}</option>
+                        <option selected>{t_regular_link}</option>
                         <option value="rel-me">{t_link_with_rel_me_attribute}</option>
                         <option value="rel-me-hidden">{t_hidden_link_with_rel_me_attribute}</option>
                     </select>
                 </div>
-                <button>{t_add}</button>
+                <button>{t_add_link}</button>
             </form>
         </div>
     "#)
@@ -323,7 +325,6 @@ pub fn layout(
     let splash_screen_rendered = splash_screen(language, context.get_editor_theme());
 
     let t_configure_deployment = language.translations.configure_deployment;
-    let t_deploy = language.translations.deploy;
     let configure_icon = icons::configure(language.translations.configure);
     let deployment_icon = icons::deployment(language.translations.deployment);
     let deployment_button = match site.deploy_config.complete() {
