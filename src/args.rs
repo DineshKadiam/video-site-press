@@ -14,7 +14,7 @@ fn worker_count(string: &str) -> Result<usize, String> {
 #[derive(Debug, Parser)]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 pub struct Args {
-    /// Directly builds the site without starting the authoring server
+    /// Directly builds the site without starting the authoring server [HEADS UP: Incomplete implementation, for now use the interactive editor]
     #[clap(long)]
     pub build: bool,
 
@@ -26,7 +26,7 @@ pub struct Args {
     #[clap(long = "cache-dir")]
     pub cache_dir: Option<PathBuf>,
 
-    /// Directly deploys the site - only applicable in combination with --build
+    /// Directly deploys the site - only applicable in combination with --build [HEADS UP: Incomplete implementation, for now use the interactive editor]
     #[clap(long)]
     pub deploy: bool,
 

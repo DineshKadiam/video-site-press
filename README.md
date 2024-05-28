@@ -34,6 +34,8 @@ Hyper 8 is a young project and a few things are knowingly incomplete - although 
   removes some, but not all, stale data it creates. Until this is fully implemented you can choose to occasionally delete
   the cache to clear out stale data (Note that these are not large amounts of data at all though, just transcoded images and
   serialized *metadata* for video).
+- The `--build` and `--deploy` options in the CLI are not correctly implemented yet, for now perform these things from the
+  interactive browser interface only
 - In certain circumstances various foreground or background processes
   (building, deploying, encoding, etc.) might still crash - you will usually
   find some feedback on this in the terminal window which you can include
