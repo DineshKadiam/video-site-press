@@ -2,22 +2,22 @@
 
 A static site generator for video
 
-<img src="https://simonrepp.com/hyper8/readme.png?1" alt="Screenshot showing the Hyper 8 browser editor and a built page (alpha version)"/>
+<img src="https://simonrepp.com/hyper8/readme.png?2" alt="Screenshot showing the Hyper 8 browser editor and a built page"/>
 
 ## Overview
 
-Watch the ~4min [introduction video](https://simonrepp.com/hyper8/teaser) to get an idea what is being built here.
+See the [website](https://simonrepp.com/hyper8) for more screenshots and information.
 
-See the [website](https://simonrepp.com/hyper8) for some more images and information.
+Watch an old ~4min [teaser/introduction](https://simonrepp.com/hyper8/teaser) to get a glimpse of Hyper 8's underlying concepts.
 
 Follow this [thread on the fediverse](https://post.lurk.org/@freebliss/112043777597496559) for continuing reports on the development.
 
-## Hyper 8 is in Alpha
+## Hyper 8 is in Beta
 
-Hyper 8 can be stably built and run from the main branch. Note that some
-things are in flux, some are make-shift implementations, and some may not
-work yet. Making backups of your Hyper 8 site directory is recommended while
-Hyper 8 is still in its early days.
+Hyper 8 can be stably built and run from the main branch, just keep in mind
+that it's not production grade software (yet) and things are still moving.
+Making backups of your Hyper 8 site directory is recommended while Hyper 8 is
+still in its early days.
 
 ### Known issues
 
@@ -50,10 +50,12 @@ Available at [simonrepp.com/hyper8/docs](https://simonrepp.com/hyper8/docs) (som
 
 ## Funding
 
-Initial development of the Hyper 8 Video System is made possible by the [Austrian Federal
-Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html)
+Initial development (early alpha to beta 0.13.0) was funded by the [Austrian Federal Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html)
+in cooperation with [dérive](https://derive.at) - thank you so much!
 
 ![BMKÖS Logo](https://simonrepp.com/hyper8/image_funding.jpg)
+
+If you'd like to support Hyper 8's ongoing development you can donate to the project at [Liberapay](https://liberapay.com/simonrepp) and [Ko-fi](https://ko-fi.com/simonrepp).
 
 ## License
 

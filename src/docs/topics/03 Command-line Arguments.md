@@ -10,7 +10,6 @@ Consult `hyper8 --help` for the most authoritative and up-to-date information on
 
 That said here's a glimpse at some particularly interesting ones:
 
-- `--build` Directly builds the site without starting the authoring server (editor)
 - `--build-dir <BUILD_DIR>` Override build directory (default is .hyper8_build/ inside the catalog directory). **Pay close attention where you point this to - this directory is wiped during the build process (!)**
 - `--cache-dir <CACHE_DIR>` Override cache directory (default is .hyper8_cache/ inside the catalog directory). **Pay close attention where you point this to - this directory is wiped during the build process (!)**
 - `--editor-language <CODE>` Translate the editor interface to the given language. This is only rudimentarily implemented right now, and only 'de' and 'en' are supported right now. Note that Hyper 8 will try to auto-determine the language from your system locale if you don't supply this flag, so this is only necessary if you need or want to specify it manually anyway.

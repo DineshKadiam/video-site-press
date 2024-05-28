@@ -1,5 +1,5 @@
 # Changelog
 
-## 0.12.0
+## 0.13.0
 
-First versioned release
+First official beta release
