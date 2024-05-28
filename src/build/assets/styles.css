@@ -21,6 +21,9 @@ a {
     background-color: var(--fg-1);
     color: var(--bg-1);
 }
+/* TODO: Temporarily hidden - unhide in an upcoming version when we figured out
+         layout questions around banner. */
+.banner { display: none; }
 body {
     background-color: var(--bg-1);
     color: var(--fg-2);
