@@ -21,10 +21,23 @@ Hyper 8 is still in its early days.
 
 ### Known issues
 
+Hyper 8 is a young project and a few things are knowingly incomplete - although for the most part harmlessly so:
+
+- Banner images are well implemented on the backend, but not included in the layout of built sites yet
+- Unfinished background encoding jobs are not persisted when you shut down the Hyper 8 server
+- Some background jobs do not necessarily give immediate feedback of them happening, these include:
+  - `Random Poster` button: After clicking wait a few seconds, then refresh - a new poster should be there
+  - `Render Format` button: After clicking you see the background job on the jobs page, but not on the video page itself (yet)
+  - Some other smaller tasks like metadata computation or image resizing might not communicate themselves well,
+    in general if anything is off you can always wait a few seconds and refresh the page to work around such glitches.
 - The cache system (which by default puts its data in a hidden `.hyper8_cache` folder in your site directory)
-  removes some, but not all, stale data it creates. Until this is fully implemented it makes sense to occasionally delete
-  the cache to clear out stale data (Note that these are not large amounts of data though, just transcoded images and
-  serialized video metadata).
+  removes some, but not all, stale data it creates. Until this is fully implemented you can choose to occasionally delete
+  the cache to clear out stale data (Note that these are not large amounts of data at all though, just transcoded images and
+  serialized *metadata* for video).
+- In certain circumstances various foreground or background processes
+  (building, deploying, encoding, etc.) might still crash - you will usually
+  find some feedback on this in the terminal window which you can include
+  with bug reports
 
 ## Documentation
 
