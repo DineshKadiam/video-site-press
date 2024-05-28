@@ -36,6 +36,9 @@ Hyper 8 is a young project and a few things are knowingly incomplete - although 
   serialized *metadata* for video).
 - The `--build` and `--deploy` options in the CLI are not correctly implemented yet, for now perform these things from the
   interactive browser interface only
+- If you manually edit `collection.eno`, `playlist.eno`, `site.eno` or `video.eno` *and* there are errors displayed
+  in the browser interface (= yellow dot(s) in the left sidebar), make sure to resolve these errors manually before performing any
+  consecutive updates from the browser interface, as Hyper 8 can not yet keep/persist malformed manifest data during updates.
 - In certain circumstances various foreground or background processes
   (building, deploying, encoding, etc.) might still crash - you will usually
   find some feedback on this in the terminal window which you can include
