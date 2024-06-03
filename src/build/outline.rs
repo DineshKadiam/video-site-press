@@ -675,6 +675,37 @@ impl<'a> Traversal<'a> {
         clone
     }
 
+    pub fn peeked_parents(&self, site: &Site) -> Vec<Breadcrumb> {
+        if self.peeked_steps.is_empty() {
+            return Vec::new();
+        }
+
+        // We always expect a last visited step, because anything we render always
+        // exists within the context of some page, therefore there needs to be one
+        // step at the minimum.
+        let last_visited_step = &self.steps[self.steps.len() - 1];
+
+        let peeked_parents_len = self.peeked_steps.len() - 1;
+        self.peeked_steps[..peeked_parents_len]
+            .iter()
+            .map(|peeked_step| {
+                let prefix = peeked_step.path()
+                    .strip_prefix(last_visited_step.path())
+                    .unwrap()
+                    .trim_start_matches('/')
+                    .to_string();
+
+                let href = if site.clean_urls {
+                    format!("{prefix}/")
+                } else {
+                    format!("{prefix}/index.html")
+                };
+
+                Breadcrumb { href, step: peeked_step }
+            })
+            .collect()
+    }
+
     /// Relative url path to go "back up" the hierarchy up to the root,
     /// following the "taken steps".
     pub fn prefix_asc(&self) -> String {
@@ -684,23 +715,21 @@ impl<'a> Traversal<'a> {
     /// Url path to go "down" to the leaf node (= page) we're peeking at,
     /// relative to where are now (rather than to the site root).
     fn prefix_desc(&self) -> String {
-        self.peeked_steps
-            .iter()
-            .last()
-            .map(|peeked_step| {
-                self.steps
-                    .iter()
-                    .last()
-                    .map(|visited_step| {
-                        peeked_step.path()
-                            .strip_prefix(visited_step.path())
-                            .unwrap()
-                            .trim_start_matches('/')
-                            .to_string()
-                    })
-                    .unwrap_or(peeked_step.path().to_string())
-            })
-            .unwrap_or_else(|| String::new())
+        match self.peeked_steps.iter().last() {
+            Some(last_peeked_step) => {
+                // We always expect a last visited step, because anything we render always
+                // exists within the context of some page, therefore there needs to be one
+                // step at the minimum.
+                let last_visited_step = &self.steps[self.steps.len() - 1];
+
+                last_peeked_step.path()
+                    .strip_prefix(last_visited_step.path())
+                    .unwrap()
+                    .trim_start_matches('/')
+                    .to_string()
+            }
+            None => String::new()
+        }
     }
 
     pub fn with_collection(&self, collection: &'a Collection) -> Traversal<'a> {

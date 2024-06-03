@@ -193,13 +193,37 @@ fn render_collection(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let videos_rendered = formatdoc!(r#"
+        let breadcrumbs = traversal_with_collection.peeked_parents(site);
+        let breadcrumbs_rendered = if breadcrumbs.is_empty() {
+            String::new()
+        } else {
+            let rendered = breadcrumbs
+                .iter()
+                .map(|breadcrumb| breadcrumb.step.breadcrumb(&breadcrumb.href, site))
+                .collect::<Vec<String>>()
+                .join(" › ");
+
+            format!(r#"<div class="parents">{rendered}</div>"#)
+        };
+
+        let e_title = match &collection.title {
+            Some(title) => html_escape_outside_attribute(title),
+            None => collection.slug().to_string()
+        };
+        let collection_title_and_videos = formatdoc!(r#"
+            <h2>
+                <a href="{collection_href}">
+                    {e_title}
+                </a>
+                {breadcrumbs_rendered}
+            </h2>
+
             <div class="videos_grid">
                 {videos}
             </div>
         "#);
 
-        output.push_str(&videos_rendered);
+        output.push_str(&collection_title_and_videos);
     }
 
     let playlists = collection.public_playlists_desc_by_release_date();
@@ -214,19 +238,7 @@ fn render_collection(
         output.push_str(&rendered);
     }
 
-    let e_title = match &collection.title {
-        Some(title) => html_escape_outside_attribute(title),
-        None => collection.slug().to_string()
-    };
-    formatdoc!(r#"
-        <h2>
-            <a href="{collection_href}">
-                {e_title}
-            </a>
-        </h2>
-
-        {output}
-    "#)
+    output
 }
 
 fn render_playlist(
@@ -283,13 +295,31 @@ fn render_playlist(
         </div>
     "#);
 
+    let breadcrumbs = traversal_with_playlist.peeked_parents(site);
+    let breadcrumbs_rendered = if breadcrumbs.is_empty() {
+        String::new()
+    } else {
+        let rendered = breadcrumbs
+            .iter()
+            .map(|breadcrumb| breadcrumb.step.breadcrumb(&breadcrumb.href, site))
+            .collect::<Vec<String>>()
+            .join(" › ");
+
+        format!(r#"<div class="parents">{rendered}</div>"#)
+    };
+
     let e_title = match &playlist.title {
         Some(title) => html_escape_outside_attribute(title),
         None => playlist.slug().to_string()
     };
     let playlist_href = traversal_with_playlist.index_desc(site);
     formatdoc!(r#"
-        <h2><a href="{playlist_href}">{e_title}</a></h2>
+        <h2>
+            <a href="{playlist_href}">
+                {e_title}
+            </a>
+            {breadcrumbs_rendered}
+        </h2>
         <a href="{playlist_href}">{banner}</a>
         {videos_rendered}
     "#)
