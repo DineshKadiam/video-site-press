@@ -158,12 +158,14 @@ impl<'input> MarkdownSubset<'input> {
 
                         self.next_char();
                         self.copy_from_index = self.index;
+
+                        return;
                     } else if self.chars.as_str().starts_with("\\)") {
                         self.chars.next();
                         self.chars.next();
                         self.index += 2;
                     } else if self.chars.as_str().starts_with("\n") || self.chars.as_str().is_empty() {
-                        return
+                        return;
                     } else {
                         self.chars.next();
                         self.index += 1;
@@ -219,6 +221,14 @@ fn check_implicit_link_inbetween() {
 fn check_mixed() {
     let input = "<Hello> [<World>](https://example.com)\nCheck this text & this address: https://example.com";
     let output = "&lt;Hello&gt; <a href=\"https://example.com\" target=\"_blank\">&lt;World&gt;</a>\nCheck this text &amp; this address: <a href=\"https://example.com\" target=\"_blank\">https://example.com</a>";
+
+    assert_eq!(MarkdownSubset::to_html(input), output);
+}
+
+#[test]
+fn check_two_explicit_links() {
+    let input = "[Foo](foo) and [Bar](bar)";
+    let output = r#"<a href="foo" target="_blank">Foo</a> and <a href="bar" target="_blank">Bar</a>"#;
 
     assert_eq!(MarkdownSubset::to_html(input), output);
 }
