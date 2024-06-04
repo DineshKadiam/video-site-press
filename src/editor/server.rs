@@ -87,8 +87,8 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .service(
                     // Static file serving of built site
                     Files::new("/preview/", &data_moving.build_dir)
+                        .redirect_to_slash_directory()
                         .index_file("index.html")
-                        .show_files_listing()
                 )
                 .route("/processing", get().to(processing))
                 .route("/random-poster/{path:.*}", post().to(video::random_poster))
