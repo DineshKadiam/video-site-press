@@ -181,7 +181,7 @@ pub fn encode(
             //       enum-like indication.
             video_filters.push(format!("scale=-2:{height}"));
 
-            command.arg("-vf").arg(video_filters.join(", "));
+            command.arg("-vf").arg(video_filters.join(","));
 
             match codec {
                 Codec::H264 => {
