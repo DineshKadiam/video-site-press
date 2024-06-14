@@ -129,6 +129,9 @@ pub fn encode(
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");
 
+    // Disable interaction on stdin from ffmpeg's side
+    command.arg("-nostdin");
+
     // Suppress all output but explicitly re-enable periodic printing
     // of progress (which we parse and process further).
     command
@@ -262,7 +265,14 @@ pub fn encode(
 
     command.arg(&temp_path);
 
+    // We're reading from stderr to receive progress updates from the ffmpeg background process.
     command.stderr(Stdio::piped());
+
+    // Adressing the theoretical possibility that open but unattended stdxxx handles
+    // could lead to to e.g. memory buffer overflows or other forms of the ffmpeg
+    // background process going stale, we're here disabling these unneeded streams.
+    command.stdin(Stdio::null());
+    command.stdout(Stdio::null());
 
     let rendering_begin = Instant::now();
 
