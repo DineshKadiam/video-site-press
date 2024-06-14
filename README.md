@@ -53,7 +53,7 @@ Available at [simonrepp.com/hyper8/docs](https://simonrepp.com/hyper8/docs) (som
 Initial development (early alpha to beta 0.13.0) was funded by the [Austrian Federal Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html)
 in cooperation with [dérive](https://derive.at) - thank you so much!
 
-![BMKÖS Logo](https://simonrepp.com/hyper8/image_funding.jpg)
+![BMKÖS Logo](https://simonrepp.com/hyper8/thumb_funding.jpg)
 
 If you'd like to support Hyper 8's ongoing development you can donate to the project at [Liberapay](https://liberapay.com/simonrepp) and [Ko-fi](https://ko-fi.com/simonrepp).
 
