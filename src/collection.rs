@@ -205,7 +205,7 @@ impl Collection {
             } else if let Some(subcollection) = self.subcollections.iter_mut().find(|subcollection| subcollection.slug() == slug) {
                 let mut subcollection_mut = (**subcollection).clone();
 
-                if subcollection_mut.delete_playlist(context, path_parts) {
+                if subcollection_mut.delete_collection(context, path_parts) {
                     *subcollection = Arc::new(subcollection_mut);
                     return true;
                 }
