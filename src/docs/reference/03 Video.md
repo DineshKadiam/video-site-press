@@ -78,7 +78,8 @@ videos that appear in a playlist. It accepts whole numerical values (1, 2, 3) - 
 and negative ones (0, -1, -2). In playlists this custom ordering will automatically be picked up
 by the default ordering mechanism (which sorts first by `sort_number` ascending, then by `release_date` 
 ascending), but the `order` field in a playlist manifest can be used to modify this behavior - e.g. to
-use descending sorting or to sort by release date even if `sort_number` is present on videos, etc.
+use descending order or to sort by release date even if `sort_number` is present on videos, to sort
+alphabetically by title, etc.
 
 Any number of `link` fields can be given. The `label` for a link is optional.
 The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,

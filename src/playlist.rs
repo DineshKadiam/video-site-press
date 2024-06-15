@@ -46,7 +46,9 @@ pub enum PlaylistOrder {
     ReleaseDateAsc,
     ReleaseDateDesc,
     SortNumberAsc,
-    SortNumberDesc
+    SortNumberDesc,
+    TitleAsc,
+    TitleDesc
 }
 
 impl Playlist {
@@ -333,6 +335,17 @@ impl Playlist {
         videos
     }
 
+    pub fn public_videos_asc_by_title(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b| {
+            let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
+            let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
+
+            a_title.cmp(b_title)
+        });
+        videos
+    }
+
     pub fn public_videos_asc_by_sort_number_or_release_date(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
         videos.sort_unstable_by(|a, b|
@@ -379,13 +392,26 @@ impl Playlist {
         videos
     }
 
+    pub fn public_videos_desc_by_title(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b| {
+            let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
+            let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
+
+            b_title.cmp(a_title)
+        });
+        videos
+    }
+
     pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
         match self.order {
             PlaylistOrder::Default => self.public_videos_asc_by_sort_number_or_release_date(),
             PlaylistOrder::ReleaseDateAsc => self.public_videos_asc_by_release_date(),
             PlaylistOrder::ReleaseDateDesc => self.public_videos_desc_by_release_date(),
             PlaylistOrder::SortNumberAsc => self.public_videos_asc_by_sort_number(),
-            PlaylistOrder::SortNumberDesc => self.public_videos_desc_by_sort_number()
+            PlaylistOrder::SortNumberDesc => self.public_videos_desc_by_sort_number(),
+            PlaylistOrder::TitleAsc => self.public_videos_asc_by_title(),
+            PlaylistOrder::TitleDesc => self.public_videos_desc_by_title()
         }
     }
 
@@ -590,9 +616,11 @@ impl PlaylistOrder {
             "release_date_desc" => Ok(PlaylistOrder::ReleaseDateDesc),
             "sort_number_asc" => Ok(PlaylistOrder::SortNumberAsc),
             "sort_number_desc" => Ok(PlaylistOrder::SortNumberDesc),
+            "title_asc" => Ok(PlaylistOrder::TitleAsc),
+            "title_desc" => Ok(PlaylistOrder::TitleDesc),
             _ => {
                 // TODO: Translate
-                let message = format!("Unsupported order key '{key}' (supported ones are 'default', 'release_date_asc', 'release_date_desc', 'sort_number_asc' and 'sort_number_desc')");
+                let message = format!("Unsupported order key '{key}' (supported ones are 'default', 'release_date_asc', 'release_date_desc', 'sort_number_asc', 'sort_number_desc', 'title_asc' and 'title_desc')");
                 Err(message)
             }
         }
@@ -604,7 +632,9 @@ impl PlaylistOrder {
             PlaylistOrder::ReleaseDateAsc => "release_date_asc",
             PlaylistOrder::ReleaseDateDesc => "release_date_desc",
             PlaylistOrder::SortNumberAsc => "sort_number_asc",
-            PlaylistOrder::SortNumberDesc => "sort_number_desc"
+            PlaylistOrder::SortNumberDesc => "sort_number_desc",
+            PlaylistOrder::TitleAsc => "title_asc",
+            PlaylistOrder::TitleDesc => "title_desc"
         }
     }
 }

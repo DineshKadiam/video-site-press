@@ -379,6 +379,8 @@ pub fn edit_page(
     let order_release_date_desc_selected = if order_selected == PlaylistOrder::ReleaseDateDesc { "selected" } else { "" };
     let order_sort_number_asc_selected = if order_selected == PlaylistOrder::SortNumberAsc { "selected" } else { "" };
     let order_sort_number_desc_selected = if order_selected == PlaylistOrder::SortNumberDesc { "selected" } else { "" };
+    let order_title_asc_selected = if order_selected == PlaylistOrder::TitleAsc { "selected" } else { "" };
+    let order_title_desc_selected = if order_selected == PlaylistOrder::TitleDesc { "selected" } else { "" };
 
     let t_banner_image = language.translations.banner_image;
     let t_danger_zone = language.translations.danger_zone;
@@ -394,6 +396,8 @@ pub fn edit_page(
     let t_release_date_descending = language.translations.release_date_descending;
     let t_sort_number_ascending = language.translations.sort_number_ascending;
     let t_sort_number_descending = language.translations.sort_number_descending;
+    let t_title_ascending = language.translations.title_ascending;
+    let t_title_descending = language.translations.title_descending;
     let t_update_playlist = language.translations.update_playlist;
     let body = formatdoc!(r#"
         {errors}
@@ -412,6 +416,8 @@ pub fn edit_page(
                         <option {order_release_date_desc_selected} value="release_date_desc">{t_release_date_descending}</option>
                         <option {order_sort_number_asc_selected} value="sort_number_asc">{t_sort_number_ascending}</option>
                         <option {order_sort_number_desc_selected} value="sort_number_desc">{t_sort_number_descending}</option>
+                        <option {order_title_asc_selected} value="title_asc">{t_title_ascending}</option>
+                        <option {order_title_desc_selected} value="title_desc">{t_title_descending}</option>
                     </select>
                 </div>
                 {input_unlisted_conditionally_hidden}
