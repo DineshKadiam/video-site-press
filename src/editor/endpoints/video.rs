@@ -538,7 +538,7 @@ pub fn edit_page(
                         let size = human_size(version.file_meta.size);
                         let width = video_meta.width;
 
-                        let (browser_support, reasons) = match browser_support::analysis(&language, video_meta) {
+                        let (browser_support, reasons) = match browser_support::analysis(&version.file_name, &language, video_meta) {
                             Some(Ok(message)) => (language.translations.good_browser_support, message),
                             Some(Err(message)) => (language.translations.not_support_by_browsers, message),
                             None => (language.translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
