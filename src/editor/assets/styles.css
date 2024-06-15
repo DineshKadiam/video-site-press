@@ -233,40 +233,57 @@ main {
     max-width: 32rem;
 }
 .muted { color: var(--bg-mg); }
-nav { background-color: var(--bg-2); }
+nav {
+    background-color: var(--bg-2);
+    max-width: 20rem;
+}
 nav ul {
     list-style: none;
     margin: 0;
     padding-left: 0;
 }
 nav a {
-    align-items: center;
-    column-gap: .4rem;
-    display: flex;
-    max-width: 16rem;
-    min-width: 12rem;
-    padding: .2rem .4rem;
+    box-sizing: border-box;
+    display: block;
+    padding: .2rem 1.2rem .2rem .4rem;
     white-space: nowrap;
+    width: 100%;
 }
+nav a:focus-visible,
+nav a:hover {
+    background-color: var(--bg-3);
+}
+nav a .icon {
+    align-items: center;
+    display: inline-flex;
+    height: 2rem;
+    vertical-align: top;
+    width: 1.3rem;
+}
+nav a .labels {
+    display: inline-block;
+    max-width: calc(100% - 1.5rem);
+    overflow-x: hidden;
+    vertical-align: top;
+}
+nav > a .path { direction: rtl; }
 nav a .path {
     color: var(--fg-3);
-    direction: rtl;
     font-size: .8rem;
     overflow-x: hidden;
     text-overflow: ellipsis;
 }
-nav a .title { font-size: .9rem; }
+nav a .title {
+    font-size: .9rem;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
 nav a svg {
     fill: var(--fg-3);
     height: 1.3rem;
     width: 1.3rem;
 }
-nav a.active { background-color: var(--bg-1); }
-nav .labels {
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-}
+nav a.active { background-color: var(--bg-3); }
 nav li { margin-top: .1rem; }
 pre.error {
     border-radius: .2rem;

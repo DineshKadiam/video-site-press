@@ -836,10 +836,12 @@ fn tree_node(
 
     formatdoc!(r#"
         <a{active} href="{href}" style="padding-left: {padding_left};">
-            {icon_container}
+            <div class="icon">
+                {icon_container}
+            </div>
             <div class="labels">
-                <span class="title">{title_with_unlisted_badge}</span>
-                <span class="path">{slug}</span>
+                <div class="title">{title_with_unlisted_badge}</div>
+                <div class="path">{slug}</div>
             </div>
         </a>
     "#)
