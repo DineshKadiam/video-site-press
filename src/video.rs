@@ -252,6 +252,89 @@ impl Video {
         }
     }
 
+    // Videos without release date are sorted to the back
+    pub fn cmp_by_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.release_date, &b.release_date) {
+            (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
+    // Videos without release date are sorted to the back
+    pub fn cmp_by_release_date_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.release_date, &b.release_date) {
+            (Some(a_release_date), Some(b_release_date)) => b_release_date.cmp(&a_release_date),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
+    // Videos without sort number are sorted to the back
+    pub fn cmp_by_sort_number_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.sort_number, &b.sort_number) {
+            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
+    // Videos without sort number are sorted to the back
+    pub fn cmp_by_sort_number_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.sort_number, &b.sort_number) {
+            (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(&a_sort_number),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
+    // Videos without sort number and without release date are sorted to the back
+    pub fn cmp_by_sort_number_then_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.sort_number, &b.sort_number) {
+            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => {
+                match (&a.release_date, &b.release_date) {
+                    (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
+                    (Some(_), None) => Ordering::Less,
+                    (None, Some(_)) => Ordering::Greater,
+                    (None, None) => Ordering::Equal
+                }
+            }
+        }
+    }
+
+    // Videos with title and videos with only a slug are sorted together
+    pub fn cmp_by_title_or_slug_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
+        let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
+
+        a_title.cmp(b_title)
+    }
+
+    // Videos with title and videos with only a slug are sorted together
+    pub fn cmp_by_title_or_slug_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
+        let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
+
+        b_title.cmp(a_title)
+    }
+
+    // Videos without title are sorted to the front
+    pub fn cmp_by_slug_then_title_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => a.slug().cmp(&b.slug())
+        }
+    }
+
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
         let mut version_candidate: Option<(usize, &VideoFile)> = None;
 

@@ -1,4 +1,7 @@
-use std::cmp;
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::cmp::{self, Ordering};
 use std::fs;
 use std::iter::Peekable;
 use std::path::Path;
@@ -185,6 +188,16 @@ impl Collection {
             } else if let Some(section) = element.as_section() {
                 self.errors.push(format!("Ignoring unsupported section '{}' in {}:{}", section.key(), manifest_path.display(), element.line_number()))
             }
+        }
+    }
+
+    // Collections without title are sorted to the front
+    pub fn cmp_by_slug_then_title_asc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => a.slug().cmp(&b.slug())
         }
     }
 
@@ -452,6 +465,12 @@ impl Collection {
         }
     }
 
+    pub fn playlists_asc_by_slug_then_title(&self) -> Vec<Arc<Playlist>> {
+        let mut playlists: Vec<Arc<Playlist>> = self.playlists.clone();
+        playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_asc);
+        playlists
+    }
+
     pub fn public_playlists(&self) -> impl Iterator<Item = &Arc<Playlist>> {
         self.playlists.iter().filter(|playlist| !playlist.unlisted)
     }
@@ -478,7 +497,7 @@ impl Collection {
 
     pub fn public_videos_desc_by_release_date(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b| a.release_date.cmp(&b.release_date));
+        videos.sort_unstable_by(Video::cmp_by_release_date_desc);
         videos
     }
 
@@ -581,6 +600,12 @@ impl Collection {
         } else {
             self.path.split('/').last()
         }
+    }
+
+    pub fn subcollections_asc_by_slug_then_title(&self) -> Vec<Arc<Collection>> {
+        let mut subcollections: Vec<Arc<Collection>> = self.subcollections.clone();
+        subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_asc);
+        subcollections
     }
 
     pub fn unpersist(&self, context: &Context) {
@@ -771,6 +796,12 @@ impl Collection {
         }
 
         Err(())
+    }
+
+    pub fn videos_asc_by_slug_then_title(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.videos.clone();
+        videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc);
+        videos
     }
 
     pub fn write_manifest(&self, context: &Context) {

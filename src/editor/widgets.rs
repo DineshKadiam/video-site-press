@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::cmp::Ordering;
 use std::path::Path;
-use std::sync::Arc;
 
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
@@ -14,12 +12,10 @@ use crate::{
     Context,
     Language,
     Link,
-    Playlist,
     Site,
     SiteContent,
     Theme,
-    Translations,
-    Video
+    Translations
 };
 use crate::editor::Input;
 use crate::icons;
@@ -77,18 +73,7 @@ fn collection_tree(
     let collection_icon = icons::collection(translations.collection);
     let playlist_icon = icons::playlist(translations.playlist);
     let video_icon = icons::video(translations.video);
-    let mut subcollections_sorted: Vec<Arc<Collection>> = collection.subcollections.to_vec();
-
-    subcollections_sorted.sort_unstable_by(|a, b| {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
-        }
-    });
-
-    let subcollections = subcollections_sorted
+    let subcollections = collection.subcollections_asc_by_slug_then_title()
         .iter()
         .map(|collection| {
             let collection_path = &collection.path;
@@ -129,18 +114,7 @@ fn collection_tree(
         .collect::<Vec<String>>()
         .join("");
 
-    let mut playlists_sorted: Vec<Arc<Playlist>> = collection.playlists.to_vec();
-
-    playlists_sorted.sort_unstable_by(|a, b| {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
-        }
-    });
-
-    let playlists = playlists_sorted
+    let playlists = collection.playlists_asc_by_slug_then_title()
         .iter()
         .map(|playlist| {
             let playlist_path = &playlist.path;
@@ -172,20 +146,7 @@ fn collection_tree(
             let children = if playlist.videos.is_empty() {
                 String::new()
             } else {
-                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
-
-                // TODO: Here and elsewhere replace these manual sorts with shared helper
-                //       methods like playlist.public_videos_asc_by_release_date?
-                videos_sorted.sort_unstable_by(|a, b| {
-                    match (&a.title, &b.title) {
-                        (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
-                        (Some(_), None) => Ordering::Greater,
-                        (None, Some(_)) => Ordering::Less,
-                        (None, None) => a.slug().cmp(&b.slug())
-                    }
-                });
-
-                let lis = videos_sorted
+                let lis = playlist.videos_in_playlist_order()
                     .iter()
                     .map(|video| {
                         let video_path = &video.path;
@@ -235,18 +196,7 @@ fn collection_tree(
         .collect::<Vec<String>>()
         .join("");
 
-    let mut videos_sorted: Vec<Arc<Video>> = collection.videos.to_vec();
-
-    videos_sorted.sort_unstable_by(|a, b| {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
-        }
-    });
-
-    let videos = videos_sorted
+    let videos = collection.videos_asc_by_slug_then_title()
         .iter()
         .map(|video| {
             let video_path = &video.path;
@@ -660,18 +610,7 @@ pub fn site_tree(
             } else {
                 let video_icon = icons::video(translations.video);
 
-                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
-
-                videos_sorted.sort_unstable_by(|a, b| {
-                    match (&a.title, &b.title) {
-                        (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
-                        (Some(_), None) => Ordering::Greater,
-                        (None, Some(_)) => Ordering::Less,
-                        (None, None) => a.slug().cmp(&b.slug())
-                    }
-                });
-
-                videos_sorted
+                playlist.videos_in_playlist_order()
                     .iter()
                     .map(|video| {
                         let video_path = &video.path;

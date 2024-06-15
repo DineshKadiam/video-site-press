@@ -227,6 +227,16 @@ impl Playlist {
         }
     }
 
+    // Playlists without title are sorted to the front
+    pub fn cmp_by_slug_then_title_asc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => a.slug().cmp(&b.slug())
+        }
+    }
+
     pub fn delete_video(
         &mut self,
         context: &Context,
@@ -309,110 +319,20 @@ impl Playlist {
         self.videos.iter().filter(|video| !video.unlisted)
     }
 
-    pub fn public_videos_asc_by_release_date(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b|
-            match (&a.release_date, &b.release_date) {
-                (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
-                (Some(_), None) => Ordering::Less,
-                (None, Some(_)) => Ordering::Greater,
-                (None, None) => Ordering::Equal
-            }
-        );
-        videos
-    }
-
-    pub fn public_videos_asc_by_sort_number(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b|
-            match (&a.sort_number, &b.sort_number) {
-                (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
-                (Some(_), None) => Ordering::Less,
-                (None, Some(_)) => Ordering::Greater,
-                (None, None) => Ordering::Equal
-            }
-        );
-        videos
-    }
-
-    pub fn public_videos_asc_by_title(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b| {
-            let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
-            let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
-
-            a_title.cmp(b_title)
-        });
-        videos
-    }
-
-    pub fn public_videos_asc_by_sort_number_or_release_date(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b|
-            match (&a.sort_number, &b.sort_number) {
-                (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
-                (Some(_), None) => Ordering::Less,
-                (None, Some(_)) => Ordering::Greater,
-                (None, None) => {
-                    match (&a.release_date, &b.release_date) {
-                        (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
-                        (Some(_), None) => Ordering::Less,
-                        (None, Some(_)) => Ordering::Greater,
-                        (None, None) => Ordering::Equal
-                    }
-                }
-            }
-        );
-        videos
-    }
-
-    pub fn public_videos_desc_by_release_date(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b|
-            match (&a.release_date, &b.release_date) {
-                (Some(a_release_date), Some(b_release_date)) => b_release_date.cmp(&a_release_date),
-                (Some(_), None) => Ordering::Less,
-                (None, Some(_)) => Ordering::Greater,
-                (None, None) => Ordering::Equal
-            }
-        );
-        videos
-    }
-
-    pub fn public_videos_desc_by_sort_number(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b|
-            match (&a.sort_number, &b.sort_number) {
-                (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(&a_sort_number),
-                (Some(_), None) => Ordering::Less,
-                (None, Some(_)) => Ordering::Greater,
-                (None, None) => Ordering::Equal
-            }
-        );
-        videos
-    }
-
-    pub fn public_videos_desc_by_title(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b| {
-            let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
-            let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
-
-            b_title.cmp(a_title)
-        });
-        videos
-    }
-
     pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+
         match self.order {
-            PlaylistOrder::Default => self.public_videos_asc_by_sort_number_or_release_date(),
-            PlaylistOrder::ReleaseDateAsc => self.public_videos_asc_by_release_date(),
-            PlaylistOrder::ReleaseDateDesc => self.public_videos_desc_by_release_date(),
-            PlaylistOrder::SortNumberAsc => self.public_videos_asc_by_sort_number(),
-            PlaylistOrder::SortNumberDesc => self.public_videos_desc_by_sort_number(),
-            PlaylistOrder::TitleAsc => self.public_videos_asc_by_title(),
-            PlaylistOrder::TitleDesc => self.public_videos_desc_by_title()
+            PlaylistOrder::Default => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
+            PlaylistOrder::ReleaseDateAsc => videos.sort_unstable_by(Video::cmp_by_release_date_asc),
+            PlaylistOrder::ReleaseDateDesc => videos.sort_unstable_by(Video::cmp_by_release_date_desc),
+            PlaylistOrder::SortNumberAsc => videos.sort_unstable_by(Video::cmp_by_sort_number_asc),
+            PlaylistOrder::SortNumberDesc => videos.sort_unstable_by(Video::cmp_by_sort_number_desc),
+            PlaylistOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_asc),
+            PlaylistOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_desc)
         }
+
+        videos
     }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
@@ -567,6 +487,22 @@ impl Playlist {
         }
 
         Err(())
+    }
+
+    pub fn videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.videos().clone();
+
+        match self.order {
+            PlaylistOrder::Default => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
+            PlaylistOrder::ReleaseDateAsc => videos.sort_unstable_by(Video::cmp_by_release_date_asc),
+            PlaylistOrder::ReleaseDateDesc => videos.sort_unstable_by(Video::cmp_by_release_date_desc),
+            PlaylistOrder::SortNumberAsc => videos.sort_unstable_by(Video::cmp_by_sort_number_asc),
+            PlaylistOrder::SortNumberDesc => videos.sort_unstable_by(Video::cmp_by_sort_number_desc),
+            PlaylistOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_asc),
+            PlaylistOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_desc)
+        }
+
+        videos
     }
 
     pub fn write_manifest(&self, context: &Context) {
