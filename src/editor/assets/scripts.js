@@ -26,16 +26,18 @@ function fetchProcessing() {
             const { deploymentInfo } = response;
 
             if (!deploymentInfo.configured) {
-                const a = document.createElement('a');
-                a.href = '/configure-deployment';
+                if (!deploymentElement.querySelector('a[href="/configure-deployment"]')) {
+                    const a = document.createElement('a');
+                    a.href = '/configure-deployment';
 
-                a.append(configureIcon.content.cloneNode(true));
+                    a.append(configureIcon.content.cloneNode(true));
 
-                const text = document.createElement('span');
-                text.textContent = t.configureDeployment;
-                a.append(text);
+                    const text = document.createElement('span');
+                    text.textContent = t.configureDeployment;
+                    a.append(text);
 
-                deploymentElement.replaceChildren(a);
+                    deploymentElement.replaceChildren(a);
+                }
             } else if (deploymentInfo.deployingSince !== null) {
                 const a = document.createElement('a');
                 a.href = '/deployment';
@@ -52,27 +54,29 @@ function fetchProcessing() {
 
                 deploymentElement.replaceChildren(a);
             } else {
-                const form = document.createElement('form');
-                form.action = '/deploy';
-                form.method = 'post';
+                if (!deploymentElement.querySelector('form[action="/deploy"]')) {
+                    const form = document.createElement('form');
+                    form.action = '/deploy';
+                    form.method = 'post';
 
-                form.addEventListener('submit', event => {
-                    event.preventDefault();
-                    const baseUrl = document.body.dataset.baseUrl;
-                    hyperConfirm(() => form.submit(), t.deploy, `${t.reallyDeploy} (${baseUrl})`);
-                });
+                    form.addEventListener('submit', event => {
+                        event.preventDefault();
+                        const baseUrl = document.body.dataset.baseUrl;
+                        hyperConfirm(() => form.submit(), t.deploy, `${t.reallyDeploy} (${baseUrl})`);
+                    });
 
-                const button = document.createElement('button');
+                    const button = document.createElement('button');
 
-                button.append(deploymentIcon.content.cloneNode(true));
+                    button.append(deploymentIcon.content.cloneNode(true));
 
-                const text = document.createElement('span');
-                text.textContent = t.deploy;
-                button.append(text);
+                    const text = document.createElement('span');
+                    text.textContent = t.deploy;
+                    button.append(text);
 
-                form.append(button);
+                    form.append(button);
 
-                deploymentElement.replaceChildren(form);
+                    deploymentElement.replaceChildren(form);
+                }
             }
 
             if (deploymentFeedback) {
