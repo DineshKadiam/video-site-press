@@ -490,7 +490,7 @@ impl Playlist {
     }
 
     pub fn videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.videos().clone();
+        let mut videos: Vec<Arc<Video>> = self.videos.clone();
 
         match self.order {
             PlaylistOrder::Default => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
