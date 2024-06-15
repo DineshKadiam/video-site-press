@@ -172,7 +172,18 @@ fn collection_tree(
             let children = if playlist.videos.is_empty() {
                 String::new()
             } else {
-                let lis = playlist.videos
+                let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
+
+                videos_sorted.sort_unstable_by(|a, b| {
+                    match (&a.title, &b.title) {
+                        (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+                        (Some(_), None) => Ordering::Greater,
+                        (None, Some(_)) => Ordering::Less,
+                        (None, None) => a.slug().cmp(&b.slug())
+                    }
+                });
+
+                let lis = videos_sorted
                     .iter()
                     .map(|video| {
                         let video_path = &video.path;
