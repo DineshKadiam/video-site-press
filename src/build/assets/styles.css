@@ -228,6 +228,7 @@ img {
 .player_controls .timeline .bar {
     bottom: 0;
     height: .3rem;
+    pointer-events: none;
     position: absolute;
 }
 .player_controls .timeline:hover .bar { height: .35rem; }
