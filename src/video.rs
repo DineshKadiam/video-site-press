@@ -252,10 +252,41 @@ impl Video {
         }
     }
 
+    // Videos without an earliest modified date date are sorted to the back
+    pub fn cmp_by_earliest_modified_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        let a_earliest_modified = a.versions.iter().map(|video_file| video_file.file_meta.modified).min();
+        let b_earliest_modified = b.versions.iter().map(|video_file| video_file.file_meta.modified).min();
+
+        match (a_earliest_modified, b_earliest_modified) {
+            (Some(a_modified), Some(b_modified)) => a_modified.cmp(&b_modified),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
+    // Videos without an earliest modified date date are sorted to the back
+    pub fn cmp_by_earliest_modified_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        let a_earliest_modified = a.versions.iter().map(|video_file| video_file.file_meta.modified).min();
+        let b_earliest_modified = b.versions.iter().map(|video_file| video_file.file_meta.modified).min();
+
+        match (a_earliest_modified, b_earliest_modified) {
+            (Some(a_modified), Some(b_modified)) => b_modified.cmp(&a_modified),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
     // Videos without release date are sorted to the back
     pub fn cmp_by_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.release_date, &b.release_date) {
-            (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
+            (Some(a_release_date), Some(b_release_date)) => {
+                match a_release_date.cmp(&b_release_date) {
+                    Ordering::Equal => Video::cmp_by_earliest_modified_asc(a, b),
+                    ordering => ordering
+                }
+            }
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
             (None, None) => Ordering::Equal
@@ -265,7 +296,12 @@ impl Video {
     // Videos without release date are sorted to the back
     pub fn cmp_by_release_date_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.release_date, &b.release_date) {
-            (Some(a_release_date), Some(b_release_date)) => b_release_date.cmp(&a_release_date),
+            (Some(a_release_date), Some(b_release_date)) => {
+                match b_release_date.cmp(&a_release_date) {
+                    Ordering::Equal => Video::cmp_by_earliest_modified_desc(a, b),
+                    ordering => ordering
+                }
+            }
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
             (None, None) => Ordering::Equal
@@ -298,14 +334,7 @@ impl Video {
             (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
-            (None, None) => {
-                match (&a.release_date, &b.release_date) {
-                    (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
-                    (Some(_), None) => Ordering::Less,
-                    (None, Some(_)) => Ordering::Greater,
-                    (None, None) => Ordering::Equal
-                }
-            }
+            (None, None) => Video::cmp_by_release_date_asc(a, b)
         }
     }
 

@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::time::SystemTime;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{PosterAssets, VideoMeta};
+use crate::{FileMeta, PosterAssets, VideoMeta};
 use crate::util;
 
 /// This is the name of an empty file created by hyper8 in the root
@@ -27,13 +29,6 @@ pub struct Cache {
 pub enum CacheItem {
     PosterAssets(PosterAssetsCached),
     VideoMeta(VideoMetaCached)
-}
-
-#[derive(Clone, Debug, Deserialize, Hash, PartialEq, Serialize)]
-pub struct FileMeta {
-    pub modified: SystemTime,
-    /// File size in bytes
-    pub size: u64
 }
 
 /// Caches differently sized, preprocessed versions of a poster.
@@ -209,16 +204,5 @@ impl Cache {
         Cache::remove_orphaned(artifact_registry, cache_dir);
 
         cache
-    }
-}
-
-impl FileMeta {
-    pub fn new(path: &Path) -> FileMeta {
-        let metadata = fs::metadata(path).unwrap();
-
-        FileMeta {
-            modified: metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
-            size: metadata.len()
-        }
     }
 }
