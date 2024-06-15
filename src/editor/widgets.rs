@@ -821,7 +821,7 @@ fn tree_node(
 
     let title_with_unlisted_badge = if unlisted {
         let t_unlisted = translations.unlisted;
-        format!(r#"<div>{e_title} <span class="unlisted_badge">{t_unlisted}</span></div>"#)
+        format!(r#"<span class="unlisted_badge">{t_unlisted}</span> {e_title}"#)
     } else {
         e_title
     };
