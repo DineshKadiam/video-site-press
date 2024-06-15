@@ -1,7 +1,8 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 use std::sync::Arc;
-
-use indoc::formatdoc;
 
 use crate::{Context, MarkdownSubset, Playlist, Site, Video};
 use crate::build::outline::Traversal;

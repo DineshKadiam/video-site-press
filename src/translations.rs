@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 #[derive(Clone, Debug)]
 pub struct Translations {
     pub a_permalink_defines_under_which_url_text: &'static str,
@@ -133,6 +136,7 @@ pub struct Translations {
     pub resource_not_found: &'static str,
     pub sec: &'static str,
     pub site_settings: &'static str,
+    pub sort_number: &'static str,
     pub sound_muted: &'static str,
     pub storage_usage: &'static str,
     pub subtitles: &'static str,
@@ -299,6 +303,7 @@ impl Translations {
             resource_not_found: "Resource nicht gefunden",
             sec: "sek",
             site_settings: "Seiteneinstellungen",
+            sort_number: "Sortiernummer",
             sound_muted: "Ton stummgeschalten",
             storage_usage: "Speicherverbrauch",
             subtitles: "Untertitel",
@@ -465,6 +470,7 @@ impl Translations {
             resource_not_found: "Resource not found",
             sec: "sec",
             site_settings: "Site Settings",
+            sort_number: "Sort number",
             sound_muted: "Sound muted",
             storage_usage: "Storage Usage",
             subtitles: "Subtitles",

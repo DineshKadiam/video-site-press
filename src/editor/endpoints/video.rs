@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
@@ -94,6 +97,7 @@ pub enum VideoFormFeedback<'a> {
     Update {
         description: &'a str,
         release_date: Field,
+        sort_number: Field,
         title: Field,
         unlisted: bool
     },
@@ -111,6 +115,7 @@ pub struct VideoMoveForm {
 pub struct VideoUpdateForm {
     description: String,
     release_date: String,
+    sort_number: String,
     title: String,
     unlisted: Option<String>
 }
@@ -659,14 +664,16 @@ pub fn edit_page(
     };
 
     let mut input_release_date = Input::date("release_date", language.translations.release_date);
+    let mut input_sort_number = Input::number("sort_number", language.translations.sort_number);
     let mut input_title = Input::text("title", language.translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
     let mut textarea_description = Textarea::markdown_subset(language, "description", language.translations.description);
 
     textarea_description.id("video_description");
 
-    let feedback_update = if let Some(VideoFormFeedback::Update { description, release_date, title, unlisted }) = &form_feedback {
+    let feedback_update = if let Some(VideoFormFeedback::Update { description, release_date, sort_number, title, unlisted }) = &form_feedback {
         input_release_date.validated_value(release_date);
+        input_sort_number.validated_value(sort_number);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
         textarea_description.value(description);
@@ -674,8 +681,10 @@ pub fn edit_page(
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         let release_date = video.release_date.as_ref().map(|date| date.to_string());
+        let sort_number = video.sort_number.as_ref().map(|number| number.to_string());
 
         input_release_date.value_option(&release_date);
+        input_sort_number.value_option(&sort_number);
         input_title.value_option(&video.title);
         input_unlisted.checked(video.unlisted);
         textarea_description.value_option(&video.description);
@@ -771,7 +780,10 @@ pub fn edit_page(
             <form action="/video/{path}" autocomplete="off" method="post">
                 {input_title}
                 {textarea_description}
-                {input_release_date}
+                <div class="form_split divide_3_1">
+                    {input_release_date}
+                    {input_sort_number}
+                </div>
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -967,20 +979,32 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
-    let release_date = if form.release_date.is_empty() {
+
+    let release_date_trimmed = form.release_date.trim();
+    let release_date = if release_date_trimmed.is_empty() {
         None
     } else {
         Some(
-            NaiveDate::parse_from_str(&form.release_date, "%Y-%m-%d")
+            NaiveDate::parse_from_str(&release_date_trimmed, "%Y-%m-%d")
                 .map_err(|err| err.to_string())
         )
     };
+
+    let sort_number_trimmed = form.sort_number.trim();
+    let sort_number = if sort_number_trimmed.is_empty() {
+        None
+    } else {
+        Some(
+            sort_number_trimmed.parse::<i32>().map_err(|err| err.to_string())
+        )
+    };
+
     let title_trimmed = form.title.trim();
+
     let unlisted = form.unlisted.is_some();
 
-
-
-    if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) {
+    if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) ||
+        sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
         let video = match context.get_video(&path.path) {
             Some(video) => video,
             None => return Either::Right(not_found(&context, &language, &path.path))
@@ -988,7 +1012,8 @@ pub async fn update(
 
         let form_feedback = VideoFormFeedback::Update {
             description: description_trimmed,
-            release_date: Field::validated(&form.release_date, release_date.unwrap().err()),
+            release_date: Field::validated(release_date_trimmed, release_date.and_then(|release_date| release_date.err())),
+            sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
             title: Field::valid(title_trimmed),
             unlisted
         };
@@ -1000,6 +1025,7 @@ pub async fn update(
         let mutation = |video_mut: &mut Video| {
             video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
+            video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
             video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             video_mut.unlisted = unlisted;
             video_mut.write_manifest(&context);

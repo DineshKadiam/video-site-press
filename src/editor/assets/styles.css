@@ -199,6 +199,9 @@ footer {
     column-gap: 1rem;
 }
 .form_split > * { flex-grow: 1; }
+.form_split.divide_3_1 > *:first-child { width: 75%; }
+.form_split.divide_3_1 > *:last-child { width: 25%; }
+.form_split.even > * { width: 50%; }
 header {
     background-color: var(--fg-2);
     display: flex;

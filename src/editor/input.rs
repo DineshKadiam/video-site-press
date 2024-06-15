@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fmt::{Display, Formatter};
 
 use indoc::formatdoc;
@@ -18,6 +21,7 @@ pub struct Input<'a> {
 #[derive(PartialEq)]
 enum InputType {
     Date,
+    Number,
     Permalink,
     Text,
     Url
@@ -44,6 +48,11 @@ impl<'a> Input<'a> {
             r#type,
             value: String::new()
         }
+    }
+
+    /// Initialize an input for a number
+    pub fn number(key: &'a str, label: &'a str) -> Input<'a> {
+        Input::new(key, label, InputType::Number)
     }
 
     /// Initialize an input for a permalink
@@ -98,6 +107,7 @@ impl<'a> Display for Input<'a> {
         let required = if self.required { "required" } else { "" };
         let r#type = match self.r#type {
             InputType::Date => r#"type="date""#,
+            InputType::Number => r#"type="number""#,
             InputType::Permalink => "",
             InputType::Text => "",
             InputType::Url => r#"type="url""#

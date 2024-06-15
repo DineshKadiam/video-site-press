@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::cmp::Ordering;
 use std::path::Path;
 use std::sync::Arc;
@@ -46,7 +49,7 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
             <h2>{t_new_link}</h2>
 
             <form action="{submit_url}" autocomplete="off" method="post">
-                <div class="form_split">
+                <div class="form_split even">
                     {input_url}
                     {input_label}
                 </div>

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::cmp::Ordering;
 use std::fs;
 use std::path::Path;
@@ -33,6 +36,7 @@ pub struct Video {
     pub path: String,
     pub poster: Option<PosterFile>,
     pub release_date: Option<NaiveDate>,
+    pub sort_number: Option<i32>,
     pub subtitles: Vec<SubtitleFile>,
     pub title: Option<String>,
     /// Unlisted videos are not linked from the site anywhere,
@@ -196,6 +200,22 @@ impl Video {
             _ => ()
         }
 
+        match document.optional_field("sort_number") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(value) => match value.parse::<i32>() {
+                        Ok(number) => {
+                            self.sort_number = Some(number);
+                        }
+                        Err(err) => self.errors.push(format!("Error in {} ({})", manifest_path.display(), err))
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
+        }
+
         match document.optional_field("title") {
             Ok(Some(field)) => {
                 match field.required_value() {
@@ -290,6 +310,7 @@ impl Video {
             path,
             poster: None,
             release_date: None,
+            sort_number: None,
             subtitles: Vec::new(),
             title: None,
             unlisted: false,
@@ -437,6 +458,10 @@ impl Video {
 
         if let Some(release_date) = &self.release_date {
             eno.push_str(&format!("release_date: {}\n", release_date));
+        }
+
+        if let Some(sort_number) = &self.sort_number {
+            eno.push_str(&format!("sort_number: {}\n", sort_number));
         }
 
         if let Some(title) = &self.title {
