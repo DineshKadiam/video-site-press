@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::path::Path;
 use std::sync::Arc;
 
@@ -270,7 +273,7 @@ pub fn links(language: &Language, links: &[Link]) -> String {
                 let label = link.pretty_label();
                 let e_label = html_escape_outside_attribute(&label);
                 formatdoc!(r#"
-                    <a class="link" href="{url}" {rel_me}>{external_icon} <span>{e_label}</span></a>
+                    <a class="link" href="{url}" {rel_me} target="_blank">{external_icon} <span>{e_label}</span></a>
                 "#)
             }
         })
