@@ -1,3 +1,8 @@
+<!--
+    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-License-Identifier: CC0-1.0
+-->
+
 # Video
 
 A video in Hyper 8 is, at its simplest, represented by a directory
@@ -45,6 +50,7 @@ description = Confused looking people in an office
 file = episode_1.jpg
 
 release_date: 2024-02-12
+sort_number: 1
 title: The pilot episode of the show
 unlisted
 
@@ -66,6 +72,13 @@ reunite at an unexpected gathering.
 Stand-alone URLs inside the `description` field are automatically converted to links, and you can
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
+
+The `sort_number` field can optionally be used to enforce a custom order of appearance for
+videos that appear in a playlist. It accepts whole numerical values (1, 2, 3) - including zero
+and negative ones (0, -1, -2). In playlists this custom ordering will automatically be picked up
+by the default ordering mechanism (which sorts first by `sort_number` ascending, then by `release_date` 
+ascending), but the `order` field in a playlist manifest can be used to modify this behavior - e.g. to
+use descending sorting or to sort by release date even if `sort_number` is present on videos, etc.
 
 Any number of `link` fields can be given. The `label` for a link is optional.
 The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,

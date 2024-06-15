@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 
 use indoc::formatdoc;
@@ -255,7 +258,7 @@ fn render_playlist(
         String::new()
     };
 
-    let videos = playlist.public_videos_asc_by_release_date()
+    let videos = playlist.public_videos_in_playlist_order()
         .iter()
         .enumerate()
         .map(|(index, video)| {

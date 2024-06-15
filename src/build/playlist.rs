@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 
 use indoc::formatdoc;
@@ -55,7 +58,7 @@ pub fn playlist_html(
         body.push_str(&links_rendered);
     }
 
-    let videos = playlist.public_videos_asc_by_release_date();
+    let videos = playlist.public_videos_in_playlist_order();
 
     if !videos.is_empty() {
         let videos = videos

@@ -39,7 +39,7 @@ pub fn video_html(
     } else {
         match playlist {
             Some(playlist) => {
-                let videos = playlist.public_videos_asc_by_release_date();
+                let videos = playlist.public_videos_in_playlist_order();
 
                 let active_position = videos
                     .iter()

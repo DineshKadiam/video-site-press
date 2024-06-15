@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
@@ -22,7 +25,8 @@ use crate::{
     JobKind,
     Language,
     Link,
-    Playlist
+    Playlist,
+    PlaylistOrder
 };
 use crate::editor::{Checkbox, Input, Textarea};
 use crate::editor::endpoints;
@@ -61,6 +65,7 @@ pub enum PlaylistFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        order: &'a str,
         title: Field,
         unlisted: bool
     }
@@ -74,6 +79,7 @@ pub struct PlaylistMoveForm {
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
     description: String,
+    order: String,
     title: String,
     unlisted: Option<String>
 }
@@ -270,15 +276,18 @@ pub fn edit_page(
 
     textarea_description.id("playlist_description");
 
-    let feedback_update = if let Some(PlaylistFormFeedback::Update { description, title, unlisted }) = &form_feedback {
+    let order_selected;
+    let feedback_update = if let Some(PlaylistFormFeedback::Update { description, order, title, unlisted }) = &form_feedback {
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        order_selected = PlaylistOrder::from_key(order).unwrap();
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         input_title.value_option(&playlist.title);
         input_unlisted.checked(playlist.unlisted);
+        order_selected = playlist.order.clone();
         textarea_description.value_option(&playlist.description);
 
         String::new()
@@ -364,14 +373,27 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), &language.translations);
     let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), &language.translations);
 
+    // TODO: Implement helper methods to encapsulate this verbose, manual select markup construction stuff?
+    let order_default_selected = if order_selected == PlaylistOrder::Default { "selected" } else { "" };
+    let order_release_date_asc_selected = if order_selected == PlaylistOrder::ReleaseDateAsc { "selected" } else { "" };
+    let order_release_date_desc_selected = if order_selected == PlaylistOrder::ReleaseDateDesc { "selected" } else { "" };
+    let order_sort_number_asc_selected = if order_selected == PlaylistOrder::SortNumberAsc { "selected" } else { "" };
+    let order_sort_number_desc_selected = if order_selected == PlaylistOrder::SortNumberDesc { "selected" } else { "" };
+
     let t_banner_image = language.translations.banner_image;
     let t_danger_zone = language.translations.danger_zone;
+    let t_default_sort_number_or_release_date_ascending = language.translations.default_sort_number_or_release_date_ascending;
     let t_delete = language.translations.delete;
     let t_delete_playlist = language.translations.delete_playlist;
     let t_deleting_the_playlist_text = language.translations.deleting_the_playlist_text;
     let t_new_video = language.translations.new_video;
+    let t_order = language.translations.order;
     let t_playlist = language.translations.playlist;
     let t_really_delete = language.translations.really_delete;
+    let t_release_date_ascending = language.translations.release_date_ascending;
+    let t_release_date_descending = language.translations.release_date_descending;
+    let t_sort_number_ascending = language.translations.sort_number_ascending;
+    let t_sort_number_descending = language.translations.sort_number_descending;
     let t_update_playlist = language.translations.update_playlist;
     let body = formatdoc!(r#"
         {errors}
@@ -382,6 +404,16 @@ pub fn edit_page(
             <form action="/playlist/{path}" autocomplete="off" method="post">
                 {input_title}
                 {textarea_description}
+                <div class="form_field">
+                    <label for="order">{t_order}</label>
+                    <select id="order" name="order">
+                        <option {order_default_selected} value="default">{t_default_sort_number_or_release_date_ascending}</option>
+                        <option {order_release_date_asc_selected} value="release_date_asc">{t_release_date_ascending}</option>
+                        <option {order_release_date_desc_selected} value="release_date_desc">{t_release_date_descending}</option>
+                        <option {order_sort_number_asc_selected} value="sort_number_asc">{t_sort_number_ascending}</option>
+                        <option {order_sort_number_desc_selected} value="sort_number_desc">{t_sort_number_descending}</option>
+                    </select>
+                </div>
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -568,6 +600,7 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+    let order = PlaylistOrder::from_key(&form.order).unwrap();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
 
@@ -575,6 +608,7 @@ pub async fn update(
     if true {
         let mutation = |playlist: &mut Playlist| {
             playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            playlist.order = order;
             playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             playlist.unlisted = unlisted;
             playlist.write_manifest(&context);
@@ -595,6 +629,7 @@ pub async fn update(
 
         let form_feedback = PlaylistFormFeedback::Update {
             description: description_trimmed,
+            order: &form.order,
             title: Field::valid(title_trimmed),
             unlisted
         };

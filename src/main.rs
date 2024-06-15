@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::sync::{Arc, Mutex};
 
 use clap::Parser;
@@ -48,7 +51,7 @@ use image_processor::{ImageProcessor, ResizeMode};
 use language::Language;
 use link::Link;
 use markdown_subset::MarkdownSubset;
-use playlist::Playlist;
+use playlist::{Playlist, PlaylistOrder};
 use poster::{PosterAsset, PosterAssets, PosterFile};
 use processing::{Job, JobKind, Processing, Progress};
 use site::{AspectRatio, Site, SiteContent};

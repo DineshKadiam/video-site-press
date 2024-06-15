@@ -174,6 +174,8 @@ fn collection_tree(
             } else {
                 let mut videos_sorted: Vec<Arc<Video>> = playlist.videos.to_vec();
 
+                // TODO: Here and elsewhere replace these manual sorts with shared helper
+                //       methods like playlist.public_videos_asc_by_release_date?
                 videos_sorted.sort_unstable_by(|a, b| {
                     match (&a.title, &b.title) {
                         (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),

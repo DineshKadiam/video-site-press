@@ -1,3 +1,8 @@
+<!--
+    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-License-Identifier: CC0-1.0
+-->
+
 # Playlist
 
 A playlist is, at its simplest, a directory that contains a file called
@@ -32,6 +37,7 @@ banner:
 description = Colorful flags in the wind
 file = my_poster.jpg
 
+order: release_date_asc
 title: All episodes from the show
 unlisted
 
@@ -53,6 +59,16 @@ including the long-lost original three pilots.
 Stand-alone URLs inside the `description` field are automatically converted to links, and you can
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
+
+The `order` field controls in which order the videos appear in the playlist on the site.
+By default videos are first ordered by their `sort_number` ascending, falling back to `release_date` ascending
+if there are no sort numbers, and given neither of those the order will be random. This field can be set
+to one of the following:
+- `default` (redundant as it's the default anyway)
+- `release_date_asc`
+- `release_date_desc`
+- `sort_number_asc`
+- `sort_number_desc`
 
 Any number of `link` fields can be given. The `label` for a link is optional.
 The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,

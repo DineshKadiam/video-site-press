@@ -1,4 +1,7 @@
-use std::cmp;
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::cmp::{self, Ordering};
 use std::fs;
 use std::iter::Peekable;
 use std::path::Path;
@@ -28,12 +31,22 @@ pub struct Playlist {
 	pub description: Option<String>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
+    pub order: PlaylistOrder,
     pub path: String,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
     pub unlisted: bool,
 	pub videos: Vec<Arc<Video>>
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PlaylistOrder {
+    Default,
+    ReleaseDateAsc,
+    ReleaseDateDesc,
+    SortNumberAsc,
+    SortNumberDesc
 }
 
 impl Playlist {
@@ -158,6 +171,24 @@ impl Playlist {
             }
         }
 
+        match document.optional_field("order") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(value) => {
+                        match PlaylistOrder::from_key(&value) {
+                            Ok(order) => {
+                                self.order = order;
+                            }
+                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                        }
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line)),
+            _ => ()
+        }
+
         match document.optional_field("title") {
             Ok(Some(field)) => {
                 match field.required_value() {
@@ -264,6 +295,7 @@ impl Playlist {
             description: None,
             errors: Vec::new(),
             links: Vec::new(),
+            order: PlaylistOrder::Default,
             path,
             title: None,
             videos: Vec::new(),
@@ -277,8 +309,84 @@ impl Playlist {
 
     pub fn public_videos_asc_by_release_date(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b| b.release_date.cmp(&a.release_date));
+        videos.sort_unstable_by(|a, b|
+            match (&a.release_date, &b.release_date) {
+                (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => Ordering::Equal
+            }
+        );
         videos
+    }
+
+    pub fn public_videos_asc_by_sort_number(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b|
+            match (&a.sort_number, &b.sort_number) {
+                (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => Ordering::Equal
+            }
+        );
+        videos
+    }
+
+    pub fn public_videos_asc_by_sort_number_or_release_date(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b|
+            match (&a.sort_number, &b.sort_number) {
+                (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => {
+                    match (&a.release_date, &b.release_date) {
+                        (Some(a_release_date), Some(b_release_date)) => a_release_date.cmp(&b_release_date),
+                        (Some(_), None) => Ordering::Less,
+                        (None, Some(_)) => Ordering::Greater,
+                        (None, None) => Ordering::Equal
+                    }
+                }
+            }
+        );
+        videos
+    }
+
+    pub fn public_videos_desc_by_release_date(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b|
+            match (&a.release_date, &b.release_date) {
+                (Some(a_release_date), Some(b_release_date)) => b_release_date.cmp(&a_release_date),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => Ordering::Equal
+            }
+        );
+        videos
+    }
+
+    pub fn public_videos_desc_by_sort_number(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(|a, b|
+            match (&a.sort_number, &b.sort_number) {
+                (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(&a_sort_number),
+                (Some(_), None) => Ordering::Less,
+                (None, Some(_)) => Ordering::Greater,
+                (None, None) => Ordering::Equal
+            }
+        );
+        videos
+    }
+
+    pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
+        match self.order {
+            PlaylistOrder::Default => self.public_videos_asc_by_sort_number_or_release_date(),
+            PlaylistOrder::ReleaseDateAsc => self.public_videos_asc_by_release_date(),
+            PlaylistOrder::ReleaseDateDesc => self.public_videos_desc_by_release_date(),
+            PlaylistOrder::SortNumberAsc => self.public_videos_asc_by_sort_number(),
+            PlaylistOrder::SortNumberDesc => self.public_videos_desc_by_sort_number()
+        }
     }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
@@ -452,6 +560,10 @@ impl Playlist {
             eno.push_str(&link.to_eno());
         }
 
+        if self.order != PlaylistOrder::Default {
+            eno.push_str(&format!("order: {}\n", self.order.key()));
+        }
+
         if let Some(title) = &self.title {
             eno.push_str(&format!("title: {}\n", title));
         }
@@ -467,5 +579,32 @@ impl Playlist {
 
         let path = context.site_dir.join(&self.path).join("playlist.eno");
         fs::write(path, eno).unwrap();
+    }
+}
+
+impl PlaylistOrder {
+    pub fn from_key(key: &str) -> Result<PlaylistOrder, String> {
+        match key {
+            "default" => Ok(PlaylistOrder::Default),
+            "release_date_asc" => Ok(PlaylistOrder::ReleaseDateAsc),
+            "release_date_desc" => Ok(PlaylistOrder::ReleaseDateDesc),
+            "sort_number_asc" => Ok(PlaylistOrder::SortNumberAsc),
+            "sort_number_desc" => Ok(PlaylistOrder::SortNumberDesc),
+            _ => {
+                // TODO: Translate
+                let message = format!("Unsupported order key '{key}' (supported ones are 'default', 'release_date_asc', 'release_date_desc', 'sort_number_asc' and 'sort_number_desc')");
+                Err(message)
+            }
+        }
+    }
+
+    pub fn key(&self) -> &str {
+        match self {
+            PlaylistOrder::Default => "default",
+            PlaylistOrder::ReleaseDateAsc => "release_date_asc",
+            PlaylistOrder::ReleaseDateDesc => "release_date_desc",
+            PlaylistOrder::SortNumberAsc => "sort_number_asc",
+            PlaylistOrder::SortNumberDesc => "sort_number_desc"
+        }
     }
 }
