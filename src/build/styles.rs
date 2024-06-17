@@ -49,25 +49,40 @@ pub fn generate(context: &Context, site: &Site) {
         ThemeKind::Adaptive { dark, light } => {
             let static_adaptive_theme_css = include_str!("assets/adaptive_theme.css");
 
-            let dark_vars = dark.print();
-            let light_vars = light.print();
+            let dark_vars_hsl = dark.print_hsl();
+            let dark_vars_oklch = dark.print_oklch();
+            let light_vars_hsl = light.print_hsl();
+            let light_vars_oklch = light.print_oklch();
 
             formatdoc!(r#"
                 body {{
-                    {dark_vars}
+                    {dark_vars_hsl}
                 }}
                 body.light {{
-                    {light_vars}
+                    {light_vars_hsl}
                 }}
+                @supports (color: oklch(0% 0 0)) {{
+                    body {{
+                        {dark_vars_oklch}
+                    }}
+                    body.light {{
+                        {light_vars_oklch}
+                    }}                }}
                 {static_adaptive_theme_css}
             "#)
         }
         ThemeKind::Static(vars) => {
-            let only_vars = vars.print();
+            let only_vars_hsl = vars.print_hsl();
+            let only_vars_oklch = vars.print_oklch();
 
             formatdoc!(r#"
                 body {{
-                    {only_vars}
+                    {only_vars_hsl}
+                }}
+                @supports (color: oklch(0% 0 0)) {{
+                    body {{
+                        {only_vars_oklch}
+                    }}
                 }}
             "#)
         }
