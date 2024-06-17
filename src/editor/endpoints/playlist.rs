@@ -139,7 +139,8 @@ pub async fn delete(
     let redirect_url = if &path.path == "" {
         "/".to_string()
     } else {
-        Path::new("/collection").join(&path.path).parent().unwrap().to_str().unwrap().to_string()
+        // We join("") to append a trailing slash (which parent() removes beforehand)
+        Path::new("/collection/").join(&path.path).parent().unwrap().join("").to_str().unwrap().to_string()
     };
 
     Either::Left(Redirect::to(redirect_url).see_other())
