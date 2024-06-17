@@ -1,3 +1,8 @@
+<!--
+    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-License-Identifier: CC0-1.0
+-->
+
 # Hyper 8 Video System
 
 A static site generator for video
@@ -50,7 +55,7 @@ Available at [simonrepp.com/hyper8/docs](https://simonrepp.com/hyper8/docs) (som
 
 ## Funding
 
-Initial development (early alpha to beta 0.13.0) was funded by the [Austrian Federal Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html)
+Initial development (up to the first beta) was funded by the [Austrian Federal Ministry for Arts, Culture, Civil Service and Sport (BMKÖS)](https://www.bmkoes.gv.at/en.html)
 in cooperation with [dérive](https://derive.at) - thank you so much!
 
 ![BMKÖS Logo](https://simonrepp.com/hyper8/thumb_funding.jpg)
