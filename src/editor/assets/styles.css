@@ -68,6 +68,11 @@ button.danger:focus-visible,
 button.danger:hover {
     background-color: var(--danger-mg);
 }
+button.minor { background-color: var(--bg-2); }
+button.minor:focus-visible,
+button.minor:hover {
+    background-color: var(--bg-3);
+}
 .button_group {
     column-gap: .5rem;
     display: flex;
