@@ -665,7 +665,7 @@ pub fn upload_widget(action: &str, label: &str) -> String {
     formatdoc!(r#"
         <form action="{action}" method="post" enctype="multipart/form-data">
             <input name="file" type="file">
-            <button class="action" class="upload_button">{label}</button>
+            <button class="action upload_button">{label}</button>
         </form>
     "#)
 }
