@@ -501,6 +501,12 @@ impl Collection {
         videos
     }
 
+    pub fn public_videos_in_collection_order(&self) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
+        videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc);
+        videos
+    }
+
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Collection> {
         let mut collection = Collection::new(hyper_dir.site_path(context));
 
