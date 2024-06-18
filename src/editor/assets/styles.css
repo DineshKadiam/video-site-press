@@ -9,7 +9,7 @@ a {
     font-size: .8rem;
     padding: .2rem .4rem;
 }
-button, input { font-size: 1rem; }
+button, input, textarea { font-size: 1rem; }
 body {
     background-color: var(--bg-1);
     color: var(--fg-2);
