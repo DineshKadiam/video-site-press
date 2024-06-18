@@ -21,6 +21,7 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
     let theme_options = [
         ("adaptive", translations.adaptive),
         ("dark", translations.dark),
+        ("experimental", "Experimental"),
         ("light", translations.light)
     ]
         .into_iter()

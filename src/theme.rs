@@ -12,6 +12,11 @@ pub enum Color {
         hsl: (u16, f32, f32),
         oklch: (f32, f32, u16)
     },
+    ChromaticAlpha {
+        a: f32,
+        hsl: (u16, f32, f32),
+        oklch: (f32, f32, u16)
+    },
     Gradient {
         begin_hsl: (u16, f32, f32),
         begin_oklch: (f32, f32, u16),
@@ -95,6 +100,14 @@ impl Color {
 
                 format!("hsl({h} {s}% {l}%)")
             }
+            Color::ChromaticAlpha { a, hsl, .. } => {
+                let a = a * 100.0;
+                let h = hsl.0;
+                let s = hsl.1 * 100.0;
+                let l = hsl.2 * 100.0;
+
+                format!("hsl({h} {s}% {l}% / {a}%)")
+            }
             Color::Gradient { begin_hsl, end_hsl, .. } => {
                 let begin_h = begin_hsl.0;
                 let begin_s = begin_hsl.1 * 100.0;
@@ -125,6 +138,14 @@ impl Color {
                 let h = oklch.2;
 
                 format!("oklch({l}% {c} {h})")
+            }
+            Color::ChromaticAlpha { a, oklch, .. } => {
+                let a = a * 100.0;
+                let l = oklch.0 * 100.0;
+                let c = oklch.1;
+                let h = oklch.2;
+
+                format!("oklch({l}% {c} {h} / {a}%)")
             }
             Color::Gradient { begin_oklch, end_oklch, .. } => {
                 let begin_l = begin_oklch.0 * 100.0;
@@ -187,12 +208,20 @@ impl Theme {
         }
     }
 
+    pub fn experimental() -> Theme {
+        Theme {
+            key: "experimental",
+            kind: ThemeKind::Static(ThemeVars::experimental())
+        }
+    }
+
     pub fn from_key(key: &str) -> Result<Theme, String> {
         match key {
             "adaptive" => Ok(Theme::adaptive()),
             "dark" => Ok(Theme::dark()),
+            "experimental" => Ok(Theme::experimental()),
             "light" => Ok(Theme::light()),
-            _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive', 'dark' and 'light')"))
+            _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive', 'dark', 'light' and 'experimental')"))
         }
     }
 
@@ -317,6 +346,70 @@ impl ThemeVars {
             mg: Color::Gray {
                 hsl_l: 0.533,
                 oklch_l: 0.627
+            }
+        }
+    }
+
+    // TODO: hsl values are arbitrary (not in sync with oklch definitions)
+    pub fn experimental() -> ThemeVars {
+        ThemeVars {
+            action: Color::Chromatic {
+                hsl: (0, 0.0, 0.086),
+                oklch: (0.45, 0.1, 268)
+            },
+            action_hover: Color::Chromatic {
+                hsl: (0, 0.0, 0.086),
+                oklch: (0.56, 0.13, 268)
+            },
+            bg_1: Color::Chromatic {
+                hsl: (0, 0.0, 0.086),
+                oklch: (0.2, 0.012, 260)
+            },
+            bg_1_overlay: Color::ChromaticAlpha {
+                a: 0.85,
+                hsl: (0, 0.0, 0.086),
+                oklch: (0.2, 0.012, 260)
+            },
+            bg_2: Color::Chromatic {
+                hsl: (0, 0.0, 0.149),
+                oklch: (0.269, 0.012, 260)
+            },
+            bg_3: Color::Chromatic {
+                hsl: (0, 0.0, 0.2),
+                oklch: (0.32, 0.012, 260)
+            },
+            bg_mg: Color::Chromatic {
+                hsl: (0, 0.0, 0.267),
+                oklch: (0.387, 0.012, 260)
+            },
+            danger: Color::Chromatic {
+                hsl: (0, 0.0, 0.267),
+                oklch: (0.45, 0.12, 370)
+            },
+            danger_hover: Color::Chromatic {
+                hsl: (0, 0.0, 0.267),
+                oklch: (0.56, 0.14, 370)
+            },
+            fg_1: Color::Gray {
+                hsl_l: 1.0,
+                oklch_l: 1.0
+            },
+            fg_2: Color::Chromatic {
+                hsl: (0, 0.0, 0.788),
+                oklch: (0.84, 0.012, 260)
+            },
+            fg_3: Color::Chromatic {
+                hsl: (0, 0.0, 0.698),
+                oklch: (0.77, 0.012, 260)
+            },
+            fg_mg: Color::Chromatic {
+                hsl: (0, 0.0, 0.596),
+                oklch: (0.68, 0.012, 260)
+            },
+            light_1: "var(--fg-1)",
+            mg: Color::Chromatic {
+                hsl: (0, 0.0, 0.533),
+                oklch: (0.627, 0.012, 260)
             }
         }
     }

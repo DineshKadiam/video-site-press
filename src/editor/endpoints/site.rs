@@ -147,6 +147,7 @@ fn edit_page(
 
     let radio_button_adaptive = radio_button(theme_key, "adaptive", translations.adaptive);
     let radio_button_dark = radio_button(theme_key, "dark", translations.dark);
+    let radio_button_experimental = radio_button(theme_key, "experimental", "Experimental");
     let radio_button_light = radio_button(theme_key, "light", translations.light);
 
     let t_deployment_is_currently_supported_text = translations.deployment_is_currently_supported_text;
@@ -175,6 +176,7 @@ fn edit_page(
                         {radio_button_adaptive}
                         {radio_button_dark}
                         {radio_button_light}
+                        {radio_button_experimental}
                     </div>
                 </div>
                 {clean_urls_checkbox}
