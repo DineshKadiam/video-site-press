@@ -731,9 +731,9 @@ pub fn edit_page(
     };
     let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path, &language.translations);
 
-    let t_upload_additional_format = language.translations.upload_additional_format;
+    let t_upload_new_version = language.translations.upload_new_version;
     let upload_url = format!("/upload-video/{path}");
-    let video_upload_button = upload_widget(&upload_url, t_upload_additional_format);
+    let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
 
     let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
     let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
