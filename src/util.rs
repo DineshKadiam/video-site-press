@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::{Error, ErrorKind};
@@ -273,16 +276,21 @@ pub fn timestamp() -> u128 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
 }
 
+/// Checks whether the string contains only a-Z, A-Z, 0-9, dash and underscore
+pub fn valid_slug_chars(string: &str) -> bool {
+    string.chars().all(|c: char| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
+
 /// If the slug comes from user input make sure to trim it before passing it.
 /// This checks whether the slug is non-empty and whether it contains only
 /// allowed characters.
-pub fn validate_slug(slug: &str) -> Result<(), String> {
-    if slug.is_empty() {
+pub fn validate_slug(string: &str) -> Result<(), String> {
+    if string.is_empty() {
         return Err(String::from("Can't be empty"));
     }
 
-    let slugified = slugify(slug);
-    if slugified != slug {
+    if !valid_slug_chars(string) {
+        let slugified = slugify(string);
         return Err(format!("Not a slug, allowed is e.g. {slugified}"));
     }
 

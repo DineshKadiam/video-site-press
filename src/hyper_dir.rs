@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::path::{Path, PathBuf};
 
 use slug::slugify;
@@ -8,7 +11,8 @@ use crate::util::{
     supported_font_extension,
     supported_image_extension,
     supported_subtitle_extension,
-    supported_video_extension
+    supported_video_extension,
+    valid_slug_chars
 };
 
 /// Convenience wrapper to generically pre-scan directories for
@@ -59,13 +63,10 @@ impl HyperDir {
                         if file_name.starts_with('.') { continue }
 
                         if file_type.is_dir() {
-                            let slugified = slugify(&file_name);
-
-                            // TODO: Revisit whether slugify(...) actually imposes the sort of dir name constraints
-                            //       we want, and also, what are these anyway, exactly?
-                            if slugified == file_name {
+                            if valid_slug_chars(&file_name) {
                                 hyper_dir.dirs.push(dir_entry.path());
                             } else {
+                                let slugified = slugify(&file_name);
                                 let error = format!("Ignoring directory '{file_name}' because its name is invalid (try to only use alphanumeric characters, dash and underscore, e.g. '{slugified}')");
                                 hyper_dir.errors.push(error);
                             }

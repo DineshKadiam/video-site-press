@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::cmp::Ordering;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -151,7 +154,7 @@ impl Context {
                     Some(title) => slugify(title),
                     None => match video.highest_quality_version() {
                         Some(version) => {
-                            Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
+                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                         }
                         None => String::from("video")
                     }
@@ -220,7 +223,7 @@ impl Context {
                     Some(title) => slugify(title),
                     None => match video.highest_quality_version() {
                         Some(version) => {
-                            Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
+                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                         }
                         None => String::from("video")
                     }
@@ -305,7 +308,7 @@ impl Context {
                     Some(title) => slugify(title),
                     None => match video.highest_quality_version() {
                         Some(version) => {
-                            Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
+                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                         }
                         None => String::from("video")
                     }
@@ -380,7 +383,7 @@ impl Context {
                     Some(title) => slugify(title),
                     None => match video.highest_quality_version() {
                         Some(version) => {
-                            Path::new(&version.file_name).file_stem().unwrap().to_string_lossy().to_string()
+                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                         }
                         None => String::from("video")
                     }
