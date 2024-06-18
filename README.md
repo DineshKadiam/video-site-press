@@ -11,9 +11,9 @@ A static site generator for video
 
 ## Overview
 
-See the [website](https://simonrepp.com/hyper8) for more screenshots and information.
+Check out videos showcasing Hyper 8 at [simonrepp.com/video/hyper8](https://simonrepp.com/video/hyper8/) - which is at the same time a Hyper 8 demo, because that site is itself using Hyper 8!
 
-Watch an old ~4min [teaser/introduction](https://simonrepp.com/hyper8/teaser) to get a glimpse of Hyper 8's underlying concepts.
+See the [website](https://simonrepp.com/hyper8) for more screenshots and information.
 
 Follow this [thread on the fediverse](https://post.lurk.org/@freebliss/112043777597496559) for continuing reports on the development.
 
