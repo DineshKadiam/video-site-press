@@ -448,7 +448,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                         <option value="speed">{t_highest_speed_only_use_if_you_need_results_as_soon_as_possible}</option>
                     </select>
                 </div>
-                <button>{t_render_format}</button>
+                <button class="action">{t_render_format}</button>
             </form>
         </div>
     "#)
@@ -571,7 +571,7 @@ pub fn edit_page(
                     method="post"
                     style="display: inline;">
                         <input name="file_name" type="hidden" value="{file_name}">
-                        <button class="delete_button">{delete_icon}</button>
+                        <button class="danger delete_button">{delete_icon}</button>
                     </form>
                 "#);
 
@@ -631,18 +631,19 @@ pub fn edit_page(
 
             let t_delete_poster = language.translations.delete_poster;
             let t_random_poster = language.translations.random_poster;
+            let t_really_delete = language.translations.really_delete;
             let t_update_description = language.translations.update_description;
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
                 <div class="button_group">
                     {poster_upload_button}
-                    <form action="/delete-poster/{path}" method="post">
-                        <div style="align-items: center; column-gap: .5rem; display: flex;">
-                            <button>{t_delete_poster}</button>
-                        </div>
-                    </form>
                     <form action="/random-poster/{path}" method="post">
-                        <button>{t_random_poster}</button>
+                        <button class="action">{t_random_poster}</button>
+                    </form>
+                    <form action="/delete-poster/{path}" data-confirm data-confirm-label="{t_delete_poster}" data-confirm-text="{t_really_delete}" method="post">
+                        <div style="align-items: center; column-gap: .5rem; display: flex;">
+                            <button class="danger">{t_delete_poster}</button>
+                        </div>
                     </form>
                 </div>
                 {poster_upload_button_error}
@@ -650,7 +651,7 @@ pub fn edit_page(
                     {description}
 
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button>{t_update_description}</button>
+                        <button class="action">{t_update_description}</button>
                     </div>
                 </form>
             "#)
@@ -787,7 +788,7 @@ pub fn edit_page(
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_update_video}</button> {feedback_update}
+                    <button class="action">{t_update_video}</button> {feedback_update}
                 </div>
             </form>
         </div>

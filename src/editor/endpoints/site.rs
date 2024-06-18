@@ -180,7 +180,7 @@ fn edit_page(
                 {clean_urls_checkbox}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_update_site}</button> {feedback}
+                    <button class="action">{t_update_site}</button> {feedback}
                 </div>
             </form>
         </div>

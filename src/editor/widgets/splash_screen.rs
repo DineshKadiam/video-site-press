@@ -91,7 +91,7 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
                         </li>
                     </ul>
                     <form class="close" method="dialog">
-                        <button autofocus class="minor">{t_close}</button>
+                        <button autofocus>{t_close}</button>
                     </form>
                 </div>
             </div>

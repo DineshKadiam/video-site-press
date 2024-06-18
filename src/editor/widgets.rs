@@ -382,7 +382,7 @@ pub fn layout(
                     <dialog class="confirmation_wrapper">
                         <div class="text"></div>
                         <div class="buttons">
-                            <button autofocus class="cancel minor">{t_cancel}</button>
+                            <button autofocus class="cancel">{t_cancel}</button>
                             <button class="confirm danger"></button>
                         </div>
                     </dialog>
@@ -665,7 +665,7 @@ pub fn upload_widget(action: &str, label: &str) -> String {
     formatdoc!(r#"
         <form action="{action}" method="post" enctype="multipart/form-data">
             <input name="file" type="file">
-            <button class="upload_button">{label}</button>
+            <button class="action" class="upload_button">{label}</button>
         </form>
     "#)
 }

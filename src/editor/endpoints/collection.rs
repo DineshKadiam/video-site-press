@@ -346,7 +346,6 @@ pub fn edit_page(
             .join("")
     };
 
-    let t_delete_banner = language.translations.delete_banner;
     let t_upload_banner = language.translations.upload_banner;
     let banner_upload_button = upload_widget(&format!("/upload-collection-banner/{path}"), t_upload_banner);
     let banner_form = match &collection.banner {
@@ -371,18 +370,20 @@ pub fn edit_page(
                 .id("banner_description")
                 .value_option(&banner.description);
 
+            let t_delete_banner = language.translations.delete_banner;
+            let t_really_delete = language.translations.really_delete;
             let t_update_description = language.translations.update_description;
             format!(r#"
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
                     {banner_upload_button}
-                    <form action="/delete-collection-banner/{path}" method="post">
-                        <button>{t_delete_banner}</button>
+                    <form action="/delete-collection-banner/{path}" data-confirm data-confirm-label="{t_delete_banner}" data-confirm-text="{t_really_delete}" method="post">
+                        <button class="danger">{t_delete_banner}</button>
                     </form>
                 </div>
                 <form action="/update-collection-banner/{path}" data-warn-discard method="post">
                     {description}
-                    <button>{t_update_description}</button>
+                    <button class="action">{t_update_description}</button>
                 </form>
             "#)
         }
@@ -550,7 +551,7 @@ pub fn edit_page(
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_update_collection}</button> {feedback_update}
+                    <button class="action">{t_update_collection}</button> {feedback_update}
                 </div>
             </form>
         </div>
@@ -566,7 +567,7 @@ pub fn edit_page(
                 {input_slug_create_subcollection}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_create_subcollection}</button> {feedback_create_subcollection}
+                    <button class="action">{t_create_subcollection}</button> {feedback_create_subcollection}
                 </div>
             </form>
         </div>
@@ -578,7 +579,7 @@ pub fn edit_page(
                 {input_slug_create_playlist}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button>{t_create_playlist}</button> {feedback_create_playlist}
+                    <button class="action">{t_create_playlist}</button> {feedback_create_playlist}
                 </div>
             </form>
         </div>
@@ -590,7 +591,7 @@ pub fn edit_page(
 
         <div class="form_group">
             <h2>{t_banner_image}</h2>
-            <p style="background-color: var(--danger-bg); border-radius: .5rem; color: var(--danger-fg); padding: 1rem;">
+            <p style="background: var(--danger); border-radius: .5rem; color: var(--light-1); padding: 1rem;">
                 Heads up: Banner images are not yet used in the layout,<br>but this will be included in a future version of Hyper 8
             </p>
             {banner_form}

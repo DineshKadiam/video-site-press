@@ -39,7 +39,7 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
                         <option value="rel-me-hidden">{t_hidden_link_with_rel_me_attribute}</option>
                     </select>
                 </div>
-                <button>{t_add_link}</button>
+                <button class="action">{t_add_link}</button>
             </form>
         </div>
     "#)
@@ -80,7 +80,7 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
                     style="display: inline;">
                     <input name="label" type="hidden" {label_value}>
                     <input name="url" type="hidden" value="{url_value}">
-                    <button class="delete_button">{delete_icon}</button>
+                    <button class="danger delete_button">{delete_icon}</button>
                 </form>
             "#);
 
