@@ -646,7 +646,7 @@ pub fn edit_page(
                     </form>
                 </div>
                 {poster_upload_button_error}
-                <form action="/update-poster/{path}" method="post">
+                <form action="/update-poster/{path}" data-warn-discard method="post">
                     {description}
 
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -714,7 +714,7 @@ pub fn edit_page(
                 {t_a_permalink_defines_under_which_url_text}
             </p>
 
-            <form action="/move-video/{path}" method="post">
+            <form action="/move-video/{path}" data-warn-discard method="post">
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -777,7 +777,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_video}</h2>
 
-            <form action="/video/{path}" autocomplete="off" method="post">
+            <form action="/video/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
                 <div class="form_split divide_3_1">

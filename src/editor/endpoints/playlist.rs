@@ -262,7 +262,7 @@ pub fn edit_page(
                         <button>{t_delete_banner}</button>
                     </form>
                 </div>
-                <form action="/update-playlist-banner/{path}" method="post">
+                <form action="/update-playlist-banner/{path}" data-warn-discard method="post">
                     {description}
                     <button>{t_update_description}</button>
                 </form>
@@ -316,7 +316,7 @@ pub fn edit_page(
                 {t_a_permalink_defines_under_which_url_text}
             </p>
 
-            <form action="/move-playlist/{path}" method="post">
+            <form action="/move-playlist/{path}" data-warn-discard method="post">
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -406,7 +406,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_playlist}</h2>
 
-            <form action="/playlist/{path}" autocomplete="off" method="post">
+            <form action="/playlist/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
                 <div class="form_field">

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
@@ -377,7 +380,7 @@ pub fn edit_page(
                         <button>{t_delete_banner}</button>
                     </form>
                 </div>
-                <form action="/update-collection-banner/{path}" method="post">
+                <form action="/update-collection-banner/{path}" data-warn-discard method="post">
                     {description}
                     <button>{t_update_description}</button>
                 </form>
@@ -430,7 +433,7 @@ pub fn edit_page(
                 {t_a_permalink_defines_under_which_url_text}
             </p>
 
-            <form action="/move-collection/{path}" method="post">
+            <form action="/move-collection/{path}" data-warn-discard method="post">
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -541,7 +544,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_collection}</h2>
 
-            <form action="/collection/{path}" autocomplete="off" method="post">
+            <form action="/collection/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
                 {input_unlisted_conditionally_hidden}
@@ -559,7 +562,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_new_subcollection}</h2>
 
-            <form action="/create-subcollection/{path}" method="post">
+            <form action="/create-subcollection/{path}" data-warn-discard method="post">
                 {input_slug_create_subcollection}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -571,7 +574,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_new_playlist}</h2>
 
-            <form action="/create-playlist/{path}" method="post">
+            <form action="/create-playlist/{path}" data-warn-discard method="post">
                 {input_slug_create_playlist}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">

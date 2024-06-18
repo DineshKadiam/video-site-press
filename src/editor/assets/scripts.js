@@ -173,6 +173,24 @@ for (const form of document.querySelectorAll('form[data-confirm]')) {
     });
 }
 
+const warnDiscardBeforeUnload = event => event.preventDefault();
+let warnDiscardBound = [];
+for (const form of document.querySelectorAll('form[data-warn-discard]')) {
+    form.addEventListener('change', () => {
+        if (!warnDiscardBound.length) {
+            window.addEventListener('beforeunload', warnDiscardBeforeUnload);
+        }
+        if (!warnDiscardBound.includes(form)) {
+            warnDiscardBound.push(form);
+        }
+    });
+    form.addEventListener('submit', event => {
+        if (warnDiscardBound.length === 1 && warnDiscardBound[0] === form) {
+            window.removeEventListener('beforeunload', warnDiscardBeforeUnload)
+        }
+    });
+}
+
 fetchProcessing();
 setInterval(fetchProcessing, 2000);
 
