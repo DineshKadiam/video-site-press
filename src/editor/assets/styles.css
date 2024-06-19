@@ -289,8 +289,8 @@ pre.error {
 }
 .processing.active svg { color: var(--danger-bg); }
 .processing_badge {
-    background-color: var(--danger-bg);
-    border: 1px solid var(--danger-bg);
+    background: var(--danger);
+    border: 1px solid var(--fg-1);
     border-radius: .2rem;
     color: var(--light-1);
     display: flex;
@@ -299,7 +299,7 @@ pre.error {
 .processing_badge span { padding: .15rem .3rem; }
 .processing_badge span.inverted {
     border-bottom-right-radius: .2rem;
-    border-left: 1px dotted var(--bg-1);
+    border-left: 1px dotted var(--fg-1);
     border-top-right-radius: .2rem;
 }
 select {
