@@ -387,7 +387,6 @@ pub fn edit_page(
 
     let t_banner_image = translations.banner_image;
     let t_danger_zone = translations.danger_zone;
-    let t_delete = translations.delete;
     let t_delete_playlist = translations.delete_playlist;
     let t_deleting_the_playlist_text = translations.deleting_the_playlist_text;
     let t_new_video = translations.new_video;
@@ -448,7 +447,7 @@ pub fn edit_page(
             <form
                 action="/delete-playlist/{path}"
                 data-confirm
-                data-confirm-label="{t_delete}"
+                data-confirm-label="{t_delete_playlist}"
                 data-confirm-text="{t_really_delete}"
                 method="post">
                 <button class="danger">{t_delete_playlist}</button>
