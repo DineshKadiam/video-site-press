@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
@@ -39,7 +42,7 @@ pub async fn change_editor_config(
     form: Form<EditorConfigForm>,
 ) -> Redirect {
     *context.editor_language.lock().unwrap() = Language::from_code(&form.language_code);
-    *context.editor_theme.lock().unwrap() = Theme::from_key(&form.theme_key).unwrap_or_else(|_| Theme::adaptive());
+    *context.editor_theme.lock().unwrap() = Theme::from_key(&form.theme_key).unwrap_or_else(|_| Theme::default());
 
     let editor_config = EditorConfig::new(&form.language_code, &form.theme_key);
 

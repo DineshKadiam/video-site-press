@@ -882,7 +882,7 @@ impl Context {
             cache,
             cache_dir,
             deploying: Mutex::new(DeploymentState::new()),
-            editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::adaptive())),
+            editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::default())),
             editor_language: Mutex::new(Language::from_code(editor_language)),
             job_queue: Mutex::new(Vec::new()),
             jobs_completed: Mutex::new(Vec::new()),

@@ -4,41 +4,30 @@
 use indoc::formatdoc;
 
 use crate::{Language, Theme};
+use crate::editor::Select;
 use crate::icons;
 
 pub fn splash_screen(language: &Language, theme: Theme) -> String {
     let translations = &language.translations;
 
-    let language_options = [("de", "Deutsch"), ("en", "English")]
-        .into_iter()
-        .map(|(code, label)| {
-            let selected = if code == &language.code { "selected" } else { "" };
-            format!(r#"<option {selected} value="{code}">{label}</option>"#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    let mut select_language = Select::new("language_code", translations.language);
+    for (code, label) in [("de", "Deutsch"), ("en", "English")] {
+        select_language.option(code, label);
+    }
+    select_language.selected(&language.code);
 
-    let theme_options = [
-        ("adaptive", translations.adaptive),
-        ("dark", translations.dark),
-        ("experimental", "Experimental"),
-        ("light", translations.light)
-    ]
-        .into_iter()
-        .map(|(key, label)| {
-            let selected = if &key == &theme.key { "selected" } else { "" };
-            format!(r#"<option {selected} value="{key}">{label}</option>"#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    let mut select_theme = Select::new("theme_key", translations.theme);
+
+    for (key, label) in Theme::variants(translations) {
+        select_theme.option(key, label);
+    }
+    select_theme.selected(&theme.key);
 
     let external_icon = icons::external(translations.external_link);
     let hyper8_version = env!("CARGO_PKG_VERSION");
     let t_documentation = translations.documentation;
     let t_close = translations.close;
-    let t_language = translations.language;
     let t_report_a_bug = translations.report_a_bug;
-    let t_theme = translations.theme;
     let t_version = translations.version;
     let t_website = translations.website;
     formatdoc!(r#"
@@ -52,17 +41,12 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
                     </a>
                 </div>
                 <div class="pad">
-                    <form action="/change-editor-config" class="editor_config" method="post">
+                    <form action="/change-editor-config" method="post">
                         <input name="redirect" type="hidden">
-                            <label for="language_code">{t_language}</label>
-                            <select id="language_code" name="language_code">
-                                {language_options}
-                            </select>
-                            <span style="display: inline-block; width: 1rem;"></span>
-                            <label for="theme_key">{t_theme}</label>
-                            <select id="theme_key" name="theme_key">
-                                {theme_options}
-                            </select>
+                        <div class="form_split even">
+                            {select_language}
+                            {select_theme}
+                        </div>
                     </form>
                     <ul autofocus>
                         <li>

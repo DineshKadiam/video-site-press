@@ -326,7 +326,6 @@ select {
     justify-content: flex-end;
 }
 .splash .close button { font-size: .9rem; }
-.splash .editor_config { columns: 2; }
 .splash .image_wrapper { position: relative; }
 .splash img {
     background:
@@ -355,7 +354,7 @@ select {
     background-color: var(--bg-2);
     border: none;
     color: var(--fg-1);
-    margin-left: .5rem;
+    width: 85%;
 }
 .splash svg {
     height: 1rem;

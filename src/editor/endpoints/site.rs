@@ -19,7 +19,7 @@ use crate::{
     Theme,
     Translations
 };
-use crate::editor::{Checkbox, Input};
+use crate::editor::{Checkbox, Input, Select};
 use crate::editor::endpoints;
 
 #[derive(Deserialize)]
@@ -64,38 +64,6 @@ fn edit_page(
             .join("")
     };
 
-    // let proposed_formats = [
-    //     VideoFormat::AudioOnly,
-    //     VideoFormat::Video {
-    //         codec: Codec::H264,
-    //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Speed,
-    //         quality: 0.0,
-    //         width: 240
-    //     },
-    //     VideoFormat::Video {
-    //         codec: Codec::H264,
-    //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Efficiency,
-    //         quality: 0.5,
-    //         width: 480
-    //     },
-    //     VideoFormat::Video {
-    //         codec: Codec::H264,
-    //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Efficiency,
-    //         quality: 0.75,
-    //         width: 720
-    //     },
-    //     VideoFormat::Video {
-    //         codec: Codec::H264,
-    //         container: Container::Mp4,
-    //         encoding_approach: EncodingApproach::Efficiency,
-    //         quality: 1.0,
-    //         width: 1080
-    //     }
-    // ]
-
     let mut clean_urls_checkbox = Checkbox::new("clean_urls", translations.clean_urls_label);
     let mut input_base_url = Input::url("base_url", translations.public_address_label);
     let mut input_deployment_path = Input::text("deployment_path", translations.deployment_path_label);
@@ -104,11 +72,16 @@ fn edit_page(
     let mut input_language = Input::text("language", translations.language_label);
     let mut input_poster_aspect = Input::text("poster_aspect", translations.poster_aspect_label);
 
+    let mut select_theme = Select::new("theme", translations.theme);
+    for (key, label) in Theme::variants(translations) {
+        select_theme.option(key, label);
+    }
+
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
     //       that give very clear indication about what base url, deployment path/server/user etc. are and
     //       what to pay attention to.
     let t_not_saved = translations.not_saved;
-    let (theme_key, feedback) = if let Some(unsaved) = &form_feedback {
+    let feedback = if let Some(unsaved) = &form_feedback {
         clean_urls_checkbox.checked(unsaved.clean_urls);
         input_base_url.validated_value(&unsaved.base_url);
         input_deployment_path.validated_value(&unsaved.deployment_path);
@@ -116,8 +89,9 @@ fn edit_page(
         input_deployment_user.validated_value(&unsaved.deployment_user);
         input_language.validated_value(&unsaved.language);
         input_poster_aspect.validated_value(&unsaved.poster_aspect);
+        select_theme.selected(&unsaved.theme.key);
 
-        (&unsaved.theme.key, format!(r#"<span class="feedback">{t_not_saved}</span>"#))
+        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         let language = if site.language.default { None } else { Some(&site.language.code) };
         let poster_aspect = match &site.poster_aspect {
@@ -132,27 +106,13 @@ fn edit_page(
         input_deployment_user.value_option(&site.deploy_config.user);
         input_language.value_option(&language);
         input_poster_aspect.value_option(&poster_aspect);
+        select_theme.selected(&site.theme.key);
 
-        (&site.theme.key, String::new())
+        String::new()
     };
-
-    let radio_button = |checked_key: &str, key: &str, label: &str| -> String {
-        let checked = if key == checked_key { "checked " } else { "" };
-        formatdoc!(r#"
-            <span>
-                <input {checked}name="theme" type="radio" value="{key}"> <label for="{key}">{label}</label>
-            </span>
-        "#)
-    };
-
-    let radio_button_adaptive = radio_button(theme_key, "adaptive", translations.adaptive);
-    let radio_button_dark = radio_button(theme_key, "dark", translations.dark);
-    let radio_button_experimental = radio_button(theme_key, "experimental", "Experimental");
-    let radio_button_light = radio_button(theme_key, "light", translations.light);
 
     let t_deployment_is_currently_supported_text = translations.deployment_is_currently_supported_text;
     let t_site_settings = translations.site_settings;
-    let t_theme = translations.theme;
     let t_update_site = translations.update_site;
     formatdoc!(r#"
         <div class="form_group">
@@ -170,15 +130,7 @@ fn edit_page(
                 {input_deployment_user}
                 {input_poster_aspect}
                 {input_language}
-                <div class="form_field">
-                    <span>{t_theme}</span>
-                    <div>
-                        {radio_button_adaptive}
-                        {radio_button_dark}
-                        {radio_button_light}
-                        {radio_button_experimental}
-                    </div>
-                </div>
+                {select_theme}
                 {clean_urls_checkbox}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
