@@ -227,7 +227,6 @@ main {
     padding: 3rem;
     max-width: 32rem;
 }
-.muted { color: var(--bg-mg); }
 nav {
     background-color: var(--bg-2);
     max-width: 20rem;
@@ -280,6 +279,7 @@ nav a svg {
 }
 nav a.active { background-color: var(--bg-3); }
 nav li { margin-top: .1rem; }
+.no_title { color: var(--mg); }
 pre.error {
     background: var(--danger);
     border-radius: .2rem;

@@ -508,12 +508,7 @@ pub fn site_tree(
             }
 
             let videos = if playlist.videos.is_empty() {
-                // TODO: Debug this state/logic, not really wanted/finished
-                formatdoc!(r#"
-                    <li>
-                        <span class="muted">Empty</span>
-                    </li>
-                "#)
+                String::new()
             } else {
                 let video_icon = icons::video(translations.video);
 
@@ -631,7 +626,7 @@ fn tree_node(
     let t_no_title = translations.no_title;
     let e_title = title_option
         .map(|title| html_escape_outside_attribute(title))
-        .unwrap_or(format!(r#"<span class="muted">{t_no_title}</span>"#));
+        .unwrap_or(format!(r#"<span aria-hidden="true" class="no_title">…</span>"#));
 
     let title_with_unlisted_badge = if unlisted {
         let t_unlisted = translations.unlisted;
