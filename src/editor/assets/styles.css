@@ -354,7 +354,6 @@ select {
     background-color: var(--bg-2);
     border: none;
     color: var(--fg-1);
-    width: 85%;
 }
 .splash svg {
     height: 1rem;

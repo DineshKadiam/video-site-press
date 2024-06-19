@@ -45,17 +45,23 @@ site the default `16:9` aspect ratio is a good choice, but for wider cinematic
 material a wider aspect ratio is recommended, as is a portrait ratio like
 for instance `9:16` for exclusively mobile video content.
 
-The `theme` option can be set to either `adaptive`, `dark`, `light` or the,
-for the time being, potentially unstable `experimental`. The adaptive theme
-will dynamically present a site that is either dark or light to visitors,
-depending on their system settings. Still, users are able to manually toggle
-between the dark and light theme by clicking on the respective control on the
-page. In general the adaptive theme is recommended as it makes the site more
-friendly and usable for visitors with different needs, but of course for
-specific usecases this can be weighed off - e.g. it might still make sense to
-configure a trailer page for a horror movie with a dark theme only, as the
-imagery might be dark itself and a light theme would potentially collide with
-the desired aesthetics and visual impression intended by the creators.
+The `theme` option can be set to any of these:
+- `adaptive_experimental`,
+- `adaptive_neutral`,
+- `dark_experimental`
+- `dark_neutral`
+- `light_experimental`
+- `light_neutral`
+
+Adaptive themes will dynamically present a site that is either dark or light
+to visitors, depending on their system settings, but users are then still able to
+manually toggle between the dark and light theme by clicking on the
+respective control on the page. In general the adaptive theme is recommended
+as it makes the site more friendly and usable for visitors with different
+needs, but of course for specific usecases this can be weighed off - e.g. it
+might still make sense to configure a trailer page for a horror movie with a
+dark theme only, as the imagery might be dark itself and a light theme would
+potentially collide with the desired aesthetics and visual impression intended.
 
 With `deploy_config` you can configure the (remote) `path`, `server` and `user`
 for an ssh/rsync based deployment. Note that for now only password-less

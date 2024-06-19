@@ -8,12 +8,14 @@ use crate::Translations;
 mod color;
 mod dark_experimental;
 mod dark_neutral;
+mod light_experimental;
 mod light_neutral;
 mod theme_vars;
 
 use color::Color;
 use dark_experimental::DARK_EXPERIMENTAL_VARS;
 use dark_neutral::DARK_NEUTRAL_VARS;
+use light_experimental::LIGHT_EXPERIMENTAL_VARS;
 use light_neutral::LIGHT_NEUTRAL_VARS;
 use theme_vars::ThemeVars;
 
@@ -33,6 +35,14 @@ pub enum ThemeKind {
 }
 
 impl Theme {
+    const ADAPTIVE_EXPERIMENTAL: Theme = Theme {
+        key: "adaptive_experimental",
+        kind: ThemeKind::Adaptive {
+            dark: DARK_EXPERIMENTAL_VARS,
+            light: LIGHT_EXPERIMENTAL_VARS
+        }
+    };
+
     const ADAPTIVE_NEUTRAL: Theme = Theme {
         key: "adaptive_neutral",
         kind: ThemeKind::Adaptive {
@@ -49,6 +59,11 @@ impl Theme {
     const DARK_NEUTRAL: Theme = Theme {
         key: "dark_neutral",
         kind: ThemeKind::Static(DARK_NEUTRAL_VARS)
+    };
+
+    const LIGHT_EXPERIMENTAL: Theme = Theme {
+        key: "light_experimental",
+        kind: ThemeKind::Static(LIGHT_EXPERIMENTAL_VARS)
     };
 
     const LIGHT_NEUTRAL: Theme = Theme {
@@ -79,9 +94,11 @@ impl Theme {
 
     pub fn from_key(key: &str) -> Result<Theme, String> {
         match key {
+            "adaptive_experimental" => Ok(Theme::ADAPTIVE_EXPERIMENTAL),
             "adaptive_neutral" => Ok(Theme::ADAPTIVE_NEUTRAL),
             "dark_experimental" => Ok(Theme::DARK_EXPERIMENTAL),
             "dark_neutral" => Ok(Theme::DARK_NEUTRAL),
+            "light_experimental" => Ok(Theme::LIGHT_EXPERIMENTAL),
             "light_neutral" => Ok(Theme::LIGHT_NEUTRAL),
             _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_neutral', 'dark_neutral', 'light_neutral' and 'dark_experimental')"))
         }
@@ -110,7 +127,7 @@ impl Theme {
         "#)
     }
 
-    pub fn variants(translations: &Translations) -> [(&str, String); 4] {
+    pub fn variants(translations: &Translations) -> [(&str, String); 6] {
         let t_adaptive = translations.adaptive;
         let t_dark = translations.dark;
         let t_light = translations.light;
@@ -120,9 +137,11 @@ impl Theme {
         // the "extended" eventual set of themes will be lined up with proper names
         // and only the neutral base theme will remain translated as a generic term.
         [
+            ("adaptive_experimental", format!("{t_adaptive} Experimental")),
             ("adaptive_neutral", format!("{t_adaptive} {t_neutral}")),
             ("dark_experimental", format!("{t_dark} Experimental")),
             ("dark_neutral", format!("{t_dark} {t_neutral}")),
+            ("light_experimental", format!("{t_light} Experimental")),
             ("light_neutral", format!("{t_light} {t_neutral}"))
         ]
     }
