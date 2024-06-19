@@ -623,7 +623,6 @@ fn tree_node(
             </span>
         "#)
     };
-    let t_no_title = translations.no_title;
     let e_title = title_option
         .map(|title| html_escape_outside_attribute(title))
         .unwrap_or(format!(r#"<span aria-hidden="true" class="no_title">…</span>"#));

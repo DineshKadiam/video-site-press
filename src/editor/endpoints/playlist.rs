@@ -28,7 +28,7 @@ use crate::{
     Playlist,
     PlaylistOrder
 };
-use crate::editor::{Checkbox, Input, Textarea};
+use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
@@ -210,7 +210,9 @@ pub fn edit_page(
     language: &Language,
     playlist: &Playlist
 ) -> HttpResponse {
-    let t_not_saved = language.translations.not_saved;
+    let translations = &language.translations;
+
+    let t_not_saved = translations.not_saved;
 
     let errors = if playlist.errors.is_empty() {
         String::new()
@@ -228,7 +230,7 @@ pub fn edit_page(
 
     let path = &playlist.path;
 
-    let t_upload_banner = language.translations.upload_banner;
+    let t_upload_banner = translations.upload_banner;
     let banner_upload_button = upload_widget(&format!("/upload-playlist-banner/{path}"), t_upload_banner);
     let banner_form = match &playlist.banner {
         Some(banner) => {
@@ -246,15 +248,15 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let mut description = Textarea::image_description("description", language.translations.banner_description);
+            let mut description = Textarea::image_description("description", translations.banner_description);
 
             description
                 .id("banner_description")
                 .value_option(&banner.description);
 
-            let t_delete_banner = language.translations.delete_banner;
-            let t_really_delete = language.translations.really_delete;
-            let t_update_description = language.translations.update_description;
+            let t_delete_banner = translations.delete_banner;
+            let t_really_delete = translations.really_delete;
+            let t_update_description = translations.update_description;
             format!(r#"
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
@@ -272,24 +274,32 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
-    let mut input_title = Input::text("title", language.translations.title);
-    let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
-    let mut textarea_description = Textarea::markdown_subset(language, "description", language.translations.description);
+    let mut input_title = Input::text("title", translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_order = Select::new("order", translations.order);
+    let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+
+    select_order.option("default", translations.default_sort_number_or_release_date_ascending);
+    select_order.option("release_date_asc", translations.release_date_ascending);
+    select_order.option("release_date_desc", translations.release_date_descending);
+    select_order.option("sort_number_asc", translations.sort_number_ascending);
+    select_order.option("sort_number_desc", translations.sort_number_descending);
+    select_order.option("title_asc", translations.title_ascending);
+    select_order.option("title_desc", translations.title_descending);
 
     textarea_description.id("playlist_description");
 
-    let order_selected;
     let feedback_update = if let Some(PlaylistFormFeedback::Update { description, order, title, unlisted }) = &form_feedback {
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
-        order_selected = PlaylistOrder::from_key(order).unwrap();
+        select_order.selected(order);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         input_title.value_option(&playlist.title);
         input_unlisted.checked(playlist.unlisted);
-        order_selected = playlist.order.clone();
+        select_order.selected(playlist.order.key());
         textarea_description.value_option(&playlist.description);
 
         String::new()
@@ -298,7 +308,7 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", language.translations.permalink);
+        let mut input_permalink = Input::permalink("slug", translations.permalink);
 
         input_permalink.required();
 
@@ -310,8 +320,8 @@ pub fn edit_page(
             String::new()
         };
 
-        let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
-        let t_update_permalink = language.translations.update_permalink;
+        let t_a_permalink_defines_under_which_url_text = translations.a_permalink_defines_under_which_url_text;
+        let t_update_permalink = translations.update_permalink;
         formatdoc!(r#"
             <p>
                 {t_a_permalink_defines_under_which_url_text}
@@ -327,7 +337,7 @@ pub fn edit_page(
         "#)
     };
 
-    let t_upload_new_video = language.translations.upload_new_video;
+    let t_upload_new_video = translations.upload_new_video;
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
@@ -335,9 +345,9 @@ pub fn edit_page(
         Some(PlaylistFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path, translations);
 
-    let t_convert_to_collection = language.translations.convert_to_collection;
+    let t_convert_to_collection = translations.convert_to_collection;
     let convert_to_collection_form = formatdoc!(r#"
         <p>
             A playlist can seamlessly be converted to a collection
@@ -355,7 +365,7 @@ pub fn edit_page(
             "This playlist contains a single video and can be converted to just a video, note however that playlist data will be removed or overwritten with data from the video where necessary."
         };
 
-        let t_convert_to_video = language.translations.convert_to_video;
+        let t_convert_to_video = translations.convert_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
@@ -372,35 +382,18 @@ pub fn edit_page(
         _ => input_unlisted.to_string()
     };
 
-    let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), &language.translations);
-    let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), &language.translations);
+    let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
+    let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
 
-    // TODO: Implement helper methods to encapsulate this verbose, manual select markup construction stuff?
-    let order_default_selected = if order_selected == PlaylistOrder::Default { "selected" } else { "" };
-    let order_release_date_asc_selected = if order_selected == PlaylistOrder::ReleaseDateAsc { "selected" } else { "" };
-    let order_release_date_desc_selected = if order_selected == PlaylistOrder::ReleaseDateDesc { "selected" } else { "" };
-    let order_sort_number_asc_selected = if order_selected == PlaylistOrder::SortNumberAsc { "selected" } else { "" };
-    let order_sort_number_desc_selected = if order_selected == PlaylistOrder::SortNumberDesc { "selected" } else { "" };
-    let order_title_asc_selected = if order_selected == PlaylistOrder::TitleAsc { "selected" } else { "" };
-    let order_title_desc_selected = if order_selected == PlaylistOrder::TitleDesc { "selected" } else { "" };
-
-    let t_banner_image = language.translations.banner_image;
-    let t_danger_zone = language.translations.danger_zone;
-    let t_default_sort_number_or_release_date_ascending = language.translations.default_sort_number_or_release_date_ascending;
-    let t_delete = language.translations.delete;
-    let t_delete_playlist = language.translations.delete_playlist;
-    let t_deleting_the_playlist_text = language.translations.deleting_the_playlist_text;
-    let t_new_video = language.translations.new_video;
-    let t_order = language.translations.order;
-    let t_playlist = language.translations.playlist;
-    let t_really_delete = language.translations.really_delete;
-    let t_release_date_ascending = language.translations.release_date_ascending;
-    let t_release_date_descending = language.translations.release_date_descending;
-    let t_sort_number_ascending = language.translations.sort_number_ascending;
-    let t_sort_number_descending = language.translations.sort_number_descending;
-    let t_title_ascending = language.translations.title_ascending;
-    let t_title_descending = language.translations.title_descending;
-    let t_update_playlist = language.translations.update_playlist;
+    let t_banner_image = translations.banner_image;
+    let t_danger_zone = translations.danger_zone;
+    let t_delete = translations.delete;
+    let t_delete_playlist = translations.delete_playlist;
+    let t_deleting_the_playlist_text = translations.deleting_the_playlist_text;
+    let t_new_video = translations.new_video;
+    let t_playlist = translations.playlist;
+    let t_really_delete = translations.really_delete;
+    let t_update_playlist = translations.update_playlist;
     let body = formatdoc!(r#"
         {errors}
 
@@ -410,18 +403,7 @@ pub fn edit_page(
             <form action="/playlist/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
-                <div class="form_field">
-                    <label for="order">{t_order}</label>
-                    <select id="order" name="order">
-                        <option {order_default_selected} value="default">{t_default_sort_number_or_release_date_ascending}</option>
-                        <option {order_release_date_asc_selected} value="release_date_asc">{t_release_date_ascending}</option>
-                        <option {order_release_date_desc_selected} value="release_date_desc">{t_release_date_descending}</option>
-                        <option {order_sort_number_asc_selected} value="sort_number_asc">{t_sort_number_ascending}</option>
-                        <option {order_sort_number_desc_selected} value="sort_number_desc">{t_sort_number_descending}</option>
-                        <option {order_title_asc_selected} value="title_asc">{t_title_ascending}</option>
-                        <option {order_title_desc_selected} value="title_desc">{t_title_descending}</option>
-                    </select>
-                </div>
+                {select_order}
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">

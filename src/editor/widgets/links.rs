@@ -4,7 +4,7 @@
 use indoc::formatdoc;
 
 use crate::{Link, Translations};
-use crate::editor::Input;
+use crate::editor::{Input, Select};
 use crate::icons;
 use crate::util::{html_escape_inside_attribute, html_escape_outside_attribute};
 
@@ -22,6 +22,12 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
     let t_link_with_rel_me_attribute = translations.link_with_rel_me_attribute;
     let t_new_link = translations.new_link;
 
+    let mut select_verification = Select::new("verification", t_link_type);
+
+    select_verification.option("", t_regular_link);
+    select_verification.option("rel-me", t_link_with_rel_me_attribute);
+    select_verification.option("rel-me-hidden", t_hidden_link_with_rel_me_attribute);
+
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_new_link}</h2>
@@ -31,14 +37,7 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
                     {input_url}
                     {input_label}
                 </div>
-                <div class="form_field">
-                    <label for="verification">{t_link_type}</label>
-                    <select id="verification" name="verification">
-                        <option selected>{t_regular_link}</option>
-                        <option value="rel-me">{t_link_with_rel_me_attribute}</option>
-                        <option value="rel-me-hidden">{t_hidden_link_with_rel_me_attribute}</option>
-                    </select>
-                </div>
+                {select_verification}
                 <button class="action">{t_add_link}</button>
             </form>
         </div>

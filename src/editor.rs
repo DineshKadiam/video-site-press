@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 
 use serde_derive::{Deserialize, Serialize};
@@ -5,12 +8,14 @@ use serde_derive::{Deserialize, Serialize};
 mod checkbox;
 mod endpoints;
 mod input;
+mod select;
 pub mod server;
 mod textarea;
 mod widgets;
 
 use checkbox::Checkbox;
 use input::Input;
+use select::Select;
 use textarea::Textarea;
 
 #[derive(Debug, Deserialize, Serialize)]

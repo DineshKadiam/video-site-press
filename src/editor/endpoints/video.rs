@@ -37,7 +37,7 @@ use crate::{
     VideoParent
 };
 use crate::browser_support;
-use crate::editor::{Checkbox, Input, Textarea};
+use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
@@ -325,7 +325,10 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
 
     let t_original = translations.original;
 
-    let mut height_options = Vec::new();
+    let mut select_resolution = Select::new("height", translations.resolution);
+    select_resolution.id("resolution");
+
+    let mut no_height_options = true;
     let candidate_heights = [1080, 720, 480, 360, 240, 144];
     let padding_len = tallest_height.to_string().len();
     for height in candidate_heights {
@@ -339,77 +342,68 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
             };
 
             let padding = "&nbsp;".repeat(2 * (padding_len - height.to_string().len()));
-            let option = formatdoc!(r#"
-                <option value="{height}"><wbr>{padding}{height}p – {width}×{height} {original}</option>
-            "#);
-            height_options.push(option);
+            let label = format!(r#"<wbr>{padding}{height}p – {width}×{height} {original}"#);
+
+            select_resolution.option(height.to_string(), label);
+
+            no_height_options = false;
         }
     }
 
-    let mut frame_rate_options = Vec::new();
-    let candidate_frame_rates = [60.0, 48.0, 30.0, 25.0, 24.0, 12.0];
-    let known_frame_rate = candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate);
-    if !known_frame_rate {
-        let unknown_frame_rate_option = formatdoc!(r#"
-            <option selected value="">{highest_frame_rate} fps ({t_original})</option>
-        "#);
-        frame_rate_options.push(unknown_frame_rate_option);
-    }
-    for frame_rate in candidate_frame_rates {
-        if frame_rate <= highest_frame_rate {
-            let (selected, value, original) = if known_frame_rate && frame_rate == highest_frame_rate {
-                ("selected", String::new(), format!("({t_original})"))
-            } else {
-                ("", frame_rate.to_string(), String::new())
-            };
-
-            let option = formatdoc!(r#"
-                <option {selected} value="{value}">{frame_rate} fps {original}</option>
-            "#);
-            frame_rate_options.push(option);
-        }
-    }
-
-    if height_options.is_empty() {
+    if no_height_options {
         return String::new();
     }
 
-    let frame_rate_options = frame_rate_options.join("\n");
-    let height_options = height_options.join("\n");
+    let mut select_frame_rate = Select::new("frame_rate", translations.frame_rate);
+
+    let candidate_frame_rates = [60.0, 48.0, 30.0, 25.0, 24.0, 12.0];
+    let known_frame_rate = candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate);
+    if !known_frame_rate {
+        let label = format!(r#"{highest_frame_rate} fps ({t_original})"#);
+        select_frame_rate.option("", label);
+        select_frame_rate.selected("");
+    }
+    for frame_rate in candidate_frame_rates {
+        if frame_rate <= highest_frame_rate {
+            if known_frame_rate && frame_rate == highest_frame_rate {
+                let label = format!("{frame_rate} fps ({t_original})");
+                select_frame_rate.option("", label);
+                select_frame_rate.selected("");
+            } else {
+                let label = format!("{frame_rate} fps");
+                select_frame_rate.option(frame_rate.to_string(), label);
+            }
+        }
+    }
+
+    let mut select_codec = Select::new("codec", translations.codec);
+
+    select_codec.option("h264", translations.h264_supported_in_all_browsers_recommended);
+    select_codec.option("hevc", translations.hevc_h265_missing_browser_support_not_recommended);
+    select_codec.option("vp9", translations.vp9_missing_browser_support_not_recommended);
+
+    let mut select_approach = Select::new("approach", translations.encoding_approach_label);
+
+    select_approach.option("compression", translations.highest_compression_recommended_but_takes_a_long_time);
+    select_approach.option("average", translations.average_compression_and_speed_reasonable_for_temporarily_used_media);
+    select_approach.option("speed", translations.highest_speed_only_use_if_you_need_results_as_soon_as_possible);
+
+    select_approach.selected("compression");
+
     let path = &video.path;
 
-    let t_average_compression_and_speed_reasonable_for_temporarily_used_media = translations.average_compression_and_speed_reasonable_for_temporarily_used_media;
     let t_best = translations.best;
-    let t_codec = translations.codec;
-    let t_encoding_approach_label = translations.encoding_approach_label;
-    let t_frame_rate = translations.frame_rate;
-    let t_h264_supported_in_all_browsers_recommended = translations.h264_supported_in_all_browsers_recommended;
-    let t_hevc_h265_missing_browser_support_not_recommended = translations.hevc_h265_missing_browser_support_not_recommended;
-    let t_highest_compression_recommended_but_takes_a_long_time = translations.highest_compression_recommended_but_takes_a_long_time;
-    let t_highest_speed_only_use_if_you_need_results_as_soon_as_possible = translations.highest_speed_only_use_if_you_need_results_as_soon_as_possible;
     let t_quality = translations.quality;
     let t_render_additional_format = translations.render_additional_format;
     let t_render_format = translations.render_format;
-    let t_resolution = translations.resolution;
-    let t_vp9_missing_browser_support_not_recommended = translations.vp9_missing_browser_support_not_recommended;
     let t_worst = translations.worst;
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_render_additional_format}</h2>
             <form action="/downsize/{path}" method="post">
                 <div class="form_split">
-                    <div class="form_field">
-                        <label for="resolution">{t_resolution}</label>
-                        <select id="resolution" name="height">
-                            {height_options}
-                        </select>
-                    </div>
-                    <div class="form_field">
-                        <label for="frame_rate">{t_frame_rate}</label>
-                        <select id="frame_rate" name="frame_rate">
-                            {frame_rate_options}
-                        </select>
-                    </div>
+                    {select_resolution}
+                    {select_frame_rate}
                 </div>
                 <div class="form_field">
                     <label for="quality">{t_quality}</label>
@@ -432,22 +426,8 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                         <span>{t_best}</span>
                     </div>
                 </div>
-                <div class="form_field">
-                    <label for="codec">{t_codec}</label>
-                    <select id="codec" name="codec">
-                        <option value="h264">{t_h264_supported_in_all_browsers_recommended}</option>
-                        <option value="hevc">{t_hevc_h265_missing_browser_support_not_recommended}</option>
-                        <option value="vp9">{t_vp9_missing_browser_support_not_recommended}</option>
-                    </select>
-                </div>
-                <div class="form_field">
-                    <label for="approach">{t_encoding_approach_label}</label>
-                    <select id="approach" name="approach">
-                        <option selected value="compression">{t_highest_compression_recommended_but_takes_a_long_time}</option>
-                        <option value="average">{t_average_compression_and_speed_reasonable_for_temporarily_used_media}</option>
-                        <option value="speed">{t_highest_speed_only_use_if_you_need_results_as_soon_as_possible}</option>
-                    </select>
-                </div>
+                {select_codec}
+                {select_approach}
                 <button class="action">{t_render_format}</button>
             </form>
         </div>
