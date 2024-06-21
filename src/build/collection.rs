@@ -54,7 +54,7 @@ pub fn collection_html(
 
     if let Some(description) = &collection.description {
         let description_html = MarkdownSubset::to_html(description);
-        body.push_str(&format!(r#"<p class="description">{description_html}</p>"#));
+        body.push_str(&format!(r#"<div class="description">{description_html}</div>"#));
     }
 
     if !collection.links.is_empty() {

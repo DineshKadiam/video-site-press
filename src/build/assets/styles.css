@@ -320,7 +320,6 @@ img {
     display: flex;
     flex-grow: 1;
 }
-
 .playlist_context {
     border: 1px solid var(--bg-2);
     border-radius: .5rem;

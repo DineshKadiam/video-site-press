@@ -50,7 +50,7 @@ pub fn playlist_html(
 
     if let Some(description) = &playlist.description {
         let description_html = MarkdownSubset::to_html(description);
-        body.push_str(&format!(r#"<p class="description">{description_html}</p>"#));
+        body.push_str(&format!(r#"<div class="description">{description_html}</div>"#));
     }
 
     if !playlist.links.is_empty() {

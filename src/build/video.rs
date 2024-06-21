@@ -21,7 +21,7 @@ pub fn video_html(
 ) {
     let description = if let Some(description) = &video.description {
         let description_html = MarkdownSubset::to_html(description);
-        format!(r#"<p class="description">{description_html}</p>"#)
+        format!(r#"<div class="description">{description_html}</div>"#)
     } else {
         String::new()
     };
@@ -101,9 +101,7 @@ pub fn video_html(
                     {downloads_widget}
                 </div>
             </div>
-            <p>
-                {description}
-            </p>
+            {description}
             {links_rendered}
         </div>
     "#);
