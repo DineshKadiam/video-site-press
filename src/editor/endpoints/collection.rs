@@ -14,6 +14,7 @@ use actix_web::web::{Data, Either, Form, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
+use slug::slugify;
 
 use crate::{
     Banner,
@@ -41,16 +42,25 @@ use crate::editor::widgets::{
 use crate::util::{nanoid, supported_image_extension, validate_slug};
 
 #[derive(Deserialize)]
+pub struct AddLinkForm {
+    label: String,
+    url: String,
+    verification: String
+}
+
+#[derive(Deserialize)]
 pub struct BannerUpdateForm {
     description: String
 }
 
 pub enum CollectionFormFeedback<'a> {
     CreatePlaylist {
-        slug: Field
+        slug: Field,
+        title: Field
     },
     CreateSubcollection {
-        slug: Field
+        slug: Field,
+        title: Field
     },
     Move {
         slug: Field
@@ -65,10 +75,15 @@ pub enum CollectionFormFeedback<'a> {
 }
 
 #[derive(Deserialize)]
-pub struct AddLinkForm {
-    label: String,
-    url: String,
-    verification: String
+pub struct CreatePlaylistForm {
+    slug: String,
+    title: String
+}
+
+#[derive(Deserialize)]
+pub struct CreateSubcollectionForm {
+    slug: String,
+    title: String
 }
 
 #[derive(Deserialize)]
@@ -78,7 +93,7 @@ pub struct DeleteLinkForm {
 }
 
 #[derive(Deserialize)]
-pub struct SlugForm {
+pub struct MoveForm {
     slug: String
 }
 
@@ -134,33 +149,48 @@ pub async fn add_link(
 
 pub async fn create_playlist(
     context: Data<Arc<Context>>,
-    form: Form<SlugForm>,
+    form: Form<CreatePlaylistForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
     let slug_trimmed = form.slug.trim();
+    let title_trimmed = form.title.trim();
 
-    let playlist_path = if &path.path == "" {
-        slug_trimmed.to_string()
-    } else {
-        format!("{}/{slug_trimmed}", &path.path)
+    let error = |slug_error, title_error| -> _ {
+        let collection = match context.get_collection(&path.path) {
+            Some(collection) => collection,
+            None => return Either::Right(not_found(&context, &language, &path.path))
+        };
+
+        let form_feedback = CollectionFormFeedback::CreatePlaylist {
+            slug: Field::validated(slug_trimmed, slug_error),
+            title: Field::validated(title_trimmed, title_error)
+        };
+
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     };
 
-    let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
-        Some(message)
-    } else if context.site_dir.join(&playlist_path).exists() {
-        let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
-        Some(message.to_string())
-    } else {
-        None
-    };
+    if slug_trimmed.is_empty() && title_trimmed.is_empty() {
+        let t_title_or_permalink_needs_to_be_provided = language.translations.title_or_permalink_needs_to_be_provided;
 
-    if slug_error.is_none() {
+        return error(
+            Some(t_title_or_permalink_needs_to_be_provided),
+            Some(t_title_or_permalink_needs_to_be_provided)
+        );
+    }
+
+    let succeed = |playlist_path: String, title: Option<&str>| {
         let playlist_dir = context.site_dir.join(&playlist_path);
         fs::create_dir_all(&playlist_dir).unwrap();
 
-        let playlist = Arc::new(Playlist::new(playlist_path));
+        let mut playlist_mut = Playlist::new(playlist_path);
+
+        if let Some(title) = title {
+            playlist_mut.title = Some(title.to_string());
+        }
+
+        let playlist = Arc::new(playlist_mut);
 
         let playlist_moving = Arc::clone(&playlist);
         let mutation = |collection: &mut Collection| {
@@ -175,49 +205,91 @@ pub async fn create_playlist(
 
         let redirect_url = format!("/playlist/{}", playlist.path);
         Either::Left(Redirect::to(redirect_url).see_other())
+    };
+
+    if slug_trimmed.is_empty() {
+        let slug = slugify(title_trimmed);
+        let mut playlist_path = if &path.path == "" {
+            slug.to_string()
+        } else {
+            format!("{}/{slug}", &path.path)
+        };
+
+        let mut duplicate = 1;
+        while context.site_dir.join(&playlist_path).exists() {
+            playlist_path = if &path.path == "" {
+                format!("{slug}_{duplicate}")
+            } else {
+                format!("{}/{slug}_{duplicate}", &path.path)
+            };
+            duplicate += 1;
+        }
+
+        return succeed(playlist_path, None);
     } else {
-        let collection = match context.get_collection(&path.path) {
-            Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+        if let Err(message) = validate_slug(slug_trimmed) {
+            return error(Some(&message), None);
+        }
+
+        let playlist_path = if &path.path == "" {
+            slug_trimmed.to_string()
+        } else {
+            format!("{}/{slug_trimmed}", &path.path)
         };
 
-        let form_feedback = CollectionFormFeedback::CreatePlaylist {
-            slug: Field::validated(slug_trimmed, slug_error)
-        };
-
-        Either::Right(edit_page(&collection, &context, form_feedback, &language))
+        if context.site_dir.join(&playlist_path).exists() {
+            let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
+            return error(Some(message), None);
+        } else {
+            return succeed(playlist_path, Some(title_trimmed));
+        }
     }
 }
 
 pub async fn create_subcollection(
     context: Data<Arc<Context>>,
-    form: Form<SlugForm>,
+    form: Form<CreateSubcollectionForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
     let slug_trimmed = form.slug.trim();
+    let title_trimmed = form.title.trim();
 
-    let subcollection_path = if &path.path == "" {
-        slug_trimmed.to_string()
-    } else {
-        format!("{}/{slug_trimmed}", &path.path)
+    let error = |slug_error, title_error| -> _ {
+        let collection = match context.get_collection(&path.path) {
+            Some(collection) => collection,
+            None => return Either::Right(not_found(&context, &language, &path.path))
+        };
+
+        let form_feedback = CollectionFormFeedback::CreateSubcollection {
+            slug: Field::validated(slug_trimmed, slug_error),
+            title: Field::validated(title_trimmed, title_error)
+        };
+
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     };
 
-    let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
-        Some(message)
-    } else if context.site_dir.join(&subcollection_path).exists() {
-        let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
-        Some(message.to_string())
-    } else {
-        None
-    };
+    if slug_trimmed.is_empty() && title_trimmed.is_empty() {
+        let t_title_or_permalink_needs_to_be_provided = language.translations.title_or_permalink_needs_to_be_provided;
 
-    if slug_error.is_none() {
+        return error(
+            Some(t_title_or_permalink_needs_to_be_provided),
+            Some(t_title_or_permalink_needs_to_be_provided)
+        );
+    }
+
+    let succeed = |subcollection_path: String, title: Option<&str>| {
         let subcollection_dir = context.site_dir.join(&subcollection_path);
         fs::create_dir_all(&subcollection_dir).unwrap();
 
-        let subcollection = Arc::new(Collection::new(subcollection_path));
+        let mut collection_mut = Collection::new(subcollection_path);
+
+        if let Some(title) = title {
+            collection_mut.title = Some(title.to_string());
+        }
+
+        let subcollection = Arc::new(collection_mut);
 
         let subcollection_moving = Arc::clone(&subcollection);
         let mutation = |collection: &mut Collection| {
@@ -232,17 +304,44 @@ pub async fn create_subcollection(
 
         let redirect_url = format!("/collection/{}", subcollection.path);
         Either::Left(Redirect::to(redirect_url).see_other())
+    };
+
+    if slug_trimmed.is_empty() {
+        let slug = slugify(title_trimmed);
+        let mut subcollection_path = if &path.path == "" {
+            slug.to_string()
+        } else {
+            format!("{}/{slug}", &path.path)
+        };
+
+        let mut duplicate = 1;
+        while context.site_dir.join(&subcollection_path).exists() {
+            subcollection_path = if &path.path == "" {
+                format!("{slug}_{duplicate}")
+            } else {
+                format!("{}/{slug}_{duplicate}", &path.path)
+            };
+            duplicate += 1;
+        }
+
+        return succeed(subcollection_path, None);
     } else {
-        let collection = match context.get_collection(&path.path) {
-            Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+        if let Err(message) = validate_slug(slug_trimmed) {
+            return error(Some(&message), None);
+        }
+
+        let subcollection_path = if &path.path == "" {
+            slug_trimmed.to_string()
+        } else {
+            format!("{}/{slug_trimmed}", &path.path)
         };
 
-        let form_feedback = CollectionFormFeedback::CreateSubcollection {
-            slug: Field::validated(slug_trimmed, slug_error)
-        };
-
-        Either::Right(edit_page(&collection, &context, form_feedback, &language))
+        if context.site_dir.join(&subcollection_path).exists() {
+            let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
+            return error(Some(message), None);
+        } else {
+            return succeed(subcollection_path, Some(title_trimmed));
+        }
     }
 }
 
@@ -329,8 +428,9 @@ pub fn edit_page(
     form_feedback: CollectionFormFeedback,
     language: &Language
 ) -> HttpResponse {
+    let translations = &language.translations;
     let path = &collection.path;
-    let t_not_saved = language.translations.not_saved;
+    let t_not_saved = translations.not_saved;
 
     let errors = if collection.errors.is_empty() {
         String::new()
@@ -346,7 +446,7 @@ pub fn edit_page(
             .join("")
     };
 
-    let t_upload_banner = language.translations.upload_banner;
+    let t_upload_banner = translations.upload_banner;
     let banner_upload_button = upload_widget(&format!("/upload-collection-banner/{path}"), t_upload_banner);
     let banner_form = match &collection.banner {
         Some(banner) => {
@@ -364,15 +464,15 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let mut description = Textarea::image_description("description", language.translations.banner_description);
+            let mut description = Textarea::image_description("description", translations.banner_description);
 
             description
                 .id("banner_description")
                 .value_option(&banner.description);
 
-            let t_delete_banner = language.translations.delete_banner;
-            let t_really_delete = language.translations.really_delete;
-            let t_update_description = language.translations.update_description;
+            let t_delete_banner = translations.delete_banner;
+            let t_really_delete = translations.really_delete;
+            let t_update_description = translations.update_description;
             format!(r#"
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
@@ -390,9 +490,9 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
-    let mut input_title = Input::text("title", language.translations.title);
-    let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
-    let mut textarea_description = Textarea::markdown_subset(language, "description", language.translations.description);
+    let mut input_title = Input::text("title", translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
     textarea_description.id("collection_description");
 
@@ -413,7 +513,7 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", language.translations.permalink);
+        let mut input_permalink = Input::permalink("slug", translations.permalink);
 
         input_permalink
             .id("slug_collection")
@@ -427,8 +527,8 @@ pub fn edit_page(
             String::new()
         };
 
-        let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
-        let t_update_permalink = language.translations.update_permalink;
+        let t_a_permalink_defines_under_which_url_text = translations.a_permalink_defines_under_which_url_text;
+        let t_update_permalink = translations.update_permalink;
         formatdoc!(r#"
             <p>
                 {t_a_permalink_defines_under_which_url_text}
@@ -444,7 +544,7 @@ pub fn edit_page(
         "#)
     };
 
-    let t_upload_new_video = language.translations.upload_new_video;
+    let t_upload_new_video = translations.upload_new_video;
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
@@ -452,36 +552,89 @@ pub fn edit_page(
         CollectionFormFeedback::Site(site_form_feedback) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, path, &language.translations);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path, &translations);
 
-    let mut input_slug_create_playlist = Input::permalink("slug", language.translations.permalink);
+    let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
 
-    input_slug_create_playlist
-        .id("slug_playlist")
-        .required();
+    let new_playlist_form = {
+        let mut input_slug_create_playlist = Input::permalink("slug", translations.permalink);
+        let mut input_title_create_playlist = Input::text("title", translations.title);
 
-    let feedback_create_playlist = if let CollectionFormFeedback::CreatePlaylist { slug } = &form_feedback {
-        input_slug_create_playlist.validated_value(slug);
-        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-    } else {
-        String::new()
+        // TODO: Needs custom client-side validation - either title or slug must be given.
+        input_slug_create_playlist.id("slug_playlist");
+        input_title_create_playlist.id("title_playlist");
+
+        let feedback = if let CollectionFormFeedback::CreatePlaylist { slug, title } = &form_feedback {
+            input_slug_create_playlist.validated_value(slug);
+            input_title_create_playlist.validated_value(title);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
+        } else {
+            String::new()
+        };
+
+        let t_create_playlist = translations.create_playlist;
+        let t_new_playlist = translations.new_playlist;
+        formatdoc!(r#"
+            <div class="form_group">
+                <h2>{t_new_playlist}</h2>
+
+                <form action="/create-playlist/{path}" data-warn-discard method="post">
+                    <p>
+                        {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
+                    </p>
+                    <div class="form_split">
+                        {input_title_create_playlist}
+                        {input_slug_create_playlist}
+                    </div>
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button class="action">{t_create_playlist}</button> {feedback}
+                    </div>
+                </form>
+            </div>
+        "#)
     };
 
-    let mut input_slug_create_subcollection = Input::permalink("slug", language.translations.permalink);
+    let new_subcollection_form = {
+        let mut input_slug_create_subcollection = Input::permalink("slug", translations.permalink);
+        let mut input_title_create_subcollection = Input::text("title", translations.title);
 
-    input_slug_create_subcollection
-        .id("slug_subcollection")
-        .required();
+        // TODO: Needs custom client-side validation - either title or slug must be given.
+        input_slug_create_subcollection.id("slug_subcollection");
+        input_title_create_subcollection.id("title_subcollection");
 
-    let feedback_create_subcollection = if let CollectionFormFeedback::CreateSubcollection { slug } = &form_feedback {
-        input_slug_create_subcollection.validated_value(slug);
-        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-    } else {
-        String::new()
+        let feedback_create_subcollection = if let CollectionFormFeedback::CreateSubcollection { slug, title } = &form_feedback {
+            input_slug_create_subcollection.validated_value(slug);
+            input_title_create_subcollection.validated_value(title);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
+        } else {
+            String::new()
+        };
+
+        let t_create_subcollection = translations.create_subcollection;
+        let t_new_subcollection = translations.new_subcollection;
+        formatdoc!(r#"
+            <div class="form_group">
+                <h2>{t_new_subcollection}</h2>
+
+                <form action="/create-subcollection/{path}" data-warn-discard method="post">
+                    <p>
+                        {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
+                    </p>
+                    <div class="form_split">
+                        {input_title_create_subcollection}
+                        {input_slug_create_subcollection}
+                    </div>
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button class="action">{t_create_subcollection}</button> {feedback_create_subcollection}
+                    </div>
+                </form>
+            </div>
+        "#)
     };
+
 
     let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
-        let t_convert_to_playlist = language.translations.convert_to_playlist;
+        let t_convert_to_playlist = translations.convert_to_playlist;
         formatdoc!(r#"
             <p>
                 This collection contains no playlists or subcollections and can therefore
@@ -506,7 +659,7 @@ pub fn edit_page(
             "This collection contains nothing can therefore seamlessly be converted to a video."
         };
 
-        let t_convert_to_video = language.translations.convert_to_video;
+        let t_convert_to_video = translations.convert_to_video;
         formatdoc!(r#"
             <p>{message}</p>
 
@@ -523,21 +676,17 @@ pub fn edit_page(
         _ => input_unlisted.to_string()
     };
 
-    let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), &language.translations);
-    let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), &language.translations);
+    let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), &translations);
+    let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), &translations);
 
-    let t_banner_image = language.translations.banner_image;
-    let t_collection = language.translations.collection;
-    let t_create_playlist = language.translations.create_playlist;
-    let t_create_subcollection = language.translations.create_subcollection;
-    let t_danger_zone = language.translations.danger_zone;
-    let t_delete_collection = language.translations.delete_collection;
-    let t_deleting_the_collection_text = language.translations.deleting_the_collection_text;
-    let t_new_playlist = language.translations.new_playlist;
-    let t_new_subcollection = language.translations.new_subcollection;
-    let t_new_video = language.translations.new_video;
-    let t_really_delete = language.translations.really_delete;
-    let t_update_collection = language.translations.update_collection;
+    let t_banner_image = translations.banner_image;
+    let t_collection = translations.collection;
+    let t_danger_zone = translations.danger_zone;
+    let t_delete_collection = translations.delete_collection;
+    let t_deleting_the_collection_text = translations.deleting_the_collection_text;
+    let t_new_video = translations.new_video;
+    let t_really_delete = translations.really_delete;
+    let t_update_collection = translations.update_collection;
     let body = formatdoc!(r#"
         {errors}
 
@@ -559,29 +708,9 @@ pub fn edit_page(
 
         {create_link_form}
 
-        <div class="form_group">
-            <h2>{t_new_subcollection}</h2>
+        {new_subcollection_form}
 
-            <form action="/create-subcollection/{path}" data-warn-discard method="post">
-                {input_slug_create_subcollection}
-
-                <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button class="action">{t_create_subcollection}</button> {feedback_create_subcollection}
-                </div>
-            </form>
-        </div>
-
-        <div class="form_group">
-            <h2>{t_new_playlist}</h2>
-
-            <form action="/create-playlist/{path}" data-warn-discard method="post">
-                {input_slug_create_playlist}
-
-                <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button class="action">{t_create_playlist}</button> {feedback_create_playlist}
-                </div>
-            </form>
-        </div>
+        {new_playlist_form}
 
         <div class="form_group">
             <h2>{t_new_video}</h2>
@@ -645,7 +774,7 @@ pub async fn edit(
 
 pub async fn r#move(
     context: Data<Arc<Context>>,
-    form: Form<SlugForm>,
+    form: Form<MoveForm>,
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();

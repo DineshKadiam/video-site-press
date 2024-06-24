@@ -154,6 +154,7 @@ pub struct Translations {
     pub title: &'static str,
     pub title_ascending: &'static str,
     pub title_descending: &'static str,
+    pub title_or_permalink_needs_to_be_provided: &'static str,
     pub unlisted: &'static str,
     unsupported_file_extension_in_xxx: &'static str,
     pub update_collection: &'static str,
@@ -173,7 +174,8 @@ pub struct Translations {
     pub videos: &'static str,
     pub vp9_missing_browser_support_not_recommended: &'static str,
     pub website: &'static str,
-    pub worst: &'static str
+    pub worst: &'static str,
+    pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str
 }
 
 impl Translations {
@@ -330,6 +332,7 @@ impl Translations {
             title: "Titel",
             title_ascending: "Titel Aufsteigend (A, B, C)",
             title_descending: "Titel Absteigend (Z, Y, X)",
+            title_or_permalink_needs_to_be_provided: "Titel oder Permalink muss ausgefüllt sein",
             unlisted: "Ungelistet",
             unsupported_file_extension_in_xxx: "Nicht unterstützte Dateiendung in {file_name}",
             update_collection: "Collection speichern",
@@ -349,7 +352,8 @@ impl Translations {
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Fehlende Browserunterstützung (Nicht empfohlen)",
             website: "Website",
-            worst: "Schlechteste"
+            worst: "Schlechteste",
+            you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "Du musst nicht sowohl einen Titel als auch einen Permalink angeben, aber eines von beiden muss ausgefüllt sein."
         }
     }
 
@@ -506,6 +510,7 @@ impl Translations {
             title: "Title",
             title_ascending: "Title Ascending (A, B, C)",
             title_descending: "Title Descending (Z, Y, X)",
+            title_or_permalink_needs_to_be_provided: "Title or permalink needs to be provided",
             unlisted: "Unlisted",
             unsupported_file_extension_in_xxx: "Unsupported file extension in {file_name}",
             update_collection: "Update Collection",
@@ -525,7 +530,8 @@ impl Translations {
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Missing browser support (Not recommended)",
             website: "Website",
-            worst: "Worst"
+            worst: "Worst",
+            you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
         }
     }
 

@@ -157,6 +157,12 @@ button.danger:hover {
     height: 1rem;
     width: 1rem;
 }
+.error {
+    background: var(--danger);
+    border-radius: .2rem;
+    color: var(--light-1);
+    padding: .5rem;
+}
 .errors_badge {
     background: var(--danger-hover);
     border-radius: .5rem;
