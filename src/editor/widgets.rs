@@ -13,7 +13,8 @@ use crate::{
     Language,
     Site,
     SiteContent,
-    Translations
+    Translations,
+    TreeViewOrder
 };
 use crate::icons;
 use crate::util::{
@@ -33,12 +34,13 @@ fn collection_tree(
     collection: &Collection,
     context: &Context,
     path: Option<&str>,
-    translations: &Translations
+    translations: &Translations,
+    tree_view_order: &TreeViewOrder
 ) -> String {
     let collection_icon = icons::collection(translations.collection);
     let playlist_icon = icons::playlist(translations.playlist);
     let video_icon = icons::video(translations.video);
-    let subcollections = collection.subcollections_asc_by_slug_then_title()
+    let subcollections = collection.subcollections_in_tree_view_order(tree_view_order)
         .iter()
         .map(|collection| {
             let collection_path = &collection.path;
@@ -67,7 +69,7 @@ fn collection_tree(
                 breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{e_label}</a>"#));
             }
 
-            let collection_content = collection_tree(breadcrumbs, collection, context, path, translations);
+            let collection_content = collection_tree(breadcrumbs, collection, context, path, translations, tree_view_order);
 
             formatdoc!(r#"
                 <li>
@@ -79,7 +81,7 @@ fn collection_tree(
         .collect::<Vec<String>>()
         .join("");
 
-    let playlists = collection.playlists_asc_by_slug_then_title()
+    let playlists = collection.playlists_in_tree_view_order(tree_view_order)
         .iter()
         .map(|playlist| {
             let playlist_path = &playlist.path;
@@ -111,7 +113,7 @@ fn collection_tree(
             let children = if playlist.videos.is_empty() {
                 String::new()
             } else {
-                let lis = playlist.videos_in_playlist_order()
+                let lis = playlist.videos_in_tree_view_order(tree_view_order)
                     .iter()
                     .map(|video| {
                         let video_path = &video.path;
@@ -161,7 +163,7 @@ fn collection_tree(
         .collect::<Vec<String>>()
         .join("");
 
-    let videos = collection.videos_asc_by_slug_then_title()
+    let videos = collection.videos_in_tree_view_order(tree_view_order)
         .iter()
         .map(|video| {
             let video_path = &video.path;
@@ -237,7 +239,8 @@ pub fn layout(
     body: &str,
     title: &str
 ) -> String {
-    let (breadcrumbs, tree) = site_tree(context, path, site, &context.site_dir, &language.translations);
+    let translations = &language.translations;
+    let (breadcrumbs, tree) = site_tree(context, path, site, &context.site_dir, translations);
 
     // TODO: Possibly hash scripts/styles
     let e_title = html_escape_outside_attribute(title);
@@ -255,14 +258,14 @@ pub fn layout(
 
     let splash_screen_rendered = splash_screen(language, context.get_editor_theme());
 
-    let t_configure_deployment = language.translations.configure_deployment;
-    let configure_icon = icons::configure(language.translations.configure);
-    let deployment_icon = icons::deployment(language.translations.deployment);
+    let t_configure_deployment = translations.configure_deployment;
+    let configure_icon = icons::configure(translations.configure);
+    let deployment_icon = icons::deployment(translations.deployment);
     let deployment_button = match site.deploy_config.complete() {
         true => {
             let deployment = &context.deploying.lock().unwrap();
             if deployment.active() {
-                let t_deploying  = language.translations.deploying;
+                let t_deploying  = translations.deploying;
                 let duration = precise_duration(deployment.started_at.unwrap().elapsed().map(|duration| duration.as_secs_f32()).unwrap_or(0.0));
                 formatdoc!(r#"
                     <a href="/deployment">
@@ -274,8 +277,8 @@ pub fn layout(
                     Some(base_url) => format!(" ({base_url})"),
                     None => String::new()
                 };
-                let t_deploy = language.translations.deploy;
-                let t_really_deploy = language.translations.really_deploy;
+                let t_deploy = translations.deploy;
+                let t_really_deploy = translations.really_deploy;
                 formatdoc!(r#"
                     <form
                         action="/deploy"
@@ -297,12 +300,12 @@ pub fn layout(
         }
     };
 
-    let t_processing = language.translations.processing;
+    let t_processing = translations.processing;
     let processing_icon = icons::processing(t_processing);
     let processing_link = {
         let processing = &context.processing.lock().unwrap();
         if processing.operations.is_empty() {
-            let t_idle = language.translations.idle;
+            let t_idle = translations.idle;
             format!(r#"<a class="processing" href="/jobs">{processing_icon} {t_idle}</a>"#)
         } else {
             let operations = processing.operations
@@ -342,60 +345,67 @@ pub fn layout(
         }
     };
 
+    let tree_view_order_label = context.get_editor_tree_view_order().key(translations);
+
     let data_base_url = match &site.base_url {
         Some(base_url) => format!(r#"data-base-url="{base_url}""#),
         None => String::new()
     };
     let storage_usage = human_size(site.storage_usage());
     let hyper8_version = env!("CARGO_PKG_VERSION");
-    let logo_icon = icons::logo(language.translations.hyper8_logo);
-    let t_preview = language.translations.preview;
+    let logo_icon = icons::logo(translations.hyper8_logo);
+    let t_preview = translations.preview;
     let preview_icon = icons::preview(t_preview);
-    let storage_icon = icons::storage(language.translations.storage_usage);
-    let t_about = language.translations.about;
-    let t_cancel = language.translations.cancel;
-    let t_filter = language.translations.filter;
+    let storage_icon = icons::storage(translations.storage_usage);
+    let t_about = translations.about;
+    let t_cancel = translations.cancel;
+    let t_filter = translations.filter;
     let body = formatdoc!(r#"
-            <body {data_base_url} data-version="{hyper8_version}">
-                <div class="controls">
-                    {processing_link}
-                    <a href="/">{storage_icon} {storage_usage}</a>
-                    <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
-                    <div id="deployment">{deployment_button}</div>
-                    <button id="toggle-splash">{logo_icon} {t_about}</button>
-                </div>
-                <div class="split">
-                    <nav>
+        <body {data_base_url} data-version="{hyper8_version}">
+            <div class="controls">
+                {processing_link}
+                <a href="/">{storage_icon} {storage_usage}</a>
+                <form action="/build" method="post" target="_blank"><button>{preview_icon} {t_preview}</button></form>
+                <div id="deployment">{deployment_button}</div>
+                <button id="toggle-splash">{logo_icon} {t_about}</button>
+            </div>
+            <div class="split">
+                <nav>
+                    <div class="tree_view_options">
                         <input id="filter_tree" placeholder="{t_filter}" type="search">
-                        {tree}
-                    </nav>
-                    <main>
-                        {breadcrumbs}
-                        {body}
-                    </main>
-                </div>
-                {splash_screen_rendered}
-                <template id="configure_icon">
-                    {configure_icon}
-                </template>
-                <template id="confirmation_dialog">
-                    <dialog class="confirmation_wrapper">
-                        <div class="text"></div>
-                        <div class="buttons">
-                            <button autofocus class="cancel">{t_cancel}</button>
-                            <button class="confirm danger"></button>
-                        </div>
-                    </dialog>
-                </template>
-                <template id="deployment_icon">
-                    {deployment_icon}
-                </template>
-                <template id="processing_icon">
-                    {processing_icon}
-                </template>
-            </body>
-        "#
-    );
+                        <form action="/change-tree-view-order" id="tree-view-order" method="post">
+                            <input name="redirect" type="hidden">
+                            <button>{tree_view_order_label}</button>
+                        </form>
+                    </div>
+                    {tree}
+                </nav>
+                <main>
+                    {breadcrumbs}
+                    {body}
+                </main>
+            </div>
+            {splash_screen_rendered}
+            <template id="configure_icon">
+                {configure_icon}
+            </template>
+            <template id="confirmation_dialog">
+                <dialog class="confirmation_wrapper">
+                    <div class="text"></div>
+                    <div class="buttons">
+                        <button autofocus class="cancel">{t_cancel}</button>
+                        <button class="confirm danger"></button>
+                    </div>
+                </dialog>
+            </template>
+            <template id="deployment_icon">
+                {deployment_icon}
+            </template>
+            <template id="processing_icon">
+                {processing_icon}
+            </template>
+        </body>
+    "#);
 
     formatdoc!(r#"
         <!doctype html>
@@ -456,7 +466,9 @@ pub fn site_tree(
                 breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{e_breadcrumb_title}</a>"#));
             }
 
-            let collection_content = collection_tree(&mut breadcrumbs, collection, context, path, translations);
+            let tree_view_order = context.get_editor_tree_view_order();
+
+            let collection_content = collection_tree(&mut breadcrumbs, collection, context, path, translations, &tree_view_order);
 
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
             let node = tree_node(
@@ -510,9 +522,11 @@ pub fn site_tree(
             let videos = if playlist.videos.is_empty() {
                 String::new()
             } else {
+                let tree_view_order = context.get_editor_tree_view_order();
+
                 let video_icon = icons::video(translations.video);
 
-                playlist.videos_in_playlist_order()
+                playlist.videos_in_tree_view_order(&tree_view_order)
                     .iter()
                     .map(|video| {
                         let video_path = &video.path;

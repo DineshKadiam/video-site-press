@@ -44,7 +44,7 @@ use cache::{Cache, CacheItem, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{Context, ContextPath, GetAnyResult};
 use deploy::DeploymentState;
-use editor::EditorConfig;
+use editor::{EditorConfig, TreeViewOrder};
 use file_meta::FileMeta;
 use font::Font;
 use hyper_dir::HyperDir;
@@ -108,12 +108,18 @@ fn main() {
             }
         });
 
+    let editor_tree_view_order = match &editor_config {
+        Some(editor_config) => editor_config.tree_view_order.clone(),
+        None => TreeViewOrder::Default
+    };
+
     let context = Context::new(
         build_dir,
         cache,
         cache_dir,
         &editor_language,
         &editor_config.as_ref().map(|config| config.theme_key.as_str()).unwrap_or("adaptive"),
+        editor_tree_view_order,
         Arc::new(Site::new()),
         site_dir.clone()
     );

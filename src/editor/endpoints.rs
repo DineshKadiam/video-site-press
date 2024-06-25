@@ -28,13 +28,24 @@ pub use processing::processing;
 pub use scripts::scripts;
 pub use styles::styles;
 
-use crate::{Context, EditorConfig, Language, Theme};
+use crate::{
+    Context,
+    EditorConfig,
+    Language,
+    Theme,
+    TreeViewOrder
+};
 
 #[derive(Deserialize)]
 pub struct EditorConfigForm {
     language_code: String,
     redirect: String,
     theme_key: String
+}
+
+#[derive(Deserialize)]
+pub struct TreeViewOrderForm {
+    redirect: String
 }
 
 pub async fn change_editor_config(
@@ -44,7 +55,31 @@ pub async fn change_editor_config(
     *context.editor_language.lock().unwrap() = Language::from_code(&form.language_code);
     *context.editor_theme.lock().unwrap() = Theme::from_key(&form.theme_key).unwrap_or_else(|_| Theme::default());
 
-    let editor_config = EditorConfig::new(&form.language_code, &form.theme_key);
+    let tree_view_order = context.editor_tree_view_order.lock().unwrap().clone();
+
+    let editor_config = EditorConfig::new(&form.language_code, &form.theme_key, tree_view_order);
+
+    editor_config.persist();
+
+    Redirect::to(form.redirect.clone()).see_other()
+}
+
+pub async fn change_tree_view_order(
+    context: Data<Arc<Context>>,
+    form: Form<TreeViewOrderForm>,
+) -> Redirect {
+    let tree_view_order = match context.get_editor_tree_view_order() {
+        TreeViewOrder::Default |
+        TreeViewOrder::TitleAsc => TreeViewOrder::TitleDesc,
+        TreeViewOrder::TitleDesc => TreeViewOrder::TitleAsc,
+    };
+
+    *context.editor_tree_view_order.lock().unwrap() = tree_view_order.clone();
+
+    let language_code = &context.editor_language.lock().unwrap().code;
+    let theme_key = context.editor_theme.lock().unwrap().key;
+
+    let editor_config = EditorConfig::new(language_code, theme_key, tree_view_order);
 
     editor_config.persist();
 

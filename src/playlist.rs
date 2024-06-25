@@ -21,6 +21,7 @@ use crate::{
     Link,
     Site,
     Translations,
+    TreeViewOrder,
     Video
 };
 use crate::util::checked_remove_dir_all;
@@ -234,6 +235,16 @@ impl Playlist {
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
             (None, None) => a.slug().cmp(&b.slug())
+        }
+    }
+
+    // Playlists without title are sorted to the front
+    pub fn cmp_by_slug_then_title_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => b_title.cmp(&a_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => b.slug().cmp(&a.slug())
         }
     }
 
@@ -500,6 +511,18 @@ impl Playlist {
             PlaylistOrder::SortNumberDesc => videos.sort_unstable_by(Video::cmp_by_sort_number_desc),
             PlaylistOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_asc),
             PlaylistOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_desc)
+        }
+
+        videos
+    }
+
+    pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.videos.clone();
+
+        match tree_view_order {
+            TreeViewOrder::Default |
+            TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
+            TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
         }
 
         videos

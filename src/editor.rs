@@ -5,6 +5,8 @@ use std::fs;
 
 use serde_derive::{Deserialize, Serialize};
 
+use crate::Translations;
+
 mod checkbox;
 mod endpoints;
 mod input;
@@ -21,14 +23,27 @@ use textarea::Textarea;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EditorConfig {
     pub language_code: String,
-    pub theme_key: String
+    pub theme_key: String,
+    pub tree_view_order: TreeViewOrder
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum TreeViewOrder {
+    Default,
+    TitleAsc,
+    TitleDesc
 }
 
 impl EditorConfig {
-    pub fn new(language_code: &str, theme_key: &str) -> EditorConfig {
+    pub fn new(
+        language_code: &str,
+        theme_key: &str,
+        tree_view_order: TreeViewOrder
+    ) -> EditorConfig {
         EditorConfig {
             language_code: language_code.into(),
-            theme_key: theme_key.into()
+            theme_key: theme_key.into(),
+            tree_view_order: tree_view_order
         }
     }
 
@@ -63,3 +78,21 @@ impl EditorConfig {
     }
 }
 
+impl TreeViewOrder {
+    pub fn from_key(key: &str) -> TreeViewOrder {
+        match key {
+            "title_asc" => TreeViewOrder::TitleAsc,
+            "title_desc" => TreeViewOrder::TitleDesc,
+            _ => TreeViewOrder::Default
+        }
+    }
+
+    pub fn key(&self, translations: &Translations) -> String {
+        let t_title = translations.title;
+        match self {
+            TreeViewOrder::Default |
+            TreeViewOrder::TitleAsc => format!("{t_title} ↑"),
+            TreeViewOrder::TitleDesc => format!("{t_title} ↓")
+        }
+    }
+}

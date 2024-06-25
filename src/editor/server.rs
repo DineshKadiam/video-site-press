@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::sync::Arc;
 
 use actix_files::Files;
@@ -8,6 +11,7 @@ use crate::Context;
 use crate::editor::endpoints::{
     build,
     change_editor_config,
+    change_tree_view_order,
     collection,
     convert,
     deploy,
@@ -48,6 +52,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/convert-to-playlist/{path:.*}", post().to(convert::to_playlist))
                 .route("/convert-to-video/{path:.*}", post().to(convert::to_video))
                 .route("/change-editor-config", post().to(change_editor_config))
+                .route("/change-tree-view-order", post().to(change_tree_view_order))
                 .route("/configure-deployment", get().to(deploy::configure))
                 .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
                 .route("/create-playlist/{path:.*}", post().to(collection::create_playlist))

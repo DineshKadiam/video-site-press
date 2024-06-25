@@ -22,6 +22,7 @@ use crate::{
     Playlist,
     Site,
     Translations,
+    TreeViewOrder,
     Video,
     VideoParent
 };
@@ -198,6 +199,16 @@ impl Collection {
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
             (None, None) => a.slug().cmp(&b.slug())
+        }
+    }
+
+    // Collections without title are sorted to the front
+    pub fn cmp_by_slug_then_title_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => b_title.cmp(&a_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => b.slug().cmp(&a.slug())
         }
     }
 
@@ -471,6 +482,18 @@ impl Collection {
         playlists
     }
 
+    pub fn playlists_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Playlist>> {
+        let mut playlists: Vec<Arc<Playlist>> = self.playlists.clone();
+
+        match tree_view_order {
+            TreeViewOrder::Default |
+            TreeViewOrder::TitleAsc => playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_asc),
+            TreeViewOrder::TitleDesc => playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_desc)
+        }
+
+        playlists
+    }
+
     pub fn public_playlists(&self) -> impl Iterator<Item = &Arc<Playlist>> {
         self.playlists.iter().filter(|playlist| !playlist.unlisted)
     }
@@ -611,6 +634,18 @@ impl Collection {
     pub fn subcollections_asc_by_slug_then_title(&self) -> Vec<Arc<Collection>> {
         let mut subcollections: Vec<Arc<Collection>> = self.subcollections.clone();
         subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_asc);
+        subcollections
+    }
+
+    pub fn subcollections_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Collection>> {
+        let mut subcollections: Vec<Arc<Collection>> = self.subcollections.clone();
+
+        match tree_view_order {
+            TreeViewOrder::Default |
+            TreeViewOrder::TitleAsc => subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_asc),
+            TreeViewOrder::TitleDesc => subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_desc)
+        }
+
         subcollections
     }
 
@@ -807,6 +842,18 @@ impl Collection {
     pub fn videos_asc_by_slug_then_title(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
         videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc);
+        videos
+    }
+
+    pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
+        let mut videos: Vec<Arc<Video>> = self.videos.clone();
+
+        match tree_view_order {
+            TreeViewOrder::Default |
+            TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
+            TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
+        }
+
         videos
     }
 

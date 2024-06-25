@@ -23,6 +23,7 @@ use crate::{
     Site,
     SiteContent,
     Theme,
+    TreeViewOrder,
     Video,
     VideoParent
 };
@@ -35,6 +36,7 @@ pub struct Context {
     pub deploying: Mutex<DeploymentState>,
     pub editor_theme: Mutex<Theme>,
     pub editor_language: Mutex<Language>,
+    pub editor_tree_view_order: Mutex<TreeViewOrder>,
     pub job_queue: Mutex<Vec<Job>>,
     pub jobs_completed: Mutex<Vec<Job>>,
     pub processing: Mutex<Processing>,
@@ -838,6 +840,12 @@ impl Context {
         self.editor_language.lock().unwrap().clone()
     }
 
+    /// Returns cloned `TreeViewOrder`, allowing subsequent read-only usage
+    /// of the tree view order without keeping a lock on it.
+    pub fn get_editor_tree_view_order(&self) -> TreeViewOrder {
+        self.editor_tree_view_order.lock().unwrap().clone()
+    }
+
     /// Returns cloned `Theme`, allowing subsequent read-only usage
     /// of the theme without keeping a lock on it.
     pub fn get_editor_theme(&self) -> Theme {
@@ -874,6 +882,7 @@ impl Context {
         cache_dir: PathBuf,
         editor_language: &str,
         editor_theme: &str,
+        editor_tree_view_order: TreeViewOrder,
         site: Arc<Site>,
         site_dir: PathBuf
     ) -> Context {
@@ -884,12 +893,13 @@ impl Context {
             deploying: Mutex::new(DeploymentState::new()),
             editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::default())),
             editor_language: Mutex::new(Language::from_code(editor_language)),
+            editor_tree_view_order: Mutex::new(editor_tree_view_order),
             job_queue: Mutex::new(Vec::new()),
             jobs_completed: Mutex::new(Vec::new()),
             processing: Mutex::new(Processing::new()),
             processing_errors: Mutex::new(Vec::new()),
             site: Mutex::new(site),
-            site_dir,
+            site_dir
         }
     }
 

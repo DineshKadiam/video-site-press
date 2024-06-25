@@ -176,10 +176,6 @@ button.danger:hover {
     animation: .5s ease 2s forwards hide;
 }
 @keyframes hide { to { opacity: 0; } }
-#filter_tree {
-    margin: .5rem;
-    width: calc(100% - 1rem);
-}
 footer {
     bottom: 1rem;
     color: var(--bg-mg);
@@ -456,6 +452,14 @@ svg { fill: currentColor; }
     width: 100%;
 }
 #toggle-splash svg { pointer-events: none; }
+.tree_view_options {
+    align-items: center;
+    display: flex;
+}
+.tree_view_options > * { margin: .5rem; }
+.tree_view_options > *:not(:first-child) { margin-left: 0; }
+.tree_view_options #tree-view-order { flex-shrink: 0; }
+.tree_view_options #tree-view-order button { padding: .3rem; }
 .unlisted_badge {
     background-color: var(--fg-3);
     border-radius: .2rem;

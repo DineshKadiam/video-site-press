@@ -276,6 +276,14 @@ if (changeEditorTheme) {
     });
 }
 
+const changeTreeViewOrder = document.querySelector('#tree-view-order');
+
+if (changeTreeViewOrder) {
+    changeTreeViewOrder.addEventListener('submit', () => {
+        changeTreeViewOrder.redirect.value = location.pathname;
+    });
+}
+
 if (splashWrapper) {
     const version = document.body.dataset.version;
     if (localStorage.getItem('hyper8SplashSeen') !== version) {

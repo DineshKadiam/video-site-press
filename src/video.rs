@@ -364,6 +364,16 @@ impl Video {
         }
     }
 
+    // Videos without title are sorted to the front
+    pub fn cmp_by_slug_then_title_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => b_title.cmp(&a_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => b.slug().cmp(&a.slug())
+        }
+    }
+
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
         let mut version_candidate: Option<(usize, &VideoFile)> = None;
 
