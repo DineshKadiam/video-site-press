@@ -299,6 +299,7 @@ img {
     cursor: pointer;
 }
 .player_wrapper button:hover { color: var(--fg-1); }
+.player_wrapper > *:not(video) { z-index: 1; }
 .playlist {
     display: flex;
     flex-direction: column;
