@@ -253,6 +253,7 @@ nav a .icon {
     align-items: center;
     display: inline-flex;
     height: 2rem;
+    margin-right: .2rem;
     vertical-align: top;
     width: 1.3rem;
 }
@@ -275,7 +276,6 @@ nav a .title {
     text-overflow: ellipsis;
 }
 nav a svg {
-    fill: var(--fg-3);
     height: 1.3rem;
     width: 1.3rem;
 }

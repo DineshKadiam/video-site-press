@@ -649,11 +649,7 @@ fn tree_node(
     };
 
     let depth = if href.ends_with('/') { 0 } else { href.split('/').count() - 2 };
-    let padding_left_rem = match depth {
-        0 => 0.4,
-        1 => 1.4,
-        other => other as f32 + 0.6
-    };
+    let padding_left_rem = 0.4 + depth as f32 * 1.4;
     let padding_left = format!("{}rem", padding_left_rem);
 
     formatdoc!(r#"
