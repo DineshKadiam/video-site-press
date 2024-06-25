@@ -30,6 +30,7 @@ pub struct EditorConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum TreeViewOrder {
     Default,
+    SiteOrder,
     TitleAsc,
     TitleDesc
 }
@@ -81,6 +82,7 @@ impl EditorConfig {
 impl TreeViewOrder {
     pub fn from_key(key: &str) -> TreeViewOrder {
         match key {
+            "site_order" => TreeViewOrder::SiteOrder,
             "title_asc" => TreeViewOrder::TitleAsc,
             "title_desc" => TreeViewOrder::TitleDesc,
             _ => TreeViewOrder::Default
@@ -88,11 +90,11 @@ impl TreeViewOrder {
     }
 
     pub fn key(&self, translations: &Translations) -> String {
-        let t_title = translations.title;
         match self {
             TreeViewOrder::Default |
-            TreeViewOrder::TitleAsc => format!("{t_title} ↑"),
-            TreeViewOrder::TitleDesc => format!("{t_title} ↓")
+            TreeViewOrder::SiteOrder => translations.site_order.to_string(),
+            TreeViewOrder::TitleAsc => format!("{} A-Z", translations.title),
+            TreeViewOrder::TitleDesc => format!("{} Z-A", translations.title)
         }
     }
 }

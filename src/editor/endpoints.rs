@@ -70,8 +70,9 @@ pub async fn change_tree_view_order(
 ) -> Redirect {
     let tree_view_order = match context.get_editor_tree_view_order() {
         TreeViewOrder::Default |
+        TreeViewOrder::SiteOrder => TreeViewOrder::TitleAsc,
         TreeViewOrder::TitleAsc => TreeViewOrder::TitleDesc,
-        TreeViewOrder::TitleDesc => TreeViewOrder::TitleAsc,
+        TreeViewOrder::TitleDesc => TreeViewOrder::SiteOrder,
     };
 
     *context.editor_tree_view_order.lock().unwrap() = tree_view_order.clone();

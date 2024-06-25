@@ -228,6 +228,10 @@ impl Playlist {
         }
     }
 
+    pub fn cmp_by_latest_release_date_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
+        b.latest_release_date().cmp(&a.latest_release_date())
+    }
+
     // Playlists without title are sorted to the front
     pub fn cmp_by_slug_then_title_asc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
         match (&a.title, &b.title) {
@@ -517,10 +521,17 @@ impl Playlist {
     }
 
     pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
+        match tree_view_order {
+            TreeViewOrder::Default |
+            TreeViewOrder::SiteOrder => return self.videos_in_playlist_order(),
+            _ => ()
+        }
+
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
 
         match tree_view_order {
             TreeViewOrder::Default |
+            TreeViewOrder::SiteOrder => unreachable!(),
             TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
         }

@@ -37,8 +37,8 @@ body {
     background-color: var(--bg-2);
 }
 .breadcrumbs a svg {
-    fill: var(--fg-3);
     height: 1.5rem;
+    margin-right: .2rem;
     width: 1.5rem;
 }
 button { cursor: pointer; }
@@ -176,6 +176,7 @@ button.danger:hover {
     animation: .5s ease 2s forwards hide;
 }
 @keyframes hide { to { opacity: 0; } }
+#filter_tree { min-width: 0; }
 footer {
     bottom: 1rem;
     color: var(--bg-mg);
@@ -459,7 +460,10 @@ svg { fill: currentColor; }
 .tree_view_options > * { margin: .5rem; }
 .tree_view_options > *:not(:first-child) { margin-left: 0; }
 .tree_view_options #tree-view-order { flex-shrink: 0; }
-.tree_view_options #tree-view-order button { padding: .3rem; }
+.tree_view_options #tree-view-order button {
+    font-size: .8rem;
+    padding: .3rem;
+}
 .unlisted_badge {
     background-color: var(--fg-3);
     border-radius: .2rem;

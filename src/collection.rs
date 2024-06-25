@@ -192,6 +192,10 @@ impl Collection {
         }
     }
 
+    pub fn cmp_by_latest_release_date_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
+        b.latest_release_date().cmp(&a.latest_release_date())
+    }
+
     // Collections without title are sorted to the front
     pub fn cmp_by_slug_then_title_asc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
         match (&a.title, &b.title) {
@@ -476,17 +480,12 @@ impl Collection {
         }
     }
 
-    pub fn playlists_asc_by_slug_then_title(&self) -> Vec<Arc<Playlist>> {
-        let mut playlists: Vec<Arc<Playlist>> = self.playlists.clone();
-        playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_asc);
-        playlists
-    }
-
     pub fn playlists_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Playlist>> {
         let mut playlists: Vec<Arc<Playlist>> = self.playlists.clone();
 
         match tree_view_order {
             TreeViewOrder::Default |
+            TreeViewOrder::SiteOrder => playlists.sort_unstable_by(Playlist::cmp_by_latest_release_date_desc),
             TreeViewOrder::TitleAsc => playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_desc)
         }
@@ -500,7 +499,7 @@ impl Collection {
 
     pub fn public_playlists_desc_by_release_date(&self) -> Vec<Arc<Playlist>> {
         let mut playlists: Vec<Arc<Playlist>> = self.public_playlists().cloned().collect();
-        playlists.sort_unstable_by(|a, b| a.latest_release_date().cmp(&b.latest_release_date()));
+        playlists.sort_unstable_by(Playlist::cmp_by_latest_release_date_desc);
         playlists
     }
 
@@ -510,7 +509,7 @@ impl Collection {
 
     pub fn public_subcollections_desc_by_release_date(&self) -> Vec<Arc<Collection>> {
         let mut subcollections: Vec<Arc<Collection>> = self.public_subcollections().cloned().collect();
-        subcollections.sort_unstable_by(|a, b| a.latest_release_date().cmp(&b.latest_release_date()));
+        subcollections.sort_unstable_by(Collection::cmp_by_latest_release_date_desc);
         subcollections
     }
 
@@ -631,17 +630,12 @@ impl Collection {
         }
     }
 
-    pub fn subcollections_asc_by_slug_then_title(&self) -> Vec<Arc<Collection>> {
-        let mut subcollections: Vec<Arc<Collection>> = self.subcollections.clone();
-        subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_asc);
-        subcollections
-    }
-
     pub fn subcollections_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Collection>> {
         let mut subcollections: Vec<Arc<Collection>> = self.subcollections.clone();
 
         match tree_view_order {
             TreeViewOrder::Default |
+            TreeViewOrder::SiteOrder => subcollections.sort_unstable_by(Collection::cmp_by_latest_release_date_desc),
             TreeViewOrder::TitleAsc => subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_desc)
         }
@@ -839,17 +833,12 @@ impl Collection {
         Err(())
     }
 
-    pub fn videos_asc_by_slug_then_title(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.videos.clone();
-        videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc);
-        videos
-    }
-
     pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
 
         match tree_view_order {
             TreeViewOrder::Default |
+            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_release_date_desc),
             TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
         }

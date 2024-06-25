@@ -375,7 +375,7 @@ pub fn layout(
                         <input id="filter_tree" placeholder="{t_filter}" type="search">
                         <form action="/change-tree-view-order" id="tree-view-order" method="post">
                             <input name="redirect" type="hidden">
-                            <button>{tree_view_order_label}</button>
+                            <button>{tree_view_order_label} ↓</button>
                         </form>
                     </div>
                     {tree}
