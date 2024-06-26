@@ -74,14 +74,12 @@ fn controls(
                 .map(|operation| {
                     match &operation.last_progress {
                         Some(last_progress) => {
-                            let progress = (last_progress.frame as f32 / last_progress.estimated_total_frames as f32).min(1.0);
-                            let percent = (progress * 100.0) as usize;
-                            let seconds_remaining = (1.0 - progress) * (last_progress.duration / progress);
-                            let time_remaining = precise_duration(seconds_remaining);
+                            let progress_percent = last_progress.percent;
+                            let time_remaining = precise_duration(last_progress.duration_remaining);
 
                             formatdoc!(r#"
                                 <div class="processing_badge">
-                                    <span>{percent}%</span>
+                                    <span>{progress_percent}%</span>
                                     <span class="inverted">-{time_remaining}</span>
                                 </div>
                             "#)

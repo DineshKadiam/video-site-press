@@ -1,10 +1,20 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::cmp::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use serde_derive::Serialize;
 
-use crate::{Collection, Playlist, Translations, Video, VideoFormat};
+use crate::{
+    Collection,
+    FFmpegEncodingStats,
+    Playlist,
+    Translations,
+    Video,
+    VideoFormat
+};
 use crate::util::{nanoid, timestamp};
 
 #[derive(Clone, Debug)]
@@ -49,15 +59,17 @@ pub struct Processing {
     pub operations: Vec<Operation>
 }
 
-// We could also (but currently don't) use the following progress fields that
-// ffmpeg reports: fps, q, size, time, bitrate, speed
-// These can easily be added in Progress:from_str if needed.
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Progress {
+    /// Progress as a factor in the range 0-1
+    pub factor: f32,
+    /// How long the encoding already took (in seconds)
     pub duration: f32,
-    pub estimated_total_frames: usize,
-    pub frame: usize
+    /// How long the encoding is estimated to still take (in seconds)
+    pub duration_remaining: f32,
+    /// Progress in percent
+    pub percent: u8
 }
 
 impl Job {
@@ -231,38 +243,21 @@ impl Processing {
 }
 
 impl Progress {
-    fn apply(&mut self, key: &str, value: &str) {
-        match key {
-            "frame" => if let Ok(number) = value.parse::<usize>() {
-                self.frame = number;
-            }
-            _ => ()
-        }
-    }
+    pub fn new(
+        duration: f32,
+        stats: FFmpegEncodingStats,
+        video_duration: f32
+    ) -> Progress {
+        let factor = (stats.time / video_duration).clamp(0.0, 1.0);
 
-    /// Parses a line like "frame=   1 fps=23 ..." coming from ffmpeg
-    pub fn new(duration: f32, estimated_total_frames: usize, line: &str) -> Progress {
-        let mut progress = Progress {
+        let duration_remaining = (1.0 - factor) * (duration / factor);
+        let percent = (factor * 100.0) as u8;
+
+        Progress {
+            factor,
             duration,
-            estimated_total_frames,
-            frame: 0
-        };
-
-        let mut remainder = line.trim();
-
-        loop {
-            if let Some((key, padding_value_next_remainder)) = remainder.split_once('=') {
-                let value_next_remainder = padding_value_next_remainder.trim_start();
-                if let Some((value, next_remainder)) = value_next_remainder.split_once(' ') {
-                    progress.apply(key, value);
-                    remainder = next_remainder;
-                } else {
-                    progress.apply(key, value_next_remainder);
-                    break
-                }
-            }
+            duration_remaining,
+            percent
         }
-
-        progress
     }
 }

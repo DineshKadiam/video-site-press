@@ -98,16 +98,12 @@ function fetchProcessing() {
                         badge.classList.add('processing_badge');
 
                         if (lastProgress) {
-                            const progress = Math.min(1, lastProgress.frame / lastProgress.estimatedTotalFrames);
-                            const percent = Math.trunc(progress * 100);
-                            const secondsRemaining = Math.trunc((1 - progress) * (lastProgress.duration / progress));
-
                             const left = document.createElement('span');
-                            left.textContent = percent.toString() + '%';
+                            left.textContent = lastProgress.percent.toString() + '%';
 
                             const right = document.createElement('span');
                             right.classList.add('inverted');
-                            right.textContent = '-' + formatTime(secondsRemaining);
+                            right.textContent = '-' + formatTime(lastProgress.durationRemaining);
 
                             badge.append(left, right);
                         } else {

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
@@ -31,7 +34,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
                 .map(|operation| {
                     let label = &operation.label;
                     let last_progress = match &operation.last_progress {
-                        Some(progress) => format!("(Frame {})", progress.frame),
+                        Some(progress) => format!("({}%)", progress.percent),
                         None => String::from("(No progress information yet)")
                     };
                     format!("<li>{label} {last_progress}</li>")

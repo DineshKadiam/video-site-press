@@ -1,7 +1,12 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::sync::Arc;
+use std::thread;
 use std::time::Instant;
 
 use serde_derive::Deserialize;
@@ -21,6 +26,17 @@ use crate::util::nanoid;
 
 pub const FFMPEG: &str = if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" };
 pub const FFPROBE: &str = if cfg!(windows) { "ffprobe.exe" } else { "ffprobe" };
+
+// We could also (but currently don't) use the following progress fields that
+// ffmpeg reports: fps, q, size, bitrate, speed
+// These can easily be added in FFmpegEncodingStats::parse if needed.
+#[allow(dead_code)]
+pub struct FFmpegEncodingStats {
+    /// How many frames of the video were encoded so far
+    pub frame: usize,
+    /// Up to which timecode in the video encoding has progressed so far
+    pub time: f32
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -119,7 +135,7 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
 }
 
 pub fn encode(
-    context: &Context,
+    context: &Arc<Context>,
     format: VideoFormat,
     process_id: usize,
     video: &Video
@@ -279,30 +295,40 @@ pub fn encode(
     match command.spawn() {
         Ok(mut child) => {
             if let Some(video_meta) = &highest_quality_version.video_meta {
-                let estimated_total_frames = match &format {
-                    VideoFormat::Video { frame_rate: Some(target_frame_rate), .. } => {
-                        (target_frame_rate * video_meta.duration) as usize
-                    }
-                    _ => (video_meta.video_frame_rate * video_meta.duration) as usize
-                };
+                let video_duration = video_meta.duration;
 
-                let stderr = match child.stderr.take() {
-                    Some(stderr) => stderr,
+                // TODO: This is NOT a reliable figure to measure encoded frames against to compute progress
+                // in percent, reason being that ffmpeg may noticably alter the target frame rate
+                // depending on the used format and encoder during encoding (and we would only know afterwards,
+                // unless we maybe enable and parse the additional up-front info from the ffmpeg invocation)
+                // let video_frames_estimated = match &format {
+                //     VideoFormat::Video { frame_rate: Some(target_frame_rate), .. } => {
+                //         (target_frame_rate * video_meta.duration) as usize
+                //     }
+                //     _ => (video_meta.video_frame_rate * video_meta.duration) as usize
+                // };
+
+                match child.stderr.take() {
+                    Some(stderr) => {
+                        let context_moving = Arc::clone(context);
+                        thread::spawn(move || {
+                            let stderr_reader = BufReader::with_capacity(1024, stderr);
+
+                            for result in stderr_reader.split(b'\r') {
+                                if let Ok(bytes) = result {
+                                    if let Ok(line) = std::str::from_utf8(&bytes) {
+                                        let duration = rendering_begin.elapsed().as_secs_f32();
+                                        let stats = FFmpegEncodingStats::parse(line);
+                                        let progress = Progress::new(duration, stats, video_duration);
+                                        context_moving.processing.lock().unwrap().update_progress(process_id, progress);
+                                    }
+                                }
+                            }
+                        });
+                    }
                     None => {
                         eprint!("Could not capture stderr for ffmpeg child process.");
                         return Err(())
-                    }
-                };
-
-                let stderr_reader = BufReader::new(stderr);
-
-                for result in stderr_reader.split(b'\r') {
-                    if let Ok(bytes) = result {
-                        if let Ok(line) = std::str::from_utf8(&bytes) {
-                            let rendering_duration = rendering_begin.elapsed().as_secs_f32();
-                            let progress = Progress::new(rendering_duration, estimated_total_frames, line);
-                            context.processing.lock().unwrap().update_progress(process_id, progress);
-                        }
                     }
                 }
             }
@@ -478,4 +504,47 @@ fn parse_frame_rate(representation: &str) -> f32 {
     let divisor = components.next().unwrap().parse::<f32>().unwrap();
 
     dividend / divisor
+}
+
+impl FFmpegEncodingStats {
+    pub fn parse(line: &str) -> FFmpegEncodingStats {
+        let mut frame = 0;
+        let mut time = 0.0;
+
+        let mut parse_token = |key: &str, value: &str| {
+            match key {
+                "frame" => if let Ok(number) = value.parse::<usize>() {
+                    frame = number;
+                }
+                "time" => {
+                    // hh:mm:ss.ff (e.g. 00:01:06.54)
+                    let hours = value[0..2].parse::<usize>().unwrap();
+                    let minutes = value[3..5].parse::<usize>().unwrap();
+                    let seconds = value[6..11].parse::<f32>().unwrap();
+                    time = (hours * 3600) as f32 + (minutes * 60) as f32 + seconds;
+                }
+                _ => ()
+            }
+        };
+
+        let mut remainder = line.trim();
+
+        loop {
+            if let Some((key, padding_value_next_remainder)) = remainder.split_once('=') {
+                let value_next_remainder = padding_value_next_remainder.trim_start();
+                if let Some((value, next_remainder)) = value_next_remainder.split_once(' ') {
+                    parse_token(key, value);
+                    remainder = next_remainder;
+                } else {
+                    parse_token(key, value_next_remainder);
+                    break
+                }
+            }
+        }
+
+        FFmpegEncodingStats {
+            frame,
+            time
+        }
+    }
 }

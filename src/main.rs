@@ -59,6 +59,7 @@ use processing::{Job, JobKind, Processing, Progress};
 use site::{AspectRatio, Site, SiteContent};
 use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};
+use transcode::FFmpegEncodingStats;
 use translations::Translations;
 use util::Field;
 use video::{Video, VideoFile, VideoMeta, VideoParent};
