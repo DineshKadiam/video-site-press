@@ -6,6 +6,7 @@ use indoc::formatdoc;
 use crate::Translations;
 
 mod color;
+mod dark_deep;
 mod dark_experimental;
 mod dark_neutral;
 mod light_experimental;
@@ -13,6 +14,7 @@ mod light_neutral;
 mod theme_vars;
 
 use color::Color;
+use dark_deep::DARK_DEEP_VARS;
 use dark_experimental::DARK_EXPERIMENTAL_VARS;
 use dark_neutral::DARK_NEUTRAL_VARS;
 use light_experimental::LIGHT_EXPERIMENTAL_VARS;
@@ -49,6 +51,11 @@ impl Theme {
             dark: DARK_NEUTRAL_VARS,
             light: LIGHT_NEUTRAL_VARS
         }
+    };
+
+    const DARK_DEEP: Theme = Theme {
+        key: "dark_deep",
+        kind: ThemeKind::Static(DARK_DEEP_VARS)
     };
 
     const DARK_EXPERIMENTAL: Theme = Theme {
@@ -96,6 +103,7 @@ impl Theme {
         match key {
             "adaptive_experimental" => Ok(Theme::ADAPTIVE_EXPERIMENTAL),
             "adaptive_neutral" => Ok(Theme::ADAPTIVE_NEUTRAL),
+            "dark_deep" => Ok(Theme::DARK_DEEP),
             "dark_experimental" => Ok(Theme::DARK_EXPERIMENTAL),
             "dark_neutral" => Ok(Theme::DARK_NEUTRAL),
             "light_experimental" => Ok(Theme::LIGHT_EXPERIMENTAL),
@@ -127,7 +135,7 @@ impl Theme {
         "#)
     }
 
-    pub fn variants(translations: &Translations) -> [(&str, String); 6] {
+    pub fn variants(translations: &Translations) -> [(&str, String); 7] {
         let t_adaptive = translations.adaptive;
         let t_dark = translations.dark;
         let t_light = translations.light;
@@ -139,6 +147,7 @@ impl Theme {
         [
             ("adaptive_experimental", format!("{t_adaptive} Experimental")),
             ("adaptive_neutral", format!("{t_adaptive} {t_neutral}")),
+            ("dark_deep", format!("{t_dark} Deep")),
             ("dark_experimental", format!("{t_dark} Experimental")),
             ("dark_neutral", format!("{t_dark} {t_neutral}")),
             ("light_experimental", format!("{t_light} Experimental")),
