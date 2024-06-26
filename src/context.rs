@@ -146,6 +146,7 @@ impl Context {
                     if let Some(title) = &playlist.title {
                         collection.title = Some(title.clone());
                     }
+                    collection.unlisted = playlist.unlisted;
                 };
 
                 collection.write_manifest(self);
@@ -183,6 +184,9 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
 
+                // TODO: If the video is unlisted we could/should make the collection unlisted
+                //       but in turn remove unlisted on the video?
+
                 collection.write_manifest(self);
                 site_mut.content = SiteContent::Collection(collection);
                 self.replace_site(site_mut);
@@ -213,6 +217,7 @@ impl Context {
                     if let Some(title) = &playlist.title {
                         collection.title = Some(title.clone());
                     }
+                    collection.unlisted = playlist.unlisted;
                 };
 
                 collection.write_manifest(self);
@@ -251,6 +256,9 @@ impl Context {
 
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+
+                // TODO: If the video is unlisted we could/should make the collection unlisted
+                //       but in turn remove unlisted on the video?
 
                 collection.write_manifest(self);
 
@@ -300,6 +308,7 @@ impl Context {
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
                     }
+                    playlist.unlisted = collection.unlisted;
                 };
 
                 playlist.write_manifest(self);
@@ -337,6 +346,9 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
 
+                // TODO: If the video is unlisted we could/should make the playlist unlisted
+                //       but in turn remove unlisted on the video?
+
                 playlist.write_manifest(self);
                 site_mut.content = SiteContent::Playlist(playlist);
                 self.replace_site(site_mut);
@@ -373,6 +385,7 @@ impl Context {
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
                     }
+                    playlist.unlisted = collection.unlisted;
                 };
 
                 playlist.write_manifest(self);
@@ -411,6 +424,9 @@ impl Context {
 
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+
+                // TODO: If the video is unlisted we could/should make the playlist unlisted
+                //       but in turn remove unlisted on the video?
 
                 playlist.write_manifest(self);
 
@@ -482,9 +498,12 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
 
-                if collection.videos.is_empty() {
-                    // This always succeeds, as the Arc is guaranteed single-owner at this point.
-                    if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                    // We only copy fields from the collection to the new video,
+                    // if the video was not initialized from a single video that
+                    // already existed in the collection.
+                    if collection.videos.is_empty() {
                         // TODO: We could consider copying a collection banner to be the new video poster here
                         if let Some(description) = &collection.description {
                             video.description = Some(description.clone());
@@ -495,9 +514,13 @@ impl Context {
                         if let Some(title) = &collection.title {
                             video.title = Some(title.clone());
                         }
-                    };
+                    }
 
-                }
+                    // If the collection was unlisted, we ensure that the video
+                    // that was indirectly unlisted as its child, stays unlisted
+                    // when it replaces the collection
+                    video.unlisted |= collection.unlisted;
+                };
 
                 video.write_manifest(self);
 
@@ -547,9 +570,12 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
 
-                if playlist.videos.is_empty() {
-                    // This always succeeds, as the Arc is guaranteed single-owner at this point.
-                    if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                    // We only copy fields from the playlist to the new video,
+                    // if the video was not initialized from a single video that
+                    // already existed in the playlist.
+                    if playlist.videos.is_empty() {
                         // TODO: We could consider copying a playlist banner to be the new video poster here
                         if let Some(description) = &playlist.description {
                             video.description = Some(description.clone());
@@ -560,9 +586,13 @@ impl Context {
                         if let Some(title) = &playlist.title {
                             video.title = Some(title.clone());
                         }
-                    };
+                    }
 
-                }
+                    // If the playlist was unlisted, we ensure that the video
+                    // that was indirectly unlisted as its child, stays unlisted
+                    // when it replaces the playlist
+                    video.unlisted |= playlist.unlisted;
+                };
 
                 video.write_manifest(self);
 
@@ -622,9 +652,12 @@ impl Context {
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
 
-                if collection.videos.is_empty() {
-                    // This always succeeds, as the Arc is guaranteed single-owner at this point.
-                    if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                    // We only copy fields from the collection to the new video,
+                    // if the video was not initialized from a single video that
+                    // already existed in the collection.
+                    if collection.videos.is_empty() {
                         // TODO: We could consider copying a collection banner to be the new video poster here
                         if let Some(description) = &collection.description {
                             video.description = Some(description.clone());
@@ -635,8 +668,13 @@ impl Context {
                         if let Some(title) = &collection.title {
                             video.title = Some(title.clone());
                         }
-                    };
-                }
+                    }
+
+                    // If the collection was unlisted, we ensure that the video
+                    // that was indirectly unlisted as its child, stays unlisted
+                    // when it replaces the collection
+                    video.unlisted |= collection.unlisted;
+                };
 
                 video.write_manifest(self);
 
@@ -687,9 +725,12 @@ impl Context {
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
 
-                if playlist.videos.is_empty() {
-                    // This always succeeds, as the Arc is guaranteed single-owner at this point.
-                    if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                if let Some(video) = Arc::<Video>::get_mut(&mut video) {
+                    // We only copy fields from the playlist to the new video,
+                    // if the video was not initialized from a single video that
+                    // already existed in the playlist.
+                    if playlist.videos.is_empty() {
                         // TODO: We could consider copying a playlist banner to be the new video poster here
                         if let Some(description) = &playlist.description {
                             video.description = Some(description.clone());
@@ -700,9 +741,13 @@ impl Context {
                         if let Some(title) = &playlist.title {
                             video.title = Some(title.clone());
                         }
-                    };
+                    }
 
-                }
+                    // If the playlist was unlisted, we ensure that the video
+                    // that was indirectly unlisted as its child, stays unlisted
+                    // when it replaces the playlist
+                    video.unlisted |= playlist.unlisted;
+                };
 
                 video.write_manifest(self);
 
