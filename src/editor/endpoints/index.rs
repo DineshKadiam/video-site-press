@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
@@ -187,8 +190,8 @@ fn storage_stats_html(translations: &Translations, videos: &Vec<Arc<Video>>) -> 
             (*size as f32 / total_size as f32) * 360.0
         };
 
-        let offset_fill = index as f32 / (sizes.len() - 1) as f32;
-        let lightness = 75.0 - offset_fill * 50.0;
+        let lightness_offset = if sizes.len() == 1 { 0.0 } else { index as f32 / (sizes.len() - 1) as f32 };
+        let lightness = 75.0 - lightness_offset * 50.0;
 
         let size_humanized = human_size(*size);
         let list_text = formatdoc!(r#"
