@@ -54,6 +54,10 @@ button,
     display: flex;
     padding: .3rem 1rem;
 }
+button .icon svg,
+.button .icon svg {
+    display: block;
+}
 button:focus-visible,
 button:hover {
     background: var(--bg-3);
@@ -278,6 +282,33 @@ nav a svg {
 nav a.active { background-color: var(--bg-3); }
 nav li { margin-top: .1rem; }
 .no_title { color: var(--mg); }
+.path_widget {
+    background: var(--action);
+    border: 1px solid transparent;
+    border-radius: .3rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+.path_widget > * {
+    align-items: center;
+    background-color: var(--bg-1);
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+}
+.path_widget > *:first-child {
+    border-top-left-radius: .3rem;
+    border-top-right-radius: .3rem;
+    margin-bottom: 1px;
+}
+.path_widget > :last-child {
+    border-bottom-left-radius: .3rem;
+    border-bottom-right-radius: .3rem;
+}
+.path_widget button {
+    flex-shrink: 0;
+    padding: .3rem;
+}
 pre.error {
     background: var(--danger);
     border-radius: .2rem;

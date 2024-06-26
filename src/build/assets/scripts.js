@@ -2,7 +2,7 @@ const copyLink = document.querySelector('#copy-link');
 const copyNotificationTimeouts = {};
 
 if (copyLink) {
-    function copyToClipboard(button) {
+    function copyToClipboard() {
         const notify = (success, content) => {
             if (content in copyNotificationTimeouts) {
                 clearTimeout(copyNotificationTimeouts[content]);

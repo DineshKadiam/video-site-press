@@ -36,6 +36,7 @@ use crate::editor::widgets::{
     layout,
     links,
     not_found,
+    path_widget,
     preview_button,
     upload_widget
 };
@@ -211,6 +212,7 @@ pub fn edit_page(
     language: &Language,
     playlist: &Playlist
 ) -> HttpResponse {
+    let site = context.get_site();
     let translations = &language.translations;
 
     let t_not_saved = translations.not_saved;
@@ -386,12 +388,14 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
     let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
 
+    let r_path_widget = path_widget(context, path, &site, translations);
     let r_preview_button = preview_button(path, translations);
 
     let t_banner_image = translations.banner_image;
     let t_danger_zone = translations.danger_zone;
     let t_delete_playlist = translations.delete_playlist;
     let t_deleting_the_playlist_text = translations.deleting_the_playlist_text;
+    let t_locations = translations.locations;
     let t_new_video = translations.new_video;
     let t_playlist = translations.playlist;
     let t_really_delete = translations.really_delete;
@@ -415,6 +419,11 @@ pub fn edit_page(
                     <button class="action">{t_update_playlist}</button> {feedback_update}
                 </div>
             </form>
+        </div>
+
+        <div class="form_group">
+            <h2>{t_locations}</h2>
+            {r_path_widget}
         </div>
 
         {links_form}
@@ -461,7 +470,6 @@ pub fn edit_page(
         </div>
     "#);
 
-    let site = context.get_site();
     let head_title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
     let html = layout(context, language, Some(path), &site, &body, head_title);
 

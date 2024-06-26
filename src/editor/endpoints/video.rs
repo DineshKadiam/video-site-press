@@ -45,6 +45,7 @@ use crate::editor::widgets::{
     layout,
     links,
     not_found,
+    path_widget,
     preview_button,
     upload_widget
 };
@@ -747,12 +748,14 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
     let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);
 
+    let r_path_widget = path_widget(context, path, &site, translations);
     let r_preview_button = preview_button(path, translations);
 
     let t_danger_zone = translations.danger_zone;
     let t_delete = translations.delete;
     let t_delete_video = translations.delete_video;
     let t_deleting_the_video_text = translations.deleting_the_video_text;
+    let t_locations = translations.locations;
     let t_poster_image = translations.poster_image;
     let t_really_delete = translations.really_delete;
     let t_video = translations.video;
@@ -779,6 +782,11 @@ pub fn edit_page(
                     <button class="action">{t_update_video}</button> {feedback_update}
                 </div>
             </form>
+        </div>
+
+        <div class="form_group">
+            <h2>{t_locations}</h2>
+            {r_path_widget}
         </div>
 
         {links_form}

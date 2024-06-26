@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: 2024 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::path::Path;
+
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use indoc::formatdoc;
 
-use crate::{Context, Language, Translations};
+use crate::{Context, Language, Site, Translations};
 use crate::icons;
 
 mod layout;
@@ -65,6 +67,64 @@ pub fn not_found(
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
+}
+
+pub fn path_widget(context: &Context, path: &str, site: &Site, translations: &Translations) -> String {
+    let t_copy_link = translations.copy_link;
+    let t_copy_path = translations.copy_path;
+
+    let copy_icon = icons::copy_link(translations.copy);
+    let failure_icon = icons::failure(translations.failed);
+    let success_icon = icons::success(translations.copied);
+
+    let render = |local_path: &str, live_url: &str| -> String {
+        formatdoc!(r#"
+            <div class="path_widget">
+                <div>
+                    <a href="{live_url}" target="_blank">{live_url}</a>
+                    <button class="action" data-copy="{live_url}">
+                        <span class="icon">{copy_icon}</span>
+                        {t_copy_link}
+                    </button>
+                </div>
+                <div>
+                    <span>{local_path}</span>
+                    <button class="action" data-copy="{local_path}">
+                        <span class="icon">{copy_icon}</span>
+                        {t_copy_path}
+                    </button>
+                </div>
+            </div>
+            <template id="copy_icon">
+                {copy_icon}
+            </template>
+            <template id="failure_icon">
+                {failure_icon}
+            </template>
+            <template id="success_icon">
+                {success_icon}
+            </template>
+        "#)
+    };
+
+    if path.is_empty() {
+        let live_url = match &site.base_url {
+            Some(hyper_url) => hyper_url.value.to_string(),
+            None => format!("https://example.com/")
+        };
+        let local_path = context.site_dir.join("");
+
+        render(&local_path.to_string_lossy(), &live_url)
+    } else {
+        let path_with_trailing_slash = Path::new(path).join("");
+        let live_url = match &site.base_url {
+            Some(hyper_url) => hyper_url.value.join(&path_with_trailing_slash.to_string_lossy()).unwrap().to_string(),
+            None => format!("https://example.com/{}", path_with_trailing_slash.display())
+        };
+        let local_path = context.site_dir.join(path).join("");
+
+        render(&local_path.to_string_lossy(), &live_url)
+    }
 }
 
 pub fn preview_button(path: &str, translations: &Translations) -> String {

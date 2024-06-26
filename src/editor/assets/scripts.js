@@ -9,6 +9,39 @@ const splashWrapper = document.querySelector('.splash_wrapper');
 
 const processing = {};
 
+const copyButtons = document.querySelectorAll('button[data-copy]');
+const copyNotificationTimeouts = {};
+if (copyButtons.length) {
+    function copyToClipboard(button) {
+        const notify = (success, content) => {
+            if (content in copyNotificationTimeouts) {
+                clearTimeout(copyNotificationTimeouts[content]);
+                delete copyNotificationTimeouts[content];
+            }
+
+            const copyIcon = document.querySelector('#copy_icon').content.cloneNode(true);
+            const feedbackIcon = document.querySelector(success ? '#success_icon' : '#failure_icon').content.cloneNode(true);
+
+            const iconContainer = button.querySelector('.icon');
+
+            iconContainer.replaceChildren(feedbackIcon);
+
+            copyNotificationTimeouts[content] = setTimeout(() => iconContainer.replaceChildren(copyIcon), 3000);
+        };
+
+        const content = button.dataset.copy;
+
+        navigator.clipboard
+            .writeText(content)
+            .then(() => notify(true, content))
+            .catch(_err => notify(false, content));
+    };
+
+    for (const copyButton of copyButtons) {
+        copyButton.addEventListener('click', () => copyToClipboard(copyButton));
+    }
+}
+
 function formatTime(seconds) {
     if (seconds < 60) {
         return `0:${Math.floor(seconds).toString().padStart(2, '0')}`;

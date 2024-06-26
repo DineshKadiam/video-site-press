@@ -55,13 +55,10 @@ pub fn copy_link(site: &Site, path: &str) -> String {
         None => String::new()
     };
 
-    let t_copied = site.language.translations.copied;
     let t_copy_link = site.language.translations.copy_link;
-    let t_failed = site.language.translations.failed;
-
     let copy_link_icon = icons::copy_link(t_copy_link);
-    let failure_icon = icons::failure(t_failed);
-    let success_icon = icons::success(t_copied);
+    let failure_icon = icons::failure(site.language.translations.failed);
+    let success_icon = icons::success(site.language.translations.copied);
     format!(r#"
         <div>
             <button {data_url} id="copy-link">
