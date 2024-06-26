@@ -838,7 +838,7 @@ impl Collection {
 
         match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_release_date_desc),
+            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
             TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
         }
