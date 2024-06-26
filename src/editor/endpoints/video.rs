@@ -45,6 +45,7 @@ use crate::editor::widgets::{
     layout,
     links,
     not_found,
+    preview_button,
     upload_widget
 };
 use crate::icons;
@@ -440,7 +441,9 @@ pub fn edit_page(
     language: &Language,
     video: &Video
 ) -> HttpResponse {
-    let t_not_saved = language.translations.not_saved;
+    let site = context.get_site();
+    let translations = &language.translations;
+    let t_not_saved = translations.not_saved;
 
     let errors = if video.errors.is_empty() {
         String::new()
@@ -490,16 +493,16 @@ pub fn edit_page(
             if longest_version - shortest_version < 1.0 {
                 let duration = precise_duration(longest_version);
 
-                let t_all_formats_are_the_same_length = language.translations.all_formats_are_the_same_length;
-                let t_ok = language.translations.ok;
+                let t_all_formats_are_the_same_length = translations.all_formats_are_the_same_length;
+                let t_ok = translations.ok;
                 let success_icon = icons::success(t_ok);
                 format!(r#"<div class="duration_info">{success_icon} {t_all_formats_are_the_same_length} ({duration})</div>"#)
             } else {
                 let longest = precise_duration(longest_version);
                 let shortest = precise_duration(shortest_version);
 
-                let t_not_ok = language.translations.not_ok;
-                let t_length_diverges_between_different_formats = language.translations.length_diverges_between_different_formats;
+                let t_not_ok = translations.not_ok;
+                let t_length_diverges_between_different_formats = translations.length_diverges_between_different_formats;
                 let failure_icon = icons::failure(t_not_ok);
                 format!(r#"<div class="duration_info">{failure_icon} {t_length_diverges_between_different_formats} ({shortest} - {longest})</div>"#)
             }
@@ -519,9 +522,9 @@ pub fn edit_page(
                         let width = video_meta.width;
 
                         let (browser_support, reasons) = match browser_support::analysis(&version.file_name, &language, video_meta) {
-                            Some(Ok(message)) => (language.translations.good_browser_support, message),
-                            Some(Err(message)) => (language.translations.not_support_by_browsers, message),
-                            None => (language.translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
+                            Some(Ok(message)) => (translations.good_browser_support, message),
+                            Some(Err(message)) => (translations.not_support_by_browsers, message),
+                            None => (translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
                         };
 
                         (
@@ -539,8 +542,8 @@ pub fn edit_page(
 
                 let file_name = &version.file_name;
 
-                let t_delete = language.translations.delete;
-                let t_really_delete = language.translations.really_delete;
+                let t_delete = translations.delete;
+                let t_really_delete = translations.really_delete;
                 let delete_icon = icons::failure(t_delete);
                 let delete_form = formatdoc!(r#"
                     <form
@@ -568,7 +571,7 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_available_formats = language.translations.available_formats;
+        let t_available_formats = translations.available_formats;
         formatdoc!(r#"
             <h2>{t_available_formats}</h2>
 
@@ -580,7 +583,7 @@ pub fn edit_page(
         "#)
     };
 
-    let t_upload_poster = language.translations.upload_poster;
+    let t_upload_poster = translations.upload_poster;
     let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), t_upload_poster);
     let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
         format!(r#"<span class="error">{error}</span>"#)
@@ -603,16 +606,16 @@ pub fn edit_page(
                 format!("/poster/{path}/{file_name}")
             };
 
-            let mut description = Textarea::image_description("description", language.translations.poster_description);
+            let mut description = Textarea::image_description("description", translations.poster_description);
 
             description
                 .id("poster_description")
                 .value_option(&poster.description);
 
-            let t_delete_poster = language.translations.delete_poster;
-            let t_random_poster = language.translations.random_poster;
-            let t_really_delete = language.translations.really_delete;
-            let t_update_description = language.translations.update_description;
+            let t_delete_poster = translations.delete_poster;
+            let t_random_poster = translations.random_poster;
+            let t_really_delete = translations.really_delete;
+            let t_update_description = translations.update_description;
             format!(r#"
                 <img {alt}class="thumbnail" src="{src}">
                 <div class="button_group">
@@ -644,11 +647,11 @@ pub fn edit_page(
         }
     };
 
-    let mut input_release_date = Input::date("release_date", language.translations.release_date);
-    let mut input_sort_number = Input::number("sort_number", language.translations.sort_number);
-    let mut input_title = Input::text("title", language.translations.title);
-    let mut input_unlisted = Checkbox::new("unlisted", language.translations.unlisted);
-    let mut textarea_description = Textarea::markdown_subset(language, "description", language.translations.description);
+    let mut input_release_date = Input::date("release_date", translations.release_date);
+    let mut input_sort_number = Input::number("sort_number", translations.sort_number);
+    let mut input_title = Input::text("title", translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
     textarea_description.id("video_description");
 
@@ -676,7 +679,7 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", language.translations.permalink);
+        let mut input_permalink = Input::permalink("slug", translations.permalink);
 
         input_permalink.required();
 
@@ -688,8 +691,8 @@ pub fn edit_page(
             String::new()
         };
 
-        let t_a_permalink_defines_under_which_url_text = language.translations.a_permalink_defines_under_which_url_text;
-        let t_update_permalink = language.translations.update_permalink;
+        let t_a_permalink_defines_under_which_url_text = translations.a_permalink_defines_under_which_url_text;
+        let t_update_permalink = translations.update_permalink;
         formatdoc!(r#"
             <p>
                 {t_a_permalink_defines_under_which_url_text}
@@ -709,16 +712,16 @@ pub fn edit_page(
         Some(VideoFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path, &language.translations);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path, translations);
 
-    let t_upload_new_version = language.translations.upload_new_version;
+    let t_upload_new_version = translations.upload_new_version;
     let upload_url = format!("/upload-video/{path}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
 
-    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
-    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist = language.translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
-    let t_move_into_new_collection = language.translations.move_into_new_collection;
-    let t_move_into_new_playlist = language.translations.move_into_new_playlist;
+    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
+    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist = translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
+    let t_move_into_new_collection = translations.move_into_new_collection;
+    let t_move_into_new_playlist = translations.move_into_new_playlist;
     let convert_form = formatdoc!(r#"
         <p>
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
@@ -739,24 +742,29 @@ pub fn edit_page(
         _ => input_unlisted.to_string()
     };
 
-    let render_additional_formats = additional_formats_form(&language.translations, video);
+    let render_additional_formats = additional_formats_form(&translations, video);
 
-    let create_link_form = add_link_form(&format!("/add-video-link/{path}"), &language.translations);
-    let links_form = links(&video.links, &format!("/delete-video-link/{path}"), &language.translations);
+    let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
+    let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);
 
-    let t_danger_zone = language.translations.danger_zone;
-    let t_delete = language.translations.delete;
-    let t_delete_video = language.translations.delete_video;
-    let t_deleting_the_video_text = language.translations.deleting_the_video_text;
-    let t_poster_image = language.translations.poster_image;
-    let t_really_delete = language.translations.really_delete;
-    let t_video = language.translations.video;
-    let t_update_video = language.translations.update_video;
+    let r_preview_button = preview_button(path, translations);
+
+    let t_danger_zone = translations.danger_zone;
+    let t_delete = translations.delete;
+    let t_delete_video = translations.delete_video;
+    let t_deleting_the_video_text = translations.deleting_the_video_text;
+    let t_poster_image = translations.poster_image;
+    let t_really_delete = translations.really_delete;
+    let t_video = translations.video;
+    let t_update_video = translations.update_video;
     let body = formatdoc!(r#"
         {errors}
 
         <div class="form_group">
-            <h2>{t_video}</h2>
+            <h2 class="with_button">
+                <span>{t_video}</span>
+                {r_preview_button}
+            </h2>
 
             <form action="/video/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
@@ -813,7 +821,6 @@ pub fn edit_page(
         </div>
     "#);
 
-    let site = context.get_site();
     let head_title = video.title.as_deref().unwrap_or(video.slug());
     let html = layout(context, language, Some(path), &site, &body, head_title);
 

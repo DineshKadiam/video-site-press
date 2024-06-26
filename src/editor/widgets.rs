@@ -5,7 +5,8 @@ use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use indoc::formatdoc;
 
-use crate::{Context, Language};
+use crate::{Context, Language, Translations};
+use crate::icons;
 
 mod layout;
 mod links;
@@ -64,6 +65,17 @@ pub fn not_found(
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
+}
+
+pub fn preview_button(path: &str, translations: &Translations) -> String {
+    let t_preview = translations.preview;
+    let preview_icon = icons::preview(t_preview);
+
+    formatdoc!(r#"
+        <form action="/build/{path}" method="post" target="_blank">
+            <button>{preview_icon} {t_preview}</button>
+        </form>
+    "#)
 }
 
 pub fn upload_widget(action: &str, label: &str) -> String {

@@ -1,13 +1,19 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
-use actix_web::web::{Data, Either, Redirect};
+use actix_web::web::{Data, Either, Path as ActixPath, Redirect};
 
-use crate::Context;
+use crate::{Context, ContextPath};
 use crate::build::perform_build;
 use crate::editor::widgets::error_page;
 
-pub async fn build(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse> {
+pub async fn build(
+    context: Data<Arc<Context>>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
     let pending_deployment = context.deploying.lock().unwrap().active();
 
     if pending_deployment {
@@ -18,5 +24,6 @@ pub async fn build(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse
 
     perform_build(&context);
 
-    Either::Left(Redirect::to("/preview/").see_other())
+    let redirect_url = format!("/preview/{}", path.path);
+    Either::Left(Redirect::to(redirect_url).see_other())
 }

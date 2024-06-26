@@ -107,7 +107,7 @@ fn controls(
     let t_preview = translations.preview;
     let preview_icon = icons::preview(t_preview);
     let preview = formatdoc!(r#"
-        <form action="/build" method="post" target="_blank">
+        <form action="/build/" method="post" target="_blank">
             <button>{preview_icon} {t_preview}</button>
         </form>
     "#);

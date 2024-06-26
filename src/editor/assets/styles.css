@@ -42,11 +42,6 @@ body {
     margin-right: .2rem;
     width: 1.5rem;
 }
-button { cursor: pointer; }
-button,
-.button * {
-    display: block;
-}
 button,
 .button {
     align-items: center;
@@ -54,6 +49,8 @@ button,
     border-radius: .2rem;
     border: none;
     color: var(--fg-1);
+    column-gap: .3rem;
+    cursor: pointer;
     display: flex;
     padding: .3rem 1rem;
 }
@@ -142,10 +139,6 @@ button.danger:hover {
 .controls button:hover {
     background-color: var(--bg-2);
 }
-.controls svg {
-    height: 1rem;
-    width: 1rem;
-}
 .delete_button {
     align-items: center;
     border-radius: 50%;
@@ -153,15 +146,7 @@ button.danger:hover {
     justify-content: center;
     padding: .5rem;
 }
-.delete_button svg {
-    height: 1rem;
-    width: 1rem;
-}
 #deployment { display: flex; }
-.duration_info svg {
-    height: 1rem;
-    width: 1rem;
-}
 .error {
     background: var(--danger);
     border-radius: .2rem;
@@ -221,6 +206,11 @@ h2 {
     color: var(--fg-1);
     font-size: 1.3rem;
     font-weight: 400;
+}
+h2.with_button {
+    align-items: center;
+    column-gap: 1rem;
+    display: flex;
 }
 input, textarea {
     background-color: var(--bg-1);
@@ -364,10 +354,8 @@ select {
     color: var(--fg-1);
 }
 .splash svg {
-    height: 1rem;
     position: relative;
     top: .1rem;
-    width: 1rem;
 }
 .splash ul {
     columns: 2;
@@ -421,6 +409,10 @@ select {
     flex-grow: 1;
     position: relative;
 }
+.storage_graph {
+    height: unset;
+    width: unset;
+}
 .storage_graph path:not(.marker) { cursor: pointer; }
 .storage_graph path.marker {
     stroke: var(--fg-1);
@@ -443,7 +435,11 @@ select {
     height: .8rem;
     width: .8rem;
 }
-svg { fill: currentColor; }
+svg {
+    fill: currentColor;
+    height: 1rem;
+    width: 1rem;
+}
 .textarea_with_hint {
     display: flex;
     flex-direction: column-reverse;

@@ -47,7 +47,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/add-collection-link/{path:.*}", post().to(collection::add_link))
                 .route("/add-playlist-link/{path:.*}", post().to(playlist::add_link))
                 .route("/add-video-link/{path:.*}", post().to(video::add_link))
-                .route("/build", post().to(build))
+                .route("/build/{path:.*}", post().to(build))
                 .route("/convert-to-collection/{path:.*}", post().to(convert::to_collection))
                 .route("/convert-to-playlist/{path:.*}", post().to(convert::to_playlist))
                 .route("/convert-to-video/{path:.*}", post().to(convert::to_video))

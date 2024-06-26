@@ -36,6 +36,7 @@ use crate::editor::widgets::{
     layout,
     links,
     not_found,
+    preview_button,
     upload_widget
 };
 use crate::util::{nanoid, supported_image_extension, validate_slug};
@@ -385,6 +386,8 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
     let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
 
+    let r_preview_button = preview_button(path, translations);
+
     let t_banner_image = translations.banner_image;
     let t_danger_zone = translations.danger_zone;
     let t_delete_playlist = translations.delete_playlist;
@@ -397,7 +400,10 @@ pub fn edit_page(
         {errors}
 
         <div class="form_group">
-            <h2>{t_playlist}</h2>
+            <h2 class="with_button">
+                <span>{t_playlist}</span>
+                {r_preview_button}
+            </h2>
 
             <form action="/playlist/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
