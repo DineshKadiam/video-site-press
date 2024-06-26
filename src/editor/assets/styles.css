@@ -22,6 +22,7 @@ body {
     align-items: center;
     column-gap: .3rem;
     display: flex;
+    padding: 0 3rem;
 }
 .breadcrumbs a {
     align-items: center;
@@ -108,11 +109,15 @@ button.danger:hover {
     justify-content: flex-end;
 }
 .controls {
+    background: var(--bg-1-overlay);
     display: flex;
-    position: fixed;
-    right: .5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: .5rem;
+    position: sticky;
     row-gap: 1rem;
-    top: .5rem;
+    top: 0;
+    z-index: 1;
 }
 .controls a {
     align-items: center;
@@ -411,6 +416,10 @@ select {
 .split {
     display: flex;
     flex-grow: 1;
+}
+.split > *:nth-child(2) {
+    flex-grow: 1;
+    position: relative;
 }
 .storage_graph path:not(.marker) { cursor: pointer; }
 .storage_graph path.marker {
