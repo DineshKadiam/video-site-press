@@ -492,12 +492,7 @@ pub fn edit_page(
 
         let duration_info = if let Some((shortest_version, longest_version)) = duration_range {
             if longest_version - shortest_version < 1.0 {
-                let duration = precise_duration(longest_version);
-
-                let t_all_formats_are_the_same_length = translations.all_formats_are_the_same_length;
-                let t_ok = translations.ok;
-                let success_icon = icons::success(t_ok);
-                format!(r#"<div class="duration_info">{success_icon} {t_all_formats_are_the_same_length} ({duration})</div>"#)
+                String::new()
             } else {
                 let longest = precise_duration(longest_version);
                 let shortest = precise_duration(shortest_version);
@@ -505,7 +500,7 @@ pub fn edit_page(
                 let t_not_ok = translations.not_ok;
                 let t_length_diverges_between_different_formats = translations.length_diverges_between_different_formats;
                 let failure_icon = icons::failure(t_not_ok);
-                format!(r#"<div class="duration_info">{failure_icon} {t_length_diverges_between_different_formats} ({shortest} - {longest})</div>"#)
+                format!(r#"<div class="error">{failure_icon} {t_length_diverges_between_different_formats} ({shortest} - {longest})</div>"#)
             }
         } else {
             String::new()
