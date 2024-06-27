@@ -235,6 +235,24 @@ input, textarea {
     padding: .3rem;
 }
 input[type="file"] { display: none; }
+.input_prefix {
+    background: var(--bg-2);
+    border-bottom-left-radius: .2rem;
+    border-top-left-radius: .2rem;
+    border: 1px solid var(--mg);
+    color: var(--fg-3);
+    direction: rtl;
+    overflow-x: hidden;
+    padding: .4rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.input_prefix + input {
+    border-bottom-left-radius: 0;
+    border-left: none;
+    border-top-left-radius: 0;
+    flex-grow: 1;
+}
 main {
     margin: 0 3rem 3rem 3rem;
     max-width: 32rem;
@@ -318,6 +336,9 @@ nav li { margin-top: .1rem; }
 .path_widget button {
     flex-shrink: 0;
     padding: .3rem;
+}
+.permalink_split {
+    display: flex;
 }
 pre.error {
     background: var(--danger);

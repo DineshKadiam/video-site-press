@@ -312,7 +312,7 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", translations.permalink);
+        let mut input_permalink = Input::permalink("slug", playlist.parent_path(), &site, translations);
 
         input_permalink.required();
 
@@ -324,11 +324,11 @@ pub fn edit_page(
             String::new()
         };
 
-        let t_a_permalink_defines_under_which_url_text = translations.a_permalink_defines_under_which_url_text;
+        let t_a_permalink_forms_part_of_text = translations.a_permalink_forms_part_of_text;
         let t_update_permalink = translations.update_permalink;
         formatdoc!(r#"
             <p>
-                {t_a_permalink_defines_under_which_url_text}
+                {t_a_permalink_forms_part_of_text}
             </p>
 
             <form action="/move-playlist/{path}" data-warn-discard method="post">

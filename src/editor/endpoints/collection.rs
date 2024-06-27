@@ -517,7 +517,7 @@ pub fn edit_page(
     let slug_form = if path == "" {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", translations.permalink);
+        let mut input_permalink = Input::permalink("slug", &collection.parent_path(), &site, translations);
 
         input_permalink
             .id("slug_collection")
@@ -531,11 +531,11 @@ pub fn edit_page(
             String::new()
         };
 
-        let t_a_permalink_defines_under_which_url_text = translations.a_permalink_defines_under_which_url_text;
+        let t_a_permalink_forms_part_of_text = translations.a_permalink_forms_part_of_text;
         let t_update_permalink = translations.update_permalink;
         formatdoc!(r#"
             <p>
-                {t_a_permalink_defines_under_which_url_text}
+                {t_a_permalink_forms_part_of_text}
             </p>
 
             <form action="/move-collection/{path}" data-warn-discard method="post">
@@ -561,7 +561,7 @@ pub fn edit_page(
     let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
 
     let new_playlist_form = {
-        let mut input_slug_create_playlist = Input::permalink("slug", translations.permalink);
+        let mut input_slug_create_playlist = Input::permalink("slug", &Path::new(path), &site, translations);
         let mut input_title_create_playlist = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -586,10 +586,8 @@ pub fn edit_page(
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
-                    <div class="form_split">
-                        {input_title_create_playlist}
-                        {input_slug_create_playlist}
-                    </div>
+                    {input_title_create_playlist}
+                    {input_slug_create_playlist}
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
                         <button class="action">{t_create_playlist}</button> {feedback}
                     </div>
@@ -599,7 +597,7 @@ pub fn edit_page(
     };
 
     let new_subcollection_form = {
-        let mut input_slug_create_subcollection = Input::permalink("slug", translations.permalink);
+        let mut input_slug_create_subcollection = Input::permalink("slug", &Path::new(path), &site, translations);
         let mut input_title_create_subcollection = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -624,10 +622,8 @@ pub fn edit_page(
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
-                    <div class="form_split">
-                        {input_title_create_subcollection}
-                        {input_slug_create_subcollection}
-                    </div>
+                    {input_title_create_subcollection}
+                    {input_slug_create_subcollection}
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
                         <button class="action">{t_create_subcollection}</button> {feedback_create_subcollection}
                     </div>

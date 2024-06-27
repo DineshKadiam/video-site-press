@@ -480,6 +480,14 @@ impl Collection {
         }
     }
 
+    pub fn parent_path(&self) -> &Path {
+        if self.path.is_empty() {
+            Path::new("")
+        } else {
+            Path::new(&self.path).parent().unwrap()
+        }
+    }
+
     pub fn playlists_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Playlist>> {
         let mut playlists: Vec<Arc<Playlist>> = self.playlists.clone();
 

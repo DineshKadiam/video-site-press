@@ -440,6 +440,14 @@ impl Video {
         }
     }
 
+    pub fn parent_path(&self) -> &Path {
+        if self.path.is_empty() {
+            Path::new("")
+        } else {
+            Path::new(&self.path).parent().unwrap()
+        }
+    }
+
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Video> {
         let mut video = Video::new(hyper_dir.site_path(context));
 

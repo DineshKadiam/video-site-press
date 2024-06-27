@@ -3,7 +3,7 @@
 
 #[derive(Clone, Debug)]
 pub struct Translations {
-    pub a_permalink_defines_under_which_url_text: &'static str,
+    pub a_permalink_forms_part_of_text: &'static str,
     pub about: &'static str,
     pub adaptive: &'static str,
     pub add_link: &'static str,
@@ -184,7 +184,7 @@ pub struct Translations {
 impl Translations {
     pub fn de() -> Translations {
         Translations {
-            a_permalink_defines_under_which_url_text: "Ein Permalink definiert unter welcher URL etwas öffentlich zugänglich ist, oder in anderen Worten, falls irgendwelche Links auf diese Resource verweisen, werden sie nicht mehr funktionieren nachdem du den Permalink geändert, und die Seite deployed hast.",
+            a_permalink_forms_part_of_text: "Ein Permalink ist Teil der öffentlichen Adresse einer Unterseite deiner Website. Wenn du den Permalink änderst, hören alle Links die bereits auf diese spezifische Unterseite verweisen auf zu funktionieren.",
             about: "Über",
             adaptive: "Adaptiv",
             add_link: "Link hinzufügen",
@@ -365,7 +365,7 @@ impl Translations {
 
     pub fn en() -> Translations {
         Translations {
-            a_permalink_defines_under_which_url_text: "A permalink defines under which url something is publicly available on the web, or in other words, if there are links pointing to this right now, they will not work anymore after you changed the permalink and deployed your site.",
+            a_permalink_forms_part_of_text: "A permalink forms part of the public address of a subpage on your site. When you modify a permalink, any links already pointing to that specific page will stop working.",
             about: "About",
             adaptive: "Adaptive",
             add_link: "Add Link",

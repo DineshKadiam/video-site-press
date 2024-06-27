@@ -330,6 +330,14 @@ impl Playlist {
         }
 	}
 
+    pub fn parent_path(&self) -> &Path {
+        if self.path.is_empty() {
+            Path::new("")
+        } else {
+            Path::new(&self.path).parent().unwrap()
+        }
+    }
+
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
         self.videos.iter().filter(|video| !video.unlisted)
     }

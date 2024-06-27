@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::{Display, Formatter};
+use std::path::Path;
 
 use indoc::formatdoc;
 
-use crate::Field;
+use crate::{Field, Site, Translations};
 use crate::util::html_escape_inside_attribute;
 
 pub struct Input<'a> {
@@ -22,7 +23,9 @@ pub struct Input<'a> {
 enum InputType {
     Date,
     Number,
-    Permalink,
+    Permalink {
+        prefix: String
+    },
     Text,
     Url
 }
@@ -56,8 +59,19 @@ impl<'a> Input<'a> {
     }
 
     /// Initialize an input for a permalink
-    pub fn permalink(key: &'a str, label: &'a str) -> Input<'a> {
-        Input::new(key, label, InputType::Permalink)
+    pub fn permalink(
+        key: &'a str,
+        parent_path: &Path,
+        site: &Site,
+        translations: &'a Translations
+    ) -> Input<'a> {
+        let parent_path_with_trailing_slash = parent_path.join("");
+        let prefix = match &site.base_url {
+            Some(hyper_url) => hyper_url.value.join(&parent_path_with_trailing_slash.to_string_lossy()).unwrap().to_string(),
+            None => format!("https://example.com/{}", parent_path_with_trailing_slash.display())
+        };
+
+        Input::new(key, translations.permalink, InputType::Permalink { prefix })
     }
 
     pub fn required(&mut self) -> &mut Input<'a> {
@@ -98,26 +112,37 @@ impl<'a> Input<'a> {
 
 impl<'a> Display for Input<'a> {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
-        let autocomplete = if self.r#type == InputType::Permalink { r#"autocomplete="off""# } else { "" };
         let error = &self.error;
         let key = self.key;
         let id = if let Some(id) = self.id { id } else { self.key };
         let label = self.label;
-        let pattern = if self.r#type == InputType::Permalink { r#"pattern="[A-Za-z0-9\-]+""# } else { "" };
         let required = if self.required { "required" } else { "" };
         let r#type = match self.r#type {
             InputType::Date => r#"type="date""#,
             InputType::Number => r#"type="number""#,
-            InputType::Permalink => "",
+            InputType::Permalink { .. } => "",
             InputType::Text => "",
             InputType::Url => r#"type="url""#
         };
         let value = &self.value;
 
+        let input = if let InputType::Permalink { prefix } = &self.r#type {
+            // The &lrm; at the end of the prefix solves the trailing slash being
+            // cut off by text-overflow: ellipsis in conjunction with direction: rtl
+            formatdoc!(r#"
+                <div class="permalink_split">
+                    <span class="input_prefix">{prefix}&lrm;</span>
+                    <input autocomplete="off" id="{id}" name="{key}" pattern="[A-Za-z0-9\-]+" {required} {type} {value}>
+                </div>
+            "#)
+        } else {
+            format!(r#"<input id="{id}" name="{key}" {required} {type} {value}>"#)
+        };
+
         let html = formatdoc!(r#"
             <div class="form_field">
                 <label for="{id}">{label}</label>
-                <input {autocomplete} id="{id}" name="{key}" {pattern} {required} {type} {value}>
+                {input}
                 {error}
             </div>
         "#);
