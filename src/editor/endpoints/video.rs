@@ -278,6 +278,7 @@ pub async fn delete_version(
     }
 }
 
+/// Request a new version the video to be encoded
 pub async fn downsize(
     context: Data<Arc<Context>>,
     form: Form<DownsizeForm>,
@@ -358,23 +359,23 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
 
     let mut select_frame_rate = Select::new("frame_rate", translations.frame_rate);
 
+    select_frame_rate.option("", translations.automatic_original_frame_rate_or_encoder_preference);
+    select_frame_rate.selected("");
+
     let candidate_frame_rates = [60.0, 48.0, 30.0, 25.0, 24.0, 12.0];
-    let known_frame_rate = candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate);
-    if !known_frame_rate {
+    // If the original frame rate is one we don't normally offer, offer it separately here
+    if !candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate) {
         let label = format!(r#"{highest_frame_rate} fps ({t_original})"#);
-        select_frame_rate.option("", label);
-        select_frame_rate.selected("");
+        select_frame_rate.option(highest_frame_rate.to_string(), label);
     }
     for frame_rate in candidate_frame_rates {
         if frame_rate <= highest_frame_rate {
-            if known_frame_rate && frame_rate == highest_frame_rate {
-                let label = format!("{frame_rate} fps ({t_original})");
-                select_frame_rate.option("", label);
-                select_frame_rate.selected("");
+            let label = if frame_rate == highest_frame_rate {
+                format!("{frame_rate} fps ({t_original})")
             } else {
-                let label = format!("{frame_rate} fps");
-                select_frame_rate.option(frame_rate.to_string(), label);
-            }
+                format!("{frame_rate} fps")
+            };
+            select_frame_rate.option(frame_rate.to_string(), label);
         }
     }
 
