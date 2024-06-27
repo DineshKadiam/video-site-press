@@ -753,6 +753,9 @@ pub fn edit_page(
     let r_path_widget = path_widget(context, path, &site, translations);
     let r_preview_button = preview_button(path, translations);
 
+    let video_icon = icons::video(translations.video);
+    let video_title = video.label(translations);
+
     let t_danger_zone = translations.danger_zone;
     let t_delete = translations.delete;
     let t_delete_video = translations.delete_video;
@@ -760,14 +763,14 @@ pub fn edit_page(
     let t_locations = translations.locations;
     let t_poster_image = translations.poster_image;
     let t_really_delete = translations.really_delete;
-    let t_video = translations.video;
     let t_update_video = translations.update_video;
     let body = formatdoc!(r#"
         {errors}
 
         <div class="form_group">
             <h2 class="with_button">
-                <span>{t_video}</span>
+                {video_icon}
+                <span>{video_title}</span>
                 {r_preview_button}
             </h2>
 

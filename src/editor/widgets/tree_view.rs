@@ -45,15 +45,14 @@ fn collection_tree(
                 collection.unlisted
             );
 
-            if active || path.is_some_and(|path|
+            if !active && path.is_some_and(|path|
                 path
                     .strip_prefix(&collection.path)
                     .is_some_and(|rest| rest.starts_with('/'))
             ) {
                 let label = collection.title.as_deref().unwrap_or_else(|| collection.slug());
                 let e_label = html_escape_outside_attribute(label);
-                let (icon, space) = if active { (collection_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{e_label}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
             }
 
             let collection_content = collection_tree(breadcrumbs, collection, context, path, translations, tree_view_order);
@@ -86,15 +85,14 @@ fn collection_tree(
                 playlist.unlisted
             );
 
-            if active || path.is_some_and(|path|
+            if !active && path.is_some_and(|path|
                 path
                     .strip_prefix(&playlist.path)
                     .is_some_and(|rest| rest.starts_with('/'))
             ) {
                 let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
                 let e_label = html_escape_outside_attribute(label);
-                let (icon, space) = if active { (playlist_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="{href}">{icon}{space}{e_label}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
             }
 
             let children = if playlist.videos.is_empty() {
@@ -117,12 +115,6 @@ fn collection_tree(
                             translations,
                             video.unlisted
                         );
-
-                        if active {
-                            let label = video.title.as_deref().unwrap_or_else(|| video.slug());
-                            let e_label = html_escape_outside_attribute(label);
-                            breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {e_label}</a>"#));
-                        }
 
                         formatdoc!(r#"
                             <li>
@@ -168,12 +160,6 @@ fn collection_tree(
                 video.unlisted
             );
 
-            if active {
-                let label = video.title.as_deref().unwrap_or_else(|| video.slug());
-                let e_label = html_escape_outside_attribute(label);
-                breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {e_label}</a>"#));
-            }
-
             formatdoc!(r#"
                 <li>
                     {node}
@@ -208,19 +194,18 @@ pub fn tree_view(
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
             let t_collection = translations.collection;
-            let collection_icon = icons::collection(t_collection);
 
-            if path.is_some() {
+            if path.is_some() && !root_active {
                 let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-                let (icon, space) = if root_active { (collection_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="/collection/">{icon}{space}{e_breadcrumb_title}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="/collection/">{e_breadcrumb_title}</a>"#));
             }
 
             let tree_view_order = context.get_editor_tree_view_order();
 
             let collection_content = collection_tree(&mut breadcrumbs, collection, context, path, translations, &tree_view_order);
 
+            let collection_icon = icons::collection(t_collection);
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
             let node = tree_node(
                 root_active,
@@ -261,20 +246,17 @@ pub fn tree_view(
         }
         SiteContent::Playlist(playlist) => {
             let t_playlist = translations.playlist;
-            let playlist_icon = icons::playlist(t_playlist);
 
-            if path.is_some() {
+            if path.is_some() && !root_active {
                 let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-                let (icon, space) = if root_active { (playlist_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="/playlist/">{icon}{space}{e_breadcrumb_title}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="/playlist/">{e_breadcrumb_title}</a>"#));
             }
 
             let videos = if playlist.videos.is_empty() {
                 String::new()
             } else {
                 let tree_view_order = context.get_editor_tree_view_order();
-
                 let video_icon = icons::video(translations.video);
 
                 playlist.videos_in_tree_view_order(&tree_view_order)
@@ -285,10 +267,6 @@ pub fn tree_view(
                         let active = path.is_some_and(|path| path == video_path);
                         let href = format!("/video/{video_path}");
                         let slug = video.slug();
-
-                        if active {
-                            breadcrumbs.push(format!(r#"<a href="{href}">{video_icon} {slug}</a>"#));
-                        }
 
                         let node = tree_node(
                             active,
@@ -311,6 +289,7 @@ pub fn tree_view(
                     .join("")
             };
 
+            let playlist_icon = icons::playlist(t_playlist);
             let node = tree_node(
                 root_active,
                 &playlist.errors,
@@ -331,15 +310,14 @@ pub fn tree_view(
         }
         SiteContent::Video(video) => {
             let t_video = translations.video;
-            let video_icon = icons::video(t_video);
 
             if path.is_some() {
                 let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-                let (icon, space) = if root_active { (video_icon.as_str(), " ") } else { ("", "") };
-                breadcrumbs.push(format!(r#"<a href="/video/">{icon}{space}{e_breadcrumb_title}</a>"#));
+                breadcrumbs.push(format!(r#"<a href="/video/">{e_breadcrumb_title}</a>"#));
             }
 
+            let video_icon = icons::video(t_video);
             tree_node(
                 root_active,
                 &video.errors,
@@ -359,7 +337,7 @@ pub fn tree_view(
         let breadcrumbs_joined = breadcrumbs.join(" › ");
         formatdoc!(r#"
             <div class="breadcrumbs">
-                {breadcrumbs_joined}
+                {breadcrumbs_joined} ›
             </div>
         "#)
     };

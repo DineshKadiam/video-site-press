@@ -40,6 +40,7 @@ use crate::editor::widgets::{
     preview_button,
     upload_widget
 };
+use crate::icons;
 use crate::util::{nanoid, supported_image_extension, validate_slug};
 
 #[derive(Deserialize)]
@@ -391,13 +392,15 @@ pub fn edit_page(
     let r_path_widget = path_widget(context, path, &site, translations);
     let r_preview_button = preview_button(path, translations);
 
+    let playlist_icon = icons::playlist(translations.playlist);
+    let playlist_title = playlist.label(translations);
+
     let t_banner_image = translations.banner_image;
     let t_danger_zone = translations.danger_zone;
     let t_delete_playlist = translations.delete_playlist;
     let t_deleting_the_playlist_text = translations.deleting_the_playlist_text;
     let t_locations = translations.locations;
     let t_new_video = translations.new_video;
-    let t_playlist = translations.playlist;
     let t_really_delete = translations.really_delete;
     let t_update_playlist = translations.update_playlist;
     let body = formatdoc!(r#"
@@ -405,7 +408,8 @@ pub fn edit_page(
 
         <div class="form_group">
             <h2 class="with_button">
-                <span>{t_playlist}</span>
+                {playlist_icon}
+                <span>{playlist_title}</span>
                 {r_preview_button}
             </h2>
 

@@ -133,7 +133,7 @@ pub fn preview_button(path: &str, translations: &Translations) -> String {
 
     formatdoc!(r#"
         <form action="/build/{path}" method="post" target="_blank">
-            <button>{preview_icon} {t_preview}</button>
+            <button class="action">{preview_icon} {t_preview}</button>
         </form>
     "#)
 }

@@ -22,7 +22,8 @@ body {
     align-items: center;
     column-gap: .3rem;
     display: flex;
-    padding: 0 3rem;
+    flex-wrap: wrap;
+    margin: 0 3rem 3rem 3rem;
 }
 .breadcrumbs a {
     align-items: center;
@@ -30,7 +31,10 @@ body {
     column-gap: .3rem;
     display: inline-flex;
     outline: none;
+    overflow-x: hidden;
     padding: .3rem .6rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .breadcrumbs a:first-child { margin-left: -.6rem; }
 .breadcrumbs a:focus-visible,
@@ -185,7 +189,7 @@ footer {
     row-gap: .1rem;
 }
 .form_field label { margin-bottom: .2rem; }
-.form_group { margin-top: 4rem; }
+.form_group { margin-bottom: 4rem; }
 .form_split {
     display: flex;
     column-gap: 1rem;
@@ -213,8 +217,14 @@ h2 {
 }
 h2.with_button {
     align-items: center;
-    column-gap: 1rem;
     display: flex;
+}
+h2.with_button > span { margin-right: 1rem; }
+h2.with_button > svg {
+    flex-shrink: 0;
+    height: 1.3rem;
+    margin-right: .5rem;
+    width: 1.3rem;
 }
 input, textarea {
     background-color: var(--bg-1);
@@ -226,7 +236,7 @@ input, textarea {
 }
 input[type="file"] { display: none; }
 main {
-    padding: 3rem;
+    margin: 0 3rem 3rem 3rem;
     max-width: 32rem;
 }
 nav {
