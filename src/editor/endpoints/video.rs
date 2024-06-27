@@ -394,6 +394,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
 
     let path = &video.path;
 
+    let t_advanced_settings = translations.advanced_settings;
     let t_best = translations.best;
     let t_quality = translations.quality;
     let t_render_additional_format = translations.render_additional_format;
@@ -403,34 +404,40 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
         <div class="form_group">
             <h2>{t_render_additional_format}</h2>
             <form action="/downsize/{path}" method="post">
-                <div class="form_split">
+                <div class="button_group">
                     {select_resolution}
-                    {select_frame_rate}
-                </div>
-                <div class="form_field">
-                    <label for="quality">{t_quality}</label>
-                    <div style="align-items: center; column-gap: .3rem; display: flex;">
-                        <span>{t_worst}</span>
-                        <div id="quality_wrapper" style="flex: 1; position: relative;">
-                            <span style="left: calc(0.95 * 80%); position: absolute; top: -1rem;">80%</span>
-                            <input
-                                aria-valuenow="80%"
-                                aria-valuetext="80%"
-                                id="quality"
-                                max="1.0"
-                                min="0.0"
-                                name="quality"
-                                step=".01"
-                                style="width: 100%;"
-                                type="range"
-                                value="0.8">
-                        </div>
-                        <span>{t_best}</span>
+                    <div class="form_field">
+                        <label>&nbsp;</label>
+                        <button class="action">{t_render_format}</button>
                     </div>
                 </div>
-                {select_codec}
-                {select_approach}
-                <button class="action">{t_render_format}</button>
+                <details>
+                    <summary>{t_advanced_settings}</summary>
+                    <div class="form_field">
+                        {select_frame_rate}
+                        <label for="quality">{t_quality}</label>
+                        <div style="align-items: center; column-gap: .3rem; display: flex;">
+                            <span>{t_worst}</span>
+                            <div id="quality_wrapper" style="flex: 1; position: relative;">
+                                <span style="left: calc(0.95 * 80%); position: absolute; top: -1rem;">80%</span>
+                                <input
+                                    aria-valuenow="80%"
+                                    aria-valuetext="80%"
+                                    id="quality"
+                                    max="1.0"
+                                    min="0.0"
+                                    name="quality"
+                                    step=".01"
+                                    style="width: 100%;"
+                                    type="range"
+                                    value="0.8">
+                            </div>
+                            <span>{t_best}</span>
+                        </div>
+                    </div>
+                    {select_codec}
+                    {select_approach}
+                </details>
             </form>
         </div>
     "#)

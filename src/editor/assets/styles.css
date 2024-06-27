@@ -466,6 +466,11 @@ select {
     height: .8rem;
     width: .8rem;
 }
+summary {
+    color: var(--fg-1);
+    cursor: pointer;
+    margin: -.5rem 0 1rem 0;
+}
 svg {
     fill: currentColor;
     height: 1rem;
