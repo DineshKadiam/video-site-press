@@ -5,6 +5,35 @@
 
 # Changelog
 
+## 0.15.0
+
+- Offer automatic and forced original frame rate option for encoding (72149a0)
+- Display full public url context as prefix for all permalink input fields (6763d77)
+- Improve editor navigation and orientation readability (8f58552)
+- Hide advanced video encoding parameters behind a toggle (85648e6)
+- Only show duration info when length between formats diverge (992e119)
+- Ensure unlisted flag is transferred or inherited when converting between types (010407b)
+- Introduce locations section for viewing/copying live urls and local paths (2693388)
+- Make collection, playlists and videos directly previewable (9144d74)
+- Fix divide by zero in storage graph computation (1690c7a)
+- Add dark deep theme variant (0ade9f6)
+- Fix incorrectly computed encoding progress in some edge cases (20a26da)
+- Improve editor controls layouting (3ad9ead)
+- Improve tree view icons and hierarchy readability (f91055e)
+- Introduce dynamic, customizable editor tree view order (92d6e1f, 8a7f95c, 9734bfb)
+- Fix video player interface z-index issues in chromium-based browsers (ed9634b)
+- Allow creating playlists and subcollections with title and/or permalink (fb1950a)
+- Render paragraphs based on empty line separation in markdown subset parser (e781d32)
+- Update theme naming scheme, unify theme pickers (65bbbd4)
+- Improve rendering of empty playlist and nodes without title in editor tree view (72f8fb2)
+- Make use of video sort number to auto-sort collection videos as well (e010e6f)
+- Introduce adaptive experimental theme (e715dc7, 86e0e19, c4f3ac2)
+- Tie up some loose ends around slug generation/validation (b66412b)
+- Normalize font size for textareas (3bc3dc7)
+- Iterate on action/danger accents, add additional delete confirmations (476038d)
+- Prompt user to confirm when they are about to discard changes made to a form (6796662)
+- Fix redirect after deleting nested collection or playlist (b669811)
+
 ## 0.14.0
 
 - Improve readability of form grouping and various editor widgets (5eaf037)
