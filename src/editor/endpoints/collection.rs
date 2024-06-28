@@ -228,7 +228,7 @@ pub async fn create_playlist(
             duplicate += 1;
         }
 
-        return succeed(playlist_path, None);
+        return succeed(playlist_path, Some(title_trimmed));
     } else {
         if let Err(message) = validate_slug(slug_trimmed) {
             return error(Some(&message), None);
@@ -244,7 +244,8 @@ pub async fn create_playlist(
             let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
             return error(Some(message), None);
         } else {
-            return succeed(playlist_path, Some(title_trimmed));
+            let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
+            return succeed(playlist_path, title);
         }
     }
 }
@@ -327,7 +328,7 @@ pub async fn create_subcollection(
             duplicate += 1;
         }
 
-        return succeed(subcollection_path, None);
+        return succeed(subcollection_path, Some(title_trimmed));
     } else {
         if let Err(message) = validate_slug(slug_trimmed) {
             return error(Some(&message), None);
@@ -343,7 +344,8 @@ pub async fn create_subcollection(
             let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
             return error(Some(message), None);
         } else {
-            return succeed(subcollection_path, Some(title_trimmed));
+            let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
+            return succeed(subcollection_path, title);
         }
     }
 }
