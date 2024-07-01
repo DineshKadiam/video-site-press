@@ -62,7 +62,7 @@ pub fn collection_html(
         body.push_str(&links_rendered);
     }
 
-    let videos = collection.public_videos_in_collection_order();
+    let videos = collection.public_videos_in_collection_video_order();
 
     if !videos.is_empty() {
         let videos = videos
@@ -162,7 +162,7 @@ fn render_collection(
         output.push_str(&wrapped);
     }
 
-    let videos = collection.public_videos_in_collection_order();
+    let videos = collection.public_videos_in_collection_video_order();
 
      if !videos.is_empty() {
         let videos = videos

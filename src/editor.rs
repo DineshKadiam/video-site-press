@@ -27,7 +27,7 @@ pub struct EditorConfig {
     pub tree_view_order: TreeViewOrder
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum TreeViewOrder {
     Default,
     SiteOrder,

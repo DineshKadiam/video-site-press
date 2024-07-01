@@ -24,6 +24,7 @@ use crate::{
     Translations,
     TreeViewOrder,
     Video,
+    VideoOrder,
     VideoParent
 };
 use crate::util::checked_remove_dir_all;
@@ -39,6 +40,7 @@ pub struct Collection {
     pub subcollections: Vec<Arc<Collection>>,
     pub title: Option<String>,
     pub unlisted: bool,
+    pub video_order: VideoOrder,
     pub videos: Vec<Arc<Video>>
 }
 
@@ -189,6 +191,24 @@ impl Collection {
             } else if let Some(section) = element.as_section() {
                 self.errors.push(format!("Ignoring unsupported section '{}' in {}:{}", section.key(), manifest_path.display(), element.line_number()))
             }
+        }
+
+        match document.optional_field("video_order") {
+            Ok(Some(field)) => {
+                match field.required_value::<String>() {
+                    Ok(value) => {
+                        match VideoOrder::from_key(&value) {
+                            Ok(order) => {
+                                self.video_order = order;
+                            }
+                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                        }
+                    }
+                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
+                }
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line)),
+            _ => ()
         }
     }
 
@@ -476,6 +496,7 @@ impl Collection {
             subcollections: Vec::new(),
             title: None,
             unlisted: false,
+            video_order: VideoOrder::Default,
             videos: Vec::new()
         }
     }
@@ -531,9 +552,9 @@ impl Collection {
         videos
     }
 
-    pub fn public_videos_in_collection_order(&self) -> Vec<Arc<Video>> {
+    pub fn public_videos_in_collection_video_order(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc);
+        videos.sort_unstable_by(Video::cmp_by_video_order(&self.video_order));
         videos
     }
 
@@ -846,7 +867,7 @@ impl Collection {
 
         match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
+            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_video_order(&self.video_order)),
             TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
         }
@@ -873,6 +894,10 @@ impl Collection {
 
         if self.unlisted {
             eno.push_str("unlisted\n");
+        }
+
+        if self.video_order != VideoOrder::Default {
+            eno.push_str(&format!("video_order: {}\n", self.video_order.key()));
         }
 
         for link in &self.links {

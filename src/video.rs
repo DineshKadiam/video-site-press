@@ -65,6 +65,17 @@ pub struct VideoMeta {
     pub width: usize
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum VideoOrder {
+    Default,
+    ReleaseDateAsc,
+    ReleaseDateDesc,
+    SortNumberAsc,
+    SortNumberDesc,
+    TitleAsc,
+    TitleDesc
+}
+
 pub enum VideoParent {
     Collection(Arc<Collection>),
     Playlist(Arc<Playlist>)
@@ -374,6 +385,19 @@ impl Video {
         }
     }
 
+    // Returns a comparator function according to the passed [VideoOrder]
+    pub fn cmp_by_video_order(video_order: &VideoOrder) -> fn(&Arc<Video>, &Arc<Video>) -> Ordering {
+        match video_order {
+            VideoOrder::Default => Video::cmp_by_sort_number_then_release_date_asc,
+            VideoOrder::ReleaseDateAsc => Video::cmp_by_release_date_asc,
+            VideoOrder::ReleaseDateDesc => Video::cmp_by_release_date_desc,
+            VideoOrder::SortNumberAsc => Video::cmp_by_sort_number_asc,
+            VideoOrder::SortNumberDesc => Video::cmp_by_sort_number_desc,
+            VideoOrder::TitleAsc => Video::cmp_by_title_or_slug_asc,
+            VideoOrder::TitleDesc => Video::cmp_by_title_or_slug_desc
+        }
+    }
+
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
         let mut version_candidate: Option<(usize, &VideoFile)> = None;
 
@@ -673,5 +697,36 @@ impl VideoMeta {
         let cache_item_path = context.cache_dir.join(cache_item_file_name);
         
         fs::write(cache_item_path, cache_item_serialized).unwrap();
+    }
+}
+
+impl VideoOrder {
+    pub fn from_key(key: &str) -> Result<VideoOrder, String> {
+        match key {
+            "default" => Ok(VideoOrder::Default),
+            "release_date_asc" => Ok(VideoOrder::ReleaseDateAsc),
+            "release_date_desc" => Ok(VideoOrder::ReleaseDateDesc),
+            "sort_number_asc" => Ok(VideoOrder::SortNumberAsc),
+            "sort_number_desc" => Ok(VideoOrder::SortNumberDesc),
+            "title_asc" => Ok(VideoOrder::TitleAsc),
+            "title_desc" => Ok(VideoOrder::TitleDesc),
+            _ => {
+                // TODO: Translate
+                let message = format!("Unsupported order key '{key}' (supported ones are 'default', 'release_date_asc', 'release_date_desc', 'sort_number_asc', 'sort_number_desc', 'title_asc' and 'title_desc')");
+                Err(message)
+            }
+        }
+    }
+
+    pub fn key(&self) -> &str {
+        match self {
+            VideoOrder::Default => "default",
+            VideoOrder::ReleaseDateAsc => "release_date_asc",
+            VideoOrder::ReleaseDateDesc => "release_date_desc",
+            VideoOrder::SortNumberAsc => "sort_number_asc",
+            VideoOrder::SortNumberDesc => "sort_number_desc",
+            VideoOrder::TitleAsc => "title_asc",
+            VideoOrder::TitleDesc => "title_desc"
+        }
     }
 }

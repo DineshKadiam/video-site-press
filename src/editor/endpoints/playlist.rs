@@ -26,7 +26,7 @@ use crate::{
     Language,
     Link,
     Playlist,
-    PlaylistOrder
+    VideoOrder
 };
 use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
@@ -607,7 +607,7 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
-    let order = PlaylistOrder::from_key(&form.order).unwrap();
+    let order = VideoOrder::from_key(&form.order).unwrap();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
 

@@ -22,7 +22,8 @@ use crate::{
     Site,
     Translations,
     TreeViewOrder,
-    Video
+    Video,
+    VideoOrder
 };
 use crate::util::checked_remove_dir_all;
 
@@ -32,24 +33,13 @@ pub struct Playlist {
 	pub description: Option<String>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
-    pub order: PlaylistOrder,
+    pub order: VideoOrder,
     pub path: String,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
     pub unlisted: bool,
 	pub videos: Vec<Arc<Video>>
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum PlaylistOrder {
-    Default,
-    ReleaseDateAsc,
-    ReleaseDateDesc,
-    SortNumberAsc,
-    SortNumberDesc,
-    TitleAsc,
-    TitleDesc
 }
 
 impl Playlist {
@@ -178,7 +168,7 @@ impl Playlist {
             Ok(Some(field)) => {
                 match field.required_value::<String>() {
                     Ok(value) => {
-                        match PlaylistOrder::from_key(&value) {
+                        match VideoOrder::from_key(&value) {
                             Ok(order) => {
                                 self.order = order;
                             }
@@ -322,7 +312,7 @@ impl Playlist {
             description: None,
             errors: Vec::new(),
             links: Vec::new(),
-            order: PlaylistOrder::Default,
+            order: VideoOrder::Default,
             path,
             title: None,
             videos: Vec::new(),
@@ -344,17 +334,7 @@ impl Playlist {
 
     pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-
-        match self.order {
-            PlaylistOrder::Default => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
-            PlaylistOrder::ReleaseDateAsc => videos.sort_unstable_by(Video::cmp_by_release_date_asc),
-            PlaylistOrder::ReleaseDateDesc => videos.sort_unstable_by(Video::cmp_by_release_date_desc),
-            PlaylistOrder::SortNumberAsc => videos.sort_unstable_by(Video::cmp_by_sort_number_asc),
-            PlaylistOrder::SortNumberDesc => videos.sort_unstable_by(Video::cmp_by_sort_number_desc),
-            PlaylistOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_asc),
-            PlaylistOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_desc)
-        }
-
+        videos.sort_unstable_by(Video::cmp_by_video_order(&self.order));
         videos
     }
 
@@ -514,36 +494,19 @@ impl Playlist {
 
     pub fn videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
-
-        match self.order {
-            PlaylistOrder::Default => videos.sort_unstable_by(Video::cmp_by_sort_number_then_release_date_asc),
-            PlaylistOrder::ReleaseDateAsc => videos.sort_unstable_by(Video::cmp_by_release_date_asc),
-            PlaylistOrder::ReleaseDateDesc => videos.sort_unstable_by(Video::cmp_by_release_date_desc),
-            PlaylistOrder::SortNumberAsc => videos.sort_unstable_by(Video::cmp_by_sort_number_asc),
-            PlaylistOrder::SortNumberDesc => videos.sort_unstable_by(Video::cmp_by_sort_number_desc),
-            PlaylistOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_asc),
-            PlaylistOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_title_or_slug_desc)
-        }
-
+        videos.sort_unstable_by(Video::cmp_by_video_order(&self.order));
         videos
     }
 
     pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
-        match tree_view_order {
-            TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => return self.videos_in_playlist_order(),
-            _ => ()
-        }
-
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
-
         match tree_view_order {
             TreeViewOrder::Default |
             TreeViewOrder::SiteOrder => unreachable!(),
+            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_video_order(&self.order)),
             TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
         }
-
         videos
     }
 
@@ -564,7 +527,7 @@ impl Playlist {
             eno.push_str(&link.to_eno());
         }
 
-        if self.order != PlaylistOrder::Default {
+        if self.order != VideoOrder::Default {
             eno.push_str(&format!("order: {}\n", self.order.key()));
         }
 
@@ -583,36 +546,5 @@ impl Playlist {
 
         let path = context.site_dir.join(&self.path).join("playlist.eno");
         fs::write(path, eno).unwrap();
-    }
-}
-
-impl PlaylistOrder {
-    pub fn from_key(key: &str) -> Result<PlaylistOrder, String> {
-        match key {
-            "default" => Ok(PlaylistOrder::Default),
-            "release_date_asc" => Ok(PlaylistOrder::ReleaseDateAsc),
-            "release_date_desc" => Ok(PlaylistOrder::ReleaseDateDesc),
-            "sort_number_asc" => Ok(PlaylistOrder::SortNumberAsc),
-            "sort_number_desc" => Ok(PlaylistOrder::SortNumberDesc),
-            "title_asc" => Ok(PlaylistOrder::TitleAsc),
-            "title_desc" => Ok(PlaylistOrder::TitleDesc),
-            _ => {
-                // TODO: Translate
-                let message = format!("Unsupported order key '{key}' (supported ones are 'default', 'release_date_asc', 'release_date_desc', 'sort_number_asc', 'sort_number_desc', 'title_asc' and 'title_desc')");
-                Err(message)
-            }
-        }
-    }
-
-    pub fn key(&self) -> &str {
-        match self {
-            PlaylistOrder::Default => "default",
-            PlaylistOrder::ReleaseDateAsc => "release_date_asc",
-            PlaylistOrder::ReleaseDateDesc => "release_date_desc",
-            PlaylistOrder::SortNumberAsc => "sort_number_asc",
-            PlaylistOrder::SortNumberDesc => "sort_number_desc",
-            PlaylistOrder::TitleAsc => "title_asc",
-            PlaylistOrder::TitleDesc => "title_desc"
-        }
     }
 }

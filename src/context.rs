@@ -147,6 +147,7 @@ impl Context {
                         collection.title = Some(title.clone());
                     }
                     collection.unlisted = playlist.unlisted;
+                    collection.video_order = playlist.order;
                 };
 
                 collection.write_manifest(self);
@@ -218,6 +219,7 @@ impl Context {
                         collection.title = Some(title.clone());
                     }
                     collection.unlisted = playlist.unlisted;
+                    collection.video_order = playlist.order;
                 };
 
                 collection.write_manifest(self);
@@ -305,6 +307,7 @@ impl Context {
                     if !collection.links.is_empty() {
                         playlist.links = collection.links.clone();
                     }
+                    playlist.order = collection.video_order;
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
                     }
@@ -382,6 +385,7 @@ impl Context {
                     if !collection.links.is_empty() {
                         playlist.links = collection.links.clone();
                     }
+                    playlist.order = collection.video_order;
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
                     }

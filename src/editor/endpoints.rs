@@ -75,7 +75,7 @@ pub async fn change_tree_view_order(
         TreeViewOrder::TitleDesc => TreeViewOrder::SiteOrder,
     };
 
-    *context.editor_tree_view_order.lock().unwrap() = tree_view_order.clone();
+    *context.editor_tree_view_order.lock().unwrap() = tree_view_order;
 
     let language_code = &context.editor_language.lock().unwrap().code;
     let theme_key = context.editor_theme.lock().unwrap().key;

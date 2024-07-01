@@ -27,9 +27,10 @@ use crate::{
     JobKind,
     Language,
     Link,
-    Playlist
+    Playlist,
+    VideoOrder
 };
-use crate::editor::{Checkbox, Input, Textarea};
+use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
@@ -73,7 +74,8 @@ pub enum CollectionFormFeedback<'a> {
     Update {
         description: &'a str,
         title: Field,
-        unlisted: bool
+        unlisted: bool,
+        video_order: &'a str
     }
 }
 
@@ -104,7 +106,8 @@ pub struct MoveForm {
 pub struct UpdateForm {
     description: String,
     title: String,
-    unlisted: Option<String>
+    unlisted: Option<String>,
+    video_order: String
 }
 
 pub async fn add_link(
@@ -498,19 +501,31 @@ pub fn edit_page(
 
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_video_order = Select::new("video_order", translations.video_order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+
+    // TODO: Same construction as in endpoints/playlist.rs, possibly encapsulate as shared helper
+    select_video_order.option("default", translations.default_sort_number_or_release_date_ascending);
+    select_video_order.option("release_date_asc", translations.release_date_ascending);
+    select_video_order.option("release_date_desc", translations.release_date_descending);
+    select_video_order.option("sort_number_asc", translations.sort_number_ascending);
+    select_video_order.option("sort_number_desc", translations.sort_number_descending);
+    select_video_order.option("title_asc", translations.title_ascending);
+    select_video_order.option("title_desc", translations.title_descending);
 
     textarea_description.id("collection_description");
 
-    let feedback_update = if let CollectionFormFeedback::Update { description, title, unlisted } = &form_feedback {
+    let feedback_update = if let CollectionFormFeedback::Update { description, title, unlisted, video_order } = &form_feedback {
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_video_order.selected(video_order);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted);
+        select_video_order.selected(collection.video_order.key());
         textarea_description.value_option(&collection.description);
 
         String::new()
@@ -708,6 +723,7 @@ pub fn edit_page(
             <form action="/collection/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
+                {select_video_order}
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -853,6 +869,7 @@ pub async fn update(
     let description_trimmed = form.description.trim();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
+    let video_order = VideoOrder::from_key(&form.video_order).unwrap();
 
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
@@ -860,6 +877,7 @@ pub async fn update(
             collection.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             collection.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             collection.unlisted = unlisted;
+            collection.video_order = video_order;
         };
 
         let collection = match context.update_collection(mutation, &path.path) {
@@ -881,7 +899,8 @@ pub async fn update(
         let form_feedback = CollectionFormFeedback::Update {
             description: description_trimmed,
             title: Field::valid(title_trimmed),
-            unlisted
+            unlisted,
+            video_order: &form.video_order
         };
 
         Either::Right(edit_page(&collection, &context, form_feedback, &language))

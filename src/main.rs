@@ -53,7 +53,7 @@ use image_processor::{ImageProcessor, ResizeMode};
 use language::Language;
 use link::Link;
 use markdown_subset::MarkdownSubset;
-use playlist::{Playlist, PlaylistOrder};
+use playlist::Playlist;
 use poster::{PosterAsset, PosterAssets, PosterFile};
 use processing::{Job, JobKind, Processing, Progress};
 use site::{AspectRatio, Site, SiteContent};
@@ -62,7 +62,7 @@ use theme::{Theme, ThemeKind};
 use transcode::FFmpegEncodingStats;
 use translations::Translations;
 use util::Field;
-use video::{Video, VideoFile, VideoMeta, VideoParent};
+use video::{Video, VideoFile, VideoMeta, VideoOrder, VideoParent};
 use video_format::{Codec, EncodingApproach, VideoFormat};
 
 fn main() {
@@ -110,7 +110,7 @@ fn main() {
         });
 
     let editor_tree_view_order = match &editor_config {
-        Some(editor_config) => editor_config.tree_view_order.clone(),
+        Some(editor_config) => editor_config.tree_view_order,
         None => TreeViewOrder::Default
     };
 
