@@ -584,7 +584,7 @@ pub fn edit_page(
             <div class="form_group">
                 <h2>{t_new_playlist}</h2>
 
-                <form action="/create-playlist/{path}" data-warn-discard method="post">
+                <form action="/create-playlist/{path}" autocomplete="off" data-warn-discard method="post">
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
@@ -620,7 +620,7 @@ pub fn edit_page(
             <div class="form_group">
                 <h2>{t_new_subcollection}</h2>
 
-                <form action="/create-subcollection/{path}" data-warn-discard method="post">
+                <form action="/create-subcollection/{path}" autocomplete="off" data-warn-discard method="post">
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
