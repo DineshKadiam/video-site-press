@@ -9,6 +9,7 @@ use indoc::formatdoc;
 
 use crate::{Context, Language, Site, Translations};
 use crate::icons;
+use crate::util::string_from_pathbuf;
 
 mod layout;
 mod links;
@@ -69,72 +70,87 @@ pub fn not_found(
         .body(html)
 }
 
-pub fn path_widget(context: &Context, path: &str, site: &Site, translations: &Translations) -> String {
-    let t_copy_link = translations.copy_link;
-    let t_copy_path = translations.copy_path;
-
-    let copy_icon = icons::copy_link(translations.copy);
-    let failure_icon = icons::failure(translations.failed);
-    let success_icon = icons::success(translations.copied);
-
-    let render = |local_path: &str, live_url: &str| -> String {
-        formatdoc!(r#"
-            <div class="path_widget">
-                <div>
-                    <a href="{live_url}" target="_blank">{live_url}</a>
-                    <button class="action" data-copy="{live_url}">
-                        <span class="icon">{copy_icon}</span>
-                        {t_copy_link}
-                    </button>
-                </div>
-                <div>
-                    <span>{local_path}</span>
-                    <button class="action" data-copy="{local_path}">
-                        <span class="icon">{copy_icon}</span>
-                        {t_copy_path}
-                    </button>
-                </div>
-            </div>
-            <template id="copy_icon">
-                {copy_icon}
-            </template>
-            <template id="failure_icon">
-                {failure_icon}
-            </template>
-            <template id="success_icon">
-                {success_icon}
-            </template>
-        "#)
+pub fn resource_actions(context: &Context, path: &str, site: &Site, translations: &Translations) -> String {
+    let local_path = if path.is_empty() {
+        string_from_pathbuf(context.site_dir.join(""))
+    } else {
+        string_from_pathbuf(context.site_dir.join(path).join(""))
     };
 
-    if path.is_empty() {
-        let live_url = match &site.base_url {
-            Some(hyper_url) => hyper_url.value.to_string(),
-            None => format!("https://example.com/")
-        };
-        let local_path = context.site_dir.join("");
-
-        render(&local_path.to_string_lossy(), &live_url)
+    let disk_icon = icons::disk(translations.local_path);
+    let local_path_displayed = if path.is_empty() {
+        format!("<span>{disk_icon} <span>{local_path}</span></span>")
     } else {
-        let path_with_trailing_slash = Path::new(path).join("");
-        let live_url = match &site.base_url {
-            Some(hyper_url) => hyper_url.value.join(&path_with_trailing_slash.to_string_lossy()).unwrap().to_string(),
-            None => format!("https://example.com/{}", path_with_trailing_slash.display())
-        };
-        let local_path = context.site_dir.join(path).join("");
+        let mut rsplitn = local_path.rsplitn(3, '/');
+        rsplitn.next().unwrap();
+        let slug = rsplitn.next().unwrap();
+        let prefix = rsplitn.next().unwrap();
+        format!(r#"<span>{disk_icon} <span>{prefix}/<span class="path_extension">{slug}</span>/</span></span>"#)
+    };
 
-        render(&local_path.to_string_lossy(), &live_url)
-    }
-}
+    let copy_icon = icons::copy_link(translations.copy);
 
-pub fn preview_button(path: &str, translations: &Translations) -> String {
+    let copy_live_url;
+    let live_url_displayed;
+    match &site.base_url {
+        Some(hyper_url) => {
+            let external_icon = icons::external(translations.external_link);
+            let live_url = if path.is_empty() {
+                let live_url = hyper_url.value.to_string();
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {live_url}</a>"#);
+                live_url
+            } else {
+                let path_with_trailing_slash = Path::new(path).join("");
+                let live_url = hyper_url.value.join(&path_with_trailing_slash.to_string_lossy()).unwrap().to_string();
+                let mut rsplitn = live_url.rsplitn(3, '/');
+                rsplitn.next().unwrap();
+                let slug = rsplitn.next().unwrap();
+                let prefix = rsplitn.next().unwrap();
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/</a>"#);
+                live_url
+            };
+
+            let t_copy_link = translations.copy_link;
+            copy_live_url = formatdoc!(r#"
+                <button class="action" data-copy="{live_url}">
+                    <span class="icon">{copy_icon}</span>
+                    {t_copy_link}
+                </button>
+            "#);
+        }
+        None => {
+            copy_live_url = String::new();
+            live_url_displayed = String::new();
+        }
+    };
+
+    let t_copy_path = translations.copy_path;
     let t_preview = translations.preview;
+    let failure_icon = icons::failure(translations.failed);
+    let success_icon = icons::success(translations.copied);
     let preview_icon = icons::preview(t_preview);
-
     formatdoc!(r#"
-        <form action="/build/{path}" method="post" target="_blank">
-            <button class="action">{preview_icon} {t_preview}</button>
-        </form>
+        {live_url_displayed}
+        {local_path_displayed}
+        <div class="button_group">
+            <form action="/build/{path}" method="post" target="_blank">
+                <button class="action">{preview_icon} {t_preview}</button>
+            </form>
+            {copy_live_url}
+            <button class="action" data-copy="{local_path}">
+                <span class="icon">{copy_icon}</span>
+                {t_copy_path}
+            </button>
+        </div>
+        <template id="copy_icon">
+            {copy_icon}
+        </template>
+        <template id="failure_icon">
+            {failure_icon}
+        </template>
+        <template id="success_icon">
+            {success_icon}
+        </template>
     "#)
 }
 

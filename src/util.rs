@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: 2024 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::ffi::OsString;
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::{Error, ErrorKind};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -208,6 +209,19 @@ pub fn precise_duration(seconds: f32) -> String {
             seconds as u16 % 60
         )
     }
+}
+
+/// Efficient, reusable implementation of the annoying OsString to String conversion
+pub fn string_from_os(os_string: OsString) -> String {
+    match os_string.into_string() {
+        Ok(string) => string,
+        Err(os_string) => os_string.to_string_lossy().to_string()
+    }
+}
+
+/// Efficient, reusable implementation of the annoying PathBuf to String conversion
+pub fn string_from_pathbuf(path: PathBuf) -> String {
+    string_from_os(path.into_os_string())
 }
 
 pub fn supported_audio_extension(filename: &str) -> bool {

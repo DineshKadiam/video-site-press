@@ -45,8 +45,7 @@ use crate::editor::widgets::{
     layout,
     links,
     not_found,
-    path_widget,
-    preview_button,
+    resource_actions,
     upload_widget
 };
 use crate::icons;
@@ -751,8 +750,7 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
     let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);
 
-    let r_path_widget = path_widget(context, path, &site, translations);
-    let r_preview_button = preview_button(path, translations);
+    let r_resource_actions = resource_actions(context, path, &site, translations);
 
     let video_icon = icons::video(translations.video);
     let video_title = video.label(translations);
@@ -761,7 +759,6 @@ pub fn edit_page(
     let t_delete = translations.delete;
     let t_delete_video = translations.delete_video;
     let t_deleting_the_video_text = translations.deleting_the_video_text;
-    let t_locations = translations.locations;
     let t_poster_image = translations.poster_image;
     let t_really_delete = translations.really_delete;
     let t_update_video = translations.update_video;
@@ -772,9 +769,11 @@ pub fn edit_page(
             <h2 class="with_button">
                 {video_icon}
                 <span>{video_title}</span>
-                {r_preview_button}
             </h2>
+            {r_resource_actions}
+        </div>
 
+        <div class="form_group">
             <form action="/video/{path}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
@@ -788,11 +787,6 @@ pub fn edit_page(
                     <button class="action">{t_update_video}</button> {feedback_update}
                 </div>
             </form>
-        </div>
-
-        <div class="form_group">
-            <h2>{t_locations}</h2>
-            {r_path_widget}
         </div>
 
         {links_form}

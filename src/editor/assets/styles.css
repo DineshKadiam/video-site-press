@@ -218,6 +218,7 @@ h2 {
 h2.with_button {
     align-items: center;
     display: flex;
+    margin-bottom: .6rem;
 }
 h2.with_button > span { margin-right: 1rem; }
 h2.with_button > svg {
@@ -225,6 +226,20 @@ h2.with_button > svg {
     height: 1.3rem;
     margin-right: .5rem;
     width: 1.3rem;
+}
+h2.with_button + a,
+h2.with_button + a + span,
+h2.with_button + span {
+    align-items: center;
+    display: flex;
+    font-size: .8rem;
+    margin-bottom: .2rem;
+}
+h2.with_button + a + span svg,
+h2.with_button + a svg {
+    height: .8rem;
+    margin-right: .3rem;
+    width: .8rem;
 }
 input, textarea {
     background-color: var(--bg-1);
@@ -310,6 +325,11 @@ nav a svg {
 nav a.active { background-color: var(--bg-3); }
 nav li { margin-top: .1rem; }
 .no_title { color: var(--mg); }
+.path_extension {
+    background: var(--bg-2);
+    border-radius: .3rem;
+    padding: .2rem;
+}
 .path_widget {
     background: var(--action);
     border: 1px solid transparent;

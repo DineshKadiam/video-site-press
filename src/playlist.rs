@@ -492,17 +492,10 @@ impl Playlist {
         Err(())
     }
 
-    pub fn videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.videos.clone();
-        videos.sort_unstable_by(Video::cmp_by_video_order(&self.order));
-        videos
-    }
-
     pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
         match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => unreachable!(),
             TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_video_order(&self.order)),
             TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
             TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
