@@ -88,6 +88,7 @@ h1 {
     color: var(--fg-1);
     font-size: 1.5rem;
     font-weight: 500;
+    margin-bottom: 2rem;
 }
 h2 {
     font-size: 1.3rem;
@@ -484,7 +485,8 @@ video {
     display: grid;
     grid-gap: 1rem;
     grid-template-columns: minmax(0, 1fr);
-    margin: 1rem 0;
+    margin-bottom: 2rem;
+    margin-top: 2rem;
 }
 .videos_grid .number {
     background-color: var(--fg-3);
