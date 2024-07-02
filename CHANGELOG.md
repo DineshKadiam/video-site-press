@@ -5,6 +5,17 @@
 
 # Changelog
 
+## 0.16.0
+
+- Minor vertical margin tweaks in build (ff55695)
+- Add dark warm, light deep and light warm theme variants (4f4aff9, 173b40a)
+- Communicate inherited visibility (offline/unlisted) in build and tree view (c03ad47)
+- Introduce offline flag to indicate resources that should not be deployed (44b72c7)
+- Move locations section into edit page title element (21e4ac2)
+- Allow customizing video order in collections (babcbc3)
+- Disable autocompletion in new playlist/subcollection forms (97b7f05)
+- Fix title sometimes not being assigned when creating playlist/subcollection (80fdc47)
+
 ## 0.15.0
 
 - Offer automatic and forced original frame rate option for encoding (72149a0)
