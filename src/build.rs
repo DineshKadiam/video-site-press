@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 
 use rsubs_lib::SRT;
@@ -34,10 +37,19 @@ pub fn perform_build(context: &Context) {
     let traversal = Traversal::new();
 
     match &site.content {
-        SiteContent::Collection(collection) => build_collection(context, collection, &site, &traversal),
-        SiteContent::Playlist(playlist) => build_playlist(context, playlist, &site, &traversal),
-        SiteContent::Video(video) => build_video(context, None, video, &site, &traversal),
-        SiteContent::Empty => (),
+        SiteContent::Collection(collection) => {
+            if collection.offline { return; }
+            build_collection(context, collection, &site, &traversal)
+        }
+        SiteContent::Playlist(playlist) => {
+            if playlist.offline { return; }
+            build_playlist(context, playlist, &site, &traversal)
+        }
+        SiteContent::Video(video) => {
+            if video.offline { return; }
+            build_video(context, None, video, &site, &traversal)
+        }
+        SiteContent::Empty => return,
         SiteContent::Invalid => todo!()
     }
 
@@ -78,14 +90,17 @@ fn build_collection(
     collection_html(context, collection, site, &traversal);
 
     for subcollection in &collection.subcollections {
+        if subcollection.offline { continue; }
         build_collection(context, subcollection, site, &traversal);
     }
 
     for playlist in &collection.playlists {
+        if playlist.offline { continue; }
         build_playlist(context, playlist, site, &traversal);
     }
 
     for video in &collection.videos {
+        if video.offline { continue; }
         build_video(context, None, video, site, &traversal);
     }
 }
@@ -124,6 +139,7 @@ fn build_playlist(
 
 
     for video in &playlist.videos {
+        if video.offline { continue; }
         build_video(context, Some(playlist), video, site, &traversal);
     }
 }

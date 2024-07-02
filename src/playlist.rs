@@ -33,6 +33,7 @@ pub struct Playlist {
 	pub description: Option<String>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
+    pub offline: bool,
     pub order: VideoOrder,
     pub path: String,
 	pub title: Option<String>,
@@ -162,6 +163,14 @@ impl Playlist {
                     self.errors.push(format!("Error in {}:{} (Links must be provided as fields with attributes)", manifest_path.display(), element.line_number()))
                 }
             }
+        }
+
+        match document.optional_flag("offline") {
+            Ok(Some(_)) => {
+                self.offline = true;
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
         }
 
         match document.optional_field("order") {
@@ -312,6 +321,7 @@ impl Playlist {
             description: None,
             errors: Vec::new(),
             links: Vec::new(),
+            offline: false,
             order: VideoOrder::Default,
             path,
             title: None,
@@ -328,8 +338,12 @@ impl Playlist {
         }
     }
 
+    pub fn public(&self) -> bool {
+        !self.offline && !self.unlisted
+    }
+
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
-        self.videos.iter().filter(|video| !video.unlisted)
+        self.videos.iter().filter(|video| video.public())
     }
 
     pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
@@ -518,6 +532,10 @@ impl Playlist {
 
         for link in &self.links {
             eno.push_str(&link.to_eno());
+        }
+
+        if self.offline {
+            eno.push_str("offline\n");
         }
 
         if self.order != VideoOrder::Default {

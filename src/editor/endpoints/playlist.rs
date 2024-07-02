@@ -67,6 +67,7 @@ pub enum PlaylistFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        offline: bool,
         order: &'a str,
         title: Field,
         unlisted: bool
@@ -81,6 +82,7 @@ pub struct PlaylistMoveForm {
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
     description: String,
+    offline: Option<String>,
     order: String,
     title: String,
     unlisted: Option<String>
@@ -277,6 +279,7 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
+    let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
     let mut select_order = Select::new("order", translations.order);
@@ -292,7 +295,14 @@ pub fn edit_page(
 
     textarea_description.id("playlist_description");
 
-    let feedback_update = if let Some(PlaylistFormFeedback::Update { description, order, title, unlisted }) = &form_feedback {
+    let feedback_update = if let Some(PlaylistFormFeedback::Update {
+        description,
+        offline,
+        order,
+        title,
+        unlisted
+    }) = &form_feedback {
+        input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
         select_order.selected(order);
@@ -300,6 +310,7 @@ pub fn edit_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        input_offline.checked(playlist.offline);
         input_title.value_option(&playlist.title);
         input_unlisted.checked(playlist.unlisted);
         select_order.selected(playlist.order.key());
@@ -388,7 +399,7 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
     let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
 
-    let r_resource_actions = resource_actions(context, path, &site, translations);
+    let r_resource_actions = resource_actions(context, playlist.offline, path, &site, translations);
 
     let playlist_icon = icons::playlist(translations.playlist);
     let playlist_title = playlist.label(translations);
@@ -416,6 +427,7 @@ pub fn edit_page(
                 {input_title}
                 {textarea_description}
                 {select_order}
+                {input_offline}
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -601,6 +613,7 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+    let offline = form.offline.is_some();
     let order = VideoOrder::from_key(&form.order).unwrap();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
@@ -609,6 +622,7 @@ pub async fn update(
     if true {
         let mutation = |playlist: &mut Playlist| {
             playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            playlist.offline = offline;
             playlist.order = order;
             playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             playlist.unlisted = unlisted;
@@ -630,6 +644,7 @@ pub async fn update(
 
         let form_feedback = PlaylistFormFeedback::Update {
             description: description_trimmed,
+            offline,
             order: &form.order,
             title: Field::valid(title_trimmed),
             unlisted

@@ -39,6 +39,7 @@ fn collection_tree(
                 &collection.errors,
                 &href,
                 &collection_icon,
+                collection.offline,
                 collection.slug(),
                 collection.title.as_deref(),
                 translations,
@@ -79,6 +80,7 @@ fn collection_tree(
                 &playlist.errors,
                 &href,
                 &playlist_icon,
+                playlist.offline,
                 playlist.slug(),
                 playlist.title.as_deref(),
                 translations,
@@ -110,6 +112,7 @@ fn collection_tree(
                             &video.errors,
                             &href,
                             &video_icon,
+                            video.offline,
                             video.slug(),
                             video.title.as_deref(),
                             translations,
@@ -154,6 +157,7 @@ fn collection_tree(
                 &video.errors,
                 &href,
                 &video_icon,
+                video.offline,
                 video.slug(),
                 video.title.as_deref(),
                 translations,
@@ -212,6 +216,7 @@ pub fn tree_view(
                 errors,
                 "/collection/",
                 &collection_icon,
+                collection.offline,
                 site_dir,
                 collection.title.as_deref(),
                 translations,
@@ -238,6 +243,7 @@ pub fn tree_view(
                 &Vec::new(),
                 "/",
                 &collection_icon,
+                false,
                 site_dir,
                 Some(t_empty_site),
                 translations,
@@ -273,6 +279,7 @@ pub fn tree_view(
                             &video.errors,
                             &href,
                             &video_icon,
+                            video.offline,
                             slug,
                             video.title.as_deref(),
                             translations,
@@ -295,6 +302,7 @@ pub fn tree_view(
                 &playlist.errors,
                 "/playlist/",
                 &playlist_icon,
+                playlist.offline,
                 site_dir,
                 playlist.title.as_deref(),
                 translations,
@@ -323,6 +331,7 @@ pub fn tree_view(
                 &video.errors,
                 "/video/",
                 &video_icon,
+                video.offline,
                 site_dir,
                 video.title.as_deref(),
                 translations,
@@ -350,6 +359,7 @@ fn tree_node(
     errors: &[String],
     href: &str,
     icon: &str,
+    offline: bool,
     slug: &str,
     title_option: Option<&str>,
     translations: &Translations,
@@ -370,7 +380,10 @@ fn tree_node(
         .map(|title| html_escape_outside_attribute(title))
         .unwrap_or(format!(r#"<span aria-hidden="true" class="no_title">…</span>"#));
 
-    let title_with_unlisted_badge = if unlisted {
+    let title_with_badge = if offline {
+        let t_offline = translations.offline;
+        format!(r#"<span class="unlisted_badge">{t_offline}</span> {e_title}"#)
+    } else if unlisted {
         let t_unlisted = translations.unlisted;
         format!(r#"<span class="unlisted_badge">{t_unlisted}</span> {e_title}"#)
     } else {
@@ -387,7 +400,7 @@ fn tree_node(
                 {icon_container}
             </div>
             <div class="labels">
-                <div class="title">{title_with_unlisted_badge}</div>
+                <div class="title">{title_with_badge}</div>
                 <div class="path">{slug}</div>
             </div>
         </a>

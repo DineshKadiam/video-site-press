@@ -35,6 +35,7 @@ pub struct Collection {
     pub description: Option<String>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
+    pub offline: bool,
     pub path: String,
     pub playlists: Vec<Arc<Playlist>>,
     pub subcollections: Vec<Arc<Collection>>,
@@ -156,6 +157,14 @@ impl Collection {
                     self.errors.push(format!("Error in {}:{} (Links must be provided as fields with attributes)", manifest_path.display(), element.line_number()))
                 }
             }
+        }
+
+        match document.optional_flag("offline") {
+            Ok(Some(_)) => {
+                self.offline = true;
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
         }
 
         match document.optional_field("title") {
@@ -491,6 +500,7 @@ impl Collection {
             description: None,
             errors: Vec::new(),
             links: Vec::new(),
+            offline: false,
             path,
             playlists: Vec::new(),
             subcollections: Vec::new(),
@@ -522,8 +532,12 @@ impl Collection {
         playlists
     }
 
+    pub fn public(&self) -> bool {
+        !self.offline && !self.unlisted
+    }
+
     pub fn public_playlists(&self) -> impl Iterator<Item = &Arc<Playlist>> {
-        self.playlists.iter().filter(|playlist| !playlist.unlisted)
+        self.playlists.iter().filter(|playlist| playlist.public())
     }
 
     pub fn public_playlists_desc_by_release_date(&self) -> Vec<Arc<Playlist>> {
@@ -533,7 +547,7 @@ impl Collection {
     }
 
     pub fn public_subcollections(&self) -> impl Iterator<Item = &Arc<Collection>> {
-        self.subcollections.iter().filter(|subcollection| !subcollection.unlisted)
+        self.subcollections.iter().filter(|subcollection| subcollection.public())
     }
 
     pub fn public_subcollections_desc_by_release_date(&self) -> Vec<Arc<Collection>> {
@@ -543,7 +557,7 @@ impl Collection {
     }
 
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
-        self.videos.iter().filter(|video| !video.unlisted)
+        self.videos.iter().filter(|video| video.public())
     }
 
     pub fn public_videos_desc_by_release_date(&self) -> Vec<Arc<Video>> {
@@ -886,6 +900,10 @@ impl Collection {
             }
 
             eno.push_str(&format!("file = {}\n", banner.file_name));
+        }
+
+        if self.offline {
+            eno.push_str("offline\n");
         }
 
         if let Some(title) = &self.title {

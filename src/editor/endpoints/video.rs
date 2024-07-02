@@ -97,6 +97,7 @@ pub enum VideoFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        offline: bool,
         release_date: Field,
         sort_number: Field,
         title: Field,
@@ -115,6 +116,7 @@ pub struct VideoMoveForm {
 #[derive(Deserialize)]
 pub struct VideoUpdateForm {
     description: String,
+    offline: Option<String>,
     release_date: String,
     sort_number: String,
     title: String,
@@ -650,6 +652,7 @@ pub fn edit_page(
         }
     };
 
+    let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_release_date = Input::date("release_date", translations.release_date);
     let mut input_sort_number = Input::number("sort_number", translations.sort_number);
     let mut input_title = Input::text("title", translations.title);
@@ -658,7 +661,15 @@ pub fn edit_page(
 
     textarea_description.id("video_description");
 
-    let feedback_update = if let Some(VideoFormFeedback::Update { description, release_date, sort_number, title, unlisted }) = &form_feedback {
+    let feedback_update = if let Some(VideoFormFeedback::Update {
+        description,
+        offline,
+        release_date,
+        sort_number,
+        title,
+        unlisted
+    }) = &form_feedback {
+        input_offline.checked(*offline);
         input_release_date.validated_value(release_date);
         input_sort_number.validated_value(sort_number);
         input_title.validated_value(title);
@@ -670,6 +681,7 @@ pub fn edit_page(
         let release_date = video.release_date.as_ref().map(|date| date.to_string());
         let sort_number = video.sort_number.as_ref().map(|number| number.to_string());
 
+        input_offline.checked(video.offline);
         input_release_date.value_option(&release_date);
         input_sort_number.value_option(&sort_number);
         input_title.value_option(&video.title);
@@ -750,7 +762,7 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
     let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);
 
-    let r_resource_actions = resource_actions(context, path, &site, translations);
+    let r_resource_actions = resource_actions(context, video.offline, path, &site, translations);
 
     let video_icon = icons::video(translations.video);
     let video_title = video.label(translations);
@@ -781,6 +793,7 @@ pub fn edit_page(
                     {input_release_date}
                     {input_sort_number}
                 </div>
+                {input_offline}
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -976,6 +989,8 @@ pub async fn update(
 
     let description_trimmed = form.description.trim();
 
+    let offline = form.offline.is_some();
+
     let release_date_trimmed = form.release_date.trim();
     let release_date = if release_date_trimmed.is_empty() {
         None
@@ -1008,6 +1023,7 @@ pub async fn update(
 
         let form_feedback = VideoFormFeedback::Update {
             description: description_trimmed,
+            offline,
             release_date: Field::validated(release_date_trimmed, release_date.and_then(|release_date| release_date.err())),
             sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
             title: Field::valid(title_trimmed),
@@ -1020,6 +1036,7 @@ pub async fn update(
     } else {
         let mutation = |video_mut: &mut Video| {
             video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            video_mut.offline = offline;
             video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
             video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
             video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };

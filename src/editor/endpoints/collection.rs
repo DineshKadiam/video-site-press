@@ -72,6 +72,7 @@ pub enum CollectionFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        offline: bool,
         title: Field,
         unlisted: bool,
         video_order: &'a str
@@ -104,6 +105,7 @@ pub struct MoveForm {
 #[derive(Deserialize)]
 pub struct UpdateForm {
     description: String,
+    offline: Option<String>,
     title: String,
     unlisted: Option<String>,
     video_order: String
@@ -498,6 +500,7 @@ pub fn edit_page(
         None => banner_upload_button
     };
 
+    let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
     let mut select_video_order = Select::new("video_order", translations.video_order);
@@ -514,7 +517,14 @@ pub fn edit_page(
 
     textarea_description.id("collection_description");
 
-    let feedback_update = if let CollectionFormFeedback::Update { description, title, unlisted, video_order } = &form_feedback {
+    let feedback_update = if let CollectionFormFeedback::Update {
+        description,
+        offline,
+        title,
+        unlisted,
+        video_order
+    } = &form_feedback {
+        input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
         select_video_order.selected(video_order);
@@ -522,6 +532,7 @@ pub fn edit_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        input_offline.checked(collection.offline);
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted);
         select_video_order.selected(collection.video_order.key());
@@ -695,7 +706,7 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), &translations);
     let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), &translations);
 
-    let r_resource_actions = resource_actions(context, path, &site, translations);
+    let r_resource_actions = resource_actions(context, collection.offline, path, &site, translations);
 
     let collection_icon = icons::collection(translations.collection);
     let collection_title = collection.label(translations);
@@ -723,6 +734,7 @@ pub fn edit_page(
                 {input_title}
                 {textarea_description}
                 {select_video_order}
+                {input_offline}
                 {input_unlisted_conditionally_hidden}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -861,6 +873,7 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+    let offline = form.offline.is_some();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
     let video_order = VideoOrder::from_key(&form.video_order).unwrap();
@@ -869,6 +882,7 @@ pub async fn update(
     if true {
         let mutation = |collection: &mut Collection| {
             collection.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            collection.offline = offline;
             collection.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             collection.unlisted = unlisted;
             collection.video_order = video_order;
@@ -892,6 +906,7 @@ pub async fn update(
 
         let form_feedback = CollectionFormFeedback::Update {
             description: description_trimmed,
+            offline,
             title: Field::valid(title_trimmed),
             unlisted,
             video_order: &form.video_order

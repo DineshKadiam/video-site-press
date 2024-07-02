@@ -143,6 +143,7 @@ impl Context {
                     if !playlist.links.is_empty() {
                         collection.links = playlist.links.clone();
                     }
+                    collection.offline = playlist.offline;
                     if let Some(title) = &playlist.title {
                         collection.title = Some(title.clone());
                     }
@@ -185,6 +186,9 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
 
+                // TODO: If the video is offline we could/should make the collection offline
+                //       but in turn remove offline on the video?
+
                 // TODO: If the video is unlisted we could/should make the collection unlisted
                 //       but in turn remove unlisted on the video?
 
@@ -215,6 +219,7 @@ impl Context {
                     if !playlist.links.is_empty() {
                         collection.links = playlist.links.clone();
                     }
+                    collection.offline = playlist.offline;
                     if let Some(title) = &playlist.title {
                         collection.title = Some(title.clone());
                     }
@@ -258,6 +263,9 @@ impl Context {
 
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+
+                // TODO: If the video is offline we could/should make the collection offline
+                //       but in turn remove offline on the video?
 
                 // TODO: If the video is unlisted we could/should make the collection unlisted
                 //       but in turn remove unlisted on the video?
@@ -307,6 +315,7 @@ impl Context {
                     if !collection.links.is_empty() {
                         playlist.links = collection.links.clone();
                     }
+                    playlist.offline = collection.offline;
                     playlist.order = collection.video_order;
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
@@ -349,6 +358,9 @@ impl Context {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
 
+                // TODO: If the video is offline we could/should make the playlist offline
+                //       but in turn remove offline on the video?
+
                 // TODO: If the video is unlisted we could/should make the playlist unlisted
                 //       but in turn remove unlisted on the video?
 
@@ -385,6 +397,7 @@ impl Context {
                     if !collection.links.is_empty() {
                         playlist.links = collection.links.clone();
                     }
+                    playlist.offline = collection.offline;
                     playlist.order = collection.video_order;
                     if let Some(title) = &collection.title {
                         playlist.title = Some(title.clone());
@@ -428,6 +441,9 @@ impl Context {
 
                 let hyper_dir = HyperDir::read(&dir_converting);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+
+                // TODO: If the video is offline we could/should make the playlist offline
+                //       but in turn remove offline on the video?
 
                 // TODO: If the video is unlisted we could/should make the playlist unlisted
                 //       but in turn remove unlisted on the video?
@@ -520,6 +536,11 @@ impl Context {
                         }
                     }
 
+                    // If the collection was offline, we ensure that the video
+                    // that was indirectly offline as its child, stays offline
+                    // when it replaces the collection
+                    video.offline |= collection.offline;
+
                     // If the collection was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
                     // when it replaces the collection
@@ -591,6 +612,11 @@ impl Context {
                             video.title = Some(title.clone());
                         }
                     }
+
+                    // If the playlist was offline, we ensure that the video
+                    // that was indirectly offline as its child, stays offline
+                    // when it replaces the playlist
+                    video.offline |= playlist.offline;
 
                     // If the playlist was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
@@ -674,6 +700,11 @@ impl Context {
                         }
                     }
 
+                    // If the collection was offline, we ensure that the video
+                    // that was indirectly offline as its child, stays offline
+                    // when it replaces the collection
+                    video.offline |= collection.offline;
+
                     // If the collection was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
                     // when it replaces the collection
@@ -746,6 +777,11 @@ impl Context {
                             video.title = Some(title.clone());
                         }
                     }
+
+                    // If the playlist was offline, we ensure that the video
+                    // that was indirectly offline as its child, stays offline
+                    // when it replaces the playlist
+                    video.offline |= playlist.offline;
 
                     // If the playlist was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted

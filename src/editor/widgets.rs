@@ -70,7 +70,7 @@ pub fn not_found(
         .body(html)
 }
 
-pub fn resource_actions(context: &Context, path: &str, site: &Site, translations: &Translations) -> String {
+pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Site, translations: &Translations) -> String {
     let local_path = if path.is_empty() {
         string_from_pathbuf(context.site_dir.join(""))
     } else {
@@ -94,10 +94,13 @@ pub fn resource_actions(context: &Context, path: &str, site: &Site, translations
     let live_url_displayed;
     match &site.base_url {
         Some(hyper_url) => {
+            let t_offline = translations.offline;
+            let offline_label = if offline { format!(" ({t_offline})") } else { String::new() };
+
             let external_icon = icons::external(translations.external_link);
             let live_url = if path.is_empty() {
                 let live_url = hyper_url.value.to_string();
-                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {live_url}</a>"#);
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {live_url}{offline_label}</a>"#);
                 live_url
             } else {
                 let path_with_trailing_slash = Path::new(path).join("");
@@ -106,7 +109,7 @@ pub fn resource_actions(context: &Context, path: &str, site: &Site, translations
                 rsplitn.next().unwrap();
                 let slug = rsplitn.next().unwrap();
                 let prefix = rsplitn.next().unwrap();
-                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/</a>"#);
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/{offline_label}</a>"#);
                 live_url
             };
 

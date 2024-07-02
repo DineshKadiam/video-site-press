@@ -32,6 +32,7 @@ pub struct Video {
     pub description: Option<String>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
+    pub offline: bool,
     /// Relative to site dir, always without leading/trailing slashes
     pub path: String,
     pub poster: Option<PosterFile>,
@@ -151,6 +152,14 @@ impl Video {
                     self.errors.push(format!("Error in {}:{} (Links must be provided as fields with attributes)", manifest_path.display(), element.line_number()))
                 }
             }
+        }
+
+        match document.optional_flag("offline") {
+            Ok(Some(_)) => {
+                self.offline = true;
+            }
+            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
+            _ => ()
         }
 
         match document.optional_field("poster") {
@@ -453,6 +462,7 @@ impl Video {
             description: None,
             errors: Vec::new(),
             links: Vec::new(),
+            offline: false,
             path,
             poster: None,
             release_date: None,
@@ -470,6 +480,10 @@ impl Video {
         } else {
             Path::new(&self.path).parent().unwrap()
         }
+    }
+
+    pub fn public(&self) -> bool {
+        !self.offline && !self.unlisted
     }
 
     pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Video> {
@@ -598,6 +612,10 @@ impl Video {
 
         for link in &self.links {
             eno.push_str(&link.to_eno());
+        }
+
+        if self.offline {
+            eno.push_str("offline\n");
         }
 
         if let Some(poster) = &self.poster {
