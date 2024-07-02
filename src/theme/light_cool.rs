@@ -3,7 +3,7 @@
 
 use super::{Color, ThemeVars};
 
-pub const DARK_EXPERIMENTAL_VARS: ThemeVars = ThemeVars {
+pub const LIGHT_COOL_VARS: ThemeVars = ThemeVars {
     action: Color::Chromatic {
         hsl: (225, 0.39, 0.4),
         oklch: (0.45, 0.1, 268)
@@ -12,26 +12,26 @@ pub const DARK_EXPERIMENTAL_VARS: ThemeVars = ThemeVars {
         hsl: (225, 0.46, 0.54),
         oklch: (0.56, 0.13, 268)
     },
-    bg_1: Color::Chromatic {
-        hsl: (217, 0.19, 0.09),
-        oklch: (0.2, 0.012, 260)
+    bg_1: Color::Gray {
+        hsl_l: 1.0,
+        oklch_l: 1.0
     },
-    bg_1_overlay: Color::ChromaticAlpha {
+    bg_1_overlay: Color::GrayAlpha {
         a: 0.85,
-        hsl: (217, 0.19, 0.09),
-        oklch: (0.2, 0.012, 260)
+        hsl_l: 1.0,
+        oklch_l: 1.0
     },
     bg_2: Color::Chromatic {
-        hsl: (217, 0.12, 0.15),
-        oklch: (0.269, 0.012, 260)
+        hsl: (217, 0.32, 0.94),
+        oklch: (0.95, 0.009, 260)
     },
     bg_3: Color::Chromatic {
-        hsl: (217, 0.09, 0.2),
-        oklch: (0.32, 0.012, 260)
+        hsl: (217, 0.15, 0.88),
+        oklch: (0.9, 0.009, 260)
     },
     bg_mg: Color::Chromatic {
-        hsl: (217, 0.07, 0.27),
-        oklch: (0.387, 0.012, 260)
+        hsl: (217, 0.1, 0.81),
+        oklch: (0.85, 0.009, 260)
     },
     danger: Color::Chromatic {
         hsl: (347, 0.46, 0.37),
@@ -42,24 +42,24 @@ pub const DARK_EXPERIMENTAL_VARS: ThemeVars = ThemeVars {
         oklch: (0.56, 0.14, 370)
     },
     fg_1: Color::Gray {
-        hsl_l: 1.0,
-        oklch_l: 1.0
+        hsl_l: 0.0,
+        oklch_l: 0.0
     },
     fg_2: Color::Chromatic {
-        hsl: (217, 0.12, 0.8),
-        oklch: (0.84, 0.012, 260)
+        hsl: (217, 0.9, 0.16),
+        oklch: (0.272, 0.009, 260)
     },
     fg_3: Color::Chromatic {
-        hsl: (217, 0.08, 0.71),
-        oklch: (0.77, 0.012, 260)
+        hsl: (217, 0.06, 0.27),
+        oklch: (0.386, 0.009, 260)
     },
     fg_mg: Color::Chromatic {
-        hsl: (217, 0.06, 0.6),
-        oklch: (0.68, 0.012, 260)
+        hsl: (217, 0.04, 0.4),
+        oklch: (0.51, 0.009, 260)
     },
-    light_1: "var(--fg-1)",
+    light_1: "var(--bg-1)",
     mg: Color::Chromatic {
-        hsl: (217, 0.05, 0.54),
-        oklch: (0.627, 0.012, 260)
+        hsl: (217, 0.04, 0.54),
+        oklch: (0.627, 0.009, 260)
     }
 };

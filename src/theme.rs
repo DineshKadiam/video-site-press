@@ -6,21 +6,25 @@ use indoc::formatdoc;
 use crate::Translations;
 
 mod color;
+mod dark_cool;
 mod dark_deep;
-mod dark_experimental;
 mod dark_neutral;
 mod dark_warm;
-mod light_experimental;
+mod light_cool;
+mod light_deep;
 mod light_neutral;
+mod light_warm;
 mod theme_vars;
 
 use color::Color;
+use dark_cool::DARK_COOL_VARS;
 use dark_deep::DARK_DEEP_VARS;
-use dark_experimental::DARK_EXPERIMENTAL_VARS;
 use dark_neutral::DARK_NEUTRAL_VARS;
 use dark_warm::DARK_WARM_VARS;
-use light_experimental::LIGHT_EXPERIMENTAL_VARS;
+use light_cool::LIGHT_COOL_VARS;
+use light_deep::LIGHT_DEEP_VARS;
 use light_neutral::LIGHT_NEUTRAL_VARS;
+use light_warm::LIGHT_WARM_VARS;
 use theme_vars::ThemeVars;
 
 #[derive(Clone, Debug)]
@@ -39,11 +43,19 @@ pub enum ThemeKind {
 }
 
 impl Theme {
-    const ADAPTIVE_EXPERIMENTAL: Theme = Theme {
-        key: "adaptive_experimental",
+    const ADAPTIVE_COOL: Theme = Theme {
+        key: "adaptive_cool",
         kind: ThemeKind::Adaptive {
-            dark: DARK_EXPERIMENTAL_VARS,
-            light: LIGHT_EXPERIMENTAL_VARS
+            dark: DARK_COOL_VARS,
+            light: LIGHT_COOL_VARS
+        }
+    };
+
+    const ADAPTIVE_DEEP: Theme = Theme {
+        key: "adaptive_deep",
+        kind: ThemeKind::Adaptive {
+            dark: DARK_DEEP_VARS,
+            light: LIGHT_DEEP_VARS
         }
     };
 
@@ -55,14 +67,22 @@ impl Theme {
         }
     };
 
+    const ADAPTIVE_WARM: Theme = Theme {
+        key: "adaptive_warm",
+        kind: ThemeKind::Adaptive {
+            dark: DARK_WARM_VARS,
+            light: LIGHT_WARM_VARS
+        }
+    };
+
+    const DARK_COOL: Theme = Theme {
+        key: "dark_cool",
+        kind: ThemeKind::Static(DARK_COOL_VARS)
+    };
+
     const DARK_DEEP: Theme = Theme {
         key: "dark_deep",
         kind: ThemeKind::Static(DARK_DEEP_VARS)
-    };
-
-    const DARK_EXPERIMENTAL: Theme = Theme {
-        key: "dark_experimental",
-        kind: ThemeKind::Static(DARK_EXPERIMENTAL_VARS)
     };
 
     const DARK_NEUTRAL: Theme = Theme {
@@ -75,14 +95,24 @@ impl Theme {
         kind: ThemeKind::Static(DARK_WARM_VARS)
     };
 
-    const LIGHT_EXPERIMENTAL: Theme = Theme {
-        key: "light_experimental",
-        kind: ThemeKind::Static(LIGHT_EXPERIMENTAL_VARS)
+    const LIGHT_COOL: Theme = Theme {
+        key: "light_cool",
+        kind: ThemeKind::Static(LIGHT_COOL_VARS)
+    };
+
+    const LIGHT_DEEP: Theme = Theme {
+        key: "light_deep",
+        kind: ThemeKind::Static(LIGHT_DEEP_VARS)
     };
 
     const LIGHT_NEUTRAL: Theme = Theme {
         key: "light_neutral",
         kind: ThemeKind::Static(LIGHT_NEUTRAL_VARS)
+    };
+
+    const LIGHT_WARM: Theme = Theme {
+        key: "light_warm",
+        kind: ThemeKind::Static(LIGHT_WARM_VARS)
     };
 
     /// Splash gradient blend mode
@@ -108,20 +138,24 @@ impl Theme {
 
     pub fn from_key(key: &str) -> Result<Theme, String> {
         match key {
-            "adaptive_experimental" => Ok(Theme::ADAPTIVE_EXPERIMENTAL),
+            "adaptive_cool" => Ok(Theme::ADAPTIVE_COOL),
+            "adaptive_deep" => Ok(Theme::ADAPTIVE_DEEP),
             "adaptive_neutral" => Ok(Theme::ADAPTIVE_NEUTRAL),
+            "adaptive_warm" => Ok(Theme::ADAPTIVE_WARM),
+            "dark_cool" => Ok(Theme::DARK_COOL),
             "dark_deep" => Ok(Theme::DARK_DEEP),
-            "dark_experimental" => Ok(Theme::DARK_EXPERIMENTAL),
             "dark_neutral" => Ok(Theme::DARK_NEUTRAL),
             "dark_warm" => Ok(Theme::DARK_WARM),
-            "light_experimental" => Ok(Theme::LIGHT_EXPERIMENTAL),
+            "light_cool" => Ok(Theme::LIGHT_COOL),
+            "light_deep" => Ok(Theme::LIGHT_DEEP),
             "light_neutral" => Ok(Theme::LIGHT_NEUTRAL),
-            _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_neutral', 'dark_neutral', 'light_neutral' and 'dark_experimental')"))
+            "light_warm" => Ok(Theme::LIGHT_WARM),
+            _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_cool', 'adaptive_deep', 'adaptive_neutral', 'adaptive_warm', 'dark_cool', 'dark_deep', 'dark_neutral', 'dark_warm', 'light_cool', 'light_neutral' and 'light_warm')"))
         }
     }
 
     pub fn print_splash_vars(&self) -> String {
-        // TODO: Port slash to oklch as well eventually
+        // TODO: Port splash to oklch as well eventually
         let splash_blend = Theme::SPLASH_BLEND;
         let splash_bg = Theme::SPLASH_BG;
         let splash_fg = Theme::SPLASH_FG;
@@ -143,25 +177,28 @@ impl Theme {
         "#)
     }
 
-    pub fn variants(translations: &Translations) -> [(&str, String); 8] {
+    pub fn variants(translations: &Translations) -> [(&str, String); 12] {
         let t_adaptive = translations.adaptive;
+        let t_cool = translations.cool;
         let t_dark = translations.dark;
+        let t_deep = translations.deep;
         let t_light = translations.light;
         let t_neutral = translations.neutral;
         let t_warm = translations.warm;
 
-        // We intentionally don't translate Experimental for now - probably/maybe
-        // the "extended" eventual set of themes will be lined up with proper names
-        // and only the neutral base theme will remain translated as a generic term.
         [
-            ("adaptive_experimental", format!("{t_adaptive} Experimental")),
+            ("adaptive_cool", format!("{t_adaptive} {t_cool}")),
+            ("adaptive_deep", format!("{t_adaptive} {t_deep}")),
             ("adaptive_neutral", format!("{t_adaptive} {t_neutral}")),
-            ("dark_deep", format!("{t_dark} Deep")),
-            ("dark_experimental", format!("{t_dark} Experimental")),
+            ("adaptive_warm", format!("{t_adaptive} {t_warm}")),
+            ("dark_cool", format!("{t_dark} {t_cool}")),
+            ("dark_deep", format!("{t_dark} {t_deep}")),
             ("dark_neutral", format!("{t_dark} {t_neutral}")),
             ("dark_warm", format!("{t_dark} {t_warm}")),
-            ("light_experimental", format!("{t_light} Experimental")),
-            ("light_neutral", format!("{t_light} {t_neutral}"))
+            ("light_cool", format!("{t_light} {t_cool}")),
+            ("light_deep", format!("{t_light} {t_deep}")),
+            ("light_neutral", format!("{t_light} {t_neutral}")),
+            ("light_warm", format!("{t_light} {t_warm}"))
         ]
     }
 }
