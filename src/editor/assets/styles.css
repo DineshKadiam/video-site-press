@@ -556,14 +556,6 @@ svg {
     font-size: .8rem;
     padding: .3rem;
 }
-.unlisted_badge {
-    background-color: var(--fg-3);
-    border-radius: .2rem;
-    color: var(--bg-1);
-    display: inline-block;
-    font-size: .8rem;
-    padding: .05rem .1rem 0;
-}
 .updates { color: red; }
 .versions {
     list-style: none;
@@ -588,4 +580,12 @@ svg {
     flex-direction: column;
     margin: 1rem 0 2rem 0;
     row-gap: .5rem;
+}
+.visibility { font-size: .8rem; }
+.visibility.inherited { color: var(--fg-3); }
+.visibility svg {
+    height: .8rem;
+    position: relative;
+    top: .05rem;
+    width: .8rem;
 }

@@ -23,7 +23,8 @@ pub fn playlist_html(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
-    traversal: &Traversal
+    traversal: &Traversal,
+    unlisted_inherited: bool
 ) {
     let translations = &site.language.translations;
 
@@ -44,7 +45,7 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(playlist.unlisted, &translations);
+    let unlisted = unlisted_badge(unlisted_inherited || playlist.unlisted, &translations);
 
     body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 

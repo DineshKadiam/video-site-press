@@ -16,13 +16,57 @@ use crate::{
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
+struct Visibility {
+    offline: bool,
+    offline_inherited: bool,
+    unlisted: bool,
+    unlisted_inherited: bool
+}
+
+impl Visibility {
+    pub fn inherited(inherited_visibility: &Visibility, offline: bool, unlisted: bool) -> Visibility {
+        Visibility {
+            offline,
+            offline_inherited: inherited_visibility.offline(),
+            unlisted,
+            unlisted_inherited: inherited_visibility.unlisted()
+        }
+    }
+
+    pub fn new(offline: bool, unlisted: bool) -> Visibility {
+        Visibility {
+            offline,
+            offline_inherited: false,
+            unlisted,
+            unlisted_inherited: false
+        }
+    }
+
+    pub fn offline(&self) -> bool {
+        self.offline || self.offline_inherited
+    }
+
+    pub fn offline_inherited(&self) -> bool {
+        self.offline_inherited && !self.offline
+    }
+
+    pub fn unlisted(&self) -> bool {
+        self.unlisted || self.unlisted_inherited
+    }
+
+    pub fn unlisted_inherited(&self) -> bool {
+        self.unlisted_inherited && !self.unlisted
+    }
+}
+
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
     context: &Context,
     path: Option<&str>,
     translations: &Translations,
-    tree_view_order: &TreeViewOrder
+    tree_view_order: &TreeViewOrder,
+    visibility_inherited: &Visibility
 ) -> String {
     let collection_icon = icons::collection(translations.collection);
     let playlist_icon = icons::playlist(translations.playlist);
@@ -32,6 +76,8 @@ fn collection_tree(
         .map(|collection| {
             let collection_path = &collection.path;
 
+            let collection_visibility = Visibility::inherited(visibility_inherited, collection.offline, collection.unlisted);
+
             let active = path.is_some_and(|path| path == collection_path);
             let href = format!("/collection/{collection_path}");
             let node = tree_node(
@@ -39,11 +85,10 @@ fn collection_tree(
                 &collection.errors,
                 &href,
                 &collection_icon,
-                collection.offline,
                 collection.slug(),
                 collection.title.as_deref(),
                 translations,
-                collection.unlisted
+                &collection_visibility
             );
 
             if !active && path.is_some_and(|path|
@@ -56,7 +101,15 @@ fn collection_tree(
                 breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
             }
 
-            let collection_content = collection_tree(breadcrumbs, collection, context, path, translations, tree_view_order);
+            let collection_content = collection_tree(
+                breadcrumbs,
+                collection,
+                context,
+                path,
+                translations,
+                tree_view_order,
+                &collection_visibility
+            );
 
             formatdoc!(r#"
                 <li>
@@ -73,6 +126,8 @@ fn collection_tree(
         .map(|playlist| {
             let playlist_path = &playlist.path;
 
+            let playlist_visibility = Visibility::inherited(visibility_inherited, playlist.offline, playlist.unlisted);
+
             let active = path.is_some_and(|path| path == playlist_path);
             let href = format!("/playlist/{playlist_path}");
             let node = tree_node(
@@ -80,11 +135,10 @@ fn collection_tree(
                 &playlist.errors,
                 &href,
                 &playlist_icon,
-                playlist.offline,
                 playlist.slug(),
                 playlist.title.as_deref(),
                 translations,
-                playlist.unlisted
+                &playlist_visibility
             );
 
             if !active && path.is_some_and(|path|
@@ -105,6 +159,8 @@ fn collection_tree(
                     .map(|video| {
                         let video_path = &video.path;
 
+                        let video_visibility = Visibility::inherited(&playlist_visibility, video.offline, video.unlisted);
+
                         let active = path.is_some_and(|path| path == video_path);
                         let href = format!("/video/{video_path}");
                         let node = tree_node(
@@ -112,11 +168,10 @@ fn collection_tree(
                             &video.errors,
                             &href,
                             &video_icon,
-                            video.offline,
                             video.slug(),
                             video.title.as_deref(),
                             translations,
-                            video.unlisted
+                            &video_visibility
                         );
 
                         formatdoc!(r#"
@@ -150,6 +205,8 @@ fn collection_tree(
         .map(|video| {
             let video_path = &video.path;
 
+            let video_visibility = Visibility::inherited(visibility_inherited, video.offline, video.unlisted);
+
             let active = path.is_some_and(|path| path == video_path);
             let href = format!("/video/{video_path}");
             let node = tree_node(
@@ -157,11 +214,10 @@ fn collection_tree(
                 &video.errors,
                 &href,
                 &video_icon,
-                video.offline,
                 video.slug(),
                 video.title.as_deref(),
                 translations,
-                video.unlisted
+                &video_visibility
             );
 
             formatdoc!(r#"
@@ -207,7 +263,17 @@ pub fn tree_view(
 
             let tree_view_order = context.get_editor_tree_view_order();
 
-            let collection_content = collection_tree(&mut breadcrumbs, collection, context, path, translations, &tree_view_order);
+            let collection_visibility = Visibility::new(collection.offline, collection.unlisted);
+
+            let collection_content = collection_tree(
+                &mut breadcrumbs,
+                collection,
+                context,
+                path,
+                translations,
+                &tree_view_order,
+                &collection_visibility
+            );
 
             let collection_icon = icons::collection(t_collection);
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
@@ -216,11 +282,10 @@ pub fn tree_view(
                 errors,
                 "/collection/",
                 &collection_icon,
-                collection.offline,
                 site_dir,
                 collection.title.as_deref(),
                 translations,
-                collection.unlisted
+                &collection_visibility
             );
 
             formatdoc!(r#"
@@ -243,11 +308,10 @@ pub fn tree_view(
                 &Vec::new(),
                 "/",
                 &collection_icon,
-                false,
                 site_dir,
                 Some(t_empty_site),
                 translations,
-                false
+                &Visibility::new(false, false)
             )
         }
         SiteContent::Playlist(playlist) => {
@@ -258,6 +322,8 @@ pub fn tree_view(
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 breadcrumbs.push(format!(r#"<a href="/playlist/">{e_breadcrumb_title}</a>"#));
             }
+
+            let playlist_visibility = Visibility::new(playlist.offline, playlist.unlisted);
 
             let videos = if playlist.videos.is_empty() {
                 String::new()
@@ -274,16 +340,17 @@ pub fn tree_view(
                         let href = format!("/video/{video_path}");
                         let slug = video.slug();
 
+                        let video_visibility = Visibility::inherited(&playlist_visibility, video.offline, video.unlisted);
+
                         let node = tree_node(
                             active,
                             &video.errors,
                             &href,
                             &video_icon,
-                            video.offline,
                             slug,
                             video.title.as_deref(),
                             translations,
-                            video.unlisted
+                            &video_visibility
                         );
 
                         formatdoc!(r#"
@@ -302,11 +369,10 @@ pub fn tree_view(
                 &playlist.errors,
                 "/playlist/",
                 &playlist_icon,
-                playlist.offline,
                 site_dir,
                 playlist.title.as_deref(),
                 translations,
-                playlist.unlisted
+                &playlist_visibility
             );
 
             formatdoc!(r#"
@@ -325,17 +391,18 @@ pub fn tree_view(
                 breadcrumbs.push(format!(r#"<a href="/video/">{e_breadcrumb_title}</a>"#));
             }
 
+            let video_visibility = Visibility::new(video.offline, video.unlisted);
+
             let video_icon = icons::video(t_video);
             tree_node(
                 root_active,
                 &video.errors,
                 "/video/",
                 &video_icon,
-                video.offline,
                 site_dir,
                 video.title.as_deref(),
                 translations,
-                video.unlisted
+                &video_visibility
             )
         }
     };
@@ -359,13 +426,12 @@ fn tree_node(
     errors: &[String],
     href: &str,
     icon: &str,
-    offline: bool,
     slug: &str,
     title_option: Option<&str>,
     translations: &Translations,
-    unlisted: bool
+    visibility: &Visibility
 ) -> String {
-    let active = if active { r#" class="active""# } else { "" };
+    let active = if active { r#"class="active""# } else { "" };
     let icon_container = if errors.is_empty() {
         icon.to_string()
     } else {
@@ -376,18 +442,31 @@ fn tree_node(
             </span>
         "#)
     };
+
     let e_title = title_option
         .map(|title| html_escape_outside_attribute(title))
         .unwrap_or(format!(r#"<span aria-hidden="true" class="no_title">…</span>"#));
 
-    let title_with_badge = if offline {
-        let t_offline = translations.offline;
-        format!(r#"<span class="unlisted_badge">{t_offline}</span> {e_title}"#)
-    } else if unlisted {
-        let t_unlisted = translations.unlisted;
-        format!(r#"<span class="unlisted_badge">{t_unlisted}</span> {e_title}"#)
-    } else {
+    let mut badges = Vec::new();
+
+    if visibility.offline() {
+        let inherited = if visibility.offline_inherited() { "inherited" } else { "" };
+        let offline_icon = icons::offline(translations.offline);
+        let badge = format!(r#"<span class="visibility {inherited}">{offline_icon}</span>"#);
+        badges.push(badge);
+    }
+
+    if visibility.unlisted() {
+        let inherited = if visibility.unlisted_inherited() { "inherited" } else { "" };
+        let unlisted_icon = icons::unlisted(translations.unlisted);
+        let badge = format!(r#"<span class="visibility {inherited}">{unlisted_icon}</span>"#);
+        badges.push(badge);
+    }
+
+    let title_with_visibility_badges = if badges.is_empty() {
         e_title
+    } else {
+        format!("{} {e_title}", badges.join(" "))
     };
 
     let depth = if href.ends_with('/') { 0 } else { href.split('/').count() - 2 };
@@ -395,12 +474,12 @@ fn tree_node(
     let padding_left = format!("{}rem", padding_left_rem);
 
     formatdoc!(r#"
-        <a{active} href="{href}" style="padding-left: {padding_left};">
+        <a {active} href="{href}" style="padding-left: {padding_left};">
             <div class="icon">
                 {icon_container}
             </div>
             <div class="labels">
-                <div class="title">{title_with_badge}</div>
+                <div class="title">{title_with_visibility_badges}</div>
                 <div class="path">{slug}</div>
             </div>
         </a>

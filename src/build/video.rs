@@ -17,7 +17,8 @@ pub fn video_html(
     playlist: Option<&Playlist>,
     video: &Video,
     site: &Site,
-    traversal: &Traversal
+    traversal: &Traversal,
+    unlisted_inherited: bool
 ) {
     let description = if let Some(description) = &video.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -84,7 +85,7 @@ pub fn video_html(
         None => String::new()
     };
 
-    let unlisted = unlisted_badge(video.unlisted, &site.language.translations);
+    let unlisted = unlisted_badge(unlisted_inherited || video.unlisted, &site.language.translations);
 
     let links_rendered = links(&site.language, &video.links);
 

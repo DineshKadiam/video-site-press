@@ -39,15 +39,15 @@ pub fn perform_build(context: &Context) {
     match &site.content {
         SiteContent::Collection(collection) => {
             if collection.offline { return; }
-            build_collection(context, collection, &site, &traversal)
+            build_collection(context, collection, &site, &traversal, false)
         }
         SiteContent::Playlist(playlist) => {
             if playlist.offline { return; }
-            build_playlist(context, playlist, &site, &traversal)
+            build_playlist(context, playlist, &site, &traversal, false)
         }
         SiteContent::Video(video) => {
             if video.offline { return; }
-            build_video(context, None, video, &site, &traversal)
+            build_video(context, None, video, &site, &traversal, false)
         }
         SiteContent::Empty => return,
         SiteContent::Invalid => todo!()
@@ -61,7 +61,8 @@ fn build_collection(
     context: &Context,
     collection: &Collection,
     site: &Site,
-    traversal_previous: &Traversal
+    traversal_previous: &Traversal,
+    unlisted_inherited: bool
 ) {
     let traversal = traversal_previous.with_collection(collection);
 
@@ -87,21 +88,21 @@ fn build_collection(
         }
     }
 
-    collection_html(context, collection, site, &traversal);
+    collection_html(context, collection, site, &traversal, unlisted_inherited);
 
     for subcollection in &collection.subcollections {
         if subcollection.offline { continue; }
-        build_collection(context, subcollection, site, &traversal);
+        build_collection(context, subcollection, site, &traversal, unlisted_inherited || collection.unlisted);
     }
 
     for playlist in &collection.playlists {
         if playlist.offline { continue; }
-        build_playlist(context, playlist, site, &traversal);
+        build_playlist(context, playlist, site, &traversal, unlisted_inherited || collection.unlisted);
     }
 
     for video in &collection.videos {
         if video.offline { continue; }
-        build_video(context, None, video, site, &traversal);
+        build_video(context, None, video, site, &traversal, unlisted_inherited || collection.unlisted);
     }
 }
 
@@ -109,7 +110,8 @@ fn build_playlist(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
-    traversal_previous: &Traversal
+    traversal_previous: &Traversal,
+    unlisted_inherited: bool
 ) {
     let traversal = traversal_previous.with_playlist(playlist);
 
@@ -135,12 +137,11 @@ fn build_playlist(
         }
     }
 
-    playlist_html(context, playlist, site, &traversal);
-
+    playlist_html(context, playlist, site, &traversal, unlisted_inherited);
 
     for video in &playlist.videos {
         if video.offline { continue; }
-        build_video(context, Some(playlist), video, site, &traversal);
+        build_video(context, Some(playlist), video, site, &traversal, unlisted_inherited || playlist.unlisted);
     }
 }
 
@@ -149,7 +150,8 @@ fn build_video(
     playlist: Option<&Playlist>,
     video: &Video,
     site: &Site,
-    traversal_previous: &Traversal
+    traversal_previous: &Traversal,
+    unlisted_inherited: bool
 ) {
     let traversal = traversal_previous.with_video(video);
 
@@ -201,5 +203,5 @@ fn build_video(
         }
     }
 
-    video_html(context, playlist, video, site, &traversal);
+    video_html(context, playlist, video, site, &traversal, unlisted_inherited);
 }
