@@ -9,6 +9,7 @@ mod color;
 mod dark_deep;
 mod dark_experimental;
 mod dark_neutral;
+mod dark_warm;
 mod light_experimental;
 mod light_neutral;
 mod theme_vars;
@@ -17,6 +18,7 @@ use color::Color;
 use dark_deep::DARK_DEEP_VARS;
 use dark_experimental::DARK_EXPERIMENTAL_VARS;
 use dark_neutral::DARK_NEUTRAL_VARS;
+use dark_warm::DARK_WARM_VARS;
 use light_experimental::LIGHT_EXPERIMENTAL_VARS;
 use light_neutral::LIGHT_NEUTRAL_VARS;
 use theme_vars::ThemeVars;
@@ -68,6 +70,11 @@ impl Theme {
         kind: ThemeKind::Static(DARK_NEUTRAL_VARS)
     };
 
+    const DARK_WARM: Theme = Theme {
+        key: "dark_warm",
+        kind: ThemeKind::Static(DARK_WARM_VARS)
+    };
+
     const LIGHT_EXPERIMENTAL: Theme = Theme {
         key: "light_experimental",
         kind: ThemeKind::Static(LIGHT_EXPERIMENTAL_VARS)
@@ -106,6 +113,7 @@ impl Theme {
             "dark_deep" => Ok(Theme::DARK_DEEP),
             "dark_experimental" => Ok(Theme::DARK_EXPERIMENTAL),
             "dark_neutral" => Ok(Theme::DARK_NEUTRAL),
+            "dark_warm" => Ok(Theme::DARK_WARM),
             "light_experimental" => Ok(Theme::LIGHT_EXPERIMENTAL),
             "light_neutral" => Ok(Theme::LIGHT_NEUTRAL),
             _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_neutral', 'dark_neutral', 'light_neutral' and 'dark_experimental')"))
@@ -135,11 +143,12 @@ impl Theme {
         "#)
     }
 
-    pub fn variants(translations: &Translations) -> [(&str, String); 7] {
+    pub fn variants(translations: &Translations) -> [(&str, String); 8] {
         let t_adaptive = translations.adaptive;
         let t_dark = translations.dark;
         let t_light = translations.light;
         let t_neutral = translations.neutral;
+        let t_warm = translations.warm;
 
         // We intentionally don't translate Experimental for now - probably/maybe
         // the "extended" eventual set of themes will be lined up with proper names
@@ -150,6 +159,7 @@ impl Theme {
             ("dark_deep", format!("{t_dark} Deep")),
             ("dark_experimental", format!("{t_dark} Experimental")),
             ("dark_neutral", format!("{t_dark} {t_neutral}")),
+            ("dark_warm", format!("{t_dark} {t_warm}")),
             ("light_experimental", format!("{t_light} Experimental")),
             ("light_neutral", format!("{t_light} {t_neutral}"))
         ]

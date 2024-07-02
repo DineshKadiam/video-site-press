@@ -179,6 +179,7 @@ pub struct Translations {
     pub video_order: &'static str,
     pub videos: &'static str,
     pub vp9_missing_browser_support_not_recommended: &'static str,
+    pub warm: &'static str,
     pub website: &'static str,
     pub worst: &'static str,
     pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str
@@ -363,6 +364,7 @@ impl Translations {
             video_order: "Video Reihenfolge",
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Fehlende Browserunterstützung (Nicht empfohlen)",
+            warm: "Warm",
             website: "Website",
             worst: "Schlechteste",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "Du musst nicht sowohl einen Titel als auch einen Permalink angeben, aber eines von beiden muss ausgefüllt sein."
@@ -547,6 +549,7 @@ impl Translations {
             video_order: "Video Order",
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Missing browser support (Not recommended)",
+            warm: "Warm",
             website: "Website",
             worst: "Worst",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
