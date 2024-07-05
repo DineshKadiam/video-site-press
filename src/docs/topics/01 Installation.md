@@ -5,8 +5,10 @@
 
 # Installation
 
-Packages are currently available for Arch and Debian-based Linux.
-On other platforms Hyper 8 needs to be built from source, for now.
+On debian-based Linux hyper8 can already be installed via packages (amd64). On
+Arch Linux and Manjaro faircamp is available through the AUR. On macOS
+faircamp can be installed using Homebrew. On other platforms Hyper 8 needs to
+be built from source, for now (which is not very complicated though!).
 
 **Arch Linux, Manjaro**
 
@@ -15,6 +17,15 @@ Install [hyper8](https://aur.archlinux.org/packages/hyper8) from the [AUR](https
 **Debian 12, Ubuntu 23.04 - 24.04**
 
 Install the [latest debian 12 package](https://simonrepp.com/hyper8/packages/hyper8_0.16.0-1+deb12_amd64.deb)
+
+**macOS**
+
+With [Homebrew](https://brew.sh/), run these two lines to install hyper8 from [homebrew-hyper8](https://codeberg.org/simonrepp/homebrew-hyper8):
+
+```
+brew tap simonrepp/homebrew-hyper8 https://codeberg.org/simonrepp/homebrew-hyper8
+brew install hyper8
+```
 
 **Building from source**
 
