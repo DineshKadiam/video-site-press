@@ -14,6 +14,7 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 use indoc::formatdoc;
 use serde_derive::Deserialize;
+use slug::slugify;
 
 use crate::{
     Banner,
@@ -26,6 +27,7 @@ use crate::{
     Language,
     Link,
     Playlist,
+    Video,
     VideoOrder
 };
 use crate::editor::{Checkbox, Input, Select, Textarea};
@@ -55,12 +57,22 @@ pub struct BannerUpdateForm {
 }
 
 #[derive(Deserialize)]
+pub struct CreateVideoForm {
+    slug: String,
+    title: String
+}
+
+#[derive(Deserialize)]
 pub struct DeleteLinkForm {
     label: String,
     url: String
 }
 
 pub enum PlaylistFormFeedback<'a> {
+    CreateVideo {
+        slug: Field,
+        title: Field
+    },
     Move {
         slug: Field
     },
@@ -127,6 +139,106 @@ pub async fn add_link(
         Err(()) => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
+
+pub async fn create_video(
+    context: Data<Arc<Context>>,
+    form: Form<CreateVideoForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let language = context.get_editor_language();
+
+    let slug_trimmed = form.slug.trim();
+    let title_trimmed = form.title.trim();
+
+    let error = |slug_error, title_error| -> _ {
+        let playlist = match context.get_playlist(&path.path) {
+            Some(playlist) => playlist,
+            None => return Either::Right(not_found(&context, &language, &path.path))
+        };
+
+        let form_feedback = PlaylistFormFeedback::CreateVideo {
+            slug: Field::validated(slug_trimmed, slug_error),
+            title: Field::validated(title_trimmed, title_error)
+        };
+
+        Either::Right(edit_page(&context, Some(form_feedback), &language, &playlist))
+    };
+
+    if slug_trimmed.is_empty() && title_trimmed.is_empty() {
+        let t_title_or_permalink_needs_to_be_provided = language.translations.title_or_permalink_needs_to_be_provided;
+
+        return error(
+            Some(t_title_or_permalink_needs_to_be_provided),
+            Some(t_title_or_permalink_needs_to_be_provided)
+        );
+    }
+
+    let succeed = |video_path: String, title: Option<&str>| {
+        let video_dir = context.site_dir.join(&video_path);
+        fs::create_dir_all(&video_dir).unwrap();
+
+        let mut video_mut = Video::new(video_path);
+
+        if let Some(title) = title {
+            video_mut.title = Some(title.to_string());
+        }
+
+        let video = Arc::new(video_mut);
+
+        let video_moving = Arc::clone(&video);
+        let mutation = |playlist: &mut Playlist| {
+            playlist.videos.push(video_moving);
+        };
+
+        if context.update_playlist(mutation, &path.path).is_err() {
+            return Either::Right(not_found(&context, &language, &path.path));
+        }
+
+        video.write_manifest(&context);
+
+        let redirect_url = format!("/video/{}", video.path);
+        Either::Left(Redirect::to(redirect_url).see_other())
+    };
+
+    if slug_trimmed.is_empty() {
+        let slug = slugify(title_trimmed);
+        let mut video_path = if &path.path == "" {
+            slug.to_string()
+        } else {
+            format!("{}/{slug}", &path.path)
+        };
+
+        let mut duplicate = 1;
+        while context.site_dir.join(&video_path).exists() {
+            video_path = if &path.path == "" {
+                format!("{slug}_{duplicate}")
+            } else {
+                format!("{}/{slug}_{duplicate}", &path.path)
+            };
+            duplicate += 1;
+        }
+
+        return succeed(video_path, Some(title_trimmed));
+    } else {
+        if let Err(message) = validate_slug(slug_trimmed) {
+            return error(Some(&message), None);
+        }
+
+        let video_path = if &path.path == "" {
+            slug_trimmed.to_string()
+        } else {
+            format!("{}/{slug_trimmed}", &path.path)
+        };
+
+        if context.site_dir.join(&video_path).exists() {
+            let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
+            return error(Some(message), None);
+        } else {
+            let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
+            return succeed(video_path, title);
         }
     }
 }
@@ -396,6 +508,43 @@ pub fn edit_page(
         _ => input_unlisted.to_string()
     };
 
+    let new_video_form = {
+        let mut input_slug_create_video = Input::permalink("slug", &Path::new(path), &site, translations);
+        let mut input_title_create_video = Input::text("title", translations.title);
+
+        // TODO: Needs custom client-side validation - either title or slug must be given.
+        input_slug_create_video.id("slug_video");
+        input_title_create_video.id("title_video");
+
+        let feedback = if let Some(PlaylistFormFeedback::CreateVideo { slug, title }) = &form_feedback {
+            input_slug_create_video.validated_value(slug);
+            input_title_create_video.validated_value(title);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
+        } else {
+            String::new()
+        };
+
+        let t_create_video = translations.create_video;
+        let t_new_video = translations.new_video;
+        let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
+        formatdoc!(r#"
+            <div class="form_group">
+                <h2>{t_new_video}</h2>
+
+                <form action="/create-playlist-video/{path}" autocomplete="off" data-warn-discard method="post">
+                    <p>
+                        {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
+                    </p>
+                    {input_title_create_video}
+                    {input_slug_create_video}
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button class="action">{t_create_video}</button> {feedback}
+                    </div>
+                </form>
+            </div>
+        "#)
+    };
+
     let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
     let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
 
@@ -439,6 +588,8 @@ pub fn edit_page(
         {links_form}
 
         {create_link_form}
+
+        {new_video_form}
 
         <div class="form_group">
             <h2>{t_new_video}</h2>

@@ -54,8 +54,10 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/change-editor-config", post().to(change_editor_config))
                 .route("/change-tree-view-order", post().to(change_tree_view_order))
                 .route("/configure-deployment", get().to(deploy::configure))
-                .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
+                .route("/create-collection-video/{path:.*}", post().to(collection::create_video))
                 .route("/create-playlist/{path:.*}", post().to(collection::create_playlist))
+                .route("/create-playlist-video/{path:.*}", post().to(playlist::create_video))
+                .route("/create-subcollection/{path:.*}", post().to(collection::create_subcollection))
                 .service(
                     resource("/collection/{path:.*}")
                         .route(get().to(collection::edit))

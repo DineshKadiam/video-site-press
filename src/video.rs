@@ -457,7 +457,7 @@ impl Video {
         version_candidate.map(|version_tuple| version_tuple.2)
     }
 
-    fn new(path: String) -> Video {
+    pub fn new(path: String) -> Video {
         Video {
             description: None,
             errors: Vec::new(),
