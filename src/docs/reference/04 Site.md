@@ -19,7 +19,7 @@ base_url: https://example.com
 disable_clean_urls
 language: es
 poster_aspect: 16:9
-theme: dark
+theme: adaptive_cool
 
 deploy_config:
 path = /data/web/customer123/html
@@ -46,12 +46,18 @@ material a wider aspect ratio is recommended, as is a portrait ratio like
 for instance `9:16` for exclusively mobile video content.
 
 The `theme` option can be set to any of these:
-- `adaptive_experimental`,
+- `adaptive_cool`,
+- `adaptive_deep`,
 - `adaptive_neutral`,
-- `dark_experimental`
+- `adaptive_warm`,
+- `dark_cool`
+- `dark_deep`
 - `dark_neutral`
-- `light_experimental`
+- `dark_warm`
+- `light_cool`
+- `light_deep`
 - `light_neutral`
+- `light_warm`
 
 Adaptive themes will dynamically present a site that is either dark or light
 to visitors, depending on their system settings, but users are then still able to
