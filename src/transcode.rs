@@ -107,8 +107,6 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
             .arg(&input_path)
             .arg("-frames")
             .arg("1")
-            .arg("-vf")
-            .arg("scale=min'(480,iw)':-2")
             .arg("-q:v")
             .arg("7") // 1-31 (best-worst)
             .arg(&output_path);
