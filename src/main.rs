@@ -132,9 +132,11 @@ fn main() {
 
     let context = Arc::new(context);
 
+    context.compute_job_queue();
+    workers::start_threads(args.workers, &context);
+
     if args.build {
-        // TODO: In --build mode we still need to process all assets (video encoding!)
-        //       before we can build the website, this is fully missing right now.
+        context.await_job_queue();
 
         build::perform_build(&context);
         
@@ -149,14 +151,9 @@ fn main() {
             };
         }
     } else {
-        context.compute_job_queue();
-
         println!("Using site directory: {}", context.site_dir.display());
 
-        workers::start_threads(args.workers, &context);
-
         watcher::watch(Arc::clone(&context));
-
         editor::server::start(context, &args.port);
     }
 }

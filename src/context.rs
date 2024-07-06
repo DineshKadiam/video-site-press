@@ -5,7 +5,8 @@ use std::cmp::Ordering;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
+use std::thread;
+use std::time::{Duration, SystemTime};
 
 use serde_derive::Deserialize;
 use slug::slugify;
@@ -58,6 +59,22 @@ pub enum GetAnyResult {
 }
 
 impl Context {
+    pub fn await_job_queue(&self) {
+        let mut previous_pending_jobs = 0;
+        loop {
+            let pending_jobs = self.job_queue.lock().unwrap().len();
+
+            if pending_jobs == 0 { break; }
+
+            if pending_jobs != previous_pending_jobs {
+                println!("Waiting for {pending_jobs} pending jobs");
+                previous_pending_jobs = pending_jobs;
+            }
+
+            thread::sleep(Duration::from_secs(1));
+        }
+    }
+
     pub fn complete_job(&self, id: &str) {
         let completed_job = {
             let mut job_queue = self.job_queue.lock().unwrap();

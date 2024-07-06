@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -14,7 +17,7 @@ fn worker_count(string: &str) -> Result<usize, String> {
 #[derive(Debug, Parser)]
 #[clap(version = env!("CARGO_PKG_VERSION"))]
 pub struct Args {
-    /// Directly builds the site without starting the authoring server [HEADS UP: Incomplete implementation, for now use the interactive editor]
+    /// Directly builds the site without starting the editor
     #[clap(long)]
     pub build: bool,
 
