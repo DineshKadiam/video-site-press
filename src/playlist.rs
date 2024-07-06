@@ -305,7 +305,7 @@ impl Playlist {
             .fold(None, |latest_release_date, video| {
                 if let Some(release_date) = video.release_date {
                     if let Some(latest_release_date) = latest_release_date {
-                        Some(cmp::min(latest_release_date, release_date))
+                        Some(cmp::max(latest_release_date, release_date))
                     } else {
                         Some(release_date)
                     }

@@ -453,7 +453,7 @@ impl Collection {
             .fold(None, |latest_release_date, playlist| {
                 if let Some(release_date) = playlist.latest_release_date() {
                     if let Some(latest_release_date) = latest_release_date {
-                        Some(cmp::min(latest_release_date, release_date))
+                        Some(cmp::max(latest_release_date, release_date))
                     } else {
                         Some(release_date)
                     }
@@ -466,7 +466,7 @@ impl Collection {
             .fold(None, |latest_release_date, subcollection| {
                 if let Some(release_date) = subcollection.latest_release_date() {
                     if let Some(latest_release_date) = latest_release_date {
-                        Some(cmp::min(latest_release_date, release_date))
+                        Some(cmp::max(latest_release_date, release_date))
                     } else {
                         Some(release_date)
                     }
@@ -479,7 +479,7 @@ impl Collection {
             .fold(None, |latest_release_date, video| {
                 if let Some(release_date) = video.release_date {
                     if let Some(latest_release_date) = latest_release_date {
-                        Some(cmp::min(latest_release_date, release_date))
+                        Some(cmp::max(latest_release_date, release_date))
                     } else {
                         Some(release_date)
                     }
@@ -490,7 +490,7 @@ impl Collection {
 
         *[latest_in_playlists, latest_in_subcollections, latest_in_videos]
             .iter()
-            .min()
+            .max()
             .unwrap()
     }
 
