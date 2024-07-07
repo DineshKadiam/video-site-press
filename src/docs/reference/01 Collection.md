@@ -6,7 +6,7 @@
 # Collection
 
 A collection is, at its simplest, a directory containing at least one
-non-empty directory that is either a video, a playlists, or a collection
+non-empty directory that is either a video, a playlist, or a collection
 itself.
 
 ```
