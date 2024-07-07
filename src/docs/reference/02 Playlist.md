@@ -37,6 +37,7 @@ banner:
 description = Colorful flags in the wind
 file = my_poster.jpg
 
+offline
 order: release_date_asc
 title: All episodes from the show
 unlisted
@@ -59,6 +60,14 @@ including the long-lost original three pilots.
 Stand-alone URLs inside the `description` field are automatically converted to links, and you can
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
+Any number of empty lines in the description field separates paragraphs in the text.
+
+The `offline` flag, if given, indicates that the playlist should not be included in the built
+site, and therefore also not deployed to the server.
+
+The `unlisted` flag, if given, indicates that the playlist should not appear or be linked to
+on any of the public pages, i.e. only those that are given the link to them, will know of their
+existence.
 
 The `order` field controls in which order the videos appear in the playlist on the site.
 By default, videos are first ordered by their `sort_number` ascending, falling back to `release_date` ascending

@@ -49,6 +49,7 @@ poster:
 description = Confused looking people in an office
 file = episode_1.jpg
 
+offline
 release_date: 2024-02-12
 sort_number: 1
 title: The pilot episode of the show
@@ -72,6 +73,14 @@ reunite at an unexpected gathering.
 Stand-alone URLs inside the `description` field are automatically converted to links, and you can
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
+Any number of empty lines in the description field separates paragraphs in the text.
+
+The `offline` flag, if given, indicates that the collection should not be included in the built
+site, and therefore also not deployed to the server.
+
+The `unlisted` flag, if given, indicates that the collection should not appear or be linked to
+on any of the public pages, i.e. only those that are given the link to them, will know of their
+existence.
 
 The `sort_number` field can optionally be used to enforce a custom order of appearance for
 videos that appear in a playlist. It accepts whole numerical values (1, 2, 3) - including zero

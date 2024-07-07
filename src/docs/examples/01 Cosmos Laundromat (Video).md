@@ -1,10 +1,15 @@
+<!--
+    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-License-Identifier: CC0-1.0
+-->
+
 # Video: Cosmos Laundromat
 
 An example site that presents only a single video - the open movie
 [Cosmos Laundromat](https://gooseberry.blender.org/about/) by the
-Blender Institute. (Note that this is an entirely hypothetical example)
+Blender Institute (note that this is an entirely hypothetical example).
 
-This is the file and folder layout:
+## File and folder layout
 
 ```
 cosmos_laundromat/            <--- Site/Video directory
@@ -15,10 +20,27 @@ cosmos_laundromat/            <--- Site/Video directory
 └─ cl-480.mp4                   <--- 480 pixel wide video
 ```
 
-In the file `cosmos_laundromat/site.eno` we find the following content:
+## cosmos_laundromat/site.eno
 
 ```eno
 base_url: https://example.com/
+theme: light_neutral
 ```
 
-... TODO
+## cosmos_laundromat/video.eno
+
+```eno
+title: Cosmos Laundromat: First Cycle
+
+link:
+label = Official Website
+url = https://gooseberry.blender.org/about/
+
+poster:
+description = A cute sheep on a green island
+file = poster.jpg
+
+-- description
+An open movie by the Blender Institute, licensed under CC-BY.
+-- description
+```

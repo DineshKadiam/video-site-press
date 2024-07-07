@@ -12,15 +12,17 @@ set in your manifests, giving detailed info for each setting.
 
 ## Examples
 
-**Heads up -** This section is still mostly work in progress.
-
 These each explain a fictional Hyper 8 site - how the files and folders are
 laid out, which manifests are placed where, and what content they hold. This
-teaches by example, but does not necessarily show *every* feature there is in
+teaches by example, but does not nearly show every feature there is in
 hyper8, so also consider going through the reference to get the full
 picture.
 
+This section is still partially in progress.
+
 ## Other resources
+
+See some [video guides and demonstrations](https://simonrepp.com/video/hyper8/).
 
 See the [website](https://simonrepp.com/hyper8).
 

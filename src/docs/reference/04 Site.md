@@ -27,8 +27,10 @@ server = ssh-customer123.example.com
 user = customer123
 ```
 
-With `base_url` you configure at which domain your site will be hosted,
-which is used for rendering certain features.
+With `base_url` you configure at which (sub)domain (respectively also
+subdirectory if not at the root) your site will be hosted, which is used for
+rendering certain features and for verifying that the deployment settings are
+correct.
 
 With `language` you can supply a language code (in BCP 47 format) that will
 identify the site's content for browsers and screenreaders. For supported

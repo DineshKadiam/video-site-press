@@ -8,7 +8,8 @@
 On debian-based Linux hyper8 can already be installed via packages (amd64). On
 Arch Linux and Manjaro faircamp is available through the AUR. On macOS
 faircamp can be installed using Homebrew. On other platforms Hyper 8 needs to
-be built from source, for now (which is not very complicated though!).
+be built from source for now (which is not very complicated though), see the instructions
+at the bottom of the page.
 
 **Arch Linux, Manjaro**
 
