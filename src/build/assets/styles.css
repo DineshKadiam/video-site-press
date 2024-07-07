@@ -14,12 +14,11 @@ a {
     column-gap: .3rem;
     cursor: pointer;
     display: flex;
-    padding: .2rem .5rem .2rem .4rem;
+    padding: .3rem .6rem .3rem .5rem;
 }
 .actions button:focus-visible,
 .actions button:hover {
-    background-color: var(--fg-1);
-    color: var(--bg-1);
+    background-color: var(--bg-3);
 }
 /* TODO: Temporarily hidden - unhide in an upcoming version when we figured out
          layout questions around banner. */
@@ -129,25 +128,24 @@ img {
     height: 100dvh;
 }
 .layout .growing { flex-grow: 1; }
-.link {
+.links {
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+.links > a {
     align-items: center;
-    border: 1px solid var(--fg-1);
+    background: var(--bg-2);
     border-radius: .2rem;
     color: var(--fg-1);
     column-gap: .3rem;
-    display: inline-flex;
-    padding: .2rem .5rem .2rem .4rem;
-}
-.link:focus-visible,
-.link:hover {
-    background-color: var(--fg-1);
-    color: var(--bg-1);
-}
-.links {
-    column-gap: .5rem;
     display: flex;
-    margin: 1rem 0;
-    row-gap: .5rem;
+    padding: .3rem .6rem .3rem .5rem;
+    width: max-content;
+}
+.links > a:not(:first-child) { margin-top: .5rem; }
+.links > a:focus-visible,
+.links > a:hover {
+    background-color: var(--bg-3);
 }
 .logo {
     background-color: var(--fg-2);
@@ -401,6 +399,7 @@ img {
     color: var(--fg-1);
     display: block;
 }
+.reading_width { max-width: 32rem; }
 .release_date {
     color: var(--fg-3);
     display: inline-block;

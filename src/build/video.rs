@@ -22,7 +22,7 @@ pub fn video_html(
 ) {
     let description = if let Some(description) = &video.description {
         let description_html = MarkdownSubset::to_html(description);
-        format!(r#"<div class="description">{description_html}</div>"#)
+        format!(r#"<div class="description reading_width">{description_html}</div>"#)
     } else {
         String::new()
     };

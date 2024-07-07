@@ -270,7 +270,7 @@ pub fn links(language: &Language, links: &[Link]) -> String {
                 let label = link.pretty_label();
                 let e_label = html_escape_outside_attribute(&label);
                 formatdoc!(r#"
-                    <a class="link" href="{url}" {rel_me} target="_blank">{external_icon} <span>{e_label}</span></a>
+                    <a href="{url}" {rel_me} target="_blank">{external_icon} <span>{e_label}</span></a>
                 "#)
             }
         })
