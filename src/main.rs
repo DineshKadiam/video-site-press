@@ -95,8 +95,6 @@ fn main() {
         .map(|path| path.to_path_buf())
         .unwrap_or_else(|| site_dir.join(".hyper8_cache"));
 
-    util::ensure_dir(&cache_dir);
-
     let cache = Mutex::new(Cache::retrieve(&cache_dir));
 
     let editor_language = args.editor_language
