@@ -414,7 +414,7 @@ pub fn player(
                     </div>
                 </div>
             </div>
-            <video data-duration="{duration}" {poster} preload="none" src="{src}">
+            <video data-duration="{duration}" {poster} preload="none" src="{src}" playsinline>
                 {subtitles}
             </video>
             <template id="maximize_icon">
