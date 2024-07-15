@@ -209,7 +209,7 @@ if (video) {
             }
 
             if (prevTrackDisabled) {
-                  selectSubtitlesButton.replaceChildren(document.querySelector('#subtitles_icon').content.cloneNode(true));
+                selectSubtitlesButton.replaceChildren(document.querySelector('#subtitles_icon').content.cloneNode(true));
             } else {
                 enableTrack(video.textTracks[0]);
             }

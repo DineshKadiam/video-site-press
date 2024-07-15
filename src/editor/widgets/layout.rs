@@ -162,7 +162,7 @@ pub fn layout(
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <link href="/favicon.png" rel="icon" type="image/png">
             <!-- <link href="favicon_light.png" rel="icon" type="image/png" media="(prefers-color-scheme: light)"> -->
-            <script defer src="/scripts.js"></script>
+            <script defer src="/scripts.js" type="module"></script>
             <link rel="stylesheet" href="/styles.css">
         </head>
     "#);

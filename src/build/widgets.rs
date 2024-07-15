@@ -188,7 +188,7 @@ pub fn layout(
             <title>{title}</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <script defer src="{root_prefix}scripts.js"></script>
+            <script defer src="{root_prefix}scripts.js" type="module"></script>
             <link rel="stylesheet" href="{root_prefix}styles.css">
         </head>
     "#);
