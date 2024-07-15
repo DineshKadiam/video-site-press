@@ -17,4 +17,6 @@ Thanks everyone for your support!
 [dérive](https://derive.at)<br>
 hatsch<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
-[surface mount dove](https://taube.xyz/)
+[Meljoann](https://www.meljoann.com/)<br>
+[surface mount dove](https://taube.xyz/)<br>
+[Walter Ebert](https://walterebert.com/)
