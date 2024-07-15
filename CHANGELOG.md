@@ -7,7 +7,7 @@
 
 ## 0.17.0
 
-- Fix critical playback issue in older Safari browsers (c835f43)
+- Fix critical playback issue in older Safari browsers (Walter Ebert, c835f43)
 - Propagate visibility upwards when moving video into new collection or playlist (a9ac6a3)
 - Ensure optimal line length on description texts in build, iterate on buttons (f8ea9b0)
 - Better hint at public address meaning in example given (c9b4e5d)
