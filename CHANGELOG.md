@@ -5,6 +5,18 @@
 
 # Changelog
 
+## 0.17.0
+
+- Fix critical playback issue in older Safari browsers (c835f43)
+- Propagate visibility upwards when moving video into new collection or playlist (a9ac6a3)
+- Ensure optimal line length on description texts in build, iterate on buttons (f8ea9b0)
+- Better hint at public address meaning in example given (c9b4e5d)
+- Fix incompatible cache message being printed for new sites (0305139)
+- Restore direct, quasi-synchronous building from command line (297d6ab)
+- Remove early experimental downscale argument for poster computation (5846ff3)
+- Fix computation of latest release dates in collections and playlists (ef0bd4c)
+- Allow creating videos without providing video files right away (3e25c57)
+
 ## 0.16.0
 
 - Minor vertical margin tweaks in build (ff55695)
