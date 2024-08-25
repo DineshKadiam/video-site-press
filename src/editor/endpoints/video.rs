@@ -1086,70 +1086,70 @@ pub async fn upload_poster(
     let language = context.get_editor_language();
 
     while let Some(mut field) = payload.try_next().await? {
-        let content_disposition = field.content_disposition();
-
-        if let Some(filename) = content_disposition.get_filename() {
-            if !supported_image_extension(filename) {
-                match context.get_video(&path.path) {
-                    Some(video) => {
-                        let error = format!("Unsupported file extension in {filename}");
-                        let form_feedback = VideoFormFeedback::UploadPoster { error };
-                        let http_response = edit_page(&context, Some(form_feedback), &language, &video);
-                        return Ok(Either::Right(http_response))
+        if let Some(content_disposition) = field.content_disposition() {
+            if let Some(filename) = content_disposition.get_filename() {
+                if !supported_image_extension(filename) {
+                    match context.get_video(&path.path) {
+                        Some(video) => {
+                            let error = format!("Unsupported file extension in {filename}");
+                            let form_feedback = VideoFormFeedback::UploadPoster { error };
+                            let http_response = edit_page(&context, Some(form_feedback), &language, &video);
+                            return Ok(Either::Right(http_response))
+                        }
+                        None => {
+                            let http_response = not_found(&context, &language, &path.path);
+                            return Ok(Either::Right(http_response));
+                        }
                     }
-                    None => {
+                }
+
+                let original_filename = filename.to_string();
+
+                let storage_filename = if !context.site_dir.join(&path.path).join(&original_filename).exists() {
+                    original_filename
+                } else {
+                    format!("{}_{original_filename}", nanoid())
+                };
+
+                let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
+                let storage_path_moving = storage_path.clone();
+
+                // File::create is blocking operation, use threadpool
+                let mut f = web::block(|| File::create(storage_path_moving)).await??;
+
+                // Field in turn is stream of *Bytes* object
+                while let Some(chunk) = field.try_next().await? {
+                    // filesystem operations are blocking, we have to use threadpool
+                    f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
+                }
+
+                let file_meta = FileMeta::new(&storage_path);
+                let poster_file = PosterFile::new(None, None, file_meta, storage_filename);
+
+                let mutation = |video: &mut Video| {
+                    video.poster = Some(poster_file);
+                    video.write_manifest(&context);
+                };
+
+                let video = match context.update_video(mutation, &path.path) {
+                    Ok(video) => video,
+                    Err(()) => {
+                        let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &path.path);
                         return Ok(Either::Right(http_response));
                     }
-                }
+                };
+
+                let site = context.get_site();
+                let job_kind = JobKind::VideoFastTasks {
+                    poster_aspect: site.poster_aspect.numeric(),
+                    video: Arc::clone(&video)
+                };
+                context.push_job_queue(job_kind);
+
+                let redirect_url = format!("/video/{}", path.path);
+                return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
             }
-
-            let original_filename = filename.to_string();
-
-            let storage_filename = if !context.site_dir.join(&path.path).join(&original_filename).exists() {
-                original_filename
-            } else {
-                format!("{}_{original_filename}", nanoid())
-            };
-
-            let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
-            let storage_path_moving = storage_path.clone();
-
-            // File::create is blocking operation, use threadpool
-            let mut f = web::block(|| File::create(storage_path_moving)).await??;
-
-            // Field in turn is stream of *Bytes* object
-            while let Some(chunk) = field.try_next().await? {
-                // filesystem operations are blocking, we have to use threadpool
-                f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
-            }
-
-            let file_meta = FileMeta::new(&storage_path);
-            let poster_file = PosterFile::new(None, None, file_meta, storage_filename);
-
-            let mutation = |video: &mut Video| {
-                video.poster = Some(poster_file);
-                video.write_manifest(&context);
-            };
-
-            let video = match context.update_video(mutation, &path.path) {
-                Ok(video) => video,
-                Err(()) => {
-                    let _ = fs::remove_file(&storage_path);
-                    let http_response = not_found(&context, &language, &path.path);
-                    return Ok(Either::Right(http_response));
-                }
-            };
-
-            let site = context.get_site();
-            let job_kind = JobKind::VideoFastTasks {
-                poster_aspect: site.poster_aspect.numeric(),
-                video: Arc::clone(&video)
-            };
-            context.push_job_queue(job_kind);
-
-            let redirect_url = format!("/video/{}", path.path);
-            return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
         }
     }
 
@@ -1172,113 +1172,113 @@ pub async fn upload_video(
     }
 
     while let Some(mut field) = payload.try_next().await? {
-        let content_disposition = field.content_disposition();
+        if let Some(content_disposition) = field.content_disposition() {
+            if let Some(filename) = content_disposition.get_filename() {
+                // TODO: Support audio formats as well?
+                //       Or should this be a separate endpoint/feature?
+                if supported_video_extension(filename) {
+                    let original_filename = filename.to_string();
 
-        if let Some(filename) = content_disposition.get_filename() {
-            // TODO: Support audio formats as well?
-            //       Or should this be a separate endpoint/feature?
-            if supported_video_extension(filename) {
-                let original_filename = filename.to_string();
-
-                let storage_path = match &container {
-                    GetAnyResult::Collection(collection) => {
-                        let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                        while context.site_dir.join(&collection.path).join(&candidate_dir_name).exists() {
-                            candidate_dir_name.push_str("-duplicate");
+                    let storage_path = match &container {
+                        GetAnyResult::Collection(collection) => {
+                            let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
+                            while context.site_dir.join(&collection.path).join(&candidate_dir_name).exists() {
+                                candidate_dir_name.push_str("-duplicate");
+                            }
+                            let candidate_dir = context.site_dir.join(&collection.path).join(&candidate_dir_name);
+                            fs::create_dir_all(&candidate_dir).unwrap();
+                            candidate_dir.join(original_filename)
                         }
-                        let candidate_dir = context.site_dir.join(&collection.path).join(&candidate_dir_name);
-                        fs::create_dir_all(&candidate_dir).unwrap();
-                        candidate_dir.join(original_filename)
-                    }
-                    GetAnyResult::Playlist(playlist) => {
-                        let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                        while context.site_dir.join(&playlist.path).join(&candidate_dir_name).exists() {
-                            candidate_dir_name.push_str("-duplicate");
+                        GetAnyResult::Playlist(playlist) => {
+                            let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
+                            while context.site_dir.join(&playlist.path).join(&candidate_dir_name).exists() {
+                                candidate_dir_name.push_str("-duplicate");
+                            }
+                            let candidate_dir = context.site_dir.join(&playlist.path).join(&candidate_dir_name);
+                            fs::create_dir_all(&candidate_dir).unwrap();
+                            candidate_dir.join(original_filename)
                         }
-                        let candidate_dir = context.site_dir.join(&playlist.path).join(&candidate_dir_name);
-                        fs::create_dir_all(&candidate_dir).unwrap();
-                        candidate_dir.join(original_filename)
-                    }
-                    GetAnyResult::Video(video) => {
-                        let mut candidate_filename = original_filename.clone();
-                        while context.site_dir.join(&video.path).join(&candidate_filename).exists() {
-                            candidate_filename = Path::new(&candidate_filename).with_file_name(format!("{}.mp4", nanoid())).to_string_lossy().to_string();
+                        GetAnyResult::Video(video) => {
+                            let mut candidate_filename = original_filename.clone();
+                            while context.site_dir.join(&video.path).join(&candidate_filename).exists() {
+                                candidate_filename = Path::new(&candidate_filename).with_file_name(format!("{}.mp4", nanoid())).to_string_lossy().to_string();
+                            }
+                            context.site_dir.join(&video.path).join(&candidate_filename)
                         }
-                        context.site_dir.join(&video.path).join(&candidate_filename)
+                        GetAnyResult::None => unreachable!()
+                    };
+
+                    let storage_path_moving = storage_path.clone();
+                    // File::create is blocking operation, use threadpool
+                    let mut f = web::block(|| File::create(storage_path_moving)).await??;
+
+                    // Field in turn is stream of *Bytes* object
+                    while let Some(chunk) = field.try_next().await? {
+                        // filesystem operations are blocking, we have to use threadpool
+                        f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
                     }
-                    GetAnyResult::None => unreachable!()
-                };
 
-                let storage_path_moving = storage_path.clone();
-                // File::create is blocking operation, use threadpool
-                let mut f = web::block(|| File::create(storage_path_moving)).await??;
+                    let site = context.get_site();
 
-                // Field in turn is stream of *Bytes* object
-                while let Some(chunk) = field.try_next().await? {
-                    // filesystem operations are blocking, we have to use threadpool
-                    f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
+                    let video = match &container {
+                        GetAnyResult::Collection(_) => {
+                            let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
+                            let video = Video::read_dir(&context, &hyper_dir, &site);
+
+                            let video_moving = Arc::clone(&video);
+                            let mutation = |collection: &mut Collection| {
+                                collection.videos.push(video_moving);
+                            };
+
+                            if context.update_collection(mutation, &path.path).is_err() {
+                                // TODO: Can only happen in weird time of check vs. time of use edge cases
+                                return Ok(Either::Right(not_found(&context, &language, &path.path)));
+                            }
+
+                            video
+                        }
+                        GetAnyResult::Playlist(_) => {
+                            let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
+                            let video = Video::read_dir(&context, &hyper_dir, &site);
+
+                            let video_moving = Arc::clone(&video);
+                            let mutation = |playlist: &mut Playlist| {
+                                playlist.videos.push(video_moving);
+                            };
+
+                            if context.update_playlist(mutation, &path.path).is_err() {
+                                // TODO: Can only happen in weird time of check vs. time of use edge cases
+                                return Ok(Either::Right(not_found(&context, &language, &path.path)));
+                            }
+
+                            video
+                        }
+                        GetAnyResult::Video(_) => {
+                            let file_meta = FileMeta::new(&storage_path);
+                            let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
+
+                            let mutation = |video: &mut Video| {
+                                video.versions.push(VideoFile::new(file_meta, file_name, None));
+                            };
+
+                            match context.update_video(mutation, &path.path) {
+                                Ok(video) => video,
+                                // TODO: Can only happen in weird time of check vs. time of use edge cases
+                                Err(()) => return Ok(Either::Right(not_found(&context, &language, &path.path)))
+                            }
+                        }
+                        GetAnyResult::None => unreachable!()
+                    };
+
+                    let job_kind = JobKind::VideoFastTasks {
+                        poster_aspect: site.poster_aspect.numeric(),
+                        video: Arc::clone(&video)
+                    };
+                    context.push_job_queue(job_kind);
+
+                    let redirect_url = format!("/video/{}", &video.path);
+                    return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                 }
-
-                let site = context.get_site();
-
-                let video = match &container {
-                    GetAnyResult::Collection(_) => {
-                        let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                        let video = Video::read_dir(&context, &hyper_dir, &site);
-
-                        let video_moving = Arc::clone(&video);
-                        let mutation = |collection: &mut Collection| {
-                            collection.videos.push(video_moving);
-                        };
-
-                        if context.update_collection(mutation, &path.path).is_err() {
-                            // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            return Ok(Either::Right(not_found(&context, &language, &path.path)));
-                        }
-
-                        video
-                    }
-                    GetAnyResult::Playlist(_) => {
-                        let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                        let video = Video::read_dir(&context, &hyper_dir, &site);
-
-                        let video_moving = Arc::clone(&video);
-                        let mutation = |playlist: &mut Playlist| {
-                            playlist.videos.push(video_moving);
-                        };
-
-                        if context.update_playlist(mutation, &path.path).is_err() {
-                            // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            return Ok(Either::Right(not_found(&context, &language, &path.path)));
-                        }
-
-                        video
-                    }
-                    GetAnyResult::Video(_) => {
-                        let file_meta = FileMeta::new(&storage_path);
-                        let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
-
-                        let mutation = |video: &mut Video| {
-                            video.versions.push(VideoFile::new(file_meta, file_name, None));
-                        };
-
-                        match context.update_video(mutation, &path.path) {
-                            Ok(video) => video,
-                            // TODO: Can only happen in weird time of check vs. time of use edge cases
-                            Err(()) => return Ok(Either::Right(not_found(&context, &language, &path.path)))
-                        }
-                    }
-                    GetAnyResult::None => unreachable!()
-                };
-
-                let job_kind = JobKind::VideoFastTasks {
-                    poster_aspect: site.poster_aspect.numeric(),
-                    video: Arc::clone(&video)
-                };
-                context.push_job_queue(job_kind);
-
-                let redirect_url = format!("/video/{}", &video.path);
-                return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
             }
         }
     }
