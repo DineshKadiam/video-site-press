@@ -59,8 +59,13 @@ struct FFprobeFormat {
 #[derive(Debug, Deserialize)]
 struct FFprobeStream {
     pub avg_frame_rate: String, // e.g. "24/1"
-    pub codec_long_name: String,
-    pub codec_name: String,
+    /// Once observed to be missing for a stream of codec_type "data" with the
+    /// codec_tag_string "tmcd" and codec_tag "0x64636d74".
+    pub codec_long_name: Option<String>,
+    /// Once observed to be missing for a stream of codec_type "data" with the
+    /// codec_tag_string "tmcd" and codec_tag "0x64636d74".
+    pub codec_name: Option<String>,
+    /// This can be "audio", "data", "video"
     pub codec_type: String,
     pub duration: Option<String>, // float
     pub height: Option<usize>,
@@ -453,10 +458,16 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                             //       Not sure how this would be handled or how this would look.
                             match stream.codec_type.as_str() {
                                 "audio" => {
-                                    audio_codec = Some(stream.codec_name.clone());
+                                    // For audio streams we assume there is always a codec name
+                                    audio_codec = Some(stream.codec_name.as_ref().unwrap().clone());
+                                }
+                                "data" => {
+                                    // Was once observed, (probably) containing timecode data of some sorts.
+                                    // We don't do anything with this.
                                 }
                                 "video" => {
-                                    video_codec = Some(stream.codec_name.clone());
+                                    // For video streams we assume there is always a codec name
+                                    video_codec = Some(stream.codec_name.as_ref().unwrap().clone());
                                     video_frame_rate = parse_frame_rate(&stream.avg_frame_rate);
 
                                     if height.is_none() { height = stream.height; }
