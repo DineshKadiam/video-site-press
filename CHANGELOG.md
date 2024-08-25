@@ -5,6 +5,11 @@
 
 # Changelog
 
+## 0.17.1
+
+- Handle ffprobe output variations caused by unrecognized data streams in video (d4afda7)
+- Play videos inline on iOS (Walter Ebert, feb8c65)
+
 ## 0.17.0
 
 - Fix critical playback issue in older Safari browsers (Walter Ebert, c835f43)
