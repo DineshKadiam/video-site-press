@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-FileCopyrightText: 2024-2025 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -15,6 +15,7 @@ Thanks everyone for your support!
 [BMKÖS](https://www.bmkoes.gv.at/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
 [dérive](https://derive.at)<br>
+[Edgar Aichinger](https://build.opensuse.org/users/edogawa)<br>
 hatsch<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
 [Meljoann](https://www.meljoann.com/)<br>
