@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::cmp::{self, Ordering};
@@ -9,7 +9,6 @@ use std::str::Split;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
-use enolib::{Element, SectionElement};
 
 use crate::{
     Banner,
@@ -27,7 +26,18 @@ use crate::{
     VideoOrder,
     VideoParent
 };
+use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::checked_remove_dir_all;
+
+const COLLECTION_OPTIONS: &[&str] = &[
+    "banner",
+    "description",
+    "link",
+    "offline",
+    "title",
+    "unlisted",
+    "video_order"
+];
 
 #[derive(Clone, Debug)]
 pub struct Collection {
@@ -57,167 +67,228 @@ impl Collection {
             }
         };
 
-        match document.optional_field("banner") {
-            Ok(Some(field)) => {
-                match field.required_attribute("file") {
-                    Ok(attribute) => {
-                        match attribute.required_value::<String>() {
-                            Ok(file_name) => {
-                                let path_absolute = manifest_path.parent().unwrap().join(&file_name);
-                                if path_absolute.exists() {
-                                    let file_meta = FileMeta::new(&path_absolute);
 
-                                    // TODO: Errors
-                                    let description = match field.required_attribute("description") {
-                                        Ok(attribute) => match attribute.required_value() {
-                                            Ok(description) => Some(description),
-                                            _ => None
+        for element in document.elements() {
+            match element.key() {
+                "banner" => 'banner: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            let mut description = None;
+                            let mut file = None;
+
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "description" => {
+                                        if let Some(value) = attribute.value() {
+                                            description = Some(value.to_string());
                                         }
-                                        _ => None
-                                    };
+                                    }
+                                    "file" => {
+                                        if let Some(value) = attribute.value() {
+                                            let absolute_path = manifest_path.parent().unwrap().join(value);
 
-                                    let assets = context.cache.lock().unwrap().fetch_poster_assets(
-                                        &file_meta,
-                                        &file_name,
-                                        &self.path,
-                                        0.0 // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
-                                    );
-
-                                    let banner = Banner::new(assets, description, file_meta, file_name);
-                                    self.banner = Some(banner);
-                                } else {
-                                    self.errors.push(format!("Error in {}:{} (Path to banner is invalid, file not found)", manifest_path.display(), attribute.line_number()));
+                                            if absolute_path.exists() {
+                                                file = Some((absolute_path, value.to_string()));
+                                            } else {
+                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.errors.push(error);
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an banner field";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.errors.push(error);
+                                    }
                                 }
                             }
-                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+
+                            if let Some((absolute_path, file_name)) = file {
+                                let file_meta = FileMeta::new(&absolute_path);
+
+                                let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                                    &file_meta,
+                                    &file_name,
+                                    &self.path,
+                                    0.0 // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                );
+
+                                let banner = Banner::new(assets, description, file_meta, file_name);
+                                self.banner = Some(banner);
+                            }
+
+                            break 'banner;
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
 
-        match document.optional_embed("description") {
-            Ok(Some(field)) => {
-                match field.required_value() {
-                    Ok(value) => {
-                        self.description = Some(value);
+                    let message = "banner needs to be provided as a field with attributes, e.g.:\n\nbanner:\ndescription = Strange geometric patterns\nfile = patterns.jpg";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "description" => {
+                    if let Ok(embed) = element.as_embed() {
+                        if let Some(value) = embed.value() {
+                            self.description = Some(value.to_string());
+                        } else {
+                            self.description = None;
+                        }
+                    } else {
+                        let message = "The 'description' option needs to be provided as an embed, e.g.:\n-- description\nA description text\n--description";
+                        let error = element_error(element, manifest_path, message);
+                        self.errors.push(error);
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
-
-        // TODO: Encapsulate in link.rs maybe?
-        // TODO: Would benefit from a .fields() iterator (then again errors for inaccurately typed errors would be harder to give)
-        for element in document.elements() {
-            if element.key() == "link" {
-                if let Some(field) = element.as_field() {
-                    match field.required_attribute("url") {
-                        Ok(attribute) => {
-                            match attribute.required_value::<String>() {
-                                Ok(value) => match HyperUrl::parse(&value) {
+                "link" => 'link: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match HyperUrl::parse(value) {
                                     Ok(url) => {
-                                        // TODO: Errors, optional_attribute does not exist in enolib?
-                                        let label = match field.required_attribute("label") {
-                                            Ok(attribute) => match attribute.required_value() {
-                                                Ok(label) => Some(label),
-                                                Err(_) => None
-                                            }
-                                            Err(_) => None
-                                        };
-
-                                        let (hidden, rel_me) = match field.required_attribute("verification") {
-                                            Ok(attribute) => match attribute.required_value::<String>() {
-                                                Ok(value) => match value.as_str() {
-                                                    "rel-me" => (false, true),
-                                                    "rel-me-hidden" => (true, true),
-                                                    _ => (false, false)
-                                                }
-                                                Err(_) => (false, false)
-                                            }
-                                            Err(_) => (false, false)
-                                        };
-
-                                        let link = Link::new(hidden, label, rel_me, url);
+                                        let link = Link::new(false, None, false, url);
                                         self.links.push(link);
                                     }
-                                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), attribute.line_number()))
+                                    Err(err) => {
+                                        let message = format!("The url supplied for the link seems to be malformed ({err})");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
                                 }
-                                Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
                             }
-                        }
-                        Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
-                    }
-                } else {
-                    self.errors.push(format!("Error in {}:{} (Links must be provided as fields with attributes)", manifest_path.display(), element.line_number()))
-                }
-            }
-        }
 
-        match document.optional_flag("offline") {
-            Ok(Some(_)) => {
-                self.offline = true;
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
+                            break 'link;
+                        } else if let Ok(attributes) = field.attributes() {
+                            let mut hidden = false;
+                            let mut label = None;
+                            let mut rel_me = false;
+                            let mut url = None;
 
-        match document.optional_field("title") {
-            Ok(Some(field)) => {
-                match field.required_value() {
-                    Ok(value) => {
-                        self.title = Some(value);
-                    }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
-
-        match document.optional_flag("unlisted") {
-            Ok(Some(_)) => {
-                self.unlisted = true;
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
-
-        for element in &document.untouched_elements() {
-            if let Some(attribute) = element.as_attribute() {
-                self.errors.push(format!("Ignoring unsupported attribute '{}' in {}:{}", attribute.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(embed) = element.as_embed() {
-                self.errors.push(format!("Ignoring unsupported embed '{}' in {}:{}", embed.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(flag) = element.as_flag() {
-                self.errors.push(format!("Ignoring unsupported flag '{}' in {}:{}", flag.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(field) = element.as_field() {
-                self.errors.push(format!("Ignoring unsupported field '{}' in {}:{}", field.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(section) = element.as_section() {
-                self.errors.push(format!("Ignoring unsupported section '{}' in {}:{}", section.key(), manifest_path.display(), element.line_number()))
-            }
-        }
-
-        match document.optional_field("video_order") {
-            Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(value) => {
-                        match VideoOrder::from_key(&value) {
-                            Ok(order) => {
-                                self.video_order = order;
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "label" => {
+                                        if let Some(value) = attribute.value() {
+                                            label = Some(value.to_string());
+                                        }
+                                    }
+                                    "url" => {
+                                        if let Some(value) = attribute.value() {
+                                            match HyperUrl::parse(value) {
+                                                Ok(parsed_url) => url = Some(parsed_url),
+                                                Err(err) => {
+                                                    let message = format!("The url supplied for the link seems to be malformed ({err})");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "verification" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value {
+                                                "rel-me" => {
+                                                    hidden = false;
+                                                    rel_me = true;
+                                                }
+                                                "rel-me-hidden" => {
+                                                    hidden = true;
+                                                    rel_me = true;
+                                                }
+                                                _ => {
+                                                    let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    other => {
+                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
+                                        let error = attribute_error(attribute, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
                             }
-                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+
+                            if let Some(url) = url {
+                                let link = Link::new(hidden, label, rel_me, url);
+                                self.links.push(link);
+                            } else {
+                                let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
+                                let error = element_error(element, manifest_path, message);
+                                self.errors.push(error);
+                            }
+
+                            break 'link;
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line))
+
+                    let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "offline" => {
+                    if element.is_flag() {
+                        self.offline = true;
+                    } else {
+                        let message = "offline needs to be provided as a flag, that is, exactly as 'offline' (without colon and without value)";
+                        let error = element_error(element, manifest_path, message);
+                        self.errors.push(error);
+                    }
+                }
+                "title" => 'title: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                self.title = Some(value.to_string());
+                            }
+
+                            break 'title;
+                        }
+                    }
+
+                    let message = "title needs to be provided as a field with a value, e.g.: 'title: The 90ies clip collection'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "unlisted" => {
+                    if element.is_flag() {
+                        self.unlisted = true;
+                    } else {
+                        let message = "unlisted needs to be provided as a flag, that is, exactly as 'unlisted' (without colon and without value)";
+                        let error = element_error(element, manifest_path, message);
+                        self.errors.push(error);
+                    }
+                }
+                "video_order" => 'video_order: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match VideoOrder::from_key(value) {
+                                    Ok(order) => {
+                                        self.video_order = order;
+                                    }
+                                    Err(err) => {
+                                        let message = format!("The supplied order was not recognized ({err})");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'video_order;
+                        }
+                    }
+
+                    let message = "video_order needs to be provided as a field with a value, e.g.: 'video_order: release_date_asc'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                other => {
+                    let message = not_supported_error("collection.eno", other, &[COLLECTION_OPTIONS]);
+                    let error = element_error(element, manifest_path, &message);
+                    self.errors.push(error);
                 }
             }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), err.line)),
-            _ => ()
         }
     }
 

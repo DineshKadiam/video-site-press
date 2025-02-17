@@ -23,6 +23,7 @@ mod icons;
 mod image_processor;
 mod language;
 mod link;
+mod manifest;
 mod markdown_subset;
 mod playlist;
 mod poster;

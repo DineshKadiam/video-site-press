@@ -1,11 +1,9 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
-
-use enolib::{Element, SectionElement};
 
 use crate::{
     Context,
@@ -19,7 +17,18 @@ use crate::{
     Theme,
     Video
 };
+use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::supported_font_extension;
+
+const SITE_OPTIONS: &[&str] = &[
+    "base_url",
+    "disable_clean_urls",
+    "deploy_config",
+    "font",
+    "language",
+    "poster_aspect",
+    "theme"
+];
 
 #[derive(Clone, Debug)]
 pub enum AspectRatio {
@@ -120,137 +129,173 @@ impl Site {
             }
         };
 
-        match document.optional_field("base_url") {
-            Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(value) => match HyperUrl::parse(&value) {
-                        Ok(url) => self.base_url = Some(url),
-                        Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), field.line_number(), err))
-                    }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
+        for element in document.elements() {
+            match element.key() {
+                "base_url" => 'base_url: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match HyperUrl::parse(value) {
+                                    Ok(url) => {
+                                        self.base_url = Some(url);
+                                    }
+                                    Err(err) => {
+                                        let message = format!("The supplied url seems to be malformed ({err})");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+                            }
 
-        match document.optional_flag("disable_clean_urls") {
-            Ok(Some(_)) => {
-                self.clean_urls = false;
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
-
-        match document.optional_field("deploy_config") {
-            Ok(Some(field)) => match field.attributes() {
-                Ok(attributes) => {
-                    for attribute in attributes {
-                        match attribute.key() {
-                            "path" => match attribute.required_value::<String>() {
-                                Ok(path) => self.deploy_config.path = Some(path),
-                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err.message))
-                            }
-                            "server" => match attribute.required_value::<String>() {
-                                Ok(server) => self.deploy_config.server = Some(server),
-                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err.message))
-                            }
-                            "user" => match attribute.required_value::<String>() {
-                                Ok(user) => self.deploy_config.user = Some(user),
-                                Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err.message))
-                            }
-                            _ => self.errors.push(format!("Ignoring unsupported attribute '{}' in {}:{}", attribute.key(), manifest_path.display(), attribute.line_number()))
+                            break 'base_url;
                         }
                     }
-                }
-                Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
 
-        match document.optional_field("font") {
-            Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(file_name) => {
-                        let path_absolute = manifest_path.parent().unwrap().join(&file_name);
-                        if path_absolute.exists() {
-                            if supported_font_extension(&file_name) {
-                                self.font = Font::Custom(file_name);
-                            } else {
-                                self.errors.push(format!("Error in {}:{} (Font file extension is not supported, only woff and woff2 are)", manifest_path.display(), field.line_number()));
+                    let message = "base_url needs to be provided as a field with a value, e.g.: 'base_url: https://example.com'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "deploy_config" => 'deploy_config: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "path" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.deploy_config.path = Some(value.to_string());
+                                        }
+                                    }
+                                    "server" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.deploy_config.server = Some(value.to_string());
+                                        }
+                                    }
+                                    "user" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.deploy_config.user = Some(value.to_string());
+                                        }
+                                    }
+                                    _ => {
+                                        let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside a deploy_config field";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.errors.push(error);
+                                    }
+                                }
                             }
-                        } else {
-                            self.errors.push(format!("Error in {}:{} (Path to font is invalid, file not found)", manifest_path.display(), field.line_number()));
+
+                            break 'deploy_config;
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
 
-        match document.optional_field("language") {
-            Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(value) => {
-                        self.language = Language::from_code(&value);
+                    let message = "deploy_config needs to be provided as a field with attributes, e.g.:\n\ndeploy_config:\npath = /var/www/example/\nserver = example.com\nuser = alice";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "disable_clean_urls" => {
+                    if element.is_flag() {
+                        self.clean_urls = false;
+                    } else {
+                        let message = "disable_clean_urls needs to be provided as a flag, that is, exactly as 'disable_clean_urls' (without colon and without value)";
+                        let error = element_error(element, manifest_path, message);
+                        self.errors.push(error);
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
                 }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
+                "font" => 'font: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                let absolute_path = manifest_path.parent().unwrap().join(value);
+                                if absolute_path.exists() {
+                                    if supported_font_extension(value) {
+                                        self.font = Font::Custom(value.to_string());
+                                    } else {
+                                        let message = "The provided font file extension is not supported, only woff and woff2 are";
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                } else {
+                                    let message = "The provided font file name is invalid - the file was not found";
+                                    let error = element_error(element, manifest_path, &message);
+                                    self.errors.push(error);
+                                }
+                            }
 
-        match document.optional_field("poster_aspect") {
-            Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(representation) => {
-                        match AspectRatio::from_representation(&representation) {
-                            Ok(aspect_ratio) => self.poster_aspect = aspect_ratio,
-                            Err(err) => self.errors.push(format!("Error in {}:{} ({err})", manifest_path.display(), field.line_number()))
+                            break 'font;
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
 
-        match document.optional_field("theme") {
-            Ok(Some(field)) => {
-                match field.required_value::<String>() {
-                    Ok(value) => {
-                        match Theme::from_key(value.as_str()) {
-                            Ok(theme) => {
-                                self.theme = theme;
+                    let message = "font needs to be provided as a field with a value specifying the woff or woff2 font file name, e.g.: 'font: custom_sans.woff2'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "language" => 'language: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                self.language = Language::from_code(value);
                             }
-                            Err(err) => {
-                                self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), field.line_number(), err));
-                            }
+
+                            break 'language;
                         }
                     }
-                    Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err))
-                }
-            }
-            Err(err) => self.errors.push(format!("Error in {}:{} ({})", manifest_path.display(), err.line, err)),
-            _ => ()
-        }
 
-        for element in &document.untouched_elements() {
-            if let Some(attribute) = element.as_attribute() {
-                self.errors.push(format!("Ignoring unsupported attribute '{}' in {}:{}", attribute.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(embed) = element.as_embed() {
-                self.errors.push(format!("Ignoring unsupported embed '{}' in {}:{}", embed.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(flag) = element.as_flag() {
-                self.errors.push(format!("Ignoring unsupported flag '{}' in {}:{}", flag.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(field) = element.as_field() {
-                self.errors.push(format!("Ignoring unsupported field '{}' in {}:{}", field.key(), manifest_path.display(), element.line_number()))
-            } else if let Some(section) = element.as_section() {
-                self.errors.push(format!("Ignoring unsupported section '{}' in {}:{}", section.key(), manifest_path.display(), element.line_number()))
+                    let message = "language needs to be provided as a field with a value, e.g.: 'language: de'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "poster_aspect" => 'poster_aspect: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match AspectRatio::from_representation(value) {
+                                    Ok(aspect_ratio) => {
+                                        self.poster_aspect = aspect_ratio;
+                                    }
+                                    Err(err) => {
+                                        let message = format!("The supplied aspect ratio was not recognized ({err})");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'poster_aspect;
+                        }
+                    }
+
+                    let message = "poster_aspect needs to be provided as a field with a value, e.g.: 'poster_aspect: 16:9'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "theme" => 'theme: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match Theme::from_key(value) {
+                                    Ok(theme) => {
+                                        self.theme = theme;
+                                    }
+                                    Err(err) => {
+                                        let message = format!("The supplied theme key was no recognized ({err})");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'theme;
+                        }
+                    }
+
+                    let message = "theme needs to be provided as a field with a value, e.g.: 'theme: light_warm'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                other => {
+                    let message = not_supported_error("site.eno", other, &[SITE_OPTIONS]);
+                    let error = element_error(element, manifest_path, &message);
+                    self.errors.push(error);
+                }
             }
         }
     }

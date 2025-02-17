@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-FileCopyrightText: 2024-2025 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -22,7 +22,7 @@ More widely speaking, a *video* in Hyper 8 is a single video-based media
 artifact that can be (re)presented through different video (but also audio)
 files to cover a range of qualities/formats. It can also be augmented with
 subtitle files and a *poster* image that is shown in thumbnails and before
-the video is played back. In fact, if there is on *poster* image, Hyper 8
+the video is played back. In fact, if there is no *poster* image, Hyper 8
 will compute one automatically (by taking a frame from the video), always.
 
 ## Video files
