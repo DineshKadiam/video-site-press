@@ -6,10 +6,11 @@
 # Installation
 
 On debian-based Linux hyper8 can already be installed via packages (amd64). On
-Arch Linux and Manjaro faircamp is available through the AUR. openSUSE On macOS
-faircamp can be installed using Homebrew. On other platforms Hyper 8 needs to
-be built from source for now (which is not very complicated though), see the instructions
-at the bottom of the page.
+Arch Linux and Manjaro hyper8 is available through the AUR. On openSUSE a
+package is provided through the openSUSE build service. On macOS hyper8 can
+be installed using Homebrew. On other platforms Hyper 8 needs to be built
+from source for now (which is fairly quick and easy though), see the
+instructions at the bottom of the page.
 
 ## Linux
 
@@ -23,7 +24,7 @@ Install the [latest debian 12 package](https://simonrepp.com/hyper8/packages/hyp
 
 **openSUSE**
 
-Install the [hyper8 package](https://build.opensuse.org/package/show/home:edogawa/hyper8)
+Install the [hyper8 package](https://software.opensuse.org//download.html?project=home%3Aedogawa&package=hyper8)
 
 ## macOS
 
@@ -36,20 +37,40 @@ brew install hyper8
 
 ## Other platforms
 
-Follow these general build instructions below:
+Follow these general build instructions:
 
 **Building from source**
 
-As prerequisites you need `ffmpeg` and `rust` installed
-on your system, then run these commands:
+What you need to have installed to build and run hyper8:
+- ffmpeg (any somewhat recent version should work)
+- Rust (version 1.80.1 or later)
 
-```
+**1. Install required dependencies**
+
+Install [rust](https://rust-lang.org) on your system following the official [installation instructions](https://www.rust-lang.org/tools/install).
+
+Install [ffmpeg](https://ffmpeg.org) on your system, see [this page](https://ffmpeg.org/download.html) for instructions for various platforms.
+
+**2. Run the compilation/installation command**
+
+Now you're ready to build and install hyper8 on your system.
+
+First check out and enter the repository:
+
+```bash
 git clone https://codeberg.org/simonrepp/hyper8.git
 cd hyper8
+```
+
+Now run this command:
+
+```bash
 cargo install --locked --path .
 ```
 
-To uninstall:
+**Uninstalling**
+
+If you want to uninstall hyper8 at any point, run:
 
 ```
 cargo uninstall hyper8
