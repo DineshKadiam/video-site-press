@@ -1,94 +1,61 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::fs::{self, File};
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-
-use actix_multipart::Multipart;
-use actix_web::{Either, Error, HttpResponse};
+use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
-use actix_web::web::{self, Data, Form, Path as ActixPath, Redirect};
-use chrono::NaiveDate;
-use futures_util::TryStreamExt as _;
+
 use indoc::formatdoc;
 use serde_derive::Deserialize;
-use slug::slugify;
 
 use crate::{
-    Collection,
     Context,
-    ContextPath,
     Field,
-    FileMeta,
-    GetAnyResult,
-    HyperDir,
-    HyperUrl,
-    JobKind,
     Language,
-    Link,
-    Playlist,
-    PosterFile,
     Translations,
-    Video,
-    VideoFile,
-    VideoFormat,
-    VideoParent
+    Video
 };
 use crate::browser_support;
 use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
-    error_page,
     layout,
     links,
-    not_found,
     resource_actions,
     upload_widget
 };
 use crate::icons;
-use crate::util::{
-    precise_duration,
-    human_size,
-    nanoid,
-    supported_image_extension,
-    supported_video_extension,
-    validate_slug
-};
+use crate::util::{precise_duration, human_size};
 
-#[derive(Deserialize)]
-pub struct AddLinkForm {
-    label: String,
-    url: String,
-    verification: String
-}
+mod add_link;
+mod delete;
+mod delete_link;
+mod delete_poster;
+mod delete_version;
+mod downsize;
+mod edit;
+mod r#move;
+mod poster;
+mod random_poster;
+mod update;
+mod update_poster;
+mod upload_poster;
+mod upload_video;
 
-#[derive(Deserialize)]
-pub struct DeleteLinkForm {
-    label: String,
-    url: String
-}
-
-#[derive(Deserialize)]
-pub struct DeleteVersionForm {
-    file_name: String
-}
-
-#[derive(Deserialize)]
-pub struct DownsizeForm {
-    approach: String,
-    codec: String,
-    frame_rate: String,
-    height: String,
-    quality: String
-}
-
-#[derive(Deserialize)]
-pub struct PosterUpdateForm {
-    description: String
-}
+pub use add_link::add_link;
+pub use delete::delete;
+pub use delete_link::delete_link;
+pub use delete_poster::delete_poster;
+pub use delete_version::delete_version;
+pub use downsize::downsize;
+pub use edit::edit;
+pub use r#move::r#move;
+pub use poster::poster;
+pub use random_poster::random_poster;
+pub use update::update;
+pub use update_poster::update_poster;
+pub use upload_poster::upload_poster;
+pub use upload_video::upload_video;
 
 pub enum VideoFormFeedback<'a> {
     Move {
@@ -109,11 +76,6 @@ pub enum VideoFormFeedback<'a> {
 }
 
 #[derive(Deserialize)]
-pub struct VideoMoveForm {
-    slug: String
-}
-
-#[derive(Deserialize)]
 pub struct VideoUpdateForm {
     description: String,
     offline: Option<String>,
@@ -121,198 +83,6 @@ pub struct VideoUpdateForm {
     sort_number: String,
     title: String,
     unlisted: Option<String>
-}
-
-pub async fn add_link(
-    context: Data<Arc<Context>>,
-    form: Form<AddLinkForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let (hidden, rel_me) = match form.verification.as_str() {
-        "rel-me" => (false, true),
-        "rel-me-hidden" => (true, true),
-        _ => (false, false)
-    };
-    let label_trimmed = form.label.trim();
-    let label = match label_trimmed.is_empty() {
-        true => None,
-        false => Some(label_trimmed.to_string())
-    };
-    let url = match HyperUrl::parse(&form.url) {
-        Ok(url) => url,
-        Err(err) => {
-            let language = context.get_editor_language();
-            let t_invalid_url = language.translations.invalid_url;
-            let message = format!("{t_invalid_url} ({err})");
-            return Either::Right(error_page(&context, &language, &message))
-        }
-    };
-
-    let mutation = |video_mut: &mut Video| {
-        let link = Link::new(hidden, label, rel_me, url);
-        video_mut.links.push(link);
-        video_mut.write_manifest(&context);
-    };
-
-    match context.update_video(mutation, &path.path) {
-        Ok(video) => {
-            let redirect_url = format!("/video/{}", video.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn delete(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let video_parent = match context.delete_video(&path.path) {
-        Ok(video_parent) => video_parent,
-        Err(()) => {
-            let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &path.path))
-        }
-    };
-
-    let redirect_url = match video_parent {
-        Some(VideoParent::Collection(collection)) => {
-            Path::new("/collection").join(&collection.path).to_str().unwrap().to_string()
-        }
-        Some(VideoParent::Playlist(playlist)) => {
-            Path::new("/playlist").join(&playlist.path).to_str().unwrap().to_string()
-        }
-        None => "/".to_string()
-    };
-
-    Either::Left(Redirect::to(redirect_url).see_other())
-}
-
-pub async fn delete_link(
-    context: Data<Arc<Context>>,
-    form: Form<DeleteLinkForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let mutation = |video_mut: &mut Video| {
-        if video_mut.links
-            .iter()
-            .position(|link|
-                if form.label.is_empty()  {
-                    link.label.is_none() && link.url.representation == form.url
-                } else {
-                    link.label.as_ref().is_some_and(|label| label == &form.label) && link.url.representation == form.url
-                }
-            )
-            .map(|index| video_mut.links.remove(index))
-            .is_some() {
-            video_mut.write_manifest(&context);
-        }
-    };
-
-    match context.update_video(mutation, &path.path) {
-        Ok(video) => {
-            let redirect_url = format!("/video/{}", video.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn delete_poster(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let mutation = |video_mut: &mut Video| {
-        if let Some(poster) = &video_mut.poster {
-            let poster_path = context.site_dir.join(&video_mut.path).join(&poster.file_name);
-            video_mut.poster = None;
-            video_mut.write_manifest(&context);
-            let _ = fs::remove_file(poster_path);
-        }
-    };
-
-    match context.update_video(mutation, &path.path) {
-        Ok(video) => {
-            let redirect_url = format!("/video/{}", video.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn delete_version(
-    context: Data<Arc<Context>>,
-    form: Form<DeleteVersionForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    // TODO: Minor issue if at all, but there is no feedback if the version is not found
-
-    let mutation = |video_mut: &mut Video| {
-        if let Some(version) = video_mut.versions
-            .iter()
-            .position(|version| version.file_name == form.file_name)
-            .map(|index| video_mut.versions.swap_remove(index)) {
-            let version_path = context.site_dir.join(&path.path).join(&version.file_name);
-            video_mut.write_manifest(&context);
-            let _ = fs::remove_file(&version_path);
-        }
-    };
-
-    match context.update_video(mutation, &path.path) {
-        Ok(video) => {
-            let redirect_url = format!("/video/{}", video.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-/// Request a new version the video to be encoded
-pub async fn downsize(
-    context: Data<Arc<Context>>,
-    form: Form<DownsizeForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let video = match context.get_video(&path.path) {
-        Some(video) => video,
-        None => {
-            let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &path.path))
-        }
-    };
-
-    let frame_rate = if form.frame_rate.is_empty() {
-        None
-    } else {
-        Some(form.frame_rate.as_str())
-    };
-
-    let video_format = VideoFormat::new_video(
-        &form.codec,
-        "mp4",
-        &form.approach,
-        frame_rate,
-        &form.height,
-        &form.quality,
-    ).unwrap();
-
-    let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
-    context.push_job_queue(job_kind);
-
-    let redirect_url = format!("/video/{}", &path.path);
-    Either::Left(Redirect::to(redirect_url).see_other())
 }
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
@@ -848,440 +618,4 @@ pub fn edit_page(
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
-}
-
-pub async fn edit(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> HttpResponse {
-    let language = context.get_editor_language();
-
-    let video = match context.get_video(&path.path) {
-        Some(video) => video,
-        None => return not_found(&context, &language, &path.path)
-    };
-
-    edit_page(&context, None, &language, &video)
-}
-
-// TODO: We currently go through the video endpoint for poster for all posters
-//       (also playlist e.g.), this is unclean, make generic or change otherwise
-// TODO: Highly insecure b/c path arbitrary etc. you know
-pub async fn poster(context: Data<Arc<Context>>, path: ActixPath<ContextPath>) -> HttpResponse {
-    let filepath = context.site_dir.join(&path.path);
-    let filepath_moving = filepath.clone();
-    let content = web::block(move || fs::read(filepath_moving))
-        .await
-        .unwrap()
-        .unwrap();
-
-    match filepath.extension() {
-        Some(extension) => {
-            let content_type = if extension.eq_ignore_ascii_case("jpg") || extension.eq_ignore_ascii_case("jpg") {
-                "image/jpeg"
-            } else if extension.eq_ignore_ascii_case("png") {
-                "image/png"
-            } else if extension.eq_ignore_ascii_case("webp") {
-                "image/webp"
-            } else if extension.eq_ignore_ascii_case("webp") {
-                "image/gif"
-            } else {
-                let body = format!("Poster file extension {} can not be requested.", extension.to_string_lossy());
-                return HttpResponse::NotImplemented().body(body);
-            };
-
-            HttpResponse::Ok()
-                .content_type(content_type)
-                .body(content)
-        }
-        None => {
-            HttpResponse::NotImplemented()
-                .body("Files without extension can not be requested as a poster.")
-        }
-    }
-}
-
-pub async fn r#move(
-    context: Data<Arc<Context>>,
-    form: Form<VideoMoveForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let language = context.get_editor_language();
-
-    let slug_trimmed = form.slug.trim();
-
-    let new_path = Path::new(&path.path)
-        .with_file_name(slug_trimmed)
-        .into_os_string()
-        .into_string()
-        .unwrap();
-
-    let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
-        Some(message)
-    } else if context.site_dir.join(&new_path).exists() {
-        Some(format!("This permalink is already used by another collection, playlist or video."))
-    } else {
-        None
-    };
-
-    if slug_error.is_none() {
-        let mutation = |video: &mut Video| {
-            fs::rename(
-                context.site_dir.join(&video.path),
-                context.site_dir.join(&new_path)
-            ).unwrap();
-
-            video.path = new_path;
-        };
-
-        let video = match context.update_video(mutation, &path.path) {
-            Ok(video) => video,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/video/{}", video.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
-    } else {
-        let video = match context.get_video(&path.path) {
-            Some(video) => video,
-            None => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let form_feedback = VideoFormFeedback::Move {
-            slug: Field::validated(slug_trimmed, slug_error)
-        };
-
-        Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &video)
-        )
-    }
-}
-
-pub async fn random_poster(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    match context.get_video(&path.path) {
-        Some(video) => {
-            let site = context.get_site();
-            let job_kind = JobKind::VideoRandomPoster {
-                poster_aspect: site.poster_aspect.numeric(),
-                video: Arc::clone(&video)
-            };
-            context.push_job_queue(job_kind);
-
-            let redirect_url = format!("/video/{}", video.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        None => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn update(
-    context: Data<Arc<Context>>,
-    form: Form<VideoUpdateForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let language = context.get_editor_language();
-
-    let description_trimmed = form.description.trim();
-
-    let offline = form.offline.is_some();
-
-    let release_date_trimmed = form.release_date.trim();
-    let release_date = if release_date_trimmed.is_empty() {
-        None
-    } else {
-        Some(
-            NaiveDate::parse_from_str(&release_date_trimmed, "%Y-%m-%d")
-                .map_err(|err| err.to_string())
-        )
-    };
-
-    let sort_number_trimmed = form.sort_number.trim();
-    let sort_number = if sort_number_trimmed.is_empty() {
-        None
-    } else {
-        Some(
-            sort_number_trimmed.parse::<i32>().map_err(|err| err.to_string())
-        )
-    };
-
-    let title_trimmed = form.title.trim();
-
-    let unlisted = form.unlisted.is_some();
-
-    if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) ||
-        sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
-        let video = match context.get_video(&path.path) {
-            Some(video) => video,
-            None => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let form_feedback = VideoFormFeedback::Update {
-            description: description_trimmed,
-            offline,
-            release_date: Field::validated(release_date_trimmed, release_date.and_then(|release_date| release_date.err())),
-            sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
-            title: Field::valid(title_trimmed),
-            unlisted
-        };
-
-        Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &video)
-        )
-    } else {
-        let mutation = |video_mut: &mut Video| {
-            video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            video_mut.offline = offline;
-            video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
-            video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
-            video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            video_mut.unlisted = unlisted;
-            video_mut.write_manifest(&context);
-        };
-
-        let video = match context.update_video(mutation, &path.path) {
-            Ok(video) => video,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/video/{}", video.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
-    }
-}
-
-pub async fn update_poster(
-    context: Data<Arc<Context>>,
-    form: Form<PosterUpdateForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let mutation = |video: &mut Video| {
-        if let Some(poster) = &mut video.poster {
-            poster.description = Some(form.description.clone());
-        }
-        video.write_manifest(&context);
-    };
-
-    match context.update_video(mutation, &path.path) {
-        Ok(video) => {
-            let redirect_url = format!("/video/{}", video.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn upload_poster(
-    context: Data<Arc<Context>>,
-    mut payload: Multipart,
-    path: ActixPath<ContextPath>
-) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let language = context.get_editor_language();
-
-    while let Some(mut field) = payload.try_next().await? {
-        if let Some(content_disposition) = field.content_disposition() {
-            if let Some(filename) = content_disposition.get_filename() {
-                if !supported_image_extension(filename) {
-                    match context.get_video(&path.path) {
-                        Some(video) => {
-                            let error = format!("Unsupported file extension in {filename}");
-                            let form_feedback = VideoFormFeedback::UploadPoster { error };
-                            let http_response = edit_page(&context, Some(form_feedback), &language, &video);
-                            return Ok(Either::Right(http_response))
-                        }
-                        None => {
-                            let http_response = not_found(&context, &language, &path.path);
-                            return Ok(Either::Right(http_response));
-                        }
-                    }
-                }
-
-                let original_filename = filename.to_string();
-
-                let storage_filename = if !context.site_dir.join(&path.path).join(&original_filename).exists() {
-                    original_filename
-                } else {
-                    format!("{}_{original_filename}", nanoid())
-                };
-
-                let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
-                let storage_path_moving = storage_path.clone();
-
-                // File::create is blocking operation, use threadpool
-                let mut f = web::block(|| File::create(storage_path_moving)).await??;
-
-                // Field in turn is stream of *Bytes* object
-                while let Some(chunk) = field.try_next().await? {
-                    // filesystem operations are blocking, we have to use threadpool
-                    f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
-                }
-
-                let file_meta = FileMeta::new(&storage_path);
-                let poster_file = PosterFile::new(None, None, file_meta, storage_filename);
-
-                let mutation = |video: &mut Video| {
-                    video.poster = Some(poster_file);
-                    video.write_manifest(&context);
-                };
-
-                let video = match context.update_video(mutation, &path.path) {
-                    Ok(video) => video,
-                    Err(()) => {
-                        let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &language, &path.path);
-                        return Ok(Either::Right(http_response));
-                    }
-                };
-
-                let site = context.get_site();
-                let job_kind = JobKind::VideoFastTasks {
-                    poster_aspect: site.poster_aspect.numeric(),
-                    video: Arc::clone(&video)
-                };
-                context.push_job_queue(job_kind);
-
-                let redirect_url = format!("/video/{}", path.path);
-                return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
-            }
-        }
-    }
-
-    unreachable!()
-}
-
-// TODO: Implementation wise this is very messy, refactoring candidate
-pub async fn upload_video(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>,
-    mut payload: Multipart
-) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let language = context.get_editor_language();
-
-    let container = context.get_any(&path.path);
-
-    if let GetAnyResult::None = container {
-        let http_response = not_found(&context, &language, &path.path);
-        return Ok(Either::Right(http_response));
-    }
-
-    while let Some(mut field) = payload.try_next().await? {
-        if let Some(content_disposition) = field.content_disposition() {
-            if let Some(filename) = content_disposition.get_filename() {
-                // TODO: Support audio formats as well?
-                //       Or should this be a separate endpoint/feature?
-                if supported_video_extension(filename) {
-                    let original_filename = filename.to_string();
-
-                    let storage_path = match &container {
-                        GetAnyResult::Collection(collection) => {
-                            let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                            while context.site_dir.join(&collection.path).join(&candidate_dir_name).exists() {
-                                candidate_dir_name.push_str("-duplicate");
-                            }
-                            let candidate_dir = context.site_dir.join(&collection.path).join(&candidate_dir_name);
-                            fs::create_dir_all(&candidate_dir).unwrap();
-                            candidate_dir.join(original_filename)
-                        }
-                        GetAnyResult::Playlist(playlist) => {
-                            let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                            while context.site_dir.join(&playlist.path).join(&candidate_dir_name).exists() {
-                                candidate_dir_name.push_str("-duplicate");
-                            }
-                            let candidate_dir = context.site_dir.join(&playlist.path).join(&candidate_dir_name);
-                            fs::create_dir_all(&candidate_dir).unwrap();
-                            candidate_dir.join(original_filename)
-                        }
-                        GetAnyResult::Video(video) => {
-                            let mut candidate_filename = original_filename.clone();
-                            while context.site_dir.join(&video.path).join(&candidate_filename).exists() {
-                                candidate_filename = Path::new(&candidate_filename).with_file_name(format!("{}.mp4", nanoid())).to_string_lossy().to_string();
-                            }
-                            context.site_dir.join(&video.path).join(&candidate_filename)
-                        }
-                        GetAnyResult::None => unreachable!()
-                    };
-
-                    let storage_path_moving = storage_path.clone();
-                    // File::create is blocking operation, use threadpool
-                    let mut f = web::block(|| File::create(storage_path_moving)).await??;
-
-                    // Field in turn is stream of *Bytes* object
-                    while let Some(chunk) = field.try_next().await? {
-                        // filesystem operations are blocking, we have to use threadpool
-                        f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
-                    }
-
-                    let site = context.get_site();
-
-                    let video = match &container {
-                        GetAnyResult::Collection(_) => {
-                            let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                            let video = Video::read_dir(&context, &hyper_dir, &site);
-
-                            let video_moving = Arc::clone(&video);
-                            let mutation = |collection: &mut Collection| {
-                                collection.videos.push(video_moving);
-                            };
-
-                            if context.update_collection(mutation, &path.path).is_err() {
-                                // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                return Ok(Either::Right(not_found(&context, &language, &path.path)));
-                            }
-
-                            video
-                        }
-                        GetAnyResult::Playlist(_) => {
-                            let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                            let video = Video::read_dir(&context, &hyper_dir, &site);
-
-                            let video_moving = Arc::clone(&video);
-                            let mutation = |playlist: &mut Playlist| {
-                                playlist.videos.push(video_moving);
-                            };
-
-                            if context.update_playlist(mutation, &path.path).is_err() {
-                                // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                return Ok(Either::Right(not_found(&context, &language, &path.path)));
-                            }
-
-                            video
-                        }
-                        GetAnyResult::Video(_) => {
-                            let file_meta = FileMeta::new(&storage_path);
-                            let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
-
-                            let mutation = |video: &mut Video| {
-                                video.versions.push(VideoFile::new(file_meta, file_name, None));
-                            };
-
-                            match context.update_video(mutation, &path.path) {
-                                Ok(video) => video,
-                                // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                Err(()) => return Ok(Either::Right(not_found(&context, &language, &path.path)))
-                            }
-                        }
-                        GetAnyResult::None => unreachable!()
-                    };
-
-                    let job_kind = JobKind::VideoFastTasks {
-                        poster_aspect: site.poster_aspect.numeric(),
-                        video: Arc::clone(&video)
-                    };
-                    context.push_job_queue(job_kind);
-
-                    let redirect_url = format!("/video/{}", &video.path);
-                    return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
-                }
-            }
-        }
-    }
-
-    unimplemented!()
 }

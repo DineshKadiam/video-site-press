@@ -1,0 +1,47 @@
+// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::fs;
+use std::sync::Arc;
+
+use actix_web::{Either, HttpResponse};
+use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
+use serde_derive::Deserialize;
+
+use crate::{Context, ContextPath, Video};
+use crate::editor::widgets::not_found;
+
+#[derive(Deserialize)]
+pub struct DeleteVersionForm {
+    file_name: String
+}
+
+pub async fn delete_version(
+    context: Data<Arc<Context>>,
+    form: Form<DeleteVersionForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    // TODO: Minor issue if at all, but there is no feedback if the version is not found
+
+    let mutation = |video_mut: &mut Video| {
+        if let Some(version) = video_mut.versions
+            .iter()
+            .position(|version| version.file_name == form.file_name)
+            .map(|index| video_mut.versions.swap_remove(index)) {
+            let version_path = context.site_dir.join(&path.path).join(&version.file_name);
+            video_mut.write_manifest(&context);
+            let _ = fs::remove_file(&version_path);
+        }
+    };
+
+    match context.update_video(mutation, &path.path) {
+        Ok(video) => {
+            let redirect_url = format!("/video/{}", video.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
