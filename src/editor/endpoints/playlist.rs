@@ -1,72 +1,46 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::fs::{self, File};
-use std::io::Write;
 use std::path::Path;
-use std::sync::Arc;
 
-use actix_multipart::Multipart;
-use actix_web::{Either, Error, HttpResponse};
+use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
-use actix_web::web;
-use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
-use futures_util::TryStreamExt as _;
-use indoc::formatdoc;
-use serde_derive::Deserialize;
-use slug::slugify;
 
-use crate::{
-    Banner,
-    Context,
-    ContextPath,
-    Field,
-    FileMeta,
-    HyperUrl,
-    JobKind,
-    Language,
-    Link,
-    Playlist,
-    Video,
-    VideoOrder
-};
+use indoc::formatdoc;
+
+use crate::{Context, Field, Language, Playlist};
 use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
     add_link_form,
-    error_page,
     layout,
     links,
-    not_found,
     resource_actions,
     upload_widget
 };
 use crate::icons;
-use crate::util::{nanoid, supported_image_extension, validate_slug};
 
-#[derive(Deserialize)]
-pub struct AddLinkForm {
-    label: String,
-    url: String,
-    verification: String
-}
+mod add_link;
+mod create_video;
+mod delete;
+mod delete_banner;
+mod delete_link;
+mod edit;
+mod r#move;
+mod update;
+mod update_banner;
+mod upload_banner;
 
-#[derive(Deserialize)]
-pub struct BannerUpdateForm {
-    description: String
-}
-
-#[derive(Deserialize)]
-pub struct CreateVideoForm {
-    slug: String,
-    title: String
-}
-
-#[derive(Deserialize)]
-pub struct DeleteLinkForm {
-    label: String,
-    url: String
-}
+pub use add_link::add_link;
+pub use create_video::create_video;
+pub use delete::delete;
+pub use delete_banner::delete_banner;
+pub use delete_link::delete_link;
+pub use edit::edit;
+pub use r#move::r#move;
+pub use update::update;
+pub use update_banner::update_banner;
+pub use upload_banner::upload_banner;
 
 pub enum PlaylistFormFeedback<'a> {
     CreateVideo {
@@ -83,240 +57,6 @@ pub enum PlaylistFormFeedback<'a> {
         order: &'a str,
         title: Field,
         unlisted: bool
-    }
-}
-
-#[derive(Deserialize)]
-pub struct PlaylistMoveForm {
-    slug: String
-}
-
-#[derive(Deserialize)]
-pub struct PlaylistUpdateForm {
-    description: String,
-    offline: Option<String>,
-    order: String,
-    title: String,
-    unlisted: Option<String>
-}
-
-pub async fn add_link(
-    context: Data<Arc<Context>>,
-    form: Form<AddLinkForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let (hidden, rel_me) = match form.verification.as_str() {
-        "rel-me" => (false, true),
-        "rel-me-hidden" => (true, true),
-        _ => (false, false)
-    };
-    let label_trimmed = form.label.trim();
-    let label = match label_trimmed.is_empty() {
-        true => None,
-        false => Some(label_trimmed.to_string())
-    };
-    let url = match HyperUrl::parse(&form.url) {
-        Ok(url) => url,
-        Err(err) => {
-            let language = context.get_editor_language();
-            let t_invalid_url = language.translations.invalid_url;
-            let message = format!("{t_invalid_url} ({err})");
-            return Either::Right(error_page(&context, &language, &message))
-        }
-    };
-
-    let mutation = |playlist_mut: &mut Playlist| {
-        let link = Link::new(hidden, label, rel_me, url);
-        playlist_mut.links.push(link);
-        playlist_mut.write_manifest(&context);
-    };
-
-    match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => {
-            let redirect_url = format!("/playlist/{}", playlist.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn create_video(
-    context: Data<Arc<Context>>,
-    form: Form<CreateVideoForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let language = context.get_editor_language();
-
-    let slug_trimmed = form.slug.trim();
-    let title_trimmed = form.title.trim();
-
-    let error = |slug_error, title_error| -> _ {
-        let playlist = match context.get_playlist(&path.path) {
-            Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let form_feedback = PlaylistFormFeedback::CreateVideo {
-            slug: Field::validated(slug_trimmed, slug_error),
-            title: Field::validated(title_trimmed, title_error)
-        };
-
-        Either::Right(edit_page(&context, Some(form_feedback), &language, &playlist))
-    };
-
-    if slug_trimmed.is_empty() && title_trimmed.is_empty() {
-        let t_title_or_permalink_needs_to_be_provided = language.translations.title_or_permalink_needs_to_be_provided;
-
-        return error(
-            Some(t_title_or_permalink_needs_to_be_provided),
-            Some(t_title_or_permalink_needs_to_be_provided)
-        );
-    }
-
-    let succeed = |video_path: String, title: Option<&str>| {
-        let video_dir = context.site_dir.join(&video_path);
-        fs::create_dir_all(&video_dir).unwrap();
-
-        let mut video_mut = Video::new(video_path);
-
-        if let Some(title) = title {
-            video_mut.title = Some(title.to_string());
-        }
-
-        let video = Arc::new(video_mut);
-
-        let video_moving = Arc::clone(&video);
-        let mutation = |playlist: &mut Playlist| {
-            playlist.videos.push(video_moving);
-        };
-
-        if context.update_playlist(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &path.path));
-        }
-
-        video.write_manifest(&context);
-
-        let redirect_url = format!("/video/{}", video.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
-    };
-
-    if slug_trimmed.is_empty() {
-        let slug = slugify(title_trimmed);
-        let mut video_path = if &path.path == "" {
-            slug.to_string()
-        } else {
-            format!("{}/{slug}", &path.path)
-        };
-
-        let mut duplicate = 1;
-        while context.site_dir.join(&video_path).exists() {
-            video_path = if &path.path == "" {
-                format!("{slug}_{duplicate}")
-            } else {
-                format!("{}/{slug}_{duplicate}", &path.path)
-            };
-            duplicate += 1;
-        }
-
-        return succeed(video_path, Some(title_trimmed));
-    } else {
-        if let Err(message) = validate_slug(slug_trimmed) {
-            return error(Some(&message), None);
-        }
-
-        let video_path = if &path.path == "" {
-            slug_trimmed.to_string()
-        } else {
-            format!("{}/{slug_trimmed}", &path.path)
-        };
-
-        if context.site_dir.join(&video_path).exists() {
-            let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
-            return error(Some(message), None);
-        } else {
-            let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
-            return succeed(video_path, title);
-        }
-    }
-}
-
-pub async fn delete(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    if !context.delete_playlist(&path.path) {
-        let language = context.get_editor_language();
-        return Either::Right(not_found(&context, &language, &path.path))
-    };
-
-    let redirect_url = if &path.path == "" {
-        "/".to_string()
-    } else {
-        // We join("") to append a trailing slash (which parent() removes beforehand)
-        Path::new("/collection/").join(&path.path).parent().unwrap().join("").to_str().unwrap().to_string()
-    };
-
-    Either::Left(Redirect::to(redirect_url).see_other())
-}
-
-pub async fn delete_link(
-    context: Data<Arc<Context>>,
-    form: Form<DeleteLinkForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let mutation = |playlist_mut: &mut Playlist| {
-        if playlist_mut.links
-            .iter()
-            .position(|link|
-                if form.label.is_empty()  {
-                    link.label.is_none() && link.url.representation == form.url
-                } else {
-                    link.label.as_ref().is_some_and(|label| label == &form.label) && link.url.representation == form.url
-                }
-            )
-            .map(|index| playlist_mut.links.remove(index))
-            .is_some() {
-            playlist_mut.write_manifest(&context);
-        }
-    };
-
-    match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => {
-            let redirect_url = format!("/playlist/{}", playlist.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn delete_banner(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let mutation = |playlist_mut: &mut Playlist| {
-        if let Some(banner) = &playlist_mut.banner {
-            let banner_path = context.site_dir.join(&playlist_mut.path).join(&banner.file_name);
-            playlist_mut.banner = None;
-            playlist_mut.write_manifest(&context);
-            let _ = fs::remove_file(banner_path);
-        }
-    };
-
-    match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => {
-            let redirect_url = format!("/playlist/{}", playlist.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
-        }
     }
 }
 
@@ -683,211 +423,3 @@ pub fn edit_page(
 //         // )
 //     }
 // }
-
-pub async fn edit(
-    context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
-) -> HttpResponse {
-    let language = context.get_editor_language();
-
-    match context.get_playlist(&path.path) {
-        Some(playlist) => edit_page(&context, None, &language, &playlist),
-        None => not_found(&context, &language, &path.path)
-    }
-}
-
-pub async fn r#move(
-    context: Data<Arc<Context>>,
-    form: Form<PlaylistMoveForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let language = context.get_editor_language();
-
-    let slug_trimmed = form.slug.trim();
-
-    let new_path = Path::new(&path.path)
-        .with_file_name(slug_trimmed)
-        .into_os_string()
-        .into_string()
-        .unwrap();
-
-    // TODO: Here and elsewhere: If a playlist already has a permalink (say "example"),
-    //       and we try to save it with exactly the same/unchanged permalink "example",
-    //       we get an error that *another* playlist is already using that permalink.
-    //       Need to make an exception for this in the validation check.
-    let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
-        Some(message)
-    } else if context.site_dir.join(&new_path).exists() {
-        Some(format!("This permalink is already used by another collection, playlist or video."))
-    } else {
-        None
-    };
-
-    if slug_error.is_none() {
-        let mutation = |playlist: &mut Playlist| {
-            fs::rename(
-                context.site_dir.join(&playlist.path),
-                context.site_dir.join(&new_path)
-            ).unwrap();
-
-            playlist.path = new_path;
-        };
-
-        let playlist = match context.update_playlist(mutation, &path.path) {
-            Ok(playlist) => playlist,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/playlist/{}", playlist.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
-    } else {
-        let playlist = match context.get_playlist(&path.path) {
-            Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let form_feedback = PlaylistFormFeedback::Move {
-            slug: Field::validated(slug_trimmed, slug_error)
-        };
-
-        Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &playlist)
-        )
-    }
-}
-
-pub async fn update(
-    context: Data<Arc<Context>>,
-    form: Form<PlaylistUpdateForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let language = context.get_editor_language();
-
-    let description_trimmed = form.description.trim();
-    let offline = form.offline.is_some();
-    let order = VideoOrder::from_key(&form.order).unwrap();
-    let title_trimmed = form.title.trim();
-    let unlisted = form.unlisted.is_some();
-
-    // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
-    if true {
-        let mutation = |playlist: &mut Playlist| {
-            playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            playlist.offline = offline;
-            playlist.order = order;
-            playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            playlist.unlisted = unlisted;
-            playlist.write_manifest(&context);
-        };
-
-        let playlist = match context.update_playlist(mutation, &path.path) {
-            Ok(playlist) => playlist,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/playlist/{}", playlist.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
-    } else {
-        let playlist = match context.get_playlist(&path.path) {
-            Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let form_feedback = PlaylistFormFeedback::Update {
-            description: description_trimmed,
-            offline,
-            order: &form.order,
-            title: Field::valid(title_trimmed),
-            unlisted
-        };
-
-        Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &playlist)
-        )
-    }
-}
-
-pub async fn update_banner(
-    context: Data<Arc<Context>>,
-    form: Form<BannerUpdateForm>,
-    path: ActixPath<ContextPath>
-) -> Either<Redirect, HttpResponse> {
-    let mutation = |playlist_mut: &mut Playlist| {
-        if let Some(banner) = &mut playlist_mut.banner {
-            banner.description = Some(form.description.clone());
-        }
-        playlist_mut.write_manifest(&context);
-    };
-
-    match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => {
-            let redirect_url = format!("/playlist/{}", playlist.path);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
-            let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &path.path))
-        }
-    }
-}
-
-pub async fn upload_banner(
-    context: Data<Arc<Context>>,
-    mut payload: Multipart,
-    path: ActixPath<ContextPath>
-) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let language = context.get_editor_language();
-
-    while let Some(mut field) = payload.try_next().await? {
-        if let Some(content_disposition) = field.content_disposition() {
-            if let Some(file_name) = content_disposition.get_filename() {
-                if !supported_image_extension(file_name) {
-                    let message = language.translations.unsupported_file_extension_in_xxx(file_name);
-                    return Ok(Either::Right(error_page(&context, &language, &message)))
-                }
-
-                let original_filename = file_name.to_string();
-                // TODO: Generate a prettier filename - this goes into the site_dir!
-                //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
-                let storage_filename = format!("{}_{original_filename}", nanoid());
-                let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
-                let storage_path_moving = storage_path.clone();
-
-                // File::create is blocking operation, use threadpool
-                let mut f = web::block(|| File::create(storage_path_moving)).await??;
-
-                while let Some(chunk) = field.try_next().await? {
-                    f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
-                }
-
-                let file_meta = FileMeta::new(&storage_path);
-
-                // TODO: Although unlikely to result in anything, most of the time,
-                //       we could fetch assets from the cache, just in case?
-
-                let banner = Banner::new(None, None, file_meta, storage_filename);
-
-                let mutation = |playlist_mut: &mut Playlist| {
-                    playlist_mut.banner = Some(banner);
-                    playlist_mut.write_manifest(&context);
-                };
-
-                match context.update_playlist(mutation, &path.path) {
-                    Ok(playlist) => {
-                        let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist));
-                        context.push_job_queue(job_kind);
-                    }
-                    Err(()) => {
-                        let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &language, &path.path);
-                        return Ok(Either::Right(http_response));
-                    }
-                }
-            }
-        }
-    }
-
-    let redirect_url = format!("/playlist/{}", path.path);
-
-    Ok(Either::Left(Redirect::to(redirect_url).see_other()))
-}

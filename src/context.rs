@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::cmp::Ordering;
@@ -35,8 +35,8 @@ pub struct Context {
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
     pub deploying: Mutex<DeploymentState>,
-    pub editor_theme: Mutex<Theme>,
     pub editor_language: Mutex<Language>,
+    pub editor_theme: Mutex<Theme>,
     pub editor_tree_view_order: Mutex<TreeViewOrder>,
     pub job_queue: Mutex<Vec<Job>>,
     pub jobs_completed: Mutex<Vec<Job>>,
@@ -1005,8 +1005,8 @@ impl Context {
             cache,
             cache_dir,
             deploying: Mutex::new(DeploymentState::new()),
-            editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::default())),
             editor_language: Mutex::new(Language::from_code(editor_language)),
+            editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::default())),
             editor_tree_view_order: Mutex::new(editor_tree_view_order),
             job_queue: Mutex::new(Vec::new()),
             jobs_completed: Mutex::new(Vec::new()),
