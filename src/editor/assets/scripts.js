@@ -118,11 +118,10 @@ function fetchProcessing() {
 
             // TODO: This lastUpdate check is maybe not really needed anymore (what purpose does it serve now?)
             if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
-
                 let content = [processingIcon.content.cloneNode(true)];
 
                 if (response.operations.length) {
-                    text = document.createElement('div');
+                    const text = document.createElement('div');
 
                     processingElement.classList.add('active');
                     for (const lastProgress of response.operations) {
