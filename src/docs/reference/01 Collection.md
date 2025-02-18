@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-FileCopyrightText: 2024-2025 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -37,10 +37,12 @@ Content in a collection currently appears in the following order on the built si
 
 ## The collection.eno manifest
 
+> All options at a glance: [description](#description), [link](#link), [offline](#offline), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
+
 Manifest for tagging and configuring a collection.
 
 ```eno
-title: Awesome clickbait videos
+title: Soothing clips
 offline
 video_order: sort_number_desc
 unlisted
@@ -61,10 +63,14 @@ Also check us out on the [fediverse](https://social.example.com/)
 -- description
 ```
 
+## <a name="description"></a> `description`
+
 Stand-alone URLs inside the `description` field are automatically converted to links, and you can
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
 Any number of empty lines in the description field separates paragraphs in the text.
+
+## <a name="link"></a> `link`
 
 Any number of `link` fields can be given. The `label` for a link is optional.
 The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,
@@ -72,14 +78,54 @@ its value can be either `rel-me` to add the `rel="me"` attribute to the link or 
 the attribute and additionally hide the link from the site, thereby making it only visible to servers
 that want to verify you are the owner of the site through this attribute.
 
-The `offline` flag, if given, indicates that the collection should not be included in the built
-site, and therefore also not deployed to the server.
+```eno
+link: https://example.com
 
-The `unlisted` flag, if given, indicates that the collection should not appear or be linked to
-on any of the public pages, i.e. only those that are given the link to them, will know of their
-existence.
+link:
+label = My Website
+url = https://example.com
 
-The `video_order` field supports the following values: `release_date_asc`, `release_date_desc`,
-`sort_number_asc`, `sort_number_desc`, `title_asc`, `title_desc`. Note that this only affects
-ordering of the videos directly inside a collection, it does not affect ordering of playlists
-or subcollections.
+link:
+label = My Social Media
+url = https://social.example.com
+verification = rel-me
+```
+
+## <a name="offline"></a> `offline`
+
+The `offline` flag, if given, indicates that the collection should not be
+included in the built site, and therefore also not deployed to the server.
+
+```eno
+offline
+```
+
+## <a name="title"></a> `title`
+
+The title of the playlist.
+
+```eno
+title: Soothing clips
+```
+
+## <a name="unlisted"></a> `unlisted`
+
+The `unlisted` flag, if given, indicates that the collection should not appear
+or be linked to on any of the public pages, i.e. only those that are given
+the link to them, will know of their existence.
+
+```eno
+unlisted
+```
+
+## <a name="video_order"></a> `video_order`
+
+The `video_order` field supports the following values: `release_date_asc`,
+`release_date_desc`, `sort_number_asc`, `sort_number_desc`, `title_asc`,
+`title_desc`. Note that this only affects ordering of the videos directly
+inside a collection, it does not affect ordering of playlists or
+subcollections.
+
+```eno
+video_order: sort_number_desc
+```
