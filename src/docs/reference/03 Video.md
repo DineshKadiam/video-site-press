@@ -39,6 +39,8 @@ subtitles while `fr.vtt` would indicate french subtitles.
 
 ## The video.eno manifest
 
+> All options at a glance: [description](#description), [link](#link), [offline](#offline), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
+
 Manifest for tagging and configuring a video, which can be placed inside the
 video directory. A video directory can be identified as a video directory
 also by just placing a `video.eno` file inside it, regardless of whether
@@ -70,28 +72,91 @@ reunite at an unexpected gathering.
 -- description
 ```
 
+## <a name="description"></a> `description`
+
 Stand-alone URLs inside the `description` field are automatically converted to links, and you can
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
 Any number of empty lines in the description field separates paragraphs in the text.
 
-The `offline` flag, if given, indicates that the collection should not be included in the built
-site, and therefore also not deployed to the server.
-
-The `unlisted` flag, if given, indicates that the collection should not appear or be linked to
-on any of the public pages, i.e. only those that are given the link to them, will know of their
-existence.
-
-The `sort_number` field can optionally be used to enforce a custom order of appearance for
-videos that appear in a playlist. It accepts whole numerical values (1, 2, 3) - including zero
-and negative ones (0, -1, -2). In playlists this custom ordering will automatically be picked up
-by the default ordering mechanism (which sorts first by `sort_number` ascending, then by `release_date` 
-ascending), but the `order` field in a playlist manifest can be used to modify this behavior - e.g. to
-use descending order or to sort by release date even if `sort_number` is present on videos, to sort
-alphabetically by title, etc.
+## <a name="link"></a> `link`
 
 Any number of `link` fields can be given. The `label` for a link is optional.
 The `verification` attribute refers to to the [rel="me"](https://microformats.org/wiki/rel-me) mechanism,
 its value can be either `rel-me` to add the `rel="me"` attribute to the link or `rel-me-hidden` to add
 the attribute and additionally hide the link from the site, thereby making it only visible to servers
 that want to verify you are the owner of the site through this attribute.
+
+```eno
+link: https://example.com
+
+link:
+label = My Website
+url = https://example.com
+
+link:
+label = My Social Media
+url = https://social.example.com
+verification = rel-me
+```
+
+## <a name="offline"></a> `offline`
+
+The `offline` flag, if given, indicates that the video should not be included
+in the built site, and therefore also not deployed to the server.
+
+```eno
+offline
+```
+
+## <a name="poster"></a> `poster`
+
+The image that is displayed in thumbnails and before you press play on the
+video. Hyper 8 will auto-generate one from the video initially, but in any
+case you should add a textutal description later for screenreader users.
+
+```eno
+poster:
+description = Confused looking people in an office
+file = episode_1.jpg
+```
+
+## <a name="release_date"></a> `release_date`
+
+When this video was released, in `YYYY-MM-DD` format. This is both displayed
+and potentially used for sorting, unless you manually configure a different
+sort order for the parent collection or playlist.
+
+```eno
+release_date: 2025-02-17
+```
+
+## <a name="sort_number"></a> `sort_number`
+
+The `sort_number` field can optionally be used to enforce a custom order of
+appearance for videos that appear in a collection or playlist. It accepts
+whole numerical values (1, 2, 3) - including zero and negative ones
+(0, -1, -2). In playlists this custom ordering will automatically be picked
+up by the default ordering mechanism (which sorts first by `sort_number`
+ascending, then by `release_date` ascending), but the `order` field in a
+playlist manifest can be used to modify this behavior - e.g. to use
+descending order or to sort by release date even if `sort_number` is present
+on videos, to sort alphabetically by title, etc.
+
+## <a name="title"></a> `title`
+
+The title of the video.
+
+```eno
+title: The pilot episode of the show
+```
+
+## <a name="unlisted"></a> `unlisted`
+
+The `unlisted` flag, if given, indicates that the video should not appear or
+be linked to on any of the public pages, i.e. only those that are given the
+link to them, will know of their existence.
+
+```eno
+unlisted
+```

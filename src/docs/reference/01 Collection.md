@@ -102,7 +102,7 @@ offline
 
 ## <a name="title"></a> `title`
 
-The title of the playlist.
+The title of the collection.
 
 ```eno
 title: Soothing clips
