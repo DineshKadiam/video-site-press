@@ -463,6 +463,7 @@ svg {
 video {
     border-radius: .5rem;
     display: block;
+    height: 100%;
     width: 100%;
 }
 .video {
