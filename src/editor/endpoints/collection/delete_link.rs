@@ -1,0 +1,50 @@
+// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::sync::Arc;
+
+use actix_web::{Either, HttpResponse};
+use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
+use serde_derive::Deserialize;
+
+use crate::{Collection, Context, ContextPath};
+use crate::editor::widgets::not_found;
+
+#[derive(Deserialize)]
+pub struct DeleteLinkForm {
+    label: String,
+    url: String
+}
+
+pub async fn delete_link(
+    context: Data<Arc<Context>>,
+    form: Form<DeleteLinkForm>,
+    path: ActixPath<ContextPath>
+) -> Either<Redirect, HttpResponse> {
+    let mutation = |collection: &mut Collection| {
+        if collection.links
+            .iter()
+            .position(|link|
+                if form.label.is_empty()  {
+                    link.label.is_none() && link.url.representation == form.url
+                } else {
+                    link.label.as_ref().is_some_and(|label| label == &form.label) && link.url.representation == form.url
+                }
+            )
+            .map(|index| collection.links.remove(index))
+            .is_some() {
+            collection.write_manifest(&context);
+        }
+    };
+
+    match context.update_collection(mutation, &path.path) {
+        Ok(collection) => {
+            let redirect_url = format!("/collection/{}", collection.path);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &path.path))
+        }
+    }
+}
