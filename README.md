@@ -28,7 +28,7 @@ See the [website](https://simonrepp.com/hyper8) for more screenshots and informa
 Hyper 8 can be stably built and run from the main branch, just keep in mind
 that it's not production grade software (yet) and things are still moving.
 Making backups of your Hyper 8 site directory is recommended while Hyper 8 is
-still in its early days.
+still in beta.
 
 ### Known issues
 
@@ -112,3 +112,5 @@ If you'd like to support Hyper 8's ongoing development you can donate to the pro
 ## License
 
 Hyper 8 is licensed under the [AGPL-3.0-or-later](https://spdx.org/licenses/AGPL-3.0-or-later.html).
+
+Documentation is licensed under the [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/).

@@ -1,18 +1,27 @@
-use std::env;
-use std::fs::{self, DirEntry};
-use std::ops::Deref;
-use std::path::Path;
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::env;
+use std::fs;
+use std::fs::DirEntry;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
+
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use enolib::HtmlPrinter;
 use indoc::formatdoc;
-use pulldown_cmark::{CodeBlockKind, Event, html, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
+use pulldown_cmark::html;
 use slug::slugify;
 
 struct Docs {
 	examples: Vec<Page>,
 	index: Page,
 	reference: Vec<Page>,
-	topics: Vec<Page>
+	topics: Vec<Page>,
+    version: &'static str
 }
 
 #[derive(PartialEq)]
@@ -22,12 +31,10 @@ struct Page {
 	title: String
 }
 
-const MANUAL_DIR: &str = "src/docs";
-
 pub fn markdown_to_html(markdown: &str) -> String {
     let mut html_output = String::new();
     let parser = Parser::new(markdown);
-    
+
     let mut inside_eno_codeblock = false;
 
     let parser = parser.map(|event| {
@@ -54,17 +61,22 @@ pub fn markdown_to_html(markdown: &str) -> String {
     });
 
     html::push_html(&mut html_output, parser);
-    
+
     html_output
 }
 
 pub fn main() {
-	println!("cargo:rerun-if-changed={MANUAL_DIR}");
+    let mut args = env::args();
+
+    let docs_out_dir = match args.nth(1) {
+        Some(path) => PathBuf::from(&path),
+        None => {
+            eprintln!("A single argument is required (directory path to which to write the docs), aborting.");
+            return;
+        }
+    };
 
 	let docs = read_docs();
-
-	let out_dir = env::var_os("OUT_DIR").unwrap();
-    let docs_out_dir = Path::new(&out_dir).join("docs");
 
 	if docs_out_dir.exists() {
 		fs::remove_dir_all(&docs_out_dir).unwrap();
@@ -110,22 +122,22 @@ pub fn main() {
 	}
 
 	fs::copy(
-		Path::new(MANUAL_DIR).join("fira-mono-v14-latin_latin-ext-regular.woff2"),
+		"assets/fira-mono-v14-latin_latin-ext-regular.woff2",
 		docs_out_dir.join("fira-mono-v14-latin_latin-ext-regular.woff2")
 	).unwrap();
 
 	fs::copy(
-		Path::new(MANUAL_DIR).join("titillium-web-v15-latin_latin-ext-regular.woff2"),
+		"assets/titillium-web-v15-latin_latin-ext-regular.woff2",
 		docs_out_dir.join("titillium-web-v15-latin_latin-ext-regular.woff2")
 	).unwrap();
 
 	fs::copy(
-		Path::new(MANUAL_DIR).join("titillium-web-v15-latin_latin-ext-italic.woff2"),
+		"assets/titillium-web-v15-latin_latin-ext-italic.woff2",
 		docs_out_dir.join("titillium-web-v15-latin_latin-ext-italic.woff2")
 	).unwrap();
 
 	fs::copy(
-		Path::new(MANUAL_DIR).join("styles.css"),
+		"assets/styles.css",
 		docs_out_dir.join("styles.css")
 	).unwrap();
 }
@@ -150,7 +162,10 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
 	let topics = section_links(&docs.topics);
 	let index_active = if active_page == &docs.index { r#" class="active""# } else { "" };
 
+	let styles_css_hash = url_safe_hash_base64(include_bytes!("../assets/styles.css"));
+
 	let title = &active_page.title;
+	let version = docs.version;
 
 	formatdoc!(r##"
 		<!doctype html>
@@ -160,12 +175,12 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
 				<meta charset="utf-8">
 		        <meta name="description" content="{title}">
 		        <meta name="viewport" content="width=device-width, initial-scale=1">
-		        <link href="styles.css?1" rel="stylesheet">
+		        <link href="styles.css?{styles_css_hash}" rel="stylesheet">
 			</head>
 			<body>
 				<header>
 					<a class="title" href="index.html">
-						<span{index_active}>Hyper 8 Video System</span>
+						<span{index_active}>Hyper 8 Video System {version}</span>
 					</a>
 					<a class="open_nav" href="#nav">☰</a>
 				</header>
@@ -195,25 +210,26 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
 }
 
 fn read_docs() -> Docs {
-	let index_path = Path::new(MANUAL_DIR).join("index.md");
-	let index_markdown = fs::read_to_string(index_path).unwrap();
-	let index_content = markdown_to_html(&index_markdown);
-	
+	let index_content = markdown_to_html(include_str!("../index.md"));
+
+	let version_display = env!("HYPER8_VERSION_DISPLAY");
+
 	let index = Page {
 		content: index_content,
 		slug: String::from("index"),
-		title: String::from("Hyper 8 Video System")
+		title: format!("Hyper 8 Video System {version_display}")
 	};
 
-	let examples = read_pages(&Path::new(MANUAL_DIR).join("examples"));
-	let reference = read_pages(&Path::new(MANUAL_DIR).join("reference"));
-	let topics = read_pages(&Path::new(MANUAL_DIR).join("topics"));
+	let examples = read_pages(&Path::new("examples"));
+	let reference = read_pages(&Path::new("reference"));
+	let topics = read_pages(&Path::new("topics"));
 
 	Docs {
 		examples,
 		index,
 		reference,
-		topics
+		topics,
+		version: version_display
 	}
 }
 
@@ -265,7 +281,7 @@ fn render_page(
 
 		formatdoc!(r#"
 			{content}
-			
+
 			<div class="next_page">
 				Next page: <a href="{next_page_slug}.html">{next_page_title}</a>
 			</div>
@@ -279,4 +295,11 @@ fn render_page(
 	let out_path = docs_out_dir.join(&page.slug).with_extension("html");
 
 	fs::write(out_path, html).unwrap();
+}
+
+pub fn url_safe_hash_base64(hashable: &impl Hash) -> String {
+    let mut hasher = DefaultHasher::new();
+    hashable.hash(&mut hasher);
+    let hash = hasher.finish();
+    URL_SAFE_NO_PAD.encode(hash.to_le_bytes())
 }

@@ -11,7 +11,7 @@ A playlist is, at its simplest, a directory that contains a file called
 ```
 my_playlist/                  <--- Playlist directory
 └─ playlist.eno                 <--- Playlist manifest
-``` 
+```
 
 The name of the directory (which may only contain alphanumeric characters, `-`
 and `_`) determines the permalink for the playlist, that is, the URL/web address

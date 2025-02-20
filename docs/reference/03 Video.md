@@ -11,7 +11,7 @@ that contains a single video file:
 ```
 my_video/                     <--- Video directory
 └─ original.mp4                 <--- Video file
-``` 
+```
 
 The name of the directory (which may only contain alphanumeric characters, `-`
 and `_`) determines the permalink for the video, that is, the URL/web address

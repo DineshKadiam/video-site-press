@@ -7,12 +7,6 @@ name = "hyper8"
 rust-version = "1.80.1"
 version = "0.17.1"
 
-[build-dependencies]
-enolib = { git = "https://codeberg.org/simonrepp/enolib-rs", tag = "0.5.0" }
-indoc = "2.0.5"
-pulldown-cmark = { default-features = false, features = ["html", "simd"], version = "0.13.0" }
-slug = "0.1.6"
-
 [dependencies]
 actix-files = "0.6.6"
 actix-multipart = "0.7.2"
