@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::cmp::Ordering;
 
 // TODO: Research state of AV1 encoding (ffmpeg etc.), future outlook for support
