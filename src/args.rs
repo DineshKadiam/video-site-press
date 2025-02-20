@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use clap::Parser;
@@ -15,7 +15,7 @@ fn worker_count(string: &str) -> Result<usize, String> {
 }
 
 #[derive(Debug, Parser)]
-#[clap(version = env!("CARGO_PKG_VERSION"))]
+#[clap(display_name = "Hyper 8 Video System", version = concat!(env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), ")"))]
 pub struct Args {
     /// Directly builds the site without starting the editor
     #[clap(long)]

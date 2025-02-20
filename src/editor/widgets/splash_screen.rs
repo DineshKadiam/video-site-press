@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
@@ -24,7 +24,7 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
     select_theme.selected(&theme.key);
 
     let external_icon = icons::external(translations.external_link);
-    let hyper8_version = env!("CARGO_PKG_VERSION");
+    let version_adaptive = env!("HYPER8_VERSION_ADAPTIVE");
     let t_documentation = translations.documentation;
     let t_close = translations.close;
     let t_report_a_bug = translations.report_a_bug;
@@ -34,10 +34,10 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
         <dialog class="splash_wrapper">
             <div class="splash">
                 <div class="image_wrapper">
-                    <img alt="Hyper 8 Video System" src="/splash_logo.svg?{hyper8_version}">
+                    <img alt="Hyper 8 Video System" src="/splash_logo.svg?{version_adaptive}">
                     <a class="version" href="https://codeberg.org/simonrepp/hyper8/src/branch/main/CHANGELOG.md" target="_blank">
                         {external_icon}
-                        <span>{t_version} {hyper8_version}</span>
+                        <span>{t_version} {version_adaptive}</span>
                     </a>
                 </div>
                 <div class="pad">

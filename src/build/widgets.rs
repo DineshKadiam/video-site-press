@@ -27,6 +27,9 @@ use crate::util::{
     precise_duration
 };
 
+/// Placed in the head of each page to identify the Hyper 8 build that generated it.
+const GENERATOR_META: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
+
 pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
         format!(r#"alt="{description}""#)
@@ -182,11 +185,14 @@ pub fn embed_layout(
     site: &Site,
     traversal: &Traversal
 ) -> String {
+    let generator_meta = GENERATOR_META;
+
     // TODO: Hash assets (cache expiration)
     let root_prefix = traversal.prefix_asc();
     let head = formatdoc!(r#"
         <head>
             <meta charset="utf-8">
+            {generator_meta}
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <script defer src="{root_prefix}embed.js" type="module"></script>
             <link rel="stylesheet" href="{root_prefix}embed.css">
@@ -217,12 +223,15 @@ pub fn layout(
     title: &str,
     traversal: &Traversal
 ) -> String {
+    let generator_meta = GENERATOR_META;
+
     // TODO: Hash assets (cache expiration)
     let root_prefix = traversal.prefix_asc();
     let head = formatdoc!(r#"
         <head>
             <title>{title}</title>
             <meta charset="utf-8">
+            {generator_meta}
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <script defer src="{root_prefix}site.js" type="module"></script>
             <link rel="stylesheet" href="{root_prefix}site.css">
@@ -250,7 +259,7 @@ pub fn layout(
         ThemeKind::Static(_) => String::new()
     };
 
-    let hyper8_version = env!("CARGO_PKG_VERSION");
+    let version_display = env!("HYPER8_VERSION_DISPLAY");
 
     let with_sidebar = if traversal.steps.len() > 1 { "with_sidebar" } else { "" };
 
@@ -266,7 +275,7 @@ pub fn layout(
                     </div>
                 </div>
                 <footer>
-                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank" title="Hyper 8 Video System {hyper8_version}">
+                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank" title="Hyper 8 Video System {version_display}">
                         Hyper 8 Video System
                     </a>
                     {theme_toggle}

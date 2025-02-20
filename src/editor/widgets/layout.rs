@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -178,11 +178,15 @@ pub fn layout(
         Some(base_url) => format!(r#"data-base-url="{base_url}""#),
         None => String::new()
     };
-    let hyper8_version = env!("CARGO_PKG_VERSION");
+    // We put this on body as the data-version attribute, and this is
+    // subsequently used at runtime to determine whether we need to display
+    // the splash screen (again), if it hasn't yet been displayed for the
+    // given version.
+    let version_detailed = env!("HYPER8_VERSION_DETAILED");
     let t_cancel = translations.cancel;
     let t_filter = translations.filter;
     let body = formatdoc!(r#"
-        <body {data_base_url} data-version="{hyper8_version}">
+        <body {data_base_url} data-version="{version_detailed}">
             <div class="split">
                 <nav>
                     <div class="tree_view_options">
