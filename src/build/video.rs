@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -7,19 +7,24 @@ use std::sync::Arc;
 use crate::{Context, MarkdownSubset, Playlist, Site, Video};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_link, downloads, layout, links, player, unlisted_badge};
+use crate::icons;
 use crate::util::{
     html_escape_outside_attribute,
     localized_date_d_mmmm_yyyy
 };
 
+use super::MergedOptions;
+
 pub fn video_html(
     context: &Context,
+    merged_options: &MergedOptions,
     playlist: Option<&Playlist>,
-    video: &Video,
     site: &Site,
     traversal: &Traversal,
-    unlisted_inherited: bool
+    video: &Video
 ) {
+    let index_suffix = site.index_suffix();
+
     let description = if let Some(description) = &video.description {
         let description_html = MarkdownSubset::to_html(description);
         format!(r#"<div class="description reading_width">{description_html}</div>"#)
@@ -33,7 +38,7 @@ pub fn video_html(
     };
     let e_title = html_escape_outside_attribute(title);
 
-    let downloads_widget = downloads(site, video);
+    let r_downloads = downloads(site, video);
 
     let next_video = if video.unlisted {
         None
@@ -73,9 +78,25 @@ pub fn video_html(
     //     </div>
     // "#);
 
-    let player_rendered = player(site, video, next_video);
+    let video_prefix = "";
+    let player_rendered = player(next_video, site, video, video_prefix);
 
-    let copy_link_widget = copy_link(site, &video.path);
+    let r_copy_link = copy_link(site, &video.path);
+
+    let r_embed = if merged_options.embedding && site.base_url.is_some() {
+        let embed_icon = icons::embed();
+
+        let t_embed = &site.language.translations.embed;
+        format!(r#"
+            <div>
+                <a href="embed-codes{index_suffix}">
+                    <span class="icon">{embed_icon}</span> {t_embed}
+                </a>
+            </div>
+        "#)
+    } else {
+        String::new()
+    };
 
     let release_date = match video.release_date {
         Some(release_date) => {
@@ -85,7 +106,7 @@ pub fn video_html(
         None => String::new()
     };
 
-    let unlisted = unlisted_badge(unlisted_inherited || video.unlisted, &site.language.translations);
+    let unlisted = unlisted_badge(merged_options.unlisted, &site.language.translations);
 
     let links_rendered = links(&site.language, &video.links);
 
@@ -98,8 +119,9 @@ pub fn video_html(
                     {release_date}
                 </div>
                 <div class="actions align flex space">
-                    {copy_link_widget}
-                    {downloads_widget}
+                    {r_copy_link}
+                    {r_embed}
+                    {r_downloads}
                 </div>
             </div>
             {description}

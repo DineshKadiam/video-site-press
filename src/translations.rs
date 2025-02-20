@@ -60,11 +60,15 @@ pub struct Translations {
     pub deployment_server_label: &'static str,
     pub deployment_user_label: &'static str,
     pub description: &'static str,
+    pub disabled: &'static str,
     pub documentation: &'static str,
     pub download: &'static str,
+    pub embed: &'static str,
+    pub embedding: &'static str,
     pub empty: &'static str,
     pub empty_site: &'static str,
     pub encoding_approach_label: &'static str,
+    pub enabled: &'static str,
     pub error: &'static str,
     pub external_link: &'static str,
     pub failed: &'static str,
@@ -82,6 +86,7 @@ pub struct Translations {
     pub hrs: &'static str,
     pub hyper8_logo: &'static str,
     pub idle: &'static str,
+    pub inherit: &'static str,
     pub initialize_site_as_collection: &'static str,
     pub initialize_site_as_playlist: &'static str,
     pub initialize_site_as_video: &'static str,
@@ -180,6 +185,7 @@ pub struct Translations {
     pub video: &'static str,
     pub video_not_yet_available: &'static str,
     pub video_order: &'static str,
+    pub video_player_widget_for_xxx: &'static str,
     pub videos: &'static str,
     pub vp9_missing_browser_support_not_recommended: &'static str,
     pub warm: &'static str,
@@ -248,10 +254,14 @@ impl Translations {
             deployment_server_label: "Deployment Server (z.b. ssh-customer123.example.com)",
             deployment_user_label: "Deployment Benutzername (z.b. customer123)",
             description: "Beschreibung",
+            disabled: "Deaktiviert",
             documentation: "Dokumentation",
             download: "Download",
+            embed: "Einbetten",
+            embedding: "Einbetten",
             empty: "Leer",
             empty_site: "Leere Seite",
+            enabled: "Aktiviert",
             encoding_approach_label: "Encoding Ansatz (Wähle den langsamsten für den du Zeit hast)",
             error: "Fehler",
             external_link: "Externer Link",
@@ -270,6 +280,7 @@ impl Translations {
             hrs: "std",
             hyper8_logo: "Hyper 8 Logo",
             idle: "Inaktiv",
+            inherit: "Übergeordnete Einstellung übernehmen",
             initialize_site_as_collection: "Seite als Collection initialisieren",
             initialize_site_as_playlist: "Seite als Playlist initialisieren",
             initialize_site_as_video: "Seite als Video initialisieren",
@@ -368,6 +379,7 @@ impl Translations {
             video: "Video",
             video_not_yet_available: "Video noch nicht verfügbar.",
             video_order: "Video Reihenfolge",
+            video_player_widget_for_xxx: r#"Videoplayer-Widget für "{title}""#,
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Fehlende Browserunterstützung (Nicht empfohlen)",
             warm: "Warm",
@@ -436,10 +448,14 @@ impl Translations {
             deployment_server_label: "Deployment Server (e.g. ssh-customer123.example.com)",
             deployment_user_label: "Deployment User (e.g. customer123)",
             description: "Description",
+            disabled: "Disabled",
             documentation: "Documentation",
             download: "Download",
+            embed: "Embed",
+            embedding: "Embedding",
             empty: "Empty",
             empty_site: "Empty Site",
+            enabled: "Enabled",
             encoding_approach_label: "Encoding Approach (Use the slowest one you have time for)",
             error: "Error",
             external_link: "External Link",
@@ -458,6 +474,7 @@ impl Translations {
             hrs: "hrs",
             hyper8_logo: "Hyper 8 Logo",
             idle: "Idle",
+            inherit: "Inherit",
             initialize_site_as_collection: "Initialize site as collection",
             initialize_site_as_playlist: "Initialize site as playlist",
             initialize_site_as_video: "Initialize site as video",
@@ -556,6 +573,7 @@ impl Translations {
             video: "Video",
             video_not_yet_available: "Video not yet available.",
             video_order: "Video Order",
+            video_player_widget_for_xxx: r#"Video player widget for "{title}""#,
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Missing browser support (Not recommended)",
             warm: "Warm",
@@ -572,6 +590,10 @@ impl Translations {
     pub fn unsupported_file_extension_in_xxx(&self, file_name: &str) -> String {
         self.unsupported_file_extension_in_xxx.replace("{file_name}", file_name)
     }
+
+    pub fn video_player_widget_for_xxx(&self, title: &str) -> String {
+        self.video_player_widget_for_xxx.replace("{title}", title)
+    }
 }
 
 #[test]
@@ -584,5 +606,6 @@ fn check_translations() {
     for translations in &locales {
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
+        assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
     }
 }

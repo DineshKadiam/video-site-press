@@ -37,7 +37,7 @@ Content in a collection currently appears in the following order on the built si
 
 ## The collection.eno manifest
 
-> All options at a glance: [description](#description), [link](#link), [offline](#offline), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
+> All options at a glance: [description](#description), [embedding](#embedding), [link](#link), [offline](#offline), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
 
 Manifest for tagging and configuring a collection.
 
@@ -69,6 +69,23 @@ Stand-alone URLs inside the `description` field are automatically converted to l
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
 Any number of empty lines in the description field separates paragraphs in the text.
+
+## <a name="embedding"></a> `embedding`
+
+This allows visitors/you to copy embed codes (html) that they/you can use to
+embed your videos on their/your own sites.
+
+Embedding is disabled by default. If you want to enable it you also need to
+set the site's base_url (embeds work by displaying something from your site
+on another site, for this the other site needs to point to your site's
+address), and then set `embedding: enabled`, either at the collection,
+playlist or video level. If you set it `enabled` at the catalog or playlist
+level, you can also use `disabled` at a lower level to disable it again for
+specific playlists or videos.
+
+```eno
+embedding: enabled
+```
 
 ## <a name="link"></a> `link`
 

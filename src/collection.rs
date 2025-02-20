@@ -32,6 +32,7 @@ use crate::util::checked_remove_dir_all;
 const COLLECTION_OPTIONS: &[&str] = &[
     "banner",
     "description",
+    "embedding",
     "link",
     "offline",
     "title",
@@ -43,6 +44,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
 pub struct Collection {
     pub banner: Option<Banner>,
     pub description: Option<String>,
+    pub embedding: Option<bool>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
     pub offline: bool,
@@ -138,6 +140,33 @@ impl Collection {
                         let error = element_error(element, manifest_path, message);
                         self.errors.push(error);
                     }
+                }
+                "embedding" => 'embedding: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value {
+                                    "enabled" => {
+                                        self.embedding = Some(true);
+                                    }
+                                    "disabled" => {
+                                        self.embedding = Some(false);
+                                    }
+                                    other => {
+                                        let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'embedding;
+                            }
+                        }
+                    }
+
+                    let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
                 }
                 "link" => 'link: {
                     if let Ok(field) = element.as_field() {
@@ -569,6 +598,7 @@ impl Collection {
         Collection {
             banner: None,
             description: None,
+            embedding: None,
             errors: Vec::new(),
             links: Vec::new(),
             offline: false,
@@ -973,6 +1003,10 @@ impl Collection {
             eno.push_str(&format!("file = {}\n", banner.file_name));
         }
 
+        if let Some(embedding) = self.embedding {
+            eno.push_str(&format!("embedding: {}\n", if embedding { "enabled" } else { "disabled" }));
+        }
+
         if self.offline {
             eno.push_str("offline\n");
         }
@@ -995,7 +1029,7 @@ impl Collection {
 
         if let Some(description) = &self.description {
             if !eno.is_empty() { eno.push('\n'); }
-            eno.push_str(&format!("-- description\n{}\n--description\n", description));
+            eno.push_str(&format!("-- description\n{}\n-- description\n", description));
         }
 
         let path = context.site_dir.join(&self.path).join("collection.eno");

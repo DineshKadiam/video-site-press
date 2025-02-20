@@ -16,6 +16,7 @@ use super::PlaylistFormFeedback;
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
     description: String,
+    embedding: String,
     offline: Option<String>,
     order: String,
     title: String,
@@ -30,6 +31,13 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+
+    let embedding = match form.embedding.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
+
     let offline = form.offline.is_some();
     let order = VideoOrder::from_key(&form.order).unwrap();
     let title_trimmed = form.title.trim();
@@ -37,13 +45,14 @@ pub async fn update(
 
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
-        let mutation = |playlist: &mut Playlist| {
-            playlist.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            playlist.offline = offline;
-            playlist.order = order;
-            playlist.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            playlist.unlisted = unlisted;
-            playlist.write_manifest(&context);
+        let mutation = |playlist_mut: &mut Playlist| {
+            playlist_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            playlist_mut.embedding = embedding;
+            playlist_mut.offline = offline;
+            playlist_mut.order = order;
+            playlist_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
+            playlist_mut.unlisted = unlisted;
+            playlist_mut.write_manifest(&context);
         };
 
         let playlist = match context.update_playlist(mutation, &path.path) {
@@ -61,6 +70,7 @@ pub async fn update(
 
         let form_feedback = PlaylistFormFeedback::Update {
             description: description_trimmed,
+            embedding,
             offline,
             order: &form.order,
             title: Field::valid(title_trimmed),

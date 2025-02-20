@@ -5,7 +5,6 @@ use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 
 use indoc::formatdoc;
-use serde_derive::Deserialize;
 
 use crate::{
     Context,
@@ -64,6 +63,7 @@ pub enum VideoFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        embedding: Option<bool>,
         offline: bool,
         release_date: Field,
         sort_number: Field,
@@ -73,16 +73,6 @@ pub enum VideoFormFeedback<'a> {
     UploadPoster {
         error: String
     }
-}
-
-#[derive(Deserialize)]
-pub struct VideoUpdateForm {
-    description: String,
-    offline: Option<String>,
-    release_date: String,
-    sort_number: String,
-    title: String,
-    unlisted: Option<String>
 }
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
@@ -427,27 +417,46 @@ pub fn edit_page(
     let mut input_sort_number = Input::number("sort_number", translations.sort_number);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+
+    // TODO: Dynamically determine and additionally display what the default or inherited value is here.
+    select_embedding.option("", translations.inherit);
+    select_embedding.option("enabled", translations.enabled);
+    select_embedding.option("disabled", translations.disabled);
 
     textarea_description.id("video_description");
 
     let feedback_update = if let Some(VideoFormFeedback::Update {
         description,
+        embedding,
         offline,
         release_date,
         sort_number,
         title,
         unlisted
     }) = &form_feedback {
+        let embedding_value = match embedding {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         input_offline.checked(*offline);
         input_release_date.validated_value(release_date);
         input_sort_number.validated_value(sort_number);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_embedding.selected(embedding_value);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        let embedding = match video.embedding {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
         let release_date = video.release_date.as_ref().map(|date| date.to_string());
         let sort_number = video.sort_number.as_ref().map(|number| number.to_string());
 
@@ -456,6 +465,7 @@ pub fn edit_page(
         input_sort_number.value_option(&sort_number);
         input_title.value_option(&video.title);
         input_unlisted.checked(video.unlisted);
+        select_embedding.selected(embedding);
         textarea_description.value_option(&video.description);
 
         String::new()
@@ -563,6 +573,7 @@ pub fn edit_page(
                     {input_release_date}
                     {input_sort_number}
                 </div>
+                {select_embedding}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -17,6 +17,8 @@ use crate::build::widgets::thumbnail;
 use crate::util::{ensure_empty_dir, hard_link_or_copy};
 
 mod collection;
+mod embed;
+mod embed_codes;
 mod outline;
 mod playlist;
 mod scripts;
@@ -25,44 +27,145 @@ mod video;
 mod widgets;
 
 use collection::collection_html;
+use embed::embed_html;
+use embed_codes::embed_codes_html;
 use outline::Traversal;
 use playlist::playlist_html;
 use video::video_html;
+
+/// Some options need to be evaluated in the context of the entire site tree
+/// before they are applied at the individual node level. This includes
+/// embedding, where the option is inherited down the tree but potentially
+/// overriden at the node level, as well as the unlisted option, which
+/// unconditionally applies to all descendants of a site tree branch whose
+/// (in)direct parent node is marked as unlisted.
+///
+/// MergeOptions represents these options, and at the node level we only
+/// consider the options on this struct (after we have merged in the options
+/// from the node level beforehand of course).
+#[derive(Clone)]
+struct MergedOptions {
+    pub embedding: bool,
+    pub unlisted: bool
+}
+
+impl MergedOptions {
+    pub fn default() -> MergedOptions {
+        MergedOptions {
+            embedding: false,
+            unlisted: false
+        }
+    }
+
+    pub fn merge_collection_options(&self, collection: &Collection) -> MergedOptions {
+        let embedding = collection.embedding.unwrap_or(self.embedding);
+        let unlisted = self.unlisted || collection.unlisted;
+
+        MergedOptions {
+            embedding,
+            unlisted
+        }
+    }
+
+    pub fn merge_playlist_options(&self, playlist: &Playlist) -> MergedOptions {
+        let embedding = playlist.embedding.unwrap_or(self.embedding);
+        let unlisted = self.unlisted || playlist.unlisted;
+
+        MergedOptions {
+            embedding,
+            unlisted
+        }
+    }
+
+    pub fn merge_video_options(&self, video: &Video) -> MergedOptions {
+        let embedding = video.embedding.unwrap_or(self.embedding);
+        let unlisted = self.unlisted || video.unlisted;
+
+        MergedOptions {
+            embedding,
+            unlisted
+        }
+    }
+}
 
 pub fn perform_build(context: &Context) {
     let site = context.get_site();
     
     ensure_empty_dir(&context.build_dir);
 
+    let default_options = MergedOptions::default();
     let traversal = Traversal::new();
+
+    // When we traverse the entire site tree below, we flip this to true when
+    // an embed is rendered anywhere. Later this tells us to add/write the
+    // accompanying assets (css/js) for embeds to the build.
+    let mut embeds_requested = false;
 
     match &site.content {
         SiteContent::Collection(collection) => {
             if collection.offline { return; }
-            build_collection(context, collection, &site, &traversal, false)
+            build_collection(
+                context,
+                collection,
+                &mut embeds_requested,
+                &default_options,
+                &site,
+                &traversal
+            );
         }
         SiteContent::Playlist(playlist) => {
             if playlist.offline { return; }
-            build_playlist(context, playlist, &site, &traversal, false)
+            build_playlist(
+                context,
+                &mut embeds_requested,
+                &default_options,
+                playlist,
+                &site,
+                &traversal
+            );
         }
         SiteContent::Video(video) => {
             if video.offline { return; }
-            build_video(context, None, video, &site, &traversal, false)
+            build_video(
+                context,
+                &mut embeds_requested,
+                &default_options,
+                None,
+                &site,
+                &traversal,
+                video
+            );
         }
         SiteContent::Empty => return,
         SiteContent::Invalid => todo!()
     }
 
-    scripts::generate(context, &site);
-    styles::generate(context, &site);
+    scripts::generate_site_js(context, &site);
+    styles::generate_site_css(context, &site);
+
+    if embeds_requested {
+        if site.base_url.is_some() {
+            scripts::generate_embed_js(context);
+            styles::generate_embed_css(context, &site);
+        } else {
+            // TODO: If we're using the graphical user interface this information needs to
+            //       be communicated earlier/differently. E.g. maybe the embedding select
+            //       should not even be accessible (= greyed out) with a note that the base_url
+            //       needs to be set for this to do anything.
+            //       Likewise for CLI usage it can be thought through further in which way this
+            //       warning can be registered and in which context it can/should be printed.
+            eprintln!("Embeds could not be generated because the site's base_url is not defined");
+        }
+    }
 }
 
 fn build_collection(
     context: &Context,
     collection: &Collection,
+    embeds_requested: &mut bool,
+    parent_options: &MergedOptions,
     site: &Site,
-    traversal_previous: &Traversal,
-    unlisted_inherited: bool
+    traversal_previous: &Traversal
 ) {
     let traversal = traversal_previous.with_collection(collection);
 
@@ -88,30 +191,61 @@ fn build_collection(
         }
     }
 
-    collection_html(context, collection, site, &traversal, unlisted_inherited);
+    let merged_options = parent_options.merge_collection_options(collection);
+
+    collection_html(
+        context,
+        collection,
+        &merged_options,
+        site,
+        &traversal
+    );
 
     for subcollection in &collection.subcollections {
         if subcollection.offline { continue; }
-        build_collection(context, subcollection, site, &traversal, unlisted_inherited || collection.unlisted);
+        build_collection(
+            context,
+            subcollection,
+            embeds_requested,
+            &merged_options,
+            site,
+            &traversal
+        );
     }
 
     for playlist in &collection.playlists {
         if playlist.offline { continue; }
-        build_playlist(context, playlist, site, &traversal, unlisted_inherited || collection.unlisted);
+        build_playlist(
+            context,
+            embeds_requested,
+            &merged_options,
+            playlist,
+            site,
+            &traversal
+        );
     }
 
     for video in &collection.videos {
         if video.offline { continue; }
-        build_video(context, None, video, site, &traversal, unlisted_inherited || collection.unlisted);
+        build_video(
+            context,
+            embeds_requested,
+            &merged_options,
+            None,
+            site,
+            &traversal,
+            video
+        );
     }
 }
 
 fn build_playlist(
     context: &Context,
+    embeds_requested: &mut bool,
+    parent_options: &MergedOptions,
     playlist: &Playlist,
     site: &Site,
-    traversal_previous: &Traversal,
-    unlisted_inherited: bool
+    traversal_previous: &Traversal
 ) {
     let traversal = traversal_previous.with_playlist(playlist);
 
@@ -137,21 +271,38 @@ fn build_playlist(
         }
     }
 
-    playlist_html(context, playlist, site, &traversal, unlisted_inherited);
+    let merged_options = parent_options.merge_playlist_options(playlist);
+
+    playlist_html(
+        context,
+        &merged_options,
+        playlist,
+        site,
+        &traversal
+    );
 
     for video in &playlist.videos {
         if video.offline { continue; }
-        build_video(context, Some(playlist), video, site, &traversal, unlisted_inherited || playlist.unlisted);
+        build_video(
+            context,
+            embeds_requested,
+            &merged_options,
+            Some(playlist),
+            site,
+            &traversal,
+            video
+        );
     }
 }
 
 fn build_video(
     context: &Context,
+    embeds_requested: &mut bool,
+    parent_options: &MergedOptions,
     playlist: Option<&Playlist>,
-    video: &Video,
     site: &Site,
     traversal_previous: &Traversal,
-    unlisted_inherited: bool
+    video: &Video
 ) {
     let traversal = traversal_previous.with_video(video);
 
@@ -203,5 +354,40 @@ fn build_video(
         }
     }
 
-    video_html(context, playlist, video, site, &traversal, unlisted_inherited);
+    let merged_options = parent_options.merge_video_options(video);
+
+    if merged_options.embedding {
+        *embeds_requested = true;
+
+        if let Some(base_url) = &site.base_url {
+            let traversal_embed_codes = traversal.with_virtual("embed-codes", &site.language.translations.embed);
+
+            embed_codes_html(
+                base_url,
+                context,
+                &merged_options,
+                site,
+                video,
+                &traversal_embed_codes
+            );
+
+            let traversal_embed = traversal.with_virtual("embed", &site.language.translations.embed);
+
+            embed_html(
+                context,
+                site,
+                video,
+                &traversal_embed
+            );
+        }
+    }
+
+    video_html(
+        context,
+        &merged_options,
+        playlist,
+        site,
+        &traversal,
+        video
+    );
 }

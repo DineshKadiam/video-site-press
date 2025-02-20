@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -60,6 +60,7 @@ pub fn copy_link(site: &Site, path: &str) -> String {
     let copy_link_icon = icons::copy_link(t_copy_link);
     let failure_icon = icons::failure(site.language.translations.failed);
     let success_icon = icons::success(site.language.translations.copied);
+    // TODO: Optimize page rendering: Render <template> tags at the bottom of the page.
     format!(r#"
         <div>
             <button {data_url} id="copy-link">
@@ -176,6 +177,40 @@ pub fn downloads(site: &Site, video: &Video) -> String {
     "#)
 }
 
+pub fn embed_layout(
+    body: &str,
+    site: &Site,
+    traversal: &Traversal
+) -> String {
+    // TODO: Hash assets (cache expiration)
+    let root_prefix = traversal.prefix_asc();
+    let head = formatdoc!(r#"
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <script defer src="{root_prefix}embed.js" type="module"></script>
+            <link rel="stylesheet" href="{root_prefix}embed.css">
+        </head>
+    "#);
+
+    let body = formatdoc!(r#"
+        <body>
+            {body}
+        </body>
+    "#);
+
+    let lang_code = &site.language.code;
+    let dir_attribute = if site.language.is_rtl() { r#"dir="rtl""# } else { "" };
+
+    formatdoc!(r#"
+        <!doctype html>
+        <html {dir_attribute} lang="{lang_code}">
+            {head}
+            {body}
+        </html>
+    "#)
+}
+
 pub fn layout(
     body: &str,
     site: &Site,
@@ -189,8 +224,8 @@ pub fn layout(
             <title>{title}</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <script defer src="{root_prefix}scripts.js" type="module"></script>
-            <link rel="stylesheet" href="{root_prefix}styles.css">
+            <script defer src="{root_prefix}site.js" type="module"></script>
+            <link rel="stylesheet" href="{root_prefix}site.css">
         </head>
     "#);
 
@@ -281,10 +316,12 @@ pub fn links(language: &Language, links: &[Link]) -> String {
     format!(r#"<div class="links">{items}</div>"#)
 }
 
+/// Renders the video player
 pub fn player(
+    next_video: Option<Arc<Video>>,
     site: &Site,
     video: &Video,
-    next_video: Option<Arc<Video>>
+    video_prefix: &str
 ) -> String {
     let index_suffix = site.index_suffix();
 
@@ -298,7 +335,7 @@ pub fn player(
                     String::new()
                 };
 
-                format!(r#"<img {alt}class="thumbnail" src="poster.jpg">"#)
+                format!(r#"<img {alt}class="thumbnail" src="{video_prefix}poster.jpg">"#)
             }
             None => String::new()
         };
@@ -322,9 +359,9 @@ pub fn player(
                 let largest = poster_assets.largest();
                 let height = largest.height;
                 let width = largest.width;
-                format!(r#"poster="poster_{width}x{height}.jpg""#)
+                format!(r#"poster="{video_prefix}poster_{width}x{height}.jpg""#)
             }
-            None => format!(r#"poster="poster.jpg""#)
+            None => format!(r#"poster="{video_prefix}poster.jpg""#)
         }
         None => String::new()
     };
@@ -345,7 +382,7 @@ pub fn player(
                 <track
                     kind="subtitles"
                     label="{label}"
-                    src="{index}.vtt"
+                    src="{video_prefix}{index}.vtt"
                     {srclang}/>
             "#)
         })
@@ -363,11 +400,11 @@ pub fn player(
     let default_resolution_label = recommended_version.vertical_resolution_label();
     let src = &recommended_version.file_name;
 
-    let versions_ring_rendered = versions_ring(recommended_version, video);
+    let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
 
     let t_next_video = site.language.translations.next_video;
     let next_video_button = match next_video {
-        Some(video) => format!(r#"<a href="../{}{index_suffix}">{t_next_video}</a>"#, video.slug()),
+        Some(video) => format!(r#"<a href="{video_prefix}../{}{index_suffix}">{t_next_video}</a>"#, video.slug()),
         None => String::new()
     };
 
@@ -414,7 +451,7 @@ pub fn player(
                     </div>
                 </div>
             </div>
-            <video data-duration="{duration}" {poster} preload="none" src="{src}" playsinline>
+            <video data-duration="{duration}" playsinline {poster} preload="none" src="{video_prefix}{src}">
                 {subtitles}
             </video>
             <template id="maximize_icon">
@@ -525,7 +562,11 @@ pub fn unlisted_badge(unlisted: bool, translations: &Translations) -> String {
     }
 }
 
-fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
+fn versions_ring(
+    recommended_version: &VideoFile,
+    video: &Video,
+    video_prefix: &str
+) -> String {
     let radius = 190.0;
     let diameter = radius * 2.0;
 
@@ -535,10 +576,10 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
     let mut largest_size = 0;
 
     for version in &video.versions {
-        let src = &version.file_name;
+        let file_name = &version.file_name;
         let size = version.file_meta.size;
         let resolution = version.vertical_resolution_label();
-        sizes.push((size, src, resolution));
+        sizes.push((file_name, resolution, size));
         total_size += size;
 
         if size > largest_size {
@@ -546,16 +587,16 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
         }
     }
 
-    sizes.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    sizes.sort_unstable_by(|a, b| a.2.cmp(&b.2));
 
     // Draws a ring segment. In clock terms we start at 12 o'clock and we go clockwise.
     let slice = |
         arc_angle: f32,
         begin_angle: f32,
         default: bool,
-        src: &str,
         resolution: &str,
-        size: &str
+        size: &str,
+        src: &str
     | -> String {
         let large_arc_flag = if arc_angle < 180.0 { 0 } else { 1 };
 
@@ -634,7 +675,7 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
     let usable_angle = 360.0 - sizes.len() as f32 * gap_angle;
     let mut begin_angle = gap_angle * 0.5;
 
-    for (size, src, title) in sizes.iter() {
+    for (file_name, resolution, size) in sizes.iter() {
         let arc_angle = if sizes.len() == 1 {
             usable_angle
         } else {
@@ -643,14 +684,15 @@ fn versions_ring(recommended_version: &VideoFile, video: &Video) -> String {
 
         let size_humanized = human_size(*size);
 
-        let default = &recommended_version.file_name == *src;
+        let default = &recommended_version.file_name == *file_name;
+        let src = format!("{video_prefix}{file_name}");
         let slice_rendered = slice(
             arc_angle,
             begin_angle,
             default,
-            src,
-            title,
-            &size_humanized
+            resolution,
+            &size_humanized,
+            &src
         );
         slices.push_str(&slice_rendered);
 

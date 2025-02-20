@@ -5,6 +5,7 @@ a {
     color: var(--fg-1);
     text-decoration: none;
 }
+.actions a,
 .actions button {
     align-items: center;
     background: var(--bg-2);
@@ -16,6 +17,8 @@ a {
     display: flex;
     padding: .3rem .6rem .3rem .5rem;
 }
+.actions a:focus-visible,
+.actions a:hover,
 .actions button:focus-visible,
 .actions button:hover {
     background-color: var(--bg-3);
@@ -194,10 +197,7 @@ img {
     width: 100%;
 }
 .player_controls button { padding: .6rem; }
-.player_controls button svg {
-    height: 1.4rem;
-    width: 1.4rem;
-}
+.player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
     background-color: var(--bg-1-overlay);
     display: flex;
@@ -420,8 +420,6 @@ img {
 svg {
     fill: currentColor;
     display: block;
-    height: 1rem;
-    width: 1rem;
 }
 .system_info { display: none; }
 /*.system_info {

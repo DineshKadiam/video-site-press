@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use chrono::{Datelike, NaiveDate};
@@ -38,7 +38,12 @@ pub struct OutlineStats {
 pub enum TraversalStep<'a> {
     Collection(&'a Collection),
     Playlist(&'a Playlist),
-    Video(&'a Video)
+    Video(&'a Video),
+    /// E.g. an embed-codes/ page below a video page
+    Virtual {
+        label: &'a str,
+        slug: &'a str
+    }
 }
 
 /// Represents a traversal through the site tree, i.e. the steps taken to get
@@ -211,6 +216,10 @@ impl<'a> TraversalStep<'a> {
                 let e_label = html_escape_outside_attribute(label);
                 format!(r#"<a href="{href}">{e_label}</a>"#)
             }
+            TraversalStep::Virtual { label, .. } => {
+                let e_label = html_escape_outside_attribute(label);
+                format!(r#"<a href="{href}">{e_label}</a>"#)
+            }
         }
     }
 
@@ -232,7 +241,8 @@ impl<'a> TraversalStep<'a> {
                 }
             }
             TraversalStep::Playlist(_) => unimplemented!(),
-            TraversalStep::Video(_) => unimplemented!()
+            TraversalStep::Video(_) => unimplemented!(),
+            TraversalStep::Virtual { .. } => unimplemented!()
         }
     }
 
@@ -254,7 +264,8 @@ impl<'a> TraversalStep<'a> {
                 }
             }
             TraversalStep::Playlist(_) => unimplemented!(),
-            TraversalStep::Video(_) => unimplemented!()
+            TraversalStep::Video(_) => unimplemented!(),
+            TraversalStep::Virtual { .. } => unimplemented!()
         }
     }
 
@@ -276,7 +287,8 @@ impl<'a> TraversalStep<'a> {
                 }
             }
             TraversalStep::Playlist(playlist) => TraversalStep::crumb_playlist(playlist, prefix, site, Some(video)),
-            TraversalStep::Video(_) => unimplemented!()
+            TraversalStep::Video(_) => unimplemented!(),
+            TraversalStep::Virtual { .. } => unimplemented!()
         }
     }
 
@@ -610,7 +622,8 @@ impl<'a> TraversalStep<'a> {
         match self {
             TraversalStep::Collection(collection) => &collection.path,
             TraversalStep::Playlist(playlist) => &playlist.path,
-            TraversalStep::Video(video) => &video.path
+            TraversalStep::Video(video) => &video.path,
+            TraversalStep::Virtual { .. } => unimplemented!()
         }
     }
 }
@@ -750,6 +763,12 @@ impl<'a> Traversal<'a> {
     pub fn with_video(&self, video: &'a Video) -> Traversal<'a> {
         let mut clone = self.clone();
         clone.steps.push(TraversalStep::Video(video));
+        clone
+    }
+
+    pub fn with_virtual(&self, label: &'a str, slug: &'a str) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Virtual { label, slug });
         clone
     }
 }

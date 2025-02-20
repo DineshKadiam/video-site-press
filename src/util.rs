@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::ffi::OsString;
@@ -108,6 +108,15 @@ pub fn hash_closure(closure: impl FnOnce(&mut DefaultHasher)) -> String {
     let mut hasher = DefaultHasher::new();
     closure(&mut hasher);
     URL_SAFE_NO_PAD.encode(hasher.finish().to_le_bytes())
+}
+
+/// Given e.g. "\"foo\"", it will first turn the input into "&quot;foo&quot;",
+/// then into "&amp;quot;foo&amp;quot;". When this is rendered in the browser,
+/// the second escaping pass is removed again, i.e. people will see this on
+/// the site: "&quot;foo&quot;". Used to render embeddable code snippets.
+pub fn html_double_escape_inside_attribute(string: &str) -> String {
+    html_escape_inside_attribute(string)
+        .replace('&', "&amp;")
 }
 
 /// Escape e.g. "me&you" so it can be rendered into an attribute,

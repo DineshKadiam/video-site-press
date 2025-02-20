@@ -6,12 +6,24 @@ use std::sync::Arc;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use chrono::NaiveDate;
+use serde_derive::Deserialize;
 
 use crate::{Context, ContextPath, Field, Video};
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
-use super::{VideoFormFeedback, VideoUpdateForm};
+use super::VideoFormFeedback;
+
+#[derive(Deserialize)]
+pub struct VideoUpdateForm {
+    description: String,
+    embedding: String,
+    offline: Option<String>,
+    release_date: String,
+    sort_number: String,
+    title: String,
+    unlisted: Option<String>
+}
 
 pub async fn update(
     context: Data<Arc<Context>>,
@@ -21,6 +33,12 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+
+    let embedding = match form.embedding.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
 
     let offline = form.offline.is_some();
 
@@ -56,6 +74,7 @@ pub async fn update(
 
         let form_feedback = VideoFormFeedback::Update {
             description: description_trimmed,
+            embedding,
             offline,
             release_date: Field::validated(release_date_trimmed, release_date.and_then(|release_date| release_date.err())),
             sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
@@ -69,6 +88,7 @@ pub async fn update(
     } else {
         let mutation = |video_mut: &mut Video| {
             video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            video_mut.embedding = embedding;
             video_mut.offline = offline;
             video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
             video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());

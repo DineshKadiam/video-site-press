@@ -65,6 +65,7 @@ pub enum CollectionFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        embedding: Option<bool>,
         offline: bool,
         title: Field,
         unlisted: bool,
@@ -144,8 +145,14 @@ pub fn edit_page(
     let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_video_order = Select::new("video_order", translations.video_order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+
+    // TODO: Dynamically determine and additionally display what the default or inherited value is here.
+    select_embedding.option("", translations.inherit);
+    select_embedding.option("enabled", translations.enabled);
+    select_embedding.option("disabled", translations.disabled);
 
     // TODO: Same construction as in endpoints/playlist.rs, possibly encapsulate as shared helper
     select_video_order.option("default", translations.default_sort_number_or_release_date_ascending);
@@ -160,22 +167,37 @@ pub fn edit_page(
 
     let feedback_update = if let CollectionFormFeedback::Update {
         description,
+        embedding,
         offline,
         title,
         unlisted,
         video_order
     } = &form_feedback {
+        let embedding_value = match embedding {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_embedding.selected(embedding_value);
         select_video_order.selected(video_order);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        let embedding = match collection.embedding {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         input_offline.checked(collection.offline);
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted);
+        select_embedding.selected(embedding);
         select_video_order.selected(collection.video_order.key());
         textarea_description.value_option(&collection.description);
 
@@ -410,6 +432,7 @@ pub fn edit_page(
                 {input_title}
                 {textarea_description}
                 {select_video_order}
+                {select_embedding}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

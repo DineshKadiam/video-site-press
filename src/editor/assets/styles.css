@@ -522,11 +522,7 @@ summary {
     cursor: pointer;
     margin: -.5rem 0 1rem 0;
 }
-svg {
-    fill: currentColor;
-    height: 1rem;
-    width: 1rem;
-}
+svg { fill: currentColor; }
 .textarea_with_hint {
     display: flex;
     flex-direction: column-reverse;

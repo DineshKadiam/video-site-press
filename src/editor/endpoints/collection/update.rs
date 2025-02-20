@@ -16,6 +16,7 @@ use super::CollectionFormFeedback;
 #[derive(Deserialize)]
 pub struct UpdateForm {
     description: String,
+    embedding: String,
     offline: Option<String>,
     title: String,
     unlisted: Option<String>,
@@ -30,6 +31,13 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+
+    let embedding = match form.embedding.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
+
     let offline = form.offline.is_some();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
@@ -37,12 +45,13 @@ pub async fn update(
 
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
-        let mutation = |collection: &mut Collection| {
-            collection.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            collection.offline = offline;
-            collection.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            collection.unlisted = unlisted;
-            collection.video_order = video_order;
+        let mutation = |collection_mut: &mut Collection| {
+            collection_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            collection_mut.embedding = embedding;
+            collection_mut.offline = offline;
+            collection_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
+            collection_mut.unlisted = unlisted;
+            collection_mut.video_order = video_order;
         };
 
         let collection = match context.update_collection(mutation, &path.path) {
@@ -63,6 +72,7 @@ pub async fn update(
 
         let form_feedback = CollectionFormFeedback::Update {
             description: description_trimmed,
+            embedding,
             offline,
             title: Field::valid(title_trimmed),
             unlisted,

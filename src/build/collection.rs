@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -23,12 +23,14 @@ use crate::build::widgets::{
 };
 use crate::util::html_escape_outside_attribute;
 
+use super::MergedOptions;
+
 pub fn collection_html(
     context: &Context,
     collection: &Collection,
+    merged_options: &MergedOptions,
     site: &Site,
-    traversal: &Traversal,
-    unlisted_inherited: bool
+    traversal: &Traversal
 ) {
     let translations = &site.language.translations;
 
@@ -49,7 +51,7 @@ pub fn collection_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(unlisted_inherited || collection.unlisted, &translations);
+    let unlisted = unlisted_badge(merged_options.unlisted, &translations);
 
     body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
