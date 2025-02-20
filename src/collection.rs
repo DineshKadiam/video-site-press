@@ -32,6 +32,7 @@ use crate::util::checked_remove_dir_all;
 const COLLECTION_OPTIONS: &[&str] = &[
     "banner",
     "description",
+    "download",
     "embedding",
     "link",
     "offline",
@@ -44,6 +45,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
 pub struct Collection {
     pub banner: Option<Banner>,
     pub description: Option<String>,
+    pub download: Option<bool>,
     pub embedding: Option<bool>,
     pub errors: Vec<String>,
     pub links: Vec<Link>,
@@ -140,6 +142,33 @@ impl Collection {
                         let error = element_error(element, manifest_path, message);
                         self.errors.push(error);
                     }
+                }
+                "download" => 'download: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value {
+                                    "enabled" => {
+                                        self.download = Some(true);
+                                    }
+                                    "disabled" => {
+                                        self.download = Some(false);
+                                    }
+                                    other => {
+                                        let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'download;
+                            }
+                        }
+                    }
+
+                    let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
                 }
                 "embedding" => 'embedding: {
                     if let Ok(field) = element.as_field() {
@@ -598,6 +627,7 @@ impl Collection {
         Collection {
             banner: None,
             description: None,
+            download: None,
             embedding: None,
             errors: Vec::new(),
             links: Vec::new(),
@@ -1001,6 +1031,10 @@ impl Collection {
             }
 
             eno.push_str(&format!("file = {}\n", banner.file_name));
+        }
+
+        if let Some(download) = self.download {
+            eno.push_str(&format!("download: {}\n", if download { "enabled" } else { "disabled" }));
         }
 
         if let Some(embedding) = self.embedding {

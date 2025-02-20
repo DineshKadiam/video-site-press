@@ -16,6 +16,7 @@ use super::CollectionFormFeedback;
 #[derive(Deserialize)]
 pub struct UpdateForm {
     description: String,
+    download: String,
     embedding: String,
     offline: Option<String>,
     title: String,
@@ -32,6 +33,12 @@ pub async fn update(
 
     let description_trimmed = form.description.trim();
 
+    let download = match form.download.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
+
     let embedding = match form.embedding.as_str() {
         "disabled" => Some(false),
         "enabled" => Some(true),
@@ -47,6 +54,7 @@ pub async fn update(
     if true {
         let mutation = |collection_mut: &mut Collection| {
             collection_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            collection_mut.download = download;
             collection_mut.embedding = embedding;
             collection_mut.offline = offline;
             collection_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
@@ -72,6 +80,7 @@ pub async fn update(
 
         let form_feedback = CollectionFormFeedback::Update {
             description: description_trimmed,
+            download,
             embedding,
             offline,
             title: Field::valid(title_trimmed),

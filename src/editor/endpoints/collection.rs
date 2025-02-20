@@ -65,6 +65,7 @@ pub enum CollectionFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
         title: Field,
@@ -145,9 +146,15 @@ pub fn edit_page(
     let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_download = Select::new("download", translations.download);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_video_order = Select::new("video_order", translations.video_order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+
+    // TODO: Dynamically determine and additionally display what the default or inherited value is here.
+    select_download.option("", translations.inherit);
+    select_download.option("enabled", translations.enabled);
+    select_download.option("disabled", translations.disabled);
 
     // TODO: Dynamically determine and additionally display what the default or inherited value is here.
     select_embedding.option("", translations.inherit);
@@ -167,12 +174,19 @@ pub fn edit_page(
 
     let feedback_update = if let CollectionFormFeedback::Update {
         description,
+        download,
         embedding,
         offline,
         title,
         unlisted,
         video_order
     } = &form_feedback {
+        let download_value = match download {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let embedding_value = match embedding {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -182,12 +196,19 @@ pub fn edit_page(
         input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_download.selected(download_value);
         select_embedding.selected(embedding_value);
         select_video_order.selected(video_order);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        let download = match collection.download {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let embedding = match collection.embedding {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -197,6 +218,7 @@ pub fn edit_page(
         input_offline.checked(collection.offline);
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted);
+        select_download.selected(download);
         select_embedding.selected(embedding);
         select_video_order.selected(collection.video_order.key());
         textarea_description.value_option(&collection.description);
@@ -432,7 +454,10 @@ pub fn edit_page(
                 {input_title}
                 {textarea_description}
                 {select_video_order}
-                {select_embedding}
+                <div class="form_split even">
+                    {select_download}
+                    {select_embedding}
+                </div>
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

@@ -16,6 +16,7 @@ use super::PlaylistFormFeedback;
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
     description: String,
+    download: String,
     embedding: String,
     offline: Option<String>,
     order: String,
@@ -32,6 +33,12 @@ pub async fn update(
 
     let description_trimmed = form.description.trim();
 
+    let download = match form.download.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
+
     let embedding = match form.embedding.as_str() {
         "disabled" => Some(false),
         "enabled" => Some(true),
@@ -47,6 +54,7 @@ pub async fn update(
     if true {
         let mutation = |playlist_mut: &mut Playlist| {
             playlist_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            playlist_mut.download = download;
             playlist_mut.embedding = embedding;
             playlist_mut.offline = offline;
             playlist_mut.order = order;
@@ -70,6 +78,7 @@ pub async fn update(
 
         let form_feedback = PlaylistFormFeedback::Update {
             description: description_trimmed,
+            download,
             embedding,
             offline,
             order: &form.order,

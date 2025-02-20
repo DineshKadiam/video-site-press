@@ -53,6 +53,7 @@ pub enum PlaylistFormFeedback<'a> {
     Site(endpoints::site::SiteFormFeedback),
     Update {
         description: &'a str,
+        download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
         order: &'a str,
@@ -135,9 +136,15 @@ pub fn edit_page(
     let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_download = Select::new("download", translations.download);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_order = Select::new("order", translations.order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+
+    // TODO: Dynamically determine and additionally display what the default or inherited value is here.
+    select_download.option("", translations.inherit);
+    select_download.option("enabled", translations.enabled);
+    select_download.option("disabled", translations.disabled);
 
     // TODO: Dynamically determine and additionally display what the default or inherited value is here.
     select_embedding.option("", translations.inherit);
@@ -156,12 +163,19 @@ pub fn edit_page(
 
     let feedback_update = if let Some(PlaylistFormFeedback::Update {
         description,
+        download,
         embedding,
         offline,
         order,
         title,
         unlisted
     }) = &form_feedback {
+        let download_value = match download {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let embedding_value = match embedding {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -171,12 +185,19 @@ pub fn edit_page(
         input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_download.selected(download_value);
         select_embedding.selected(embedding_value);
         select_order.selected(order);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        let download = match playlist.download {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let embedding = match playlist.embedding {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -186,6 +207,7 @@ pub fn edit_page(
         input_offline.checked(playlist.offline);
         input_title.value_option(&playlist.title);
         input_unlisted.checked(playlist.unlisted);
+        select_download.selected(download);
         select_embedding.selected(embedding);
         select_order.selected(playlist.order.key());
         textarea_description.value_option(&playlist.description);
@@ -338,7 +360,10 @@ pub fn edit_page(
                 {input_title}
                 {textarea_description}
                 {select_order}
-                {select_embedding}
+                <div class="form_split even">
+                    {select_download}
+                    {select_embedding}
+                </div>
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

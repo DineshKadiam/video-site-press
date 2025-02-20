@@ -30,7 +30,7 @@ sequential playback.
 
 ## The playlist.eno manifest
 
-> All options at a glance: [banner](#banner), [description](#description), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [banner](#banner), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a playlist.
 
@@ -39,6 +39,7 @@ banner:
 description = Colorful flags in the wind
 file = my_poster.jpg
 
+download: enabled
 embedding: enabled
 offline
 order: release_date_asc
@@ -77,6 +78,25 @@ Stand-alone URLs inside the `description` field are automatically converted to l
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
 Any number of empty lines in the description field separates paragraphs in the text.
+
+## <a name="download"></a> `download`
+
+This opt-in setting enables download buttons on video pages, openly inviting
+and allowing visitors to conveniently choose and download a specific version
+of a video to their computer.
+
+```eno
+download: enabled
+```
+
+Note that the absence of a download button (i.e. the default setting of this
+option) does not mean that it is not possible to download your videos - this
+is always easily possible for anyone with some technical knowledge. Enabling
+download buttons however is an invitation to your visitors that you want them
+to be easily able to do so, and inversely, not enabling it - as on every
+other website - simply implies that you do not openly invite downloads, and
+visitors will have to research or inquire about your video's license before
+making any use of it beyond watching it on your site.
 
 ## <a name="embedding"></a> `embedding`
 

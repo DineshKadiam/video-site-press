@@ -38,7 +38,10 @@ pub fn video_html(
     };
     let e_title = html_escape_outside_attribute(title);
 
-    let r_downloads = downloads(site, video);
+    let r_downloads = match merged_options.download {
+        true => downloads(site, video),
+        false => String::new()
+    };
 
     let next_video = if video.unlisted {
         None

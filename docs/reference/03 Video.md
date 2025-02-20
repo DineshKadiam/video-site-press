@@ -39,7 +39,7 @@ subtitles while `fr.vtt` would indicate french subtitles.
 
 ## The video.eno manifest
 
-> All options at a glance: [description](#description), [embedding](#embedding), [link](#link), [offline](#offline), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a video, which can be placed inside the
 video directory. A video directory can be identified as a video directory
@@ -51,6 +51,7 @@ poster:
 description = Confused looking people in an office
 file = episode_1.jpg
 
+download: enabled
 offline
 release_date: 2024-02-12
 sort_number: 1
@@ -78,6 +79,25 @@ Stand-alone URLs inside the `description` field are automatically converted to l
 additionally use markdown-style inline links such as `[Example](https://example.com)` to customize
 the text of a link (Note that no other markdown syntax is supported inside `description` though).
 Any number of empty lines in the description field separates paragraphs in the text.
+
+## <a name="download"></a> `download`
+
+This opt-in setting enables a download button on the video page, openly inviting
+and allowing visitors to conveniently choose and download a specific version
+of the video to their computer.
+
+```eno
+download: enabled
+```
+
+Note that the absence of a download button (i.e. the default setting of this
+option) does not mean that it is not possible to download your video - this
+is always easily possible for anyone with some technical knowledge. Enabling
+the download button however is an invitation to your visitors that you want them
+to be easily able to do so, and inversely, not enabling it - as on every
+other website - simply implies that you do not openly invite downloading, and
+visitors will have to research or inquire about your video's license before
+making any use of it beyond watching it on your site.
 
 ## <a name="embedding"></a> `embedding`
 
