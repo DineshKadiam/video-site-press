@@ -68,7 +68,7 @@ dialog {
 }
 dialog::backdrop {
     /* This is not yet working in some browsers as of April 2024, but will, gradually.
-       see https://stackoverflow.com/questions/58818299/css-variables-not-working-in-dialogbackdrop) 
+       see https://stackoverflow.com/questions/58818299/css-variables-not-working-in-dialogbackdrop)
        (TODO: This note can be removed ~2025 or so probably) */
     background-color: var(--bg-1-overlay);
 }
@@ -453,6 +453,7 @@ svg {
     right: 3%;
 }
 #toggle_speed { font-weight: 500; }
+#toggle_volume:not(.interactive) { display: none; }
 .unlisted_badge {
     background-color: var(--bg-2);
     border-radius: .2rem;
