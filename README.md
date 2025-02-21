@@ -32,7 +32,7 @@ still in beta.
 
 ### Known issues
 
-Hyper 8 is a young project and a few things are knowingly incomplete - although for the most part harmlessly so:
+Hyper 8 is in beta and some things are knowingly incomplete, this is an overview:
 
 - Banner images are well implemented on the backend, but not included in the layout of built sites yet
 - Unfinished background encoding jobs are not persisted when you shut down the Hyper 8 server
@@ -41,15 +41,20 @@ Hyper 8 is a young project and a few things are knowingly incomplete - although 
   - `Render Format` button: After clicking you see the background job on the jobs page, but not on the video page itself (yet)
   - Some other smaller tasks like metadata computation or image resizing might not communicate themselves well,
     in general if anything is off you can always wait a few seconds and refresh the page to work around such glitches.
-- The cache system (which by default puts its data in a hidden `.hyper8_cache` folder in your site directory)
-  removes some, but not all, stale data it creates. Until this is fully implemented you can choose to occasionally delete
-  the cache to clear out stale data (Note that these are not large amounts of data at all though, just transcoded images and
-  serialized *metadata* for video).
-- The `--build` and `--deploy` options in the CLI are not correctly implemented yet, for now perform these things from the
-  interactive browser interface only
-- If you manually edit `collection.eno`, `playlist.eno`, `site.eno` or `video.eno` *and* there are errors displayed
-  in the browser interface (= yellow dot(s) in the left sidebar), make sure to resolve these errors manually before performing any
-  consecutive updates from the browser interface, as Hyper 8 can not yet keep/persist malformed manifest data during updates.
+- The cache system (which by default puts its data in a hidden `.hyper8_cache`
+  folder in your site directory) removes some, but not all, stale data it
+  creates. As a result, minor amounts of cache data can accumulate
+  (this merely includes transcoded images and serialized *metadata* for video
+  though, never any large files). Until this is fully implemented you can
+  choose to occasionally delete the cache to clear out stale data.
+- The `--deploy` option in the CLI is not correctly implemented yet, for now
+  use this from the interactive browser interface only
+- If you manually edit a `collection.eno`, `playlist.eno`, `site.eno` or
+  `video.eno` manifest *and* there are errors displayed in the browser
+  interface (= colored dots in the left sidebar, prominent messages on
+  their repspective pages), make sure to resolve these errors manually before
+  performing any consecutive updates from the browser interface, as Hyper 8
+  can not yet keep/persist malformed manifest data during updates.
 - In rare circumstances various foreground or background processes
   (building, deploying, encoding, etc.) might still crash - you will usually
   find some feedback on this in the terminal window which you can include
