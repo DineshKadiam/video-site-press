@@ -62,6 +62,7 @@ pub enum VideoFormFeedback<'a> {
     },
     Site(endpoints::site::SiteFormFeedback),
     Update {
+        copy_link: Option<bool>,
         description: &'a str,
         download: Option<bool>,
         embedding: Option<bool>,
@@ -419,13 +420,19 @@ pub fn edit_page(
     let mut input_sort_number = Input::number("sort_number", translations.sort_number);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
-    let mut select_download = Select::new("download", translations.download);
+    let mut select_copy_link = Select::new("copy_link", translations.copy_link);
+    let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
     let t_disabled = translations.disabled;
     let t_enabled = translations.enabled;
     let t_inherit = translations.inherit;
+
+    let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
+    select_copy_link.option("", &format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("enabled", t_enabled);
+    select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
     select_download.option("", &format!("{t_inherit} ({t_download_disabled_enabled})"));
@@ -440,6 +447,7 @@ pub fn edit_page(
     textarea_description.id("video_description");
 
     let feedback_update = if let Some(VideoFormFeedback::Update {
+        copy_link,
         description,
         download,
         embedding,
@@ -449,6 +457,12 @@ pub fn edit_page(
         title,
         unlisted
     }) = &form_feedback {
+        let copy_link_value = match copy_link {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let download_value = match download {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -466,12 +480,19 @@ pub fn edit_page(
         input_sort_number.validated_value(sort_number);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        let copy_link = match video.copy_link {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let download = match video.download {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -491,6 +512,7 @@ pub fn edit_page(
         input_sort_number.value_option(&sort_number);
         input_title.value_option(&video.title);
         input_unlisted.checked(video.unlisted);
+        select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
         textarea_description.value_option(&video.description);
@@ -601,6 +623,7 @@ pub fn edit_page(
                     {input_sort_number}
                 </div>
                 <div class="form_split even">
+                    {select_copy_link}
                     {select_download}
                     {select_embedding}
                 </div>

@@ -15,6 +15,7 @@ use super::PlaylistFormFeedback;
 
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
+    copy_link: String,
     description: String,
     download: String,
     embedding: String,
@@ -32,6 +33,12 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+
+    let copy_link = match form.copy_link.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
 
     let download = match form.download.as_str() {
         "disabled" => Some(false),
@@ -53,6 +60,7 @@ pub async fn update(
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
         let mutation = |playlist_mut: &mut Playlist| {
+            playlist_mut.copy_link = copy_link;
             playlist_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             playlist_mut.download = download;
             playlist_mut.embedding = embedding;
@@ -77,6 +85,7 @@ pub async fn update(
         };
 
         let form_feedback = PlaylistFormFeedback::Update {
+            copy_link,
             description: description_trimmed,
             download,
             embedding,

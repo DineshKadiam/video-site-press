@@ -16,6 +16,7 @@ use super::VideoFormFeedback;
 
 #[derive(Deserialize)]
 pub struct VideoUpdateForm {
+    copy_link: String,
     description: String,
     download: String,
     embedding: String,
@@ -34,6 +35,12 @@ pub async fn update(
     let language = context.get_editor_language();
 
     let description_trimmed = form.description.trim();
+
+    let copy_link = match form.copy_link.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
 
     let download = match form.download.as_str() {
         "disabled" => Some(false),
@@ -80,6 +87,7 @@ pub async fn update(
         };
 
         let form_feedback = VideoFormFeedback::Update {
+            copy_link,
             description: description_trimmed,
             download,
             embedding,
@@ -95,6 +103,7 @@ pub async fn update(
         )
     } else {
         let mutation = |video_mut: &mut Video| {
+            video_mut.copy_link = copy_link;
             video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             video_mut.download = download;
             video_mut.embedding = embedding;

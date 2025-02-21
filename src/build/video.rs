@@ -84,7 +84,11 @@ pub fn video_html(
     let video_prefix = "";
     let player_rendered = player(next_video, site, video, video_prefix);
 
-    let r_copy_link = copy_link(site, &video.path);
+    let r_copy_link = if merged_options.copy_link {
+        copy_link(site, &video.path)
+    } else {
+        String::new()
+    };
 
     let r_embed = if merged_options.embedding && site.base_url.is_some() {
         let embed_icon = icons::embed();

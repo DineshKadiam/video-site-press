@@ -15,6 +15,7 @@ use super::CollectionFormFeedback;
 
 #[derive(Deserialize)]
 pub struct UpdateForm {
+    copy_link: String,
     description: String,
     download: String,
     embedding: String,
@@ -30,6 +31,12 @@ pub async fn update(
     path: ActixPath<ContextPath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
+
+    let copy_link = match form.copy_link.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
 
     let description_trimmed = form.description.trim();
 
@@ -53,6 +60,7 @@ pub async fn update(
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
         let mutation = |collection_mut: &mut Collection| {
+            collection_mut.copy_link = copy_link;
             collection_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             collection_mut.download = download;
             collection_mut.embedding = embedding;
@@ -79,6 +87,7 @@ pub async fn update(
         };
 
         let form_feedback = CollectionFormFeedback::Update {
+            copy_link,
             description: description_trimmed,
             download,
             embedding,

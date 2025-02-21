@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 #[derive(Clone, Debug)]
@@ -63,6 +63,7 @@ pub struct Translations {
     pub disabled: &'static str,
     pub documentation: &'static str,
     pub download: &'static str,
+    pub downloads: &'static str,
     pub embed: &'static str,
     pub embedding: &'static str,
     pub empty: &'static str,
@@ -257,6 +258,7 @@ impl Translations {
             disabled: "Deaktiviert",
             documentation: "Dokumentation",
             download: "Download",
+            downloads: "Downloads",
             embed: "Einbetten",
             embedding: "Einbetten",
             empty: "Leer",
@@ -451,6 +453,7 @@ impl Translations {
             disabled: "Disabled",
             documentation: "Documentation",
             download: "Download",
+            downloads: "Downloads",
             embed: "Embed",
             embedding: "Embedding",
             empty: "Empty",

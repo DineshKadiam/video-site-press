@@ -37,7 +37,7 @@ Content in a collection currently appears in the following order on the built si
 
 ## The collection.eno manifest
 
-> All options at a glance: [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
+> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
 
 Manifest for tagging and configuring a collection.
 
@@ -62,6 +62,17 @@ New videos are released every tuesday!
 
 Also check us out on the [fediverse](https://social.example.com/)
 -- description
+```
+
+## <a name="copy_link"></a> `copy_link`
+
+To disable the "Copy link" button for videos (by default it's enabled) you can
+use the `copy_link` option, with either `enabled` or `disabled` as value.
+This is inherited by playlists and videos, but can be changed on a granular
+basis in their manifests.
+
+```eno
+copy_link: disabled
 ```
 
 ## <a name="description"></a> `description`

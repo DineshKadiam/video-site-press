@@ -39,7 +39,7 @@ subtitles while `fr.vtt` would indicate french subtitles.
 
 ## The video.eno manifest
 
-> All options at a glance: [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a video, which can be placed inside the
 video directory. A video directory can be identified as a video directory
@@ -71,6 +71,15 @@ verification = rel-me
 An unsettling truth comes to light as three old friends
 reunite at an unexpected gathering.
 -- description
+```
+
+## <a name="copy_link"></a> `copy_link`
+
+To disable the "Copy link" button (by default it's enabled) you can use the
+`copy_link` option, with either `enabled` or `disabled` as value.
+
+```eno
+copy_link: disabled
 ```
 
 ## <a name="description"></a> `description`

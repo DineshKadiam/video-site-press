@@ -25,6 +25,7 @@ use crate::util::html_escape_outside_attribute;
 
 use super::MergedOptions;
 
+/// Generates and writes a collection index page to the build directory.
 pub fn collection_html(
     context: &Context,
     collection: &Collection,

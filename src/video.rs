@@ -29,6 +29,7 @@ use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::{checked_remove_dir_all, hash};
 
 const VIDEO_OPTIONS: &[&str] = &[
+    "copy_link",
     "description",
     "download",
     "embedding",
@@ -43,6 +44,7 @@ const VIDEO_OPTIONS: &[&str] = &[
 
 #[derive(Clone, Debug)]
 pub struct Video {
+    pub copy_link: Option<bool>,
     pub description: Option<String>,
     pub download: Option<bool>,
     pub embedding: Option<bool>,
@@ -112,6 +114,33 @@ impl Video {
 
         for element in document.elements() {
             match element.key() {
+                "copy_link" => 'copy_link: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value {
+                                    "enabled" => {
+                                        self.copy_link = Some(true);
+                                    }
+                                    "disabled" => {
+                                        self.copy_link = Some(false);
+                                    }
+                                    other => {
+                                        let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'copy_link;
+                            }
+                        }
+                    }
+
+                    let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
                 "description" => {
                     if let Ok(embed) = element.as_embed() {
                         if let Some(value) = embed.value() {
@@ -599,6 +628,7 @@ impl Video {
 
     pub fn new(path: String) -> Video {
         Video {
+            copy_link: None,
             description: None,
             download: None,
             embedding: None,
@@ -769,6 +799,10 @@ impl Video {
 
         for link in &self.links {
             eno.push_str(&link.to_eno());
+        }
+
+        if let Some(copy_link) = self.copy_link {
+            eno.push_str(&format!("copy_link: {}\n", if copy_link { "enabled" } else { "disabled" }));
         }
 
         if let Some(download) = self.download {

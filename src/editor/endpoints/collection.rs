@@ -64,6 +64,7 @@ pub enum CollectionFormFeedback<'a> {
     None,
     Site(endpoints::site::SiteFormFeedback),
     Update {
+        copy_link: Option<bool>,
         description: &'a str,
         download: Option<bool>,
         embedding: Option<bool>,
@@ -147,7 +148,8 @@ pub fn edit_page(
     let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
-    let mut select_download = Select::new("download", translations.download);
+    let mut select_copy_link = Select::new("copy_link", translations.copy_link);
+    let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_video_order = Select::new("video_order", translations.video_order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
@@ -155,6 +157,11 @@ pub fn edit_page(
     let t_disabled = translations.disabled;
     let t_enabled = translations.enabled;
     let t_inherit = translations.inherit;
+
+    let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
+    select_copy_link.option("", &format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("enabled", t_enabled);
+    select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
     select_download.option("", &format!("{t_inherit} ({t_download_disabled_enabled})"));
@@ -178,6 +185,7 @@ pub fn edit_page(
     textarea_description.id("collection_description");
 
     let feedback_update = if let CollectionFormFeedback::Update {
+        copy_link,
         description,
         download,
         embedding,
@@ -186,6 +194,12 @@ pub fn edit_page(
         unlisted,
         video_order
     } = &form_feedback {
+        let copy_link_value = match copy_link {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let download_value = match download {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -201,6 +215,7 @@ pub fn edit_page(
         input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
         select_video_order.selected(video_order);
@@ -208,6 +223,12 @@ pub fn edit_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
+        let copy_link = match collection.copy_link {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let download = match collection.download {
             Some(true) => "enabled",
             Some(false) => "disabled",
@@ -223,6 +244,7 @@ pub fn edit_page(
         input_offline.checked(collection.offline);
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted);
+        select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
         select_video_order.selected(collection.video_order.key());
@@ -460,6 +482,7 @@ pub fn edit_page(
                 {textarea_description}
                 {select_video_order}
                 <div class="form_split even">
+                    {select_copy_link}
                     {select_download}
                     {select_embedding}
                 </div>

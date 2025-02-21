@@ -30,7 +30,7 @@ sequential playback.
 
 ## The playlist.eno manifest
 
-> All options at a glance: [banner](#banner), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [banner](#banner), [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a playlist.
 
@@ -70,6 +70,17 @@ interface.
 banner:
 description = Colorful flags in the wind
 file = my_poster.jpg
+```
+
+## <a name="copy_link"></a> `copy_link`
+
+To disable the "Copy link" button for videos (by default it's enabled) you can
+use the `copy_link` option, with either `enabled` or `disabled` as value.
+This is inherited by videos, but can be changed on a granular basis in their
+manifests.
+
+```eno
+copy_link: disabled
 ```
 
 ## <a name="description"></a> `description`

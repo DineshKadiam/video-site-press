@@ -5,16 +5,17 @@ use crate::{Collection, Playlist, Video};
 
 /// Some options need to be evaluated in the context of the entire site tree
 /// before they are applied at the individual node level. This includes
-/// embedding and download, where the option is inherited down the tree but
-/// potentially overriden at the node level, as well as the unlisted option,
-/// which unconditionally applies to all descendants of a site tree branch
-/// whose(in)direct parent node is marked as unlisted.
+/// copy_link, embedding and download, where the option is inherited down the
+/// tree but potentially overriden at the node level, as well as the unlisted
+/// option, which unconditionally applies to all descendants of a site tree
+/// branch whose (in)direct parent node is marked as unlisted.
 ///
 /// MergeOptions represents these options, and at the node level we only
 /// consider the options on this struct (after we have merged in the options
 /// from the node level beforehand of course).
 #[derive(Clone, Debug)]
 pub struct MergedOptions {
+    pub copy_link: bool,
     pub download: bool,
     pub embedding: bool,
     pub unlisted: bool
@@ -24,6 +25,10 @@ impl MergedOptions {
     /// Mutably merges this set of merged options with the collection's
     /// options by mutating this set itself.
     pub fn apply_collection_options(&mut self, collection: &Collection) {
+        if let Some(copy_link) = collection.copy_link {
+            self.copy_link = copy_link;
+        }
+
         if let Some(download) = collection.download {
             self.download = download;
         }
@@ -38,6 +43,10 @@ impl MergedOptions {
     /// Mutably merges this set of merged options with the playlist's
     /// options by mutating this set itself.
     pub fn apply_playlist_options(&mut self, playlist: &Playlist) {
+        if let Some(copy_link) = playlist.copy_link {
+            self.copy_link = copy_link;
+        }
+
         if let Some(download) = playlist.download {
             self.download = download;
         }
@@ -52,6 +61,10 @@ impl MergedOptions {
     /// Mutably merges this set of merged options with the video's
     /// options by mutating this set itself.
     pub fn apply_video_options(&mut self, video: &Video) {
+        if let Some(copy_link) = video.copy_link {
+            self.copy_link = copy_link;
+        }
+
         if let Some(download) = video.download {
             self.download = download;
         }
@@ -66,6 +79,7 @@ impl MergedOptions {
     /// This reflects the general defaults for a site in Hyper 8.
     pub fn default() -> MergedOptions {
         MergedOptions {
+            copy_link: true,
             download: false,
             embedding: false,
             unlisted: false
