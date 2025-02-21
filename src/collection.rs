@@ -18,6 +18,7 @@ use crate::{
     HyperDir,
     HyperUrl,
     Link,
+    MergedOptions,
     Playlist,
     Site,
     Translations,
@@ -350,6 +351,50 @@ impl Collection {
         }
     }
 
+    /// Applies the merged options at the given path, that is, it resolves
+    /// options that depend both on the setting at the node level and its
+    /// parent nodes. This method is unchecked, i.e. you should have ensured
+    /// beforehand that the given path really refers to an existing collection,
+    /// playlist or video, otherwise this will produce wrong results.
+    pub fn apply_merged_options_unchecked(
+        &self,
+        options: &mut MergedOptions,
+        path: &str
+    ) {
+        options.apply_collection_options(self);
+
+        for subcollection in &self.subcollections {
+            if let Some(rest) = path.strip_prefix(&subcollection.path) {
+                options.apply_collection_options(subcollection);
+
+                if rest.starts_with('/') {
+                    subcollection.apply_merged_options_unchecked(options, path);
+                }
+
+                return;
+            }
+        }
+
+        for playlist in &self.playlists {
+            if let Some(rest) = path.strip_prefix(&playlist.path) {
+                options.apply_playlist_options(playlist);
+
+                if rest.starts_with('/') {
+                    playlist.apply_merged_options_unchecked(options, path);
+                }
+
+                return;
+            }
+        }
+
+        for video in &self.videos {
+            if video.path == path {
+                options.apply_video_options(video);
+                return;
+            }
+        }
+    }
+
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
         b.latest_release_date().cmp(&a.latest_release_date())
     }
@@ -642,6 +687,21 @@ impl Collection {
         }
     }
 
+    /// The merged options constructed from all ancestors, or in the case of
+    //  a site-level collection just the general default options.
+    pub fn parent_options(&self, site: &Site) -> MergedOptions {
+        if self.path.is_empty() {
+            MergedOptions::default()
+        } else {
+            let parent_path = Path::new(&self.path).parent().unwrap();
+            site.get_merged_options_unchecked(parent_path.to_str().unwrap())
+        }
+    }
+
+    // TODO: Maybe this should better be parent_path_unchecked and we only use
+    //       the current 'else' branch? Calling this on a root node currently
+    //       returns a semi-correct/meaningful result.
+    //       (also applies to playlist/video)
     pub fn parent_path(&self) -> &Path {
         if self.path.is_empty() {
             Path::new("")

@@ -17,6 +17,7 @@ use crate::{
     HyperDir,
     HyperUrl,
     Link,
+    MergedOptions,
     Playlist,
     PosterFile,
     Site,
@@ -615,6 +616,21 @@ impl Video {
         }
     }
 
+    /// The merged options constructed from all ancestors, or in the case of
+    //  a site-level video just the general default options.
+    pub fn parent_options(&self, site: &Site) -> MergedOptions {
+        if self.path.is_empty() {
+            MergedOptions::default()
+        } else {
+            let parent_path = Path::new(&self.path).parent().unwrap();
+            site.get_merged_options_unchecked(parent_path.to_str().unwrap())
+        }
+    }
+
+    // TODO: Maybe this should better be parent_path_unchecked and we only use
+    //       the current 'else' branch? Calling this on a root node currently
+    //       returns a semi-correct/meaningful result.
+    //       (also applies to collection/playlist)
     pub fn parent_path(&self) -> &Path {
         if self.path.is_empty() {
             Path::new("")

@@ -213,6 +213,7 @@ pub fn edit_page(
     video: &Video
 ) -> HttpResponse {
     let site = context.get_site();
+    let parent_options = video.parent_options(&site);
     let translations = &language.translations;
     let t_not_saved = translations.not_saved;
 
@@ -422,15 +423,19 @@ pub fn edit_page(
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
-    // TODO: Dynamically determine and additionally display what the default or inherited value is here.
-    select_download.option("", translations.inherit);
-    select_download.option("enabled", translations.enabled);
-    select_download.option("disabled", translations.disabled);
+    let t_disabled = translations.disabled;
+    let t_enabled = translations.enabled;
+    let t_inherit = translations.inherit;
 
-    // TODO: Dynamically determine and additionally display what the default or inherited value is here.
-    select_embedding.option("", translations.inherit);
-    select_embedding.option("enabled", translations.enabled);
-    select_embedding.option("disabled", translations.disabled);
+    let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
+    select_download.option("", &format!("{t_inherit} ({t_download_disabled_enabled})"));
+    select_download.option("enabled", t_enabled);
+    select_download.option("disabled", t_disabled);
+
+    let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
+    select_embedding.option("", &format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    select_embedding.option("enabled", t_enabled);
+    select_embedding.option("disabled", t_disabled);
 
     textarea_description.id("video_description");
 

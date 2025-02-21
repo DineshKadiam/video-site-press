@@ -8,6 +8,7 @@ use rsubs_lib::SRT;
 use crate::{
     Collection,
     Context,
+    MergedOptions,
     Playlist,
     Site,
     SiteContent,
@@ -32,69 +33,6 @@ use embed_codes::embed_codes_html;
 use outline::Traversal;
 use playlist::playlist_html;
 use video::video_html;
-
-/// Some options need to be evaluated in the context of the entire site tree
-/// before they are applied at the individual node level. This includes
-/// embedding and download, where the option is inherited down the tree but
-/// potentially overriden at the node level, as well as the unlisted option,
-/// which unconditionally applies to all descendants of a site tree branch
-/// whose(in)direct parent node is marked as unlisted.
-///
-/// MergeOptions represents these options, and at the node level we only
-/// consider the options on this struct (after we have merged in the options
-/// from the node level beforehand of course).
-#[derive(Clone)]
-struct MergedOptions {
-    pub download: bool,
-    pub embedding: bool,
-    pub unlisted: bool
-}
-
-impl MergedOptions {
-    pub fn default() -> MergedOptions {
-        MergedOptions {
-            download: false,
-            embedding: false,
-            unlisted: false
-        }
-    }
-
-    pub fn merge_collection_options(&self, collection: &Collection) -> MergedOptions {
-        let download = collection.download.unwrap_or(self.download);
-        let embedding = collection.embedding.unwrap_or(self.embedding);
-        let unlisted = self.unlisted || collection.unlisted;
-
-        MergedOptions {
-            download,
-            embedding,
-            unlisted
-        }
-    }
-
-    pub fn merge_playlist_options(&self, playlist: &Playlist) -> MergedOptions {
-        let download = playlist.download.unwrap_or(self.download);
-        let embedding = playlist.embedding.unwrap_or(self.embedding);
-        let unlisted = self.unlisted || playlist.unlisted;
-
-        MergedOptions {
-            download,
-            embedding,
-            unlisted
-        }
-    }
-
-    pub fn merge_video_options(&self, video: &Video) -> MergedOptions {
-        let download = video.download.unwrap_or(self.download);
-        let embedding = video.embedding.unwrap_or(self.embedding);
-        let unlisted = self.unlisted || video.unlisted;
-
-        MergedOptions {
-            download,
-            embedding,
-            unlisted
-        }
-    }
-}
 
 pub fn perform_build(context: &Context) {
     let site = context.get_site();
@@ -175,6 +113,7 @@ fn build_collection(
     site: &Site,
     traversal_previous: &Traversal
 ) {
+    let merged_options = parent_options.merge_collection_options(collection);
     let traversal = traversal_previous.with_collection(collection);
 
     if let Some(banner) = &collection.banner {
@@ -199,7 +138,6 @@ fn build_collection(
         }
     }
 
-    let merged_options = parent_options.merge_collection_options(collection);
 
     collection_html(
         context,
@@ -255,6 +193,7 @@ fn build_playlist(
     site: &Site,
     traversal_previous: &Traversal
 ) {
+    let merged_options = parent_options.merge_playlist_options(playlist);
     let traversal = traversal_previous.with_playlist(playlist);
 
     if let Some(banner) = &playlist.banner {
@@ -278,8 +217,6 @@ fn build_playlist(
             );
         }
     }
-
-    let merged_options = parent_options.merge_playlist_options(playlist);
 
     playlist_html(
         context,
@@ -312,6 +249,7 @@ fn build_video(
     traversal_previous: &Traversal,
     video: &Video
 ) {
+    let merged_options = parent_options.merge_video_options(video);
     let traversal = traversal_previous.with_video(video);
 
     let video_build_dir = context.build_dir.join(&video.path);
@@ -361,8 +299,6 @@ fn build_video(
             fs::write(target_path, vtt.to_string()).unwrap();
         }
     }
-
-    let merged_options = parent_options.merge_video_options(video);
 
     if merged_options.embedding {
         *embeds_requested = true;

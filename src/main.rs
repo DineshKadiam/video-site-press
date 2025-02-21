@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::{Arc, Mutex};
@@ -25,6 +25,7 @@ mod language;
 mod link;
 mod manifest;
 mod markdown_subset;
+mod merged_options;
 mod playlist;
 mod poster;
 mod processing;
@@ -54,6 +55,7 @@ use image_processor::{ImageProcessor, ResizeMode};
 use language::Language;
 use link::Link;
 use markdown_subset::MarkdownSubset;
+use merged_options::MergedOptions;
 use playlist::Playlist;
 use poster::{PosterAsset, PosterAssets, PosterFile};
 use processing::{Job, JobKind, Processing, Progress};
@@ -138,7 +140,7 @@ fn main() {
         context.await_job_queue();
 
         build::perform_build(&context);
-        
+
         if args.deploy {
             let site = context.get_site();
 

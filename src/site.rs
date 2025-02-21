@@ -13,6 +13,7 @@ use crate::{
     HyperDir,
     HyperUrl,
     Language,
+    MergedOptions,
     Playlist,
     Theme,
     Video
@@ -331,6 +332,33 @@ impl Site {
         None
     }
 
+    /// Returns the merged options at the given path, that is, it resolves
+    /// options that depend both on the setting at the node level and its
+    /// parent nodes. This method is unchecked, i.e. you should have ensured
+    /// beforehand that the given path really refers to an existing collection,
+    /// playlist or video, otherwise this will panic or produce wrong results.
+    pub fn get_merged_options_unchecked(&self, path: &str) -> MergedOptions {
+        let mut options = MergedOptions::default();
+
+        if path == "" {
+            match &self.content {
+                SiteContent::Collection(collection) => options.apply_collection_options(collection),
+                SiteContent::Playlist(playlist) => options.apply_playlist_options(playlist),
+                SiteContent::Video(video) => options.apply_video_options(video),
+                _ => panic!()
+            }
+        } else {
+            match &self.content {
+                SiteContent::Collection(collection) => collection.apply_merged_options_unchecked(&mut options, path),
+                SiteContent::Playlist(playlist) => playlist.apply_merged_options_unchecked(&mut options, path),
+                SiteContent::Video(video) => options.apply_video_options(video),
+                _ => panic!()
+            }
+        }
+
+        options
+    }
+
     /// Returns the playlist at the given path.
     pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
         if path == "" {
@@ -344,7 +372,7 @@ impl Site {
         None
     }
 
-    /// Returns the video at the given path. 
+    /// Returns the video at the given path.
     pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
         if path == "" {
             if let SiteContent::Video(video) = &self.content {

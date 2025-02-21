@@ -18,6 +18,7 @@ use crate::{
     HyperDir,
     HyperUrl,
     Link,
+    MergedOptions,
     Site,
     Translations,
     TreeViewOrder,
@@ -355,6 +356,26 @@ impl Playlist {
         }
     }
 
+    /// Applies the merged options at the given path, that is, it resolves
+    /// options that depend both on the setting at the node level and its
+    /// parent nodes. This method is unchecked, i.e. you should have ensured
+    /// beforehand that the given path really refers to an existing collection,
+    /// playlist or video, otherwise this will produce wrong results.
+    pub fn apply_merged_options_unchecked(
+        &self,
+        options: &mut MergedOptions,
+        path: &str
+    ) {
+        options.apply_playlist_options(self);
+
+        for video in &self.videos {
+            if video.path == path {
+                options.apply_video_options(video);
+                return;
+            }
+        }
+    }
+
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
         b.latest_release_date().cmp(&a.latest_release_date())
     }
@@ -460,6 +481,21 @@ impl Playlist {
         }
 	}
 
+    /// The merged options constructed from all ancestors, or in the case of
+    //  a site-level playlist just the general default options.
+    pub fn parent_options(&self, site: &Site) -> MergedOptions {
+        if self.path.is_empty() {
+            MergedOptions::default()
+        } else {
+            let parent_path = Path::new(&self.path).parent().unwrap();
+            site.get_merged_options_unchecked(parent_path.to_str().unwrap())
+        }
+    }
+
+    // TODO: Maybe this should better be parent_path_unchecked and we only use
+    //       the current 'else' branch? Calling this on a root node currently
+    //       returns a semi-correct/meaningful result.
+    //       (also applies to collection/video)
     pub fn parent_path(&self) -> &Path {
         if self.path.is_empty() {
             Path::new("")
