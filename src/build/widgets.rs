@@ -263,22 +263,29 @@ pub fn layout(
 
     let with_sidebar = if traversal.steps.len() > 1 { "with_sidebar" } else { "" };
 
+    let e_site_title = html_escape_outside_attribute(site.title());
+
     let body = formatdoc!(r##"
         <body>
             <div class="layout {with_sidebar}">
+                <header>
+                    <div class="breadcrumbs">
+                        {breadcrumbs}
+                    </div>
+                    {theme_toggle}
+                </header>
                 <div class="growing">
                     <div class="center">
-                        <header>
-                            {breadcrumbs}
-                        </header>
                         {body}
                     </div>
                 </div>
                 <footer>
-                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank" title="Hyper 8 Video System {version_display}">
-                        Hyper 8 Video System
+                    <span>
+                        {e_site_title}
+                    </span>
+                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
+                        Hyper 8 Video System {version_display}
                     </a>
-                    {theme_toggle}
                 </footer>
             </div>
         </body>
