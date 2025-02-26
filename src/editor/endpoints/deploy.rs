@@ -31,7 +31,7 @@ pub async fn deploy(context: Data<Arc<Context>>) -> Either<Redirect, HttpRespons
     let language = context.get_editor_language();
     let site = context.get_site();
 
-    if !site.base_url.is_some() {
+    if site.base_url.is_none() {
         // TODO: Localize
         let message = "Base url is not set, therefore the deploy config cannot be probed, therefore deploying is not permitted for safety reasons.";
         return Either::Right(error_page(&context, &language, message));

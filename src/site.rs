@@ -211,12 +211,12 @@ impl Site {
                                         self.font = Font::Custom(value.to_string());
                                     } else {
                                         let message = "The provided font file extension is not supported, only woff and woff2 are";
-                                        let error = element_error(element, manifest_path, &message);
+                                        let error = element_error(element, manifest_path, message);
                                         self.errors.push(error);
                                     }
                                 } else {
                                     let message = "The provided font file name is invalid - the file was not found";
-                                    let error = element_error(element, manifest_path, &message);
+                                    let error = element_error(element, manifest_path, message);
                                     self.errors.push(error);
                                 }
                             }
@@ -303,7 +303,7 @@ impl Site {
 
     /// Returns a collection, playlist or video at the given path.
     pub fn get_any(&self, path: &str) -> GetAnyResult {
-        if path == "" {
+        if path.is_empty() {
             match &self.content {
                 SiteContent::Collection(collection) => GetAnyResult::Collection(Arc::clone(collection)),
                 SiteContent::Playlist(playlist) => GetAnyResult::Playlist(Arc::clone(playlist)),
@@ -322,7 +322,7 @@ impl Site {
     /// Returns the collection at the given path.
     pub fn get_collection(&self, path: &str) -> Option<Arc<Collection>> {
         if let SiteContent::Collection(collection) = &self.content {
-            if path == "" {
+            if path.is_empty() {
                 return Some(Arc::clone(collection));
             } else {
                 return collection.get_collection(path);
@@ -340,7 +340,7 @@ impl Site {
     pub fn get_merged_options_unchecked(&self, path: &str) -> MergedOptions {
         let mut options = MergedOptions::default();
 
-        if path == "" {
+        if path.is_empty() {
             match &self.content {
                 SiteContent::Collection(collection) => options.apply_collection_options(collection),
                 SiteContent::Playlist(playlist) => options.apply_playlist_options(playlist),
@@ -361,7 +361,7 @@ impl Site {
 
     /// Returns the playlist at the given path.
     pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
-        if path == "" {
+        if path.is_empty() {
             if let SiteContent::Playlist(playlist) = &self.content {
                 return Some(Arc::clone(playlist));
             }
@@ -374,7 +374,7 @@ impl Site {
 
     /// Returns the video at the given path.
     pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
-        if path == "" {
+        if path.is_empty() {
             if let SiteContent::Video(video) = &self.content {
                 return Some(Arc::clone(video));
             }

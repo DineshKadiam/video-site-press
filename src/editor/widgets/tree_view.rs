@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::Path;
@@ -62,7 +62,6 @@ impl Visibility {
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
-    context: &Context,
     path: Option<&str>,
     translations: &Translations,
     tree_view_order: &TreeViewOrder,
@@ -104,7 +103,6 @@ fn collection_tree(
             let collection_content = collection_tree(
                 breadcrumbs,
                 collection,
-                context,
                 path,
                 translations,
                 tree_view_order,
@@ -247,7 +245,7 @@ pub fn tree_view(
 ) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
-    let root_active = path.is_some_and(|path| path == "");
+    let root_active = path.is_some_and(|path| path.is_empty());
     let root_dir = site_dir.file_name().unwrap().to_string_lossy();
     let site_dir = &site_dir.to_string_lossy();
 
@@ -268,7 +266,6 @@ pub fn tree_view(
             let collection_content = collection_tree(
                 &mut breadcrumbs,
                 collection,
-                context,
                 path,
                 translations,
                 &tree_view_order,
@@ -444,8 +441,8 @@ fn tree_node(
     };
 
     let e_title = title_option
-        .map(|title| html_escape_outside_attribute(title))
-        .unwrap_or(format!(r#"<span aria-hidden="true" class="no_title">…</span>"#));
+        .map(html_escape_outside_attribute)
+        .unwrap_or(String::from(r#"<span aria-hidden="true" class="no_title">…</span>"#));
 
     let mut badges = Vec::new();
 

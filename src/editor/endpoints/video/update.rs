@@ -61,7 +61,7 @@ pub async fn update(
         None
     } else {
         Some(
-            NaiveDate::parse_from_str(&release_date_trimmed, "%Y-%m-%d")
+            NaiveDate::parse_from_str(release_date_trimmed, "%Y-%m-%d")
                 .map_err(|err| err.to_string())
         )
     };

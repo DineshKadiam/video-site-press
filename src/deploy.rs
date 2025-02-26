@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -72,7 +72,7 @@ pub fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
     let probe_signature = nanoid();
     let probe_content = format!("{PROBE_TEXT}\n\n{probe_signature}");
 
-    let local_probe_path = context.build_dir.join(&PROBE_FILE_NAME);
+    let local_probe_path = context.build_dir.join(PROBE_FILE_NAME);
     let remote_probe_path = format!(
         "{user}@{server}:{path}",
         path = Path::new(site.deploy_config.path.as_ref().unwrap()).join(PROBE_FILE_NAME).to_string_lossy(),
@@ -119,9 +119,9 @@ pub fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
             remove_probe_command
                 .arg("--delete")
                 .arg("--dirs")
-                .arg(&format!("--include={PROBE_FILE_NAME}")) // must appear before --exclude (!) otherwise removal does not happen
+                .arg(format!("--include={PROBE_FILE_NAME}")) // must appear before --exclude (!) otherwise removal does not happen
                 .arg("--exclude=*")
-                .arg(&context.build_dir.join("./"))
+                .arg(context.build_dir.join("./"))
                 .arg(&remote_deploy_path);
 
             let _ = remove_probe_command.output();
@@ -132,7 +132,7 @@ pub fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
                 Err(format!("The config probe was successfully uploaded to {remote_probe_path} but its presence could not be verified through the public interface {public_probe_url}. (Double-check that both the base url and the deployment configuration are correct)"))
             }
         }
-        Err(err) => return Err(format!("The config probe was successfully uploaded to {remote_probe_path} but not obtainable through the public interface {public_probe_url}. ({err})"))
+        Err(err) => Err(format!("The config probe was successfully uploaded to {remote_probe_path} but not obtainable through the public interface {public_probe_url}. ({err})"))
     }
 }
 

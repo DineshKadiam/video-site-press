@@ -21,7 +21,7 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
     for (key, label) in Theme::variants(translations) {
         select_theme.option(key, label);
     }
-    select_theme.selected(&theme.key);
+    select_theme.selected(theme.key);
 
     let external_icon = icons::external(translations.external_link);
     let version_adaptive = env!("HYPER8_VERSION_ADAPTIVE");

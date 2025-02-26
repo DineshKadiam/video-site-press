@@ -34,7 +34,7 @@ pub fn playlist_html(
 
     let title = match &playlist.title {
         Some(title) => title,
-        None => if playlist.path == "" { "Hyper 8" } else { playlist.slug() }
+        None => if playlist.path.is_empty() { "Hyper 8" } else { playlist.slug() }
     };
     let e_title = html_escape_outside_attribute(title);
 
@@ -47,7 +47,7 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(merged_options.unlisted, &translations);
+    let unlisted = unlisted_badge(merged_options.unlisted, translations);
 
     body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
@@ -79,8 +79,8 @@ pub fn playlist_html(
                     None => String::new()
                 };
                 let number = index + 1;
-                let label = video.label(&translations);
-                let video_thumbnail = thumbnail(&translations, video, &traversal_with_video_prefix, true);
+                let label = video.label(translations);
+                let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"

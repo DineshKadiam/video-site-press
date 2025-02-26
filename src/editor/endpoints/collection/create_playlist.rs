@@ -84,7 +84,7 @@ pub async fn create_playlist(
 
     if slug_trimmed.is_empty() {
         let slug = slugify(title_trimmed);
-        let mut playlist_path = if &path.path == "" {
+        let mut playlist_path = if path.path.is_empty() {
             slug.to_string()
         } else {
             format!("{}/{slug}", &path.path)
@@ -92,7 +92,7 @@ pub async fn create_playlist(
 
         let mut duplicate = 1;
         while context.site_dir.join(&playlist_path).exists() {
-            playlist_path = if &path.path == "" {
+            playlist_path = if path.path.is_empty() {
                 format!("{slug}_{duplicate}")
             } else {
                 format!("{}/{slug}_{duplicate}", &path.path)
@@ -100,13 +100,13 @@ pub async fn create_playlist(
             duplicate += 1;
         }
 
-        return succeed(playlist_path, Some(title_trimmed));
+        succeed(playlist_path, Some(title_trimmed))
     } else {
         if let Err(message) = validate_slug(slug_trimmed) {
             return error(Some(&message), None);
         }
 
-        let playlist_path = if &path.path == "" {
+        let playlist_path = if path.path.is_empty() {
             slug_trimmed.to_string()
         } else {
             format!("{}/{slug_trimmed}", &path.path)
@@ -114,10 +114,10 @@ pub async fn create_playlist(
 
         if context.site_dir.join(&playlist_path).exists() {
             let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
-            return error(Some(message), None);
+            error(Some(message), None)
         } else {
             let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
-            return succeed(playlist_path, title);
+            succeed(playlist_path, title)
         }
     }
 }

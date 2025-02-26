@@ -125,7 +125,7 @@ fn build_collection(
     if let Some(banner) = &collection.banner {
         let collection_build_dir = context.build_dir.join(&collection.path);
 
-        if &collection.path != "" {
+        if !collection.path.is_empty() {
             fs::create_dir_all(&collection_build_dir).unwrap();
         }
 
@@ -205,7 +205,7 @@ fn build_playlist(
     if let Some(banner) = &playlist.banner {
         let playlist_build_dir = context.build_dir.join(&playlist.path);
 
-        if &playlist.path != "" {
+        if !playlist.path.is_empty() {
             fs::create_dir_all(&playlist_build_dir).unwrap();
         }
 
@@ -260,13 +260,13 @@ fn build_video(
 
     let video_build_dir = context.build_dir.join(&video.path);
 
-    if &video.path != "" {
+    if !video.path.is_empty() {
         fs::create_dir_all(&video_build_dir).unwrap();
     }
 
     for version in &video.versions {
         hard_link_or_copy(
-            &context.site_dir.join(&video.path).join(&version.file_name),
+            context.site_dir.join(&video.path).join(&version.file_name),
             video_build_dir.join(&version.file_name)
         );
     }
@@ -310,7 +310,7 @@ fn build_video(
         *embeds_requested = true;
 
         if let Some(base_url) = &site.base_url {
-            let traversal_embed_codes = traversal.with_virtual("embed-codes", &site.language.translations.embed);
+            let traversal_embed_codes = traversal.with_virtual("embed-codes", site.language.translations.embed);
 
             embed_codes_html(
                 base_url,
@@ -321,7 +321,7 @@ fn build_video(
                 &traversal_embed_codes
             );
 
-            let traversal_embed = traversal.with_virtual("embed", &site.language.translations.embed);
+            let traversal_embed = traversal.with_virtual("embed", site.language.translations.embed);
 
             embed_html(
                 context,

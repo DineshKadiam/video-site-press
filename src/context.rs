@@ -135,7 +135,7 @@ impl Context {
     pub fn convert_to_collection(&self, path: &str) {
         let mut site_mut = self.get_site_mut();
 
-        if path == "" {
+        if path.is_empty() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
@@ -305,7 +305,7 @@ impl Context {
     pub fn convert_to_playlist(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
-        if path == "" {
+        if path.is_empty() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
@@ -488,7 +488,7 @@ impl Context {
     pub fn convert_to_video(&self, path: &str) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
-        if path == "" {
+        if path.is_empty() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let video = Video::read_dir(self, &hyper_dir, &site_mut);

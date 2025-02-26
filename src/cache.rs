@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::collections::HashMap;
@@ -121,7 +121,7 @@ impl Cache {
                     "Removing orphaned cache artifact ({}) - it was probably created with a different version of hyper8 or stems from a cancelled background job.",
                     filename
                 );
-                let _ = fs::remove_file(&cache_dir.join(filename));
+                let _ = fs::remove_file(cache_dir.join(filename));
             }
         }
     }

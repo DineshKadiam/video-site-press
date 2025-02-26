@@ -113,7 +113,7 @@ pub fn edit_page(
 
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &banner.file_name;
-            let src = if path == "" {
+            let src = if path.is_empty() {
                 format!("/poster/{file_name}")
             } else {
                 format!("/poster/{path}/{file_name}")
@@ -159,17 +159,17 @@ pub fn edit_page(
     let t_inherit = translations.inherit;
 
     let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
-    select_copy_link.option("", &format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
-    select_download.option("", &format!("{t_inherit} ({t_download_disabled_enabled})"));
+    select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
     let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
-    select_embedding.option("", &format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
@@ -253,10 +253,10 @@ pub fn edit_page(
         String::new()
     };
 
-    let slug_form = if path == "" {
+    let slug_form = if path.is_empty() {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", &collection.parent_path(), &site, translations);
+        let mut input_permalink = Input::permalink("slug", collection.parent_path(), &site, translations);
 
         input_permalink
             .id("slug_collection")
@@ -295,12 +295,12 @@ pub fn edit_page(
         CollectionFormFeedback::Site(site_form_feedback) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, path, &translations);
+    let site_edit = endpoints::site::edit(context, site_form_feedback, path, translations);
 
     let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
 
     let new_playlist_form = {
-        let mut input_slug_create_playlist = Input::permalink("slug", &Path::new(path), &site, translations);
+        let mut input_slug_create_playlist = Input::permalink("slug", Path::new(path), &site, translations);
         let mut input_title_create_playlist = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -336,7 +336,7 @@ pub fn edit_page(
     };
 
     let new_subcollection_form = {
-        let mut input_slug_create_subcollection = Input::permalink("slug", &Path::new(path), &site, translations);
+        let mut input_slug_create_subcollection = Input::permalink("slug", Path::new(path), &site, translations);
         let mut input_title_create_subcollection = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -372,7 +372,7 @@ pub fn edit_page(
     };
 
     let new_video_form = {
-        let mut input_slug_create_video = Input::permalink("slug", &Path::new(path), &site, translations);
+        let mut input_slug_create_video = Input::permalink("slug", Path::new(path), &site, translations);
         let mut input_title_create_video = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -428,9 +428,9 @@ pub fn edit_page(
         collection.subcollections.is_empty() &&
         collection.videos.len() < 2 {
         let message = if collection.videos.is_empty() {
-            "This collection contains nothing can therefore seamlessly be converted to a video."
+            "This collection contains nothing and can therefore seamlessly be converted to a video."
         } else {
-            "This collection contains nothing can therefore seamlessly be converted to a video."
+            "This collection contains only a single video and can therefore seamlessly be converted to a video."
         };
 
         let t_convert_to_video = translations.convert_to_video;
@@ -446,12 +446,12 @@ pub fn edit_page(
     };
 
     let input_unlisted_conditionally_hidden = match collection.path.as_str() {
-        "" => if collection.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
+        "" => if collection.unlisted { String::from(r#"<input name="unlisted" type="hidden" value="checked">"#) } else { String::new() },
         _ => input_unlisted.to_string()
     };
 
-    let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), &translations);
-    let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), &translations);
+    let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), translations);
+    let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), translations);
 
     let r_resource_actions = resource_actions(context, collection.offline, path, &site, translations);
 
@@ -545,7 +545,7 @@ pub fn edit_page(
     "#);
 
     let head_title = collection.title.as_deref().unwrap_or_else(|| collection.slug());
-    let html = layout(context, &language, Some(path), &site, &body, head_title);
+    let html = layout(context, language, Some(path), &site, &body, head_title);
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

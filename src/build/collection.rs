@@ -39,7 +39,7 @@ pub fn collection_html(
 
     let title = match &collection.title {
         Some(title) => title,
-        None => if collection.path == "" { "Hyper 8" } else { collection.slug() }
+        None => if collection.path.is_empty() { "Hyper 8" } else { collection.slug() }
     };
     let e_title = html_escape_outside_attribute(title);
 
@@ -52,7 +52,7 @@ pub fn collection_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(merged_options.unlisted, &translations);
+    let unlisted = unlisted_badge(merged_options.unlisted, translations);
 
     body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
@@ -87,7 +87,7 @@ pub fn collection_html(
                     None => video.slug().to_string()
                 };
 
-                let video_thumbnail = thumbnail(&translations, video, &traversal_with_video_prefix, true);
+                let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"
@@ -112,13 +112,13 @@ pub fn collection_html(
 
     let playlists = collection.public_playlists_desc_by_release_date();
     for playlist in &playlists {
-        let rendered = render_playlist(playlist, site, &traversal);
+        let rendered = render_playlist(playlist, site, traversal);
         body.push_str(&rendered);
     }
 
     let subcollections = collection.public_subcollections_desc_by_release_date();
     for subcollection in &subcollections {
-        let rendered = render_collection(subcollection, site, &traversal);
+        let rendered = render_collection(subcollection, site, traversal);
         body.push_str(&rendered);
     }
 

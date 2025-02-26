@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -87,7 +87,7 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
         // we take the poster snapshot at halftime, otherwise at the start
         let snapshot_seek_offset_seconds = version.video_meta
             .as_ref()
-            .map(|video_meta| format!("{}", &video_meta.duration * seek_offset))
+            .map(|video_meta| format!("{}", video_meta.duration * seek_offset))
             .unwrap_or("0".to_string());
 
         let output_filename = if !context.site_dir.join(&video.path).join("poster.jpg").exists() {

@@ -56,7 +56,7 @@ impl<'a> Textarea<'a> {
     }
 }
 
-impl<'a> Display for Textarea<'a> {
+impl Display for Textarea<'_> {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
         let key = self.key;
         let id = if let Some(id) = self.id { id } else { self.key };

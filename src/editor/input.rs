@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::{Display, Formatter};
@@ -110,7 +110,7 @@ impl<'a> Input<'a> {
     }
 }
 
-impl<'a> Display for Input<'a> {
+impl Display for Input<'_> {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
         let error = &self.error;
         let key = self.key;

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -44,7 +44,7 @@ impl EditorConfig {
         EditorConfig {
             language_code: language_code.into(),
             theme_key: theme_key.into(),
-            tree_view_order: tree_view_order
+            tree_view_order
         }
     }
 

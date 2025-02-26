@@ -107,7 +107,7 @@ pub fn downloads(site: &Site, video: &Video) -> String {
             let height = video_meta.height;
             let width = video_meta.width;
 
-            let slug = video.slug_opt().unwrap_or_else(|| "video");
+            let slug = video.slug_opt().unwrap_or("video");
             let download_name = Path::new(file_name).with_file_name(format!("{slug}_{width}x{height}")).to_string_lossy().to_string();
 
             let format_label = format!("{width}×{height}");

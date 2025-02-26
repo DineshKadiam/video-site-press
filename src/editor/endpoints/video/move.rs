@@ -39,7 +39,7 @@ pub async fn r#move(
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
     } else if context.site_dir.join(&new_path).exists() {
-        Some(format!("This permalink is already used by another collection, playlist or video."))
+        Some(String::from("This permalink is already used by another collection, playlist or video."))
     } else {
         None
     };

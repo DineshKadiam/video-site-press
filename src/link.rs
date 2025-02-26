@@ -56,9 +56,9 @@ impl Link {
 
         if self.rel_me {
             if self.hidden {
-                field.push_str(&format!("verification = rel-me-hidden\n"));
+                field.push_str("verification = rel-me-hidden\n");
             } else {
-                field.push_str(&format!("verification = rel-me\n"));
+                field.push_str("verification = rel-me\n");
             }
         }
 

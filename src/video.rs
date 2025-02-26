@@ -471,7 +471,7 @@ impl Video {
     pub fn cmp_by_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.release_date, &b.release_date) {
             (Some(a_release_date), Some(b_release_date)) => {
-                match a_release_date.cmp(&b_release_date) {
+                match a_release_date.cmp(b_release_date) {
                     Ordering::Equal => Video::cmp_by_earliest_modified_asc(a, b),
                     ordering => ordering
                 }
@@ -486,7 +486,7 @@ impl Video {
     pub fn cmp_by_release_date_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.release_date, &b.release_date) {
             (Some(a_release_date), Some(b_release_date)) => {
-                match b_release_date.cmp(&a_release_date) {
+                match b_release_date.cmp(a_release_date) {
                     Ordering::Equal => Video::cmp_by_earliest_modified_desc(a, b),
                     ordering => ordering
                 }
@@ -500,7 +500,7 @@ impl Video {
     // Videos without sort number are sorted to the back
     pub fn cmp_by_sort_number_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.sort_number, &b.sort_number) {
-            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
+            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(b_sort_number),
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
             (None, None) => Ordering::Equal
@@ -510,7 +510,7 @@ impl Video {
     // Videos without sort number are sorted to the back
     pub fn cmp_by_sort_number_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.sort_number, &b.sort_number) {
-            (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(&a_sort_number),
+            (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(a_sort_number),
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
             (None, None) => Ordering::Equal
@@ -520,7 +520,7 @@ impl Video {
     // Videos without sort number and without release date are sorted to the back
     pub fn cmp_by_sort_number_then_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.sort_number, &b.sort_number) {
-            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(&b_sort_number),
+            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(b_sort_number),
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
             (None, None) => Video::cmp_by_release_date_asc(a, b)
@@ -546,20 +546,20 @@ impl Video {
     // Videos without title are sorted to the front
     pub fn cmp_by_slug_then_title_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
+            (None, None) => a.slug().cmp(b.slug())
         }
     }
 
     // Videos without title are sorted to the front
     pub fn cmp_by_slug_then_title_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => b_title.cmp(&a_title),
+            (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(&a.slug())
+            (None, None) => b.slug().cmp(a.slug())
         }
     }
 
@@ -744,7 +744,7 @@ impl Video {
     }
 
     pub fn slug_opt(&self) -> Option<&str> {
-        if self.path == "" {
+        if self.path.is_empty() {
             None
         } else {
             self.path.split('/').last()
@@ -753,7 +753,7 @@ impl Video {
 
     // TODO: Terminate any scheduled/running background jobs associated with the video?
     pub fn unpersist(&self, context: &Context) {
-        if self.path == "" {
+        if self.path.is_empty() {
             let manifest_path = context.site_dir.join("video.eno");
             let _ = fs::remove_file(&manifest_path);
 
@@ -773,7 +773,7 @@ impl Video {
     }
 
     pub fn versions_desc_by_quality(&self) -> Vec<VideoFile> {
-        let mut versions: Vec<VideoFile> = self.versions.iter().cloned().collect();
+        let mut versions: Vec<VideoFile> = self.versions.clone();
         versions.sort_unstable_by(|a, b| {
             match (&a.video_meta, &b.video_meta) {
                 (Some(a_video_meta), Some(b_video_meta)) => {

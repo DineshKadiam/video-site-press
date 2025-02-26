@@ -43,7 +43,7 @@ pub fn video_html(
 
     let title = match &video.title {
         Some(title) => title,
-        None => if video.path == "" { "Hyper 8" } else { video.slug() }
+        None => if video.path.is_empty() { "Hyper 8" } else { video.slug() }
     };
     let e_title = html_escape_outside_attribute(title);
 
@@ -65,9 +65,8 @@ pub fn video_html(
                     .unwrap();
 
                 videos
-                    .iter()
-                    .nth(active_position + 1)
-                    .map(|video| Arc::clone(video))
+                    .get(active_position + 1)
+                    .map(Arc::clone)
             }
             None => None
         }

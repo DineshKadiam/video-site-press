@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::ops::Range;
@@ -24,7 +24,7 @@ struct Paragraph {
     trailing_whitespace: usize
 }
 
-impl<'input> MarkdownSubset<'input> {
+impl MarkdownSubset<'_> {
     fn consume_newline(&mut self) {
         self.next_char();
 

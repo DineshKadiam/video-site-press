@@ -289,7 +289,7 @@ pub fn edit_page(
                         let size = human_size(version.file_meta.size);
                         let width = video_meta.width;
 
-                        let (browser_support, reasons) = match browser_support::analysis(&version.file_name, &language, video_meta) {
+                        let (browser_support, reasons) = match browser_support::analysis(&version.file_name, language, video_meta) {
                             Some(Ok(message)) => (translations.good_browser_support, message),
                             Some(Err(message)) => (translations.not_support_by_browsers, message),
                             None => (translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
@@ -368,7 +368,7 @@ pub fn edit_page(
 
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &poster.file_name;
-            let src = if path == "" {
+            let src = if path.is_empty() {
                 format!("/poster/{file_name}")
             } else {
                 format!("/poster/{path}/{file_name}")
@@ -430,17 +430,17 @@ pub fn edit_page(
     let t_inherit = translations.inherit;
 
     let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
-    select_copy_link.option("", &format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
-    select_download.option("", &format!("{t_inherit} ({t_download_disabled_enabled})"));
+    select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
     let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
-    select_embedding.option("", &format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
@@ -520,7 +520,7 @@ pub fn edit_page(
         String::new()
     };
 
-    let slug_form = if path == "" {
+    let slug_form = if path.is_empty() {
         String::new()
     } else {
         let mut input_permalink = Input::permalink("slug", video.parent_path(), &site, translations);
@@ -582,11 +582,11 @@ pub fn edit_page(
     "#);
 
     let input_unlisted_conditionally_hidden = match video.path.as_str() {
-        "" => if video.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
+        "" => if video.unlisted { String::from(r#"<input name="unlisted" type="hidden" value="checked">"#) } else { String::new() },
         _ => input_unlisted.to_string()
     };
 
-    let render_additional_formats = additional_formats_form(&translations, video);
+    let render_additional_formats = additional_formats_form(translations, video);
 
     let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
     let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);

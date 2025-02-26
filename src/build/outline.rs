@@ -63,7 +63,7 @@ pub struct Traversal<'a> {
     pub steps: Vec<TraversalStep<'a>>
 }
 
-impl<'a> CurrentPage<'a> {
+impl CurrentPage<'_> {
     pub fn is_collection(&self, collection: &Collection) -> bool {
         if let CurrentPage::Collection(contained_collection) = self {
             contained_collection.path == collection.path
@@ -198,7 +198,7 @@ impl OutlineStats {
     }
 }
 
-impl<'a> TraversalStep<'a> {
+impl TraversalStep<'_> {
     pub fn breadcrumb(&self, href: &str, site: &Site) -> String {
         match self {
             TraversalStep::Collection(collection) => {
@@ -306,7 +306,7 @@ impl<'a> TraversalStep<'a> {
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
             // TODO: Something graphically interesting instead (that also conveys "collection" somehow?)
-            format!(r#"<div class="placeholder"></div>"#)
+            String::from(r#"<div class="placeholder"></div>"#)
         };
         let label = collection.label(&site.language.translations);
         let outline_stats = OutlineStats::for_collection(collection).render(site);
@@ -516,7 +516,7 @@ impl<'a> TraversalStep<'a> {
             let video_prefix = format!("{prefix}{}/", video.slug());
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
-            format!(r#"<div class="placeholder"></div>"#)
+            String::from(r#"<div class="placeholder"></div>"#)
         };
         let label = playlist.label(&site.language.translations);
         let outline_stats = OutlineStats::for_playlist(playlist).render(site);

@@ -89,7 +89,7 @@ fn edit_page(
         input_deployment_user.validated_value(&unsaved.deployment_user);
         input_language.validated_value(&unsaved.language);
         input_poster_aspect.validated_value(&unsaved.poster_aspect);
-        select_theme.selected(&unsaved.theme.key);
+        select_theme.selected(unsaved.theme.key);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
@@ -106,7 +106,7 @@ fn edit_page(
         input_deployment_user.value_option(&site.deploy_config.user);
         input_language.value_option(&language);
         input_poster_aspect.value_option(&poster_aspect);
-        select_theme.selected(&site.theme.key);
+        select_theme.selected(site.theme.key);
 
         String::new()
     };
@@ -147,7 +147,7 @@ pub fn edit(
     path: &str,
     translations: &Translations
 ) -> String {
-    if path == "" {
+    if path.is_empty() {
         let site = context.get_site();
         edit_page(form_feedback, &site, translations)
     } else {
@@ -198,7 +198,7 @@ pub async fn update(
     let base_url = if base_url_trimmed.is_empty() {
         None
     } else {
-        Some(HyperUrl::parse(&base_url_trimmed))
+        Some(HyperUrl::parse(base_url_trimmed))
     };
 
     let poster_aspect = if poster_aspect_trimmed.is_empty() {

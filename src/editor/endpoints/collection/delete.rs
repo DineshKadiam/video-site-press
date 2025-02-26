@@ -19,7 +19,7 @@ pub async fn delete(
         return Either::Right(not_found(&context, &language, &path.path))
     };
 
-    let redirect_url = if &path.path == "" {
+    let redirect_url = if path.path.is_empty() {
         "/".to_string()
     } else {
         // We join("") to append a trailing slash (which parent() removes beforehand)

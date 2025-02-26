@@ -103,7 +103,7 @@ pub fn edit_page(
 
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &banner.file_name;
-            let src = if path == "" {
+            let src = if path.is_empty() {
                 format!("/poster/{file_name}")
             } else {
                 format!("/poster/{path}/{file_name}")
@@ -149,17 +149,17 @@ pub fn edit_page(
     let t_inherit = translations.inherit;
 
     let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
-    select_copy_link.option("", &format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
-    select_download.option("", &format!("{t_inherit} ({t_download_disabled_enabled})"));
+    select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
     let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
-    select_embedding.option("", &format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
@@ -242,7 +242,7 @@ pub fn edit_page(
         String::new()
     };
 
-    let slug_form = if path == "" {
+    let slug_form = if path.is_empty() {
         String::new()
     } else {
         let mut input_permalink = Input::permalink("slug", playlist.parent_path(), &site, translations);
@@ -315,12 +315,12 @@ pub fn edit_page(
     };
 
     let input_unlisted_conditionally_hidden = match playlist.path.as_str() {
-        "" => if playlist.unlisted { format!(r#"<input name="unlisted" type="hidden" value="checked">"#)} else { String::new() },
+        "" => if playlist.unlisted { String::from(r#"<input name="unlisted" type="hidden" value="checked">"#) } else { String::new() },
         _ => input_unlisted.to_string()
     };
 
     let new_video_form = {
-        let mut input_slug_create_video = Input::permalink("slug", &Path::new(path), &site, translations);
+        let mut input_slug_create_video = Input::permalink("slug", Path::new(path), &site, translations);
         let mut input_title_create_video = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.

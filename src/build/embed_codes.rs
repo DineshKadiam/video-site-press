@@ -62,11 +62,11 @@ pub fn embed_codes_html(
 
     let title = match &video.title {
         Some(title) => title,
-        None => if video.path == "" { "Hyper 8" } else { video.slug() }
+        None => if video.path.is_empty() { "Hyper 8" } else { video.slug() }
     };
     let e_title = html_escape_outside_attribute(title);
 
-    let embed_interfix = if video.path == "" { "embed" } else { "/embed" };
+    let embed_interfix = if video.path.is_empty() { "embed" } else { "/embed" };
     let embed_url = base_url.value
         .join(&format!("{}{embed_interfix}{index_suffix}", video.path))
         .unwrap();

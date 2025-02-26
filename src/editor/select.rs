@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::{Display, Formatter};
@@ -48,7 +48,7 @@ impl<'a> Select<'a> {
     }
 }
 
-impl<'a> Display for Select<'a> {
+impl Display for Select<'_> {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
         let key = self.key;
         let id = if let Some(id) = self.id { id } else { self.key };

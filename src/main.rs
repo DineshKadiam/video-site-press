@@ -120,7 +120,7 @@ fn main() {
         cache,
         cache_dir,
         &editor_language,
-        &editor_config.as_ref().map(|config| config.theme_key.as_str()).unwrap_or("adaptive"),
+        editor_config.as_ref().map(|config| config.theme_key.as_str()).unwrap_or("adaptive"),
         editor_tree_view_order,
         Arc::new(Site::new()),
         site_dir.clone()

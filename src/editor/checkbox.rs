@@ -25,7 +25,7 @@ impl<'a> Checkbox<'a> {
     }
 }
 
-impl<'a> Display for Checkbox<'a> {
+impl Display for Checkbox<'_> {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
         let checked = if self.checked { "checked" } else { "" };
         let key = self.key;

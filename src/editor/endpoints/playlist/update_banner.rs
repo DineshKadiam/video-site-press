@@ -34,7 +34,7 @@ pub async fn update_banner(
         }
         Err(()) => {
             let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &path.path))
+            Either::Right(not_found(&context, &language, &path.path))
         }
     }
 }

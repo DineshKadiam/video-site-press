@@ -412,20 +412,20 @@ impl Playlist {
     // Playlists without title are sorted to the front
     pub fn cmp_by_slug_then_title_asc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
         match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(&b_title),
+            (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
+            (None, None) => a.slug().cmp(b.slug())
         }
     }
 
     // Playlists without title are sorted to the front
     pub fn cmp_by_slug_then_title_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
         match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => b_title.cmp(&a_title),
+            (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(&a.slug())
+            (None, None) => b.slug().cmp(a.slug())
         }
     }
 
@@ -622,7 +622,7 @@ impl Playlist {
     }
 
     pub fn slug_opt(&self) -> Option<&str> {
-        if self.path == "" {
+        if self.path.is_empty() {
             None
         } else {
             self.path.split('/').last()
@@ -630,7 +630,7 @@ impl Playlist {
     }
 
     pub fn unpersist(&self, context: &Context) {
-        if self.path == "" {
+        if self.path.is_empty() {
             let manifest_path = context.site_dir.join("playlist.eno");
             let _ = fs::remove_file(&manifest_path);
 
