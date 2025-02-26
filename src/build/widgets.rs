@@ -13,7 +13,6 @@ use crate::{
     Link,
     PosterFile,
     Site,
-    ThemeKind,
     Translations,
     Video,
     VideoFile
@@ -27,8 +26,7 @@ use crate::util::{
     precise_duration
 };
 
-/// Placed in the head of each page to identify the Hyper 8 build that generated it.
-const GENERATOR_META: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
+use super::GENERATOR_META;
 
 pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
@@ -49,39 +47,39 @@ pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     }
 }
 
-
-pub fn copy_link(site: &Site, path: &str) -> String {
-    let data_url = match &site.base_url {
-        Some(base_url) => {
-            let url = base_url.value.join(path).unwrap().to_string();
-            format!(r#"data-url="{url}""#)
-        }
-        None => String::new()
-    };
-
-    let t_copy_link = site.language.translations.copy_link;
-    let copy_link_icon = icons::copy_link(t_copy_link);
+/// A button enriched with data attributes that client scripting can use
+/// to copy the content (embed code or link) to clipboard and display success/failure state.
+/// Returns a tuple `(button, templates)` where `button` contains the markup
+/// for the copy link button itself, and `templates` the markup for three
+/// template tags that are only used at runtime by the clipboard script to
+/// switch the button's icon for visual feedback. The template tags should
+/// only be appended at the bottom of the page to optimize page load.
+pub fn copy_button(content_key: &str, content_value: &str, label: &str, site: &Site) -> (String, String) {
+    let copy_icon = icons::copy();
     let failure_icon = icons::failure(site.language.translations.failed);
     let success_icon = icons::success(site.language.translations.copied);
-    // TODO: Optimize page rendering: Render <template> tags at the bottom of the page.
-    format!(r#"
-        <div>
-            <button {data_url} id="copy-link">
-                <span class="icon">{copy_link_icon}</span> {t_copy_link}
-            </button>
-            <template id="copy_link_icon">
-                {copy_link_icon}
-            </template>
-            <template id="failure_icon">
-                {failure_icon}
-            </template>
-            <template id="success_icon">
-                {success_icon}
-            </template>
-        </div>
-    "#)
-}
 
+    let button = format!(r#"
+        <button data-{content_key}="{content_value}" data-copy>
+            <span class="icon">{copy_icon}</span>
+            <span>{label}</label>
+        </button>
+    "#);
+
+    let templates = format!(r#"
+        <template id="copy_icon">
+            {copy_icon}
+        </template>
+        <template id="failure_icon">
+            {failure_icon}
+        </template>
+        <template id="success_icon">
+            {success_icon}
+        </template>
+    "#);
+
+    (button, templates)
+}
 
 pub fn downloads(site: &Site, video: &Video) -> String {
     if video.versions.is_empty() {
@@ -204,92 +202,6 @@ pub fn embed_layout(
             {body}
         </body>
     "#);
-
-    let lang_code = &site.language.code;
-    let dir_attribute = if site.language.is_rtl() { r#"dir="rtl""# } else { "" };
-
-    formatdoc!(r#"
-        <!doctype html>
-        <html {dir_attribute} lang="{lang_code}">
-            {head}
-            {body}
-        </html>
-    "#)
-}
-
-pub fn layout(
-    body: &str,
-    site: &Site,
-    title: &str,
-    traversal: &Traversal
-) -> String {
-    let generator_meta = GENERATOR_META;
-
-    // TODO: Hash assets (cache expiration)
-    let root_prefix = traversal.prefix_asc();
-    let head = formatdoc!(r#"
-        <head>
-            <title>{title}</title>
-            <meta charset="utf-8">
-            {generator_meta}
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <script defer src="{root_prefix}site.js" type="module"></script>
-            <link rel="stylesheet" href="{root_prefix}site.css">
-        </head>
-    "#);
-
-    let breadcrumbs = traversal.parents(site)
-        .iter()
-        .map(|breadcrumb| {
-            let breadcrumb_rendered = breadcrumb.step.breadcrumb(&breadcrumb.href, site);
-            format!(r#"{breadcrumb_rendered} <span style="font-size: 1.6rem; position: relative; top: -.2rem;">›</span> "#)
-        })
-        .collect::<Vec<String>>()
-        .join("");
-
-    let dark_icon = icons::dark(site.language.translations.dark_color_scheme);
-    let light_icon = icons::light(site.language.translations.light_color_scheme);
-    let theme_toggle = match &site.theme.kind {
-        ThemeKind::Adaptive { .. } => formatdoc!(r#"
-            <div id="theme-toggles">
-                <button class="theme_toggle" id="toggle-dark">{dark_icon}</button>
-                <button class="theme_toggle" id="toggle-light">{light_icon}</button>
-            </div>
-        "#),
-        ThemeKind::Static(_) => String::new()
-    };
-
-    let version_display = env!("HYPER8_VERSION_DISPLAY");
-
-    let with_sidebar = if traversal.steps.len() > 1 { "with_sidebar" } else { "" };
-
-    let e_site_title = html_escape_outside_attribute(site.title());
-
-    let body = formatdoc!(r##"
-        <body>
-            <div class="layout {with_sidebar}">
-                <header>
-                    <div class="breadcrumbs">
-                        {breadcrumbs}
-                    </div>
-                    {theme_toggle}
-                </header>
-                <div class="growing">
-                    <div class="center">
-                        {body}
-                    </div>
-                </div>
-                <footer>
-                    <span>
-                        {e_site_title}
-                    </span>
-                    <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
-                        Hyper 8 Video System {version_display}
-                    </a>
-                </footer>
-            </div>
-        </body>
-    "##);
 
     let lang_code = &site.language.code;
     let dir_attribute = if site.language.is_rtl() { r#"dir="rtl""# } else { "" };

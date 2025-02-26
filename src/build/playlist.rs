@@ -6,10 +6,10 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Context, MarkdownSubset, Playlist, Site};
+use crate::build::Layout;
 use crate::build::outline::Traversal;
 use crate::build::widgets::{
     banner_html,
-    layout,
     links,
     thumbnail,
     unlisted_badge
@@ -120,7 +120,8 @@ pub fn playlist_html(
     //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
     // }
 
-    let html = layout(&body, site, title, traversal);
+    let layout = Layout::new();
+    let html = layout.render(&body, site, title, traversal);
 
     let playlist_dir = context.build_dir.join(&playlist.path);
     fs::create_dir_all(&playlist_dir).unwrap();

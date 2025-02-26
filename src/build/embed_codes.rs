@@ -7,8 +7,9 @@ use url::Url;
 use indoc::formatdoc;
 
 use crate::{Context, HyperUrl, Site, Video};
+use crate::build::Layout;
 use crate::build::outline::Traversal;
-use crate::build::widgets::{layout, unlisted_badge};
+use crate::build::widgets::{copy_button, unlisted_badge};
 use crate::util::{
     html_double_escape_inside_attribute,
     html_escape_inside_attribute,
@@ -56,6 +57,7 @@ pub fn embed_codes_html(
     video: &Video,
     traversal: &Traversal
 ) {
+    let mut layout = Layout::new();
     let index_suffix = site.index_suffix();
 
     let title = match &video.title {
@@ -72,6 +74,12 @@ pub fn embed_codes_html(
     let t_video_player_widget_for_xxx = site.language.translations.video_player_widget_for_xxx(title);
     let (embed_copy_code, embed_display_code) = embed_code(&embed_url, &t_video_player_widget_for_xxx);
 
+    let t_copy = site.language.translations.copy;
+    let (copy_code_button, copy_code_templates) = copy_button("content", &embed_copy_code, t_copy, site);
+
+    layout.add_clipboard_script();
+    layout.add_templates(&copy_code_templates);
+
     let unlisted = unlisted_badge(merged_options.unlisted, &site.language.translations);
 
     let body = format!(r#"
@@ -81,11 +89,14 @@ pub fn embed_codes_html(
                     <h1 class="video_title">{e_title} {unlisted}</h1>
                 </div>
             </div>
-            {embed_display_code}
+                {embed_display_code}
+            <div class="actions">
+                {copy_code_button}
+            </div>
         </div>
     "#);
 
-    let html = layout(&body, site, title, traversal);
+    let html = layout.render(&body, site, title, traversal);
 
     let embed_code_dir = context.build_dir.join(&video.path).join("embed-codes");
     fs::create_dir_all(&embed_code_dir).unwrap();

@@ -20,6 +20,7 @@ use crate::util::{ensure_empty_dir, hard_link_or_copy};
 mod collection;
 mod embed;
 mod embed_codes;
+mod layout;
 mod outline;
 mod playlist;
 mod scripts;
@@ -30,9 +31,13 @@ mod widgets;
 use collection::collection_html;
 use embed::embed_html;
 use embed_codes::embed_codes_html;
+use layout::Layout;
 use outline::Traversal;
 use playlist::playlist_html;
 use video::video_html;
+
+/// Placed in the head of each page to identify the Hyper 8 build that generated it.
+const GENERATOR_META: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
 
 pub fn perform_build(context: &Context) {
     let site = context.get_site();
@@ -86,6 +91,7 @@ pub fn perform_build(context: &Context) {
         SiteContent::Invalid => todo!()
     }
 
+    scripts::generate_clipboard_js(context);
     scripts::generate_site_js(context, &site);
     styles::generate_site_css(context, &site);
 

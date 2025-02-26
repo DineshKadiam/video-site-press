@@ -1,35 +1,3 @@
-const copyLink = document.querySelector('#copy-link');
-const copyNotificationTimeouts = {};
-
-if (copyLink) {
-    function copyToClipboard() {
-        const notify = (success, content) => {
-            if (content in copyNotificationTimeouts) {
-                clearTimeout(copyNotificationTimeouts[content]);
-                delete copyNotificationTimeouts[content];
-            }
-
-            const copyLinkIcon = document.querySelector('#copy_link_icon').content.cloneNode(true);
-            const feedbackIcon = document.querySelector(success ? '#success_icon' : '#failure_icon').content.cloneNode(true);
-
-            const iconContainer = copyLink.querySelector('.icon');
-
-            iconContainer.replaceChildren(feedbackIcon);
-
-            copyNotificationTimeouts[content] = setTimeout(() => iconContainer.replaceChildren(copyLinkIcon), 3000);
-        };
-
-        const content = copyLink.dataset.url || window.location.href.split('#')[0]; // discard hash if present
-
-        navigator.clipboard
-            .writeText(content)
-            .then(() => notify(true, content))
-            .catch(_err => notify(false, content));
-    };
-
-    copyLink.addEventListener('click', copyToClipboard);
-}
-
 const downloadLink = document.querySelector('#download');
 
 if (downloadLink) {

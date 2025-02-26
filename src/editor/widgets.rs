@@ -88,7 +88,7 @@ pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Sit
         format!(r#"<span>{disk_icon} <span>{prefix}/<span class="path_extension">{slug}</span>/</span></span>"#)
     };
 
-    let copy_icon = icons::copy_link(translations.copy);
+    let copy_icon = icons::copy();
 
     let copy_live_url;
     let live_url_displayed;

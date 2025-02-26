@@ -7,6 +7,12 @@ use indoc::formatdoc;
 
 use crate::{Context, Site, ThemeKind};
 
+pub fn generate_clipboard_js(context: &Context) {
+    let js = include_str!("assets/clipboard.js");
+    fs::write(context.build_dir.join("clipboard.js"), js).unwrap();
+}
+
+
 pub fn generate_embed_js(context: &Context) {
     fs::write(
         context.build_dir.join("embed.js"),

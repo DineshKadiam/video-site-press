@@ -4,9 +4,16 @@
 use std::fs;
 use std::sync::Arc;
 
-use crate::{Context, MarkdownSubset, Playlist, Site, Video};
+use crate::{
+    Context,
+    MarkdownSubset,
+    Playlist,
+    Site,
+    Video
+};
+use crate::build::Layout;
 use crate::build::outline::Traversal;
-use crate::build::widgets::{copy_link, downloads, layout, links, player, unlisted_badge};
+use crate::build::widgets::{copy_button, downloads, links, player, unlisted_badge};
 use crate::icons;
 use crate::util::{
     html_escape_outside_attribute,
@@ -23,6 +30,8 @@ pub fn video_html(
     traversal: &Traversal,
     video: &Video
 ) {
+    let mut layout = Layout::new();
+
     let index_suffix = site.index_suffix();
 
     let description = if let Some(description) = &video.description {
@@ -84,8 +93,22 @@ pub fn video_html(
     let video_prefix = "";
     let player_rendered = player(next_video, site, video, video_prefix);
 
-    let r_copy_link = if merged_options.copy_link {
-        copy_link(site, &video.path)
+    let copy_link_button = if merged_options.copy_link {
+        let (content_key, content_value) = match &site.base_url {
+            Some(base_url) => {
+                let url = base_url.value.join(&format!("{}{index_suffix}", &video.path)).unwrap().to_string();
+                ("content", url)
+            }
+            None => ("dynamic-url", String::new())
+        };
+
+        let t_copy_link = site.language.translations.copy_link;
+        let (button, templates) = copy_button(content_key, &content_value, t_copy_link, site);
+
+        layout.add_clipboard_script();
+        layout.add_templates(&templates);
+
+        button
     } else {
         String::new()
     };
@@ -126,7 +149,7 @@ pub fn video_html(
                     {release_date}
                 </div>
                 <div class="actions align flex space">
-                    {r_copy_link}
+                    {copy_link_button}
                     {r_embed}
                     {r_downloads}
                 </div>
@@ -136,7 +159,12 @@ pub fn video_html(
         </div>
     "#);
 
-    let html = layout(&body, site, title, traversal);
+    let html = layout.render(
+        &body,
+        site,
+        title,
+        traversal
+    );
 
     let video_dir = context.build_dir.join(&video.path);
     fs::create_dir_all(&video_dir).unwrap();

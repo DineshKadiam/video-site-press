@@ -40,10 +40,14 @@ pub fn configure(label: &str) -> String {
     "#)
 }
 
-pub fn copy_link(label: &str) -> String {
+/// Two squares with rounded corners slightly shifted from each other
+/// diagonally, with one being in front of the other (the common symbol
+/// depiction for "copy"). We currently always use it in a context where the
+/// text next to it adequately describes the action ("Copy link", "Copy") so
+/// we hide it from assistive technology using aria-hidden.
+pub fn copy() -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <title>{label}</title>
+        <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <path d="m24.18 7.1387c-3.8714 0-7.0703 3.197-7.0703 7.0684h5.1992c0-1.0814 0.78966-1.8711 1.8711-1.8711h25.439c1.0814 0 1.8711 0.78966 1.8711 1.8711v25.441c0 1.0814-0.78966 1.8691-1.8711 1.8691v5.1992c3.8714 0 7.0684-3.197 7.0684-7.0684v-25.441c0-3.8714-3.197-7.0684-7.0684-7.0684h-25.439zm-9.9434 10.131c-3.8714 0-7.0684 3.1989-7.0684 7.0703v25.439c0 3.8714 3.197 7.0684 7.0684 7.0684h25.441c3.8714 0 7.0684-3.197 7.0684-7.0684v-25.439c0-3.8714-3.197-7.0703-7.0684-7.0703h-25.441zm0 5.1992h25.441c1.0814 0 1.8711 0.78966 1.8711 1.8711v25.439c0 1.0814-0.78966 1.8711-1.8711 1.8711h-25.441c-1.0814 0-1.8711-0.78966-1.8711-1.8711v-25.439c0-1.0814 0.78966-1.8711 1.8711-1.8711z"/>
         </svg>
     "#)
@@ -89,7 +93,7 @@ pub fn download(label: &str) -> String {
 
 pub fn embed() -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <path d="m15.521 8.9121c-3.5097 0-6.5566 2.7444-6.5566 6.2656v4.6992h4.5625v-4.6992c0-0.89455 0.76775-1.7031 1.9941-1.7031h4.5195v-4.5625h-4.5195zm11.355 0v4.5625h10.23v-4.5625h-10.23zm17.066 0v4.5625h4.4609c1.2264 0 1.9922 0.80858 1.9922 1.7031v4.6992h4.5645v-4.6992c0-3.5212-3.0469-6.2656-6.5566-6.2656h-4.4609zm-34.979 17.801v10.23h4.5625v-10.23h-4.5625zm41.432 0v10.23h4.5645v-10.23h-4.5645zm-41.432 17.066v4.7637c0 3.5212 3.0469 6.2676 6.5566 6.2676h4.5195v-4.5625h-4.5195c-1.2264 0-1.9941-0.81053-1.9941-1.7051v-4.7637h-4.5625zm41.432 0v4.7637c0 0.89455-0.76579 1.7051-1.9922 1.7051h-4.4609v4.5625h4.4609c3.5097 0 6.5566-2.7464 6.5566-6.2676v-4.7637h-4.5645zm-23.52 6.4688v4.5625h10.23v-4.5625h-10.23z"/>
         </svg>
     "#)

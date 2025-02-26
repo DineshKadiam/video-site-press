@@ -14,9 +14,9 @@ use crate::{
 };
 use crate::build::outline::Traversal;
 use crate::util::localized_date_d_mmmm_yyyy;
+use crate::build::Layout;
 use crate::build::widgets::{
     banner_html,
-    layout,
     links,
     thumbnail,
     unlisted_badge
@@ -137,7 +137,8 @@ pub fn collection_html(
     //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
     // }
 
-    let html = layout(&body, site, title, traversal);
+    let layout = Layout::new();
+    let html = layout.render(&body, site, title, traversal);
 
     let collection_dir = context.build_dir.join(&collection.path);
     fs::create_dir_all(&collection_dir).unwrap();
