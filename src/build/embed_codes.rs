@@ -7,7 +7,7 @@ use url::Url;
 use indoc::formatdoc;
 
 use crate::{Context, HyperUrl, Site, Video};
-use crate::build::Layout;
+use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, unlisted_badge};
 use crate::util::{
@@ -15,8 +15,6 @@ use crate::util::{
     html_escape_inside_attribute,
     html_escape_outside_attribute
 };
-
-use super::MergedOptions;
 
 /// Returns a two-field tuple where the fields have the following use:
 /// .0 => Intended to be directly copied via copy-to-clipboard
@@ -50,9 +48,9 @@ fn embed_code(embed_url: &Url, title: &str) -> (String, String) {
 
 /// Writes the page on which the embed html code can be viewed and copied.
 pub fn embed_codes_html(
+    asset_hashes: &AssetHashes,
     base_url: &HyperUrl,
     context: &Context,
-    merged_options: &MergedOptions,
     site: &Site,
     video: &Video,
     traversal: &Traversal
@@ -80,7 +78,7 @@ pub fn embed_codes_html(
     layout.add_clipboard_script();
     layout.add_templates(&copy_code_templates);
 
-    let unlisted = unlisted_badge(merged_options.unlisted, &site.language.translations);
+    let unlisted = unlisted_badge(video.unlisted(), &site.language.translations);
 
     let body = format!(r#"
         <div class="video_info">
@@ -96,7 +94,13 @@ pub fn embed_codes_html(
         </div>
     "#);
 
-    let html = layout.render(&body, site, title, traversal);
+    let html = layout.render(
+        asset_hashes,
+        &body,
+        site,
+        title,
+        traversal
+    );
 
     let embed_code_dir = context.build_dir.join(&video.path).join("embed-codes");
     fs::create_dir_all(&embed_code_dir).unwrap();

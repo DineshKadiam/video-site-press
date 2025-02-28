@@ -5,7 +5,11 @@
 /// the version that is displayed and reported in resulting builds.
 
 use std::env;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::process::Command;
+
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
 /// Provides four variables to the consecutive build step:
 /// - HYPER8_REVISION (If git is available the short commit hash, otherwise "unknown revision")
@@ -44,4 +48,17 @@ fn main() {
     println!("cargo:rustc-env=HYPER8_VERSION_ADAPTIVE={version_adaptive}");
     println!("cargo:rustc-env=HYPER8_VERSION_DETAILED={version_detailed}");
     println!("cargo:rustc-env=HYPER8_VERSION_DISPLAY={version_display}");
+
+    let static_asset_hash_clipboard_js = url_safe_hash_base64(include_bytes!("src/build/assets/clipboard.js"));
+    let static_asset_hash_embed_js = url_safe_hash_base64(include_bytes!("src/build/assets/embed.js"));
+
+    println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS={static_asset_hash_clipboard_js}");
+    println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_EMBED_JS={static_asset_hash_embed_js}");
+}
+
+pub fn url_safe_hash_base64(hashable: &impl Hash) -> String {
+    let mut hasher = DefaultHasher::new();
+    hashable.hash(&mut hasher);
+    let hash = hasher.finish();
+    URL_SAFE_NO_PAD.encode(hash.to_le_bytes())
 }

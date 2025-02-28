@@ -8,54 +8,74 @@ use indoc::formatdoc;
 use crate::{
     Collection,
     Context,
+    Playlist,
     Site,
     SiteContent,
     Translations,
-    TreeViewOrder
+    TreeViewOrder,
+    Video
 };
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
 struct Visibility {
-    offline: bool,
     offline_inherited: bool,
-    unlisted: bool,
-    unlisted_inherited: bool
+    offline_local: bool,
+    unlisted_inherited: bool,
+    unlisted_local: bool
 }
 
 impl Visibility {
-    pub fn inherited(inherited_visibility: &Visibility, offline: bool, unlisted: bool) -> Visibility {
+    pub fn from_collection(collection: &Collection) -> Visibility {
         Visibility {
-            offline,
-            offline_inherited: inherited_visibility.offline(),
-            unlisted,
-            unlisted_inherited: inherited_visibility.unlisted()
+            offline_inherited: collection.offline_inherited(),
+            offline_local: collection.offline_local(),
+            unlisted_inherited: collection.unlisted_inherited(),
+            unlisted_local: collection.unlisted_local()
         }
     }
 
-    pub fn new(offline: bool, unlisted: bool) -> Visibility {
+    pub fn from_playlist(playlist: &Playlist) -> Visibility {
         Visibility {
-            offline,
+            offline_inherited: playlist.offline_inherited(),
+            offline_local: playlist.offline_local(),
+            unlisted_inherited: playlist.unlisted_inherited(),
+            unlisted_local: playlist.unlisted_local()
+        }
+    }
+
+    pub fn from_video(video: &Video) -> Visibility {
+        Visibility {
+            offline_inherited: video.offline_inherited(),
+            offline_local: video.offline_local(),
+            unlisted_inherited: video.unlisted_inherited(),
+            unlisted_local: video.unlisted_local()
+        }
+    }
+
+    pub fn none() -> Visibility {
+        Visibility {
             offline_inherited: false,
-            unlisted,
-            unlisted_inherited: false
+            offline_local: false,
+            unlisted_inherited: false,
+            unlisted_local: false
         }
     }
 
     pub fn offline(&self) -> bool {
-        self.offline || self.offline_inherited
+        self.offline_local || self.offline_inherited
     }
 
-    pub fn offline_inherited(&self) -> bool {
-        self.offline_inherited && !self.offline
+    pub fn offline_inherited_only(&self) -> bool {
+        self.offline_inherited && !self.offline_local
     }
 
     pub fn unlisted(&self) -> bool {
-        self.unlisted || self.unlisted_inherited
+        self.unlisted_local || self.unlisted_inherited
     }
 
-    pub fn unlisted_inherited(&self) -> bool {
-        self.unlisted_inherited && !self.unlisted
+    pub fn unlisted_inherited_only(&self) -> bool {
+        self.unlisted_inherited && !self.unlisted_local
     }
 }
 
@@ -65,7 +85,6 @@ fn collection_tree(
     path: Option<&str>,
     translations: &Translations,
     tree_view_order: &TreeViewOrder,
-    visibility_inherited: &Visibility
 ) -> String {
     let collection_icon = icons::collection(translations.collection);
     let playlist_icon = icons::playlist(translations.playlist);
@@ -75,7 +94,7 @@ fn collection_tree(
         .map(|collection| {
             let collection_path = &collection.path;
 
-            let collection_visibility = Visibility::inherited(visibility_inherited, collection.offline, collection.unlisted);
+            let collection_visibility = Visibility::from_collection(collection);
 
             let active = path.is_some_and(|path| path == collection_path);
             let href = format!("/collection/{collection_path}");
@@ -106,7 +125,6 @@ fn collection_tree(
                 path,
                 translations,
                 tree_view_order,
-                &collection_visibility
             );
 
             formatdoc!(r#"
@@ -124,7 +142,7 @@ fn collection_tree(
         .map(|playlist| {
             let playlist_path = &playlist.path;
 
-            let playlist_visibility = Visibility::inherited(visibility_inherited, playlist.offline, playlist.unlisted);
+            let playlist_visibility = Visibility::from_playlist(playlist);
 
             let active = path.is_some_and(|path| path == playlist_path);
             let href = format!("/playlist/{playlist_path}");
@@ -157,7 +175,7 @@ fn collection_tree(
                     .map(|video| {
                         let video_path = &video.path;
 
-                        let video_visibility = Visibility::inherited(&playlist_visibility, video.offline, video.unlisted);
+                        let video_visibility = Visibility::from_video(video);
 
                         let active = path.is_some_and(|path| path == video_path);
                         let href = format!("/video/{video_path}");
@@ -203,7 +221,7 @@ fn collection_tree(
         .map(|video| {
             let video_path = &video.path;
 
-            let video_visibility = Visibility::inherited(visibility_inherited, video.offline, video.unlisted);
+            let video_visibility = Visibility::from_video(video);
 
             let active = path.is_some_and(|path| path == video_path);
             let href = format!("/video/{video_path}");
@@ -261,18 +279,16 @@ pub fn tree_view(
 
             let tree_view_order = context.get_editor_tree_view_order();
 
-            let collection_visibility = Visibility::new(collection.offline, collection.unlisted);
-
             let collection_content = collection_tree(
                 &mut breadcrumbs,
                 collection,
                 path,
                 translations,
                 &tree_view_order,
-                &collection_visibility
             );
 
             let collection_icon = icons::collection(t_collection);
+            let collection_visibility = Visibility::from_collection(collection);
             let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
             let node = tree_node(
                 root_active,
@@ -308,7 +324,7 @@ pub fn tree_view(
                 site_dir,
                 Some(t_empty_site),
                 translations,
-                &Visibility::new(false, false)
+                &Visibility::none()
             )
         }
         SiteContent::Playlist(playlist) => {
@@ -320,7 +336,7 @@ pub fn tree_view(
                 breadcrumbs.push(format!(r#"<a href="/playlist/">{e_breadcrumb_title}</a>"#));
             }
 
-            let playlist_visibility = Visibility::new(playlist.offline, playlist.unlisted);
+            let playlist_visibility = Visibility::from_playlist(playlist);
 
             let videos = if playlist.videos.is_empty() {
                 String::new()
@@ -337,7 +353,7 @@ pub fn tree_view(
                         let href = format!("/video/{video_path}");
                         let slug = video.slug();
 
-                        let video_visibility = Visibility::inherited(&playlist_visibility, video.offline, video.unlisted);
+                        let video_visibility = Visibility::from_video(video);
 
                         let node = tree_node(
                             active,
@@ -388,7 +404,7 @@ pub fn tree_view(
                 breadcrumbs.push(format!(r#"<a href="/video/">{e_breadcrumb_title}</a>"#));
             }
 
-            let video_visibility = Visibility::new(video.offline, video.unlisted);
+            let video_visibility = Visibility::from_video(video);
 
             let video_icon = icons::video(t_video);
             tree_node(
@@ -447,14 +463,14 @@ fn tree_node(
     let mut badges = Vec::new();
 
     if visibility.offline() {
-        let inherited = if visibility.offline_inherited() { "inherited" } else { "" };
+        let inherited = if visibility.offline_inherited_only() { "inherited" } else { "" };
         let offline_icon = icons::offline(translations.offline);
         let badge = format!(r#"<span class="visibility {inherited}">{offline_icon}</span>"#);
         badges.push(badge);
     }
 
     if visibility.unlisted() {
-        let inherited = if visibility.unlisted_inherited() { "inherited" } else { "" };
+        let inherited = if visibility.unlisted_inherited_only() { "inherited" } else { "" };
         let unlisted_icon = icons::unlisted(translations.unlisted);
         let badge = format!(r#"<span class="visibility {inherited}">{unlisted_icon}</span>"#);
         badges.push(badge);

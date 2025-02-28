@@ -70,7 +70,6 @@ pub fn edit_page(
     playlist: &Playlist
 ) -> HttpResponse {
     let site = context.get_site();
-    let parent_options = playlist.parent_options(&site);
     let translations = &language.translations;
 
     let t_not_saved = translations.not_saved;
@@ -148,17 +147,17 @@ pub fn edit_page(
     let t_enabled = translations.enabled;
     let t_inherit = translations.inherit;
 
-    let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
+    let t_copy_link_disabled_enabled = if playlist.copy_link_inherited() { t_enabled } else { t_disabled };
     select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
-    let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
+    let t_download_disabled_enabled = if playlist.download_inherited() { t_enabled } else { t_disabled };
     select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
-    let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
+    let t_embedding_disabled_enabled = if playlist.embedding_inherited() { t_enabled } else { t_disabled };
     select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
@@ -212,27 +211,27 @@ pub fn edit_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
-        let copy_link = match playlist.copy_link {
+        let copy_link = match playlist.copy_link_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        let download = match playlist.download {
+        let download = match playlist.download_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        let embedding = match playlist.embedding {
+        let embedding = match playlist.embedding_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        input_offline.checked(playlist.offline);
+        input_offline.checked(playlist.offline_local());
         input_title.value_option(&playlist.title);
-        input_unlisted.checked(playlist.unlisted);
+        input_unlisted.checked(playlist.unlisted_local());
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
@@ -314,9 +313,12 @@ pub fn edit_page(
         String::new()
     };
 
-    let input_unlisted_conditionally_hidden = match playlist.path.as_str() {
-        "" => if playlist.unlisted { String::from(r#"<input name="unlisted" type="hidden" value="checked">"#) } else { String::new() },
-        _ => input_unlisted.to_string()
+    let input_unlisted_conditionally_hidden = if !playlist.path.is_empty() {
+        input_unlisted.to_string()
+    } else if playlist.unlisted_local() {
+        String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
+    } else {
+        String::new()
     };
 
     let new_video_form = {
@@ -359,7 +361,7 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
     let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
 
-    let r_resource_actions = resource_actions(context, playlist.offline, path, &site, translations);
+    let r_resource_actions = resource_actions(context, playlist.offline(), path, &site, translations);
 
     let playlist_icon = icons::playlist(translations.playlist);
     let playlist_title = playlist.label(translations);

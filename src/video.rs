@@ -16,8 +16,8 @@ use crate::{
     FileMeta,
     HyperDir,
     HyperUrl,
+    InheritedOptions,
     Link,
-    MergedOptions,
     Playlist,
     PosterFile,
     Site,
@@ -44,13 +44,18 @@ const VIDEO_OPTIONS: &[&str] = &[
 
 #[derive(Clone, Debug)]
 pub struct Video {
-    pub copy_link: Option<bool>,
+    copy_link: Option<bool>,
     pub description: Option<String>,
-    pub download: Option<bool>,
-    pub embedding: Option<bool>,
+    download: Option<bool>,
+    embedding: Option<bool>,
     pub errors: Vec<String>,
+    /// Some options of a video (e.g. copy_link, embedding and unlisted)
+    /// are affected by both the local settings in the manifest as well as
+    /// the inherited state from ancestors in the site tree. This stores
+    /// the options interited by this video from its ancestors.
+    inherited_options: InheritedOptions,
     pub links: Vec<Link>,
-    pub offline: bool,
+    offline: bool,
     /// Relative to site dir, always without leading/trailing slashes
     pub path: String,
     pub poster: Option<PosterFile>,
@@ -58,9 +63,10 @@ pub struct Video {
     pub sort_number: Option<i32>,
     pub subtitles: Vec<SubtitleFile>,
     pub title: Option<String>,
-    /// Unlisted videos are not linked from the site anywhere,
-    /// one needs to know the link to access them.
-    pub unlisted: bool,
+    /// Unlisted videos are not linked from the site anywhere, one needs to
+    /// know the link to access them. This property propagates downwards in
+    /// in the site tree once it is set (e.g. on a collection or playlist).
+    unlisted: bool,
     // TODO: We cannot actually represent an audio only version here?
     //       (or only in an odd way - height/width are e.g. always present on VideoFile)
     pub versions: Vec<VideoFile>
@@ -441,6 +447,12 @@ impl Video {
         }
     }
 
+    /// When we convert between types (collection, playlist, video) we pass
+    /// over existing inherited options using this method.
+    pub fn copy_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.clone()
+    }
+
     // Videos without an earliest modified date date are sorted to the back
     pub fn cmp_by_earliest_modified_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
         let a_earliest_modified = a.versions.iter().map(|video_file| video_file.file_meta.modified).min();
@@ -576,6 +588,69 @@ impl Video {
         }
     }
 
+    /// Get the copy_link setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn copy_link(&self) -> bool {
+        self.copy_link.unwrap_or(self.inherited_options.copy_link)
+    }
+
+    /// Get the copy_link setting as inherited from ancestors.
+    pub fn copy_link_inherited(&self) -> bool {
+        self.inherited_options.copy_link
+    }
+
+    /// Get the copy_link setting as set locally on the video.
+    pub fn copy_link_local(&self) -> Option<bool> {
+        self.copy_link
+    }
+
+    /// Set the copy_link setting locally on the video.
+    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) {
+        self.copy_link = enabled_option;
+    }
+
+    /// Get the download setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn download(&self) -> bool {
+        self.download.unwrap_or(self.inherited_options.download)
+    }
+
+    /// Get the download setting as inherited from ancestors.
+    pub fn download_inherited(&self) -> bool {
+        self.inherited_options.download
+    }
+
+    /// Get the download setting as set locally on the video.
+    pub fn download_local(&self) -> Option<bool> {
+        self.download
+    }
+
+    /// Set the download setting locally on the video.
+    pub fn download_local_set(&mut self, enabled_option: Option<bool>) {
+        self.download = enabled_option;
+    }
+
+    /// Get the embedding setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn embedding(&self) -> bool {
+        self.embedding.unwrap_or(self.inherited_options.embedding)
+    }
+
+    /// Get the embedding setting as inherited from ancestors.
+    pub fn embedding_inherited(&self) -> bool {
+        self.inherited_options.embedding
+    }
+
+    /// Get the embedding setting as set locally on the video.
+    pub fn embedding_local(&self) -> Option<bool> {
+        self.embedding
+    }
+
+    /// Set the embedding setting locally on the video.
+    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) {
+        self.embedding = enabled_option;
+    }
+
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
         let mut version_candidate: Option<(usize, &VideoFile)> = None;
 
@@ -626,13 +701,14 @@ impl Video {
         version_candidate.map(|version_tuple| version_tuple.2)
     }
 
-    pub fn new(path: String) -> Video {
+    pub fn new(path: String, inherited_options: InheritedOptions) -> Video {
         Video {
             copy_link: None,
             description: None,
             download: None,
             embedding: None,
             errors: Vec::new(),
+            inherited_options,
             links: Vec::new(),
             offline: false,
             path,
@@ -646,15 +722,25 @@ impl Video {
         }
     }
 
-    /// The merged options constructed from all ancestors, or in the case of
-    //  a site-level video just the general default options.
-    pub fn parent_options(&self, site: &Site) -> MergedOptions {
-        if self.path.is_empty() {
-            MergedOptions::default()
-        } else {
-            let parent_path = Path::new(&self.path).parent().unwrap();
-            site.get_merged_options_unchecked(parent_path.to_str().unwrap())
-        }
+    /// Get the offline setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn offline(&self) -> bool {
+        self.offline || self.inherited_options.offline
+    }
+
+    /// Get the offline setting as inherited from ancestors.
+    pub fn offline_inherited(&self) -> bool {
+        self.inherited_options.offline
+    }
+
+    /// Get the offline setting as set locally on the video.
+    pub fn offline_local(&self) -> bool {
+        self.offline
+    }
+
+    /// Set the offline setting locally on the video.
+    pub fn offline_local_set(&mut self, enabled: bool) {
+        self.offline = enabled;
     }
 
     // TODO: Maybe this should better be parent_path_unchecked and we only use
@@ -669,12 +755,21 @@ impl Video {
         }
     }
 
-    pub fn public(&self) -> bool {
+    /// A video is public in its local context if it is neither offline
+    /// nor unlisted according to its own settings. This does
+    /// (intentionally) not take into account publicity settings inherited
+    /// from ancestors.
+    pub fn public_local(&self) -> bool {
         !self.offline && !self.unlisted
     }
 
-    pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Video> {
-        let mut video = Video::new(hyper_dir.site_path(context));
+    pub fn read_dir(
+        context: &Context,
+        hyper_dir: &HyperDir,
+        inherited_options: InheritedOptions,
+        site: &Site
+    ) -> Arc<Video> {
+        let mut video = Video::new(hyper_dir.site_path(context), inherited_options);
 
         if let Some(manifest) = &hyper_dir.video_manifest {
             video.apply_manifest(context, manifest, site);
@@ -749,6 +844,27 @@ impl Video {
         } else {
             self.path.split('/').last()
         }
+    }
+
+    /// Get the unlisted setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn unlisted(&self) -> bool {
+        self.unlisted || self.inherited_options.unlisted
+    }
+
+    /// Get the unlisted setting as inherited from ancestors.
+    pub fn unlisted_inherited(&self) -> bool {
+        self.inherited_options.unlisted
+    }
+
+    /// Get the unlisted setting as set locally on the video.
+    pub fn unlisted_local(&self) -> bool {
+        self.unlisted
+    }
+
+    /// Set the unlisted setting locally on the video.
+    pub fn unlisted_local_set(&mut self, enabled: bool) {
+        self.unlisted = enabled;
     }
 
     // TODO: Terminate any scheduled/running background jobs associated with the video?

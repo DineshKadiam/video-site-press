@@ -17,7 +17,7 @@ use crate::{
     Video,
     VideoFile
 };
-use crate::build::outline::Traversal;
+use crate::build::{AssetHashes, Traversal};
 use crate::icons;
 use crate::util::{
     casual_duration,
@@ -179,21 +179,23 @@ pub fn downloads(site: &Site, video: &Video) -> String {
 }
 
 pub fn embed_layout(
+    asset_hashes: &AssetHashes,
     body: &str,
     site: &Site,
     traversal: &Traversal
 ) -> String {
     let generator_meta = GENERATOR_META;
 
-    // TODO: Hash assets (cache expiration)
+    let embed_css_asset_hash = asset_hashes.embed_css.as_ref().unwrap();
+    let embed_js_asset_hash = AssetHashes::EMBED_JS;
     let root_prefix = traversal.prefix_asc();
     let head = formatdoc!(r#"
         <head>
             <meta charset="utf-8">
             {generator_meta}
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <script defer src="{root_prefix}embed.js" type="module"></script>
-            <link rel="stylesheet" href="{root_prefix}embed.css">
+            <script defer src="{root_prefix}embed.js?{embed_js_asset_hash}" type="module"></script>
+            <link rel="stylesheet" href="{root_prefix}embed.css?{embed_css_asset_hash}">
         </head>
     "#);
 

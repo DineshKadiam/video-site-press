@@ -82,7 +82,6 @@ pub fn edit_page(
     language: &Language
 ) -> HttpResponse {
     let site = context.get_site();
-    let parent_options = collection.parent_options(&site);
     let translations = &language.translations;
     let path = &collection.path;
     let t_not_saved = translations.not_saved;
@@ -158,17 +157,17 @@ pub fn edit_page(
     let t_enabled = translations.enabled;
     let t_inherit = translations.inherit;
 
-    let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
+    let t_copy_link_disabled_enabled = if collection.copy_link_inherited() { t_enabled } else { t_disabled };
     select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
-    let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
+    let t_download_disabled_enabled = if collection.download_inherited() { t_enabled } else { t_disabled };
     select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
-    let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
+    let t_embedding_disabled_enabled = if collection.embedding_inherited() { t_enabled } else { t_disabled };
     select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
@@ -223,27 +222,27 @@ pub fn edit_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
-        let copy_link = match collection.copy_link {
+        let copy_link = match collection.copy_link_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        let download = match collection.download {
+        let download = match collection.download_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        let embedding = match collection.embedding {
+        let embedding = match collection.embedding_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        input_offline.checked(collection.offline);
+        input_offline.checked(collection.offline_local());
         input_title.value_option(&collection.title);
-        input_unlisted.checked(collection.unlisted);
+        input_unlisted.checked(collection.unlisted_local());
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
@@ -445,15 +444,18 @@ pub fn edit_page(
         String::new()
     };
 
-    let input_unlisted_conditionally_hidden = match collection.path.as_str() {
-        "" => if collection.unlisted { String::from(r#"<input name="unlisted" type="hidden" value="checked">"#) } else { String::new() },
-        _ => input_unlisted.to_string()
+    let input_unlisted_conditionally_hidden = if !collection.path.is_empty() {
+        input_unlisted.to_string()
+    } else if collection.unlisted_local() {
+        String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
+    } else {
+        String::new()
     };
 
     let create_link_form = add_link_form(&format!("/add-collection-link/{path}"), translations);
     let links_form = links(&collection.links, &format!("/delete-collection-link/{path}"), translations);
 
-    let r_resource_actions = resource_actions(context, collection.offline, path, &site, translations);
+    let r_resource_actions = resource_actions(context, collection.offline(), path, &site, translations);
 
     let collection_icon = icons::collection(translations.collection);
     let collection_title = collection.label(translations);

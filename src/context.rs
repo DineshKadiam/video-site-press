@@ -16,6 +16,7 @@ use crate::{
     Collection,
     DeploymentState,
     HyperDir,
+    InheritedOptions,
     Job,
     JobKind,
     Language,
@@ -56,6 +57,34 @@ pub enum GetAnyResult {
     None,
     Playlist(Arc<Playlist>),
     Video(Arc<Video>)
+}
+
+/// An update to a collection happens by cloning the existing collection, running
+/// a closure on it that mutates it into the new, updated state and lastly
+/// replacing the existing collection in the site tree with our new, updated
+/// version. The calling code then receives a reference to the new collection,
+/// and if it returned anything in the closure that performed the mutation,
+/// it is passed back that value through `optional_return_value`.
+pub enum CollectionUpdate<T> {
+    NotFound,
+    Updated {
+        collection_updated: Arc<Collection>,
+        optional_return_value: T,
+    }
+}
+
+/// An update to a playlist happens by cloning the existing playlist, running
+/// a closure on it that mutates it into the new, updated state and lastly
+/// replacing the existing playlist in the site tree with our new, updated
+/// version. The calling code then receives a reference to the new playlist,
+/// and if it returned anything in the closure that performed the mutation,
+/// it is passed back that value through `optional_return_value`.
+pub enum PlaylistUpdate<T> {
+    NotFound,
+    Updated {
+        optional_return_value: T,
+        playlist_updated: Arc<Playlist>
+    }
 }
 
 impl Context {
@@ -138,7 +167,7 @@ impl Context {
         if path.is_empty() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+                let collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
                 collection.write_manifest(self);
                 site_mut.content = SiteContent::Collection(collection);
                 self.replace_site(site_mut);
@@ -147,7 +176,7 @@ impl Context {
                 let _ = fs::remove_file(&manifest_path);
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+                let mut collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
                 {
                     let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
@@ -161,11 +190,11 @@ impl Context {
                     if !playlist.links.is_empty() {
                         collection_mut.links = playlist.links.clone();
                     }
-                    collection_mut.offline = playlist.offline;
+                    collection_mut.offline_local_set(playlist.offline_local());
                     if let Some(title) = &playlist.title {
                         collection_mut.title = Some(title.clone());
                     }
-                    collection_mut.unlisted = playlist.unlisted;
+                    collection_mut.unlisted_local_set(playlist.unlisted_local());
                     collection_mut.video_order = playlist.order;
                 }
 
@@ -202,13 +231,13 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+                let mut collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
                 {
                     // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
                     let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
-                    collection_mut.offline = video.offline;
-                    collection_mut.unlisted = video.unlisted;
+                    collection_mut.offline_local_set(video.offline_local());
+                    collection_mut.unlisted_local_set(video.unlisted_local());
                 }
 
                 collection.write_manifest(self);
@@ -225,7 +254,7 @@ impl Context {
                 let _ = fs::remove_file(&manifest_path);
 
                 let hyper_dir = HyperDir::read(&dir_converting);
-                let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+                let mut collection = Collection::read_dir(self, &hyper_dir, playlist.copy_inherited_options(), &site_mut);
 
                {
                     let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap();  // always succeeds, single-owned at this point
@@ -239,11 +268,11 @@ impl Context {
                     if !playlist.links.is_empty() {
                         collection_mut.links = playlist.links.clone();
                     }
-                    collection_mut.offline = playlist.offline;
+                    collection_mut.offline_local_set(playlist.offline_local());
                     if let Some(title) = &playlist.title {
                         collection_mut.title = Some(title.clone());
                     }
-                    collection_mut.unlisted = playlist.unlisted;
+                    collection_mut.unlisted_local_set(playlist.unlisted_local());
                     collection_mut.video_order = playlist.order;
                 };
 
@@ -282,13 +311,13 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&dir_converting);
-                let mut collection = Collection::read_dir(self, &hyper_dir, &site_mut);
+                let mut collection = Collection::read_dir(self, &hyper_dir, video.copy_inherited_options(), &site_mut);
 
                 {
                     // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
                     let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
-                    collection_mut.offline = video.offline;
-                    collection_mut.unlisted = video.unlisted;
+                    collection_mut.offline_local_set(video.offline_local());
+                    collection_mut.unlisted_local_set(video.unlisted_local());
                 }
 
                 collection.write_manifest(self);
@@ -308,7 +337,7 @@ impl Context {
         if path.is_empty() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+                let playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
                 playlist.write_manifest(self);
                 site_mut.content = SiteContent::Playlist(playlist);
                 self.replace_site(site_mut);
@@ -323,7 +352,7 @@ impl Context {
                 let _ = fs::remove_file(&manifest_path);
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+                let mut playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
                 {
                     let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
@@ -337,12 +366,12 @@ impl Context {
                     if !collection.links.is_empty() {
                         playlist_mut.links = collection.links.clone();
                     }
-                    playlist_mut.offline = collection.offline;
+                    playlist_mut.offline_local_set(collection.offline_local());
                     playlist_mut.order = collection.video_order;
                     if let Some(title) = &collection.title {
                         playlist_mut.title = Some(title.clone());
                     }
-                    playlist_mut.unlisted = collection.unlisted;
+                    playlist_mut.unlisted_local_set(collection.unlisted_local());
                 }
 
                 playlist.write_manifest(self);
@@ -378,13 +407,13 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+                let mut playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
                 {
                     // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
                     let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
-                    playlist_mut.offline = video.offline;
-                    playlist_mut.unlisted = video.unlisted;
+                    playlist_mut.offline_local_set(video.offline_local());
+                    playlist_mut.unlisted_local_set(video.unlisted_local());
                 }
 
                 playlist.write_manifest(self);
@@ -407,7 +436,7 @@ impl Context {
                 let _ = fs::remove_file(&manifest_path);
 
                 let hyper_dir = HyperDir::read(&dir_converting);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+                let mut playlist = Playlist::read_dir(self, &hyper_dir, collection.copy_inherited_options(), &site_mut);
 
                 {
                     let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap();  // always succeeds, single-owned at this point
@@ -421,12 +450,12 @@ impl Context {
                     if !collection.links.is_empty() {
                         playlist_mut.links = collection.links.clone();
                     }
-                    playlist_mut.offline = collection.offline;
+                    playlist_mut.offline_local_set(collection.offline_local());
                     playlist_mut.order = collection.video_order;
                     if let Some(title) = &collection.title {
                         playlist_mut.title = Some(title.clone());
                     }
-                    playlist_mut.unlisted = collection.unlisted;
+                    playlist_mut.unlisted_local_set(collection.unlisted_local());
                 }
 
                 playlist.write_manifest(self);
@@ -464,13 +493,13 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&dir_converting);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, &site_mut);
+                let mut playlist = Playlist::read_dir(self, &hyper_dir, video.copy_inherited_options(), &site_mut);
 
                 {
                     // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
                     let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
-                    playlist_mut.offline = video.offline;
-                    playlist_mut.unlisted = video.unlisted;
+                    playlist_mut.offline_local_set(video.offline_local());
+                    playlist_mut.unlisted_local_set(video.unlisted_local());
                 }
 
                 playlist.write_manifest(self);
@@ -491,7 +520,7 @@ impl Context {
         if path.is_empty() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let video = Video::read_dir(self, &hyper_dir, &site_mut);
+                let video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
                 video.write_manifest(self);
                 site_mut.content = SiteContent::Video(video);
                 self.replace_site(site_mut);
@@ -541,7 +570,7 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
+                let mut video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
                 {
                     let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
@@ -565,12 +594,16 @@ impl Context {
                     // If the collection was offline, we ensure that the video
                     // that was indirectly offline as its child, stays offline
                     // when it replaces the collection
-                    video_mut.offline |= collection.offline;
+                    if collection.offline_local() && !video_mut.offline_local() {
+                        video_mut.offline_local_set(true);
+                    }
 
                     // If the collection was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
                     // when it replaces the collection
-                    video_mut.unlisted |= collection.unlisted;
+                    if collection.unlisted_local() && !video_mut.unlisted_local() {
+                        video_mut.unlisted_local_set(true);
+                    }
                 }
 
                 video.write_manifest(self);
@@ -619,7 +652,7 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
+                let mut video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
                 // This always succeeds, as the Arc is guaranteed single-owner at this point.
                {
@@ -644,12 +677,16 @@ impl Context {
                     // If the playlist was offline, we ensure that the video
                     // that was indirectly offline as its child, stays offline
                     // when it replaces the playlist
-                    video_mut.offline |= playlist.offline;
+                    if playlist.offline_local() && !video_mut.offline_local() {
+                        video_mut.offline_local_set(true);
+                    }
 
                     // If the playlist was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
                     // when it replaces the playlist
-                    video_mut.unlisted |= playlist.unlisted;
+                    if playlist.unlisted_local() && !video_mut.unlisted_local() {
+                        video_mut.unlisted_local_set(true);
+                    }
                 };
 
                 video.write_manifest(self);
@@ -708,7 +745,7 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&dir_converting);
-                let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
+                let mut video = Video::read_dir(self, &hyper_dir, collection.copy_inherited_options(), &site_mut);
 
                 {
                     let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
@@ -731,12 +768,16 @@ impl Context {
                     // If the collection was offline, we ensure that the video
                     // that was indirectly offline as its child, stays offline
                     // when it replaces the collection
-                    video_mut.offline |= collection.offline;
+                    if collection.offline_local() && !video_mut.offline_local() {
+                        video_mut.offline_local_set(true);
+                    }
 
                     // If the collection was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
                     // when it replaces the collection
-                    video_mut.unlisted |= collection.unlisted;
+                    if collection.unlisted_local() && !video_mut.unlisted_local() {
+                        video_mut.unlisted_local_set(true);
+                    }
                 }
 
                 video.write_manifest(self);
@@ -786,7 +827,7 @@ impl Context {
                 }
 
                 let hyper_dir = HyperDir::read(&dir_converting);
-                let mut video = Video::read_dir(self, &hyper_dir, &site_mut);
+                let mut video = Video::read_dir(self, &hyper_dir, playlist.copy_inherited_options(), &site_mut);
 
                 {
                     let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
@@ -810,12 +851,16 @@ impl Context {
                     // If the playlist was offline, we ensure that the video
                     // that was indirectly offline as its child, stays offline
                     // when it replaces the playlist
-                    video_mut.offline |= playlist.offline;
+                    if playlist.offline_local() && !video_mut.offline_local() {
+                        video_mut.offline_local_set(true);
+                    }
 
                     // If the playlist was unlisted, we ensure that the video
                     // that was indirectly unlisted as its child, stays unlisted
                     // when it replaces the playlist
-                    video_mut.unlisted |= playlist.unlisted;
+                    if playlist.unlisted_local() && !video_mut.unlisted_local() {
+                        video_mut.unlisted_local_set(true);
+                    }
                 }
 
                 video.write_manifest(self);
@@ -1096,41 +1141,45 @@ impl Context {
             })
     }
 
-    pub fn update_collection(
+    pub fn update_collection<T>(
         &self,
-        mutation: impl FnOnce(&mut Collection),
+        mutation: impl FnOnce(&mut Collection) -> T,
         path: &str
-    ) -> Result<Arc<Collection>, ()> {
+    ) -> CollectionUpdate<T> {
         let mut path_parts = path.split('/').peekable();
 
         let mut site_mut = self.get_site_mut();
 
-        let mut collection_new = None;
+        let mut result = CollectionUpdate::NotFound;
 
         if let Some(&"") = path_parts.peek() {
             if path_parts.count() == 1 {
                 if let SiteContent::Collection(collection) = &mut site_mut.content {
                     let mut collection_mut = (**collection).clone();
-                    mutation(&mut collection_mut);
+                    let optional_return_value = mutation(&mut collection_mut);
                     *collection = Arc::new(collection_mut);
-                    collection_new = Some(Arc::clone(collection));
+
+                    result = CollectionUpdate::Updated {
+                        collection_updated: Arc::clone(collection),
+                        optional_return_value
+                    };
                 }
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if let Ok(collection_updated) = collection_mut.update_collection(mutation, path_parts) {
+            result = collection_mut.update_collection(mutation, path_parts);
+
+            if let CollectionUpdate::Updated { .. } = result {
                 *collection = Arc::new(collection_mut);
-                collection_new = Some(collection_updated);
             }
         }
 
-        if let Some(collection) = collection_new {
-            self.replace_site(site_mut);
-            return Ok(collection);
+        if let CollectionUpdate::Updated { .. } = result {
+             self.replace_site(site_mut);
         }
 
-        Err(())
+        result
     }
 
     pub fn update_from_filesystem(&self, path: &Path, site: &Site) {
@@ -1170,41 +1219,45 @@ impl Context {
         }
     }
 
-    pub fn update_playlist(
+    pub fn update_playlist<T>(
         &self,
-        mutation: impl FnOnce(&mut Playlist),
+        mutation: impl FnOnce(&mut Playlist) -> T,
         path: &str
-    ) -> Result<Arc<Playlist>, ()> {
+    ) -> PlaylistUpdate<T> {
         let mut path_parts = path.split('/').peekable();
 
         let mut site_mut = self.get_site_mut();
 
-        let mut playlist_new = None;
+        let mut result = PlaylistUpdate::NotFound;
 
         if let Some(&"") = path_parts.peek() {
             if path_parts.count() == 1 {
                 if let SiteContent::Playlist(playlist) = &mut site_mut.content {
                     let mut playlist_mut = (**playlist).clone();
-                    mutation(&mut playlist_mut);
+                    let optional_return_value = mutation(&mut playlist_mut);
                     *playlist = Arc::new(playlist_mut);
-                    playlist_new = Some(Arc::clone(playlist));
+
+                    result = PlaylistUpdate::Updated {
+                        optional_return_value,
+                        playlist_updated: Arc::clone(playlist)
+                    };
                 }
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if let Ok(playlist) = collection_mut.update_playlist(mutation, path_parts) {
+            result = collection_mut.update_playlist(mutation, path_parts);
+
+            if let PlaylistUpdate::Updated { .. } = result {
                 *collection = Arc::new(collection_mut);
-                playlist_new = Some(playlist);
             }
         }
 
-        if let Some(playlist) = playlist_new {
-            self.replace_site(site_mut);
-            return Ok(playlist);
+        if let PlaylistUpdate::Updated { .. } = result {
+             self.replace_site(site_mut);
         }
 
-        Err(())
+        result
     }
 
     pub fn update_site(

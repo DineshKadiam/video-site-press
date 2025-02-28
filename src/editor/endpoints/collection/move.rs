@@ -9,7 +9,13 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Collection, Context, ContextPath, Field};
+use crate::{
+    Collection,
+    CollectionUpdate,
+    Context,
+    ContextPath,
+    Field
+};
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -54,14 +60,15 @@ pub async fn r#move(
             collection.path = new_path;
         };
 
-        let collection = match context.update_collection(mutation, &path.path) {
-            Ok(collection) => collection,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/collection/{}", &collection.path);
-
-        Either::Left(Redirect::to(redirect_url).see_other())
+        match context.update_collection(mutation, &path.path) {
+            CollectionUpdate::Updated { collection_updated, .. } => {
+                let redirect_url = format!("/collection/{}", &collection_updated.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
+        }
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,

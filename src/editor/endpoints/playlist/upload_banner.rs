@@ -18,7 +18,8 @@ use crate::{
     ContextPath,
     FileMeta,
     JobKind,
-    Playlist
+    Playlist,
+    PlaylistUpdate
 };
 use crate::editor::widgets::{error_page, not_found};
 use crate::util::{nanoid, supported_image_extension};
@@ -65,11 +66,11 @@ pub async fn upload_banner(
                 };
 
                 match context.update_playlist(mutation, &path.path) {
-                    Ok(playlist) => {
-                        let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist));
+                    PlaylistUpdate::Updated { playlist_updated, .. } => {
+                        let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist_updated));
                         context.push_job_queue(job_kind);
                     }
-                    Err(()) => {
+                    PlaylistUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &path.path);
                         return Ok(Either::Right(http_response));

@@ -4,7 +4,7 @@
 use indoc::formatdoc;
 
 use crate::{Site, ThemeKind};
-use crate::build::Traversal;
+use crate::build::{AssetHashes, Traversal};
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
@@ -19,7 +19,6 @@ pub struct Layout {
 
 impl Layout {
     pub fn add_clipboard_script(&mut self) {
-        // TODO: Implement actual interpolation of script (and separate implementation as file)
         self.clipboard_script = true;
     }
 
@@ -36,6 +35,7 @@ impl Layout {
 
     pub fn render(
         &self,
+        asset_hashes: &AssetHashes,
         body: &str,
         site: &Site,
         title: &str,
@@ -44,12 +44,15 @@ impl Layout {
         let generator_meta = GENERATOR_META;
         let root_prefix = traversal.prefix_asc();
 
-        // TODO: Hash assets (cache expiration)
-
-        let clipboard_script = match self.clipboard_script {
-            true => format!(r#"<script defer src="{root_prefix}clipboard.js"></script>"#),
-            false => String::new()
+        let clipboard_script = if self.clipboard_script {
+            let clipboard_js_asset_hash = AssetHashes::CLIPBOARD_JS;
+            format!(r#"<script defer src="{root_prefix}clipboard.js?{clipboard_js_asset_hash}"></script>"#)
+        } else {
+            String::new()
         };
+
+        let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
+        let site_js_asset_hash = asset_hashes.site_js.as_ref().unwrap();
 
         let head = formatdoc!(r#"
             <head>
@@ -58,8 +61,8 @@ impl Layout {
                 {generator_meta}
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 {clipboard_script}
-                <script defer src="{root_prefix}site.js" type="module"></script>
-                <link rel="stylesheet" href="{root_prefix}site.css">
+                <script defer src="{root_prefix}site.js?{site_js_asset_hash}" type="module"></script>
+                <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
             </head>
         "#);
 

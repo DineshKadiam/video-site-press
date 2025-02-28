@@ -7,10 +7,13 @@ use std::path::Path;
 use indoc::formatdoc;
 
 use crate::{Context, Font, Site, ThemeKind};
+use crate::util::url_safe_hash_base64;
+
+use super::AssetHashes;
 
 const FONT_ELEMENTS_SELECTOR: &str = "body, button";
 
-pub fn generate_embed_css(context: &Context, site: &Site) {
+pub fn generate_embed_css(asset_hashes: &mut AssetHashes, context: &Context, site: &Site) {
     let fonts_css = match &site.font {
         Font::Custom(file_name) => {
             let extension = Path::new(file_name).extension().unwrap().to_string_lossy().to_string();
@@ -100,10 +103,12 @@ pub fn generate_embed_css(context: &Context, site: &Site) {
         {static_css}
     "#);
 
+    asset_hashes.embed_css = Some(url_safe_hash_base64(&css));
+
     fs::write(context.build_dir.join("embed.css"), css).unwrap();
 }
 
-pub fn generate_site_css(context: &Context, site: &Site) {
+pub fn generate_site_css(asset_hashes: &mut AssetHashes, context: &Context, site: &Site) {
     let fonts_css = match &site.font {
         Font::Custom(file_name) => {
             let extension = Path::new(file_name).extension().unwrap().to_string_lossy().to_string();
@@ -195,6 +200,8 @@ pub fn generate_site_css(context: &Context, site: &Site) {
         {theme_vars}
         {static_css}
     "#);
+
+    asset_hashes.site_css = Some(url_safe_hash_base64(&css));
 
     fs::write(context.build_dir.join("site.css"), css).unwrap();
 }

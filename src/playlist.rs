@@ -17,8 +17,8 @@ use crate::{
     GetAnyResult,
     HyperDir,
     HyperUrl,
+    InheritedOptions,
     Link,
-    MergedOptions,
     Site,
     Translations,
     TreeViewOrder,
@@ -44,19 +44,24 @@ const PLAYLIST_OPTIONS: &[&str] = &[
 #[derive(Clone, Debug)]
 pub struct Playlist {
 	pub banner: Option<Banner>,
-    pub copy_link: Option<bool>,
+    copy_link: Option<bool>,
 	pub description: Option<String>,
-    pub download: Option<bool>,
-    pub embedding: Option<bool>,
+    download: Option<bool>,
+    embedding: Option<bool>,
     pub errors: Vec<String>,
+    /// Some options of a playlist (e.g. copy_link, embedding and unlisted)
+    /// are affected by both the local settings in the manifest as well as
+    /// the inherited state from ancestors in the site tree. This stores
+    /// the options interited by this playlist from its ancestors.
+    inherited_options: InheritedOptions,
     pub links: Vec<Link>,
-    pub offline: bool,
+    offline: bool,
     pub order: VideoOrder,
     pub path: String,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
-    pub unlisted: bool,
+    unlisted: bool,
 	pub videos: Vec<Arc<Video>>
 }
 
@@ -385,24 +390,10 @@ impl Playlist {
         }
     }
 
-    /// Applies the merged options at the given path, that is, it resolves
-    /// options that depend both on the setting at the node level and its
-    /// parent nodes. This method is unchecked, i.e. you should have ensured
-    /// beforehand that the given path really refers to an existing collection,
-    /// playlist or video, otherwise this will produce wrong results.
-    pub fn apply_merged_options_unchecked(
-        &self,
-        options: &mut MergedOptions,
-        path: &str
-    ) {
-        options.apply_playlist_options(self);
-
-        for video in &self.videos {
-            if video.path == path {
-                options.apply_video_options(video);
-                return;
-            }
-        }
+    /// When we convert between types (collection, playlist, video) we pass
+    /// over existing inherited options using this method.
+    pub fn copy_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.clone()
     }
 
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
@@ -429,6 +420,34 @@ impl Playlist {
         }
     }
 
+    /// Get the copy_link setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn copy_link(&self) -> bool {
+        self.copy_link.unwrap_or(self.inherited_options.copy_link)
+    }
+
+    /// Get the copy_link setting as inherited from ancestors.
+    pub fn copy_link_inherited(&self) -> bool {
+        self.inherited_options.copy_link
+    }
+
+    /// Get the copy_link setting as set locally on the playlist.
+    pub fn copy_link_local(&self) -> Option<bool> {
+        self.copy_link
+    }
+
+    /// Set the copy_link setting locally on the playlist.
+    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) {
+        self.copy_link = enabled_option;
+    }
+
+    /// Determines if any published video in the playlist has copy_link enabled.
+    /// This information is consecutively used to determine whether we need
+    /// to write clipboard css/js assets to the build.
+    pub fn copy_link_requested(&self) -> bool {
+        self.published_videos().any(|video| video.copy_link())
+    }
+
     pub fn delete_video(
         &mut self,
         context: &Context,
@@ -445,6 +464,55 @@ impl Playlist {
         }
 
         false
+    }
+
+    /// Get the download setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn download(&self) -> bool {
+        self.download.unwrap_or(self.inherited_options.download)
+    }
+
+    /// Get the download setting as inherited from ancestors.
+    pub fn download_inherited(&self) -> bool {
+        self.inherited_options.download
+    }
+
+    /// Get the download setting as set locally on the playlist.
+    pub fn download_local(&self) -> Option<bool> {
+        self.download
+    }
+
+    /// Set the download setting locally on the playlist.
+    pub fn download_local_set(&mut self, enabled_option: Option<bool>) {
+        self.download = enabled_option;
+    }
+
+    /// Get the embedding setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn embedding(&self) -> bool {
+        self.embedding.unwrap_or(self.inherited_options.embedding)
+    }
+
+    /// Get the embedding setting as inherited from ancestors.
+    pub fn embedding_inherited(&self) -> bool {
+        self.inherited_options.embedding
+    }
+
+    /// Get the embedding setting as set locally on the playlist.
+    pub fn embedding_local(&self) -> Option<bool> {
+        self.embedding
+    }
+
+    /// Set the embedding setting locally on the playlist.
+    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) {
+        self.embedding = enabled_option;
+    }
+
+    /// Determines if any published video in the playlist has embeds enabled.
+    /// This information is consecutively used to determine whether we need
+    /// to write embed css/js assets to the build.
+    pub fn embeds_requested(&self) -> bool {
+        self.published_videos().any(|video| video.embedding())
     }
 
     /// Potentially returns a video at the given path.
@@ -493,7 +561,7 @@ impl Playlist {
             })
     }
 
-	pub fn new(path: String) -> Playlist {
+	pub fn new(path: String, inherited_options: InheritedOptions) -> Playlist {
 		Playlist {
             banner: None,
             copy_link: None,
@@ -501,6 +569,7 @@ impl Playlist {
             download: None,
             embedding: None,
             errors: Vec::new(),
+            inherited_options,
             links: Vec::new(),
             offline: false,
             order: VideoOrder::Default,
@@ -511,15 +580,25 @@ impl Playlist {
         }
 	}
 
-    /// The merged options constructed from all ancestors, or in the case of
-    //  a site-level playlist just the general default options.
-    pub fn parent_options(&self, site: &Site) -> MergedOptions {
-        if self.path.is_empty() {
-            MergedOptions::default()
-        } else {
-            let parent_path = Path::new(&self.path).parent().unwrap();
-            site.get_merged_options_unchecked(parent_path.to_str().unwrap())
-        }
+    /// Get the offline setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn offline(&self) -> bool {
+        self.offline || self.inherited_options.offline
+    }
+
+    /// Get the offline setting as inherited from ancestors.
+    pub fn offline_inherited(&self) -> bool {
+        self.inherited_options.offline
+    }
+
+    /// Get the offline setting as set locally on the playlist.
+    pub fn offline_local(&self) -> bool {
+        self.offline
+    }
+
+    /// Set the offline setting locally on the playlist.
+    pub fn offline_local_set(&mut self, enabled: bool) {
+        self.offline = enabled;
     }
 
     // TODO: Maybe this should better be parent_path_unchecked and we only use
@@ -534,12 +613,22 @@ impl Playlist {
         }
     }
 
-    pub fn public(&self) -> bool {
+    /// Merges the options the playlist inherited from its ancestors with
+    /// its own options for hand-down to a (new) descendant.
+    pub fn propagate_options(&self) -> InheritedOptions {
+        self.inherited_options.merge_playlist_options(self)
+    }
+
+    /// A playlist is public in its local context if it is neither offline
+    /// nor unlisted according to its own settings. This does
+    /// (intentionally) not take into account publicity settings inherited
+    /// from ancestors.
+    pub fn public_local(&self) -> bool {
         !self.offline && !self.unlisted
     }
 
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
-        self.videos.iter().filter(|video| video.public())
+        self.videos.iter().filter(|video| video.public_local())
     }
 
     pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
@@ -548,8 +637,19 @@ impl Playlist {
         videos
     }
 
-    pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Playlist> {
-        let mut playlist = Playlist::new(hyper_dir.site_path(context));
+    /// Returns all published videos in the playlist, i.e. those that are not
+    /// set to be offline.
+    pub fn published_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
+        self.videos.iter().filter(|video| !video.offline_local())
+    }
+
+    pub fn read_dir(
+        context: &Context,
+        hyper_dir: &HyperDir,
+        inherited_options: InheritedOptions,
+        site: &Site
+    ) -> Arc<Playlist> {
+        let mut playlist = Playlist::new(hyper_dir.site_path(context), inherited_options);
 
         if let Some(manifest) = &hyper_dir.playlist_manifest {
             playlist.apply_manifest(context, manifest);
@@ -612,7 +712,7 @@ impl Playlist {
         } else if hyper_subdir.video_manifest.is_some() ||
             !hyper_subdir.video_files.is_empty() ||
             !hyper_subdir.audio_files.is_empty() {
-            let video = Video::read_dir(context, hyper_subdir, site);
+            let video = Video::read_dir(context, hyper_subdir, self.propagate_options(), site);
             self.videos.push(video);
         }
     }
@@ -627,6 +727,27 @@ impl Playlist {
         } else {
             self.path.split('/').last()
         }
+    }
+
+    /// Get the unlisted setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn unlisted(&self) -> bool {
+        self.unlisted || self.inherited_options.unlisted
+    }
+
+    /// Get the unlisted setting as inherited from ancestors.
+    pub fn unlisted_inherited(&self) -> bool {
+        self.inherited_options.unlisted
+    }
+
+    /// Get the unlisted setting as set locally on the playlist.
+    pub fn unlisted_local(&self) -> bool {
+        self.unlisted
+    }
+
+    /// Set the unlisted setting locally on the playlist.
+    pub fn unlisted_local_set(&mut self, enabled: bool) {
+        self.unlisted = enabled;
     }
 
     pub fn unpersist(&self, context: &Context) {

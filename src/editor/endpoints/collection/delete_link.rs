@@ -7,7 +7,12 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Collection, Context, ContextPath};
+use crate::{
+    Collection,
+    CollectionUpdate,
+    Context,
+    ContextPath
+};
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -38,11 +43,11 @@ pub async fn delete_link(
     };
 
     match context.update_collection(mutation, &path.path) {
-        Ok(collection) => {
-            let redirect_url = format!("/collection/{}", collection.path);
+        CollectionUpdate::Updated { collection_updated, .. } => {
+            let redirect_url = format!("/collection/{}", collection_updated.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => {
+        CollectionUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &path.path))
         }

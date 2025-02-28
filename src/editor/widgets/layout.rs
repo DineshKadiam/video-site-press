@@ -154,7 +154,7 @@ pub fn layout(
     let translations = &language.translations;
     let (breadcrumbs, tree) = tree_view(context, path, site, &context.site_dir, translations);
 
-    // TODO: Possibly hash scripts/styles
+    // TODO: Hash scripts/styles
     let e_title = html_escape_outside_attribute(title);
     let head = formatdoc!(r#"
         <head>

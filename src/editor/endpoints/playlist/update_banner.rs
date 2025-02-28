@@ -7,7 +7,12 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Context, ContextPath, Playlist};
+use crate::{
+    Context,
+    ContextPath,
+    Playlist,
+    PlaylistUpdate
+};
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -28,11 +33,11 @@ pub async fn update_banner(
     };
 
     match context.update_playlist(mutation, &path.path) {
-        Ok(playlist) => {
-            let redirect_url = format!("/playlist/{}", playlist.path);
+        PlaylistUpdate::Updated { playlist_updated, .. } => {
+            let redirect_url = format!("/playlist/{}", playlist_updated.path);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        Err(()) => {
+        PlaylistUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &path.path))
         }

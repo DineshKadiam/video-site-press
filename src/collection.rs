@@ -12,14 +12,16 @@ use chrono::NaiveDate;
 
 use crate::{
     Banner,
+    CollectionUpdate,
     Context,
     FileMeta,
     GetAnyResult,
     HyperDir,
     HyperUrl,
+    InheritedOptions,
     Link,
-    MergedOptions,
     Playlist,
+    PlaylistUpdate,
     Site,
     Translations,
     TreeViewOrder,
@@ -46,18 +48,23 @@ const COLLECTION_OPTIONS: &[&str] = &[
 #[derive(Clone, Debug)]
 pub struct Collection {
     pub banner: Option<Banner>,
-    pub copy_link: Option<bool>,
+    copy_link: Option<bool>,
     pub description: Option<String>,
-    pub download: Option<bool>,
-    pub embedding: Option<bool>,
+    download: Option<bool>,
+    embedding: Option<bool>,
     pub errors: Vec<String>,
+    /// Some options of a collection (e.g. copy_link, embedding and unlisted)
+    /// are affected by both the local settings in the manifest as well as
+    /// the inherited state from ancestors in the site tree. This stores
+    /// the options interited by this collection from its ancestors.
+    inherited_options: InheritedOptions,
     pub links: Vec<Link>,
-    pub offline: bool,
+    offline: bool,
     pub path: String,
     pub playlists: Vec<Arc<Playlist>>,
     pub subcollections: Vec<Arc<Collection>>,
     pub title: Option<String>,
-    pub unlisted: bool,
+    unlisted: bool,
     pub video_order: VideoOrder,
     pub videos: Vec<Arc<Video>>
 }
@@ -73,7 +80,6 @@ impl Collection {
                 return
             }
         };
-
 
         for element in document.elements() {
             match element.key() {
@@ -380,48 +386,10 @@ impl Collection {
         }
     }
 
-    /// Applies the merged options at the given path, that is, it resolves
-    /// options that depend both on the setting at the node level and its
-    /// parent nodes. This method is unchecked, i.e. you should have ensured
-    /// beforehand that the given path really refers to an existing collection,
-    /// playlist or video, otherwise this will produce wrong results.
-    pub fn apply_merged_options_unchecked(
-        &self,
-        options: &mut MergedOptions,
-        path: &str
-    ) {
-        options.apply_collection_options(self);
-
-        for subcollection in &self.subcollections {
-            if let Some(rest) = path.strip_prefix(&subcollection.path) {
-                options.apply_collection_options(subcollection);
-
-                if rest.starts_with('/') {
-                    subcollection.apply_merged_options_unchecked(options, path);
-                }
-
-                return;
-            }
-        }
-
-        for playlist in &self.playlists {
-            if let Some(rest) = path.strip_prefix(&playlist.path) {
-                options.apply_playlist_options(playlist);
-
-                if rest.starts_with('/') {
-                    playlist.apply_merged_options_unchecked(options, path);
-                }
-
-                return;
-            }
-        }
-
-        for video in &self.videos {
-            if video.path == path {
-                options.apply_video_options(video);
-                return;
-            }
-        }
+    /// When we convert between types (collection, playlist, video) we pass
+    /// over existing inherited options using this method.
+    pub fn copy_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.clone()
     }
 
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
@@ -446,6 +414,37 @@ impl Collection {
             (None, Some(_)) => Ordering::Less,
             (None, None) => b.slug().cmp(a.slug())
         }
+    }
+
+    /// Get the copy_link setting resolved in the context of the site tree
+    /// (= as set locally on the collection or as inherited from an ancestor).
+    pub fn copy_link(&self) -> bool {
+        self.copy_link.unwrap_or(self.inherited_options.copy_link)
+    }
+
+    /// Get the copy_link setting as inherited from ancestors.
+    pub fn copy_link_inherited(&self) -> bool {
+        self.inherited_options.copy_link
+    }
+
+    /// Get the copy_link setting as set locally on the collection.
+    pub fn copy_link_local(&self) -> Option<bool> {
+        self.copy_link
+    }
+
+    /// Set the copy_link setting locally on the collection.
+    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) {
+        self.copy_link = enabled_option;
+    }
+
+    /// Recursively traverses the collection to determine if any published
+    /// video in it has copy_link enabled. This information is consecutively
+    /// used to determine whether we need to write clipboard css/js assets to the
+    /// build.
+    pub fn copy_link_requested(&self) -> bool {
+        self.published_videos().any(|video| video.copy_link()) ||
+        self.published_playlists().any(|playlist| playlist.copy_link_requested()) ||
+        self.published_subcollections().any(|subcollection| subcollection.copy_link_requested())
     }
 
     pub fn delete_collection(
@@ -548,6 +547,58 @@ impl Collection {
         }
 
         Err(())
+    }
+
+    /// Get the download setting resolved in the context of the site tree
+    /// (= as set locally on the collection or as inherited from an ancestor).
+    pub fn download(&self) -> bool {
+        self.download.unwrap_or(self.inherited_options.download)
+    }
+
+    /// Get the download setting as inherited from ancestors.
+    pub fn download_inherited(&self) -> bool {
+        self.inherited_options.download
+    }
+
+    /// Get the download setting as set locally on the collection.
+    pub fn download_local(&self) -> Option<bool> {
+        self.download
+    }
+
+    /// Set the download setting locally on the collection.
+    pub fn download_local_set(&mut self, enabled_option: Option<bool>) {
+        self.download = enabled_option;
+    }
+
+    /// Get the embedding setting resolved in the context of the site tree
+    /// (= as set locally on the collection or as inherited from an ancestor).
+    pub fn embedding(&self) -> bool {
+        self.embedding.unwrap_or(self.inherited_options.embedding)
+    }
+
+    /// Get the embedding setting as inherited from ancestors.
+    pub fn embedding_inherited(&self) -> bool {
+        self.inherited_options.embedding
+    }
+
+    /// Get the embedding setting as set locally on the collection.
+    pub fn embedding_local(&self) -> Option<bool> {
+        self.embedding
+    }
+
+    /// Set the embedding setting locally on the collection.
+    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) {
+        self.embedding = enabled_option;
+    }
+
+    /// Recursively traverses the collection to determine if any published
+    /// video in it has embeds enabled. This information is consecutively
+    /// used to determine whether we need to write embed css/js assets to the
+    /// build.
+    pub fn embeds_requested(&self) -> bool {
+        self.published_videos().any(|video| video.embedding()) ||
+        self.published_playlists().any(|playlist| playlist.embeds_requested()) ||
+        self.published_subcollections().any(|subcollection| subcollection.embeds_requested())
     }
 
     /// Returns a collection, playlist or video at the given path.
@@ -697,7 +748,7 @@ impl Collection {
             .unwrap()
     }
 
-    pub fn new(path: String) -> Collection {
+    pub fn new(path: String, inherited_options: InheritedOptions) -> Collection {
         Collection {
             banner: None,
             copy_link: None,
@@ -706,6 +757,7 @@ impl Collection {
             embedding: None,
             errors: Vec::new(),
             links: Vec::new(),
+            inherited_options,
             offline: false,
             path,
             playlists: Vec::new(),
@@ -717,15 +769,25 @@ impl Collection {
         }
     }
 
-    /// The merged options constructed from all ancestors, or in the case of
-    //  a site-level collection just the general default options.
-    pub fn parent_options(&self, site: &Site) -> MergedOptions {
-        if self.path.is_empty() {
-            MergedOptions::default()
-        } else {
-            let parent_path = Path::new(&self.path).parent().unwrap();
-            site.get_merged_options_unchecked(parent_path.to_str().unwrap())
-        }
+    /// Get the offline setting resolved in the context of the site tree
+    /// (= as set locally on the collection or as inherited from an ancestor).
+    pub fn offline(&self) -> bool {
+        self.offline || self.inherited_options.offline
+    }
+
+    /// Get the offline setting as inherited from ancestors.
+    pub fn offline_inherited(&self) -> bool {
+        self.inherited_options.offline
+    }
+
+    /// Get the offline setting as set locally on the collection.
+    pub fn offline_local(&self) -> bool {
+        self.offline
+    }
+
+    /// Set the offline setting locally on the collection.
+    pub fn offline_local_set(&mut self, enabled: bool) {
+        self.offline = enabled;
     }
 
     // TODO: Maybe this should better be parent_path_unchecked and we only use
@@ -753,12 +815,22 @@ impl Collection {
         playlists
     }
 
-    pub fn public(&self) -> bool {
+    /// Merges the options the collection inherited from its ancestors with
+    /// its own options for hand-down to a (new) descendant.
+    pub fn propagate_options(&self) -> InheritedOptions {
+        self.inherited_options.merge_collection_options(self)
+    }
+
+    /// A collection is public in its local context if it is neither offline
+    /// nor unlisted according to its own settings. This does
+    /// (intentionally) not take into account publicity settings inherited
+    /// from ancestors.
+    pub fn public_local(&self) -> bool {
         !self.offline && !self.unlisted
     }
 
     pub fn public_playlists(&self) -> impl Iterator<Item = &Arc<Playlist>> {
-        self.playlists.iter().filter(|playlist| playlist.public())
+        self.playlists.iter().filter(|playlist| playlist.public_local())
     }
 
     pub fn public_playlists_desc_by_release_date(&self) -> Vec<Arc<Playlist>> {
@@ -768,7 +840,7 @@ impl Collection {
     }
 
     pub fn public_subcollections(&self) -> impl Iterator<Item = &Arc<Collection>> {
-        self.subcollections.iter().filter(|subcollection| subcollection.public())
+        self.subcollections.iter().filter(|subcollection| subcollection.public_local())
     }
 
     pub fn public_subcollections_desc_by_release_date(&self) -> Vec<Arc<Collection>> {
@@ -777,8 +849,10 @@ impl Collection {
         subcollections
     }
 
+    /// Returns all public videos in the collection, i.e. those that are not
+    /// marked as offline or unlisted.
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
-        self.videos.iter().filter(|video| video.public())
+        self.videos.iter().filter(|video| video.public_local())
     }
 
     pub fn public_videos_desc_by_release_date(&self) -> Vec<Arc<Video>> {
@@ -793,8 +867,31 @@ impl Collection {
         videos
     }
 
-    pub fn read_dir(context: &Context, hyper_dir: &HyperDir, site: &Site) -> Arc<Collection> {
-        let mut collection = Collection::new(hyper_dir.site_path(context));
+    /// Returns all published playlists in the collection, i.e. those that are
+    /// not marked as offline.
+    pub fn published_playlists(&self) -> impl Iterator<Item = &Arc<Playlist>> {
+        self.playlists.iter().filter(|playlist| !playlist.offline_local())
+    }
+
+    /// Returns all published subcollections in the collection, i.e. those
+    /// that are not marked as offline.
+    pub fn published_subcollections(&self) -> impl Iterator<Item = &Arc<Collection>> {
+        self.subcollections.iter().filter(|subcollection| !subcollection.offline_local())
+    }
+
+    /// Returns all published videos in the collection, i.e. those that are
+    /// not marked as offline.
+    pub fn published_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
+        self.videos.iter().filter(|video| !video.offline_local())
+    }
+
+    pub fn read_dir(
+        context: &Context,
+        hyper_dir: &HyperDir,
+        inherited_options: InheritedOptions,
+        site: &Site
+    ) -> Arc<Collection> {
+        let mut collection = Collection::new(hyper_dir.site_path(context), inherited_options);
 
         if let Some(manifest) = &hyper_dir.collection_manifest {
             collection.apply_manifest(context, manifest);
@@ -854,7 +951,7 @@ impl Collection {
                 let error = format!("Ignoring collection subdirectory {} because it contains conflicting manifest types (only one of collection.eno, playlist.eno and video.eno may exist in one directory)", hyper_subdir.path.display());
                 self.errors.push(error);
             } else {
-                let subcollection = Collection::read_dir(context, hyper_subdir, site);
+                let subcollection = Collection::read_dir(context, hyper_subdir, self.propagate_options(), site);
                 self.subcollections.push(subcollection);
             }
         } else if hyper_subdir.playlist_manifest.is_some() {
@@ -862,17 +959,17 @@ impl Collection {
                 let error = format!("Ignoring collection subdirectory {} because it contains both playlist.eno and video.eno (only one of the two may exist in one directory)", hyper_subdir.path.display());
                 self.errors.push(error);
             } else {
-                let playlist = Playlist::read_dir(context, hyper_subdir, site);
+                let playlist = Playlist::read_dir(context, hyper_subdir, self.propagate_options(), site);
                 self.playlists.push(playlist);
             }
         } else if hyper_subdir.video_manifest.is_some() {
-            let video = Video::read_dir(context, hyper_subdir, site);
+            let video = Video::read_dir(context, hyper_subdir, self.propagate_options(), site);
             self.videos.push(video);
         } else if !hyper_subdir.dirs.is_empty() {
-            let subcollection = Collection::read_dir(context, hyper_subdir, site);
+            let subcollection = Collection::read_dir(context, hyper_subdir, self.propagate_options(), site);
             self.subcollections.push(subcollection);
         } else if !hyper_subdir.video_files.is_empty() {
-            let video = Video::read_dir(context, hyper_subdir, site);
+            let video = Video::read_dir(context, hyper_subdir, self.propagate_options(), site);
             self.videos.push(video);
         } else {
             // TODO: We currently ignore an empty subdir, as if it didn't exist.
@@ -907,6 +1004,27 @@ impl Collection {
         subcollections
     }
 
+    /// Get the unlisted setting resolved in the context of the site tree
+    /// (= as set locally on the collection or as inherited from an ancestor).
+    pub fn unlisted(&self) -> bool {
+        self.unlisted || self.inherited_options.unlisted
+    }
+
+    /// Get the unlisted setting as inherited from ancestors.
+    pub fn unlisted_inherited(&self) -> bool {
+        self.inherited_options.unlisted
+    }
+
+    /// Get the unlisted setting as set locally on the collection.
+    pub fn unlisted_local(&self) -> bool {
+        self.unlisted
+    }
+
+    /// Set the unlisted setting locally on the collection.
+    pub fn unlisted_local_set(&mut self, enabled: bool) {
+        self.unlisted = enabled;
+    }
+
     pub fn unpersist(&self, context: &Context) {
         if self.path.is_empty() {
             let manifest_path = context.site_dir.join("collection.eno");
@@ -937,11 +1055,11 @@ impl Collection {
         }
     }
 
-    pub fn update_collection(
+    pub fn update_collection<T>(
         &mut self,
-        mutation: impl FnOnce(&mut Collection),
+        mutation: impl FnOnce(&mut Collection) -> T,
         mut path_parts: Peekable<Split<char>>
-    ) -> Result<Arc<Collection>, ()> {
+    ) -> CollectionUpdate<T> {
         if let Some(slug) = path_parts.next() {
             if path_parts.peek().is_some() {
                 if let Some(subcollection) = self.subcollections
@@ -949,22 +1067,28 @@ impl Collection {
                     .find(|subcollection| subcollection.slug() == slug) {
                     let mut subcollection_mut = (**subcollection).clone();
 
-                    if let Ok(subcollection_new) = subcollection_mut.update_collection(mutation, path_parts) {
+                    let result = subcollection_mut.update_collection(mutation, path_parts);
+
+                    if let CollectionUpdate::Updated { .. } = result {
                         *subcollection = Arc::new(subcollection_mut);
-                        return Ok(subcollection_new);
+                        return result;
                     }
                 }
             } else if let Some(subcollection) = self.subcollections
                 .iter_mut()
                 .find(|subcollection| subcollection.slug() == slug) {
                 let mut subcollection_mut = (**subcollection).clone();
-                mutation(&mut subcollection_mut);
+                let optional_return_value = mutation(&mut subcollection_mut);
                 *subcollection = Arc::new(subcollection_mut);
-                return Ok(Arc::clone(subcollection));
+
+                return CollectionUpdate::Updated {
+                    collection_updated: Arc::clone(subcollection),
+                    optional_return_value
+                };
             }
         }
 
-        Err(())
+        CollectionUpdate::NotFound
     }
 
     /// Intended to be called with at least one remaining path part to consume,
@@ -978,7 +1102,7 @@ impl Collection {
         let slug = path_parts.next().unwrap();
 
         if path_parts.peek().is_some() {
-            // Here we know the update occured "deeper down", so we 
+            // Here we know the update occured "deeper down", so we
             // (mostly) just clone the tree nodes at this level and
             // delegate actual reads/updates to the lower leaves of the tree.
 
@@ -1032,32 +1156,38 @@ impl Collection {
         }
     }
 
-    pub fn update_playlist(
+    pub fn update_playlist<T>(
         &mut self,
-        mutation: impl FnOnce(&mut Playlist),
+        mutation: impl FnOnce(&mut Playlist) -> T,
         mut path_parts: Peekable<Split<char>>
-    ) -> Result<Arc<Playlist>, ()> {
+    ) -> PlaylistUpdate<T> {
         if let Some(slug) = path_parts.next() {
             if let Some(playlist) = self.playlists
                 .iter_mut()
                 .find(|playlist| playlist.slug() == slug) {
                 let mut playlist_mut = (**playlist).clone();
-                mutation(&mut playlist_mut);
+                let optional_return_value = mutation(&mut playlist_mut);
                 *playlist = Arc::new(playlist_mut);
-                return Ok(Arc::clone(playlist));
+
+                return PlaylistUpdate::Updated {
+                    optional_return_value,
+                    playlist_updated: Arc::clone(playlist)
+                };
             } else if let Some(subcollection) = self.subcollections
                 .iter_mut()
                 .find(|subcollection| subcollection.slug() == slug) {
                 let mut subcollection_mut = (**subcollection).clone();
 
-                if let Ok(playlist) = subcollection_mut.update_playlist(mutation, path_parts) {
+                let result = subcollection_mut.update_playlist(mutation, path_parts);
+
+                if let PlaylistUpdate::Updated { .. } = result {
                     *subcollection = Arc::new(subcollection_mut);
-                    return Ok(playlist);
+                    return result;
                 }
             }
         }
 
-        Err(())
+        PlaylistUpdate::NotFound
     }
 
     pub fn update_video(

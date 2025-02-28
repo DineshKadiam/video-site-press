@@ -4,12 +4,14 @@
 use std::fs;
 
 use crate::{Context, Site, Video};
+use crate::build::AssetHashes;
 use crate::build::outline::Traversal;
 use crate::build::widgets::{embed_layout, player};
 
 /// Writes html for the embed itself, i.e. what is pulled in from external
 /// site B through an iframe when they embed a video from site A.
 pub fn embed_html(
+    asset_hashes: &AssetHashes,
     context: &Context,
     site: &Site,
     video: &Video,
@@ -22,7 +24,7 @@ pub fn embed_html(
         {player_rendered}
     "#);
 
-    let html = embed_layout(&body, site, traversal);
+    let html = embed_layout(asset_hashes, &body, site, traversal);
 
     let embed_dir = context.build_dir.join(&video.path).join("embed");
     fs::create_dir_all(&embed_dir).unwrap();

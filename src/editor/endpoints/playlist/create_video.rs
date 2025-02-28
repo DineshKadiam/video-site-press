@@ -9,7 +9,14 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 use slug::slugify;
 
-use crate::{Context, ContextPath, Field, Playlist, Video};
+use crate::{
+    Context,
+    ContextPath,
+    Field,
+    Playlist,
+    PlaylistUpdate,
+    Video
+};
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -59,27 +66,27 @@ pub async fn create_video(
         let video_dir = context.site_dir.join(&video_path);
         fs::create_dir_all(&video_dir).unwrap();
 
-        let mut video_mut = Video::new(video_path);
-
-        if let Some(title) = title {
-            video_mut.title = Some(title.to_string());
-        }
-
-        let video = Arc::new(video_mut);
-
-        let video_moving = Arc::clone(&video);
-        let mutation = |playlist: &mut Playlist| {
-            playlist.videos.push(video_moving);
+        let mutation = |playlist: &mut Playlist| -> Arc<Video> {
+            let mut video_mut = Video::new(video_path, playlist.propagate_options());
+            if let Some(title) = title {
+                video_mut.title = Some(title.to_string());
+            }
+            let video = Arc::new(video_mut);
+            playlist.videos.push(Arc::clone(&video));
+            video
         };
 
-        if context.update_playlist(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &path.path));
+        match context.update_playlist(mutation, &path.path) {
+            PlaylistUpdate::Updated { optional_return_value: video, .. } => {
+                video.write_manifest(&context);
+
+                let redirect_url = format!("/video/{}", video.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            PlaylistUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
         }
-
-        video.write_manifest(&context);
-
-        let redirect_url = format!("/video/{}", video.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
     };
 
     if slug_trimmed.is_empty() {

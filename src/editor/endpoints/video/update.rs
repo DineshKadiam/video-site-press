@@ -103,15 +103,15 @@ pub async fn update(
         )
     } else {
         let mutation = |video_mut: &mut Video| {
-            video_mut.copy_link = copy_link;
+            video_mut.copy_link_local_set(copy_link);
             video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            video_mut.download = download;
-            video_mut.embedding = embedding;
-            video_mut.offline = offline;
+            video_mut.download_local_set(download);
+            video_mut.embedding_local_set(embedding);
+            video_mut.offline_local_set(offline);
             video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
             video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
             video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            video_mut.unlisted = unlisted;
+            video_mut.unlisted_local_set(unlisted);
             video_mut.write_manifest(&context);
         };
 

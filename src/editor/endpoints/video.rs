@@ -214,7 +214,6 @@ pub fn edit_page(
     video: &Video
 ) -> HttpResponse {
     let site = context.get_site();
-    let parent_options = video.parent_options(&site);
     let translations = &language.translations;
     let t_not_saved = translations.not_saved;
 
@@ -429,17 +428,17 @@ pub fn edit_page(
     let t_enabled = translations.enabled;
     let t_inherit = translations.inherit;
 
-    let t_copy_link_disabled_enabled = if parent_options.copy_link { t_enabled } else { t_disabled };
+    let t_copy_link_disabled_enabled = if video.copy_link_inherited() { t_enabled } else { t_disabled };
     select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
-    let t_download_disabled_enabled = if parent_options.download { t_enabled } else { t_disabled };
+    let t_download_disabled_enabled = if video.download_inherited() { t_enabled } else { t_disabled };
     select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
-    let t_embedding_disabled_enabled = if parent_options.embedding { t_enabled } else { t_disabled };
+    let t_embedding_disabled_enabled = if video.embedding_inherited() { t_enabled } else { t_disabled };
     select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
@@ -487,19 +486,19 @@ pub fn edit_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
-        let copy_link = match video.copy_link {
+        let copy_link = match video.copy_link_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        let download = match video.download {
+        let download = match video.download_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
         };
 
-        let embedding = match video.embedding {
+        let embedding = match video.embedding_local() {
             Some(true) => "enabled",
             Some(false) => "disabled",
             None => ""
@@ -507,11 +506,11 @@ pub fn edit_page(
         let release_date = video.release_date.as_ref().map(|date| date.to_string());
         let sort_number = video.sort_number.as_ref().map(|number| number.to_string());
 
-        input_offline.checked(video.offline);
+        input_offline.checked(video.offline_local());
         input_release_date.value_option(&release_date);
         input_sort_number.value_option(&sort_number);
         input_title.value_option(&video.title);
-        input_unlisted.checked(video.unlisted);
+        input_unlisted.checked(video.unlisted_local());
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
@@ -581,9 +580,12 @@ pub fn edit_page(
         </form>
     "#);
 
-    let input_unlisted_conditionally_hidden = match video.path.as_str() {
-        "" => if video.unlisted { String::from(r#"<input name="unlisted" type="hidden" value="checked">"#) } else { String::new() },
-        _ => input_unlisted.to_string()
+    let input_unlisted_conditionally_hidden = if !video.path.is_empty() {
+        input_unlisted.to_string()
+    } else if video.unlisted_local() {
+        String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
+    } else {
+        String::new()
     };
 
     let render_additional_formats = additional_formats_form(translations, video);
@@ -591,7 +593,7 @@ pub fn edit_page(
     let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
     let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);
 
-    let r_resource_actions = resource_actions(context, video.offline, path, &site, translations);
+    let r_resource_actions = resource_actions(context, video.offline(), path, &site, translations);
 
     let video_icon = icons::video(translations.video);
     let video_title = video.label(translations);

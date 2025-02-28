@@ -8,7 +8,6 @@ use rsubs_lib::SRT;
 use crate::{
     Collection,
     Context,
-    MergedOptions,
     Playlist,
     Site,
     SiteContent,
@@ -39,66 +38,48 @@ use video::video_html;
 /// Placed in the head of each page to identify the Hyper 8 build that generated it.
 const GENERATOR_META: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
 
+/// When we link to assets on the rendered pages, we append a unique asset
+/// hash to each path (e.g. "site.js?g1VVfPoEjUw"), which is derived from
+/// the file content of the asset. We do this in order to prompt browsers to
+/// fetch new, uncached assets when their content has changed. This struct
+/// groups together those hashes for all assets we use.
+pub struct AssetHashes {
+    pub embed_css: Option<String>,
+    pub site_css: Option<String>,
+    pub site_js: Option<String>
+}
+
+impl AssetHashes {
+    pub const CLIPBOARD_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS");
+    pub const EMBED_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_EMBED_JS");
+
+    pub fn new() -> AssetHashes {
+        AssetHashes {
+            embed_css: None,
+            site_css: None,
+            site_js: None
+        }
+    }
+}
+
 pub fn perform_build(context: &Context) {
     let site = context.get_site();
     
     ensure_empty_dir(&context.build_dir);
 
-    let default_options = MergedOptions::default();
+    let mut asset_hashes = AssetHashes::new();
+
     let traversal = Traversal::new();
 
-    // When we traverse the entire site tree below, we flip this to true when
-    // an embed is rendered anywhere. Later this tells us to add/write the
-    // accompanying assets (css/js) for embeds to the build.
-    let mut embeds_requested = false;
+    scripts::generate_site_js(&mut asset_hashes, context, &site);
+    styles::generate_site_css(&mut asset_hashes, context, &site);
 
-    match &site.content {
-        SiteContent::Collection(collection) => {
-            if collection.offline { return; }
-            build_collection(
-                context,
-                collection,
-                &mut embeds_requested,
-                &default_options,
-                &site,
-                &traversal
-            );
-        }
-        SiteContent::Playlist(playlist) => {
-            if playlist.offline { return; }
-            build_playlist(
-                context,
-                &mut embeds_requested,
-                &default_options,
-                playlist,
-                &site,
-                &traversal
-            );
-        }
-        SiteContent::Video(video) => {
-            if video.offline { return; }
-            build_video(
-                context,
-                &mut embeds_requested,
-                &default_options,
-                None,
-                &site,
-                &traversal,
-                video
-            );
-        }
-        SiteContent::Empty => return,
-        SiteContent::Invalid => todo!()
-    }
-
-    scripts::generate_clipboard_js(context);
-    scripts::generate_site_js(context, &site);
-    styles::generate_site_css(context, &site);
+    let embeds_requested = site.embeds_requested();
 
     if embeds_requested {
         if site.base_url.is_some() {
             scripts::generate_embed_js(context);
-            styles::generate_embed_css(context, &site);
+            styles::generate_embed_css(&mut asset_hashes, context, &site);
         } else {
             // TODO: If we're using the graphical user interface this information needs to
             //       be communicated earlier/differently. E.g. maybe the embedding select
@@ -109,17 +90,55 @@ pub fn perform_build(context: &Context) {
             eprintln!("Embeds could not be generated because the site's base_url is not defined");
         }
     }
+
+    if embeds_requested || site.copy_link_requested() {
+        scripts::generate_clipboard_js(context);
+    }
+
+    match &site.content {
+        SiteContent::Collection(collection) => {
+            if collection.offline() { return; }
+            build_collection(
+                &asset_hashes,
+                context,
+                collection,
+                &site,
+                &traversal
+            );
+        }
+        SiteContent::Playlist(playlist) => {
+            if playlist.offline() { return; }
+            build_playlist(
+                &asset_hashes,
+                context,
+                playlist,
+                &site,
+                &traversal
+            );
+        }
+        SiteContent::Video(video) => {
+            if video.offline() { return; }
+            build_video(
+                &asset_hashes,
+                context,
+                None,
+                &site,
+                &traversal,
+                video
+            );
+        }
+        SiteContent::Empty => return,
+        SiteContent::Invalid => todo!()
+    }
 }
 
 fn build_collection(
+    asset_hashes: &AssetHashes,
     context: &Context,
     collection: &Collection,
-    embeds_requested: &mut bool,
-    parent_options: &MergedOptions,
     site: &Site,
     traversal_previous: &Traversal
 ) {
-    let merged_options = parent_options.merge_collection_options(collection);
     let traversal = traversal_previous.with_collection(collection);
 
     if let Some(banner) = &collection.banner {
@@ -146,31 +165,29 @@ fn build_collection(
 
 
     collection_html(
+        asset_hashes,
         context,
         collection,
-        &merged_options,
         site,
         &traversal
     );
 
     for subcollection in &collection.subcollections {
-        if subcollection.offline { continue; }
+        if subcollection.offline() { continue; }
         build_collection(
+            asset_hashes,
             context,
             subcollection,
-            embeds_requested,
-            &merged_options,
             site,
             &traversal
         );
     }
 
     for playlist in &collection.playlists {
-        if playlist.offline { continue; }
+        if playlist.offline() { continue; }
         build_playlist(
+            asset_hashes,
             context,
-            embeds_requested,
-            &merged_options,
             playlist,
             site,
             &traversal
@@ -178,11 +195,10 @@ fn build_collection(
     }
 
     for video in &collection.videos {
-        if video.offline { continue; }
+        if video.offline() { continue; }
         build_video(
+            asset_hashes,
             context,
-            embeds_requested,
-            &merged_options,
             None,
             site,
             &traversal,
@@ -192,14 +208,12 @@ fn build_collection(
 }
 
 fn build_playlist(
+    asset_hashes: &AssetHashes,
     context: &Context,
-    embeds_requested: &mut bool,
-    parent_options: &MergedOptions,
     playlist: &Playlist,
     site: &Site,
     traversal_previous: &Traversal
 ) {
-    let merged_options = parent_options.merge_playlist_options(playlist);
     let traversal = traversal_previous.with_playlist(playlist);
 
     if let Some(banner) = &playlist.banner {
@@ -225,19 +239,18 @@ fn build_playlist(
     }
 
     playlist_html(
+        asset_hashes,
         context,
-        &merged_options,
         playlist,
         site,
         &traversal
     );
 
     for video in &playlist.videos {
-        if video.offline { continue; }
+        if video.offline() { continue; }
         build_video(
+            asset_hashes,
             context,
-            embeds_requested,
-            &merged_options,
             Some(playlist),
             site,
             &traversal,
@@ -247,15 +260,13 @@ fn build_playlist(
 }
 
 fn build_video(
+    asset_hashes: &AssetHashes,
     context: &Context,
-    embeds_requested: &mut bool,
-    parent_options: &MergedOptions,
     playlist: Option<&Playlist>,
     site: &Site,
     traversal_previous: &Traversal,
     video: &Video
 ) {
-    let merged_options = parent_options.merge_video_options(video);
     let traversal = traversal_previous.with_video(video);
 
     let video_build_dir = context.build_dir.join(&video.path);
@@ -306,16 +317,14 @@ fn build_video(
         }
     }
 
-    if merged_options.embedding {
-        *embeds_requested = true;
-
+    if video.embedding() {
         if let Some(base_url) = &site.base_url {
             let traversal_embed_codes = traversal.with_virtual("embed-codes", site.language.translations.embed);
 
             embed_codes_html(
+                asset_hashes,
                 base_url,
                 context,
-                &merged_options,
                 site,
                 video,
                 &traversal_embed_codes
@@ -324,6 +333,7 @@ fn build_video(
             let traversal_embed = traversal.with_virtual("embed", site.language.translations.embed);
 
             embed_html(
+                asset_hashes,
                 context,
                 site,
                 video,
@@ -333,8 +343,8 @@ fn build_video(
     }
 
     video_html(
+        asset_hashes,
         context,
-        &merged_options,
         playlist,
         site,
         &traversal,

@@ -9,7 +9,13 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Context, ContextPath, Field, Playlist};
+use crate::{
+    Context,
+    ContextPath,
+    Field,
+    Playlist,
+    PlaylistUpdate
+};
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -58,13 +64,15 @@ pub async fn r#move(
             playlist.path = new_path;
         };
 
-        let playlist = match context.update_playlist(mutation, &path.path) {
-            Ok(playlist) => playlist,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/playlist/{}", playlist.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
+        match context.update_playlist(mutation, &path.path) {
+            PlaylistUpdate::Updated { playlist_updated, .. } => {
+                let redirect_url = format!("/playlist/{}", playlist_updated.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            PlaylistUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
+        }
     } else {
         let playlist = match context.get_playlist(&path.path) {
             Some(playlist) => playlist,

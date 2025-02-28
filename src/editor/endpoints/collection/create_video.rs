@@ -9,7 +9,14 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 use slug::slugify;
 
-use crate::{Collection, Context, ContextPath, Field, Video};
+use crate::{
+    Collection,
+    CollectionUpdate,
+    Context,
+    ContextPath,
+    Field,
+    Video
+};
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -59,27 +66,27 @@ pub async fn create_video(
         let video_dir = context.site_dir.join(&video_path);
         fs::create_dir_all(&video_dir).unwrap();
 
-        let mut video_mut = Video::new(video_path);
-
-        if let Some(title) = title {
-            video_mut.title = Some(title.to_string());
-        }
-
-        let video = Arc::new(video_mut);
-
-        let video_moving = Arc::clone(&video);
-        let mutation = |collection: &mut Collection| {
-            collection.videos.push(video_moving);
+        let mutation = |collection: &mut Collection| -> Arc<Video> {
+            let mut video_mut = Video::new(video_path, collection.propagate_options());
+            if let Some(title) = title {
+                video_mut.title = Some(title.to_string());
+            }
+            let video = Arc::new(video_mut);
+            collection.videos.push(Arc::clone(&video));
+            video
         };
 
-        if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &path.path));
+        match context.update_collection(mutation, &path.path) {
+            CollectionUpdate::Updated { optional_return_value: video, .. } => {
+                video.write_manifest(&context);
+
+                let redirect_url = format!("/video/{}", video.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
         }
-
-        video.write_manifest(&context);
-
-        let redirect_url = format!("/video/{}", video.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
     };
 
     if slug_trimmed.is_empty() {

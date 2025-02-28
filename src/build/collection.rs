@@ -14,7 +14,7 @@ use crate::{
 };
 use crate::build::outline::Traversal;
 use crate::util::localized_date_d_mmmm_yyyy;
-use crate::build::Layout;
+use crate::build::{AssetHashes, Layout};
 use crate::build::widgets::{
     banner_html,
     links,
@@ -23,13 +23,11 @@ use crate::build::widgets::{
 };
 use crate::util::html_escape_outside_attribute;
 
-use super::MergedOptions;
-
 /// Generates and writes a collection index page to the build directory.
 pub fn collection_html(
+    asset_hashes: &AssetHashes,
     context: &Context,
     collection: &Collection,
-    merged_options: &MergedOptions,
     site: &Site,
     traversal: &Traversal
 ) {
@@ -52,7 +50,7 @@ pub fn collection_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(merged_options.unlisted, translations);
+    let unlisted = unlisted_badge(collection.unlisted(), translations);
 
     body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
@@ -138,7 +136,13 @@ pub fn collection_html(
     // }
 
     let layout = Layout::new();
-    let html = layout.render(&body, site, title, traversal);
+    let html = layout.render(
+        asset_hashes,
+        &body,
+        site,
+        title,
+        traversal
+    );
 
     let collection_dir = context.build_dir.join(&collection.path);
     fs::create_dir_all(&collection_dir).unwrap();

@@ -8,11 +8,13 @@ use std::time::Duration;
 
 use crate::{
     Collection,
+    CollectionUpdate,
     Context,
     FileMeta,
     ImageProcessor,
     JobKind,
     Playlist,
+    PlaylistUpdate,
     PosterAsset,
     PosterAssets,
     PosterAssetsCached,
@@ -107,7 +109,7 @@ fn compute_collection_banner_assets(context: &Context, collection: Arc<Collectio
                     }
                 };
 
-                if let Err(()) = context.update_collection(mutation, &collection.path) {
+                if let CollectionUpdate::NotFound = context.update_collection(mutation, &collection.path) {
                     return Err("Banner assets could not be assigned in the site tree as the collection has meanwhile changed path.".to_string());
                 }
             }
@@ -257,7 +259,7 @@ fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) ->
                     }
                 };
 
-                if let Err(()) = context.update_playlist(mutation, &playlist.path) {
+                if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &playlist.path) {
                     return Err("Banner assets could not be assigned in the site tree as the playlist has meanwhile changed path.".to_string());
                 }
             }

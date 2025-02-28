@@ -11,7 +11,7 @@ use crate::{
     Site,
     Video
 };
-use crate::build::Layout;
+use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, downloads, links, player, unlisted_badge};
 use crate::icons;
@@ -20,11 +20,9 @@ use crate::util::{
     localized_date_d_mmmm_yyyy
 };
 
-use super::MergedOptions;
-
 pub fn video_html(
+    asset_hashes: &AssetHashes,
     context: &Context,
-    merged_options: &MergedOptions,
     playlist: Option<&Playlist>,
     site: &Site,
     traversal: &Traversal,
@@ -47,12 +45,12 @@ pub fn video_html(
     };
     let e_title = html_escape_outside_attribute(title);
 
-    let r_downloads = match merged_options.download {
+    let r_downloads = match video.download() {
         true => downloads(site, video),
         false => String::new()
     };
 
-    let next_video = if video.unlisted {
+    let next_video = if video.unlisted() {
         None
     } else {
         match playlist {
@@ -92,7 +90,7 @@ pub fn video_html(
     let video_prefix = "";
     let player_rendered = player(next_video, site, video, video_prefix);
 
-    let copy_link_button = if merged_options.copy_link {
+    let copy_link_button = if video.copy_link() {
         let (content_key, content_value) = match &site.base_url {
             Some(base_url) => {
                 let url = base_url.value.join(&format!("{}{index_suffix}", &video.path)).unwrap().to_string();
@@ -112,7 +110,7 @@ pub fn video_html(
         String::new()
     };
 
-    let r_embed = if merged_options.embedding && site.base_url.is_some() {
+    let r_embed = if video.embedding() && site.base_url.is_some() {
         let embed_icon = icons::embed();
 
         let t_embed = &site.language.translations.embed;
@@ -135,7 +133,7 @@ pub fn video_html(
         None => String::new()
     };
 
-    let unlisted = unlisted_badge(merged_options.unlisted, &site.language.translations);
+    let unlisted = unlisted_badge(video.unlisted(), &site.language.translations);
 
     let links_rendered = links(&site.language, &video.links);
 
@@ -159,6 +157,7 @@ pub fn video_html(
     "#);
 
     let html = layout.render(
+        asset_hashes,
         &body,
         site,
         title,

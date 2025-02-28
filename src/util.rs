@@ -299,6 +299,13 @@ pub fn timestamp() -> u128 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
 }
 
+pub fn url_safe_hash_base64(hashable: &impl Hash) -> String {
+    let mut hasher = DefaultHasher::new();
+    hashable.hash(&mut hasher);
+    let hash = hasher.finish();
+    URL_SAFE_NO_PAD.encode(hash.to_le_bytes())
+}
+
 /// Checks whether the string contains only a-Z, A-Z, 0-9, dash and underscore
 pub fn valid_slug_chars(string: &str) -> bool {
     string.chars().all(|c: char| c.is_ascii_alphanumeric() || c == '-' || c == '_')

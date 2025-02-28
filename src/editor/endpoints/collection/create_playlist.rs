@@ -9,7 +9,14 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 use slug::slugify;
 
-use crate::{Collection, Context, ContextPath, Field, Playlist};
+use crate::{
+    Collection,
+    CollectionUpdate,
+    Context,
+    ContextPath,
+    Field,
+    Playlist
+};
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -59,27 +66,27 @@ pub async fn create_playlist(
         let playlist_dir = context.site_dir.join(&playlist_path);
         fs::create_dir_all(&playlist_dir).unwrap();
 
-        let mut playlist_mut = Playlist::new(playlist_path);
-
-        if let Some(title) = title {
-            playlist_mut.title = Some(title.to_string());
-        }
-
-        let playlist = Arc::new(playlist_mut);
-
-        let playlist_moving = Arc::clone(&playlist);
-        let mutation = |collection: &mut Collection| {
-            collection.playlists.push(playlist_moving);
+        let mutation = |collection: &mut Collection| -> Arc<Playlist> {
+            let mut playlist_mut = Playlist::new(playlist_path, collection.propagate_options());
+            if let Some(title) = title {
+                playlist_mut.title = Some(title.to_string());
+            }
+            let playlist = Arc::new(playlist_mut);
+            collection.playlists.push(Arc::clone(&playlist));
+            playlist
         };
 
-        if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &path.path));
+        match context.update_collection(mutation, &path.path) {
+            CollectionUpdate::Updated { optional_return_value: playlist, .. } => {
+                playlist.write_manifest(&context);
+
+                let redirect_url = format!("/playlist/{}", playlist.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
         }
-
-        playlist.write_manifest(&context);
-
-        let redirect_url = format!("/playlist/{}", playlist.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
     };
 
     if slug_trimmed.is_empty() {

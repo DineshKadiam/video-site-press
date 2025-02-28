@@ -6,7 +6,7 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Context, MarkdownSubset, Playlist, Site};
-use crate::build::Layout;
+use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{
     banner_html,
@@ -19,11 +19,9 @@ use crate::util::{
     localized_date_d_mmmm_yyyy
 };
 
-use super::MergedOptions;
-
 pub fn playlist_html(
+    asset_hashes: &AssetHashes,
     context: &Context,
-    merged_options: &MergedOptions,
     playlist: &Playlist,
     site: &Site,
     traversal: &Traversal
@@ -47,7 +45,7 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(merged_options.unlisted, translations);
+    let unlisted = unlisted_badge(playlist.unlisted(), translations);
 
     body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
 
@@ -121,7 +119,13 @@ pub fn playlist_html(
     // }
 
     let layout = Layout::new();
-    let html = layout.render(&body, site, title, traversal);
+    let html = layout.render(
+        asset_hashes,
+        &body,
+        site,
+        title,
+        traversal
+    );
 
     let playlist_dir = context.build_dir.join(&playlist.path);
     fs::create_dir_all(&playlist_dir).unwrap();

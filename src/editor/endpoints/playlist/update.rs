@@ -7,7 +7,14 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Context, ContextPath, Field, Playlist, VideoOrder};
+use crate::{
+    Context,
+    ContextPath,
+    Field,
+    Playlist,
+    PlaylistUpdate,
+    VideoOrder
+};
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
@@ -60,24 +67,26 @@ pub async fn update(
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
         let mutation = |playlist_mut: &mut Playlist| {
-            playlist_mut.copy_link = copy_link;
+            playlist_mut.copy_link_local_set(copy_link);
             playlist_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            playlist_mut.download = download;
-            playlist_mut.embedding = embedding;
-            playlist_mut.offline = offline;
+            playlist_mut.download_local_set(download);
+            playlist_mut.embedding_local_set(embedding);
+            playlist_mut.offline_local_set(offline);
             playlist_mut.order = order;
             playlist_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            playlist_mut.unlisted = unlisted;
+            playlist_mut.unlisted_local_set(unlisted);
             playlist_mut.write_manifest(&context);
         };
 
-        let playlist = match context.update_playlist(mutation, &path.path) {
-            Ok(playlist) => playlist,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        let redirect_url = format!("/playlist/{}", playlist.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
+        match context.update_playlist(mutation, &path.path) {
+            PlaylistUpdate::Updated { playlist_updated, .. } => {
+                let redirect_url = format!("/playlist/{}", playlist_updated.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            PlaylistUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
+        }
     } else {
         let playlist = match context.get_playlist(&path.path) {
             Some(playlist) => playlist,

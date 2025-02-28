@@ -7,7 +7,14 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Collection, Context, ContextPath, Field, VideoOrder};
+use crate::{
+    Collection,
+    CollectionUpdate,
+    Context,
+    ContextPath,
+    Field,
+    VideoOrder
+};
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
@@ -60,26 +67,26 @@ pub async fn update(
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
         let mutation = |collection_mut: &mut Collection| {
-            collection_mut.copy_link = copy_link;
+            collection_mut.copy_link_local_set(copy_link);
             collection_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            collection_mut.download = download;
-            collection_mut.embedding = embedding;
-            collection_mut.offline = offline;
+            collection_mut.download_local_set(download);
+            collection_mut.embedding_local_set(embedding);
+            collection_mut.offline_local_set(offline);
             collection_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            collection_mut.unlisted = unlisted;
+            collection_mut.unlisted_local_set(unlisted);
             collection_mut.video_order = video_order;
         };
 
-        let collection = match context.update_collection(mutation, &path.path) {
-            Ok(collection) => collection,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
-        };
-
-        collection.write_manifest(&context);
-
-        let redirect_url = format!("/collection/{}", &collection.path);
-
-        Either::Left(Redirect::to(redirect_url).see_other())
+        match context.update_collection(mutation, &path.path) {
+            CollectionUpdate::Updated { collection_updated, .. } => {
+                collection_updated.write_manifest(&context);
+                let redirect_url = format!("/collection/{}", &collection_updated.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
+        }
     } else {
         let collection = match context.get_collection(&path.path) {
             Some(collection) => collection,

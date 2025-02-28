@@ -16,6 +16,7 @@ use slug::slugify;
 
 use crate::{
     Collection,
+    CollectionUpdate,
     Context,
     ContextPath,
     FileMeta,
@@ -23,6 +24,7 @@ use crate::{
     HyperDir,
     JobKind,
     Playlist,
+    PlaylistUpdate,
     Video,
     VideoFile
 };
@@ -94,32 +96,32 @@ pub async fn upload_video(
                     let site = context.get_site();
 
                     let video = match &container {
-                        GetAnyResult::Collection(_) => {
+                        GetAnyResult::Collection(collection) => {
                             let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                            let video = Video::read_dir(&context, &hyper_dir, &site);
+                            let video = Video::read_dir(&context, &hyper_dir, collection.propagate_options(), &site);
 
                             let video_moving = Arc::clone(&video);
                             let mutation = |collection: &mut Collection| {
                                 collection.videos.push(video_moving);
                             };
 
-                            if context.update_collection(mutation, &path.path).is_err() {
+                            if let CollectionUpdate::NotFound = context.update_collection(mutation, &path.path) {
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
                                 return Ok(Either::Right(not_found(&context, &language, &path.path)));
                             }
 
                             video
                         }
-                        GetAnyResult::Playlist(_) => {
+                        GetAnyResult::Playlist(playlist) => {
                             let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                            let video = Video::read_dir(&context, &hyper_dir, &site);
+                            let video = Video::read_dir(&context, &hyper_dir, playlist.propagate_options(), &site);
 
                             let video_moving = Arc::clone(&video);
                             let mutation = |playlist: &mut Playlist| {
                                 playlist.videos.push(video_moving);
                             };
 
-                            if context.update_playlist(mutation, &path.path).is_err() {
+                            if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &path.path) {
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
                                 return Ok(Either::Right(not_found(&context, &language, &path.path)));
                             }

@@ -9,7 +9,13 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 use slug::slugify;
 
-use crate::{Collection, Context, ContextPath, Field};
+use crate::{
+    Collection,
+    CollectionUpdate,
+    Context,
+    ContextPath,
+    Field
+};
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -59,27 +65,27 @@ pub async fn create_subcollection(
         let subcollection_dir = context.site_dir.join(&subcollection_path);
         fs::create_dir_all(&subcollection_dir).unwrap();
 
-        let mut collection_mut = Collection::new(subcollection_path);
-
-        if let Some(title) = title {
-            collection_mut.title = Some(title.to_string());
-        }
-
-        let subcollection = Arc::new(collection_mut);
-
-        let subcollection_moving = Arc::clone(&subcollection);
-        let mutation = |collection: &mut Collection| {
-            collection.subcollections.push(subcollection_moving);
+        let mutation = |collection: &mut Collection| -> Arc<Collection> {
+            let mut subcollection_mut = Collection::new(subcollection_path, collection.propagate_options());
+            if let Some(title) = title {
+                subcollection_mut.title = Some(title.to_string());
+            }
+            let subcollection = Arc::new(subcollection_mut);
+            collection.subcollections.push(Arc::clone(&subcollection));
+            subcollection
         };
 
-        if context.update_collection(mutation, &path.path).is_err() {
-            return Either::Right(not_found(&context, &language, &path.path));
+        match context.update_collection(mutation, &path.path) {
+            CollectionUpdate::Updated { optional_return_value: subcollection, .. } => {
+                subcollection.write_manifest(&context);
+
+                let redirect_url = format!("/collection/{}", subcollection.path);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &path.path))
+            }
         }
-
-        subcollection.write_manifest(&context);
-
-        let redirect_url = format!("/collection/{}", subcollection.path);
-        Either::Left(Redirect::to(redirect_url).see_other())
     };
 
     if slug_trimmed.is_empty() {

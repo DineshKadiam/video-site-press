@@ -6,10 +6,15 @@ use std::fs;
 use indoc::formatdoc;
 
 use crate::{Context, Site, ThemeKind};
+use crate::util::url_safe_hash_base64;
+
+use super::AssetHashes;
 
 pub fn generate_clipboard_js(context: &Context) {
-    let js = include_str!("assets/clipboard.js");
-    fs::write(context.build_dir.join("clipboard.js"), js).unwrap();
+    fs::write(
+        context.build_dir.join("clipboard.js"),
+        include_str!("assets/clipboard.js")
+    ).unwrap();
 }
 
 
@@ -20,7 +25,7 @@ pub fn generate_embed_js(context: &Context) {
     ).unwrap();
 }
 
-pub fn generate_site_js(context: &Context, site: &Site) {
+pub fn generate_site_js(asset_hashes: &mut AssetHashes, context: &Context, site: &Site) {
     let adaptive_theme_js = match &site.theme.kind {
         ThemeKind::Adaptive { .. } => include_str!("assets/adaptive_theme.js"),
         ThemeKind::Static(_) => ""
@@ -32,6 +37,8 @@ pub fn generate_site_js(context: &Context, site: &Site) {
         {adaptive_theme_js}
         {site_js}
     "#);
+
+    asset_hashes.site_js = Some(url_safe_hash_base64(&js));
 
     fs::write(context.build_dir.join("site.js"), js).unwrap();
 }

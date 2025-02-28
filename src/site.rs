@@ -12,8 +12,8 @@ use crate::{
     GetAnyResult,
     HyperDir,
     HyperUrl,
+    InheritedOptions,
     Language,
-    MergedOptions,
     Playlist,
     Theme,
     Video
@@ -301,6 +301,33 @@ impl Site {
         }
     }
 
+    /// Traverses the site tree to determine if any video on the site has
+    /// copy link enabled. This information is consecutively used to
+    /// determine whether we need to write clipboard css/js assets to the
+    /// build.
+    pub fn copy_link_requested(&self) -> bool {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.copy_link_requested(),
+            SiteContent::Playlist(playlist) => playlist.copy_link_requested(),
+            SiteContent::Video(video) => video.copy_link(),
+            SiteContent::Empty |
+            SiteContent::Invalid => false
+        }
+    }
+
+    /// Traverses the site tree to determine if any video on the site has
+    /// embeds enabled. This information is consecutively used to determine
+    /// whether we need to write embed css/js assets to the build.
+    pub fn embeds_requested(&self) -> bool {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.embeds_requested(),
+            SiteContent::Playlist(playlist) => playlist.embeds_requested(),
+            SiteContent::Video(video) => video.embedding(),
+            SiteContent::Empty |
+            SiteContent::Invalid => false
+        }
+    }
+
     /// Returns a collection, playlist or video at the given path.
     pub fn get_any(&self, path: &str) -> GetAnyResult {
         if path.is_empty() {
@@ -330,33 +357,6 @@ impl Site {
         }
 
         None
-    }
-
-    /// Returns the merged options at the given path, that is, it resolves
-    /// options that depend both on the setting at the node level and its
-    /// parent nodes. This method is unchecked, i.e. you should have ensured
-    /// beforehand that the given path really refers to an existing collection,
-    /// playlist or video, otherwise this will panic or produce wrong results.
-    pub fn get_merged_options_unchecked(&self, path: &str) -> MergedOptions {
-        let mut options = MergedOptions::default();
-
-        if path.is_empty() {
-            match &self.content {
-                SiteContent::Collection(collection) => options.apply_collection_options(collection),
-                SiteContent::Playlist(playlist) => options.apply_playlist_options(playlist),
-                SiteContent::Video(video) => options.apply_video_options(video),
-                _ => panic!()
-            }
-        } else {
-            match &self.content {
-                SiteContent::Collection(collection) => collection.apply_merged_options_unchecked(&mut options, path),
-                SiteContent::Playlist(playlist) => playlist.apply_merged_options_unchecked(&mut options, path),
-                SiteContent::Video(video) => options.apply_video_options(video),
-                _ => panic!()
-            }
-        }
-
-        options
     }
 
     /// Returns the playlist at the given path.
@@ -422,13 +422,15 @@ impl Site {
             site.apply_manifest(hyper_dir.site_manifest.as_deref().unwrap());
         }
 
+        let default_options = InheritedOptions::default();
+
         if hyper_dir.collection_manifest.is_some() {
             if hyper_dir.playlist_manifest.is_some() || hyper_dir.video_manifest.is_some() {
                 let error = "Only one of collection.eno, playlist.eno and video.eno may exist in the site directory, site is not read until this is manually resolved.".to_string();
                 site.errors.push(error);
                 site.content = SiteContent::Invalid;
             } else {
-                let collection = Collection::read_dir(context, &hyper_dir, &site);
+                let collection = Collection::read_dir(context, &hyper_dir, default_options, &site);
                 site.content = SiteContent::Collection(collection);
             }
         } else if hyper_dir.playlist_manifest.is_some() {
@@ -437,17 +439,17 @@ impl Site {
                 site.errors.push(error);
                 site.content = SiteContent::Invalid;
             } else {
-                let playlist = Playlist::read_dir(context, &hyper_dir, &site);
+                let playlist = Playlist::read_dir(context, &hyper_dir, default_options, &site);
                 site.content = SiteContent::Playlist(playlist);
             }
         } else if hyper_dir.video_manifest.is_some() {
-            let video = Video::read_dir(context, &hyper_dir, &site);
+            let video = Video::read_dir(context, &hyper_dir, default_options, &site);
             site.content = SiteContent::Video(video);
         } else if !hyper_dir.dirs.is_empty() {
-            let collection = Collection::read_dir(context, &hyper_dir, &site);
+            let collection = Collection::read_dir(context, &hyper_dir, default_options, &site);
             site.content = SiteContent::Collection(collection);
         } else if !hyper_dir.video_files.is_empty() {
-            let video = Video::read_dir(context, &hyper_dir, &site);
+            let video = Video::read_dir(context, &hyper_dir, default_options, &site);
             site.content = SiteContent::Video(video);
         }
 

@@ -15,6 +15,7 @@ use futures_util::TryStreamExt as _;
 use crate::{
     Banner,
     Collection,
+    CollectionUpdate,
     Context,
     ContextPath,
     FileMeta,
@@ -65,11 +66,11 @@ pub async fn upload_banner(
                 };
 
                 match context.update_collection(mutation, &path.path) {
-                    Ok(collection) => {
-                        let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection));
+                    CollectionUpdate::Updated { collection_updated, .. } => {
+                        let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection_updated));
                         context.push_job_queue(job_kind);
                     }
-                    Err(()) => {
+                    CollectionUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &path.path);
                         return Ok(Either::Right(http_response));
