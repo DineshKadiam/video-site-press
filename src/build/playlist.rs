@@ -26,6 +26,7 @@ pub fn playlist_html(
     site: &Site,
     traversal: &Traversal
 ) {
+    let mut layout = Layout::new();
     let translations = &site.language.translations;
 
     let mut body = String::new();
@@ -45,9 +46,14 @@ pub fn playlist_html(
         body.push_str(&img);
     }
 
-    let unlisted = unlisted_badge(playlist.unlisted(), translations);
+    let r_unlisted_badge = if playlist.unlisted() {
+        layout.no_indexing();
+        unlisted_badge(&site.language.translations)
+    } else {
+        String::new()
+    };
 
-    body.push_str(&format!("<h1>{e_title} {unlisted}</h1>\n\n"));
+    body.push_str(&format!("<h1>{e_title} {r_unlisted_badge}</h1>\n\n"));
 
     if let Some(description) = &playlist.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -118,7 +124,6 @@ pub fn playlist_html(
     //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
     // }
 
-    let layout = Layout::new();
     let html = layout.render(
         asset_hashes,
         &body,

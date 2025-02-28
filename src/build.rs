@@ -36,7 +36,8 @@ use playlist::playlist_html;
 use video::video_html;
 
 /// Placed in the head of each page to identify the Hyper 8 build that generated it.
-const GENERATOR_META: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
+const META_GENERATOR: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
+const META_ROBOTS_NOINDEX_NOFOLLOW: &str = r#"<meta name="robots" content="noindex, nofollow">"#;
 
 /// When we link to assets on the rendered pages, we append a unique asset
 /// hash to each path (e.g. "site.js?g1VVfPoEjUw"), which is derived from

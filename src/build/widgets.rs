@@ -26,7 +26,7 @@ use crate::util::{
     precise_duration
 };
 
-use super::GENERATOR_META;
+use super::{META_GENERATOR, META_ROBOTS_NOINDEX_NOFOLLOW};
 
 pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     let alt = if let Some(description) = &banner.description {
@@ -184,7 +184,8 @@ pub fn embed_layout(
     site: &Site,
     traversal: &Traversal
 ) -> String {
-    let generator_meta = GENERATOR_META;
+    let meta_generator = META_GENERATOR;
+    let meta_robots_noindex_nofollow = META_ROBOTS_NOINDEX_NOFOLLOW;
 
     let embed_css_asset_hash = asset_hashes.embed_css.as_ref().unwrap();
     let embed_js_asset_hash = AssetHashes::EMBED_JS;
@@ -192,7 +193,8 @@ pub fn embed_layout(
     let head = formatdoc!(r#"
         <head>
             <meta charset="utf-8">
-            {generator_meta}
+            {meta_generator}
+            {meta_robots_noindex_nofollow}
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <script defer src="{root_prefix}embed.js?{embed_js_asset_hash}" type="module"></script>
             <link rel="stylesheet" href="{root_prefix}embed.css?{embed_css_asset_hash}">
@@ -483,13 +485,9 @@ pub fn thumbnail(
     }
 }
 
-pub fn unlisted_badge(unlisted: bool, translations: &Translations) -> String {
-    if unlisted {
-        let t_not_public = translations.not_public;
-        format!(r#"<span class="unlisted_badge">{t_not_public}</span>"#)
-    } else {
-        String::new()
-    }
+pub fn unlisted_badge(translations: &Translations) -> String {
+    let t_not_public = translations.not_public;
+    format!(r#"<span class="unlisted_badge">{t_not_public}</span>"#)
 }
 
 fn versions_ring(

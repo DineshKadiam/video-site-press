@@ -133,7 +133,12 @@ pub fn video_html(
         None => String::new()
     };
 
-    let unlisted = unlisted_badge(video.unlisted(), &site.language.translations);
+    let r_unlisted_badge = if video.unlisted() {
+        layout.no_indexing();
+        unlisted_badge(&site.language.translations)
+    } else {
+        String::new()
+    };
 
     let links_rendered = links(&site.language, &video.links);
 
@@ -142,7 +147,7 @@ pub fn video_html(
         <div class="video_info">
             <div class="align apart flex" style="margin-top: 2rem;">
                 <div>
-                    <h1 class="video_title">{e_title} {unlisted}</h1>
+                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
                     {release_date}
                 </div>
                 <div class="actions align flex space">

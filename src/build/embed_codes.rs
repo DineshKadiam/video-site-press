@@ -78,13 +78,18 @@ pub fn embed_codes_html(
     layout.add_clipboard_script();
     layout.add_templates(&copy_code_templates);
 
-    let unlisted = unlisted_badge(video.unlisted(), &site.language.translations);
+    let r_unlisted_badge = if video.unlisted() {
+        layout.no_indexing();
+        unlisted_badge(&site.language.translations)
+    } else {
+        String::new()
+    };
 
     let body = format!(r#"
         <div class="video_info">
             <div class="align apart flex" style="margin-top: 2rem;">
                 <div>
-                    <h1 class="video_title">{e_title} {unlisted}</h1>
+                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
                 </div>
             </div>
                 {embed_display_code}

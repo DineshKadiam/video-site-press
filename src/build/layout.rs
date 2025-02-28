@@ -8,10 +8,11 @@ use crate::build::{AssetHashes, Traversal};
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
-use super::GENERATOR_META;
+use super::{META_GENERATOR, META_ROBOTS_NOINDEX_NOFOLLOW};
 
 pub struct Layout {
     clipboard_script: bool,
+    indexing: bool,
     /// <template> tags that are used in the scripting on the page, and
     /// appended at the bottom of the body to optimize loading.
     templates: String
@@ -29,8 +30,14 @@ impl Layout {
     pub fn new() -> Layout {
         Layout {
             clipboard_script: false,
+            indexing: true,
             templates: String::new()
         }
+    }
+
+    /// Call to enable meta tags that tell crawlers to not index the page.
+    pub fn no_indexing(&mut self) {
+        self.indexing = false;
     }
 
     pub fn render(
@@ -41,7 +48,8 @@ impl Layout {
         title: &str,
         traversal: &Traversal
     ) -> String {
-        let generator_meta = GENERATOR_META;
+        let meta_generator = META_GENERATOR;
+        let meta_noindex_nofollow = if self.indexing { "" } else { META_ROBOTS_NOINDEX_NOFOLLOW };
         let root_prefix = traversal.prefix_asc();
 
         let clipboard_script = if self.clipboard_script {
@@ -58,7 +66,8 @@ impl Layout {
             <head>
                 <title>{title}</title>
                 <meta charset="utf-8">
-                {generator_meta}
+                {meta_generator}
+                {meta_noindex_nofollow}
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 {clipboard_script}
                 <script defer src="{root_prefix}site.js?{site_js_asset_hash}" type="module"></script>
