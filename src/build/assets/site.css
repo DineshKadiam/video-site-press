@@ -5,6 +5,7 @@ a {
     color: var(--fg-1);
     text-decoration: none;
 }
+a:hover { color: var(--fg-3); }
 .actions a,
 .actions button {
     align-items: center;
@@ -66,18 +67,6 @@ button {
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
 .current { background-color: var(--bg-3); }
-dialog {
-    background-color: var(--bg-1);
-    border: 1px solid var(--bg-2);
-    border-radius: .2rem;
-    width: min(calc(100vw - 2rem), 20rem);
-}
-dialog::backdrop {
-    /* This is not yet working in some browsers as of April 2024, but will, gradually.
-       see https://stackoverflow.com/questions/58818299/css-variables-not-working-in-dialogbackdrop)
-       (TODO: This note can be removed ~2025 or so probably) */
-    background-color: var(--bg-1-overlay);
-}
 .flex { display: flex; }
 .flex.align { align-items: center; }
 .flex.apart { justify-content: space-between; }
@@ -118,10 +107,7 @@ header a {
     outline: none;
     padding: .3rem 0;
 }
-header a:focus-visible,
-header a:hover {
-    border-bottom-color: var(--fg-1);
-}
+header a:focus-visible { border-bottom-color: var(--fg-1); }
 img {
     display: block;
     max-width: 100%;

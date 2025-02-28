@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use url::Url;
 
 use indoc::formatdoc;
+use url::Url;
 
 use crate::{Context, HyperUrl, Site, Video};
 use crate::build::{AssetHashes, Layout};
@@ -57,22 +57,25 @@ pub fn embed_codes_html(
 ) {
     let mut layout = Layout::new();
     let index_suffix = site.index_suffix();
+    let translations = &site.language.translations;
 
-    let title = match &video.title {
+    let t_embed = translations.embed;
+    let video_title = match &video.title {
         Some(title) => title,
-        None => if video.path.is_empty() { "Hyper 8" } else { video.slug() }
+        None => if video.path.is_empty() { "Video" } else { video.slug() }
     };
-    let e_title = html_escape_outside_attribute(title);
+    let title = format!("{t_embed} – {video_title}");
+    let e_title = html_escape_outside_attribute(&title);
 
     let embed_interfix = if video.path.is_empty() { "embed" } else { "/embed" };
     let embed_url = base_url.value
         .join(&format!("{}{embed_interfix}{index_suffix}", video.path))
         .unwrap();
 
-    let t_video_player_widget_for_xxx = site.language.translations.video_player_widget_for_xxx(title);
+    let t_video_player_widget_for_xxx = translations.video_player_widget_for_xxx(&title);
     let (embed_copy_code, embed_display_code) = embed_code(&embed_url, &t_video_player_widget_for_xxx);
 
-    let t_copy = site.language.translations.copy;
+    let t_copy = translations.copy;
     let (copy_code_button, copy_code_templates) = copy_button("content", &embed_copy_code, t_copy, site);
 
     layout.add_clipboard_script();
@@ -80,19 +83,15 @@ pub fn embed_codes_html(
 
     let r_unlisted_badge = if video.unlisted() {
         layout.no_indexing();
-        unlisted_badge(&site.language.translations)
+        unlisted_badge(translations)
     } else {
         String::new()
     };
 
     let body = format!(r#"
         <div class="video_info">
-            <div class="align apart flex" style="margin-top: 2rem;">
-                <div>
-                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
-                </div>
-            </div>
-                {embed_display_code}
+            <h1>{e_title} {r_unlisted_badge}</h1>
+            {embed_display_code}
             <div class="actions">
                 {copy_code_button}
             </div>
@@ -103,11 +102,12 @@ pub fn embed_codes_html(
         asset_hashes,
         &body,
         site,
-        title,
+        &title,
         traversal
     );
 
-    let embed_code_dir = context.build_dir.join(&video.path).join("embed-codes");
+    let t_embed_codes_permalink = translations.embed_codes_permalink;
+    let embed_code_dir = context.build_dir.join(&video.path).join(t_embed_codes_permalink);
     fs::create_dir_all(&embed_code_dir).unwrap();
     let index_path = embed_code_dir.join("index.html");
     fs::write(index_path, html).unwrap();

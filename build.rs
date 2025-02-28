@@ -49,11 +49,15 @@ fn main() {
     println!("cargo:rustc-env=HYPER8_VERSION_DETAILED={version_detailed}");
     println!("cargo:rustc-env=HYPER8_VERSION_DISPLAY={version_display}");
 
+    let static_asset_hash_adaptive_theme_js = url_safe_hash_base64(include_bytes!("src/build/assets/adaptive_theme.js"));
     let static_asset_hash_clipboard_js = url_safe_hash_base64(include_bytes!("src/build/assets/clipboard.js"));
     let static_asset_hash_embed_js = url_safe_hash_base64(include_bytes!("src/build/assets/embed.js"));
+    let static_asset_hash_video_js = url_safe_hash_base64(include_bytes!("src/build/assets/video.js"));
 
+    println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_ADAPTIVE_THEME_JS={static_asset_hash_adaptive_theme_js}");
     println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS={static_asset_hash_clipboard_js}");
     println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_EMBED_JS={static_asset_hash_embed_js}");
+    println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_VIDEO_JS={static_asset_hash_video_js}");
 }
 
 pub fn url_safe_hash_base64(hashable: &impl Hash) -> String {

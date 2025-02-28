@@ -11,12 +11,14 @@ use crate::{
     Playlist,
     Site,
     SiteContent,
+    ThemeKind,
     Video
 };
 use crate::build::widgets::thumbnail;
 use crate::util::{ensure_empty_dir, hard_link_or_copy};
 
 mod collection;
+mod download;
 mod embed;
 mod embed_codes;
 mod layout;
@@ -28,6 +30,7 @@ mod video;
 mod widgets;
 
 use collection::collection_html;
+use download::download_html;
 use embed::embed_html;
 use embed_codes::embed_codes_html;
 use layout::Layout;
@@ -46,19 +49,19 @@ const META_ROBOTS_NOINDEX_NOFOLLOW: &str = r#"<meta name="robots" content="noind
 /// groups together those hashes for all assets we use.
 pub struct AssetHashes {
     pub embed_css: Option<String>,
-    pub site_css: Option<String>,
-    pub site_js: Option<String>
+    pub site_css: Option<String>
 }
 
 impl AssetHashes {
+    pub const ADAPTIVE_THEME_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_ADAPTIVE_THEME_JS");
     pub const CLIPBOARD_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS");
     pub const EMBED_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_EMBED_JS");
+    pub const VIDEO_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_VIDEO_JS");
 
     pub fn new() -> AssetHashes {
         AssetHashes {
             embed_css: None,
-            site_css: None,
-            site_js: None
+            site_css: None
         }
     }
 }
@@ -72,8 +75,12 @@ pub fn perform_build(context: &Context) {
 
     let traversal = Traversal::new();
 
-    scripts::generate_site_js(&mut asset_hashes, context, &site);
     styles::generate_site_css(&mut asset_hashes, context, &site);
+    scripts::generate_video_js(context);
+
+    if let ThemeKind::Adaptive { .. } = site.theme.kind {
+        scripts::generate_adaptive_theme_js(context);
+    }
 
     let embeds_requested = site.embeds_requested();
 
@@ -268,6 +275,7 @@ fn build_video(
     traversal_previous: &Traversal,
     video: &Video
 ) {
+    let translations = &site.language.translations;
     let traversal = traversal_previous.with_video(video);
 
     let video_build_dir = context.build_dir.join(&video.path);
@@ -318,9 +326,21 @@ fn build_video(
         }
     }
 
+    if video.download() {
+        let traversal_download = traversal.with_virtual(translations.download);
+
+        download_html(
+            asset_hashes,
+            context,
+            site,
+            video,
+            &traversal_download
+        );
+    }
+
     if video.embedding() {
         if let Some(base_url) = &site.base_url {
-            let traversal_embed_codes = traversal.with_virtual("embed-codes", site.language.translations.embed);
+            let traversal_embed_codes = traversal.with_virtual(translations.embed);
 
             embed_codes_html(
                 asset_hashes,
@@ -331,7 +351,7 @@ fn build_video(
                 &traversal_embed_codes
             );
 
-            let traversal_embed = traversal.with_virtual("embed", site.language.translations.embed);
+            let traversal_embed = traversal.with_virtual(translations.embed);
 
             embed_html(
                 asset_hashes,

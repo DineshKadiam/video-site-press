@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
 use std::sync::Arc;
 
 use indoc::formatdoc;
@@ -79,103 +78,6 @@ pub fn copy_button(content_key: &str, content_value: &str, label: &str, site: &S
     "#);
 
     (button, templates)
-}
-
-pub fn downloads(site: &Site, video: &Video) -> String {
-    if video.versions.is_empty() {
-        return String::new();
-    }
-
-    let mut versions_with_meta: Vec<&VideoFile> = video.versions
-        .iter()
-        .filter(|version| version.video_meta.is_some())
-        .collect();
-
-    versions_with_meta.sort_unstable_by(|a, b| {
-        a.video_meta.as_ref().unwrap().height.cmp(
-            &b.video_meta.as_ref().unwrap().height
-        )
-    });
-
-    let format_buttons = versions_with_meta
-        .iter()
-        .map(|version| {
-            // TODO: Clean up/better/more complete concept for how to build file names (e.g. maybe hide original names altogether!)
-            let file_name = version.file_name.as_str();
-            let video_meta = &version.video_meta.as_ref().unwrap();
-
-            let height = video_meta.height;
-            let width = video_meta.width;
-
-            let slug = video.slug_opt().unwrap_or("video");
-            let download_name = Path::new(file_name).with_file_name(format!("{slug}_{width}x{height}")).to_string_lossy().to_string();
-
-            let format_label = format!("{width}×{height}");
-            let vertical_resolution_label = format!("{height}p");
-
-            let size = human_size(version.file_meta.size);
-
-            let t_no_audio = site.language.translations.no_audio;
-            let audio_codec = video_meta.audio_codec.as_deref().unwrap_or(t_no_audio);
-
-            let t_no_video = site.language.translations.no_video;
-            let video_codec = video_meta.video_codec.as_deref().unwrap_or(t_no_video);
-
-            let extension = Path::new(&version.file_name)
-                .extension()
-                .unwrap_or(std::ffi::OsStr::new(""))
-                .to_string_lossy();
-
-            formatdoc!(r#"
-                <a download="{download_name}" class="align apart flex" href="{file_name}">
-                    <div>
-                        <div class="large_font">{vertical_resolution_label}</div>
-                        <small>{format_label}, {audio_codec}, {video_codec}, {extension}</small>
-                    </div>
-                    <div class="large_font">{size}</div>
-                </a>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-
-    let t_subtitles = site.language.translations.subtitles;
-    let subtitle_buttons = video.subtitles
-        .iter()
-        .map(|subtitle_file| {
-            let file_name = &subtitle_file.file_name;
-            let language = match &subtitle_file.language {
-                Some(language_code) => format!(r#"<div class="large_font">{language_code}</div>"#),
-                None => String::new()
-            };
-
-            formatdoc!(r#"
-                <a download="{file_name}" class="align apart flex" href="{file_name}">
-                    <div>
-                        <div class="large_font">{file_name}</div>
-                        <small>{t_subtitles}</small>
-                    </div>
-                    {language}
-                </a>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-
-    let t_download = site.language.translations.download;
-    let download_icon = icons::download(t_download);
-    formatdoc!(r#"
-        <button id="download">
-            {download_icon} {t_download}
-        </button>
-        <dialog id="download_dialog">
-            {format_buttons}
-            {subtitle_buttons}
-            <form method="dialog">
-                <button>Close</button>
-            </form>
-        </dialog>
-    "#)
 }
 
 pub fn embed_layout(

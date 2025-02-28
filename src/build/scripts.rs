@@ -3,12 +3,14 @@
 
 use std::fs;
 
-use indoc::formatdoc;
+use crate::Context;
 
-use crate::{Context, Site, ThemeKind};
-use crate::util::url_safe_hash_base64;
-
-use super::AssetHashes;
+pub fn generate_adaptive_theme_js(context: &Context) {
+    fs::write(
+        context.build_dir.join("adaptive_theme.js"),
+        include_str!("assets/adaptive_theme.js")
+    ).unwrap();
+}
 
 pub fn generate_clipboard_js(context: &Context) {
     fs::write(
@@ -17,7 +19,6 @@ pub fn generate_clipboard_js(context: &Context) {
     ).unwrap();
 }
 
-
 pub fn generate_embed_js(context: &Context) {
     fs::write(
         context.build_dir.join("embed.js"),
@@ -25,20 +26,9 @@ pub fn generate_embed_js(context: &Context) {
     ).unwrap();
 }
 
-pub fn generate_site_js(asset_hashes: &mut AssetHashes, context: &Context, site: &Site) {
-    let adaptive_theme_js = match &site.theme.kind {
-        ThemeKind::Adaptive { .. } => include_str!("assets/adaptive_theme.js"),
-        ThemeKind::Static(_) => ""
-    };
-
-    let site_js = include_str!("assets/site.js");
-
-    let js = formatdoc!(r#"
-        {adaptive_theme_js}
-        {site_js}
-    "#);
-
-    asset_hashes.site_js = Some(url_safe_hash_base64(&js));
-
-    fs::write(context.build_dir.join("site.js"), js).unwrap();
+pub fn generate_video_js(context: &Context) {
+    fs::write(
+        context.build_dir.join("video.js"),
+        include_str!("assets/video.js")
+    ).unwrap();
 }

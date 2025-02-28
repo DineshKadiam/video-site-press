@@ -4,6 +4,8 @@
 use std::fs;
 use std::sync::Arc;
 
+use indoc::formatdoc;
+
 use crate::{
     Context,
     MarkdownSubset,
@@ -13,7 +15,7 @@ use crate::{
 };
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
-use crate::build::widgets::{copy_button, downloads, links, player, unlisted_badge};
+use crate::build::widgets::{copy_button, links, player, unlisted_badge};
 use crate::icons;
 use crate::util::{
     html_escape_outside_attribute,
@@ -30,6 +32,8 @@ pub fn video_html(
 ) {
     let mut layout = Layout::new();
 
+    layout.add_video_script();
+
     let index_suffix = site.index_suffix();
 
     let description = if let Some(description) = &video.description {
@@ -45,9 +49,18 @@ pub fn video_html(
     };
     let e_title = html_escape_outside_attribute(title);
 
-    let r_downloads = match video.download() {
-        true => downloads(site, video),
-        false => String::new()
+    let r_downloads = if video.download() {
+        let t_download = site.language.translations.download;
+        let t_download_permalink = site.language.translations.download_permalink;
+        let download_icon = icons::download(t_download);
+
+        formatdoc!(r#"
+            <a href="{t_download_permalink}{index_suffix}">
+                {download_icon} {t_download}
+            </a>
+        "#)
+    } else {
+        String::new()
     };
 
     let next_video = if video.unlisted() {
@@ -114,12 +127,12 @@ pub fn video_html(
         let embed_icon = icons::embed();
 
         let t_embed = &site.language.translations.embed;
+        let t_embed_codes_permalink = &site.language.translations.embed_codes_permalink;
+
         format!(r#"
-            <div>
-                <a href="embed-codes{index_suffix}">
-                    <span class="icon">{embed_icon}</span> {t_embed}
-                </a>
-            </div>
+            <a href="{t_embed_codes_permalink}{index_suffix}">
+                {embed_icon} {t_embed}
+            </a>
         "#)
     } else {
         String::new()
@@ -142,7 +155,7 @@ pub fn video_html(
 
     let links_rendered = links(&site.language, &video.links);
 
-    let body = format!(r#"
+    let body = formatdoc!(r#"
         {player_rendered}
         <div class="video_info">
             <div class="align apart flex" style="margin-top: 2rem;">

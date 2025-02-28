@@ -41,8 +41,7 @@ pub enum TraversalStep<'a> {
     Video(&'a Video),
     /// E.g. an embed-codes/ page below a video page
     Virtual {
-        label: &'a str,
-        slug: &'a str
+        label: &'a str
     }
 }
 
@@ -198,6 +197,151 @@ impl OutlineStats {
     }
 }
 
+impl<'a> Traversal<'a> {
+    /// Url path to the index (page) at the peeked traversal.
+    pub fn file_prefix_desc(&self) -> String {
+        let prefix = self.prefix_desc();
+
+        if prefix.is_empty() {
+            prefix
+        } else {
+            format!("{prefix}/")
+        }
+    }
+
+    /// Url path to the index (page) at the peeked traversal.
+    pub fn index_desc(&self, site: &Site) -> String {
+        let prefix = self.prefix_desc();
+
+        if prefix.is_empty() {
+            prefix
+        } else if site.clean_urls {
+            format!("{prefix}/")
+        } else {
+            format!("{prefix}/index.html")
+        }
+    }
+
+    pub fn new() -> Traversal<'a> {
+        Traversal {
+            peeked_steps: Vec::new(),
+            steps: Vec::new()
+        }
+    }
+
+    pub fn parents(&self, site: &Site) -> Vec<Breadcrumb> {
+        let parents_len = self.steps.len() - 1;
+        self.steps[..parents_len]
+            .iter()
+            .enumerate()
+            .map(|(index, step)| {
+                let levels_upwards = parents_len - index;
+                let href = site.upwards_href(levels_upwards);
+                Breadcrumb { href, step }
+            })
+            .collect()
+    }
+
+    pub fn peek_collection(&self, collection: &'a Collection) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.peeked_steps.push(TraversalStep::Collection(collection));
+        clone
+    }
+
+    pub fn peek_playlist(&self, playlist: &'a Playlist) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.peeked_steps.push(TraversalStep::Playlist(playlist));
+        clone
+    }
+
+    pub fn peek_video(&self, video: &'a Video) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.peeked_steps.push(TraversalStep::Video(video));
+        clone
+    }
+
+    pub fn peeked_parents(&self, site: &Site) -> Vec<Breadcrumb> {
+        if self.peeked_steps.is_empty() {
+            return Vec::new();
+        }
+
+        // We always expect a last visited step, because anything we render always
+        // exists within the context of some page, therefore there needs to be one
+        // step at the minimum.
+        let last_visited_step = &self.steps[self.steps.len() - 1];
+
+        let peeked_parents_len = self.peeked_steps.len() - 1;
+        self.peeked_steps[..peeked_parents_len]
+            .iter()
+            .map(|peeked_step| {
+                let prefix = peeked_step.path()
+                    .strip_prefix(last_visited_step.path())
+                    .unwrap()
+                    .trim_start_matches('/')
+                    .to_string();
+
+                let href = if site.clean_urls {
+                    format!("{prefix}/")
+                } else {
+                    format!("{prefix}/index.html")
+                };
+
+                Breadcrumb { href, step: peeked_step }
+            })
+            .collect()
+    }
+
+    /// Relative url path to go "back up" the hierarchy up to the root,
+    /// following the "taken steps".
+    pub fn prefix_asc(&self) -> String {
+        "../".repeat(self.steps.len() - 1)
+    }
+
+    /// Url path to go "down" to the leaf node (= page) we're peeking at,
+    /// relative to where are now (rather than to the site root).
+    fn prefix_desc(&self) -> String {
+        match self.peeked_steps.iter().last() {
+            Some(last_peeked_step) => {
+                // We always expect a last visited step, because anything we render always
+                // exists within the context of some page, therefore there needs to be one
+                // step at the minimum.
+                let last_visited_step = &self.steps[self.steps.len() - 1];
+
+                last_peeked_step.path()
+                    .strip_prefix(last_visited_step.path())
+                    .unwrap()
+                    .trim_start_matches('/')
+                    .to_string()
+            }
+            None => String::new()
+        }
+    }
+
+    pub fn with_collection(&self, collection: &'a Collection) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Collection(collection));
+        clone
+    }
+
+    pub fn with_playlist(&self, playlist: &'a Playlist) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Playlist(playlist));
+        clone
+    }
+
+    pub fn with_video(&self, video: &'a Video) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Video(video));
+        clone
+    }
+
+    pub fn with_virtual(&self, label: &'a str) -> Traversal<'a> {
+        let mut clone = self.clone();
+        clone.steps.push(TraversalStep::Virtual { label });
+        clone
+    }
+}
+
 impl TraversalStep<'_> {
     pub fn breadcrumb(&self, href: &str, site: &Site) -> String {
         match self {
@@ -216,7 +360,7 @@ impl TraversalStep<'_> {
                 let e_label = html_escape_outside_attribute(label);
                 format!(r#"<a href="{href}">{e_label}</a>"#)
             }
-            TraversalStep::Virtual { label, .. } => {
+            TraversalStep::Virtual { label } => {
                 let e_label = html_escape_outside_attribute(label);
                 format!(r#"<a href="{href}">{e_label}</a>"#)
             }
@@ -625,150 +769,5 @@ impl TraversalStep<'_> {
             TraversalStep::Video(video) => &video.path,
             TraversalStep::Virtual { .. } => unimplemented!()
         }
-    }
-}
-
-impl<'a> Traversal<'a> {
-    /// Url path to the index (page) at the peeked traversal.
-    pub fn file_prefix_desc(&self) -> String {
-        let prefix = self.prefix_desc();
-
-        if prefix.is_empty() {
-            prefix
-        } else {
-            format!("{prefix}/")
-        }
-    }
-
-    /// Url path to the index (page) at the peeked traversal.
-    pub fn index_desc(&self, site: &Site) -> String {
-        let prefix = self.prefix_desc();
-
-        if prefix.is_empty() {
-            prefix
-        } else if site.clean_urls {
-            format!("{prefix}/")
-        } else {
-            format!("{prefix}/index.html")
-        }
-    }
-
-    pub fn new() -> Traversal<'a> {
-        Traversal {
-            peeked_steps: Vec::new(),
-            steps: Vec::new()
-        }
-    }
-
-    pub fn parents(&self, site: &Site) -> Vec<Breadcrumb> {
-        let parents_len = self.steps.len() - 1;
-        self.steps[..parents_len]
-            .iter()
-            .enumerate()
-            .map(|(index, step)| {
-                let levels_upwards = parents_len - index;
-                let href = site.upwards_href(levels_upwards);
-                Breadcrumb { href, step }
-            })
-            .collect()
-    }
-
-    pub fn peek_collection(&self, collection: &'a Collection) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.peeked_steps.push(TraversalStep::Collection(collection));
-        clone
-    }
-
-    pub fn peek_playlist(&self, playlist: &'a Playlist) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.peeked_steps.push(TraversalStep::Playlist(playlist));
-        clone
-    }
-
-    pub fn peek_video(&self, video: &'a Video) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.peeked_steps.push(TraversalStep::Video(video));
-        clone
-    }
-
-    pub fn peeked_parents(&self, site: &Site) -> Vec<Breadcrumb> {
-        if self.peeked_steps.is_empty() {
-            return Vec::new();
-        }
-
-        // We always expect a last visited step, because anything we render always
-        // exists within the context of some page, therefore there needs to be one
-        // step at the minimum.
-        let last_visited_step = &self.steps[self.steps.len() - 1];
-
-        let peeked_parents_len = self.peeked_steps.len() - 1;
-        self.peeked_steps[..peeked_parents_len]
-            .iter()
-            .map(|peeked_step| {
-                let prefix = peeked_step.path()
-                    .strip_prefix(last_visited_step.path())
-                    .unwrap()
-                    .trim_start_matches('/')
-                    .to_string();
-
-                let href = if site.clean_urls {
-                    format!("{prefix}/")
-                } else {
-                    format!("{prefix}/index.html")
-                };
-
-                Breadcrumb { href, step: peeked_step }
-            })
-            .collect()
-    }
-
-    /// Relative url path to go "back up" the hierarchy up to the root,
-    /// following the "taken steps".
-    pub fn prefix_asc(&self) -> String {
-        "../".repeat(self.steps.len() - 1)
-    }
-
-    /// Url path to go "down" to the leaf node (= page) we're peeking at,
-    /// relative to where are now (rather than to the site root).
-    fn prefix_desc(&self) -> String {
-        match self.peeked_steps.iter().last() {
-            Some(last_peeked_step) => {
-                // We always expect a last visited step, because anything we render always
-                // exists within the context of some page, therefore there needs to be one
-                // step at the minimum.
-                let last_visited_step = &self.steps[self.steps.len() - 1];
-
-                last_peeked_step.path()
-                    .strip_prefix(last_visited_step.path())
-                    .unwrap()
-                    .trim_start_matches('/')
-                    .to_string()
-            }
-            None => String::new()
-        }
-    }
-
-    pub fn with_collection(&self, collection: &'a Collection) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.steps.push(TraversalStep::Collection(collection));
-        clone
-    }
-
-    pub fn with_playlist(&self, playlist: &'a Playlist) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.steps.push(TraversalStep::Playlist(playlist));
-        clone
-    }
-
-    pub fn with_video(&self, video: &'a Video) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.steps.push(TraversalStep::Video(video));
-        clone
-    }
-
-    pub fn with_virtual(&self, label: &'a str, slug: &'a str) -> Traversal<'a> {
-        let mut clone = self.clone();
-        clone.steps.push(TraversalStep::Virtual { label, slug });
-        clone
     }
 }

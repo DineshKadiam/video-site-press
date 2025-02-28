@@ -15,7 +15,8 @@ pub struct Layout {
     indexing: bool,
     /// <template> tags that are used in the scripting on the page, and
     /// appended at the bottom of the body to optimize loading.
-    templates: String
+    templates: String,
+    video_script: bool
 }
 
 impl Layout {
@@ -27,11 +28,16 @@ impl Layout {
         self.templates.push_str(templates);
     }
 
+    pub fn add_video_script(&mut self) {
+        self.video_script = true;
+    }
+
     pub fn new() -> Layout {
         Layout {
             clipboard_script: false,
             indexing: true,
-            templates: String::new()
+            templates: String::new(),
+            video_script: false
         }
     }
 
@@ -52,6 +58,13 @@ impl Layout {
         let meta_noindex_nofollow = if self.indexing { "" } else { META_ROBOTS_NOINDEX_NOFOLLOW };
         let root_prefix = traversal.prefix_asc();
 
+        let adaptive_theme_script = if let ThemeKind::Adaptive { .. } = site.theme.kind {
+            let adaptive_theme_js_asset_hash = AssetHashes::ADAPTIVE_THEME_JS;
+            format!(r#"<script defer src="{root_prefix}adaptive_theme.js?{adaptive_theme_js_asset_hash}"></script>"#)
+        } else {
+            String::new()
+        };
+
         let clipboard_script = if self.clipboard_script {
             let clipboard_js_asset_hash = AssetHashes::CLIPBOARD_JS;
             format!(r#"<script defer src="{root_prefix}clipboard.js?{clipboard_js_asset_hash}"></script>"#)
@@ -60,7 +73,13 @@ impl Layout {
         };
 
         let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
-        let site_js_asset_hash = asset_hashes.site_js.as_ref().unwrap();
+
+        let video_script = if self.video_script {
+            let video_js_asset_hash = AssetHashes::VIDEO_JS;
+            format!(r#"<script defer src="{root_prefix}video.js?{video_js_asset_hash}" type="module"></script>"#)
+        } else {
+            String::new()
+        };
 
         let head = formatdoc!(r#"
             <head>
@@ -69,9 +88,10 @@ impl Layout {
                 {meta_generator}
                 {meta_noindex_nofollow}
                 <meta name="viewport" content="width=device-width, initial-scale=1">
-                {clipboard_script}
-                <script defer src="{root_prefix}site.js?{site_js_asset_hash}" type="module"></script>
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
+                {adaptive_theme_script}
+                {clipboard_script}
+                {video_script}
             </head>
         "#);
 
@@ -79,7 +99,7 @@ impl Layout {
             .iter()
             .map(|breadcrumb| {
                 let breadcrumb_rendered = breadcrumb.step.breadcrumb(&breadcrumb.href, site);
-                format!(r#"{breadcrumb_rendered} <span style="font-size: 1.6rem; position: relative; top: -.2rem;">›</span> "#)
+                format!(r#"{breadcrumb_rendered} <span style="font-size: 1.6rem; pointer-events: none; position: relative; top: -.2rem;">›</span> "#)
             })
             .collect::<Vec<String>>()
             .join("");
