@@ -6,11 +6,11 @@ use std::sync::Arc;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
+use url::Url;
 
 use crate::{
     Context,
     ContextPath,
-    HyperUrl,
     Link,
     Video
 };
@@ -38,8 +38,8 @@ pub async fn add_link(
         true => None,
         false => Some(label_trimmed.to_string())
     };
-    let url = match HyperUrl::parse(&form.url) {
-        Ok(url) => url,
+    let url = match Url::parse(&form.url) {
+        Ok(_) => form.url.clone(),
         Err(err) => {
             let language = context.get_editor_language();
             let t_invalid_url = language.translations.invalid_url;

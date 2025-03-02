@@ -26,9 +26,9 @@ pub async fn delete_link(
             .iter()
             .position(|link|
                 if form.label.is_empty()  {
-                    link.label.is_none() && link.url.representation == form.url
+                    link.label.is_none() && link.url == form.url
                 } else {
-                    link.label.as_ref().is_some_and(|label| label == &form.label) && link.url.representation == form.url
+                    link.label.as_ref().is_some_and(|label| label == &form.label) && link.url == form.url
                 }
             )
             .map(|index| video_mut.links.remove(index))

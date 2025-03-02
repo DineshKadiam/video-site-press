@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use crate::HyperUrl;
-
 #[derive(Clone, Debug)]
 pub struct Link {
     /// Used in conjunction with rel="me" linking, when we want the link to be present
@@ -11,7 +9,7 @@ pub struct Link {
     pub label: Option<String>,
     /// Indicates rel="me" linking (https://microformats.org/wiki/rel-me)
     pub rel_me: bool,
-    pub url: HyperUrl
+    pub url: String
 }
 
 impl Link {
@@ -19,13 +17,13 @@ impl Link {
         hidden: bool,
         label: Option<String>,
         rel_me: bool,
-        url: HyperUrl
+        url: impl Into<String>
     ) -> Link {
         Link {
             hidden,
             label,
             rel_me,
-            url
+            url: url.into()
         }
     }
 
@@ -34,7 +32,7 @@ impl Link {
     pub fn pretty_label(&self) -> String {
         match &self.label {
             Some(label) => label.clone(),
-            None => self.url.representation
+            None => self.url
                 .split_once("://")
                 .unwrap()
                 .1

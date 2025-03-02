@@ -9,6 +9,8 @@ use indoc::formatdoc;
 use crate::{
     Context,
     MarkdownSubset,
+    OpenGraph,
+    OpenGraphMeta,
     Playlist,
     Site,
     Video
@@ -105,10 +107,7 @@ pub fn video_html(
 
     let copy_link_button = if video.copy_link() {
         let (content_key, content_value) = match &site.base_url {
-            Some(base_url) => {
-                let url = base_url.value.join(&format!("{}{index_suffix}", &video.path)).unwrap().to_string();
-                ("content", url)
-            }
+            Some(base_url) => ("content", base_url.join(&video.path, site)),
             None => ("dynamic-url", String::new())
         };
 
@@ -173,6 +172,38 @@ pub fn video_html(
             {links_rendered}
         </div>
     "#);
+
+    if let OpenGraph::LinkPreviews = video.opengraph() {
+        if let Some(video_url) = site.absolute_url(&video.path) {
+            let mut meta = OpenGraphMeta::new(title.to_string(), video_url);
+
+            if let Some(description) = &video.description {
+                let plaintext = MarkdownSubset::to_plaintext(description);
+
+                // As a somewhat arbitrary practical decision we currently
+                // only use "our" description as the opengraph description
+                // when it is less than 256 characters long in plaintext.
+                if plaintext.len() < 256 {
+                    meta.description(description);
+                }
+            }
+
+            if let Some(poster) = &video.poster {
+                if let Some(poster_assets) = &poster.assets {
+                    let image_url_prefix = site.absolute_url_prefix_unchecked(&video.path);
+                    let opengraph_image = poster_assets.opengraph_image("poster", &image_url_prefix);
+
+                    meta.image(opengraph_image);
+
+                    if let Some(description) = &poster.description {
+                        meta.image_alt(description);
+                    }
+                }
+            }
+
+            layout.add_opengraph_meta(meta);
+        }
+    }
 
     let html = layout.render(
         asset_hashes,

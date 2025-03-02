@@ -119,6 +119,22 @@ impl DeployConfig {
 }
 
 impl Site {
+    pub fn absolute_url(&self, path: &str) -> Option<String> {
+        self.base_url.as_ref().map(|base_url| base_url.join(path, self))
+    }
+
+    pub fn absolute_url_prefix(&self, path: &str) -> Option<String> {
+        self.base_url.as_ref().map(|base_url| base_url.join_prefix(path))
+    }
+
+    pub fn absolute_url_prefix_unchecked(&self, path: &str) -> String {
+        self.base_url.as_ref().unwrap().join_prefix(path)
+    }
+
+    pub fn absolute_url_unchecked(&self, path: &str) -> String {
+        self.base_url.as_ref().unwrap().join(path, self)
+    }
+
     fn apply_manifest(&mut self, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
@@ -410,6 +426,20 @@ impl Site {
             language: Language::default(),
             poster_aspect: AspectRatio::Default,
             theme: Theme::default()
+        }
+    }
+
+    /// Traverses the site tree to determine if opengraph is enabled anywhere.
+    /// This information is consecutively used to output a warning if
+    /// base_url is not set (which is required for opengraph meta to be
+    /// generated).
+    pub fn opengraph_requested(&self) -> bool {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.opengraph_requested(),
+            SiteContent::Playlist(playlist) => playlist.opengraph_requested(),
+            SiteContent::Video(video) => video.opengraph_local().is_some_and(|opengraph| opengraph.enabled()),
+            SiteContent::Empty |
+            SiteContent::Invalid => false
         }
     }
 

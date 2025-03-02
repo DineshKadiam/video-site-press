@@ -22,18 +22,17 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn valid<V>(value: V) -> Field
-        where V: Into<String>
-    {
+    pub fn valid(value: impl Into<String>) -> Field {
         Field {
             error: None,
             value: value.into()
         }
     }
 
-    pub fn validated<E, V>(value: V, error: Option<E>) -> Field
-        where E: Into<String>, V: Into<String>
-    {
+    pub fn validated(
+        value: impl Into<String>,
+        error: Option<impl Into<String>>
+    ) -> Field {
         Field {
             error: error.map(|message| message.into()),
             value: value.into()

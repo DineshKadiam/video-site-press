@@ -8,7 +8,13 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use chrono::NaiveDate;
 use serde_derive::Deserialize;
 
-use crate::{Context, ContextPath, Field, Video};
+use crate::{
+    Context,
+    ContextPath,
+    Field,
+    OpenGraph,
+    Video
+};
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
@@ -21,6 +27,7 @@ pub struct VideoUpdateForm {
     download: String,
     embedding: String,
     offline: Option<String>,
+    opengraph: String,
     release_date: String,
     sort_number: String,
     title: String,
@@ -55,6 +62,11 @@ pub async fn update(
     };
 
     let offline = form.offline.is_some();
+
+    let opengraph = match form.opengraph.as_str() {
+        "" => None,
+        other => Some(OpenGraph::from_key(other).unwrap())
+    };
 
     let release_date_trimmed = form.release_date.trim();
     let release_date = if release_date_trimmed.is_empty() {
@@ -92,6 +104,7 @@ pub async fn update(
             download,
             embedding,
             offline,
+            opengraph,
             release_date: Field::validated(release_date_trimmed, release_date.and_then(|release_date| release_date.err())),
             sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
             title: Field::valid(title_trimmed),
@@ -108,6 +121,7 @@ pub async fn update(
             video_mut.download_local_set(download);
             video_mut.embedding_local_set(embedding);
             video_mut.offline_local_set(offline);
+            video_mut.opengraph_local_set(opengraph);
             video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
             video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
             video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };

@@ -9,6 +9,8 @@ use crate::{
     Collection,
     Context,
     MarkdownSubset,
+    OpenGraph,
+    OpenGraphMeta,
     Playlist,
     Site
 };
@@ -38,7 +40,7 @@ pub fn collection_html(
 
     let title = match &collection.title {
         Some(title) => title,
-        None => if collection.path.is_empty() { "Hyper 8" } else { collection.slug() }
+        None => if collection.path.is_empty() { "Collection" } else { collection.slug() }
     };
     let e_title = html_escape_outside_attribute(title);
 
@@ -140,6 +142,41 @@ pub fn collection_html(
 
     //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
     // }
+
+    if let OpenGraph::LinkPreviews = collection.opengraph() {
+        if let Some(collection_url) = site.absolute_url(&collection.path) {
+            let mut meta = OpenGraphMeta::new(title.to_string(), collection_url);
+
+            if let Some(description) = &collection.description {
+                let plaintext = MarkdownSubset::to_plaintext(description);
+
+                // As a somewhat arbitrary practical decision we currently
+                // only use "our" description as the opengraph description
+                // when it is less than 256 characters long in plaintext.
+                if plaintext.len() < 256 {
+                    meta.description(description);
+                }
+            }
+
+            // TODO: Technically working but we're keeping it disabled until
+            // banners are actually integrated in the visible frontend as
+            // well.
+            // if let Some(banner) = &collection.banner {
+            //     if let Some(poster_assets) = &banner.assets {
+            //         let image_url_prefix = site.absolute_url_prefix_unchecked(&collection.path);
+            //         let opengraph_image = poster_assets.opengraph_image("banner", &image_url_prefix);
+
+            //         meta.image(opengraph_image);
+
+            //         if let Some(description) = &banner.description {
+            //             meta.image_alt(description);
+            //         }
+            //     }
+            // }
+
+            layout.add_opengraph_meta(meta);
+        }
+    }
 
     let html = layout.render(
         asset_hashes,

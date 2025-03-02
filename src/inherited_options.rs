@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use crate::{Collection, Playlist};
+use crate::{
+    Collection,
+    OpenGraph,
+    Playlist
+};
 
 /// Some options need to be evaluated in the context of the entire site tree
 /// before they are applied at the individual node level. This includes
@@ -16,6 +20,7 @@ pub struct InheritedOptions {
     pub download: bool,
     pub embedding: bool,
     pub offline: bool,
+    pub opengraph: OpenGraph,
     pub unlisted: bool
 }
 
@@ -36,6 +41,11 @@ impl InheritedOptions {
         }
 
         self.offline |= collection.offline_local();
+
+        if let Some(opengraph) = collection.opengraph_local() {
+            self.opengraph = opengraph;
+        }
+
         self.unlisted |= collection.unlisted_local();
     }
 
@@ -55,6 +65,11 @@ impl InheritedOptions {
         }
 
         self.offline |= playlist.offline_local();
+
+        if let Some(opengraph) = playlist.opengraph_local() {
+            self.opengraph = opengraph;
+        }
+
         self.unlisted |= playlist.unlisted_local();
     }
 
@@ -65,6 +80,7 @@ impl InheritedOptions {
             download: false,
             embedding: false,
             offline: false,
+            opengraph: OpenGraph::Disabled,
             unlisted: false
         }
     }

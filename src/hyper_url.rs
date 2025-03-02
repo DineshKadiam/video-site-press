@@ -1,45 +1,64 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
-
-use std::fmt::{Display, Formatter};
 
 use url::Url;
 
+use crate::Site;
+
 /// Urls can be user-provided with or without trailing slash
 /// ("https://example.com/subdir" "https://example.com/subdir/"), but for
-/// further url construction through the [url] crate the trailing slash is
-/// significant (https://docs.rs/url/latest/url/struct.Url.html#method.join),
-/// hence we store both representation and a working copy of the parsed url.
+/// further url construction we want to ensure a normalized format, therefore
+/// we store both the representation (with or without trailing slash, as
+/// provided by the user, this is what they see) and the normalized form
+/// (this is what we internally use to construct urls).
 #[derive(Clone, Debug)]
 pub struct HyperUrl {
-    pub representation: String,
-    pub value: Url
+    /// Always with a trailing slash, this is the internally used,
+    /// normalized form.
+    pub normalized: String,
+    /// With or without trailing slash, as provided by the user.
+    pub representation: String
 }
 
 impl HyperUrl {
-    /// Delegates parsing to the url crate but beforehand ensures a trailing
-    /// slash so further url construction is performed correctly.
-    pub fn parse(url: &str) -> Result<HyperUrl, String> {
-        let parsed_url = match url.ends_with('/') {
-            true => Url::parse(url),
-            false => Url::parse(&format!("{url}/"))
-        };
+    pub fn join(&self, path: &str, site: &Site) -> String {
+        let normalized = &self.normalized;
 
-        match parsed_url {
-            Ok(value) => {
-                Ok(HyperUrl {
-                    representation: url.to_owned(),
-                    value
-                })
+        if path.is_empty() {
+            match site.clean_urls {
+                true => normalized.clone(),
+                false => format!("{normalized}index.html")
             }
-            Err(err) => Err(err.to_string())
+        } else {
+            match site.clean_urls {
+                true => format!("{normalized}{path}/"),
+                false => format!("{normalized}{path}/index.html")
+            }
         }
     }
-}
 
-impl Display for HyperUrl {
-    fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
-        let representation = &self.representation;
-        write!(formatter, "{representation}")
+    pub fn join_prefix(&self, path: &str) -> String {
+        let normalized = &self.normalized;
+
+        match path.is_empty() {
+            true => normalized.clone(),
+            false => format!("{normalized}{path}/")
+        }
+    }
+
+    /// Delegates parsing to the url crate and stores the url as both a
+    /// normalized form (with a guaranteed trailing slash) and representation
+    /// variant (with or without trailing slash, as provided by the user).
+    pub fn parse(url: impl Into<String>) -> Result<HyperUrl, String> {
+        let representation = url.into();
+        let normalized = match representation.ends_with('/') {
+            true => representation.clone(),
+            false => format!("{representation}/")
+        };
+
+        match Url::parse(&normalized) {
+            Ok(_) => Ok(HyperUrl { normalized, representation }),
+            Err(err) => Err(err.to_string())
+        }
     }
 }

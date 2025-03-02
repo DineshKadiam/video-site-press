@@ -6,7 +6,13 @@ use std::hash::{DefaultHasher, Hash};
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{CacheItem, Context, FileMeta, PosterAssetsCached};
+use crate::{
+    CacheItem,
+    Context,
+    FileMeta,
+    OpenGraphImage,
+    PosterAssetsCached
+};
 use crate::util::hash_closure;
 
 pub struct ImgAttributes {
@@ -41,37 +47,6 @@ pub struct PosterFile {
     pub description: Option<String>,
     pub file_meta: FileMeta,
     pub file_name: String
-}
-
-impl PosterAssets {
-    pub fn write_cache_manifest(
-        &self,
-        context: &Context,
-        file_meta: &FileMeta,
-        file_name: &str,
-        path: &str
-    ) {
-        let poster_path = format!("{}/{}", path, file_name);
-
-        let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
-            assets: self.clone(),
-            file_meta: file_meta.clone(),
-            path: poster_path.clone()
-        });
-
-        let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
-
-        let hash = |hasher: &mut DefaultHasher| {
-            poster_path.hash(hasher);
-            file_meta.hash(hasher);
-            self.poster_aspect.to_string().hash(hasher);
-        };
-
-        let cache_item_file_name = format!("{}.bincode", hash_closure(hash));
-        let cache_item_path = context.cache_dir.join(cache_item_file_name);
-        
-        fs::write(cache_item_path, cache_item_serialized).unwrap();
-    }
 }
 
 impl ImgAttributes {
@@ -153,6 +128,53 @@ impl PosterAssets {
         } else {
             &self.max_160
         }
+    }
+
+    pub fn opengraph_image(&self, type_key: &str, url_prefix: &String) -> OpenGraphImage {
+        let asset = if let Some(max_800) = &self.max_800 {
+            max_800
+        } else if let Some(max_480) = &self.max_480 {
+            max_480
+        } else if let Some(max_320) = &self.max_320 {
+            max_320
+        } else {
+            &self.max_160
+        };
+
+        OpenGraphImage {
+            height: asset.height,
+            url: format!("{url_prefix}{type_key}_{}x{}.jpg", asset.width, asset.height),
+            width: asset.width
+        }
+    }
+
+    pub fn write_cache_manifest(
+        &self,
+        context: &Context,
+        file_meta: &FileMeta,
+        file_name: &str,
+        path: &str
+    ) {
+        let poster_path = format!("{}/{}", path, file_name);
+
+        let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
+            assets: self.clone(),
+            file_meta: file_meta.clone(),
+            path: poster_path.clone()
+        });
+
+        let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
+
+        let hash = |hasher: &mut DefaultHasher| {
+            poster_path.hash(hasher);
+            file_meta.hash(hasher);
+            self.poster_aspect.to_string().hash(hasher);
+        };
+
+        let cache_item_file_name = format!("{}.bincode", hash_closure(hash));
+        let cache_item_path = context.cache_dir.join(cache_item_file_name);
+
+        fs::write(cache_item_path, cache_item_serialized).unwrap();
     }
 }
 

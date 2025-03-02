@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::{Display, Formatter};
-use std::path::Path;
 
 use indoc::formatdoc;
 
@@ -61,15 +60,17 @@ impl<'a> Input<'a> {
     /// Initialize an input for a permalink
     pub fn permalink(
         key: &'a str,
-        parent_path: &Path,
+        parent_path: &str,
         site: &Site,
         translations: &'a Translations
     ) -> Input<'a> {
-        let parent_path_with_trailing_slash = parent_path.join("");
-        let prefix = match &site.base_url {
-            Some(hyper_url) => hyper_url.value.join(&parent_path_with_trailing_slash.to_string_lossy()).unwrap().to_string(),
-            None => format!("https://example.com/{}", parent_path_with_trailing_slash.display())
-        };
+        let prefix = site.absolute_url_prefix(parent_path)
+            .unwrap_or_else(|| {
+                match parent_path.is_empty() {
+                    true => String::from("https://example.com/"),
+                    false => format!("https://example.com/{parent_path}/")
+                }
+            });
 
         Input::new(key, translations.permalink, InputType::Permalink { prefix })
     }

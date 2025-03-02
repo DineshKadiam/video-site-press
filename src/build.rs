@@ -103,6 +103,16 @@ pub fn perform_build(context: &Context) {
         scripts::generate_clipboard_js(context);
     }
 
+    if site.opengraph_requested() && site.base_url.is_none() {
+        // TODO: If we're using the graphical user interface this information needs to
+        //       be communicated earlier/differently. E.g. maybe the opengraph select
+        //       should not even be accessible (= greyed out) with a note that the base_url
+        //       needs to be set for this to do anything.
+        //       Likewise for CLI usage it can be thought through further in which way this
+        //       warning can be registered and in which context it can/should be printed.
+        eprintln!("Open Graph metadata could not be generated because the site's base_url is not defined");
+    }
+
     match &site.content {
         SiteContent::Collection(collection) => {
             if collection.offline() { return; }

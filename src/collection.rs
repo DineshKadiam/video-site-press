@@ -9,6 +9,7 @@ use std::str::Split;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
+use url::Url;
 
 use crate::{
     Banner,
@@ -17,9 +18,9 @@ use crate::{
     FileMeta,
     GetAnyResult,
     HyperDir,
-    HyperUrl,
     InheritedOptions,
     Link,
+    OpenGraph,
     Playlist,
     PlaylistUpdate,
     Site,
@@ -40,6 +41,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
     "embedding",
     "link",
     "offline",
+    "opengraph",
     "title",
     "unlisted",
     "video_order"
@@ -60,6 +62,7 @@ pub struct Collection {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
+    opengraph: Option<OpenGraph>,
     pub path: String,
     pub playlists: Vec<Arc<Playlist>>,
     pub subcollections: Vec<Arc<Collection>>,
@@ -237,9 +240,9 @@ impl Collection {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
-                                match HyperUrl::parse(value) {
-                                    Ok(url) => {
-                                        let link = Link::new(false, None, false, url);
+                                match Url::parse(value) {
+                                    Ok(_) => {
+                                        let link = Link::new(false, None, false, value);
                                         self.links.push(link);
                                     }
                                     Err(err) => {
@@ -266,8 +269,8 @@ impl Collection {
                                     }
                                     "url" => {
                                         if let Some(value) = attribute.value() {
-                                            match HyperUrl::parse(value) {
-                                                Ok(parsed_url) => url = Some(parsed_url),
+                                            match Url::parse(value) {
+                                                Ok(_) => url = Some(value),
                                                 Err(err) => {
                                                     let message = format!("The url supplied for the link seems to be malformed ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
@@ -328,6 +331,30 @@ impl Collection {
                         let error = element_error(element, manifest_path, message);
                         self.errors.push(error);
                     }
+                }
+                "opengraph" => 'opengraph: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match OpenGraph::from_key(value) {
+                                    Some(opengraph) => {
+                                        self.opengraph = Some(opengraph);
+                                    }
+                                    None => {
+                                        let message = format!("The opengraph option only supports the value 'link_previews' or 'disabled'. The given value '{value}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'opengraph;
+                            }
+                        }
+                    }
+
+                    let message = "opengraph needs to be provided as a field with the value 'link_previews' or 'disabled', e.g.: 'opengraph: link_previews'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
                 }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
@@ -759,6 +786,7 @@ impl Collection {
             links: Vec::new(),
             inherited_options,
             offline: false,
+            opengraph: None,
             path,
             playlists: Vec::new(),
             subcollections: Vec::new(),
@@ -790,15 +818,43 @@ impl Collection {
         self.offline = enabled;
     }
 
-    // TODO: Maybe this should better be parent_path_unchecked and we only use
-    //       the current 'else' branch? Calling this on a root node currently
-    //       returns a semi-correct/meaningful result.
-    //       (also applies to playlist/video)
-    pub fn parent_path(&self) -> &Path {
-        if self.path.is_empty() {
-            Path::new("")
-        } else {
-            Path::new(&self.path).parent().unwrap()
+    /// Get the opengraph setting resolved in the context of the site tree
+    /// (= as set locally on the colletion or as inherited from an ancestor).
+    pub fn opengraph(&self) -> OpenGraph {
+        self.opengraph.unwrap_or(self.inherited_options.opengraph)
+    }
+
+    /// Get the opengraph setting as inherited from ancestors.
+    pub fn opengraph_inherited(&self) -> OpenGraph {
+        self.inherited_options.opengraph
+    }
+
+    /// Get the opengraph setting as set locally on the colletion.
+    pub fn opengraph_local(&self) -> Option<OpenGraph> {
+        self.opengraph
+    }
+
+    /// Set the opengraph setting locally on the colletion.
+    pub fn opengraph_local_set(&mut self, opengraph_option: Option<OpenGraph>) {
+        self.opengraph = opengraph_option;
+    }
+
+    /// Determines if the collection or any of its descendants has opengraph
+    /// enabled. This information is consecutively used to output a warning
+    /// if base_url is not set (which is required for opengraph meta to be
+    /// generated).
+    pub fn opengraph_requested(&self) -> bool {
+        self.opengraph_local().is_some_and(|opengraph| opengraph.enabled()) ||
+        self.published_videos().any(|video| video.opengraph_local().is_some_and(|opengraph| opengraph.enabled())) ||
+        self.published_playlists().any(|playlist| playlist.opengraph_requested()) ||
+        self.published_subcollections().any(|subcollection| subcollection.opengraph_requested())
+    }
+
+    // Calling this on a root node returns its own path instead
+    pub fn parent_path_unchecked(&self) -> &str {
+        match self.path.rsplit_once('/') {
+            Some((parent_path, _)) => parent_path,
+            None => ""
         }
     }
 
@@ -1267,6 +1323,10 @@ impl Collection {
 
         if self.offline {
             eno.push_str("offline\n");
+        }
+
+        if let Some(opengraph) = self.opengraph {
+            eno.push_str(&format!("opengraph: {}\n", opengraph.key()));
         }
 
         if let Some(title) = &self.title {

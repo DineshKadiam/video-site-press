@@ -34,7 +34,7 @@ impl<'a> Select<'a> {
         }
     }
 
-    pub fn option<K: Into<String>, V: Into<String>>(&mut self, key: K, label: V) {
+    pub fn option(&mut self, key: impl Into<String>, label: impl Into<String>) {
     	let option = SelectOption::new(key.into(), label.into());
     	self.options.push(option);
     }

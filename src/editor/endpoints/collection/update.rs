@@ -13,6 +13,7 @@ use crate::{
     Context,
     ContextPath,
     Field,
+    OpenGraph,
     VideoOrder
 };
 use crate::editor::widgets::not_found;
@@ -27,6 +28,7 @@ pub struct UpdateForm {
     download: String,
     embedding: String,
     offline: Option<String>,
+    opengraph: String,
     title: String,
     unlisted: Option<String>,
     video_order: String
@@ -59,6 +61,11 @@ pub async fn update(
         _ => None
     };
 
+    let opengraph = match form.opengraph.as_str() {
+        "" => None,
+        other => Some(OpenGraph::from_key(other).unwrap())
+    };
+
     let offline = form.offline.is_some();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
@@ -72,6 +79,7 @@ pub async fn update(
             collection_mut.download_local_set(download);
             collection_mut.embedding_local_set(embedding);
             collection_mut.offline_local_set(offline);
+            collection_mut.opengraph_local_set(opengraph);
             collection_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             collection_mut.unlisted_local_set(unlisted);
             collection_mut.video_order = video_order;
@@ -99,6 +107,7 @@ pub async fn update(
             download,
             embedding,
             offline,
+            opengraph,
             title: Field::valid(title_trimmed),
             unlisted,
             video_order: &form.video_order

@@ -4,7 +4,6 @@
 use std::fs;
 
 use indoc::formatdoc;
-use url::Url;
 
 use crate::{Context, HyperUrl, Site, Video};
 use crate::build::{AssetHashes, Layout};
@@ -22,7 +21,7 @@ use crate::util::{
 /// The title parameter provides a text that indicates to screen-reader users
 /// what to expect inside the iframe. See description at
 /// https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#accessibility_concerns
-fn embed_code(embed_url: &Url, title: &str) -> (String, String) {
+fn embed_code(embed_url: &str, title: &str) -> (String, String) {
     let title_double_escaped = html_double_escape_inside_attribute(title);
     let title_escaped = html_escape_inside_attribute(title);
 
@@ -56,7 +55,6 @@ pub fn embed_codes_html(
     traversal: &Traversal
 ) {
     let mut layout = Layout::new();
-    let index_suffix = site.index_suffix();
     let translations = &site.language.translations;
 
     let t_embed = translations.embed;
@@ -67,10 +65,10 @@ pub fn embed_codes_html(
     let title = format!("{t_embed} – {video_title}");
     let e_title = html_escape_outside_attribute(&title);
 
-    let embed_interfix = if video.path.is_empty() { "embed" } else { "/embed" };
-    let embed_url = base_url.value
-        .join(&format!("{}{embed_interfix}{index_suffix}", video.path))
-        .unwrap();
+    let embed_url = match video.path.is_empty() {
+        true => base_url.join("embed", site),
+        false => base_url.join(&format!("{}/embed", video.path), site)
+    };
 
     let t_video_player_widget_for_xxx = translations.video_player_widget_for_xxx(&title);
     let (embed_copy_code, embed_display_code) = embed_code(&embed_url, &t_video_player_widget_for_xxx);

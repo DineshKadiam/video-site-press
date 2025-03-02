@@ -1,13 +1,17 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
-
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use indoc::formatdoc;
 
-use crate::{Collection, Context, Field, Language};
+use crate::{
+    Collection,
+    Context,
+    Field,
+    Language,
+    OpenGraph
+};
 use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
@@ -69,6 +73,7 @@ pub enum CollectionFormFeedback<'a> {
         download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
+        opengraph: Option<OpenGraph>,
         title: Field,
         unlisted: bool,
         video_order: &'a str
@@ -150,6 +155,7 @@ pub fn edit_page(
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
+    let mut select_opengraph = Select::new("opengraph", "Open Graph");
     let mut select_video_order = Select::new("video_order", translations.video_order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
@@ -157,20 +163,26 @@ pub fn edit_page(
     let t_enabled = translations.enabled;
     let t_inherit = translations.inherit;
 
-    let t_copy_link_disabled_enabled = if collection.copy_link_inherited() { t_enabled } else { t_disabled };
-    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    let t_copy_link_inherited_enabled_disabled = if collection.copy_link_inherited() { t_enabled } else { t_disabled };
+    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_inherited_enabled_disabled})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
-    let t_download_disabled_enabled = if collection.download_inherited() { t_enabled } else { t_disabled };
-    select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
+    let t_download_inherited_enabled_disabled = if collection.download_inherited() { t_enabled } else { t_disabled };
+    select_download.option("", format!("{t_inherit} ({t_download_inherited_enabled_disabled})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
-    let t_embedding_disabled_enabled = if collection.embedding_inherited() { t_enabled } else { t_disabled };
-    select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    let t_embedding_inherited_enabled_disabled = if collection.embedding_inherited() { t_enabled } else { t_disabled };
+    select_embedding.option("", format!("{t_inherit} ({t_embedding_inherited_enabled_disabled})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
+
+    let opengraph_inherited = collection.opengraph_inherited();
+    let t_opengraph_inherited_label = opengraph_inherited.label(translations);
+    select_opengraph.option("", format!("{t_inherit} ({t_opengraph_inherited_label})"));
+    select_opengraph.option("disabled", t_disabled);
+    select_opengraph.option("link_previews", translations.link_previews);
 
     // TODO: Same construction as in endpoints/playlist.rs, possibly encapsulate as shared helper
     select_video_order.option("default", translations.default_sort_number_or_release_date_ascending);
@@ -189,6 +201,7 @@ pub fn edit_page(
         download,
         embedding,
         offline,
+        opengraph,
         title,
         unlisted,
         video_order
@@ -211,12 +224,18 @@ pub fn edit_page(
             None => ""
         };
 
+        let opengraph_value = match opengraph {
+            Some(opengraph) => opengraph.key(),
+            None => ""
+        };
+
         input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
+        select_opengraph.selected(opengraph_value);
         select_video_order.selected(video_order);
         textarea_description.value(description);
 
@@ -240,12 +259,18 @@ pub fn edit_page(
             None => ""
         };
 
+        let opengraph = match collection.opengraph_local() {
+            Some(opengraph) => opengraph.key(),
+            None => ""
+        };
+
         input_offline.checked(collection.offline_local());
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted_local());
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
+        select_opengraph.selected(opengraph);
         select_video_order.selected(collection.video_order.key());
         textarea_description.value_option(&collection.description);
 
@@ -255,7 +280,7 @@ pub fn edit_page(
     let slug_form = if path.is_empty() {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", collection.parent_path(), &site, translations);
+        let mut input_permalink = Input::permalink("slug", collection.parent_path_unchecked(), &site, translations);
 
         input_permalink
             .id("slug_collection")
@@ -299,7 +324,7 @@ pub fn edit_page(
     let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
 
     let new_playlist_form = {
-        let mut input_slug_create_playlist = Input::permalink("slug", Path::new(path), &site, translations);
+        let mut input_slug_create_playlist = Input::permalink("slug", path, &site, translations);
         let mut input_title_create_playlist = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -335,7 +360,7 @@ pub fn edit_page(
     };
 
     let new_subcollection_form = {
-        let mut input_slug_create_subcollection = Input::permalink("slug", Path::new(path), &site, translations);
+        let mut input_slug_create_subcollection = Input::permalink("slug", path, &site, translations);
         let mut input_title_create_subcollection = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -371,7 +396,7 @@ pub fn edit_page(
     };
 
     let new_video_form = {
-        let mut input_slug_create_video = Input::permalink("slug", Path::new(path), &site, translations);
+        let mut input_slug_create_video = Input::permalink("slug", path, &site, translations);
         let mut input_title_create_video = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -488,6 +513,7 @@ pub fn edit_page(
                     {select_download}
                     {select_embedding}
                 </div>
+                {select_opengraph}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

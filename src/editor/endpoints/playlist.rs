@@ -1,14 +1,18 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
-
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 
 use indoc::formatdoc;
 
-use crate::{Context, Field, Language, Playlist};
+use crate::{
+    Context,
+    Field,
+    Language,
+    OpenGraph,
+    Playlist
+};
 use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
 use crate::editor::widgets::{
@@ -57,6 +61,7 @@ pub enum PlaylistFormFeedback<'a> {
         download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
+        opengraph: Option<OpenGraph>,
         order: &'a str,
         title: Field,
         unlisted: bool
@@ -140,6 +145,7 @@ pub fn edit_page(
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
+    let mut select_opengraph = Select::new("opengraph", "Open Graph");
     let mut select_order = Select::new("order", translations.order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
@@ -162,6 +168,12 @@ pub fn edit_page(
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
+    let opengraph_inherited = playlist.opengraph_inherited();
+    let t_opengraph_inherited_label = opengraph_inherited.label(translations);
+    select_opengraph.option("", format!("{t_inherit} ({t_opengraph_inherited_label})"));
+    select_opengraph.option("disabled", t_disabled);
+    select_opengraph.option("link_previews", translations.link_previews);
+
     select_order.option("default", translations.default_sort_number_or_release_date_ascending);
     select_order.option("release_date_asc", translations.release_date_ascending);
     select_order.option("release_date_desc", translations.release_date_descending);
@@ -178,6 +190,7 @@ pub fn edit_page(
         download,
         embedding,
         offline,
+        opengraph,
         order,
         title,
         unlisted
@@ -200,12 +213,18 @@ pub fn edit_page(
             None => ""
         };
 
+        let opengraph_value = match opengraph {
+            Some(opengraph) => opengraph.key(),
+            None => ""
+        };
+
         input_offline.checked(*offline);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
+        select_opengraph.selected(opengraph_value);
         select_order.selected(order);
         textarea_description.value(description);
 
@@ -229,12 +248,18 @@ pub fn edit_page(
             None => ""
         };
 
+        let opengraph = match playlist.opengraph_local() {
+            Some(opengraph) => opengraph.key(),
+            None => ""
+        };
+
         input_offline.checked(playlist.offline_local());
         input_title.value_option(&playlist.title);
         input_unlisted.checked(playlist.unlisted_local());
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
+        select_opengraph.selected(opengraph);
         select_order.selected(playlist.order.key());
         textarea_description.value_option(&playlist.description);
 
@@ -244,7 +269,7 @@ pub fn edit_page(
     let slug_form = if path.is_empty() {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", playlist.parent_path(), &site, translations);
+        let mut input_permalink = Input::permalink("slug", playlist.parent_path_unchecked(), &site, translations);
 
         input_permalink.required();
 
@@ -322,7 +347,7 @@ pub fn edit_page(
     };
 
     let new_video_form = {
-        let mut input_slug_create_video = Input::permalink("slug", Path::new(path), &site, translations);
+        let mut input_slug_create_video = Input::permalink("slug", path, &site, translations);
         let mut input_title_create_video = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -394,6 +419,7 @@ pub fn edit_page(
                     {select_download}
                     {select_embedding}
                 </div>
+                {select_opengraph}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

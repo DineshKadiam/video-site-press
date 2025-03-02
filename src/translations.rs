@@ -100,6 +100,7 @@ pub struct Translations {
     pub length_diverges_between_different_formats: &'static str,
     pub light: &'static str,
     pub light_color_scheme: &'static str,
+    pub link_previews: &'static str,
     pub link_type: &'static str,
     pub link_with_rel_me_attribute: &'static str,
     pub links: &'static str,
@@ -297,6 +298,7 @@ impl Translations {
             length_diverges_between_different_formats: "Länge variiert zwischen den verschiedenen Formaten",
             light: "Hell",
             light_color_scheme: "Helles Farbschema",
+            link_previews: "Link-Vorschauen",
             link_type: "Linktyp",
             link_with_rel_me_attribute: r#"Link mit rel="me" Attribut"#,
             links: "Links",
@@ -494,6 +496,7 @@ impl Translations {
             length_diverges_between_different_formats: "Length diverges between different formats",
             light: "Light",
             light_color_scheme: "Light Color Scheme",
+            link_previews: "Link previews",
             link_type: "Link type",
             link_with_rel_me_attribute: r#"Link with rel="me" attribute"#,
             links: "Links",
@@ -616,5 +619,10 @@ fn check_translations() {
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
+
+        let disallowed_char = |c: char| !c.is_ascii_alphanumeric() && c != '-';
+
+        assert!(!&translations.download_permalink.contains(disallowed_char));
+        assert!(!&translations.embed_codes_permalink.contains(disallowed_char));
     }
 }

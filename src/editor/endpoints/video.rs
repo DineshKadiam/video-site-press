@@ -10,6 +10,7 @@ use crate::{
     Context,
     Field,
     Language,
+    OpenGraph,
     Translations,
     Video
 };
@@ -67,6 +68,7 @@ pub enum VideoFormFeedback<'a> {
         download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
+        opengraph: Option<OpenGraph>,
         release_date: Field,
         sort_number: Field,
         title: Field,
@@ -422,6 +424,7 @@ pub fn edit_page(
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
+    let mut select_opengraph = Select::new("opengraph", "Open Graph");
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
     let t_disabled = translations.disabled;
@@ -443,6 +446,12 @@ pub fn edit_page(
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
+    let opengraph_inherited = video.opengraph_inherited();
+    let t_opengraph_inherited_label = opengraph_inherited.label(translations);
+    select_opengraph.option("", format!("{t_inherit} ({t_opengraph_inherited_label})"));
+    select_opengraph.option("disabled", t_disabled);
+    select_opengraph.option("link_previews", translations.link_previews);
+
     textarea_description.id("video_description");
 
     let feedback_update = if let Some(VideoFormFeedback::Update {
@@ -451,6 +460,7 @@ pub fn edit_page(
         download,
         embedding,
         offline,
+        opengraph,
         release_date,
         sort_number,
         title,
@@ -474,6 +484,11 @@ pub fn edit_page(
             None => ""
         };
 
+        let opengraph_value = match opengraph {
+            Some(opengraph) => opengraph.key(),
+            None => ""
+        };
+
         input_offline.checked(*offline);
         input_release_date.validated_value(release_date);
         input_sort_number.validated_value(sort_number);
@@ -482,6 +497,7 @@ pub fn edit_page(
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
+        select_opengraph.selected(opengraph_value);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
@@ -503,6 +519,12 @@ pub fn edit_page(
             Some(false) => "disabled",
             None => ""
         };
+
+        let opengraph = match video.opengraph_local() {
+            Some(opengraph) => opengraph.key(),
+            None => ""
+        };
+
         let release_date = video.release_date.as_ref().map(|date| date.to_string());
         let sort_number = video.sort_number.as_ref().map(|number| number.to_string());
 
@@ -514,6 +536,7 @@ pub fn edit_page(
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
+        select_opengraph.selected(opengraph);
         textarea_description.value_option(&video.description);
 
         String::new()
@@ -522,7 +545,7 @@ pub fn edit_page(
     let slug_form = if path.is_empty() {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", video.parent_path(), &site, translations);
+        let mut input_permalink = Input::permalink("slug", video.parent_path_unchecked(), &site, translations);
 
         input_permalink.required();
 
@@ -629,6 +652,7 @@ pub fn edit_page(
                     {select_download}
                     {select_embedding}
                 </div>
+                {select_opengraph}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

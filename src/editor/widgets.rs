@@ -1,7 +1,5 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
-
-use std::path::Path;
 
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
@@ -93,24 +91,20 @@ pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Sit
     let copy_live_url;
     let live_url_displayed;
     match &site.base_url {
-        Some(hyper_url) => {
+        Some(base_url) => {
             let t_offline = translations.offline;
             let offline_label = if offline { format!(" ({t_offline})") } else { String::new() };
 
             let external_icon = icons::external(translations.external_link);
-            let live_url = if path.is_empty() {
-                let live_url = hyper_url.value.to_string();
+            let live_url = base_url.join_prefix(path);
+            if path.is_empty() {
                 live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {live_url}{offline_label}</a>"#);
-                live_url
             } else {
-                let path_with_trailing_slash = Path::new(path).join("");
-                let live_url = hyper_url.value.join(&path_with_trailing_slash.to_string_lossy()).unwrap().to_string();
                 let mut rsplitn = live_url.rsplitn(3, '/');
                 rsplitn.next().unwrap();
                 let slug = rsplitn.next().unwrap();
                 let prefix = rsplitn.next().unwrap();
                 live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/{offline_label}</a>"#);
-                live_url
             };
 
             let t_copy_link = translations.copy_link;

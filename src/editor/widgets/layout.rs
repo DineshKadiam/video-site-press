@@ -35,7 +35,7 @@ fn controls(
                 "#)
             } else {
                 let base_url = match &site.base_url {
-                    Some(base_url) => format!(" ({base_url})"),
+                    Some(base_url) => format!(" ({})", base_url.representation),
                     None => String::new()
                 };
                 let t_deploy = translations.deploy;
@@ -174,8 +174,9 @@ pub fn layout(
 
     let tree_view_order_label = context.get_editor_tree_view_order().key(translations);
 
+    // This is used at runtime in client-side js to display the url in a message
     let data_base_url = match &site.base_url {
-        Some(base_url) => format!(r#"data-base-url="{base_url}""#),
+        Some(base_url) => format!(r#"data-base-url="{}""#, base_url.representation),
         None => String::new()
     };
     // We put this on body as the data-version attribute, and this is

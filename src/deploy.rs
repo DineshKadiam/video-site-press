@@ -101,7 +101,7 @@ pub fn config_probe(context: &Context, site: &Site) -> Result<(), String> {
         Err(err) => return Err(format!("The rsync child process for syncing the config probe to the remote could not be executed. ({err})"))
     }
 
-    let public_probe_url = site.base_url.as_ref().unwrap().value.join(PROBE_FILE_NAME).unwrap();
+    let public_probe_url = format!("{}{PROBE_FILE_NAME}", site.base_url.as_ref().unwrap().normalized);
 
     match minreq::get(public_probe_url.clone()).send() {
         Ok(response) => {

@@ -3,7 +3,7 @@
 
 use indoc::formatdoc;
 
-use crate::{Site, ThemeKind};
+use crate::{OpenGraphMeta, Site, ThemeKind};
 use crate::build::{AssetHashes, Traversal};
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
@@ -15,6 +15,7 @@ pub struct Layout {
     indexing: bool,
     /// <template> tags that are used in the scripting on the page, and
     /// appended at the bottom of the body to optimize loading.
+    opengraph_meta: Option<OpenGraphMeta>,
     templates: String,
     video_script: bool
 }
@@ -22,6 +23,10 @@ pub struct Layout {
 impl Layout {
     pub fn add_clipboard_script(&mut self) {
         self.clipboard_script = true;
+    }
+
+    pub fn add_opengraph_meta(&mut self, opengraph_meta: OpenGraphMeta) {
+        self.opengraph_meta = Some(opengraph_meta);
     }
 
     pub fn add_templates(&mut self, templates: &str) {
@@ -36,6 +41,7 @@ impl Layout {
         Layout {
             clipboard_script: false,
             indexing: true,
+            opengraph_meta: None,
             templates: String::new(),
             video_script: false
         }
@@ -72,6 +78,11 @@ impl Layout {
             String::new()
         };
 
+        let meta_opengraph = match &self.opengraph_meta {
+            Some(meta) => meta.tags(site),
+            None => String::new()
+        };
+
         let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
 
         let video_script = if self.video_script {
@@ -87,6 +98,7 @@ impl Layout {
                 <meta charset="utf-8">
                 {meta_generator}
                 {meta_noindex_nofollow}
+                {meta_opengraph}
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
                 {adaptive_theme_script}

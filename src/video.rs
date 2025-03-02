@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 use serde_derive::{Deserialize, Serialize};
+use url::Url;
 
 use crate::{
     CacheItem,
@@ -15,9 +16,9 @@ use crate::{
     Context,
     FileMeta,
     HyperDir,
-    HyperUrl,
     InheritedOptions,
     Link,
+    OpenGraph,
     Playlist,
     PosterFile,
     Site,
@@ -35,6 +36,7 @@ const VIDEO_OPTIONS: &[&str] = &[
     "embedding",
     "link",
     "offline",
+    "opengraph",
     "poster",
     "release_date",
     "sort_number",
@@ -56,6 +58,7 @@ pub struct Video {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
+    opengraph: Option<OpenGraph>,
     /// Relative to site dir, always without leading/trailing slashes
     pub path: String,
     pub poster: Option<PosterFile>,
@@ -218,9 +221,9 @@ impl Video {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
-                                match HyperUrl::parse(value) {
-                                    Ok(url) => {
-                                        let link = Link::new(false, None, false, url);
+                                match Url::parse(value) {
+                                    Ok(_) => {
+                                        let link = Link::new(false, None, false, value);
                                         self.links.push(link);
                                     }
                                     Err(err) => {
@@ -247,8 +250,8 @@ impl Video {
                                     }
                                     "url" => {
                                         if let Some(value) = attribute.value() {
-                                            match HyperUrl::parse(value) {
-                                                Ok(parsed_url) => url = Some(parsed_url),
+                                            match Url::parse(value) {
+                                                Ok(_) => url = Some(value),
                                                 Err(err) => {
                                                     let message = format!("The url supplied for the link seems to be malformed ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
@@ -309,6 +312,30 @@ impl Video {
                         let error = element_error(element, manifest_path, message);
                         self.errors.push(error);
                     }
+                }
+                "opengraph" => 'opengraph: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match OpenGraph::from_key(value) {
+                                    Some(opengraph) => {
+                                        self.opengraph = Some(opengraph);
+                                    }
+                                    None => {
+                                        let message = format!("The opengraph option only supports the value 'link_previews' or 'disabled'. The given value '{value}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'opengraph;
+                            }
+                        }
+                    }
+
+                    let message = "opengraph needs to be provided as a field with the value 'link_previews' or 'disabled', e.g.: 'opengraph: link_previews'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
                 }
                 "poster" => 'poster: {
                     if let Ok(field) = element.as_field() {
@@ -711,6 +738,7 @@ impl Video {
             inherited_options,
             links: Vec::new(),
             offline: false,
+            opengraph: None,
             path,
             poster: None,
             release_date: None,
@@ -743,15 +771,32 @@ impl Video {
         self.offline = enabled;
     }
 
-    // TODO: Maybe this should better be parent_path_unchecked and we only use
-    //       the current 'else' branch? Calling this on a root node currently
-    //       returns a semi-correct/meaningful result.
-    //       (also applies to collection/playlist)
-    pub fn parent_path(&self) -> &Path {
-        if self.path.is_empty() {
-            Path::new("")
-        } else {
-            Path::new(&self.path).parent().unwrap()
+    /// Get the opengraph setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn opengraph(&self) -> OpenGraph {
+        self.opengraph.unwrap_or(self.inherited_options.opengraph)
+    }
+
+    /// Get the opengraph setting as inherited from ancestors.
+    pub fn opengraph_inherited(&self) -> OpenGraph {
+        self.inherited_options.opengraph
+    }
+
+    /// Get the opengraph setting as set locally on the video.
+    pub fn opengraph_local(&self) -> Option<OpenGraph> {
+        self.opengraph
+    }
+
+    /// Set the opengraph setting locally on the video.
+    pub fn opengraph_local_set(&mut self, opengraph_option: Option<OpenGraph>) {
+        self.opengraph = opengraph_option;
+    }
+
+    // Calling this on a root node returns its own path instead
+    pub fn parent_path_unchecked(&self) -> &str {
+        match self.path.rsplit_once('/') {
+            Some((parent_path, _)) => parent_path,
+            None => ""
         }
     }
 
@@ -931,6 +976,10 @@ impl Video {
 
         if self.offline {
             eno.push_str("offline\n");
+        }
+
+        if let Some(opengraph) = self.opengraph {
+            eno.push_str(&format!("opengraph: {}\n", opengraph.key()));
         }
 
         if let Some(poster) = &self.poster {
