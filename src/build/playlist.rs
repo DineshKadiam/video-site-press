@@ -8,8 +8,7 @@ use indoc::formatdoc;
 use crate::{
     Context,
     MarkdownSubset,
-    OpenGraph,
-    OpenGraphMeta,
+    PlatformIntegrationMeta,
     Playlist,
     Site
 };
@@ -131,15 +130,15 @@ pub fn playlist_html(
     //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
     // }
 
-    if let OpenGraph::LinkPreviews = playlist.opengraph() {
+    if playlist.platform_integration().enabled() {
         if let Some(playlist_url) = site.absolute_url(&playlist.path) {
-            let mut meta = OpenGraphMeta::new(title.to_string(), playlist_url);
+            let mut meta = PlatformIntegrationMeta::new(title.to_string(), playlist_url);
 
             if let Some(description) = &playlist.description {
                 let plaintext = MarkdownSubset::to_plaintext(description);
 
                 // As a somewhat arbitrary practical decision we currently
-                // only use "our" description as the opengraph description
+                // only use "our" description as the description for platform integration
                 // when it is less than 256 characters long in plaintext.
                 if plaintext.len() < 256 {
                     meta.description(description);
@@ -152,9 +151,9 @@ pub fn playlist_html(
             // if let Some(banner) = &playlist.banner {
             //     if let Some(poster_assets) = &banner.assets {
             //         let image_url_prefix = site.absolute_url_prefix_unchecked(&playlist.path);
-            //         let opengraph_image = poster_assets.opengraph_image("banner", &image_url_prefix);
+            //         let platform_integration_image = poster_assets.platform_integration_image("banner", &image_url_prefix);
 
-            //         meta.image(opengraph_image);
+            //         meta.image(platform_integration_image);
 
             //         if let Some(description) = &banner.description {
             //             meta.image_alt(description);
@@ -162,7 +161,7 @@ pub fn playlist_html(
             //     }
             // }
 
-            layout.add_opengraph_meta(meta);
+            layout.add_platform_integration_meta(meta);
         }
     }
 

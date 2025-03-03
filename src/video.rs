@@ -18,7 +18,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     Link,
-    OpenGraph,
+    PlatformIntegration,
     Playlist,
     PosterFile,
     Site,
@@ -36,7 +36,7 @@ const VIDEO_OPTIONS: &[&str] = &[
     "embedding",
     "link",
     "offline",
-    "opengraph",
+    "platform_integration",
     "poster",
     "release_date",
     "sort_number",
@@ -58,9 +58,9 @@ pub struct Video {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
-    opengraph: Option<OpenGraph>,
     /// Relative to site dir, always without leading/trailing slashes
     pub path: String,
+    platform_integration: Option<PlatformIntegration>,
     pub poster: Option<PosterFile>,
     pub release_date: Option<NaiveDate>,
     pub sort_number: Option<i32>,
@@ -313,27 +313,27 @@ impl Video {
                         self.errors.push(error);
                     }
                 }
-                "opengraph" => 'opengraph: {
+                "platform_integration" => 'platform_integration: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
-                                match OpenGraph::from_key(value) {
-                                    Some(opengraph) => {
-                                        self.opengraph = Some(opengraph);
+                                match PlatformIntegration::from_key(value) {
+                                    Some(platform_integration) => {
+                                        self.platform_integration = Some(platform_integration);
                                     }
                                     None => {
-                                        let message = format!("The opengraph option only supports the value 'link_previews' or 'disabled'. The given value '{value}' was not recognized.");
+                                        let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
                                         self.errors.push(error);
                                     }
                                 }
 
-                                break 'opengraph;
+                                break 'platform_integration;
                             }
                         }
                     }
 
-                    let message = "opengraph needs to be provided as a field with the value 'link_previews' or 'disabled', e.g.: 'opengraph: link_previews'";
+                    let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
                     let error = element_error(element, manifest_path, message);
                     self.errors.push(error);
                 }
@@ -710,22 +710,36 @@ impl Video {
     /// high-res, not too low-res, but a nice balance between resource
     /// consumption and visual fidelity.
     pub fn recommended_version(&self) -> Option<&VideoFile> {
-        // (fps_distance, height_distance, version)
-        let mut version_candidate: Option<(f32, i32, &VideoFile)> = None;
+        const IDEAL_FRAME_RATE: f32 = 27.0;
+        const IDEAL_HEIGHT: usize = 720;
+
+        struct Candidate<'a> {
+            frame_rate_distance: f32,
+            height_distance: usize,
+            video_file: &'a VideoFile
+        }
+
+        let mut candidate_option: Option<Candidate> = None;
 
         for version in &self.versions {
             if let Some(video_meta) = &version.video_meta {
-                let fps_distance = (27.0 - video_meta.video_frame_rate).abs();
-                let height_distance = (720 - video_meta.height as i32).abs();
-                if version_candidate.is_none() || version_candidate.is_some_and(|version_tuple| {
-                    fps_distance < version_tuple.0 || height_distance < version_tuple.1
+                let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
+                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).abs() as usize;
+
+                if candidate_option.is_none() || candidate_option.as_ref().is_some_and(|candidate| {
+                    frame_rate_distance <= candidate.frame_rate_distance &&
+                    height_distance <= candidate.height_distance
                 }) {
-                    version_candidate = Some((fps_distance, height_distance, version));
+                    candidate_option = Some(Candidate {
+                        frame_rate_distance,
+                        height_distance,
+                        video_file: version
+                    });
                 }
             }
         }
 
-        version_candidate.map(|version_tuple| version_tuple.2)
+        candidate_option.map(|candidate| candidate.video_file)
     }
 
     pub fn new(path: String, inherited_options: InheritedOptions) -> Video {
@@ -738,8 +752,8 @@ impl Video {
             inherited_options,
             links: Vec::new(),
             offline: false,
-            opengraph: None,
             path,
+            platform_integration: None,
             poster: None,
             release_date: None,
             sort_number: None,
@@ -771,33 +785,33 @@ impl Video {
         self.offline = enabled;
     }
 
-    /// Get the opengraph setting resolved in the context of the site tree
-    /// (= as set locally on the video or as inherited from an ancestor).
-    pub fn opengraph(&self) -> OpenGraph {
-        self.opengraph.unwrap_or(self.inherited_options.opengraph)
-    }
-
-    /// Get the opengraph setting as inherited from ancestors.
-    pub fn opengraph_inherited(&self) -> OpenGraph {
-        self.inherited_options.opengraph
-    }
-
-    /// Get the opengraph setting as set locally on the video.
-    pub fn opengraph_local(&self) -> Option<OpenGraph> {
-        self.opengraph
-    }
-
-    /// Set the opengraph setting locally on the video.
-    pub fn opengraph_local_set(&mut self, opengraph_option: Option<OpenGraph>) {
-        self.opengraph = opengraph_option;
-    }
-
     // Calling this on a root node returns its own path instead
     pub fn parent_path_unchecked(&self) -> &str {
         match self.path.rsplit_once('/') {
             Some((parent_path, _)) => parent_path,
             None => ""
         }
+    }
+
+    /// Get the platform_integration setting resolved in the context of the site tree
+    /// (= as set locally on the video or as inherited from an ancestor).
+    pub fn platform_integration(&self) -> PlatformIntegration {
+        self.platform_integration.unwrap_or(self.inherited_options.platform_integration)
+    }
+
+    /// Get the platform_integration setting as inherited from ancestors.
+    pub fn platform_integration_inherited(&self) -> PlatformIntegration {
+        self.inherited_options.platform_integration
+    }
+
+    /// Get the platform_integration setting as set locally on the video.
+    pub fn platform_integration_local(&self) -> Option<PlatformIntegration> {
+        self.platform_integration
+    }
+
+    /// Set the platform_integration setting locally on the video.
+    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) {
+        self.platform_integration = platform_integration_option;
     }
 
     /// A video is public in its local context if it is neither offline
@@ -978,8 +992,8 @@ impl Video {
             eno.push_str("offline\n");
         }
 
-        if let Some(opengraph) = self.opengraph {
-            eno.push_str(&format!("opengraph: {}\n", opengraph.key()));
+        if let Some(platform_integration) = self.platform_integration {
+            eno.push_str(&format!("platform_integration: {}\n", platform_integration.key()));
         }
 
         if let Some(poster) = &self.poster {
@@ -1019,6 +1033,23 @@ impl Video {
 }
 
 impl VideoFile {
+    pub fn mime_type(&self) -> &'static str {
+        let (_stem, extension) = self.file_name.rsplit_once('.').unwrap();
+
+        // This mapping must be kept up-to-date with what we accept in our
+        // [supported_video_extension] helper function, otherwise it's a full
+        // on-crash (but at least something that is quickly and easily
+        // discovered).
+        match extension {
+            "m4v" |
+            "mp4" => "video/mp4",
+            "mkv" => "video/x-matroska",
+            "mov" => "video/quicktime",
+            "webm" => "video/webm",
+            _ => unimplemented!()
+        }
+    }
+
     pub fn new(
         file_meta: FileMeta,
         file_name: String,
@@ -1077,7 +1108,7 @@ impl VideoMeta {
 
         let cache_item_file_name = format!("{}.bincode", hash(&version_path));
         let cache_item_path = context.cache_dir.join(cache_item_file_name);
-        
+
         fs::write(cache_item_path, cache_item_serialized).unwrap();
     }
 }

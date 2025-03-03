@@ -3,7 +3,7 @@
 
 use crate::{
     Collection,
-    OpenGraph,
+    PlatformIntegration,
     Playlist
 };
 
@@ -20,7 +20,7 @@ pub struct InheritedOptions {
     pub download: bool,
     pub embedding: bool,
     pub offline: bool,
-    pub opengraph: OpenGraph,
+    pub platform_integration: PlatformIntegration,
     pub unlisted: bool
 }
 
@@ -42,8 +42,8 @@ impl InheritedOptions {
 
         self.offline |= collection.offline_local();
 
-        if let Some(opengraph) = collection.opengraph_local() {
-            self.opengraph = opengraph;
+        if let Some(platform_integration) = collection.platform_integration_local() {
+            self.platform_integration = platform_integration;
         }
 
         self.unlisted |= collection.unlisted_local();
@@ -66,8 +66,8 @@ impl InheritedOptions {
 
         self.offline |= playlist.offline_local();
 
-        if let Some(opengraph) = playlist.opengraph_local() {
-            self.opengraph = opengraph;
+        if let Some(platform_integration) = playlist.platform_integration_local() {
+            self.platform_integration = platform_integration;
         }
 
         self.unlisted |= playlist.unlisted_local();
@@ -80,7 +80,7 @@ impl InheritedOptions {
             download: false,
             embedding: false,
             offline: false,
-            opengraph: OpenGraph::Disabled,
+            platform_integration: PlatformIntegration::Disabled,
             unlisted: false
         }
     }

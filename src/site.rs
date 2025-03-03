@@ -429,15 +429,15 @@ impl Site {
         }
     }
 
-    /// Traverses the site tree to determine if opengraph is enabled anywhere.
-    /// This information is consecutively used to output a warning if
-    /// base_url is not set (which is required for opengraph meta to be
-    /// generated).
-    pub fn opengraph_requested(&self) -> bool {
+    /// Traverses the site tree to determine if platform_integration is
+    /// enabled anywhere. This information is consecutively used to output a
+    /// warning if base_url is not set (which is required for
+    /// platform integration metadata to be generated).
+    pub fn platform_integration_requested(&self) -> bool {
         match &self.content {
-            SiteContent::Collection(collection) => collection.opengraph_requested(),
-            SiteContent::Playlist(playlist) => playlist.opengraph_requested(),
-            SiteContent::Video(video) => video.opengraph_local().is_some_and(|opengraph| opengraph.enabled()),
+            SiteContent::Collection(collection) => collection.platform_integration_requested(),
+            SiteContent::Playlist(playlist) => playlist.platform_integration_requested(),
+            SiteContent::Video(video) => video.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled()),
             SiteContent::Empty |
             SiteContent::Invalid => false
         }

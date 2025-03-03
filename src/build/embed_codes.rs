@@ -5,7 +5,7 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Context, HyperUrl, Site, Video};
+use crate::{Context, Site, Video};
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, unlisted_badge};
@@ -48,7 +48,6 @@ fn embed_code(embed_url: &str, title: &str) -> (String, String) {
 /// Writes the page on which the embed html code can be viewed and copied.
 pub fn embed_codes_html(
     asset_hashes: &AssetHashes,
-    base_url: &HyperUrl,
     context: &Context,
     site: &Site,
     video: &Video,
@@ -66,8 +65,8 @@ pub fn embed_codes_html(
     let e_title = html_escape_outside_attribute(&title);
 
     let embed_url = match video.path.is_empty() {
-        true => base_url.join("embed", site),
-        false => base_url.join(&format!("{}/embed", video.path), site)
+        true => site.absolute_url_unchecked("embed"),
+        false => site.absolute_url_unchecked(&format!("{}/embed", video.path))
     };
 
     let t_video_player_widget_for_xxx = translations.video_player_widget_for_xxx(&title);

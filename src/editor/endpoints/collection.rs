@@ -10,7 +10,7 @@ use crate::{
     Context,
     Field,
     Language,
-    OpenGraph
+    PlatformIntegration
 };
 use crate::editor::{Checkbox, Input, Select, Textarea};
 use crate::editor::endpoints;
@@ -73,7 +73,7 @@ pub enum CollectionFormFeedback<'a> {
         download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
-        opengraph: Option<OpenGraph>,
+        platform_integration: Option<PlatformIntegration>,
         title: Field,
         unlisted: bool,
         video_order: &'a str
@@ -155,7 +155,7 @@ pub fn edit_page(
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
-    let mut select_opengraph = Select::new("opengraph", "Open Graph");
+    let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
     let mut select_video_order = Select::new("video_order", translations.video_order);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
@@ -178,11 +178,12 @@ pub fn edit_page(
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
-    let opengraph_inherited = collection.opengraph_inherited();
-    let t_opengraph_inherited_label = opengraph_inherited.label(translations);
-    select_opengraph.option("", format!("{t_inherit} ({t_opengraph_inherited_label})"));
-    select_opengraph.option("disabled", t_disabled);
-    select_opengraph.option("link_previews", translations.link_previews);
+    let platform_integration_inherited = collection.platform_integration_inherited();
+    let t_platform_integration_inherited_label = platform_integration_inherited.label(translations);
+    select_platform_integration.option("", format!("{t_inherit} ({t_platform_integration_inherited_label})"));
+    select_platform_integration.option("disabled", t_disabled);
+    select_platform_integration.option("link_previews", translations.link_previews_only);
+    select_platform_integration.option("content_embeds", translations.link_previews_and_content_embeds);
 
     // TODO: Same construction as in endpoints/playlist.rs, possibly encapsulate as shared helper
     select_video_order.option("default", translations.default_sort_number_or_release_date_ascending);
@@ -201,7 +202,7 @@ pub fn edit_page(
         download,
         embedding,
         offline,
-        opengraph,
+        platform_integration,
         title,
         unlisted,
         video_order
@@ -224,8 +225,8 @@ pub fn edit_page(
             None => ""
         };
 
-        let opengraph_value = match opengraph {
-            Some(opengraph) => opengraph.key(),
+        let platform_integration_value = match platform_integration {
+            Some(platform_integration) => platform_integration.key(),
             None => ""
         };
 
@@ -235,7 +236,7 @@ pub fn edit_page(
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
-        select_opengraph.selected(opengraph_value);
+        select_platform_integration.selected(platform_integration_value);
         select_video_order.selected(video_order);
         textarea_description.value(description);
 
@@ -259,8 +260,8 @@ pub fn edit_page(
             None => ""
         };
 
-        let opengraph = match collection.opengraph_local() {
-            Some(opengraph) => opengraph.key(),
+        let platform_integration = match collection.platform_integration_local() {
+            Some(platform_integration) => platform_integration.key(),
             None => ""
         };
 
@@ -270,7 +271,7 @@ pub fn edit_page(
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
-        select_opengraph.selected(opengraph);
+        select_platform_integration.selected(platform_integration);
         select_video_order.selected(collection.video_order.key());
         textarea_description.value_option(&collection.description);
 
@@ -513,7 +514,7 @@ pub fn edit_page(
                     {select_download}
                     {select_embedding}
                 </div>
-                {select_opengraph}
+                {select_platform_integration}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

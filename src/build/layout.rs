@@ -3,7 +3,7 @@
 
 use indoc::formatdoc;
 
-use crate::{OpenGraphMeta, Site, ThemeKind};
+use crate::{PlatformIntegrationMeta, Site, ThemeKind};
 use crate::build::{AssetHashes, Traversal};
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
@@ -13,9 +13,9 @@ use super::{META_GENERATOR, META_ROBOTS_NOINDEX_NOFOLLOW};
 pub struct Layout {
     clipboard_script: bool,
     indexing: bool,
+    platform_integration_meta: Option<PlatformIntegrationMeta>,
     /// <template> tags that are used in the scripting on the page, and
     /// appended at the bottom of the body to optimize loading.
-    opengraph_meta: Option<OpenGraphMeta>,
     templates: String,
     video_script: bool
 }
@@ -25,8 +25,8 @@ impl Layout {
         self.clipboard_script = true;
     }
 
-    pub fn add_opengraph_meta(&mut self, opengraph_meta: OpenGraphMeta) {
-        self.opengraph_meta = Some(opengraph_meta);
+    pub fn add_platform_integration_meta(&mut self, platform_integration_meta: PlatformIntegrationMeta) {
+        self.platform_integration_meta = Some(platform_integration_meta);
     }
 
     pub fn add_templates(&mut self, templates: &str) {
@@ -41,7 +41,7 @@ impl Layout {
         Layout {
             clipboard_script: false,
             indexing: true,
-            opengraph_meta: None,
+            platform_integration_meta: None,
             templates: String::new(),
             video_script: false
         }
@@ -78,7 +78,7 @@ impl Layout {
             String::new()
         };
 
-        let meta_opengraph = match &self.opengraph_meta {
+        let meta_platform_integration = match &self.platform_integration_meta {
             Some(meta) => meta.tags(site),
             None => String::new()
         };
@@ -98,7 +98,7 @@ impl Layout {
                 <meta charset="utf-8">
                 {meta_generator}
                 {meta_noindex_nofollow}
-                {meta_opengraph}
+                {meta_platform_integration}
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
                 {adaptive_theme_script}

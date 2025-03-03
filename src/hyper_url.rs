@@ -21,6 +21,10 @@ pub struct HyperUrl {
 }
 
 impl HyperUrl {
+    pub fn is_https(&self) -> bool {
+        self.normalized.starts_with("https")
+    }
+
     pub fn join(&self, path: &str, site: &Site) -> String {
         let normalized = &self.normalized;
 

@@ -103,14 +103,14 @@ pub fn perform_build(context: &Context) {
         scripts::generate_clipboard_js(context);
     }
 
-    if site.opengraph_requested() && site.base_url.is_none() {
+    if site.platform_integration_requested() && site.base_url.is_none() {
         // TODO: If we're using the graphical user interface this information needs to
-        //       be communicated earlier/differently. E.g. maybe the opengraph select
+        //       be communicated earlier/differently. E.g. maybe the platform integration select
         //       should not even be accessible (= greyed out) with a note that the base_url
         //       needs to be set for this to do anything.
         //       Likewise for CLI usage it can be thought through further in which way this
         //       warning can be registered and in which context it can/should be printed.
-        eprintln!("Open Graph metadata could not be generated because the site's base_url is not defined");
+        eprintln!("Metadata for platform integration could not be generated because the site's base_url is not defined");
     }
 
     match &site.content {
@@ -348,19 +348,20 @@ fn build_video(
         );
     }
 
-    if video.embedding() {
-        if let Some(base_url) = &site.base_url {
+    if site.base_url.is_some() && !video.versions.is_empty() {
+        if video.embedding() {
             let traversal_embed_codes = traversal.with_virtual(translations.embed);
 
             embed_codes_html(
                 asset_hashes,
-                base_url,
                 context,
                 site,
                 video,
                 &traversal_embed_codes
             );
+        }
 
+        if video.embedding() || video.platform_integration().content_embeds() {
             let traversal_embed = traversal.with_virtual(translations.embed);
 
             embed_html(

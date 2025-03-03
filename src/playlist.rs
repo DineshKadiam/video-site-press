@@ -19,7 +19,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     Link,
-    OpenGraph,
+    PlatformIntegration,
     Site,
     Translations,
     TreeViewOrder,
@@ -37,8 +37,8 @@ const PLAYLIST_OPTIONS: &[&str] = &[
     "embedding",
     "link",
     "offline",
-    "opengraph",
     "order",
+    "platform_integration",
     "title",
     "unlisted"
 ];
@@ -58,9 +58,9 @@ pub struct Playlist {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
-    opengraph: Option<OpenGraph>,
     pub order: VideoOrder,
     pub path: String,
+    platform_integration: Option<PlatformIntegration>,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
@@ -336,30 +336,6 @@ impl Playlist {
                         self.errors.push(error);
                     }
                 }
-                "opengraph" => 'opengraph: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match OpenGraph::from_key(value) {
-                                    Some(opengraph) => {
-                                        self.opengraph = Some(opengraph);
-                                    }
-                                    None => {
-                                        let message = format!("The opengraph option only supports the value 'link_previews' or 'disabled'. The given value '{value}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
-                                    }
-                                }
-
-                                break 'opengraph;
-                            }
-                        }
-                    }
-
-                    let message = "opengraph needs to be provided as a field with the value 'link_previews' or 'disabled', e.g.: 'opengraph: link_previews'";
-                    let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
-                }
                 "order" => 'order: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -381,6 +357,30 @@ impl Playlist {
                     }
 
                     let message = "order needs to be provided as a field with a value, e.g.: 'order: release_date_asc'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "platform_integration" => 'platform_integration: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match PlatformIntegration::from_key(value) {
+                                    Some(platform_integration) => {
+                                        self.platform_integration = Some(platform_integration);
+                                    }
+                                    None => {
+                                        let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'platform_integration;
+                            }
+                        }
+                    }
+
+                    let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
                     let error = element_error(element, manifest_path, message);
                     self.errors.push(error);
                 }
@@ -599,9 +599,9 @@ impl Playlist {
             inherited_options,
             links: Vec::new(),
             offline: false,
-            opengraph: None,
             order: VideoOrder::Default,
             path,
+            platform_integration: None,
             title: None,
             videos: Vec::new(),
             unlisted: false
@@ -629,42 +629,42 @@ impl Playlist {
         self.offline = enabled;
     }
 
-    /// Get the opengraph setting resolved in the context of the site tree
-    /// (= as set locally on the playlist or as inherited from an ancestor).
-    pub fn opengraph(&self) -> OpenGraph {
-        self.opengraph.unwrap_or(self.inherited_options.opengraph)
-    }
-
-    /// Get the opengraph setting as inherited from ancestors.
-    pub fn opengraph_inherited(&self) -> OpenGraph {
-        self.inherited_options.opengraph
-    }
-
-    /// Get the opengraph setting as set locally on the playlist.
-    pub fn opengraph_local(&self) -> Option<OpenGraph> {
-        self.opengraph
-    }
-
-    /// Set the opengraph setting locally on the playlist.
-    pub fn opengraph_local_set(&mut self, opengraph_option: Option<OpenGraph>) {
-        self.opengraph = opengraph_option;
-    }
-
-    /// Determines if the playlist or any published video in the playlist has
-    /// opengraph enabled.This information is consecutively used to output a
-    /// warning if base_url is not set(which is required for opengraph meta
-    /// to be generated).
-    pub fn opengraph_requested(&self) -> bool {
-        self.opengraph_local().is_some_and(|opengraph| opengraph.enabled()) ||
-        self.published_videos().any(|video| video.opengraph_local().is_some_and(|opengraph| opengraph.enabled()))
-    }
-
     // Calling this on a root node returns its own path instead
     pub fn parent_path_unchecked(&self) -> &str {
         match self.path.rsplit_once('/') {
             Some((parent_path, _)) => parent_path,
             None => ""
         }
+    }
+
+    /// Get the platform_integration setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn platform_integration(&self) -> PlatformIntegration {
+        self.platform_integration.unwrap_or(self.inherited_options.platform_integration)
+    }
+
+    /// Get the platform_integration setting as inherited from ancestors.
+    pub fn platform_integration_inherited(&self) -> PlatformIntegration {
+        self.inherited_options.platform_integration
+    }
+
+    /// Get the platform_integration setting as set locally on the playlist.
+    pub fn platform_integration_local(&self) -> Option<PlatformIntegration> {
+        self.platform_integration
+    }
+
+    /// Set the platform_integration setting locally on the playlist.
+    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) {
+        self.platform_integration = platform_integration_option;
+    }
+
+    /// Determines if the playlist or any published video in the playlist has
+    /// platform_integration enabled.This information is consecutively used to output a
+    /// warning if base_url is not set(which is required for platform_integration meta
+    /// to be generated).
+    pub fn platform_integration_requested(&self) -> bool {
+        self.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled()) ||
+        self.published_videos().any(|video| video.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled()))
     }
 
     /// Merges the options the playlist inherited from its ancestors with
@@ -921,12 +921,12 @@ impl Playlist {
             eno.push_str("offline\n");
         }
 
-        if let Some(opengraph) = self.opengraph {
-            eno.push_str(&format!("opengraph: {}\n", opengraph.key()));
-        }
-
         if self.order != VideoOrder::Default {
             eno.push_str(&format!("order: {}\n", self.order.key()));
+        }
+
+        if let Some(platform_integration) = self.platform_integration {
+            eno.push_str(&format!("platform_integration: {}\n", platform_integration.key()));
         }
 
         if let Some(title) = &self.title {

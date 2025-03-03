@@ -20,7 +20,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     Link,
-    OpenGraph,
+    PlatformIntegration,
     Playlist,
     PlaylistUpdate,
     Site,
@@ -41,7 +41,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
     "embedding",
     "link",
     "offline",
-    "opengraph",
+    "platform_integration",
     "title",
     "unlisted",
     "video_order"
@@ -62,8 +62,8 @@ pub struct Collection {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
-    opengraph: Option<OpenGraph>,
     pub path: String,
+    platform_integration: Option<PlatformIntegration>,
     pub playlists: Vec<Arc<Playlist>>,
     pub subcollections: Vec<Arc<Collection>>,
     pub title: Option<String>,
@@ -332,27 +332,27 @@ impl Collection {
                         self.errors.push(error);
                     }
                 }
-                "opengraph" => 'opengraph: {
+                "platform_integration" => 'platform_integration: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
-                                match OpenGraph::from_key(value) {
-                                    Some(opengraph) => {
-                                        self.opengraph = Some(opengraph);
+                                match PlatformIntegration::from_key(value) {
+                                    Some(platform_integration) => {
+                                        self.platform_integration = Some(platform_integration);
                                     }
                                     None => {
-                                        let message = format!("The opengraph option only supports the value 'link_previews' or 'disabled'. The given value '{value}' was not recognized.");
+                                        let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
                                         self.errors.push(error);
                                     }
                                 }
 
-                                break 'opengraph;
+                                break 'platform_integration;
                             }
                         }
                     }
 
-                    let message = "opengraph needs to be provided as a field with the value 'link_previews' or 'disabled', e.g.: 'opengraph: link_previews'";
+                    let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
                     let error = element_error(element, manifest_path, message);
                     self.errors.push(error);
                 }
@@ -786,8 +786,8 @@ impl Collection {
             links: Vec::new(),
             inherited_options,
             offline: false,
-            opengraph: None,
             path,
+            platform_integration: None,
             playlists: Vec::new(),
             subcollections: Vec::new(),
             title: None,
@@ -818,44 +818,44 @@ impl Collection {
         self.offline = enabled;
     }
 
-    /// Get the opengraph setting resolved in the context of the site tree
-    /// (= as set locally on the colletion or as inherited from an ancestor).
-    pub fn opengraph(&self) -> OpenGraph {
-        self.opengraph.unwrap_or(self.inherited_options.opengraph)
-    }
-
-    /// Get the opengraph setting as inherited from ancestors.
-    pub fn opengraph_inherited(&self) -> OpenGraph {
-        self.inherited_options.opengraph
-    }
-
-    /// Get the opengraph setting as set locally on the colletion.
-    pub fn opengraph_local(&self) -> Option<OpenGraph> {
-        self.opengraph
-    }
-
-    /// Set the opengraph setting locally on the colletion.
-    pub fn opengraph_local_set(&mut self, opengraph_option: Option<OpenGraph>) {
-        self.opengraph = opengraph_option;
-    }
-
-    /// Determines if the collection or any of its descendants has opengraph
-    /// enabled. This information is consecutively used to output a warning
-    /// if base_url is not set (which is required for opengraph meta to be
-    /// generated).
-    pub fn opengraph_requested(&self) -> bool {
-        self.opengraph_local().is_some_and(|opengraph| opengraph.enabled()) ||
-        self.published_videos().any(|video| video.opengraph_local().is_some_and(|opengraph| opengraph.enabled())) ||
-        self.published_playlists().any(|playlist| playlist.opengraph_requested()) ||
-        self.published_subcollections().any(|subcollection| subcollection.opengraph_requested())
-    }
-
     // Calling this on a root node returns its own path instead
     pub fn parent_path_unchecked(&self) -> &str {
         match self.path.rsplit_once('/') {
             Some((parent_path, _)) => parent_path,
             None => ""
         }
+    }
+
+    /// Get the platform_integration setting resolved in the context of the site tree
+    /// (= as set locally on the colletion or as inherited from an ancestor).
+    pub fn platform_integration(&self) -> PlatformIntegration {
+        self.platform_integration.unwrap_or(self.inherited_options.platform_integration)
+    }
+
+    /// Get the platform_integration setting as inherited from ancestors.
+    pub fn platform_integration_inherited(&self) -> PlatformIntegration {
+        self.inherited_options.platform_integration
+    }
+
+    /// Get the platform_integration setting as set locally on the colletion.
+    pub fn platform_integration_local(&self) -> Option<PlatformIntegration> {
+        self.platform_integration
+    }
+
+    /// Set the platform_integration setting locally on the colletion.
+    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) {
+        self.platform_integration = platform_integration_option;
+    }
+
+    /// Determines if the collection or any of its descendants has platform_integration
+    /// enabled. This information is consecutively used to output a warning
+    /// if base_url is not set (which is required for platform_integration meta to be
+    /// generated).
+    pub fn platform_integration_requested(&self) -> bool {
+        self.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled()) ||
+        self.published_videos().any(|video| video.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled())) ||
+        self.published_playlists().any(|playlist| playlist.platform_integration_requested()) ||
+        self.published_subcollections().any(|subcollection| subcollection.platform_integration_requested())
     }
 
     pub fn playlists_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Playlist>> {
@@ -1325,8 +1325,8 @@ impl Collection {
             eno.push_str("offline\n");
         }
 
-        if let Some(opengraph) = self.opengraph {
-            eno.push_str(&format!("opengraph: {}\n", opengraph.key()));
+        if let Some(platform_integration) = self.platform_integration {
+            eno.push_str(&format!("platform_integration: {}\n", platform_integration.key()));
         }
 
         if let Some(title) = &self.title {

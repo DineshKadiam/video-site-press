@@ -10,7 +10,7 @@ use crate::{
     CacheItem,
     Context,
     FileMeta,
-    OpenGraphImage,
+    PlatformIntegrationImage,
     PosterAssetsCached
 };
 use crate::util::hash_closure;
@@ -130,7 +130,7 @@ impl PosterAssets {
         }
     }
 
-    pub fn opengraph_image(&self, type_key: &str, url_prefix: &String) -> OpenGraphImage {
+    pub fn platform_integration_image(&self, type_key: &str, url_prefix: &String) -> PlatformIntegrationImage {
         let asset = if let Some(max_800) = &self.max_800 {
             max_800
         } else if let Some(max_480) = &self.max_480 {
@@ -141,7 +141,7 @@ impl PosterAssets {
             &self.max_160
         };
 
-        OpenGraphImage {
+        PlatformIntegrationImage {
             height: asset.height,
             url: format!("{url_prefix}{type_key}_{}x{}.jpg", asset.width, asset.height),
             width: asset.width

@@ -10,7 +10,7 @@ use crate::{
     Context,
     Field,
     Language,
-    OpenGraph,
+    PlatformIntegration,
     Playlist
 };
 use crate::editor::{Checkbox, Input, Select, Textarea};
@@ -61,8 +61,8 @@ pub enum PlaylistFormFeedback<'a> {
         download: Option<bool>,
         embedding: Option<bool>,
         offline: bool,
-        opengraph: Option<OpenGraph>,
         order: &'a str,
+        platform_integration: Option<PlatformIntegration>,
         title: Field,
         unlisted: bool
     }
@@ -145,8 +145,8 @@ pub fn edit_page(
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
-    let mut select_opengraph = Select::new("opengraph", "Open Graph");
     let mut select_order = Select::new("order", translations.order);
+    let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
     let t_disabled = translations.disabled;
@@ -168,12 +168,6 @@ pub fn edit_page(
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
-    let opengraph_inherited = playlist.opengraph_inherited();
-    let t_opengraph_inherited_label = opengraph_inherited.label(translations);
-    select_opengraph.option("", format!("{t_inherit} ({t_opengraph_inherited_label})"));
-    select_opengraph.option("disabled", t_disabled);
-    select_opengraph.option("link_previews", translations.link_previews);
-
     select_order.option("default", translations.default_sort_number_or_release_date_ascending);
     select_order.option("release_date_asc", translations.release_date_ascending);
     select_order.option("release_date_desc", translations.release_date_descending);
@@ -181,6 +175,13 @@ pub fn edit_page(
     select_order.option("sort_number_desc", translations.sort_number_descending);
     select_order.option("title_asc", translations.title_ascending);
     select_order.option("title_desc", translations.title_descending);
+
+    let platform_integration_inherited = playlist.platform_integration_inherited();
+    let t_platform_integration_inherited_label = platform_integration_inherited.label(translations);
+    select_platform_integration.option("", format!("{t_inherit} ({t_platform_integration_inherited_label})"));
+    select_platform_integration.option("disabled", t_disabled);
+    select_platform_integration.option("link_previews", translations.link_previews_only);
+    select_platform_integration.option("content_embeds", translations.link_previews_and_content_embeds);
 
     textarea_description.id("playlist_description");
 
@@ -190,8 +191,8 @@ pub fn edit_page(
         download,
         embedding,
         offline,
-        opengraph,
         order,
+        platform_integration,
         title,
         unlisted
     }) = &form_feedback {
@@ -213,8 +214,8 @@ pub fn edit_page(
             None => ""
         };
 
-        let opengraph_value = match opengraph {
-            Some(opengraph) => opengraph.key(),
+        let platform_integration_value = match platform_integration {
+            Some(platform_integration) => platform_integration.key(),
             None => ""
         };
 
@@ -224,8 +225,8 @@ pub fn edit_page(
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
-        select_opengraph.selected(opengraph_value);
         select_order.selected(order);
+        select_platform_integration.selected(platform_integration_value);
         textarea_description.value(description);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
@@ -248,8 +249,8 @@ pub fn edit_page(
             None => ""
         };
 
-        let opengraph = match playlist.opengraph_local() {
-            Some(opengraph) => opengraph.key(),
+        let platform_integration = match playlist.platform_integration_local() {
+            Some(platform_integration) => platform_integration.key(),
             None => ""
         };
 
@@ -259,8 +260,8 @@ pub fn edit_page(
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
-        select_opengraph.selected(opengraph);
         select_order.selected(playlist.order.key());
+        select_platform_integration.selected(platform_integration);
         textarea_description.value_option(&playlist.description);
 
         String::new()
@@ -419,7 +420,7 @@ pub fn edit_page(
                     {select_download}
                     {select_embedding}
                 </div>
-                {select_opengraph}
+                {select_platform_integration}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
 

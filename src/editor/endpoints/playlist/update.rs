@@ -11,7 +11,7 @@ use crate::{
     Context,
     ContextPath,
     Field,
-    OpenGraph,
+    PlatformIntegration,
     Playlist,
     PlaylistUpdate,
     VideoOrder
@@ -28,8 +28,8 @@ pub struct PlaylistUpdateForm {
     download: String,
     embedding: String,
     offline: Option<String>,
-    opengraph: String,
     order: String,
+    platform_integration: String,
     title: String,
     unlisted: Option<String>
 }
@@ -61,13 +61,14 @@ pub async fn update(
         _ => None
     };
 
-    let opengraph = match form.opengraph.as_str() {
-        "" => None,
-        other => Some(OpenGraph::from_key(other).unwrap())
-    };
-
     let offline = form.offline.is_some();
     let order = VideoOrder::from_key(&form.order).unwrap();
+
+    let platform_integration = match form.platform_integration.as_str() {
+        "" => None,
+        other => Some(PlatformIntegration::from_key(other).unwrap())
+    };
+
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
 
@@ -79,8 +80,8 @@ pub async fn update(
             playlist_mut.download_local_set(download);
             playlist_mut.embedding_local_set(embedding);
             playlist_mut.offline_local_set(offline);
-            playlist_mut.opengraph_local_set(opengraph);
             playlist_mut.order = order;
+            playlist_mut.platform_integration_local_set(platform_integration);
             playlist_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             playlist_mut.unlisted_local_set(unlisted);
             playlist_mut.write_manifest(&context);
@@ -107,8 +108,8 @@ pub async fn update(
             download,
             embedding,
             offline,
-            opengraph,
             order: &form.order,
+            platform_integration,
             title: Field::valid(title_trimmed),
             unlisted
         };
