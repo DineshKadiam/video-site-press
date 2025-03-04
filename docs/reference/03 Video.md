@@ -27,7 +27,7 @@ will compute one automatically (by taking a frame from the video), always.
 
 ## Video files
 
-Currently the extensions `m4v`, `mp4`, `mkv`, `mov` are supported.
+Currently the extensions `m4v`, `mp4`, `mkv`, `mov`, `webm` are supported.
 
 ## Subtitle files
 
@@ -39,7 +39,7 @@ subtitles while `fr.vtt` would indicate french subtitles.
 
 ## The video.eno manifest
 
-> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [platform_integration](#platform_integration), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a video, which can be placed inside the
 video directory. A video directory can be identified as a video directory
@@ -53,6 +53,7 @@ file = episode_1.jpg
 
 download: enabled
 offline
+platform_integration: link_previews
 release_date: 2024-02-12
 sort_number: 1
 title: The pilot episode of the show
@@ -153,6 +154,38 @@ in the built site, and therefore also not deployed to the server.
 
 ```eno
 offline
+```
+
+## <a name="platform_integration"></a> `platform_integration`
+
+This opt-in feature adds metadata on your pages that is crawled and harvested
+by many platforms in order to present your page (when it is being linked to)
+using a uniform "card" design pattern inside social feeds and timelines.
+
+To enable metadata that platforms use to generate link previews (this is based
+on Facebook's [Open Graph](https://ogp.me) protocol), specify the
+`link_previews` setting like this:
+
+```eno
+platform_integration: link_previews
+```
+
+To enable link previews *plus* additional metadata that lets platforms
+directly embed your audiovisual content into their timelines through embedded
+players (this utilizes Facebook's [Open Graph](https://ogp.me) protocol,
+"player card" metadata declarations that were originally introduced by twitter,
+as well as Hyper 8's native embed widgets) specify the `content_embeds`
+setting like this:
+
+```eno
+platform_integration: content_embeds
+```
+
+To disable this feature, either remove the option (it is disabled by default)
+or explicitly specify `disabled` if you want to override it somewhere:
+
+```eno
+platform_integration: disabled
 ```
 
 ## <a name="poster"></a> `poster`

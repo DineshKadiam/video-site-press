@@ -37,7 +37,7 @@ Content in a collection currently appears in the following order on the built si
 
 ## The collection.eno manifest
 
-> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
+> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [platform_integration](#platform_integration), [title](#title), [unlisted](#unlisted), [video_order](#video_order)
 
 Manifest for tagging and configuring a collection.
 
@@ -45,6 +45,7 @@ Manifest for tagging and configuring a collection.
 title: Soothing clips
 download: enabled
 offline
+platform_integration: link_previews
 video_order: sort_number_desc
 unlisted
 
@@ -146,6 +147,38 @@ included in the built site, and therefore also not deployed to the server.
 
 ```eno
 offline
+```
+
+## <a name="platform_integration"></a> `platform_integration`
+
+This opt-in feature adds metadata on your pages that is crawled and harvested
+by many platforms in order to present your page (when it is being linked to)
+using a uniform "card" design pattern inside social feeds and timelines.
+
+To enable metadata that platforms use to generate link previews (this is based
+on Facebook's [Open Graph](https://ogp.me) protocol), specify the
+`link_previews` setting like this:
+
+```eno
+platform_integration: link_previews
+```
+
+To enable link previews *plus* additional metadata that lets platforms
+directly embed your audiovisual content into their timelines through embedded
+players (this utilizes Facebook's [Open Graph](https://ogp.me) protocol,
+"player card" metadata declarations that were originally introduced by twitter,
+as well as Hyper 8's native embed widgets) specify the `content_embeds`
+setting like this:
+
+```eno
+platform_integration: content_embeds
+```
+
+To disable this feature, either remove the option (it is disabled by default)
+or explicitly specify `disabled` if you want to override it somewhere:
+
+```eno
+platform_integration: disabled
 ```
 
 ## <a name="title"></a> `title`

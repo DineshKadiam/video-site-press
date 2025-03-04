@@ -30,7 +30,7 @@ sequential playback.
 
 ## The playlist.eno manifest
 
-> All options at a glance: [banner](#banner), [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [banner](#banner), [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [platform_integration](#platform_integration), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a playlist.
 
@@ -43,6 +43,7 @@ download: enabled
 embedding: enabled
 offline
 order: release_date_asc
+platform_integration: link_previews
 title: All episodes from the show
 unlisted
 
@@ -174,6 +175,38 @@ be set to one of the following:
 
 ```eno
 order: release_date_asc
+```
+
+## <a name="platform_integration"></a> `platform_integration`
+
+This opt-in feature adds metadata on your pages that is crawled and harvested
+by many platforms in order to present your page (when it is being linked to)
+using a uniform "card" design pattern inside social feeds and timelines.
+
+To enable metadata that platforms use to generate link previews (this is based
+on Facebook's [Open Graph](https://ogp.me) protocol), specify the
+`link_previews` setting like this:
+
+```eno
+platform_integration: link_previews
+```
+
+To enable link previews *plus* additional metadata that lets platforms
+directly embed your audiovisual content into their timelines through embedded
+players (this utilizes Facebook's [Open Graph](https://ogp.me) protocol,
+"player card" metadata declarations that were originally introduced by twitter,
+as well as Hyper 8's native embed widgets) specify the `content_embeds`
+setting like this:
+
+```eno
+platform_integration: content_embeds
+```
+
+To disable this feature, either remove the option (it is disabled by default)
+or explicitly specify `disabled` if you want to override it somewhere:
+
+```eno
+platform_integration: disabled
 ```
 
 ## <a name="title"></a> `title`
