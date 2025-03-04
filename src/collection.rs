@@ -605,6 +605,15 @@ impl Collection {
         self.download = enabled_option;
     }
 
+    /// Traverses the collection tree to determine if any published video in
+    /// it needs to render embed codes. This information is used to check whether
+    /// we need to write clipboard css/js assets to the build.
+    pub fn embed_codes_requested(&self) -> bool {
+        self.published_videos().any(|video| video.embedding()) ||
+        self.published_playlists().any(|playlist| playlist.embed_codes_requested()) ||
+        self.published_subcollections().any(|subcollection| subcollection.embed_codes_requested())
+    }
+
     /// Get the embedding setting resolved in the context of the site tree
     /// (= as set locally on the collection or as inherited from an ancestor).
     pub fn embedding(&self) -> bool {
@@ -626,12 +635,11 @@ impl Collection {
         self.embedding = enabled_option;
     }
 
-    /// Recursively traverses the collection to determine if any published
-    /// video in it has embeds enabled. This information is consecutively
-    /// used to determine whether we need to write embed css/js assets to the
-    /// build.
+    /// Traverses the collection tree to determine if any published video in
+    /// it needs to render embeds. This information is used to check whether
+    /// we need to write embed css/js assets to the build.
     pub fn embeds_requested(&self) -> bool {
-        self.published_videos().any(|video| video.embedding()) ||
+        self.published_videos().any(|video| video.embeds_requested()) ||
         self.published_playlists().any(|playlist| playlist.embeds_requested()) ||
         self.published_subcollections().any(|subcollection| subcollection.embeds_requested())
     }

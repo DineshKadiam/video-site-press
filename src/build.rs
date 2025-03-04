@@ -90,9 +90,7 @@ pub fn perform_build(context: &Context) {
         scripts::generate_adaptive_theme_js(context);
     }
 
-    let embeds_requested = site.embeds_requested();
-
-    if embeds_requested {
+    if site.embeds_requested() {
         if site.base_url.is_some() {
             scripts::generate_embed_js(context);
             styles::generate_embed_css(&mut asset_hashes, context, &site);
@@ -107,7 +105,7 @@ pub fn perform_build(context: &Context) {
         }
     }
 
-    if embeds_requested || site.copy_link_requested() {
+    if site.copy_link_requested() || (site.embed_codes_requested() && site.base_url.is_some()) {
         scripts::generate_clipboard_js(context);
     }
 

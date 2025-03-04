@@ -341,14 +341,27 @@ impl Site {
         }
     }
 
-    /// Traverses the site tree to determine if any video on the site has
-    /// embeds enabled. This information is consecutively used to determine
-    /// whether we need to write embed css/js assets to the build.
+    /// Traverses the site tree to determine if any published video on the
+    /// site needs to render embed codes. This information is used to check
+    /// whether we need to write clipboard css/js assets to the build.
+    pub fn embed_codes_requested(&self) -> bool {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.embed_codes_requested(),
+            SiteContent::Playlist(playlist) => playlist.embed_codes_requested(),
+            SiteContent::Video(video) => video.embedding(),
+            SiteContent::Empty |
+            SiteContent::Invalid => false
+        }
+    }
+
+    /// Traverses the site tree to determine if any video on the site needs to
+    /// render embeds. This information is used to check whether we need to
+    /// write embed css/js assets to the build.
     pub fn embeds_requested(&self) -> bool {
         match &self.content {
             SiteContent::Collection(collection) => collection.embeds_requested(),
             SiteContent::Playlist(playlist) => playlist.embeds_requested(),
-            SiteContent::Video(video) => video.embedding(),
+            SiteContent::Video(video) => video.embeds_requested(),
             SiteContent::Empty |
             SiteContent::Invalid => false
         }

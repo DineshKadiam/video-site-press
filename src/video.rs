@@ -684,6 +684,13 @@ impl Video {
         self.embedding = enabled_option;
     }
 
+    /// Determines if the video needs to render embeds. This information is
+    /// used to check whether we need to write embed css/js assets to the
+    /// build.
+    pub fn embeds_requested(&self) -> bool {
+        self.embedding() || self.platform_integration().content_embeds()
+    }
+
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
         let mut version_candidate: Option<(usize, &VideoFile)> = None;
 

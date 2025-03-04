@@ -519,6 +519,13 @@ impl Playlist {
         self.download = enabled_option;
     }
 
+    /// Determines if any published video in the playlist needs to render
+    /// embed codes. This information is used to check whether we need to
+    /// write clipboard css/js assets to the build.
+    pub fn embed_codes_requested(&self) -> bool {
+        self.published_videos().any(|video| video.embedding())
+    }
+
     /// Get the embedding setting resolved in the context of the site tree
     /// (= as set locally on the playlist or as inherited from an ancestor).
     pub fn embedding(&self) -> bool {
@@ -540,11 +547,11 @@ impl Playlist {
         self.embedding = enabled_option;
     }
 
-    /// Determines if any published video in the playlist has embeds enabled.
-    /// This information is consecutively used to determine whether we need
-    /// to write embed css/js assets to the build.
+    /// Determines if any published video in the playlist needs to render
+    /// embeds. This information is used to check whether we need to write
+    /// embed css/js assets to the build.
     pub fn embeds_requested(&self) -> bool {
-        self.published_videos().any(|video| video.embedding())
+        self.published_videos().any(|video| video.embeds_requested())
     }
 
     /// Potentially returns a video at the given path.
