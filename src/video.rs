@@ -58,7 +58,8 @@ pub struct Video {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
-    /// Relative to site dir, always without leading/trailing slashes
+    /// Path in site tree. "" for a video at the root, otherwise "foo", "foo/bar", etc.
+    /// (relative to site dir, always without leading/trailing slashes).
     pub path: String,
     platform_integration: Option<PlatformIntegration>,
     pub poster: Option<PosterFile>,
@@ -110,6 +111,11 @@ pub enum VideoParent {
 }
 
 impl Video {
+    pub fn all_metadata_computed(&self) -> bool {
+        self.poster.as_ref().is_none_or(|poster| poster.assets.is_some()) &&
+        self.versions.iter().all(|video_file| video_file.video_meta.is_some())
+    }
+
     fn apply_manifest(&mut self, context: &Context, manifest_path: &Path, site: &Site) {
         let content = fs::read_to_string(manifest_path).unwrap();
 

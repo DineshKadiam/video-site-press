@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
+use std::thread;
+use std::time::Duration;
 
 use rsubs_lib::SRT;
 
@@ -67,7 +69,13 @@ impl AssetHashes {
 }
 
 pub fn perform_build(context: &Context) {
-    let site = context.get_site();
+    let mut site = context.get_site();
+
+    while !site.all_metadata_computed() {
+        println!("Waiting for banner/poster/video_meta computation");
+        thread::sleep(Duration::from_secs(1));
+        site = context.get_site();
+    }
     
     ensure_empty_dir(&context.build_dir);
 
@@ -336,41 +344,44 @@ fn build_video(
         }
     }
 
-    if video.download() {
-        let traversal_download = traversal.with_virtual(translations.download);
+    // We only render the download and embed pages if there are any video files.
+    if !video.versions.is_empty() {
+        if video.download() {
+            let traversal_download = traversal.with_virtual(translations.download);
 
-        download_html(
-            asset_hashes,
-            context,
-            site,
-            video,
-            &traversal_download
-        );
-    }
-
-    if site.base_url.is_some() && !video.versions.is_empty() {
-        if video.embedding() {
-            let traversal_embed_codes = traversal.with_virtual(translations.embed);
-
-            embed_codes_html(
+            download_html(
                 asset_hashes,
                 context,
                 site,
                 video,
-                &traversal_embed_codes
+                &traversal_download
             );
         }
 
-        if video.embedding() || video.platform_integration().content_embeds() {
-            let traversal_embed = traversal.with_virtual(translations.embed);
+        if site.base_url.is_some() {
+            if video.embedding() {
+                let traversal_embed_codes = traversal.with_virtual(translations.embed);
 
-            embed_html(
-                asset_hashes,
-                context,
-                site,
-                video,
-                &traversal_embed
-            );
+                embed_codes_html(
+                    asset_hashes,
+                    context,
+                    site,
+                    video,
+                    &traversal_embed_codes
+                );
+            }
+
+            if video.embedding() || video.platform_integration().content_embeds() {
+                let traversal_embed = traversal.with_virtual(translations.embed);
+
+                embed_html(
+                    asset_hashes,
+                    context,
+                    site,
+                    video,
+                    &traversal_embed
+                );
+            }
         }
     }
 

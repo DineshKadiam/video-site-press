@@ -135,6 +135,16 @@ impl Site {
         self.base_url.as_ref().unwrap().join(path, self)
     }
 
+    pub fn all_metadata_computed(&self) -> bool {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.all_metadata_computed(),
+            SiteContent::Playlist(playlist) => playlist.all_metadata_computed(),
+            SiteContent::Video(video) => video.all_metadata_computed(),
+            SiteContent::Empty |
+            SiteContent::Invalid => true
+        }
+    }
+
     fn apply_manifest(&mut self, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 

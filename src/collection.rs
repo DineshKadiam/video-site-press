@@ -62,6 +62,7 @@ pub struct Collection {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
+    /// Path in site tree. "" for a root collection, otherwise "foo", "foo/bar", etc.
     pub path: String,
     platform_integration: Option<PlatformIntegration>,
     pub playlists: Vec<Arc<Playlist>>,
@@ -73,6 +74,13 @@ pub struct Collection {
 }
 
 impl Collection {
+    pub fn all_metadata_computed(&self) -> bool {
+        self.banner.as_ref().is_none_or(|banner| banner.assets.is_some()) &&
+        self.published_playlists().all(|playlist| playlist.all_metadata_computed()) &&
+        self.published_subcollections().all(|subcollection| subcollection.all_metadata_computed()) &&
+        self.published_videos().all(|video| video.all_metadata_computed())
+    }
+
     fn apply_manifest(&mut self, context: &Context, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 

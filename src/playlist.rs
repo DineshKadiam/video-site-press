@@ -69,6 +69,11 @@ pub struct Playlist {
 }
 
 impl Playlist {
+    pub fn all_metadata_computed(&self) -> bool {
+        self.banner.as_ref().is_none_or(|banner| banner.assets.is_some()) &&
+        self.published_videos().all(|video| video.all_metadata_computed())
+    }
+
     fn apply_manifest(&mut self, context: &Context, manifest_path: &Path) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
