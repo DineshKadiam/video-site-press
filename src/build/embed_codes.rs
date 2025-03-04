@@ -21,22 +21,25 @@ use crate::util::{
 /// The title parameter provides a text that indicates to screen-reader users
 /// what to expect inside the iframe. See description at
 /// https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#accessibility_concerns
-fn embed_code(embed_url: &str, title: &str) -> (String, String) {
+fn embed_code(aspect_ratio: f32, embed_url: &str, title: &str) -> (String, String) {
     let title_double_escaped = html_double_escape_inside_attribute(title);
     let title_escaped = html_escape_inside_attribute(title);
 
+    let inline_style = format!("aspect-ratio: {aspect_ratio}; border: none; height: 100%; width: 100%;");
+
     let copy_code = html_escape_inside_attribute(
-        &formatdoc!(r#"
-            <iframe loading="lazy" src="{embed_url}" style="min-height: 270px; min-width: 480px;" title="{title_escaped}"></iframe>
+        &format!(r#"
+            <iframe allow="fullscreen" loading="lazy" src="{embed_url}" style="{inline_style}" title="{title_escaped}"></iframe>
         "#)
     );
 
     let display_code = formatdoc!(r#"
         <div class="embed_code_wrapper">
             <pre class="embed_code"><span class="embed_syntax_special">&lt;</span>iframe
+            allow<span class="embed_syntax_special">=</span><span class="embed_syntax_value">"fullscreen"</span>
             loading<span class="embed_syntax_special">=</span><span class="embed_syntax_value">"lazy"</span>
             src<span class="embed_syntax_special">=</span><span class="embed_syntax_value">"{embed_url}"</span>
-            style<span class="embed_syntax_special">=</span><span class="embed_syntax_value">"min-height: 270px; min-width: 480px;"</span>
+            style<span class="embed_syntax_special">=</span><span class="embed_syntax_value">"{inline_style}"</span>
             title<span class="embed_syntax_special">=</span><span class="embed_syntax_value">"{title_double_escaped}"</span><span class="embed_syntax_special">&gt;</span>
         <span class="embed_syntax_special">&lt;/</span>iframe<span class="embed_syntax_special">&gt;</span></pre>
         </div>
@@ -69,8 +72,11 @@ pub fn embed_codes_html(
         false => site.absolute_url_unchecked(&format!("{}/embed", video.path))
     };
 
+    let recommended_version = video.recommended_version().unwrap();
+    let aspect_ratio = recommended_version.video_meta.as_ref().unwrap().aspect_ratio();
+
     let t_video_player_widget_for_xxx = translations.video_player_widget_for_xxx(&title);
-    let (embed_copy_code, embed_display_code) = embed_code(&embed_url, &t_video_player_widget_for_xxx);
+    let (embed_copy_code, embed_display_code) = embed_code(aspect_ratio, &embed_url, &t_video_player_widget_for_xxx);
 
     let t_copy = translations.copy;
     let (copy_code_button, copy_code_templates) = copy_button("content", &embed_copy_code, t_copy, site);
