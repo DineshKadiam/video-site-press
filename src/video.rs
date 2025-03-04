@@ -112,7 +112,7 @@ pub enum VideoParent {
 
 impl Video {
     pub fn all_metadata_computed(&self) -> bool {
-        self.poster.as_ref().is_none_or(|poster| poster.assets.is_some()) &&
+        (self.poster.is_none() || self.poster.as_ref().is_some_and(|poster| poster.assets.is_some())) &&
         self.versions.iter().all(|video_file| video_file.video_meta.is_some())
     }
 
@@ -728,7 +728,7 @@ impl Video {
 
         struct Candidate<'a> {
             frame_rate_distance: f32,
-            height_distance: usize,
+            height_distance: u32,
             video_file: &'a VideoFile
         }
 
@@ -737,7 +737,7 @@ impl Video {
         for version in &self.versions {
             if let Some(video_meta) = &version.video_meta {
                 let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
-                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).abs() as usize;
+                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).unsigned_abs();
 
                 if candidate_option.is_none() || candidate_option.as_ref().is_some_and(|candidate| {
                     frame_rate_distance <= candidate.frame_rate_distance &&

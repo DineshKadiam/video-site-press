@@ -151,7 +151,7 @@ pub fn perform_build(context: &Context) {
                 video
             );
         }
-        SiteContent::Empty => return,
+        SiteContent::Empty => (),
         SiteContent::Invalid => todo!()
     }
 }

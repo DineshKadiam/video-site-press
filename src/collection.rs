@@ -75,7 +75,7 @@ pub struct Collection {
 
 impl Collection {
     pub fn all_metadata_computed(&self) -> bool {
-        self.banner.as_ref().is_none_or(|banner| banner.assets.is_some()) &&
+        (self.banner.is_none() || self.banner.as_ref().is_some_and(|banner| banner.assets.is_some())) &&
         self.published_playlists().all(|playlist| playlist.all_metadata_computed()) &&
         self.published_subcollections().all(|subcollection| subcollection.all_metadata_computed()) &&
         self.published_videos().all(|video| video.all_metadata_computed())

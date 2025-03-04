@@ -53,7 +53,7 @@ impl MarkdownSubset<'_> {
                     }
                     match self.output_format {
                         OutputFormat::Html => self.output.push_str("</p><p>"),
-                        OutputFormat::Plaintext => self.output.push_str("\n")
+                        OutputFormat::Plaintext => self.output.push('\n')
                     }
                     paragraph.copy_range = self.index..self.index;
                 }
