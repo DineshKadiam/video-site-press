@@ -173,7 +173,7 @@ pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) -> Result<(), Str
                 let stdout = match child.stdout.take() {
                     Some(stdout) => stdout,
                     None => {
-                        eprint!("Could not capture stdout for rsync child process.");
+                        eprintln!("Could not capture stdout for rsync child process.");
                         return;
                     }
                 };
@@ -189,7 +189,7 @@ pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) -> Result<(), Str
                 let exit_status = match child.wait() {
                     Ok(exit_status) => exit_status,
                     Err(_) => {
-                        eprint!("The rsync child process could not be waited for.");
+                        eprintln!("The rsync child process could not be waited for.");
                         return;
                     }
                 };
@@ -199,12 +199,12 @@ pub fn perform_deploy(context_ref: &Arc<Context>, site: &Site) -> Result<(), Str
                         Some(code) => format!("error code {code}"),
                         None => String::from("probably signal-terminated")
                     };
-                    eprint!("The rsync child process terminated unsuccessfully ({error_code})");
+                    eprintln!("The rsync child process terminated unsuccessfully ({error_code})");
                 }
             }
             Err(err) => {
-                eprint!("The rsync child process could not be executed.");
-                eprint!("{err}");
+                eprintln!("The rsync child process could not be executed.");
+                eprintln!("{err}");
             }
         }
 

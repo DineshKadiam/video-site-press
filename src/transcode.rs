@@ -122,17 +122,17 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
                     return Ok(output_filename);
                 }
 
-                eprint!("{output:?}");
+                eprintln!("{output:?}");
                 Err(())
             }
             Err(err) => {
-                eprint!("The ffmpeg child process could not be executed.");
-                eprint!("{err}");
+                eprintln!("The ffmpeg child process could not be executed.");
+                eprintln!("{err}");
                 Err(())
             }
         }
     } else {
-        eprint!("There was no source video to compute a poster from. ({})", &video.path);
+        eprintln!("There was no source video to compute a poster from. ({})", &video.path);
         Err(())
     }
 }
@@ -330,7 +330,7 @@ pub fn encode(
                         });
                     }
                     None => {
-                        eprint!("Could not capture stderr for ffmpeg child process.");
+                        eprintln!("Could not capture stderr for ffmpeg child process.");
                         return Err(())
                     }
                 }
@@ -339,7 +339,7 @@ pub fn encode(
             let exit_status = match child.wait() {
                 Ok(exit_status) => exit_status,
                 Err(_) => {
-                    eprint!("The ffmpeg child process could not be waited for.");
+                    eprintln!("The ffmpeg child process could not be waited for.");
                     return Err(())
                 }
             };
@@ -405,13 +405,13 @@ pub fn encode(
                     Some(code) => format!("error code {code}"),
                     None => String::from("probably signal-terminated")
                 };
-                eprint!("The ffmpeg child process terminated unsuccessfully ({error_code})");
+                eprintln!("The ffmpeg child process terminated unsuccessfully ({error_code})");
                 Err(())
             }
         }
         Err(err) => {
-            eprint!("The ffmpeg child process could not be spawned.");
-            eprint!("{err}");
+            eprintln!("The ffmpeg child process could not be spawned.");
+            eprintln!("{err}");
             Err(())
         }
     }
@@ -495,12 +495,12 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
                 }
             }
 
-            eprint!("{output:?}");
+            eprintln!("{output:?}");
             Err(())
         }
         Err(err) => {
-            eprint!("The ffprobe child process could not be executed.");
-            eprint!("{err}");
+            eprintln!("The ffprobe child process could not be executed.");
+            eprintln!("{err}");
             Err(())
         }
     }
