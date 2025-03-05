@@ -82,7 +82,11 @@ fn main() {
         return
     }
 
-    let site_dir = args.site_dir.canonicalize().unwrap();
+    // This compiles to fs::canonicalize(...) on all platforms but windows,
+    // on windows it instead tries to supply a canonicalized path that uses
+    // the regular form (e.g. "C:\\Foo") instead of the UNC form ("\\?C:\\Foo")
+    // when possible (for background see https://crates.io/crates/dunce).
+    let site_dir = dunce::canonicalize(args.site_dir).unwrap();
 
     let build_dir = args.build_dir
         .as_ref()
