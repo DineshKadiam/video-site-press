@@ -42,14 +42,14 @@ Follow these general build instructions:
 **Building from source**
 
 What you need to have installed to build and run hyper8:
-- ffmpeg (any somewhat recent version should work)
+- ffmpeg - including the ffprobe binary (any somewhat recent version should work)
 - Rust (version 1.80.1 or later)
 
 **1. Install required dependencies**
 
 Install [rust](https://rust-lang.org) on your system following the official [installation instructions](https://www.rust-lang.org/tools/install).
 
-Install [ffmpeg](https://ffmpeg.org) on your system, see [this page](https://ffmpeg.org/download.html) for instructions for various platforms.
+Install [ffmpeg](https://ffmpeg.org) (including the ffprobe binary) on your system, see [this page](https://ffmpeg.org/download.html) for instructions for various platforms.
 
 **2. Run the compilation/installation command**
 

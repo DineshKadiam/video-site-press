@@ -499,7 +499,7 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
             Err(())
         }
         Err(err) => {
-            eprint!("The ffmpeg child process could not be executed.");
+            eprint!("The ffprobe child process could not be executed.");
             eprint!("{err}");
             Err(())
         }
