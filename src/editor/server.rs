@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 
 use actix_files::Files;
@@ -28,7 +29,7 @@ use crate::editor::endpoints::{
     video
 };
 
-const EDITOR_IP: &str = "127.0.0.1";
+const DEFAULT_EDITOR_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
 const DEFAULT_EDITOR_PORT: u16 = 8080;
 
 /// When DEFAULT_EDITOR_PORT is unavailable, we try DEFAULT_EDITOR_PORT + 1,
@@ -38,8 +39,12 @@ const DEFAULT_EDITOR_PORT: u16 = 8080;
 const MAX_PORT_ATTEMPTS: u16 = 10;
 
 #[actix_web::main]
-pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
-    let bind_server = |data_moving: Data<Arc<Context>>, port: u16| {
+pub async fn start(
+    context: Arc<Context>,
+    ip_requested: &Option<IpAddr>,
+    port_requested: &Option<u16>
+) {
+    let bind_server = |data_moving: Data<Arc<Context>>, ip: IpAddr, port: u16| {
         HttpServer::new(move || {
             App::new()
                 .app_data(data_moving.clone())
@@ -117,16 +122,18 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
                 .route("/upload-poster/{site_path:.*}", post().to(video::upload_poster))
                 .route("/upload-video/{site_path:.*}", post().to(video::upload_video))
         })
-        .bind((EDITOR_IP, port))
+        .bind((ip, port))
     };
 
     let data = Data::new(context);
 
+    let ip = ip_requested.unwrap_or(DEFAULT_EDITOR_IP);
+
     let (server, port_bound) = if let Some(port) = port_requested {
-        match bind_server(data, *port) {
+        match bind_server(data, ip, *port) {
             Ok(server) => (server, *port),
             Err(err) => {
-                eprintln!("Could not bind editor server to {EDITOR_IP}:{port} ({err})");
+                eprintln!("Could not bind editor server to {ip}:{port} ({err})");
                 return
             }
         }
@@ -134,11 +141,11 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
         let mut port = DEFAULT_EDITOR_PORT;
 
         loop {
-            match bind_server(data.clone(), port) {
+            match bind_server(data.clone(), ip, port) {
                 Ok(server) => break (server, port),
                 Err(err) => {
                     if port > DEFAULT_EDITOR_PORT + MAX_PORT_ATTEMPTS {
-                        eprintln!("Could not bind preview server to {EDITOR_IP} on any port in the range {DEFAULT_EDITOR_PORT}-{port} (last error was {err}).\nUse --port to manually set a port and/or check that no other issue is at play");
+                        eprintln!("Could not bind preview server to {ip} on any port in the range {DEFAULT_EDITOR_PORT}-{port} (last error was {err}).\nUse --port to manually set a port and/or check that no other issue is at play");
                         return
                     }
 
@@ -148,7 +155,7 @@ pub async fn start(context: Arc<Context>, port_requested: &Option<u16>) {
         }
     };
 
-    let url = format!("http://localhost:{port_bound}");
+    let url = format!("http://{ip}:{port_bound}");
 
     println!("Serving the editor at {url} (open this address in your browser if it doesn't by itself)");
 

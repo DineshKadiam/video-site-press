@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use clap::Parser;
+use std::net::IpAddr;
 use std::path::PathBuf;
+
+use clap::Parser;
 
 fn worker_count(string: &str) -> Result<usize, String> {
     match string.parse::<usize>() {
@@ -36,6 +38,10 @@ pub struct Args {
     /// Override the language displayed in the editor (e.g. 'en', 'de')
     #[clap(long = "editor-language")]
     pub editor_language: Option<String>,
+
+    /// Manually sets the ip address used by the web editor (otherwise defaults to localhost)
+    #[clap(long = "ip")]
+    pub ip: Option<IpAddr>,
 
     /// Manually sets the port used by the web editor (otherwise hyper8 chooses an available port on its own)
     #[clap(long = "port")]

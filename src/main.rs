@@ -163,6 +163,6 @@ fn main() {
         println!("Using site directory: {}", context.site_dir.display());
 
         watcher::watch(Arc::clone(&context));
-        editor::server::start(context, &args.port);
+        editor::server::start(context, &args.ip, &args.port);
     }
 }
