@@ -132,31 +132,11 @@ impl Context {
         }
     }
 
-    pub fn extend_job_queue(&self, job_kinds: Vec<JobKind>) {
-        if let Ok(mut job_queue) = self.job_queue.lock() {
-            for job_kind in job_kinds {
-                if !job_queue
-                    .iter()
-                    .any(|existing_job| existing_job.kind == job_kind) {
-                    job_queue.push(Job::new(job_kind));
-                }
-            }
-        }
-    }
-
-    pub fn push_job_queue(&self, job_kind: JobKind) {
-        if let Ok(mut job_queue) = self.job_queue.lock() {
-            if !job_queue
-                .iter()
-                .any(|existing_job| existing_job.kind == job_kind) {
-                job_queue.push(Job::new(job_kind));
-            }
-        }
-    }
-
-    /// Take the playlist or video at the given path (or if the site is still empty,
-    /// the empty site itself) and convert it to a collection. This never fails.
-    pub fn convert_to_collection(&self, site_path: &SitePath) {
+    /// Take the playlist or video at the given path (or if the site is still
+    /// empty, the empty site itself) and convert it to a collection. This
+    /// may fail if we're converting from a video that is inside a playlist,
+    /// as a playlist can not contain a collection.
+    pub fn convert_to_collection(&self, site_path: &SitePath) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
@@ -275,6 +255,10 @@ impl Context {
 
                 self.update_from_filesystem(&dir_converting, &site_mut);
             } else if let GetAnyResult::Video(video) = node {
+                if self.get_any(&video.parent_site_path_unchecked()).is_playlist() {
+                    return Err("A video inside a playlist can not be converted to a collection".to_string());
+                }
+
                 let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
 
                 let slug = match &video.title {
@@ -320,12 +304,17 @@ impl Context {
                 self.update_from_filesystem(&dir_converting, &site_mut);
             }
         }
+
+        Ok(())
     }
 
-    /// Take the collection or video at the given path (or if the site is still empty,
-    /// the empty site itself) and convert it to a playlist. This may fail if we're
-    /// converting from a collection and that collection happens to contain playlists
-    /// or subcollections, which a playlist can not contain.
+    /// Take the collection or video at the given path (or if the site is
+    /// still empty, the empty site itself) and convert it to a playlist.
+    /// This may fail if we're converting from a collection and that
+    /// collection happens to contain playlists or subcollections (which a
+    /// playlist can not contain), or if we're converting from a video that
+    /// is contained inside a playlist (as a playlist can not contain another
+    /// playlist).
     pub fn convert_to_playlist(&self, site_path: &SitePath) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
@@ -457,6 +446,10 @@ impl Context {
 
                 self.update_from_filesystem(&dir_converting, &site_mut);
             } else if let GetAnyResult::Video(video) = node {
+                if self.get_any(&video.parent_site_path_unchecked()).is_playlist() {
+                    return Err("A video inside a playlist can not be converted to a playlist".to_string());
+                }
+
                 let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
 
                 let slug = match &video.title {
@@ -957,6 +950,19 @@ impl Context {
         Err(())
     }
 
+
+    pub fn extend_job_queue(&self, job_kinds: Vec<JobKind>) {
+        if let Ok(mut job_queue) = self.job_queue.lock() {
+            for job_kind in job_kinds {
+                if !job_queue
+                    .iter()
+                    .any(|existing_job| existing_job.kind == job_kind) {
+                    job_queue.push(Job::new(job_kind));
+                }
+            }
+        }
+    }
+
     /// Returns the collection, playlist or video at the given path.
     pub fn get_any(&self, site_path: &SitePath) -> GetAnyResult {
         self.site.lock().unwrap().get_any(site_path)
@@ -1033,6 +1039,16 @@ impl Context {
             processing_errors: Mutex::new(Vec::new()),
             site: Mutex::new(site),
             site_dir
+        }
+    }
+
+    pub fn push_job_queue(&self, job_kind: JobKind) {
+        if let Ok(mut job_queue) = self.job_queue.lock() {
+            if !job_queue
+                .iter()
+                .any(|existing_job| existing_job.kind == job_kind) {
+                job_queue.push(Job::new(job_kind));
+            }
         }
     }
 
@@ -1285,5 +1301,16 @@ impl Context {
         }
 
         Err(())
+    }
+}
+
+impl GetAnyResult {
+    pub fn is_playlist(&self) -> bool {
+        match self {
+            GetAnyResult::Collection(_) => false,
+            GetAnyResult::None => false,
+            GetAnyResult::Playlist(_) => true,
+            GetAnyResult::Video(_) => false
+        }
     }
 }

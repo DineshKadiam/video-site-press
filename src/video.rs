@@ -708,43 +708,6 @@ impl Video {
         version_candidate.map(|pixels_version| pixels_version.1)
     }
 
-    /// Applies a simple heuristic to determine the "most recommended"
-    /// version to watch. Roughly speaking, something that is not too
-    /// high-res, not too low-res, but a nice balance between resource
-    /// consumption and visual fidelity.
-    pub fn recommended_version(&self) -> Option<&VideoFile> {
-        const IDEAL_FRAME_RATE: f32 = 27.0;
-        const IDEAL_HEIGHT: usize = 720;
-
-        struct Candidate<'a> {
-            frame_rate_distance: f32,
-            height_distance: u32,
-            video_file: &'a VideoFile
-        }
-
-        let mut candidate_option: Option<Candidate> = None;
-
-        for version in &self.versions {
-            if let Some(video_meta) = &version.video_meta {
-                let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
-                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).unsigned_abs();
-
-                if candidate_option.is_none() || candidate_option.as_ref().is_some_and(|candidate| {
-                    frame_rate_distance <= candidate.frame_rate_distance &&
-                    height_distance <= candidate.height_distance
-                }) {
-                    candidate_option = Some(Candidate {
-                        frame_rate_distance,
-                        height_distance,
-                        video_file: version
-                    });
-                }
-            }
-        }
-
-        candidate_option.map(|candidate| candidate.video_file)
-    }
-
     pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Video {
         Video {
             copy_link: None,
@@ -892,6 +855,43 @@ impl Video {
         }
 
         Arc::new(video)
+    }
+
+    /// Applies a simple heuristic to determine the "most recommended"
+    /// version to watch. Roughly speaking, something that is not too
+    /// high-res, not too low-res, but a nice balance between resource
+    /// consumption and visual fidelity.
+    pub fn recommended_version(&self) -> Option<&VideoFile> {
+        const IDEAL_FRAME_RATE: f32 = 27.0;
+        const IDEAL_HEIGHT: usize = 720;
+
+        struct Candidate<'a> {
+            frame_rate_distance: f32,
+            height_distance: u32,
+            video_file: &'a VideoFile
+        }
+
+        let mut candidate_option: Option<Candidate> = None;
+
+        for version in &self.versions {
+            if let Some(video_meta) = &version.video_meta {
+                let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
+                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).unsigned_abs();
+
+                if candidate_option.is_none() || candidate_option.as_ref().is_some_and(|candidate| {
+                    frame_rate_distance <= candidate.frame_rate_distance &&
+                    height_distance <= candidate.height_distance
+                }) {
+                    candidate_option = Some(Candidate {
+                        frame_rate_distance,
+                        height_distance,
+                        video_file: version
+                    });
+                }
+            }
+        }
+
+        candidate_option.map(|candidate| candidate.video_file)
     }
 
     pub fn slug(&self) -> Option<&str> {

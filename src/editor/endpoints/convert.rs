@@ -12,10 +12,18 @@ use crate::editor::widgets::error_page;
 pub async fn to_collection(
     context: Data<Arc<Context>>,
     site_path: ActixPath<SitePath>
-) -> Redirect {
-    context.convert_to_collection(&site_path);
-    let redirect_url = format!("/collection/{}", site_path.normalized());
-    Redirect::to(redirect_url).see_other()
+) -> Either<Redirect, HttpResponse> {
+    match context.convert_to_collection(&site_path) {
+        Ok(()) => {
+            let redirect_url = format!("/collection/{}", site_path.normalized());
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Err(err) => {
+            let language = context.get_editor_language();
+            // TODO: Return error in context of originating page (playlist/video/empty)
+            Either::Right(error_page(&context, &language, &err))
+        }
+    }
 }
 
 pub async fn to_playlist(

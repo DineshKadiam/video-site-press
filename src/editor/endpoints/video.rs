@@ -590,24 +590,31 @@ pub fn edit_page(
     let upload_url = format!("/upload-video/{site_path_normalized}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
 
-    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
-    let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist = translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
-    let t_move_into_new_collection = translations.move_into_new_collection;
-    let t_move_into_new_playlist = translations.move_into_new_playlist;
-    let convert_form = formatdoc!(r#"
-        <p>
-            {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
-        </p>
-        <form action="/convert-to-collection/{site_path_normalized}" method="post">
-            <button class="danger">{t_move_into_new_collection}</button>
-        </form>
-        <p>
-            {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist}
-        </p>
-        <form action="/convert-to-playlist/{site_path_normalized}" method="post">
-            <button class="danger">{t_move_into_new_playlist}</button>
-        </form>
-    "#);
+    let convert_form = if site.get_any(&video.parent_site_path_unchecked()).is_playlist() {
+        String::new()
+    } else {
+        let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection =
+            translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
+        let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist =
+            translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist;
+        let t_move_into_new_collection = translations.move_into_new_collection;
+        let t_move_into_new_playlist = translations.move_into_new_playlist;
+
+        formatdoc!(r#"
+            <p>
+                {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
+            </p>
+            <form action="/convert-to-collection/{site_path_normalized}" method="post">
+                <button class="danger">{t_move_into_new_collection}</button>
+            </form>
+            <p>
+                {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist}
+            </p>
+            <form action="/convert-to-playlist/{site_path_normalized}" method="post">
+                <button class="danger">{t_move_into_new_playlist}</button>
+            </form>
+        "#)
+    };
 
     let input_unlisted_conditionally_hidden = if !video.site_path.is_root_path() {
         input_unlisted.to_string()
