@@ -4,7 +4,13 @@
 
 use indoc::formatdoc;
 
-use crate::{Context, Language, Site, Translations};
+use crate::{
+    Context,
+    Language,
+    Site,
+    SitePath,
+    Translations
+};
 use crate::icons;
 use crate::util::{
     html_escape_outside_attribute,
@@ -144,15 +150,21 @@ fn controls(
 /// When path is Some() that signifies we are viewing some node in the site tree.
 /// If it's None we are on some auxillary page such as the dashboard or 404 page.
 pub fn layout(
+    body: &str,
     context: &Context,
     language: &Language,
-    path: Option<&str>,
     site: &Site,
-    body: &str,
+    site_path: Option<&SitePath>,
     title: &str
 ) -> String {
     let translations = &language.translations;
-    let (breadcrumbs, tree) = tree_view(context, path, site, &context.site_dir, translations);
+    let (breadcrumbs, tree) = tree_view(
+        context,
+        site,
+        &context.site_dir,
+        site_path,
+        translations
+    );
 
     // TODO: Hash scripts/styles
     let e_title = html_escape_outside_attribute(title);

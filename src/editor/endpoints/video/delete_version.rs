@@ -8,7 +8,7 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Context, ContextPath, Video};
+use crate::{Context, SitePath, Video};
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -19,7 +19,7 @@ pub struct DeleteVersionForm {
 pub async fn delete_version(
     context: Data<Arc<Context>>,
     form: Form<DeleteVersionForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     // TODO: Minor issue if at all, but there is no feedback if the version is not found
 
@@ -28,20 +28,23 @@ pub async fn delete_version(
             .iter()
             .position(|version| version.file_name == form.file_name)
             .map(|index| video_mut.versions.swap_remove(index)) {
-            let version_path = context.site_dir.join(&path.path).join(&version.file_name);
+            let version_path = context.site_dir
+                .join(site_path.filesystem_relative())
+                .join(&version.file_name);
+
             video_mut.write_manifest(&context);
             let _ = fs::remove_file(&version_path);
         }
     };
 
-    match context.update_video(mutation, &path.path) {
+    match context.update_video(mutation, &site_path) {
         Ok(video) => {
-            let redirect_url = format!("/video/{}", video.path);
+            let redirect_url = format!("/video/{}", video.site_path.normalized());
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(()) => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
+            Either::Right(not_found(&context, &language, &site_path))
         }
     }
 }

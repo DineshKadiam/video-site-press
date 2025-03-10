@@ -32,6 +32,7 @@ pub fn video_html(
     video: &Video
 ) {
     let mut layout = Layout::new();
+    let translations = &site.language.translations;
 
     layout.add_video_script();
 
@@ -44,10 +45,7 @@ pub fn video_html(
         String::new()
     };
 
-    let title = match &video.title {
-        Some(title) => title,
-        None => if video.path.is_empty() { "Hyper 8" } else { video.slug() }
-    };
+    let title = video.title_or_slug_or_generic_label(translations);
     let e_title = html_escape_outside_attribute(title);
 
     let r_downloads = if video.download() {
@@ -73,7 +71,7 @@ pub fn video_html(
 
                 let active_position = videos
                     .iter()
-                    .position(|video_iterated| video_iterated.path == video.path)
+                    .position(|video_iterated| video_iterated.site_path == video.site_path)
                     .unwrap();
 
                 videos
@@ -106,7 +104,7 @@ pub fn video_html(
 
     let copy_link_button = if video.copy_link() {
         let (content_key, content_value) = match &site.base_url {
-            Some(base_url) => ("content", base_url.join(&video.path, site)),
+            Some(base_url) => ("content", base_url.join_index(site, &video.site_path)),
             None => ("dynamic-url", String::new())
         };
 
@@ -174,7 +172,7 @@ pub fn video_html(
 
     let platform_integration = video.platform_integration();
     if platform_integration.enabled() {
-        if let Some(video_url) = site.absolute_url(&video.path) {
+        if let Some(video_url) = site.absolute_url_index(&video.site_path) {
             let mut meta = PlatformIntegrationMeta::new(title.to_string(), video_url);
 
             if let Some(description) = &video.description {
@@ -190,7 +188,7 @@ pub fn video_html(
 
             if let Some(poster) = &video.poster {
                 if let Some(poster_assets) = &poster.assets {
-                    let image_url_prefix = site.absolute_url_prefix_unchecked(&video.path);
+                    let image_url_prefix = site.absolute_url_prefix_unchecked(&video.site_path);
                     let platform_integration_image = poster_assets.platform_integration_image("poster", &image_url_prefix);
 
                     meta.image(platform_integration_image);
@@ -204,9 +202,8 @@ pub fn video_html(
             if platform_integration.content_embeds() {
                 if let Some(video_file) = video.recommended_version() {
                     if let Some(video_meta) = &video_file.video_meta {
-                        let video_url_prefix = site.absolute_url_prefix_unchecked(&video.path);
-                        let player_url = format!("{video_url_prefix}embed/");
-                        let video_url = format!("{video_url_prefix}{}", video_file.file_name);
+                        let player_url = site.absolute_url_dir_unchecked("embed/", &video.site_path);
+                        let video_url = site.absolute_url_file_unchecked(&video_file.file_name, &video.site_path);
 
                         let height = video_meta.height;
                         let mime_type = video_file.mime_type();
@@ -235,7 +232,7 @@ pub fn video_html(
         traversal
     );
 
-    let video_dir = context.build_dir.join(&video.path);
+    let video_dir = context.build_dir.join(video.site_path.filesystem_relative());
     fs::create_dir_all(&video_dir).unwrap();
     let index_path = video_dir.join("index.html");
     fs::write(index_path, html).unwrap();

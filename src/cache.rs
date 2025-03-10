@@ -7,7 +7,12 @@ use std::path::Path;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{FileMeta, PosterAssets, VideoMeta};
+use crate::{
+    FileMeta,
+    PosterAssets,
+    SitePath,
+    VideoMeta
+};
 use crate::util;
 
 /// This is the name of an empty file created by hyper8 in the root
@@ -66,10 +71,10 @@ impl Cache {
         &self,
         file_meta: &FileMeta,
         file_name: &str,
-        path: &str,
-        poster_aspect: f32
+        poster_aspect: f32,
+        site_path: &SitePath
     ) -> Option<PosterAssets> {
-        let poster_path = format!("{}/{}", path, file_name);
+        let poster_path = format!("{}{file_name}", site_path.normalized());
 
         self.poster_assets
             .iter()

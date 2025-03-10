@@ -4,7 +4,13 @@
 use chrono::{Datelike, NaiveDate};
 use indoc::formatdoc;
 
-use crate::{Collection, Playlist, Site, Video};
+use crate::{
+    Collection,
+    Playlist,
+    Site,
+    SitePath,
+    Video
+};
 use crate::build::thumbnail;
 use crate::build::widgets::{banner_html, poster_html};
 use crate::util::{
@@ -65,7 +71,7 @@ pub struct Traversal<'a> {
 impl CurrentPage<'_> {
     pub fn is_collection(&self, collection: &Collection) -> bool {
         if let CurrentPage::Collection(contained_collection) = self {
-            contained_collection.path == collection.path
+            contained_collection.site_path == collection.site_path
         } else {
             false
         }
@@ -73,7 +79,7 @@ impl CurrentPage<'_> {
 
     pub fn is_playlist(&self, playlist: &Playlist) -> bool {
         if let CurrentPage::Playlist(contained_playlist) = self {
-            contained_playlist.path == playlist.path
+            contained_playlist.site_path == playlist.site_path
         } else {
             false
         }
@@ -81,7 +87,7 @@ impl CurrentPage<'_> {
 
     pub fn is_video(&self, video: &Video) -> bool {
         if let CurrentPage::Video(contained_video) = self {
-            contained_video.path == video.path
+            contained_video.site_path == video.site_path
         } else {
             false
         }
@@ -199,26 +205,12 @@ impl OutlineStats {
 
 impl<'a> Traversal<'a> {
     /// Url path to the index (page) at the peeked traversal.
-    pub fn file_prefix_desc(&self) -> String {
-        let prefix = self.prefix_desc();
-
-        if prefix.is_empty() {
-            prefix
-        } else {
-            format!("{prefix}/")
-        }
-    }
-
-    /// Url path to the index (page) at the peeked traversal.
     pub fn index_desc(&self, site: &Site) -> String {
         let prefix = self.prefix_desc();
 
-        if prefix.is_empty() {
-            prefix
-        } else if site.clean_urls {
-            format!("{prefix}/")
-        } else {
-            format!("{prefix}/index.html")
+        match site.clean_urls {
+            true => prefix,
+            false => prefix + "index.html"
         }
     }
 
@@ -274,16 +266,15 @@ impl<'a> Traversal<'a> {
         self.peeked_steps[..peeked_parents_len]
             .iter()
             .map(|peeked_step| {
-                let prefix = peeked_step.path()
-                    .strip_prefix(last_visited_step.path())
+                let prefix = peeked_step.site_path().normalized()
+                    .strip_prefix(last_visited_step.site_path().normalized())
                     .unwrap()
-                    .trim_start_matches('/')
                     .to_string();
 
                 let href = if site.clean_urls {
-                    format!("{prefix}/")
+                    prefix
                 } else {
-                    format!("{prefix}/index.html")
+                    format!("{prefix}index.html")
                 };
 
                 Breadcrumb { href, step: peeked_step }
@@ -291,15 +282,16 @@ impl<'a> Traversal<'a> {
             .collect()
     }
 
-    /// Relative url path to go "back up" the hierarchy up to the root,
+    /// Relative url to go "back up" the hierarchy up to the root,
     /// following the "taken steps".
     pub fn prefix_asc(&self) -> String {
         "../".repeat(self.steps.len() - 1)
     }
 
-    /// Url path to go "down" to the leaf node (= page) we're peeking at,
-    /// relative to where are now (rather than to the site root).
-    fn prefix_desc(&self) -> String {
+    /// Relative url prefix to go "down" to the leaf node (= page) we're
+    /// peeking at, relative to where are now (rather than to the site
+    /// root). Returns e.g. "", "foo/", "foo/bar/", etc.
+    pub fn prefix_desc(&self) -> String {
         match self.peeked_steps.iter().last() {
             Some(last_peeked_step) => {
                 // We always expect a last visited step, because anything we render always
@@ -307,10 +299,9 @@ impl<'a> Traversal<'a> {
                 // step at the minimum.
                 let last_visited_step = &self.steps[self.steps.len() - 1];
 
-                last_peeked_step.path()
-                    .strip_prefix(last_visited_step.path())
+                last_peeked_step.site_path().normalized()
+                    .strip_prefix(last_visited_step.site_path().normalized())
                     .unwrap()
-                    .trim_start_matches('/')
                     .to_string()
             }
             None => String::new()
@@ -346,19 +337,19 @@ impl TraversalStep<'_> {
     pub fn breadcrumb(&self, href: &str, site: &Site) -> String {
         match self {
             TraversalStep::Collection(collection) => {
-                let label = collection.label(&site.language.translations);
-                let e_label = html_escape_outside_attribute(label);
-                format!(r#"<a href="{href}">{e_label}</a>"#)
+                let title = collection.title_or_slug_or_generic_label(&site.language.translations);
+                let e_title = html_escape_outside_attribute(title);
+                format!(r#"<a href="{href}">{e_title}</a>"#)
             }
             TraversalStep::Playlist(playlist) => {
-                let label = playlist.label(&site.language.translations);
-                let e_label = html_escape_outside_attribute(label);
-                format!(r#"<a href="{href}">{e_label}</a>"#)
+                let title = playlist.title_or_slug_or_generic_label(&site.language.translations);
+                let e_title = html_escape_outside_attribute(title);
+                format!(r#"<a href="{href}">{e_title}</a>"#)
             }
             TraversalStep::Video(video) => {
-                let label = video.label(&site.language.translations);
-                let e_label = html_escape_outside_attribute(label);
-                format!(r#"<a href="{href}">{e_label}</a>"#)
+                let title = video.title_or_slug_or_generic_label(&site.language.translations);
+                let e_title = html_escape_outside_attribute(title);
+                format!(r#"<a href="{href}">{e_title}</a>"#)
             }
             TraversalStep::Virtual { label } => {
                 let e_label = html_escape_outside_attribute(label);
@@ -446,13 +437,13 @@ impl TraversalStep<'_> {
         let banner = if let Some(banner) = &collection.banner {
             banner_html(banner, prefix)
         } else if let Some(video) = &collection.public_videos().find(|video| video.poster.is_some()) { // TODO: Fall back to playlist/subcollection banner if no poster on video
-            let video_prefix = format!("{prefix}{}/", video.slug());
+            let video_prefix = format!("{prefix}{}/", video.slug_unchecked());
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
             // TODO: Something graphically interesting instead (that also conveys "collection" somehow?)
             String::from(r#"<div class="placeholder"></div>"#)
         };
-        let label = collection.label(&site.language.translations);
+        let label = collection.title_or_slug_or_generic_label(&site.language.translations);
         let outline_stats = OutlineStats::for_collection(collection).render(site);
 
         formatdoc!(r#"
@@ -481,8 +472,8 @@ impl TraversalStep<'_> {
             let rendered_subcollections = subcollections
                 .iter()
                 .map(|subcollection| {
-                    let label = subcollection.label(&site.language.translations);
-                    let slug = subcollection.slug();
+                    let label = subcollection.title_or_slug_or_generic_label(&site.language.translations);
+                    let slug = subcollection.slug_unchecked();
 
                     let subcollection_prefix = if current_page.is_collection(collection) {
                         String::new()
@@ -493,7 +484,7 @@ impl TraversalStep<'_> {
                     let thumbnail_rendered = if let Some(banner) = &subcollection.banner {
                         banner_html(banner, &subcollection_prefix)
                     } else if let Some(video) = subcollection.public_videos().find(|video| video.poster.is_some()) { // TODO: Take a banner from a present playlist or sub-subcollection too as alternative
-                        let video_prefix = format!("{subcollection_prefix}{}/", video.slug());
+                        let video_prefix = format!("{subcollection_prefix}{}/", video.slug_unchecked());
                         thumbnail(&site.language.translations, video, &video_prefix, false)
                     } else {
                         String::new()
@@ -537,8 +528,8 @@ impl TraversalStep<'_> {
             let rendered_playlists = playlists
                 .iter()
                 .map(|playlist| {
-                    let label = playlist.label(&site.language.translations);
-                    let slug = playlist.slug();
+                    let label = playlist.title_or_slug_or_generic_label(&site.language.translations);
+                    let slug = playlist.slug_unchecked();
 
                     let playlist_prefix = if current_page.is_playlist(playlist) {
                         String::new()
@@ -551,7 +542,7 @@ impl TraversalStep<'_> {
                     } else if let Some(video) = playlist
                         .public_videos()
                         .find(|video| video.poster.is_some()) {
-                        let video_prefix = format!("{playlist_prefix}{}/", video.slug());
+                        let video_prefix = format!("{playlist_prefix}{}/", video.slug_unchecked());
                         thumbnail(&site.language.translations, video, &video_prefix, false)
                     } else {
                         // TODO: Decide what condition this even is and handle
@@ -596,8 +587,8 @@ impl TraversalStep<'_> {
             let rendered_videos = videos
                 .iter()
                 .map(|video| {
-                    let label = video.label(&site.language.translations);
-                    let slug = video.slug();
+                    let label = video.title_or_slug_or_generic_label(&site.language.translations);
+                    let slug = video.slug_unchecked();
 
                     let video_prefix = if current_page.is_video(video) {
                         String::new()
@@ -657,12 +648,12 @@ impl TraversalStep<'_> {
             banner_html(banner, prefix)
         } else if let Some(video) = &playlist.public_videos()
             .find(|video| video.poster.is_some()) {
-            let video_prefix = format!("{prefix}{}/", video.slug());
+            let video_prefix = format!("{prefix}{}/", video.slug_unchecked());
             poster_html(video.poster.as_ref().unwrap(), &video_prefix)
         } else {
             String::from(r#"<div class="placeholder"></div>"#)
         };
-        let label = playlist.label(&site.language.translations);
+        let label = playlist.title_or_slug_or_generic_label(&site.language.translations);
         let outline_stats = OutlineStats::for_playlist(playlist).render(site);
 
         let header_crumb = formatdoc!(r#"
@@ -684,10 +675,10 @@ impl TraversalStep<'_> {
                 .iter()
                 .enumerate()
                 .map(|(index, video_iterated)| {
-                    let label = video_iterated.label(&site.language.translations);
-                    let slug = video_iterated.slug();
+                    let label = video_iterated.title_or_slug_or_generic_label(&site.language.translations);
+                    let slug = video_iterated.slug_unchecked();
 
-                    let video_prefix = if video_iterated.path == video.path {
+                    let video_prefix = if video_iterated.site_path == video.site_path {
                         String::new()
                     } else {
                         format!("../{slug}/")
@@ -695,7 +686,7 @@ impl TraversalStep<'_> {
 
                     let thumbnail_rendered = thumbnail(&site.language.translations, video_iterated, &video_prefix, false);
 
-                    let (current, href) = if video_iterated.path == video.path {
+                    let (current, href) = if video_iterated.site_path == video.site_path {
                         ("current", String::new())
                     } else {
                         ("", format!("../{slug}{index_suffix}"))
@@ -740,7 +731,7 @@ impl TraversalStep<'_> {
 
     pub fn is_collection(&self, collection: &Collection) -> bool {
         if let TraversalStep::Collection(subcollection) = self {
-            subcollection.path == collection.path
+            subcollection.site_path == collection.site_path
         } else {
             false
         }
@@ -756,17 +747,17 @@ impl TraversalStep<'_> {
 
     pub fn is_video(&self, video: &Video) -> bool {
         if let TraversalStep::Video(contained_video) = self {
-            contained_video.path == video.path
+            contained_video.site_path == video.site_path
         } else {
             false
         }
     }
 
-    pub fn path(&self) -> &str {
+    pub fn site_path(&self) -> &SitePath {
         match self {
-            TraversalStep::Collection(collection) => &collection.path,
-            TraversalStep::Playlist(playlist) => &playlist.path,
-            TraversalStep::Video(video) => &video.path,
+            TraversalStep::Collection(collection) => &collection.site_path,
+            TraversalStep::Playlist(playlist) => &playlist.site_path,
+            TraversalStep::Video(video) => &video.site_path,
             TraversalStep::Virtual { .. } => unimplemented!()
         }
     }

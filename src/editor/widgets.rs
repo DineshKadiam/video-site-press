@@ -1,11 +1,19 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::path::MAIN_SEPARATOR;
+
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use indoc::formatdoc;
 
-use crate::{Context, Language, Site, Translations};
+use crate::{
+    Context,
+    Language,
+    Site,
+    SitePath,
+    Translations
+};
 use crate::icons;
 use crate::util::string_from_pathbuf;
 
@@ -36,7 +44,14 @@ pub fn error_page(
     let site = &context.get_site();
 
     let t_error = language.translations.error;
-    let html = layout(context, language, None, site, &body, t_error);
+    let html = layout(
+        &body,
+        context,
+        language,
+        site,
+        None,
+        t_error
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -46,10 +61,10 @@ pub fn error_page(
 pub fn not_found(
     context: &Context,
     language: &Language,
-    path: &str
+    site_path: &SitePath
 ) -> HttpResponse {
     let t_back = language.translations.back;
-    let t_message = language.translations.the_resource_xxx_was_not_found_message(path);
+    let t_message = language.translations.the_resource_xxx_was_not_found_message(site_path.normalized());
     let body = formatdoc!(r#"
         <div>
             {t_message}
@@ -61,29 +76,37 @@ pub fn not_found(
     let site = &context.get_site();
 
     let t_resource_not_found = language.translations.resource_not_found;
-    let html = layout(context, language, None, site, &body, t_resource_not_found);
+    let html = layout(
+        &body,
+        context,
+        language,
+        site,
+        None,
+        t_resource_not_found
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
         .body(html)
 }
 
-pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Site, translations: &Translations) -> String {
-    let local_path = if path.is_empty() {
-        string_from_pathbuf(context.site_dir.join(""))
-    } else {
-        string_from_pathbuf(context.site_dir.join(path).join(""))
-    };
-
+pub fn resource_actions(
+    context: &Context,
+    offline: bool,
+    site: &Site,
+    site_path: &SitePath,
+    translations: &Translations
+) -> String {
+    let local_path = string_from_pathbuf(context.site_dir.join(site_path.filesystem_relative()));
     let disk_icon = icons::disk(translations.local_path);
-    let local_path_displayed = if path.is_empty() {
+    let local_path_displayed = if site_path.is_root_path() {
         format!("<span>{disk_icon} <span>{local_path}</span></span>")
     } else {
-        let mut rsplitn = local_path.rsplitn(3, '/');
+        let mut rsplitn = local_path.rsplitn(3, MAIN_SEPARATOR);
         rsplitn.next().unwrap();
         let slug = rsplitn.next().unwrap();
         let prefix = rsplitn.next().unwrap();
-        format!(r#"<span>{disk_icon} <span>{prefix}/<span class="path_extension">{slug}</span>/</span></span>"#)
+        format!(r#"<span>{disk_icon} <span>{prefix}{MAIN_SEPARATOR}<span class="path_extension">{slug}</span>{MAIN_SEPARATOR}</span></span>"#)
     };
 
     let copy_icon = icons::copy();
@@ -96,15 +119,17 @@ pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Sit
             let offline_label = if offline { format!(" ({t_offline})") } else { String::new() };
 
             let external_icon = icons::external(translations.external_link);
-            let live_url = base_url.join_prefix(path);
-            if path.is_empty() {
+            let live_url = base_url.join_index(site, site_path);
+            if site_path.is_root_path() {
                 live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {live_url}{offline_label}</a>"#);
             } else {
                 let mut rsplitn = live_url.rsplitn(3, '/');
-                rsplitn.next().unwrap();
+
+                let index_html = rsplitn.next().unwrap();
                 let slug = rsplitn.next().unwrap();
                 let prefix = rsplitn.next().unwrap();
-                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/{offline_label}</a>"#);
+
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/{index_html}{offline_label}</a>"#);
             };
 
             let t_copy_link = translations.copy_link;
@@ -121,6 +146,8 @@ pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Sit
         }
     };
 
+    let build_action = format!("/build/{}", site_path.normalized());
+
     let t_copy_path = translations.copy_path;
     let t_preview = translations.preview;
     let failure_icon = icons::failure(translations.failed);
@@ -130,7 +157,7 @@ pub fn resource_actions(context: &Context, offline: bool, path: &str, site: &Sit
         {live_url_displayed}
         {local_path_displayed}
         <div class="button_group">
-            <form action="/build/{path}" method="post" target="_blank">
+            <form action="{build_action}" method="post" target="_blank">
                 <button class="action">{preview_icon} {t_preview}</button>
             </form>
             {copy_live_url}

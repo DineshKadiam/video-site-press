@@ -13,8 +13,8 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
     Field,
+    SitePath,
     Video
 };
 use crate::editor::widgets::not_found;
@@ -32,7 +32,7 @@ pub struct CreateVideoForm {
 pub async fn create_video(
     context: Data<Arc<Context>>,
     form: Form<CreateVideoForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
@@ -40,9 +40,9 @@ pub async fn create_video(
     let title_trimmed = form.title.trim();
 
     let error = |slug_error, title_error| -> _ {
-        let collection = match context.get_collection(&path.path) {
+        let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = CollectionFormFeedback::CreateVideo {
@@ -62,12 +62,12 @@ pub async fn create_video(
         );
     }
 
-    let succeed = |video_path: String, title: Option<&str>| {
-        let video_dir = context.site_dir.join(&video_path);
+    let succeed = |video_site_path: SitePath, title: Option<&str>| {
+        let video_dir = context.site_dir.join(video_site_path.filesystem_relative());
         fs::create_dir_all(&video_dir).unwrap();
 
         let mutation = |collection: &mut Collection| -> Arc<Video> {
-            let mut video_mut = Video::new(video_path, collection.propagate_options());
+            let mut video_mut = Video::new(collection.propagate_options(), video_site_path);
             if let Some(title) = title {
                 video_mut.title = Some(title.to_string());
             }
@@ -76,55 +76,43 @@ pub async fn create_video(
             video
         };
 
-        match context.update_collection(mutation, &path.path) {
+        match context.update_collection(mutation, &site_path) {
             CollectionUpdate::Updated { optional_return_value: video, .. } => {
                 video.write_manifest(&context);
 
-                let redirect_url = format!("/video/{}", video.path);
+                let redirect_url = format!("/video/{}", video.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &path.path))
+                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     };
 
     if slug_trimmed.is_empty() {
         let slug = slugify(title_trimmed);
-        let mut video_path = if path.path.is_empty() {
-            slug.to_string()
-        } else {
-            format!("{}/{slug}", &path.path)
-        };
+        let mut video_site_path = site_path.join(&slug);
 
         let mut duplicate = 1;
-        while context.site_dir.join(&video_path).exists() {
-            video_path = if path.path.is_empty() {
-                format!("{slug}_{duplicate}")
-            } else {
-                format!("{}/{slug}_{duplicate}", &path.path)
-            };
+        while context.site_dir.join(video_site_path.filesystem_relative()).exists() {
+            video_site_path = site_path.join(&format!("{slug}_{duplicate}"));
             duplicate += 1;
         }
 
-        succeed(video_path, Some(title_trimmed))
+        succeed(video_site_path, Some(title_trimmed))
     } else {
         if let Err(message) = validate_slug(slug_trimmed) {
             return error(Some(&message), None);
         }
 
-        let video_path = if path.path.is_empty() {
-            slug_trimmed.to_string()
-        } else {
-            format!("{}/{slug_trimmed}", &path.path)
-        };
+        let video_site_path = site_path.join(slug_trimmed);
 
-        if context.site_dir.join(&video_path).exists() {
+        if context.site_dir.join(video_site_path.filesystem_relative()).exists() {
             let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
             error(Some(message), None)
         } else {
             let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
-            succeed(video_path, title)
+            succeed(video_site_path, title)
         }
     }
 }

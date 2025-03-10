@@ -9,11 +9,11 @@ use serde_derive::Deserialize;
 
 use crate::{
     Context,
-    ContextPath,
     Field,
     PlatformIntegration,
     Playlist,
     PlaylistUpdate,
+    SitePath,
     VideoOrder
 };
 use crate::editor::widgets::not_found;
@@ -37,7 +37,7 @@ pub struct PlaylistUpdateForm {
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<PlaylistUpdateForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
@@ -87,19 +87,19 @@ pub async fn update(
             playlist_mut.write_manifest(&context);
         };
 
-        match context.update_playlist(mutation, &path.path) {
+        match context.update_playlist(mutation, &site_path) {
             PlaylistUpdate::Updated { playlist_updated, .. } => {
-                let redirect_url = format!("/playlist/{}", playlist_updated.path);
+                let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             PlaylistUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &path.path))
+                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {
-        let playlist = match context.get_playlist(&path.path) {
+        let playlist = match context.get_playlist(&site_path) {
             Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = PlaylistFormFeedback::Update {

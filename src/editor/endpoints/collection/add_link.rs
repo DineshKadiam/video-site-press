@@ -12,8 +12,8 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
-    Link
+    Link,
+    SitePath
 };
 use crate::editor::widgets::{error_page, not_found};
 
@@ -27,7 +27,7 @@ pub struct AddLinkForm {
 pub async fn add_link(
     context: Data<Arc<Context>>,
     form: Form<AddLinkForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let (hidden, rel_me) = match form.verification.as_str() {
         "rel-me" => (false, true),
@@ -55,14 +55,14 @@ pub async fn add_link(
         collection_mut.write_manifest(&context);
     };
 
-    match context.update_collection(mutation, &path.path) {
+    match context.update_collection(mutation, &site_path) {
         CollectionUpdate::Updated { collection_updated, .. } => {
-            let redirect_url = format!("/collection/{}", collection_updated.path);
+            let redirect_url = format!("/collection/{}", collection_updated.site_path.normalized());
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         CollectionUpdate::NotFound => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
+            Either::Right(not_found(&context, &language, &site_path))
         }
     }
 }

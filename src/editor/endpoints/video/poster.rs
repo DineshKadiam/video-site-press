@@ -8,13 +8,16 @@ use actix_web::HttpResponse;
 use actix_web::web;
 use actix_web::web::{Data, Path as ActixPath};
 
-use crate::{Context, ContextPath};
+use crate::{Context, SitePath};
 
 // TODO: We currently go through the video endpoint for poster for all posters
 //       (also playlist e.g.), this is unclean, make generic or change otherwise
 // TODO: Highly insecure b/c path arbitrary etc. you know
-pub async fn poster(context: Data<Arc<Context>>, path: ActixPath<ContextPath>) -> HttpResponse {
-    let filepath = context.site_dir.join(&path.path);
+pub async fn poster(
+    context: Data<Arc<Context>>,
+    site_path: ActixPath<SitePath>
+) -> HttpResponse {
+    let filepath = context.site_dir.join(site_path.filesystem_relative());
     let filepath_moving = filepath.clone();
     let content = web::block(move || fs::read(filepath_moving))
         .await

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use slug::slugify;
 
-use crate::Context;
+use crate::{Context, SitePath};
 use crate::util::{
     supported_audio_extension,
     supported_font_extension,
@@ -119,13 +119,10 @@ impl HyperDir {
         hyper_dir
     }
 
-    pub fn site_path(&self, context: &Context) -> String {
-        self.path
-            .strip_prefix(&context.site_dir)
-            .unwrap()
-            .as_os_str()
-            .to_str()
-            .unwrap()
-            .to_string()
+    /// HyperDir stores a platform-specific, absolute path internally. With
+    /// this method it instead returns the relative [SitePath] inside the
+    /// site directory.
+    pub fn site_path(&self, context: &Context) -> SitePath {
+        SitePath::from_path(context, &self.path)
     }
 }

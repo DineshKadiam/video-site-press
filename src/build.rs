@@ -166,9 +166,9 @@ fn build_collection(
     let traversal = traversal_previous.with_collection(collection);
 
     if let Some(banner) = &collection.banner {
-        let collection_build_dir = context.build_dir.join(&collection.path);
+        let collection_build_dir = context.build_dir.join(collection.site_path.filesystem_relative());
 
-        if !collection.path.is_empty() {
+        if !collection.site_path.is_root_path() {
             fs::create_dir_all(&collection_build_dir).unwrap();
         }
 
@@ -181,7 +181,7 @@ fn build_collection(
             }
         } else {
             hard_link_or_copy(
-                context.site_dir.join(&collection.path).join(&banner.file_name),
+                context.site_dir.join(collection.site_path.filesystem_relative()).join(&banner.file_name),
                 collection_build_dir.join("banner.jpg")
             );
         }
@@ -241,9 +241,9 @@ fn build_playlist(
     let traversal = traversal_previous.with_playlist(playlist);
 
     if let Some(banner) = &playlist.banner {
-        let playlist_build_dir = context.build_dir.join(&playlist.path);
+        let playlist_build_dir = context.build_dir.join(playlist.site_path.filesystem_relative());
 
-        if !playlist.path.is_empty() {
+        if !playlist.site_path.is_root_path() {
             fs::create_dir_all(&playlist_build_dir).unwrap();
         }
 
@@ -256,7 +256,7 @@ fn build_playlist(
             }
         } else {
             hard_link_or_copy(
-                context.site_dir.join(&playlist.path).join(&banner.file_name),
+                context.site_dir.join(playlist.site_path.filesystem_relative()).join(&banner.file_name),
                 playlist_build_dir.join("banner.jpg")
             );
         }
@@ -294,15 +294,15 @@ fn build_video(
     let translations = &site.language.translations;
     let traversal = traversal_previous.with_video(video);
 
-    let video_build_dir = context.build_dir.join(&video.path);
+    let video_build_dir = context.build_dir.join(video.site_path.filesystem_relative());
 
-    if !video.path.is_empty() {
+    if !video.site_path.is_root_path() {
         fs::create_dir_all(&video_build_dir).unwrap();
     }
 
     for version in &video.versions {
         hard_link_or_copy(
-            context.site_dir.join(&video.path).join(&version.file_name),
+            context.site_dir.join(video.site_path.filesystem_relative()).join(&version.file_name),
             video_build_dir.join(&version.file_name)
         );
     }
@@ -317,14 +317,17 @@ fn build_video(
             }
         } else {
             hard_link_or_copy(
-                context.site_dir.join(&video.path).join(&poster.file_name),
+                context.site_dir.join(video.site_path.filesystem_relative()).join(&poster.file_name),
                 video_build_dir.join("poster.jpg")
             );
         }
     }
 
     for (index, subtitle_file) in video.subtitles.iter().enumerate() {
-        let source_path = &context.site_dir.join(&video.path).join(&subtitle_file.file_name);
+        let source_path = &context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&subtitle_file.file_name);
+
         let target_path = video_build_dir.join(format!("{index}.vtt"));
 
         if subtitle_file.file_name.ends_with(".vtt") {

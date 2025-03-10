@@ -158,7 +158,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
 
     select_approach.selected("compression");
 
-    let path = &video.path;
+    let downsize_action = format!("/downsize/{}", video.site_path.normalized());
 
     let t_advanced_settings = translations.advanced_settings;
     let t_best = translations.best;
@@ -169,7 +169,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_render_additional_format}</h2>
-            <form action="/downsize/{path}" method="post">
+            <form action="{downsize_action}" method="post">
                 <div class="button_group">
                     {select_resolution}
                     <div class="form_field">
@@ -216,6 +216,7 @@ pub fn edit_page(
     video: &Video
 ) -> HttpResponse {
     let site = context.get_site();
+    let site_path_normalized = video.site_path.normalized();
     let translations = &language.translations;
     let t_not_saved = translations.not_saved;
 
@@ -232,8 +233,6 @@ pub fn edit_page(
             .collect::<Vec<String>>()
             .join("")
     };
-
-    let path = &video.path;
 
     let versions = if video.versions.is_empty() {
         String::new()
@@ -316,7 +315,7 @@ pub fn edit_page(
                 let delete_icon = icons::failure(t_delete);
                 let delete_form = formatdoc!(r#"
                     <form
-                    action="/delete-version/{path}"
+                    action="/delete-version/{site_path_normalized}"
                     data-confirm
                     data-confirm-label="{t_delete}"
                     data-confirm-text="{t_really_delete}"
@@ -353,7 +352,7 @@ pub fn edit_page(
     };
 
     let t_upload_poster = translations.upload_poster;
-    let poster_upload_button = upload_widget(&format!("/upload-poster/{path}"), t_upload_poster);
+    let poster_upload_button = upload_widget(&format!("/upload-poster/{site_path_normalized}"), t_upload_poster);
     let poster_upload_button_error = if let Some(VideoFormFeedback::UploadPoster { error }) = &form_feedback {
         format!(r#"<span class="error">{error}</span>"#)
     } else {
@@ -369,11 +368,7 @@ pub fn edit_page(
 
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &poster.file_name;
-            let src = if path.is_empty() {
-                format!("/poster/{file_name}")
-            } else {
-                format!("/poster/{path}/{file_name}")
-            };
+            let src = format!("/poster/{site_path_normalized}{file_name}");
 
             let mut description = Textarea::image_description("description", translations.poster_description);
 
@@ -389,17 +384,17 @@ pub fn edit_page(
                 <img {alt}class="thumbnail" src="{src}">
                 <div class="button_group">
                     {poster_upload_button}
-                    <form action="/random-poster/{path}" method="post">
+                    <form action="/random-poster/{site_path_normalized}" method="post">
                         <button class="action">{t_random_poster}</button>
                     </form>
-                    <form action="/delete-poster/{path}" data-confirm data-confirm-label="{t_delete_poster}" data-confirm-text="{t_really_delete}" method="post">
+                    <form action="/delete-poster/{site_path_normalized}" data-confirm data-confirm-label="{t_delete_poster}" data-confirm-text="{t_really_delete}" method="post">
                         <div style="align-items: center; column-gap: .5rem; display: flex;">
                             <button class="danger">{t_delete_poster}</button>
                         </div>
                     </form>
                 </div>
                 {poster_upload_button_error}
-                <form action="/update-poster/{path}" data-warn-discard method="post">
+                <form action="/update-poster/{site_path_normalized}" data-warn-discard method="post">
                     {description}
 
                     <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -543,10 +538,15 @@ pub fn edit_page(
         String::new()
     };
 
-    let slug_form = if path.is_empty() {
+    let slug_form = if video.site_path.is_root_path() {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", video.parent_path_unchecked(), &site, translations);
+        let mut input_permalink = Input::permalink(
+            "slug",
+            &video.parent_site_path_unchecked(),
+            &site,
+            translations
+        );
 
         input_permalink.required();
 
@@ -554,7 +554,7 @@ pub fn edit_page(
             input_permalink.validated_value(slug);
             format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         } else {
-            input_permalink.value(video.slug());
+            input_permalink.value(video.slug_unchecked());
             String::new()
         };
 
@@ -565,7 +565,7 @@ pub fn edit_page(
                 {t_a_permalink_forms_part_of_text}
             </p>
 
-            <form action="/move-video/{path}" data-warn-discard method="post">
+            <form action="/move-video/{site_path_normalized}" data-warn-discard method="post">
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -579,10 +579,15 @@ pub fn edit_page(
         Some(VideoFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, &video.path, translations);
+    let site_edit = endpoints::site::edit(
+        context,
+        site_form_feedback,
+        &video.site_path,
+        translations
+    );
 
     let t_upload_new_version = translations.upload_new_version;
-    let upload_url = format!("/upload-video/{path}");
+    let upload_url = format!("/upload-video/{site_path_normalized}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
 
     let t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection = translations.this_video_can_be_seamlessly_converted_to_a_video_in_a_collection;
@@ -593,18 +598,18 @@ pub fn edit_page(
         <p>
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_collection}
         </p>
-        <form action="/convert-to-collection/{path}" method="post">
+        <form action="/convert-to-collection/{site_path_normalized}" method="post">
             <button class="danger">{t_move_into_new_collection}</button>
         </form>
         <p>
             {t_this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist}
         </p>
-        <form action="/convert-to-playlist/{path}" method="post">
+        <form action="/convert-to-playlist/{site_path_normalized}" method="post">
             <button class="danger">{t_move_into_new_playlist}</button>
         </form>
     "#);
 
-    let input_unlisted_conditionally_hidden = if !video.path.is_empty() {
+    let input_unlisted_conditionally_hidden = if !video.site_path.is_root_path() {
         input_unlisted.to_string()
     } else if video.unlisted_local() {
         String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
@@ -614,13 +619,19 @@ pub fn edit_page(
 
     let render_additional_formats = additional_formats_form(translations, video);
 
-    let create_link_form = add_link_form(&format!("/add-video-link/{path}"), translations);
-    let links_form = links(&video.links, &format!("/delete-video-link/{path}"), translations);
+    let create_link_form = add_link_form(&format!("/add-video-link/{site_path_normalized}"), translations);
+    let links_form = links(&video.links, &format!("/delete-video-link/{site_path_normalized}"), translations);
 
-    let r_resource_actions = resource_actions(context, video.offline(), path, &site, translations);
+    let r_resource_actions = resource_actions(
+        context,
+        video.offline(),
+        &site,
+        &video.site_path,
+        translations
+    );
 
     let video_icon = icons::video(translations.video);
-    let video_title = video.label(translations);
+    let video_title = video.title_or_slug_or_generic_label(translations);
 
     let t_danger_zone = translations.danger_zone;
     let t_delete = translations.delete;
@@ -641,7 +652,7 @@ pub fn edit_page(
         </div>
 
         <div class="form_group">
-            <form action="/video/{path}" autocomplete="off" data-warn-discard method="post">
+            <form action="/video/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
                 <div class="form_split divide_3_1">
@@ -693,7 +704,7 @@ pub fn edit_page(
             </p>
 
             <form
-                action="/delete-video/{path}"
+                action="/delete-video/{site_path_normalized}"
                 data-confirm
                 data-confirm-label="{t_delete}"
                 data-confirm-text="{t_really_delete}"
@@ -703,8 +714,15 @@ pub fn edit_page(
         </div>
     "#);
 
-    let head_title = video.title.as_deref().unwrap_or(video.slug());
-    let html = layout(context, language, Some(path), &site, &body, head_title);
+    let head_title = video.title_or_slug_or_generic_label(translations);
+    let html = layout(
+        &body,
+        context,
+        language,
+        &site,
+        Some(&video.site_path),
+        head_title
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

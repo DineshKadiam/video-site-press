@@ -81,7 +81,9 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
     if let Some(version) = &video.highest_quality_version() {
         let mut command = Command::new(FFMPEG);
 
-        let input_path = context.site_dir.join(&video.path).join(&version.file_name);
+        let input_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&version.file_name);
 
         // If we know the duration (which conceptually speaking we should be guaranteed to know),
         // we take the poster snapshot at halftime, otherwise at the start
@@ -90,19 +92,21 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
             .map(|video_meta| format!("{}", video_meta.duration * seek_offset))
             .unwrap_or("0".to_string());
 
-        let output_filename = if !context.site_dir.join(&video.path).join("poster.jpg").exists() {
-            "poster.jpg".to_string()
+        let output_filename = if !context.site_dir.join(video.site_path.filesystem_relative()).join("poster.jpg").exists() {
+            String::from("poster.jpg")
         } else {
             let timecoded = format!("poster_{}.jpg", snapshot_seek_offset_seconds);
 
-            if !context.site_dir.join(&video.path).join(&timecoded).exists() {
+            if !context.site_dir.join(video.site_path.filesystem_relative()).join(&timecoded).exists() {
                 timecoded
             } else {
                 format!("poster_{}.jpg", nanoid())
             }
         };
 
-        let output_path = context.site_dir.join(&video.path).join(&output_filename);
+        let output_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&output_filename);
 
         command
             .arg("-y")
@@ -132,7 +136,7 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
             }
         }
     } else {
-        eprintln!("There was no source video to compute a poster from. ({})", &video.path);
+        eprintln!("There was no source video to compute a poster from. ({})", video.site_path.normalized());
         Err(())
     }
 }
@@ -163,7 +167,9 @@ pub fn encode(
         None => return Err(())
     };
 
-    let input_path = context.site_dir.join(&video.path).join(&highest_quality_version.file_name);
+    let input_path = context.site_dir
+        .join(video.site_path.filesystem_relative())
+        .join(&highest_quality_version.file_name);
 
     command.arg("-i").arg(&input_path);
 
@@ -347,7 +353,7 @@ pub fn encode(
             if exit_status.success() {
                 // If the video directory disappeared (was moved/removed) while we were encoding
                 // we discard our encoding output as we don't know where to put it anymore.
-                if !context.site_dir.join(&video.path).exists() {
+                if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
                     return Err(())
                 }
 
@@ -378,7 +384,9 @@ pub fn encode(
                         format!("{base_name}({iteration}).{extension}")
                     };
 
-                    let output_path = context.site_dir.join(&video.path).join(&output_file);
+                    let output_path = context.site_dir
+                        .join(video.site_path.filesystem_relative())
+                        .join(&output_file);
 
                     if output_path.exists() {
                         iteration += 1;

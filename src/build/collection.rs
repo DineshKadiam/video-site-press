@@ -37,10 +37,7 @@ pub fn collection_html(
 
     let mut body = String::new();
 
-    let title = match &collection.title {
-        Some(title) => title,
-        None => if collection.path.is_empty() { "Collection" } else { collection.slug() }
-    };
+    let title = collection.title_or_slug_or_generic_label(translations);
     let e_title = html_escape_outside_attribute(title);
 
     // TODO: Hack to get margin to come out beneath header - replace with something proper soon
@@ -78,7 +75,7 @@ pub fn collection_html(
             .iter()
             .map(|video| {
                 let traversal_with_video = traversal.peek_video(video);
-                let traversal_with_video_prefix = traversal_with_video.file_prefix_desc();
+                let traversal_with_video_prefix = traversal_with_video.prefix_desc();
 
                 let release_date = match video.release_date {
                     Some(release_date) => {
@@ -89,7 +86,7 @@ pub fn collection_html(
                 };
                 let e_title = match &video.title {
                     Some(title) => html_escape_outside_attribute(title),
-                    None => video.slug().to_string()
+                    None => video.slug_unchecked().to_string()
                 };
 
                 let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
@@ -143,7 +140,7 @@ pub fn collection_html(
     // }
 
     if collection.platform_integration().enabled() {
-        if let Some(collection_url) = site.absolute_url(&collection.path) {
+        if let Some(collection_url) = site.absolute_url_index(&collection.site_path) {
             let mut meta = PlatformIntegrationMeta::new(title.to_string(), collection_url);
 
             if let Some(description) = &collection.description {
@@ -162,7 +159,7 @@ pub fn collection_html(
             // well.
             // if let Some(banner) = &collection.banner {
             //     if let Some(poster_assets) = &banner.assets {
-            //         let image_url_prefix = site.absolute_url_prefix_unchecked(&collection.path);
+            //         let image_url_prefix = site.absolute_url_prefix_unchecked(&collection.site_path);
             //         let platform_integration_image = poster_assets.platform_integration_image("banner", &image_url_prefix);
 
             //         meta.image(platform_integration_image);
@@ -185,7 +182,7 @@ pub fn collection_html(
         traversal
     );
 
-    let collection_dir = context.build_dir.join(&collection.path);
+    let collection_dir = context.build_dir.join(collection.site_path.filesystem_relative());
     fs::create_dir_all(&collection_dir).unwrap();
     let index_path = collection_dir.join("index.html");
     fs::write(index_path, html).unwrap();
@@ -199,7 +196,7 @@ fn render_collection(
     let mut output = String::new();
 
     let traversal_with_collection = traversal.peek_collection(collection);
-    let traversal_with_collection_prefix = traversal_with_collection.file_prefix_desc();
+    let traversal_with_collection_prefix = traversal_with_collection.prefix_desc();
 
     let collection_href = traversal_with_collection.index_desc(site);
 
@@ -219,7 +216,7 @@ fn render_collection(
             .iter()
             .map(|video| {
                 let traversal_with_video = traversal_with_collection.peek_video(video);
-                let traversal_with_video_prefix = traversal_with_video.file_prefix_desc();
+                let traversal_with_video_prefix = traversal_with_video.prefix_desc();
 
                 let release_date = match video.release_date {
                     Some(release_date) => {
@@ -230,7 +227,7 @@ fn render_collection(
                 };
                 let e_title = match &video.title {
                     Some(title) => html_escape_outside_attribute(title),
-                    None => video.slug().to_string()
+                    None => video.slug_unchecked().to_string()
                 };
                 let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
 
@@ -261,7 +258,7 @@ fn render_collection(
 
         let e_title = match &collection.title {
             Some(title) => html_escape_outside_attribute(title),
-            None => collection.slug().to_string()
+            None => collection.slug_unchecked().to_string()
         };
         let collection_title_and_videos = formatdoc!(r#"
             <h2>
@@ -300,7 +297,7 @@ fn render_playlist(
     traversal: &Traversal
 ) -> String {
     let traversal_with_playlist = traversal.peek_playlist(playlist);
-    let traversal_with_playlist_prefix = traversal_with_playlist.file_prefix_desc();
+    let traversal_with_playlist_prefix = traversal_with_playlist.prefix_desc();
 
     let banner = if let Some(banner) = &playlist.banner {
         banner_html(banner, &traversal_with_playlist_prefix)
@@ -313,7 +310,7 @@ fn render_playlist(
         .enumerate()
         .map(|(index, video)| {
             let traversal_with_video = traversal_with_playlist.peek_video(video);
-            let traversal_with_video_prefix = traversal_with_video.file_prefix_desc();
+            let traversal_with_video_prefix = traversal_with_video.prefix_desc();
 
             let release_date = match video.release_date {
                 Some(release_date) => {
@@ -325,7 +322,7 @@ fn render_playlist(
             let number = index + 1;
             let e_title = match &video.title {
                 Some(title) => html_escape_outside_attribute(title),
-                None => video.slug().to_string()
+                None => video.slug_unchecked().to_string()
             };
 
             let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
@@ -363,7 +360,7 @@ fn render_playlist(
 
     let e_title = match &playlist.title {
         Some(title) => html_escape_outside_attribute(title),
-        None => playlist.slug().to_string()
+        None => playlist.slug_unchecked().to_string()
     };
     let playlist_href = traversal_with_playlist.index_desc(site);
     formatdoc!(r#"

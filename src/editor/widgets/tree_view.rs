@@ -11,6 +11,7 @@ use crate::{
     Playlist,
     Site,
     SiteContent,
+    SitePath,
     Translations,
     TreeViewOrder,
     Video
@@ -82,7 +83,7 @@ impl Visibility {
 fn collection_tree(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
-    path: Option<&str>,
+    site_path: Option<&SitePath>,
     translations: &Translations,
     tree_view_order: &TreeViewOrder,
 ) -> String {
@@ -92,29 +93,23 @@ fn collection_tree(
     let subcollections = collection.subcollections_in_tree_view_order(tree_view_order)
         .iter()
         .map(|collection| {
-            let collection_path = &collection.path;
-
             let collection_visibility = Visibility::from_collection(collection);
 
-            let active = path.is_some_and(|path| path == collection_path);
-            let href = format!("/collection/{collection_path}");
+            let active = site_path.is_some_and(|site_path| *site_path == collection.site_path);
+            let href = format!("/collection/{}", collection.site_path.normalized());
             let node = tree_node(
                 active,
                 &collection.errors,
                 &href,
                 &collection_icon,
-                collection.slug(),
+                collection.slug_unchecked(),
                 collection.title.as_deref(),
                 translations,
                 &collection_visibility
             );
 
-            if !active && path.is_some_and(|path|
-                path
-                    .strip_prefix(&collection.path)
-                    .is_some_and(|rest| rest.starts_with('/'))
-            ) {
-                let label = collection.title.as_deref().unwrap_or_else(|| collection.slug());
+            if !active && site_path.is_some_and(|site_path| site_path.starts_with(&collection.site_path)) {
+                let label = collection.title.as_deref().unwrap_or_else(|| collection.slug_unchecked());
                 let e_label = html_escape_outside_attribute(label);
                 breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
             }
@@ -122,7 +117,7 @@ fn collection_tree(
             let collection_content = collection_tree(
                 breadcrumbs,
                 collection,
-                path,
+                site_path,
                 translations,
                 tree_view_order,
             );
@@ -140,29 +135,23 @@ fn collection_tree(
     let playlists = collection.playlists_in_tree_view_order(tree_view_order)
         .iter()
         .map(|playlist| {
-            let playlist_path = &playlist.path;
-
             let playlist_visibility = Visibility::from_playlist(playlist);
 
-            let active = path.is_some_and(|path| path == playlist_path);
-            let href = format!("/playlist/{playlist_path}");
+            let active = site_path.is_some_and(|site_path| *site_path == playlist.site_path);
+            let href = format!("/playlist/{}", playlist.site_path.normalized());
             let node = tree_node(
                 active,
                 &playlist.errors,
                 &href,
                 &playlist_icon,
-                playlist.slug(),
+                playlist.slug_unchecked(),
                 playlist.title.as_deref(),
                 translations,
                 &playlist_visibility
             );
 
-            if !active && path.is_some_and(|path|
-                path
-                    .strip_prefix(&playlist.path)
-                    .is_some_and(|rest| rest.starts_with('/'))
-            ) {
-                let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
+            if !active && site_path.is_some_and(|site_path| site_path.starts_with(&playlist.site_path)) {
+                let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug_unchecked());
                 let e_label = html_escape_outside_attribute(label);
                 breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
             }
@@ -173,18 +162,16 @@ fn collection_tree(
                 let lis = playlist.videos_in_tree_view_order(tree_view_order)
                     .iter()
                     .map(|video| {
-                        let video_path = &video.path;
-
                         let video_visibility = Visibility::from_video(video);
 
-                        let active = path.is_some_and(|path| path == video_path);
-                        let href = format!("/video/{video_path}");
+                        let active = site_path.is_some_and(|site_path| *site_path == video.site_path);
+                        let href = format!("/video/{}", video.site_path.normalized());
                         let node = tree_node(
                             active,
                             &video.errors,
                             &href,
                             &video_icon,
-                            video.slug(),
+                            video.slug_unchecked(),
                             video.title.as_deref(),
                             translations,
                             &video_visibility
@@ -219,18 +206,16 @@ fn collection_tree(
     let videos = collection.videos_in_tree_view_order(tree_view_order)
         .iter()
         .map(|video| {
-            let video_path = &video.path;
-
             let video_visibility = Visibility::from_video(video);
 
-            let active = path.is_some_and(|path| path == video_path);
-            let href = format!("/video/{video_path}");
+            let active = site_path.is_some_and(|site_path| *site_path == video.site_path);
+            let href = format!("/video/{}", video.site_path.normalized());
             let node = tree_node(
                 active,
                 &video.errors,
                 &href,
                 &video_icon,
-                video.slug(),
+                video.slug_unchecked(),
                 video.title.as_deref(),
                 translations,
                 &video_visibility
@@ -256,14 +241,14 @@ fn collection_tree(
 
 pub fn tree_view(
     context: &Context,
-    path: Option<&str>,
     site: &Site,
     site_dir: &Path,
+    site_path: Option<&SitePath>,
     translations: &Translations
 ) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
-    let root_active = path.is_some_and(|path| path.is_empty());
+    let root_active = site_path.is_some_and(|site_path| site_path.is_root_path());
     let root_dir = site_dir.file_name().unwrap().to_string_lossy();
     let site_dir = &site_dir.to_string_lossy();
 
@@ -271,7 +256,7 @@ pub fn tree_view(
         SiteContent::Collection(collection) => {
             let t_collection = translations.collection;
 
-            if path.is_some() && !root_active {
+            if site_path.is_some() && !root_active {
                 let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 breadcrumbs.push(format!(r#"<a href="/collection/">{e_breadcrumb_title}</a>"#));
@@ -282,7 +267,7 @@ pub fn tree_view(
             let collection_content = collection_tree(
                 &mut breadcrumbs,
                 collection,
-                path,
+                site_path,
                 translations,
                 &tree_view_order,
             );
@@ -312,7 +297,7 @@ pub fn tree_view(
             // TODO: Dedicated icon for empty site?
             let collection_icon = icons::collection(t_empty_site);
 
-            if path.is_some() {
+            if site_path.is_some() {
                 breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
             }
 
@@ -330,7 +315,7 @@ pub fn tree_view(
         SiteContent::Playlist(playlist) => {
             let t_playlist = translations.playlist;
 
-            if path.is_some() && !root_active {
+            if site_path.is_some() && !root_active {
                 let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 breadcrumbs.push(format!(r#"<a href="/playlist/">{e_breadcrumb_title}</a>"#));
@@ -347,11 +332,8 @@ pub fn tree_view(
                 playlist.videos_in_tree_view_order(&tree_view_order)
                     .iter()
                     .map(|video| {
-                        let video_path = &video.path;
-
-                        let active = path.is_some_and(|path| path == video_path);
-                        let href = format!("/video/{video_path}");
-                        let slug = video.slug();
+                        let active = site_path.is_some_and(|site_path| *site_path == video.site_path);
+                        let href = format!("/video/{}", video.site_path.normalized());
 
                         let video_visibility = Visibility::from_video(video);
 
@@ -360,7 +342,7 @@ pub fn tree_view(
                             &video.errors,
                             &href,
                             &video_icon,
-                            slug,
+                            video.slug_unchecked(),
                             video.title.as_deref(),
                             translations,
                             &video_visibility
@@ -398,7 +380,7 @@ pub fn tree_view(
         SiteContent::Video(video) => {
             let t_video = translations.video;
 
-            if path.is_some() {
+            if site_path.is_some() {
                 let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
                 let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
                 breadcrumbs.push(format!(r#"<a href="/video/">{e_breadcrumb_title}</a>"#));
@@ -439,7 +421,7 @@ fn tree_node(
     errors: &[String],
     href: &str,
     icon: &str,
-    slug: &str,
+    slug_or_path: &str,
     title_option: Option<&str>,
     translations: &Translations,
     visibility: &Visibility
@@ -482,7 +464,7 @@ fn tree_node(
         format!("{} {e_title}", badges.join(" "))
     };
 
-    let depth = if href.ends_with('/') { 0 } else { href.split('/').count() - 2 };
+    let depth = if href == "/" { 0 } else { href.split('/').count() - 3 };
     let padding_left_rem = 0.4 + depth as f32 * 1.4;
     let padding_left = format!("{}rem", padding_left_rem);
 
@@ -493,7 +475,7 @@ fn tree_node(
             </div>
             <div class="labels">
                 <div class="title">{title_with_visibility_badges}</div>
-                <div class="path">{slug}</div>
+                <div class="path">{slug_or_path}</div>
             </div>
         </a>
     "#)

@@ -33,10 +33,7 @@ pub fn download_html(
     let translations = &site.language.translations;
 
     let t_download = translations.download;
-    let video_title = match &video.title {
-        Some(title) => title,
-        None => if video.path.is_empty() { "Video" } else { video.slug() }
-    };
+    let video_title = video.title_or_slug_or_generic_label(translations);
     let title = format!("{t_download} – {video_title}");
     let e_title = html_escape_outside_attribute(&title);
 
@@ -68,8 +65,8 @@ pub fn download_html(
             let height = video_meta.height;
             let width = video_meta.width;
 
-            let slug = video.slug_opt().unwrap_or("video");
-            let download_name = Path::new(file_name).with_file_name(format!("{slug}_{width}x{height}")).to_string_lossy().to_string();
+            let download_slug = video.slug().unwrap_or("video");
+            let download_name = Path::new(file_name).with_file_name(format!("{download_slug}_{width}x{height}")).to_string_lossy().to_string();
 
             let format_label = format!("{width}×{height}");
             let vertical_resolution_label = format!("{height}p");
@@ -140,7 +137,10 @@ pub fn download_html(
     );
 
     let t_download_permalink = translations.download_permalink;
-    let download_dir = context.build_dir.join(&video.path).join(t_download_permalink);
+    let download_dir = context.build_dir
+        .join(video.site_path.filesystem_relative())
+        .join(t_download_permalink);
+
     fs::create_dir_all(&download_dir).unwrap();
     let index_path = download_dir.join("index.html");
     fs::write(index_path, html).unwrap();

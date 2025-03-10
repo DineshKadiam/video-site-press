@@ -3,9 +3,7 @@
 
 use std::cmp::{self, Ordering};
 use std::fs;
-use std::iter::Peekable;
 use std::path::Path;
-use std::str::Split;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
@@ -24,6 +22,7 @@ use crate::{
     Playlist,
     PlaylistUpdate,
     Site,
+    SitePath,
     Translations,
     TreeViewOrder,
     Video,
@@ -62,10 +61,9 @@ pub struct Collection {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
-    /// Path in site tree. "" for a root collection, otherwise "foo", "foo/bar", etc.
-    pub path: String,
     platform_integration: Option<PlatformIntegration>,
     pub playlists: Vec<Arc<Playlist>>,
+    pub site_path: SitePath,
     pub subcollections: Vec<Arc<Collection>>,
     pub title: Option<String>,
     unlisted: bool,
@@ -134,8 +132,8 @@ impl Collection {
                                 let assets = context.cache.lock().unwrap().fetch_poster_assets(
                                     &file_meta,
                                     &file_name,
-                                    &self.path,
-                                    0.0 // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                    0.0, // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                    &self.site_path
                                 );
 
                                 let banner = Banner::new(assets, description, file_meta, file_name);
@@ -437,7 +435,7 @@ impl Collection {
             (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(b.slug())
+            (None, None) => a.slug().cmp(&b.slug())
         }
     }
 
@@ -447,7 +445,7 @@ impl Collection {
             (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(a.slug())
+            (None, None) => b.slug().cmp(&a.slug())
         }
     }
 
@@ -485,24 +483,22 @@ impl Collection {
     pub fn delete_collection(
         &mut self,
         context: &Context,
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> bool {
-        if let Some(slug) = path_parts.next() {
-            if path_parts.peek().is_none() {
-                if let Some(subcollection) = self.subcollections
-                    .iter()
-                    .position(|subcollection| subcollection.slug() == slug)
-                    .map(|index| self.subcollections.swap_remove(index)) {
-                    subcollection.unpersist(context);
-                    return true;
-                }
-            } else if let Some(subcollection) = self.subcollections.iter_mut().find(|subcollection| subcollection.slug() == slug) {
-                let mut subcollection_mut = (**subcollection).clone();
+        if let Some(subcollection) = self.subcollections
+            .iter()
+            .position(|subcollection| subcollection.site_path == *site_path)
+            .map(|index| self.subcollections.swap_remove(index)) {
+            subcollection.unpersist(context);
+            return true;
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
 
-                if subcollection_mut.delete_collection(context, path_parts) {
-                    *subcollection = Arc::new(subcollection_mut);
-                    return true;
-                }
+            if subcollection_mut.delete_collection(context, site_path) {
+                *subcollection = Arc::new(subcollection_mut);
+                return true;
             }
         }
 
@@ -512,70 +508,66 @@ impl Collection {
     pub fn delete_playlist(
         &mut self,
         context: &Context,
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> bool {
-        if let Some(slug) = path_parts.next() {
-            if let Some(playlist) = self.playlists
-                .iter()
-                .position(|playlist| playlist.slug() == slug)
-                .map(|index| self.playlists.swap_remove(index)) {
-                playlist.unpersist(context);
-                return true;
-            } else if let Some(subcollection) = self.subcollections
-                .iter_mut()
-                .find(|subcollection| subcollection.slug() == slug) {
-                let mut subcollection_mut = (**subcollection).clone();
+        if let Some(playlist) = self.playlists
+            .iter()
+            .position(|playlist| playlist.site_path == *site_path)
+            .map(|index| self.playlists.swap_remove(index)) {
+            playlist.unpersist(context);
+            return true;
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
 
-                if subcollection_mut.delete_playlist(context, path_parts) {
-                    *subcollection = Arc::new(subcollection_mut);
-                    return true;
-                }
+            if subcollection_mut.delete_playlist(context, site_path) {
+                *subcollection = Arc::new(subcollection_mut);
+                return true;
             }
         }
 
         false
     }
 
-    /// Deletes the video at path (if found) and in case of success returns
+    /// Deletes the video at site path (if found) and in case of success returns
     /// its deeper parent (subcollection or playlist or None if it was a
     /// direct child of this collection).
     pub fn delete_video(
         &mut self,
         context: &Context,
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> Result<Option<VideoParent>, ()> {
-        if let Some(slug) = path_parts.next() {
-            if let Some(video) = self.videos
-                .iter()
-                .position(|video| video.slug() == slug)
-                .map(|index| self.videos.swap_remove(index)) {
-                video.unpersist(context);
-                return Ok(None);
-            } else if let Some(playlist) = self.playlists
-                .iter_mut()
-                .find(|playlist| playlist.slug() == slug) {
-                let mut playlist_mut = (**playlist).clone();
+        if let Some(video) = self.videos
+            .iter()
+            .position(|video| video.site_path == *site_path)
+            .map(|index| self.videos.swap_remove(index)) {
+            video.unpersist(context);
+            return Ok(None);
+        } else if let Some(playlist) = self.playlists
+            .iter_mut()
+            .find(|playlist| site_path.starts_with(&playlist.site_path)) {
+            let mut playlist_mut = (**playlist).clone();
 
-                if playlist_mut.delete_video(context, path_parts) {
-                    *playlist = Arc::new(playlist_mut);
-                    return Ok(Some(VideoParent::Playlist(Arc::clone(playlist))));
-                }
-            } else if let Some(subcollection) = self.subcollections
-                .iter_mut()
-                .find(|subcollection| subcollection.slug() == slug) {
-                let mut subcollection_mut = (**subcollection).clone();
+            if playlist_mut.delete_video(context, site_path) {
+                *playlist = Arc::new(playlist_mut);
+                return Ok(Some(VideoParent::Playlist(Arc::clone(playlist))));
+            }
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
 
-                if let Ok(video_parent) = subcollection_mut.delete_video(context, path_parts) {
-                    match video_parent {
-                        Some(video_parent) => {
-                            *subcollection = Arc::new(subcollection_mut);
-                            return Ok(Some(video_parent));
-                        }
-                        None => {
-                            let subcollection_new = Arc::new(subcollection_mut);
-                            *subcollection = Arc::clone(&subcollection_new);
-                            return Ok(Some(VideoParent::Collection(subcollection_new)))
-                        }
+            if let Ok(video_parent) = subcollection_mut.delete_video(context, site_path) {
+                match video_parent {
+                    Some(video_parent) => {
+                        *subcollection = Arc::new(subcollection_mut);
+                        return Ok(Some(video_parent));
+                    }
+                    None => {
+                        let subcollection_new = Arc::new(subcollection_mut);
+                        *subcollection = Arc::clone(&subcollection_new);
+                        return Ok(Some(VideoParent::Collection(subcollection_new)))
                     }
                 }
             }
@@ -644,30 +636,26 @@ impl Collection {
         self.published_subcollections().any(|subcollection| subcollection.embeds_requested())
     }
 
-    /// Returns a collection, playlist or video at the given path.
-    pub fn get_any(&self, path: &str) -> GetAnyResult {
+    /// Returns a collection, playlist or video at the given site path.
+    pub fn get_any(&self, site_path: &SitePath) -> GetAnyResult {
         for subcollection in &self.subcollections {
-            if subcollection.path == path {
+            if subcollection.site_path == *site_path {
                 return GetAnyResult::Collection(Arc::clone(subcollection));
-            } else if path
-                .strip_prefix(&subcollection.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
-                return subcollection.get_any(path);
+            } else if site_path.starts_with(&subcollection.site_path) {
+                return subcollection.get_any(site_path);
             }
         }
 
         for playlist in &self.playlists {
-            if playlist.path == path {
+            if playlist.site_path == *site_path {
                 return GetAnyResult::Playlist(Arc::clone(playlist));
-            } else if path
-                .strip_prefix(&playlist.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
-                return playlist.get_any(path);
+            } else if site_path.starts_with(&playlist.site_path) {
+                return playlist.get_any(site_path);
             }
         }
 
         for video in &self.videos {
-            if video.path == path {
+            if video.site_path == *site_path {
                 return GetAnyResult::Video(Arc::clone(video));
             }
         }
@@ -675,74 +663,57 @@ impl Collection {
         GetAnyResult::None
     }
 
-    /// Returns the collection at the given path.
-    pub fn get_collection(&self, path: &str) -> Option<Arc<Collection>> {
+    /// Returns the collection at the given site path.
+    pub fn get_collection(&self, site_path: &SitePath) -> Option<Arc<Collection>> {
         for subcollection in &self.subcollections {
-            if subcollection.path == path {
+            if subcollection.site_path == *site_path {
                 return Some(Arc::clone(subcollection));
-            } else if path
-                .strip_prefix(&subcollection.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
-                return subcollection.get_collection(path);
+            } else if site_path.starts_with(&subcollection.site_path) {
+                return subcollection.get_collection(site_path);
             }
         }
 
         None
     }
 
-    /// Returns the playlist at the given path.
-    pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
+    /// Returns the playlist at the given site path.
+    pub fn get_playlist(&self, site_path: &SitePath) -> Option<Arc<Playlist>> {
         for playlist in &self.playlists {
-            if playlist.path == path {
+            if playlist.site_path == *site_path {
                 return Some(Arc::clone(playlist));
             }
         }
 
         for subcollection in &self.subcollections {
-            if path
-                .strip_prefix(&subcollection.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
-                return subcollection.get_playlist(path);
+            if site_path.starts_with(&subcollection.site_path) {
+                return subcollection.get_playlist(site_path);
             }
         }
 
         None
     }
 
-    /// Returns the video at the given path.
-    pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
+    /// Returns the video at the given site path.
+    pub fn get_video(&self, site_path: &SitePath) -> Option<Arc<Video>> {
         for video in &self.videos {
-            if video.path == path {
+            if video.site_path == *site_path {
                 return Some(Arc::clone(video));
             }
         }
 
         for playlist in &self.playlists {
-            if path
-                .strip_prefix(&playlist.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
-                return playlist.get_video(path);
+            if site_path.starts_with(&playlist.site_path) {
+                return playlist.get_video(site_path);
             }
         }
 
         for subcollection in &self.subcollections {
-            if path
-                .strip_prefix(&subcollection.path)
-                .is_some_and(|rest| rest.starts_with('/')) {
-                return subcollection.get_video(path);
+            if site_path.starts_with(&subcollection.site_path) {
+                return subcollection.get_video(site_path);
             }
         }
 
         None
-    }
-
-    pub fn label(&self, translations: &Translations) -> &str {
-        self.title
-            .as_deref()
-            .unwrap_or_else(||
-                self.slug_opt()
-                    .unwrap_or(translations.collection)
-            )
     }
 
     pub fn latest_release_date(&self) -> Option<NaiveDate> {
@@ -791,7 +762,7 @@ impl Collection {
             .unwrap()
     }
 
-    pub fn new(path: String, inherited_options: InheritedOptions) -> Collection {
+    pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Collection {
         Collection {
             banner: None,
             copy_link: None,
@@ -802,9 +773,9 @@ impl Collection {
             links: Vec::new(),
             inherited_options,
             offline: false,
-            path,
             platform_integration: None,
             playlists: Vec::new(),
+            site_path,
             subcollections: Vec::new(),
             title: None,
             unlisted: false,
@@ -834,12 +805,9 @@ impl Collection {
         self.offline = enabled;
     }
 
-    // Calling this on a root node returns its own path instead
-    pub fn parent_path_unchecked(&self) -> &str {
-        match self.path.rsplit_once('/') {
-            Some((parent_path, _)) => parent_path,
-            None => ""
-        }
+    // Calling this on a root node returns the same site path again
+    pub fn parent_site_path_unchecked(&self) -> SitePath {
+        self.site_path.parent_site_path_unchecked()
     }
 
     /// Get the platform_integration setting resolved in the context of the site tree
@@ -963,7 +931,8 @@ impl Collection {
         inherited_options: InheritedOptions,
         site: &Site
     ) -> Arc<Collection> {
-        let mut collection = Collection::new(hyper_dir.site_path(context), inherited_options);
+        let site_path = hyper_dir.site_path(context);
+        let mut collection = Collection::new(inherited_options, site_path);
 
         if let Some(manifest) = &hyper_dir.collection_manifest {
             collection.apply_manifest(context, manifest);
@@ -985,8 +954,8 @@ impl Collection {
             let assets = context.cache.lock().unwrap().fetch_poster_assets(
                 &file_meta,
                 &file_name,
-                &collection.path,
-                0.0
+                0.0,
+                &collection.site_path
             );
 
             let banner = Banner::new(assets, None, file_meta, file_name);
@@ -1051,16 +1020,12 @@ impl Collection {
         }
     }
 
-    pub fn slug(&self) -> &str {
-        self.path.split('/').last().unwrap()
+    pub fn slug(&self) -> Option<&str> {
+        self.site_path.last_component()
     }
 
-    pub fn slug_opt(&self) -> Option<&str> {
-        if self.path.is_empty() {
-            None
-        } else {
-            self.path.split('/').last()
-        }
+    pub fn slug_unchecked(&self) -> &str {
+        self.site_path.last_component_unchecked()
     }
 
     pub fn subcollections_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Collection>> {
@@ -1074,6 +1039,13 @@ impl Collection {
         }
 
         subcollections
+    }
+
+    pub fn title_or_slug_or_generic_label(&self, translations: &Translations) -> &str {
+        match &self.title {
+            Some(title) => title,
+            None => self.slug().unwrap_or(translations.collection)
+        }
     }
 
     /// Get the unlisted setting resolved in the context of the site tree
@@ -1098,7 +1070,7 @@ impl Collection {
     }
 
     pub fn unpersist(&self, context: &Context) {
-        if self.path.is_empty() {
+        if self.site_path.is_root_path() {
             let manifest_path = context.site_dir.join("collection.eno");
             let _ = fs::remove_file(&manifest_path);
 
@@ -1108,21 +1080,21 @@ impl Collection {
             }
 
             for playlist in &self.playlists {
-                let playlist_path = context.site_dir.join(playlist.slug());
+                let playlist_path = context.site_dir.join(playlist.slug_unchecked());
                 let _ = checked_remove_dir_all(context, &playlist_path);
             }
 
             for subcollection in &self.subcollections {
-                let subcollection_path = context.site_dir.join(subcollection.slug());
+                let subcollection_path = context.site_dir.join(subcollection.slug_unchecked());
                 let _ = checked_remove_dir_all(context, &subcollection_path);
             }
 
             for video in &self.videos {
-                let video_path = context.site_dir.join(video.slug());
+                let video_path = context.site_dir.join(video.slug_unchecked());
                 let _ = checked_remove_dir_all(context, &video_path);
             }
         } else {
-            let collection_dir = context.site_dir.join(&self.path);
+            let collection_dir = context.site_dir.join(self.site_path.filesystem_relative());
             let _ = checked_remove_dir_all(context, &collection_dir);
         }
     }
@@ -1130,132 +1102,129 @@ impl Collection {
     pub fn update_collection<T>(
         &mut self,
         mutation: impl FnOnce(&mut Collection) -> T,
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> CollectionUpdate<T> {
-        if let Some(slug) = path_parts.next() {
-            if path_parts.peek().is_some() {
-                if let Some(subcollection) = self.subcollections
-                    .iter_mut()
-                    .find(|subcollection| subcollection.slug() == slug) {
-                    let mut subcollection_mut = (**subcollection).clone();
+        if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| subcollection.site_path == *site_path) {
+            let mut subcollection_mut = (**subcollection).clone();
 
-                    let result = subcollection_mut.update_collection(mutation, path_parts);
+            let result = subcollection_mut.update_collection(mutation, site_path);
 
-                    if let CollectionUpdate::Updated { .. } = result {
-                        *subcollection = Arc::new(subcollection_mut);
-                        return result;
-                    }
-                }
-            } else if let Some(subcollection) = self.subcollections
-                .iter_mut()
-                .find(|subcollection| subcollection.slug() == slug) {
-                let mut subcollection_mut = (**subcollection).clone();
-                let optional_return_value = mutation(&mut subcollection_mut);
+            if let CollectionUpdate::Updated { .. } = result {
                 *subcollection = Arc::new(subcollection_mut);
-
-                return CollectionUpdate::Updated {
-                    collection_updated: Arc::clone(subcollection),
-                    optional_return_value
-                };
+                return result;
             }
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
+            let optional_return_value = mutation(&mut subcollection_mut);
+            *subcollection = Arc::new(subcollection_mut);
+
+            return CollectionUpdate::Updated {
+                collection_updated: Arc::clone(subcollection),
+                optional_return_value
+            };
         }
 
         CollectionUpdate::NotFound
     }
 
-    /// Intended to be called with at least one remaining path part to consume,
-    /// otherwise will panic.
-    pub fn update_from_filesystem(
+    /// The site path to be updated is intended to be that of a descendant of
+    /// the collection, never the collection itself!
+    pub fn update_descendant_from_filesystem(
         &mut self,
         context: &Context,
-        mut path_parts: Peekable<Split<char>>,
-        site: &Site
+        site: &Site,
+        site_path: &SitePath
     ) {
-        let slug = path_parts.next().unwrap();
+        if site_path.is_direct_descendant_of(&self.site_path) {
+            // If we presently have a video, playlist or collection registered
+            // at the given site path, we remove it.
+            if let Some(index) = self.videos
+                .iter()
+                .position(|video| video.site_path == *site_path) {
+                self.videos.swap_remove(index);
+            } else if let Some(index) = self.playlists
+                .iter()
+                .position(|playlist| playlist.site_path == *site_path) {
+                self.playlists.swap_remove(index);
+            } else if let Some(index) = self.subcollections
+                .iter()
+                .position(|subcollection| subcollection.site_path == *site_path) {
+                self.subcollections.swap_remove(index);
+            }
 
-        if path_parts.peek().is_some() {
+            // Add the new leaf (respectively, replace what was removed)
+            let subdir = context.site_dir.join(site_path.filesystem_relative());
+            let hyper_subdir = HyperDir::read(&subdir);
+            self.read_subdir(context, &hyper_subdir, site);
+        } else {
             // Here we know the update occured "deeper down", so we
             // (mostly) just clone the tree nodes at this level and
             // delegate actual reads/updates to the lower leaves of the tree.
 
             if let Some(index) = self.videos
                 .iter()
-                .position(|video| video.slug() == slug) {
+                .position(|video| site_path.starts_with(&video.site_path)) {
                 // A video isn't allowed to have subfolders, so this is a bit of an odd case,
                 // so we just remove and replace it with whatever happened down this branch.
                 self.videos.swap_remove(index);
-                let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
+                let closest_descendant = self.site_path.closest_descendant_to_unchecked(site_path);
+                let hyper_subdir = HyperDir::read(&context.site_dir.join(closest_descendant.filesystem_relative()));
                 self.read_subdir(context, &hyper_subdir, site);
             } else if let Some(playlist) = self.playlists
                 .iter_mut()
-                .find(|playlist| playlist.slug() == slug) {
+                .find(|playlist| site_path.starts_with(&playlist.site_path)) {
                 let mut playlist_mut = (**playlist).clone();
-                playlist_mut.update_from_filesystem(context, path_parts, site);
+                playlist_mut.update_descendant_from_filesystem(context, site, site_path);
                 *playlist = Arc::new(playlist_mut);
             } else if let Some(subcollection) = self.subcollections
                 .iter_mut()
-                .find(|subcollection| subcollection.slug() == slug) {
+                .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
                 let mut subcollection_mut = (**subcollection).clone();
-                subcollection_mut.update_from_filesystem(context, path_parts, site);
+                subcollection_mut.update_descendant_from_filesystem(context, site, site_path);
                 *subcollection = Arc::new(subcollection_mut);
             } else {
                 // Here a sub-subdir needs to be updated (e.g. a video in a
                 // collection within this collection) that we haven't
                 // even yet registered as subdir, so we read the entire
                 // subtree.
-                let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
+
+                let closest_descendant = self.site_path.closest_descendant_to_unchecked(site_path);
+                let hyper_subdir = HyperDir::read(&context.site_dir.join(closest_descendant.filesystem_relative()));
                 self.read_subdir(context, &hyper_subdir, site);
             }
-        } else {
-            // If we presently have a video, playlist or collection registered at the given path, we remove it.
-            if let Some(index) = self.videos
-                .iter()
-                .position(|video| video.slug() == slug) {
-                self.videos.swap_remove(index);
-            } else if let Some(index) = self.playlists
-                .iter()
-                .position(|playlist| playlist.slug() == slug) {
-                self.playlists.swap_remove(index);
-            } else if let Some(index) = self.subcollections
-                .iter()
-                .position(|subcollection| subcollection.slug() == slug) {
-                self.subcollections.swap_remove(index);
-            }
-
-            // Add the new leaf (respectively, replace what was removed)
-            let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-            self.read_subdir(context, &hyper_subdir, site);
         }
     }
 
     pub fn update_playlist<T>(
         &mut self,
         mutation: impl FnOnce(&mut Playlist) -> T,
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> PlaylistUpdate<T> {
-        if let Some(slug) = path_parts.next() {
-            if let Some(playlist) = self.playlists
-                .iter_mut()
-                .find(|playlist| playlist.slug() == slug) {
-                let mut playlist_mut = (**playlist).clone();
-                let optional_return_value = mutation(&mut playlist_mut);
-                *playlist = Arc::new(playlist_mut);
+        if let Some(playlist) = self.playlists
+            .iter_mut()
+            .find(|playlist| playlist.site_path == *site_path) {
+            let mut playlist_mut = (**playlist).clone();
+            let optional_return_value = mutation(&mut playlist_mut);
+            *playlist = Arc::new(playlist_mut);
 
-                return PlaylistUpdate::Updated {
-                    optional_return_value,
-                    playlist_updated: Arc::clone(playlist)
-                };
-            } else if let Some(subcollection) = self.subcollections
-                .iter_mut()
-                .find(|subcollection| subcollection.slug() == slug) {
-                let mut subcollection_mut = (**subcollection).clone();
+            return PlaylistUpdate::Updated {
+                optional_return_value,
+                playlist_updated: Arc::clone(playlist)
+            };
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
 
-                let result = subcollection_mut.update_playlist(mutation, path_parts);
+            let result = subcollection_mut.update_playlist(mutation, site_path);
 
-                if let PlaylistUpdate::Updated { .. } = result {
-                    *subcollection = Arc::new(subcollection_mut);
-                    return result;
-                }
+            if let PlaylistUpdate::Updated { .. } = result {
+                *subcollection = Arc::new(subcollection_mut);
+                return result;
             }
         }
 
@@ -1265,34 +1234,32 @@ impl Collection {
     pub fn update_video(
         &mut self,
         mutation: impl FnOnce(&mut Video),
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> Result<Arc<Video>, ()> {
-        if let Some(slug) = path_parts.next() {
-            if let Some(video) = self.videos
-                .iter_mut()
-                .find(|video| video.slug() == slug) {
-                let mut video_mut = (**video).clone();
-                mutation(&mut video_mut);
-                *video = Arc::new(video_mut);
-                return Ok(Arc::clone(video));
-            } else if let Some(playlist) = self.playlists
-                .iter_mut()
-                .find(|playlist| playlist.slug() == slug) {
-                let mut playlist_mut = (**playlist).clone();
+        if let Some(video) = self.videos
+            .iter_mut()
+            .find(|video| video.site_path == *site_path) {
+            let mut video_mut = (**video).clone();
+            mutation(&mut video_mut);
+            *video = Arc::new(video_mut);
+            return Ok(Arc::clone(video));
+        } else if let Some(playlist) = self.playlists
+            .iter_mut()
+            .find(|playlist| site_path.starts_with(&playlist.site_path)) {
+            let mut playlist_mut = (**playlist).clone();
 
-                if let Ok(video) = playlist_mut.update_video(mutation, path_parts) {
-                    *playlist = Arc::new(playlist_mut);
-                    return Ok(video);
-                }
-            } else if let Some(subcollection) = self.subcollections
-                .iter_mut()
-                .find(|subcollection| subcollection.slug() == slug) {
-                let mut subcollection_mut = (**subcollection).clone();
+            if let Ok(video) = playlist_mut.update_video(mutation, site_path) {
+                *playlist = Arc::new(playlist_mut);
+                return Ok(video);
+            }
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
 
-                if let Ok(video) = subcollection_mut.update_video(mutation, path_parts) {
-                    *subcollection = Arc::new(subcollection_mut);
-                    return Ok(video);
-                }
+            if let Ok(video) = subcollection_mut.update_video(mutation, site_path) {
+                *subcollection = Arc::new(subcollection_mut);
+                return Ok(video);
             }
         }
 
@@ -1366,7 +1333,10 @@ impl Collection {
             eno.push_str(&format!("-- description\n{}\n-- description\n", description));
         }
 
-        let path = context.site_dir.join(&self.path).join("collection.eno");
+        let path = context.site_dir
+            .join(self.site_path.filesystem_relative())
+            .join("collection.eno");
+
         fs::write(path, eno).unwrap();
     }
 }

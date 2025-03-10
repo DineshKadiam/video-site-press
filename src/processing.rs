@@ -152,11 +152,26 @@ impl Job {
 impl JobKind {
     pub fn representation(&self, translations: &Translations) -> String {
         match self {
-            JobKind::CollectionFastTasks(collection) => format!("Compute banner for collection '{}'", collection.label(translations)),
-            JobKind::PlaylistFastTasks(playlist) => format!("Compute banner for playlist '{}'", playlist.label(translations)),
-            JobKind::VideoFastTasks { video, .. } => format!("Compute metadata and/or poster for video '{}'", video.label(translations)),
-            JobKind::VideoFormat { video, .. } => format!("Compute additional format for video '{}'", video.label(translations)),
-            JobKind::VideoRandomPoster { video, .. } => format!("Compute random poster for video '{}'", video.label(translations))
+            JobKind::CollectionFastTasks(collection) => {
+                let label = collection.title_or_slug_or_generic_label(translations);
+                format!("Compute banner for collection '{label}'")
+            }
+            JobKind::PlaylistFastTasks(playlist) => {
+                let label = playlist.title_or_slug_or_generic_label(translations);
+                format!("Compute banner for playlist '{label}'")
+            }
+            JobKind::VideoFastTasks { video, .. } => {
+                let label = video.title_or_slug_or_generic_label(translations);
+                format!("Compute metadata and/or poster for video '{label}'")
+            }
+            JobKind::VideoFormat { video, .. } => {
+                let label = video.title_or_slug_or_generic_label(translations);
+                format!("Compute additional format for video '{label}'")
+            }
+            JobKind::VideoRandomPoster { video, .. } => {
+                let label = video.title_or_slug_or_generic_label(translations);
+                format!("Compute random poster for video '{label}'")
+            }
         }
     }
 }
@@ -165,26 +180,26 @@ impl PartialEq for JobKind {
     fn eq(&self, other: &JobKind) -> bool {
         match self {
             JobKind::CollectionFastTasks(collection) => match other {
-                JobKind::CollectionFastTasks(other_collection) => collection.path == other_collection.path,
+                JobKind::CollectionFastTasks(other_collection) => collection.site_path == other_collection.site_path,
                 _ => false
             }
             JobKind::PlaylistFastTasks(playlist) => match other {
-                JobKind::PlaylistFastTasks(other_playlist) => playlist.path == other_playlist.path,
+                JobKind::PlaylistFastTasks(other_playlist) => playlist.site_path == other_playlist.site_path,
                 _ => false
             }
             JobKind::VideoFastTasks { poster_aspect, video } => match other {
                 JobKind::VideoFastTasks { poster_aspect: other_poster_aspect, video: other_video } => {
-                    video.path == other_video.path && poster_aspect == other_poster_aspect
+                    video.site_path == other_video.site_path && poster_aspect == other_poster_aspect
                 }
                 _ => false
             }
             JobKind::VideoFormat { format, video } => match other {
                 JobKind::VideoFormat { format: other_format, video: other_video } =>
-                    video.path == other_video.path && format == other_format,
+                    video.site_path == other_video.site_path && format == other_format,
                 _ => false
             }
             JobKind::VideoRandomPoster { video, .. } => match other {
-                JobKind::VideoRandomPoster { video: other_video, .. } => video.path == other_video.path,
+                JobKind::VideoRandomPoster { video: other_video, .. } => video.site_path == other_video.site_path,
                 _ => false
             }
         }

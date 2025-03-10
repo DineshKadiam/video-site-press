@@ -14,10 +14,10 @@ use futures_util::TryStreamExt as _;
 
 use crate::{
     Context,
-    ContextPath,
     FileMeta,
     JobKind,
     PosterFile,
+    SitePath,
     Video
 };
 use crate::editor::widgets::not_found;
@@ -29,7 +29,7 @@ use super::VideoFormFeedback;
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
     let language = context.get_editor_language();
 
@@ -37,7 +37,7 @@ pub async fn upload_poster(
         if let Some(content_disposition) = field.content_disposition() {
             if let Some(filename) = content_disposition.get_filename() {
                 if !supported_image_extension(filename) {
-                    match context.get_video(&path.path) {
+                    match context.get_video(&site_path) {
                         Some(video) => {
                             let error = format!("Unsupported file extension in {filename}");
                             let form_feedback = VideoFormFeedback::UploadPoster { error };
@@ -45,7 +45,7 @@ pub async fn upload_poster(
                             return Ok(Either::Right(http_response))
                         }
                         None => {
-                            let http_response = not_found(&context, &language, &path.path);
+                            let http_response = not_found(&context, &language, &site_path);
                             return Ok(Either::Right(http_response));
                         }
                     }
@@ -53,13 +53,19 @@ pub async fn upload_poster(
 
                 let original_filename = filename.to_string();
 
-                let storage_filename = if !context.site_dir.join(&path.path).join(&original_filename).exists() {
+                let storage_filename = if !context.site_dir
+                    .join(site_path.filesystem_relative())
+                    .join(&original_filename)
+                    .exists() {
                     original_filename
                 } else {
                     format!("{}_{original_filename}", nanoid())
                 };
 
-                let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
+                let storage_path = context.site_dir
+                    .join(site_path.filesystem_relative())
+                    .join(&storage_filename);
+
                 let storage_path_moving = storage_path.clone();
 
                 // File::create is blocking operation, use threadpool
@@ -79,11 +85,11 @@ pub async fn upload_poster(
                     video.write_manifest(&context);
                 };
 
-                let video = match context.update_video(mutation, &path.path) {
+                let video = match context.update_video(mutation, &site_path) {
                     Ok(video) => video,
                     Err(()) => {
                         let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &language, &path.path);
+                        let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
                     }
                 };
@@ -95,7 +101,7 @@ pub async fn upload_poster(
                 };
                 context.push_job_queue(job_kind);
 
-                let redirect_url = format!("/video/{}", path.path);
+                let redirect_url = format!("/video/{}", site_path.normalized());
                 return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
             }
         }

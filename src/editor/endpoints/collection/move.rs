@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use std::path::Path;
 use std::sync::Arc;
 
 use actix_web::{Either, HttpResponse};
@@ -13,8 +12,8 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
-    Field
+    Field,
+    SitePath
 };
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
@@ -30,21 +29,19 @@ pub struct MoveForm {
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<MoveForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
     let slug_trimmed = form.slug.trim();
 
-    let new_path = Path::new(&path.path)
-        .with_file_name(slug_trimmed)
-        .into_os_string()
-        .into_string()
-        .unwrap();
+    let new_path = site_path
+        .parent_site_path_unchecked()
+        .join(slug_trimmed);
 
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    } else if context.site_dir.join(&new_path).exists() {
+    } else if context.site_dir.join(new_path.filesystem_relative()).exists() {
         Some("This permalink is already used by another collection, playlist or video.".to_string())
     } else {
         None
@@ -53,26 +50,26 @@ pub async fn r#move(
     if slug_error.is_none() {
         let mutation = |collection: &mut Collection| {
             fs::rename(
-                context.site_dir.join(&collection.path),
-                context.site_dir.join(&new_path)
+                context.site_dir.join(collection.site_path.filesystem_relative()),
+                context.site_dir.join(new_path.filesystem_relative())
             ).unwrap();
 
-            collection.path = new_path;
+            collection.site_path = new_path;
         };
 
-        match context.update_collection(mutation, &path.path) {
+        match context.update_collection(mutation, &site_path) {
             CollectionUpdate::Updated { collection_updated, .. } => {
-                let redirect_url = format!("/collection/{}", &collection_updated.path);
+                let redirect_url = format!("/collection/{}", collection_updated.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &path.path))
+                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {
-        let collection = match context.get_collection(&path.path) {
+        let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = CollectionFormFeedback::Move {

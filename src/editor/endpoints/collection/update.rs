@@ -11,9 +11,9 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
     Field,
     PlatformIntegration,
+    SitePath,
     VideoOrder
 };
 use crate::editor::widgets::not_found;
@@ -37,7 +37,7 @@ pub struct UpdateForm {
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<UpdateForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
@@ -85,20 +85,20 @@ pub async fn update(
             collection_mut.video_order = video_order;
         };
 
-        match context.update_collection(mutation, &path.path) {
+        match context.update_collection(mutation, &site_path) {
             CollectionUpdate::Updated { collection_updated, .. } => {
                 collection_updated.write_manifest(&context);
-                let redirect_url = format!("/collection/{}", &collection_updated.path);
+                let redirect_url = format!("/collection/{}", &collection_updated.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &path.path))
+                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {
-        let collection = match context.get_collection(&path.path) {
+        let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = CollectionFormFeedback::Update {

@@ -60,17 +60,11 @@ pub fn embed_codes_html(
     let translations = &site.language.translations;
 
     let t_embed = translations.embed;
-    let video_title = match &video.title {
-        Some(title) => title,
-        None => if video.path.is_empty() { "Video" } else { video.slug() }
-    };
+    let video_title = video.title_or_slug_or_generic_label(translations);
     let title = format!("{t_embed} – {video_title}");
     let e_title = html_escape_outside_attribute(&title);
 
-    let embed_url = match video.path.is_empty() {
-        true => site.absolute_url_unchecked("embed"),
-        false => site.absolute_url_unchecked(&format!("{}/embed", video.path))
-    };
+    let embed_url = site.absolute_url_dir_unchecked("embed/", &video.site_path);
 
     let recommended_version = video.recommended_version().unwrap();
     let aspect_ratio = recommended_version.video_meta.as_ref().unwrap().aspect_ratio();
@@ -110,7 +104,10 @@ pub fn embed_codes_html(
     );
 
     let t_embed_codes_permalink = translations.embed_codes_permalink;
-    let embed_code_dir = context.build_dir.join(&video.path).join(t_embed_codes_permalink);
+    let embed_code_dir = context.build_dir
+        .join(video.site_path.filesystem_relative())
+        .join(t_embed_codes_permalink);
+
     fs::create_dir_all(&embed_code_dir).unwrap();
     let index_path = embed_code_dir.join("index.html");
     fs::write(index_path, html).unwrap();

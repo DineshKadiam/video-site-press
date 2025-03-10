@@ -18,13 +18,13 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
     FileMeta,
     GetAnyResult,
     HyperDir,
     JobKind,
     Playlist,
     PlaylistUpdate,
+    SitePath,
     Video,
     VideoFile
 };
@@ -34,15 +34,15 @@ use crate::util::{nanoid, supported_video_extension};
 // TODO: Implementation wise this is very messy, refactoring candidate
 pub async fn upload_video(
     context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>,
-    mut payload: Multipart
+    mut payload: Multipart,
+    site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
     let language = context.get_editor_language();
 
-    let container = context.get_any(&path.path);
+    let container = context.get_any(&site_path);
 
     if let GetAnyResult::None = container {
-        let http_response = not_found(&context, &language, &path.path);
+        let http_response = not_found(&context, &language, &site_path);
         return Ok(Either::Right(http_response));
     }
 
@@ -57,28 +57,28 @@ pub async fn upload_video(
                     let storage_path = match &container {
                         GetAnyResult::Collection(collection) => {
                             let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                            while context.site_dir.join(&collection.path).join(&candidate_dir_name).exists() {
+                            while context.site_dir.join(collection.site_path.filesystem_relative()).join(&candidate_dir_name).exists() {
                                 candidate_dir_name.push_str("-duplicate");
                             }
-                            let candidate_dir = context.site_dir.join(&collection.path).join(&candidate_dir_name);
+                            let candidate_dir = context.site_dir.join(collection.site_path.filesystem_relative()).join(&candidate_dir_name);
                             fs::create_dir_all(&candidate_dir).unwrap();
                             candidate_dir.join(original_filename)
                         }
                         GetAnyResult::Playlist(playlist) => {
                             let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                            while context.site_dir.join(&playlist.path).join(&candidate_dir_name).exists() {
+                            while context.site_dir.join(playlist.site_path.filesystem_relative()).join(&candidate_dir_name).exists() {
                                 candidate_dir_name.push_str("-duplicate");
                             }
-                            let candidate_dir = context.site_dir.join(&playlist.path).join(&candidate_dir_name);
+                            let candidate_dir = context.site_dir.join(playlist.site_path.filesystem_relative()).join(&candidate_dir_name);
                             fs::create_dir_all(&candidate_dir).unwrap();
                             candidate_dir.join(original_filename)
                         }
                         GetAnyResult::Video(video) => {
                             let mut candidate_filename = original_filename.clone();
-                            while context.site_dir.join(&video.path).join(&candidate_filename).exists() {
+                            while context.site_dir.join(video.site_path.filesystem_relative()).join(&candidate_filename).exists() {
                                 candidate_filename = Path::new(&candidate_filename).with_file_name(format!("{}.mp4", nanoid())).to_string_lossy().to_string();
                             }
-                            context.site_dir.join(&video.path).join(&candidate_filename)
+                            context.site_dir.join(video.site_path.filesystem_relative()).join(&candidate_filename)
                         }
                         GetAnyResult::None => unreachable!()
                     };
@@ -105,9 +105,9 @@ pub async fn upload_video(
                                 collection.videos.push(video_moving);
                             };
 
-                            if let CollectionUpdate::NotFound = context.update_collection(mutation, &path.path) {
+                            if let CollectionUpdate::NotFound = context.update_collection(mutation, &site_path) {
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                return Ok(Either::Right(not_found(&context, &language, &path.path)));
+                                return Ok(Either::Right(not_found(&context, &language, &site_path)));
                             }
 
                             video
@@ -121,9 +121,9 @@ pub async fn upload_video(
                                 playlist.videos.push(video_moving);
                             };
 
-                            if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &path.path) {
+                            if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &site_path) {
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                return Ok(Either::Right(not_found(&context, &language, &path.path)));
+                                return Ok(Either::Right(not_found(&context, &language, &site_path)));
                             }
 
                             video
@@ -136,10 +136,10 @@ pub async fn upload_video(
                                 video.versions.push(VideoFile::new(file_meta, file_name, None));
                             };
 
-                            match context.update_video(mutation, &path.path) {
+                            match context.update_video(mutation, &site_path) {
                                 Ok(video) => video,
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                Err(()) => return Ok(Either::Right(not_found(&context, &language, &path.path)))
+                                Err(()) => return Ok(Either::Right(not_found(&context, &language, &site_path)))
                             }
                         }
                         GetAnyResult::None => unreachable!()
@@ -151,7 +151,7 @@ pub async fn upload_video(
                     };
                     context.push_job_queue(job_kind);
 
-                    let redirect_url = format!("/video/{}", &video.path);
+                    let redirect_url = format!("/video/{}", video.site_path.normalized());
                     return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                 }
             }

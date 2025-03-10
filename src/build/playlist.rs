@@ -37,10 +37,7 @@ pub fn playlist_html(
 
     let mut body = String::new();
 
-    let title = match &playlist.title {
-        Some(title) => title,
-        None => if playlist.path.is_empty() { "Hyper 8" } else { playlist.slug() }
-    };
+    let title = playlist.title_or_slug_or_generic_label(translations);
     let e_title = html_escape_outside_attribute(title);
 
     // TODO: Hack to get margin to come out beneath header - replace with something proper soon
@@ -79,7 +76,7 @@ pub fn playlist_html(
             .enumerate()
             .map(|(index, video)| {
                 let traversal_with_video = traversal.peek_video(video);
-                let traversal_with_video_prefix = traversal_with_video.file_prefix_desc();
+                let traversal_with_video_prefix = traversal_with_video.prefix_desc();
 
                 let release_date = match video.release_date {
                     Some(release_date) => {
@@ -89,7 +86,7 @@ pub fn playlist_html(
                     None => String::new()
                 };
                 let number = index + 1;
-                let label = video.label(translations);
+                let label = video.title_or_slug_or_generic_label(translations);
                 let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
@@ -131,7 +128,7 @@ pub fn playlist_html(
     // }
 
     if playlist.platform_integration().enabled() {
-        if let Some(playlist_url) = site.absolute_url(&playlist.path) {
+        if let Some(playlist_url) = site.absolute_url_index(&playlist.site_path) {
             let mut meta = PlatformIntegrationMeta::new(title.to_string(), playlist_url);
 
             if let Some(description) = &playlist.description {
@@ -150,7 +147,7 @@ pub fn playlist_html(
             // well.
             // if let Some(banner) = &playlist.banner {
             //     if let Some(poster_assets) = &banner.assets {
-            //         let image_url_prefix = site.absolute_url_prefix_unchecked(&playlist.path);
+            //         let image_url_prefix = site.absolute_url_prefix_unchecked(&playlist.site_path);
             //         let platform_integration_image = poster_assets.platform_integration_image("banner", &image_url_prefix);
 
             //         meta.image(platform_integration_image);
@@ -173,7 +170,7 @@ pub fn playlist_html(
         traversal
     );
 
-    let playlist_dir = context.build_dir.join(&playlist.path);
+    let playlist_dir = context.build_dir.join(playlist.site_path.filesystem_relative());
     fs::create_dir_all(&playlist_dir).unwrap();
     let index_path = playlist_dir.join("index.html");
     fs::write(index_path, html).unwrap();

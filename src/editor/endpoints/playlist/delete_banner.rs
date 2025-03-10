@@ -9,33 +9,36 @@ use actix_web::web::{Data, Path as ActixPath, Redirect};
 
 use crate::{
     Context,
-    ContextPath,
     Playlist,
-    PlaylistUpdate
+    PlaylistUpdate,
+    SitePath
 };
 use crate::editor::widgets::not_found;
 
 pub async fn delete_banner(
     context: Data<Arc<Context>>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |playlist_mut: &mut Playlist| {
         if let Some(banner) = &playlist_mut.banner {
-            let banner_path = context.site_dir.join(&playlist_mut.path).join(&banner.file_name);
+            let banner_path = context.site_dir
+                .join(playlist_mut.site_path.filesystem_relative())
+                .join(&banner.file_name);
+
             playlist_mut.banner = None;
             playlist_mut.write_manifest(&context);
             let _ = fs::remove_file(banner_path);
         }
     };
 
-    match context.update_playlist(mutation, &path.path) {
+    match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::Updated { playlist_updated, .. } => {
-            let redirect_url = format!("/playlist/{}", playlist_updated.path);
+            let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         PlaylistUpdate::NotFound => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
+            Either::Right(not_found(&context, &language, &site_path))
         }
     }
 }

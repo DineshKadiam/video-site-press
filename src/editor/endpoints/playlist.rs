@@ -75,6 +75,7 @@ pub fn edit_page(
     playlist: &Playlist
 ) -> HttpResponse {
     let site = context.get_site();
+    let site_path_normalized = playlist.site_path.normalized();
     let translations = &language.translations;
 
     let t_not_saved = translations.not_saved;
@@ -93,10 +94,8 @@ pub fn edit_page(
             .join("")
     };
 
-    let path = &playlist.path;
-
     let t_upload_banner = translations.upload_banner;
-    let banner_upload_button = upload_widget(&format!("/upload-playlist-banner/{path}"), t_upload_banner);
+    let banner_upload_button = upload_widget(&format!("/upload-playlist-banner/{site_path_normalized}"), t_upload_banner);
     let banner_form = match &playlist.banner {
         Some(banner) => {
             let alt = if let Some(description) = &banner.description {
@@ -107,11 +106,7 @@ pub fn edit_page(
 
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &banner.file_name;
-            let src = if path.is_empty() {
-                format!("/poster/{file_name}")
-            } else {
-                format!("/poster/{path}/{file_name}")
-            };
+            let src = format!("/poster/{}{file_name}", playlist.site_path.normalized());
 
             let mut description = Textarea::image_description("description", translations.banner_description);
 
@@ -126,11 +121,11 @@ pub fn edit_page(
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
                     {banner_upload_button}
-                    <form action="/delete-playlist-banner/{path}" data-confirm data-confirm-label="{t_delete_banner}" data-confirm-text="{t_really_delete}" method="post">
+                    <form action="/delete-playlist-banner/{site_path_normalized}" data-confirm data-confirm-label="{t_delete_banner}" data-confirm-text="{t_really_delete}" method="post">
                         <button class="danger">{t_delete_banner}</button>
                     </form>
                 </div>
-                <form action="/update-playlist-banner/{path}" data-warn-discard method="post">
+                <form action="/update-playlist-banner/{site_path_normalized}" data-warn-discard method="post">
                     {description}
                     <button class="action">{t_update_description}</button>
                 </form>
@@ -267,10 +262,15 @@ pub fn edit_page(
         String::new()
     };
 
-    let slug_form = if path.is_empty() {
+    let slug_form = if playlist.site_path.is_root_path() {
         String::new()
     } else {
-        let mut input_permalink = Input::permalink("slug", playlist.parent_path_unchecked(), &site, translations);
+        let mut input_permalink = Input::permalink(
+            "slug",
+            &playlist.parent_site_path_unchecked(),
+            &site,
+            translations
+        );
 
         input_permalink.required();
 
@@ -278,7 +278,7 @@ pub fn edit_page(
             input_permalink.validated_value(slug);
             format!(r#"<span class="feedback">{t_not_saved}</span>"#)
         } else {
-            input_permalink.value(playlist.slug());
+            input_permalink.value(playlist.slug_unchecked());
             String::new()
         };
 
@@ -289,7 +289,7 @@ pub fn edit_page(
                 {t_a_permalink_forms_part_of_text}
             </p>
 
-            <form action="/move-playlist/{path}" data-warn-discard method="post">
+            <form action="/move-playlist/{site_path_normalized}" data-warn-discard method="post">
                 {input_permalink}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
@@ -300,14 +300,19 @@ pub fn edit_page(
     };
 
     let t_upload_new_video = translations.upload_new_video;
-    let upload_url = format!("/upload-video/{path}");
+    let upload_url = format!("/upload-video/{site_path_normalized}");
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
 
     let site_form_feedback = match &form_feedback {
         Some(PlaylistFormFeedback::Site(site_form_feedback)) => Some(site_form_feedback),
         _ => None
     };
-    let site_edit = endpoints::site::edit(context, site_form_feedback, path, translations);
+    let site_edit = endpoints::site::edit(
+        context,
+        site_form_feedback,
+        &playlist.site_path,
+        translations
+    );
 
     let t_convert_to_collection = translations.convert_to_collection;
     let convert_to_collection_form = formatdoc!(r#"
@@ -315,7 +320,7 @@ pub fn edit_page(
             A playlist can seamlessly be converted to a collection
         </p>
 
-        <form action="/convert-to-collection/{path}" method="post">
+        <form action="/convert-to-collection/{site_path_normalized}" method="post">
             <button class="danger">{t_convert_to_collection}</button>
         </form>
     "#);
@@ -331,7 +336,7 @@ pub fn edit_page(
         formatdoc!(r#"
             <p>{message}</p>
 
-            <form action="/convert-to-video/{path}" method="post">
+            <form action="/convert-to-video/{site_path_normalized}" method="post">
                 <button class="danger">{t_convert_to_video}</button>
             </form>
         "#)
@@ -339,7 +344,7 @@ pub fn edit_page(
         String::new()
     };
 
-    let input_unlisted_conditionally_hidden = if !playlist.path.is_empty() {
+    let input_unlisted_conditionally_hidden = if !playlist.site_path.is_root_path() {
         input_unlisted.to_string()
     } else if playlist.unlisted_local() {
         String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
@@ -348,7 +353,12 @@ pub fn edit_page(
     };
 
     let new_video_form = {
-        let mut input_slug_create_video = Input::permalink("slug", path, &site, translations);
+        let mut input_slug_create_video = Input::permalink(
+            "slug",
+            &playlist.site_path,
+            &site,
+            translations
+        );
         let mut input_title_create_video = Input::text("title", translations.title);
 
         // TODO: Needs custom client-side validation - either title or slug must be given.
@@ -370,7 +380,7 @@ pub fn edit_page(
             <div class="form_group">
                 <h2>{t_new_video}</h2>
 
-                <form action="/create-playlist-video/{path}" autocomplete="off" data-warn-discard method="post">
+                <form action="/create-playlist-video/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
@@ -384,13 +394,19 @@ pub fn edit_page(
         "#)
     };
 
-    let create_link_form = add_link_form(&format!("/add-playlist-link/{path}"), translations);
-    let links_form = links(&playlist.links, &format!("/delete-playlist-link/{path}"), translations);
+    let create_link_form = add_link_form(&format!("/add-playlist-link/{site_path_normalized}"), translations);
+    let links_form = links(&playlist.links, &format!("/delete-playlist-link/{site_path_normalized}"), translations);
 
-    let r_resource_actions = resource_actions(context, playlist.offline(), path, &site, translations);
+    let r_resource_actions = resource_actions(
+        context,
+        playlist.offline(),
+        &site,
+        &playlist.site_path,
+        translations
+    );
 
     let playlist_icon = icons::playlist(translations.playlist);
-    let playlist_title = playlist.label(translations);
+    let playlist_title = playlist.title_or_slug_or_generic_label(translations);
 
     let t_banner_image = translations.banner_image;
     let t_danger_zone = translations.danger_zone;
@@ -411,7 +427,7 @@ pub fn edit_page(
         </div>
 
         <div class="form_group">
-            <form action="/playlist/{path}" autocomplete="off" data-warn-discard method="post">
+            <form action="/playlist/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
                 {select_order}
@@ -466,7 +482,7 @@ pub fn edit_page(
             </p>
 
             <form
-                action="/delete-playlist/{path}"
+                action="/delete-playlist/{site_path_normalized}"
                 data-confirm
                 data-confirm-label="{t_delete_playlist}"
                 data-confirm-text="{t_really_delete}"
@@ -476,8 +492,14 @@ pub fn edit_page(
         </div>
     "#);
 
-    let head_title = playlist.title.as_deref().unwrap_or_else(|| playlist.slug());
-    let html = layout(context, language, Some(path), &site, &body, head_title);
+    let html = layout(
+        &body,
+        context,
+        language,
+        &site,
+        Some(&playlist.site_path),
+        playlist.title_or_slug_or_generic_label(translations)
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

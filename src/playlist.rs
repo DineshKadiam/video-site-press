@@ -3,9 +3,7 @@
 
 use std::cmp::{self, Ordering};
 use std::fs;
-use std::iter::Peekable;
 use std::path::Path;
-use std::str::Split;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
@@ -21,6 +19,7 @@ use crate::{
     Link,
     PlatformIntegration,
     Site,
+    SitePath,
     Translations,
     TreeViewOrder,
     Video,
@@ -59,8 +58,8 @@ pub struct Playlist {
     pub links: Vec<Link>,
     offline: bool,
     pub order: VideoOrder,
-    pub path: String,
     platform_integration: Option<PlatformIntegration>,
+    pub site_path: SitePath,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
@@ -135,8 +134,8 @@ impl Playlist {
                                 let assets = context.cache.lock().unwrap().fetch_poster_assets(
                                     &file_meta,
                                     &file_name,
-                                    &self.path,
-                                    0.0 // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                    0.0, // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                    &self.site_path
                                 );
 
                                 let banner = Banner::new(assets, description, file_meta, file_name);
@@ -438,7 +437,7 @@ impl Playlist {
             (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(b.slug())
+            (None, None) => a.slug().cmp(&b.slug())
         }
     }
 
@@ -448,7 +447,7 @@ impl Playlist {
             (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(a.slug())
+            (None, None) => b.slug().cmp(&a.slug())
         }
     }
 
@@ -483,16 +482,14 @@ impl Playlist {
     pub fn delete_video(
         &mut self,
         context: &Context,
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> bool {
-        if let Some(slug) = path_parts.next() {
-            if let Some(video) = self.videos
-                .iter()
-                .position(|video| video.slug() == slug)
-                .map(|index| self.videos.swap_remove(index)) {
-                video.unpersist(context);
-                return true;
-            }
+        if let Some(video) = self.videos
+            .iter()
+            .position(|video| video.site_path == *site_path)
+            .map(|index| self.videos.swap_remove(index)) {
+            video.unpersist(context);
+            return true;
         }
 
         false
@@ -555,9 +552,9 @@ impl Playlist {
     }
 
     /// Potentially returns a video at the given path.
-    pub fn get_any(&self, path: &str) -> GetAnyResult {
+    pub fn get_any(&self, site_path: &SitePath) -> GetAnyResult {
         for video in &self.videos {
-            if video.path == path {
+            if video.site_path == *site_path {
                 return GetAnyResult::Video(Arc::clone(video));
             }
         }
@@ -566,23 +563,14 @@ impl Playlist {
     }
 
     /// Returns the video at the given path.
-    pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
+    pub fn get_video(&self, site_path: &SitePath) -> Option<Arc<Video>> {
         for video in &self.videos {
-            if video.path == path {
+            if video.site_path == *site_path {
                 return Some(Arc::clone(video));
             }
         }
 
         None
-    }
-
-    pub fn label(&self, translations: &Translations) -> &str {
-        self.title
-            .as_deref()
-            .unwrap_or_else(||
-                self.slug_opt()
-                    .unwrap_or(translations.playlist)
-            )
     }
 
     pub fn latest_release_date(&self) -> Option<NaiveDate> {
@@ -600,7 +588,7 @@ impl Playlist {
             })
     }
 
-	pub fn new(path: String, inherited_options: InheritedOptions) -> Playlist {
+	pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Playlist {
 		Playlist {
             banner: None,
             copy_link: None,
@@ -612,8 +600,8 @@ impl Playlist {
             links: Vec::new(),
             offline: false,
             order: VideoOrder::Default,
-            path,
             platform_integration: None,
+            site_path,
             title: None,
             videos: Vec::new(),
             unlisted: false
@@ -641,12 +629,9 @@ impl Playlist {
         self.offline = enabled;
     }
 
-    // Calling this on a root node returns its own path instead
-    pub fn parent_path_unchecked(&self) -> &str {
-        match self.path.rsplit_once('/') {
-            Some((parent_path, _)) => parent_path,
-            None => ""
-        }
+    // Calling this on a root node returns the same site path again
+    pub fn parent_site_path_unchecked(&self) -> SitePath {
+        self.site_path.parent_site_path_unchecked()
     }
 
     /// Get the platform_integration setting resolved in the context of the site tree
@@ -715,7 +700,8 @@ impl Playlist {
         inherited_options: InheritedOptions,
         site: &Site
     ) -> Arc<Playlist> {
-        let mut playlist = Playlist::new(hyper_dir.site_path(context), inherited_options);
+        let site_path = hyper_dir.site_path(context);
+        let mut playlist = Playlist::new(inherited_options, site_path);
 
         if let Some(manifest) = &hyper_dir.playlist_manifest {
             playlist.apply_manifest(context, manifest);
@@ -736,8 +722,8 @@ impl Playlist {
             let assets = context.cache.lock().unwrap().fetch_poster_assets(
                 &file_meta,
                 &file_name,
-                &playlist.path,
-                0.0
+                0.0,
+                &playlist.site_path
             );
 
             let banner = Banner::new(assets, None, file_meta, file_name);
@@ -783,15 +769,18 @@ impl Playlist {
         }
     }
 
-    pub fn slug(&self) -> &str {
-        self.path.split('/').last().unwrap()
+    pub fn slug(&self) -> Option<&str> {
+        self.site_path.last_component()
     }
 
-    pub fn slug_opt(&self) -> Option<&str> {
-        if self.path.is_empty() {
-            None
-        } else {
-            self.path.split('/').last()
+    pub fn slug_unchecked(&self) -> &str {
+        self.site_path.last_component_unchecked()
+    }
+
+    pub fn title_or_slug_or_generic_label(&self, translations: &Translations) -> &str {
+        match &self.title {
+            Some(title) => title,
+            None => self.slug().unwrap_or(translations.playlist)
         }
     }
 
@@ -817,7 +806,7 @@ impl Playlist {
     }
 
     pub fn unpersist(&self, context: &Context) {
-        if self.path.is_empty() {
+        if self.site_path.is_root_path() {
             let manifest_path = context.site_dir.join("playlist.eno");
             let _ = fs::remove_file(&manifest_path);
 
@@ -827,63 +816,66 @@ impl Playlist {
             }
 
             for video in &self.videos {
-                let video_path = context.site_dir.join(video.slug());
+                let video_path = context.site_dir.join(video.slug_unchecked());
                 let _ = checked_remove_dir_all(context, &video_path);
             }
         } else {
-            let playlist_dir = context.site_dir.join(&self.path);
+            let playlist_dir = context.site_dir.join(self.site_path.filesystem_relative());
             let _ = checked_remove_dir_all(context, &playlist_dir);
         }
     }
 
-    /// Intended to be called with at least one remaining path part to consume,
-    /// otherwise will panic.
-    pub fn update_from_filesystem(
+    /// The site path to be updated is intended to be that of a descendant of
+    /// the playlist, never the playlist itself!
+    pub fn update_descendant_from_filesystem(
         &mut self,
         context: &Context,
-        mut path_parts: Peekable<Split<char>>,
-        site: &Site
+        site: &Site,
+        site_path: &SitePath
     ) {
-        let slug = path_parts.next().unwrap();
-
-        if path_parts.peek().is_some() {
-            // A video (and only video folders may exist in a playlist) isn't allowed
-            // to have subfolders, so this is a bit of an odd case.
-
-            // Remove a video at this path if there is one
-            if let Some(index) = self.videos.iter().position(|video| video.slug() == slug) {
-                self.videos.swap_remove(index);
-            }
-
-            let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
-            self.read_subdir(context, &hyper_subdir, site);
-        } else {
+        if site_path.is_direct_descendant_of(&self.site_path) {
             // If we presently have a video at the given path, we remove it.
-            if let Some(index) = self.videos.iter().position(|video| video.slug() == slug) {
+            if let Some(index) = self.videos
+                .iter()
+                .position(|video| video.site_path == *site_path) {
                 self.videos.swap_remove(index);
             }
 
             // Add the new leaf (respectively, replace what was removed)
-            let hyper_subdir = HyperDir::read(&context.site_dir.join(&self.path).join(slug));
+            let subdir = context.site_dir.join(site_path.filesystem_relative());
+            let hyper_subdir = HyperDir::read(&subdir);
+            self.read_subdir(context, &hyper_subdir, site);
+        } else {
+            // Here we know the update occured "deeper down". A video (and only
+            // video folders may exist in a playlist) isn't allowed to have
+            // subfolders, so this is a bit of an odd case.
+
+            // Remove a video at this path if there is one
+            if let Some(index) = self.videos
+                .iter()
+                .position(|video| site_path.starts_with(&video.site_path)) {
+                self.videos.swap_remove(index);
+            }
+
+            let subdir = context.site_dir.join(self.site_path.filesystem_relative());
+            let hyper_subdir = HyperDir::read(&subdir);
             self.read_subdir(context, &hyper_subdir, site);
         }
     }
 
-    /// Performs the passed mutation on the video under the given path (if it exists).
-    /// Should not be called directly, instead only through a cascade call originating
-    /// from `update_video` on [Context].
+    /// Performs the passed mutation on the video under the given site path
+    /// (if it exists). Should not be called directly, instead only through a
+    /// cascade call originating from `update_video` on [Context].
     pub fn update_video(
         &mut self,
         mutation: impl FnOnce(&mut Video),
-        mut path_parts: Peekable<Split<char>>
+        site_path: &SitePath
     ) -> Result<Arc<Video>, ()> {
-        if let Some(slug) = path_parts.next() {
-            if let Some(video) = self.videos.iter_mut().find(|video| video.slug() == slug) {
-                let mut video_mut = (**video).clone();
-                mutation(&mut video_mut);
-                *video = Arc::new(video_mut);
-                return Ok(Arc::clone(video));
-            }
+        if let Some(video) = self.videos.iter_mut().find(|video| video.site_path == *site_path) {
+            let mut video_mut = (**video).clone();
+            mutation(&mut video_mut);
+            *video = Arc::new(video_mut);
+            return Ok(Arc::clone(video));
         }
 
         Err(())
@@ -954,7 +946,10 @@ impl Playlist {
             eno.push_str(&format!("-- description\n{}\n-- description\n", description));
         }
 
-        let path = context.site_dir.join(&self.path).join("playlist.eno");
+        let path = context.site_dir
+            .join(self.site_path.filesystem_relative())
+            .join("playlist.eno");
+
         fs::write(path, eno).unwrap();
     }
 }

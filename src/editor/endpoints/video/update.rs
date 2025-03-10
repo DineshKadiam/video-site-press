@@ -10,9 +10,9 @@ use serde_derive::Deserialize;
 
 use crate::{
     Context,
-    ContextPath,
     Field,
     PlatformIntegration,
+    SitePath,
     Video
 };
 use crate::editor::widgets::not_found;
@@ -37,7 +37,7 @@ pub struct VideoUpdateForm {
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<VideoUpdateForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
@@ -93,9 +93,9 @@ pub async fn update(
 
     if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) ||
         sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
-        let video = match context.get_video(&path.path) {
+        let video = match context.get_video(&site_path) {
             Some(video) => video,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = VideoFormFeedback::Update {
@@ -129,12 +129,12 @@ pub async fn update(
             video_mut.write_manifest(&context);
         };
 
-        let video = match context.update_video(mutation, &path.path) {
+        let video = match context.update_video(mutation, &site_path) {
             Ok(video) => video,
-            Err(()) => return Either::Right(not_found(&context, &language, &path.path))
+            Err(()) => return Either::Right(not_found(&context, &language, &site_path))
         };
 
-        let redirect_url = format!("/video/{}", video.path);
+        let redirect_url = format!("/video/{}", video.site_path.normalized());
         Either::Left(Redirect::to(redirect_url).see_other())
     }
 }

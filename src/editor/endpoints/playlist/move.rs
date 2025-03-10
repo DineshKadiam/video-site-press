@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use std::path::Path;
 use std::sync::Arc;
 
 use actix_web::{Either, HttpResponse};
@@ -11,10 +10,10 @@ use serde_derive::Deserialize;
 
 use crate::{
     Context,
-    ContextPath,
     Field,
     Playlist,
-    PlaylistUpdate
+    PlaylistUpdate,
+    SitePath
 };
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
@@ -30,17 +29,15 @@ pub struct PlaylistMoveForm {
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<PlaylistMoveForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
     let slug_trimmed = form.slug.trim();
 
-    let new_path = Path::new(&path.path)
-        .with_file_name(slug_trimmed)
-        .into_os_string()
-        .into_string()
-        .unwrap();
+    let new_path = site_path
+        .parent_site_path_unchecked()
+        .join(slug_trimmed);
 
     // TODO: Here and elsewhere: If a playlist already has a permalink (say "example"),
     //       and we try to save it with exactly the same/unchanged permalink "example",
@@ -48,7 +45,7 @@ pub async fn r#move(
     //       Need to make an exception for this in the validation check.
     let slug_error = if let Err(message) = validate_slug(slug_trimmed) {
         Some(message)
-    } else if context.site_dir.join(&new_path).exists() {
+    } else if context.site_dir.join(new_path.filesystem_relative()).exists() {
         Some(String::from("This permalink is already used by another collection, playlist or video."))
     } else {
         None
@@ -57,26 +54,26 @@ pub async fn r#move(
     if slug_error.is_none() {
         let mutation = |playlist: &mut Playlist| {
             fs::rename(
-                context.site_dir.join(&playlist.path),
-                context.site_dir.join(&new_path)
+                context.site_dir.join(playlist.site_path.filesystem_relative()),
+                context.site_dir.join(new_path.filesystem_relative())
             ).unwrap();
 
-            playlist.path = new_path;
+            playlist.site_path = new_path;
         };
 
-        match context.update_playlist(mutation, &path.path) {
+        match context.update_playlist(mutation, &site_path) {
             PlaylistUpdate::Updated { playlist_updated, .. } => {
-                let redirect_url = format!("/playlist/{}", playlist_updated.path);
+                let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             PlaylistUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &path.path))
+                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {
-        let playlist = match context.get_playlist(&path.path) {
+        let playlist = match context.get_playlist(&site_path) {
             Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = PlaylistFormFeedback::Move {

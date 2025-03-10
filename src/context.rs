@@ -8,7 +8,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-use serde_derive::Deserialize;
 use slug::slugify;
 
 use crate::{
@@ -24,6 +23,7 @@ use crate::{
     Processing,
     Site,
     SiteContent,
+    SitePath,
     Theme,
     TreeViewOrder,
     Video,
@@ -45,11 +45,6 @@ pub struct Context {
     pub processing_errors: Mutex<Vec<String>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
-}
-
-#[derive(Deserialize)]
-pub struct ContextPath {
-    pub path: String
 }
 
 pub enum GetAnyResult {
@@ -161,10 +156,10 @@ impl Context {
 
     /// Take the playlist or video at the given path (or if the site is still empty,
     /// the empty site itself) and convert it to a collection. This never fails.
-    pub fn convert_to_collection(&self, path: &str) {
+    pub fn convert_to_collection(&self, site_path: &SitePath) {
         let mut site_mut = self.get_site_mut();
 
-        if path.is_empty() {
+        if site_path.is_root_path() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
@@ -245,10 +240,10 @@ impl Context {
                 self.replace_site(site_mut);
             }
         } else {
-            let node = self.get_any(path);
+            let node = self.get_any(site_path);
 
             if let GetAnyResult::Playlist(playlist) = node {
-                let dir_converting = self.site_dir.join(&playlist.path);
+                let dir_converting = self.site_dir.join(playlist.site_path.filesystem_relative());
 
                 let manifest_path = dir_converting.join("playlist.eno");
                 let _ = fs::remove_file(&manifest_path);
@@ -280,7 +275,7 @@ impl Context {
 
                 self.update_from_filesystem(&dir_converting, &site_mut);
             } else if let GetAnyResult::Video(video) = node {
-                let dir_converting = self.site_dir.join(&video.path);
+                let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
 
                 let slug = match &video.title {
                     Some(title) => slugify(title),
@@ -331,10 +326,10 @@ impl Context {
     /// the empty site itself) and convert it to a playlist. This may fail if we're
     /// converting from a collection and that collection happens to contain playlists
     /// or subcollections, which a playlist can not contain.
-    pub fn convert_to_playlist(&self, path: &str) -> Result<(), String> {
+    pub fn convert_to_playlist(&self, site_path: &SitePath) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
-        if path.is_empty() {
+        if site_path.is_root_path() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
@@ -421,7 +416,7 @@ impl Context {
                 self.replace_site(site_mut);
             } 
         } else {
-            let node = self.get_any(path);
+            let node = self.get_any(site_path);
 
             if let GetAnyResult::Collection(collection) = node {
                 if !collection.playlists.is_empty() {
@@ -430,7 +425,7 @@ impl Context {
                     return Err("A collection containing (a) subcollection(s) can not be converted to a playlist".to_string());
                 }
 
-                let dir_converting = self.site_dir.join(&collection.path);
+                let dir_converting = self.site_dir.join(collection.site_path.filesystem_relative());
 
                 let manifest_path = dir_converting.join("collection.eno");
                 let _ = fs::remove_file(&manifest_path);
@@ -462,7 +457,7 @@ impl Context {
 
                 self.update_from_filesystem(&dir_converting, &site_mut);
             } else if let GetAnyResult::Video(video) = node {
-                let dir_converting = self.site_dir.join(&video.path);
+                let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
 
                 let slug = match &video.title {
                     Some(title) => slugify(title),
@@ -514,10 +509,10 @@ impl Context {
     /// Take the collection or playlist at the given path (or if the site is still empty,
     /// the empty site itself) and convert it to a video. This only succeeds if we're
     /// converting from a collection or playlist that contains exactly one video (or none).
-    pub fn convert_to_video(&self, path: &str) -> Result<(), String> {
+    pub fn convert_to_video(&self, site_path: &SitePath) -> Result<(), String> {
         let mut site_mut = self.get_site_mut();
 
-        if path.is_empty() {
+        if site_path.is_root_path() {
             if let SiteContent::Empty = &site_mut.content {
                 let hyper_dir = HyperDir::read(&self.site_dir);
                 let video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
@@ -544,7 +539,7 @@ impl Context {
                     // Rename the video directory to unique temporary name, so we can copy
                     // files/folders within without any possible name collisions with the
                     // video directory name itself.
-                    fs::rename(self.site_dir.join(&video.path), &temp_dir).unwrap();
+                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
 
                     if let Ok(dir_entries) = temp_dir.read_dir() {
                         for dir_entry_result in dir_entries {
@@ -626,7 +621,7 @@ impl Context {
                     // Rename the video directory to unique temporary name, so we can copy
                     // files/folders within without any possible name collisions with the
                     // video directory name itself.
-                    fs::rename(self.site_dir.join(&video.path), &temp_dir).unwrap();
+                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
 
                     if let Ok(dir_entries) = temp_dir.read_dir() {
                         for dir_entry_result in dir_entries {
@@ -695,7 +690,7 @@ impl Context {
                 self.replace_site(site_mut);
             }
         } else {
-            let node = self.get_any(path);
+            let node = self.get_any(site_path);
 
             if let GetAnyResult::Collection(collection) = node {
                 if !collection.playlists.is_empty() {
@@ -706,7 +701,7 @@ impl Context {
                     return Err("A collection containing two or more videos can not be converted to a single video".to_string());
                 }
 
-                let dir_converting = self.site_dir.join(&collection.path);
+                let dir_converting = self.site_dir.join(collection.site_path.filesystem_relative());
 
                 let manifest_path = dir_converting.join("collection.eno");
                 let _ = fs::remove_file(&manifest_path);
@@ -719,7 +714,7 @@ impl Context {
                     // Rename the video directory to unique temporary name, so we can copy
                     // files/folders within without any possible name collisions with the
                     // video directory name itself.
-                    fs::rename(self.site_dir.join(&video.path), &temp_dir).unwrap();
+                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
 
                     if let Ok(dir_entries) = temp_dir.read_dir() {
                         for dir_entry_result in dir_entries {
@@ -788,7 +783,7 @@ impl Context {
                     return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
                 }
 
-                let dir_converting = self.site_dir.join(&playlist.path);
+                let dir_converting = self.site_dir.join(playlist.site_path.filesystem_relative());
 
                 let manifest_path = dir_converting.join("playlist.eno");
                 let _ = fs::remove_file(&manifest_path);
@@ -801,7 +796,7 @@ impl Context {
                     // Rename the video directory to unique temporary name, so we can copy
                     // files/folders within without any possible name collisions with the
                     // video directory name itself.
-                    fs::rename(self.site_dir.join(&video.path), &temp_dir).unwrap();
+                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
 
                     if let Ok(dir_entries) = temp_dir.read_dir() {
                         for dir_entry_result in dir_entries {
@@ -872,27 +867,20 @@ impl Context {
         Ok(())
     }
 
-    pub fn delete_collection(
-        &self,
-        path: &str
-    ) -> bool {
-        let mut path_parts = path.split('/').peekable();
-
+    pub fn delete_collection(&self, site_path: &SitePath) -> bool {
         let mut site_mut = self.get_site_mut();
 
-        if let Some(&"") = path_parts.peek() {
-            if path_parts.count() == 1 {
-                if let SiteContent::Collection(collection) = &site_mut.content {
-                    collection.unpersist(self);
-                    site_mut.content = SiteContent::Empty;
-                    self.replace_site(site_mut);
-                    return true;
-                }
+        if site_path.is_root_path() {
+            if let SiteContent::Collection(collection) = &site_mut.content {
+                collection.unpersist(self);
+                site_mut.content = SiteContent::Empty;
+                self.replace_site(site_mut);
+                return true;
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if collection_mut.delete_collection(self, path_parts) {
+            if collection_mut.delete_collection(self, site_path) {
                 *collection = Arc::new(collection_mut);
                 self.replace_site(site_mut);
                 return true;
@@ -902,27 +890,20 @@ impl Context {
         false
     }
 
-    pub fn delete_playlist(
-        &self,
-        path: &str
-    ) -> bool {
-        let mut path_parts = path.split('/').peekable();
-
+    pub fn delete_playlist(&self, site_path: &SitePath) -> bool {
         let mut site_mut = self.get_site_mut();
 
-        if let Some(&"") = path_parts.peek() {
-            if path_parts.count() == 1 {
-                if let SiteContent::Playlist(playlist) = &site_mut.content {
-                    playlist.unpersist(self);
-                    site_mut.content = SiteContent::Empty;
-                    self.replace_site(site_mut);
-                    return true;
-                }
+        if site_path.is_root_path() {
+            if let SiteContent::Playlist(playlist) = &site_mut.content {
+                playlist.unpersist(self);
+                site_mut.content = SiteContent::Empty;
+                self.replace_site(site_mut);
+                return true;
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if collection_mut.delete_playlist(self, path_parts) {
+            if collection_mut.delete_playlist(self, site_path) {
                 *collection = Arc::new(collection_mut);
                 self.replace_site(site_mut);
                 return true;
@@ -934,27 +915,20 @@ impl Context {
 
     /// Deletes the video at path (if found) and in case of success returns
     // its parent (collection or playlist or none if it was at the site root).
-    pub fn delete_video(
-        &self,
-        path: &str
-    ) -> Result<Option<VideoParent>, ()> {
-        let mut path_parts = path.split('/').peekable();
-
+    pub fn delete_video(&self, site_path: &SitePath) -> Result<Option<VideoParent>, ()> {
         let mut site_mut = self.get_site_mut();
 
-        if let Some(&"") = path_parts.peek() {
-            if path_parts.count() == 1 {
-                if let SiteContent::Video(video) = &site_mut.content {
-                    video.unpersist(self);
-                    site_mut.content = SiteContent::Empty;
-                    self.replace_site(site_mut);
-                    return Ok(None);
-                }
+        if site_path.is_root_path() {
+            if let SiteContent::Video(video) = &site_mut.content {
+                video.unpersist(self);
+                site_mut.content = SiteContent::Empty;
+                self.replace_site(site_mut);
+                return Ok(None);
             }
         } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
             let mut playlist_mut = (**playlist).clone();
 
-            if playlist_mut.delete_video(self, path_parts) {
+            if playlist_mut.delete_video(self, site_path) {
                 let playlist_new = Arc::new(playlist_mut);
                 *playlist = Arc::clone(&playlist_new);
                 self.replace_site(site_mut);
@@ -963,7 +937,7 @@ impl Context {
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if let Ok(video_parent) = collection_mut.delete_video(self, path_parts) {
+            if let Ok(video_parent) = collection_mut.delete_video(self, site_path) {
                 match video_parent {
                     Some(video_parent) => {
                         *collection = Arc::new(collection_mut);
@@ -984,13 +958,13 @@ impl Context {
     }
 
     /// Returns the collection, playlist or video at the given path.
-    pub fn get_any(&self, path: &str) -> GetAnyResult {
-        self.site.lock().unwrap().get_any(path)
+    pub fn get_any(&self, site_path: &SitePath) -> GetAnyResult {
+        self.site.lock().unwrap().get_any(site_path)
     }
 
     /// Returns the collection at the given path.
-    pub fn get_collection(&self, path: &str) -> Option<Arc<Collection>> {
-        self.site.lock().unwrap().get_collection(path)
+    pub fn get_collection(&self, site_path: &SitePath) -> Option<Arc<Collection>> {
+        self.site.lock().unwrap().get_collection(site_path)
     }
 
     /// Returns cloned `Language`, allowing subsequent read-only usage
@@ -1012,8 +986,8 @@ impl Context {
     }
 
     /// Returns the playlist at the given path.
-    pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
-        self.site.lock().unwrap().get_playlist(path)
+    pub fn get_playlist(&self, site_path: &SitePath) -> Option<Arc<Playlist>> {
+        self.site.lock().unwrap().get_playlist(site_path)
     }
 
     /// Returns a cloned `Arc<Site>`, allowing subsequent read-only processing
@@ -1031,8 +1005,8 @@ impl Context {
     }
 
     /// Returns the video at the given path.
-    pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
-        self.site.lock().unwrap().get_video(path)
+    pub fn get_video(&self, site_path: &SitePath) -> Option<Arc<Video>> {
+        self.site.lock().unwrap().get_video(site_path)
     }
 
     pub fn new(
@@ -1144,31 +1118,27 @@ impl Context {
     pub fn update_collection<T>(
         &self,
         mutation: impl FnOnce(&mut Collection) -> T,
-        path: &str
+        site_path: &SitePath
     ) -> CollectionUpdate<T> {
-        let mut path_parts = path.split('/').peekable();
-
         let mut site_mut = self.get_site_mut();
 
         let mut result = CollectionUpdate::NotFound;
 
-        if let Some(&"") = path_parts.peek() {
-            if path_parts.count() == 1 {
-                if let SiteContent::Collection(collection) = &mut site_mut.content {
-                    let mut collection_mut = (**collection).clone();
-                    let optional_return_value = mutation(&mut collection_mut);
-                    *collection = Arc::new(collection_mut);
+        if site_path.is_root_path() {
+            if let SiteContent::Collection(collection) = &mut site_mut.content {
+                let mut collection_mut = (**collection).clone();
+                let optional_return_value = mutation(&mut collection_mut);
+                *collection = Arc::new(collection_mut);
 
-                    result = CollectionUpdate::Updated {
-                        collection_updated: Arc::clone(collection),
-                        optional_return_value
-                    };
-                }
+                result = CollectionUpdate::Updated {
+                    collection_updated: Arc::clone(collection),
+                    optional_return_value
+                };
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            result = collection_mut.update_collection(mutation, path_parts);
+            result = collection_mut.update_collection(mutation, site_path);
 
             if let CollectionUpdate::Updated { .. } = result {
                 *collection = Arc::new(collection_mut);
@@ -1182,30 +1152,36 @@ impl Context {
         result
     }
 
+    /// Based on the passed (absolute) path determines from which site path
+    /// downwards (e.g. from the root, from a subcollection, etc.) we need to
+    /// update our site tree (picking up what changed in the filesystem).
+    /// When passed a file path (which is allowed, e.g. a manifest, video
+    /// file, etc.) the update still happens at the directory level, i.e.
+    /// from the site path that contains the respective file.
     pub fn update_from_filesystem(&self, path: &Path, site: &Site) {
-        let dir_relative = if path.is_dir() {
-            path.strip_prefix(&self.site_dir).unwrap()
+        let dir_path = if path.is_dir() {
+            path
         } else if path.is_file() {
-            path.parent().unwrap().strip_prefix(&self.site_dir).unwrap()
+            path.parent().unwrap()
         } else {
             return;
         };
 
-        let mut path_parts = dir_relative.to_str().unwrap().split('/').peekable();
+        let site_path = SitePath::from_path(self, dir_path);
 
-        if let Some(&"") = path_parts.peek() {
+        if site_path.is_root_path() {
             self.replace_site(Site::read_dir(self, &self.site_dir));
         } else {
             let mut site_mut = self.get_site_mut();
 
             if let SiteContent::Collection(collection) = &mut site_mut.content {
                 let mut collection_mut = (**collection).clone();
-                collection_mut.update_from_filesystem(self, path_parts, site);
+                collection_mut.update_descendant_from_filesystem(self, site, &site_path);
                 *collection = Arc::new(collection_mut);
                 self.replace_site(site_mut);
             } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
                 let mut playlist_mut = (**playlist).clone();
-                playlist_mut.update_from_filesystem(self, path_parts, site);
+                playlist_mut.update_descendant_from_filesystem(self, site, &site_path);
                 *playlist = Arc::new(playlist_mut);
                 self.replace_site(site_mut);
             } else if let SiteContent::Video(_) = &mut site_mut.content {
@@ -1222,31 +1198,27 @@ impl Context {
     pub fn update_playlist<T>(
         &self,
         mutation: impl FnOnce(&mut Playlist) -> T,
-        path: &str
+        site_path: &SitePath
     ) -> PlaylistUpdate<T> {
-        let mut path_parts = path.split('/').peekable();
-
         let mut site_mut = self.get_site_mut();
 
         let mut result = PlaylistUpdate::NotFound;
 
-        if let Some(&"") = path_parts.peek() {
-            if path_parts.count() == 1 {
-                if let SiteContent::Playlist(playlist) = &mut site_mut.content {
-                    let mut playlist_mut = (**playlist).clone();
-                    let optional_return_value = mutation(&mut playlist_mut);
-                    *playlist = Arc::new(playlist_mut);
+        if site_path.is_root_path() {
+            if let SiteContent::Playlist(playlist) = &mut site_mut.content {
+                let mut playlist_mut = (**playlist).clone();
+                let optional_return_value = mutation(&mut playlist_mut);
+                *playlist = Arc::new(playlist_mut);
 
-                    result = PlaylistUpdate::Updated {
-                        optional_return_value,
-                        playlist_updated: Arc::clone(playlist)
-                    };
-                }
+                result = PlaylistUpdate::Updated {
+                    optional_return_value,
+                    playlist_updated: Arc::clone(playlist)
+                };
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            result = collection_mut.update_playlist(mutation, path_parts);
+            result = collection_mut.update_playlist(mutation, site_path);
 
             if let PlaylistUpdate::Updated { .. } = result {
                 *collection = Arc::new(collection_mut);
@@ -1278,34 +1250,30 @@ impl Context {
     pub fn update_video(
         &self,
         mutation: impl FnOnce(&mut Video),
-        path: &str
+        site_path: &SitePath
     ) -> Result<Arc<Video>, ()> {
-        let mut path_parts = path.split('/').peekable();
-
         let mut site_mut = self.get_site_mut();
 
         let mut video_new = None;
 
-        if let Some(&"") = path_parts.peek() {
-            if path_parts.count() == 1 {
-                if let SiteContent::Video(video) = &mut site_mut.content {
-                    let mut video_mut = (**video).clone();
-                    mutation(&mut video_mut);
-                    *video = Arc::new(video_mut);
-                    video_new = Some(Arc::clone(video));
-                }
+        if site_path.is_root_path() {
+            if let SiteContent::Video(video) = &mut site_mut.content {
+                let mut video_mut = (**video).clone();
+                mutation(&mut video_mut);
+                *video = Arc::new(video_mut);
+                video_new = Some(Arc::clone(video));
             }
         } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
             let mut playlist_mut = (**playlist).clone();
 
-            if let Ok(video) = playlist_mut.update_video(mutation, path_parts) {
+            if let Ok(video) = playlist_mut.update_video(mutation, site_path) {
                 *playlist = Arc::new(playlist_mut);
                 video_new = Some(video);
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if let Ok(video) = collection_mut.update_video(mutation, path_parts) {
+            if let Ok(video) = collection_mut.update_video(mutation, site_path) {
                 *collection = Arc::new(collection_mut);
                 video_new = Some(video);
             }

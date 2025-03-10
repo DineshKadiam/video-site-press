@@ -22,6 +22,7 @@ use crate::{
     Playlist,
     PosterFile,
     Site,
+    SitePath,
     SubtitleFile,
     Translations,
     VideoMetaCached
@@ -58,12 +59,10 @@ pub struct Video {
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
     offline: bool,
-    /// Path in site tree. "" for a video at the root, otherwise "foo", "foo/bar", etc.
-    /// (relative to site dir, always without leading/trailing slashes).
-    pub path: String,
     platform_integration: Option<PlatformIntegration>,
     pub poster: Option<PosterFile>,
     pub release_date: Option<NaiveDate>,
+    pub site_path: SitePath,
     pub sort_number: Option<i32>,
     pub subtitles: Vec<SubtitleFile>,
     pub title: Option<String>,
@@ -383,8 +382,8 @@ impl Video {
                                 let assets = context.cache.lock().unwrap().fetch_poster_assets(
                                     &file_meta,
                                     &file_name,
-                                    &self.path,
-                                    site.poster_aspect.numeric()
+                                    site.poster_aspect.numeric(),
+                                    &self.site_path
                                 );
 
                                 let poster = PosterFile::new(assets, description, file_meta, file_name);
@@ -574,18 +573,18 @@ impl Video {
 
     // Videos with title and videos with only a slug are sorted together
     pub fn cmp_by_title_or_slug_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
-        let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
+        let a_title = a.title.as_deref().or_else(|| a.slug());
+        let b_title = b.title.as_deref().or_else(|| b.slug());
 
-        a_title.cmp(b_title)
+        a_title.cmp(&b_title)
     }
 
     // Videos with title and videos with only a slug are sorted together
     pub fn cmp_by_title_or_slug_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_title = a.title.as_deref().unwrap_or_else(|| a.slug());
-        let b_title = b.title.as_deref().unwrap_or_else(|| b.slug());
+        let a_title = a.title.as_deref().or_else(|| a.slug());
+        let b_title = b.title.as_deref().or_else(|| b.slug());
 
-        b_title.cmp(a_title)
+        b_title.cmp(&a_title)
     }
 
     // Videos without title are sorted to the front
@@ -594,7 +593,7 @@ impl Video {
             (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(b.slug())
+            (None, None) => a.slug().cmp(&b.slug())
         }
     }
 
@@ -604,7 +603,7 @@ impl Video {
             (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(a.slug())
+            (None, None) => b.slug().cmp(&a.slug())
         }
     }
 
@@ -709,15 +708,6 @@ impl Video {
         version_candidate.map(|pixels_version| pixels_version.1)
     }
 
-    pub fn label(&self, translations: &Translations) -> &str {
-        self.title
-            .as_deref()
-            .unwrap_or_else(||
-                self.slug_opt()
-                    .unwrap_or(translations.video)
-            )
-    }
-
     /// Applies a simple heuristic to determine the "most recommended"
     /// version to watch. Roughly speaking, something that is not too
     /// high-res, not too low-res, but a nice balance between resource
@@ -755,7 +745,7 @@ impl Video {
         candidate_option.map(|candidate| candidate.video_file)
     }
 
-    pub fn new(path: String, inherited_options: InheritedOptions) -> Video {
+    pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Video {
         Video {
             copy_link: None,
             description: None,
@@ -765,10 +755,10 @@ impl Video {
             inherited_options,
             links: Vec::new(),
             offline: false,
-            path,
             platform_integration: None,
             poster: None,
             release_date: None,
+            site_path,
             sort_number: None,
             subtitles: Vec::new(),
             title: None,
@@ -798,12 +788,9 @@ impl Video {
         self.offline = enabled;
     }
 
-    // Calling this on a root node returns its own path instead
-    pub fn parent_path_unchecked(&self) -> &str {
-        match self.path.rsplit_once('/') {
-            Some((parent_path, _)) => parent_path,
-            None => ""
-        }
+    // Calling this on a root node returns the same site path again
+    pub fn parent_site_path_unchecked(&self) -> SitePath {
+        self.site_path.parent_site_path_unchecked()
     }
 
     /// Get the platform_integration setting resolved in the context of the site tree
@@ -841,7 +828,8 @@ impl Video {
         inherited_options: InheritedOptions,
         site: &Site
     ) -> Arc<Video> {
-        let mut video = Video::new(hyper_dir.site_path(context), inherited_options);
+        let site_path = hyper_dir.site_path(context);
+        let mut video = Video::new(inherited_options, site_path);
 
         if let Some(manifest) = &hyper_dir.video_manifest {
             video.apply_manifest(context, manifest, site);
@@ -867,8 +855,8 @@ impl Video {
             let assets = context.cache.lock().unwrap().fetch_poster_assets(
                 &file_meta,
                 &file_name,
-                &video.path,
-                site.poster_aspect.numeric()
+                site.poster_aspect.numeric(),
+                &video.site_path
             );
 
             let poster_file = PosterFile::new(assets, None, file_meta, file_name);
@@ -884,7 +872,7 @@ impl Video {
             let file_meta = FileMeta::new(video_file);
             let file_name = video_file.file_name().unwrap().to_string_lossy().to_string();
 
-            let version_path = format!("{}/{}", &video.path, file_name);
+            let version_path = format!("{}{}", &video.site_path.normalized(), file_name);
             let video_meta = context.cache.lock().unwrap().video_meta
                 .iter()
                 .find(|cached| cached.file_meta == file_meta && cached.path == version_path)
@@ -906,15 +894,18 @@ impl Video {
         Arc::new(video)
     }
 
-    pub fn slug(&self) -> &str {
-        self.path.split('/').last().unwrap()
+    pub fn slug(&self) -> Option<&str> {
+        self.site_path.last_component()
     }
 
-    pub fn slug_opt(&self) -> Option<&str> {
-        if self.path.is_empty() {
-            None
-        } else {
-            self.path.split('/').last()
+    pub fn slug_unchecked(&self) -> &str {
+        self.site_path.last_component_unchecked()
+    }
+
+    pub fn title_or_slug_or_generic_label(&self, translations: &Translations) -> &str {
+        match &self.title {
+            Some(title) => title,
+            None => self.slug().unwrap_or(translations.video)
         }
     }
 
@@ -941,7 +932,7 @@ impl Video {
 
     // TODO: Terminate any scheduled/running background jobs associated with the video?
     pub fn unpersist(&self, context: &Context) {
-        if self.path.is_empty() {
+        if self.site_path.is_root_path() {
             let manifest_path = context.site_dir.join("video.eno");
             let _ = fs::remove_file(&manifest_path);
 
@@ -955,7 +946,7 @@ impl Video {
                 let _ = fs::remove_file(&version_path);
             }
         } else {
-            let video_dir = context.site_dir.join(&self.path);
+            let video_dir = context.site_dir.join(self.site_path.filesystem_relative());
             let _ = checked_remove_dir_all(context, &video_dir);
         }
     }
@@ -1040,7 +1031,7 @@ impl Video {
             eno.push_str(&format!("-- description\n{}\n-- description\n", description));
         }
 
-        let path = context.site_dir.join(&self.path).join("video.eno");
+        let path = context.site_dir.join(self.site_path.filesystem_relative()).join("video.eno");
         fs::write(path, eno).unwrap();
     }
 }
@@ -1111,9 +1102,9 @@ impl VideoMeta {
         context: &Context,
         file_meta: &FileMeta,
         file_name: &str,
-        path: &str
+        site_path: &SitePath
     ) {
-        let version_path = format!("{}/{}", path, file_name);
+        let version_path = format!("{}{}", site_path.normalized(), file_name);
 
         let cache_item = CacheItem::VideoMeta(VideoMetaCached {
             file_meta: file_meta.clone(),

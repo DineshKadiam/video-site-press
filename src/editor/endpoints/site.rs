@@ -10,12 +10,13 @@ use serde_derive::Deserialize;
 
 use crate::{
     AspectRatio,
-    HyperUrl,
     Context,
     Field,
     Language,
     Site,
     SiteContent,
+    SitePath,
+    SiteUrl,
     Theme,
     Translations
 };
@@ -144,10 +145,10 @@ fn edit_page(
 pub fn edit(
     context: &Context,
     form_feedback: Option<&SiteFormFeedback>,
-    path: &str,
+    site_path: &SitePath,
     translations: &Translations
 ) -> String {
-    if path.is_empty() {
+    if site_path.is_root_path() {
         let site = context.get_site();
         edit_page(form_feedback, &site, translations)
     } else {
@@ -198,7 +199,7 @@ pub async fn update(
     let base_url = if base_url_trimmed.is_empty() {
         None
     } else {
-        Some(HyperUrl::parse(base_url_trimmed))
+        Some(SiteUrl::parse(base_url_trimmed))
     };
 
     let poster_aspect = if poster_aspect_trimmed.is_empty() {

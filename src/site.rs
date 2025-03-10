@@ -11,10 +11,11 @@ use crate::{
     Font,
     GetAnyResult,
     HyperDir,
-    HyperUrl,
     InheritedOptions,
     Language,
     Playlist,
+    SitePath,
+    SiteUrl,
     Theme,
     Video
 };
@@ -49,7 +50,7 @@ pub struct DeployConfig {
 
 #[derive(Clone, Debug)]
 pub struct Site {
-    pub base_url: Option<HyperUrl>,
+    pub base_url: Option<SiteUrl>,
     pub clean_urls: bool,
     pub content: SiteContent,
     pub deploy_config: DeployConfig,
@@ -119,20 +120,37 @@ impl DeployConfig {
 }
 
 impl Site {
-    pub fn absolute_url(&self, path: &str) -> Option<String> {
-        self.base_url.as_ref().map(|base_url| base_url.join(path, self))
+    pub fn absolute_url_dir_unchecked(&self, dir: &str, site_path: &SitePath) -> String {
+        self.base_url
+            .as_ref()
+            .unwrap()
+            .join_dir(self, dir, site_path)
     }
 
-    pub fn absolute_url_prefix(&self, path: &str) -> Option<String> {
-        self.base_url.as_ref().map(|base_url| base_url.join_prefix(path))
+    pub fn absolute_url_file_unchecked(&self, file: &str, site_path: &SitePath) -> String {
+        self.base_url
+            .as_ref()
+            .unwrap()
+            .join_file(file, site_path)
     }
 
-    pub fn absolute_url_prefix_unchecked(&self, path: &str) -> String {
-        self.base_url.as_ref().unwrap().join_prefix(path)
+    pub fn absolute_url_index(&self, site_path: &SitePath) -> Option<String> {
+        self.base_url
+            .as_ref()
+            .map(|base_url| base_url.join_index(self, site_path))
     }
 
-    pub fn absolute_url_unchecked(&self, path: &str) -> String {
-        self.base_url.as_ref().unwrap().join(path, self)
+    pub fn absolute_url_prefix(&self, site_path: &SitePath) -> Option<String> {
+        self.base_url
+            .as_ref()
+            .map(|base_url| base_url.join_prefix(site_path))
+    }
+
+    pub fn absolute_url_prefix_unchecked(&self, site_path: &SitePath) -> String {
+        self.base_url
+            .as_ref()
+            .unwrap()
+            .join_prefix(site_path)
     }
 
     pub fn all_metadata_computed(&self) -> bool {
@@ -162,7 +180,7 @@ impl Site {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
-                                match HyperUrl::parse(value) {
+                                match SiteUrl::parse(value) {
                                     Ok(url) => {
                                         self.base_url = Some(url);
                                     }
@@ -367,9 +385,9 @@ impl Site {
         }
     }
 
-    /// Returns a collection, playlist or video at the given path.
-    pub fn get_any(&self, path: &str) -> GetAnyResult {
-        if path.is_empty() {
+    /// Returns a collection, playlist or video at the given site path.
+    pub fn get_any(&self, site_path: &SitePath) -> GetAnyResult {
+        if site_path.is_root_path() {
             match &self.content {
                 SiteContent::Collection(collection) => GetAnyResult::Collection(Arc::clone(collection)),
                 SiteContent::Playlist(playlist) => GetAnyResult::Playlist(Arc::clone(playlist)),
@@ -378,49 +396,49 @@ impl Site {
             }
         } else {
             match &self.content {
-                SiteContent::Collection(collection) => collection.get_any(path),
-                SiteContent::Playlist(playlist) => playlist.get_any(path),
+                SiteContent::Collection(collection) => collection.get_any(site_path),
+                SiteContent::Playlist(playlist) => playlist.get_any(site_path),
                 _ => GetAnyResult::None
             }
         }
     }
 
-    /// Returns the collection at the given path.
-    pub fn get_collection(&self, path: &str) -> Option<Arc<Collection>> {
+    /// Returns the collection at the given site path.
+    pub fn get_collection(&self, site_path: &SitePath) -> Option<Arc<Collection>> {
         if let SiteContent::Collection(collection) = &self.content {
-            if path.is_empty() {
+            if site_path.is_root_path() {
                 return Some(Arc::clone(collection));
             } else {
-                return collection.get_collection(path);
+                return collection.get_collection(site_path);
             }
         }
 
         None
     }
 
-    /// Returns the playlist at the given path.
-    pub fn get_playlist(&self, path: &str) -> Option<Arc<Playlist>> {
-        if path.is_empty() {
+    /// Returns the playlist at the given site path.
+    pub fn get_playlist(&self, site_path: &SitePath) -> Option<Arc<Playlist>> {
+        if site_path.is_root_path() {
             if let SiteContent::Playlist(playlist) = &self.content {
                 return Some(Arc::clone(playlist));
             }
         } else if let SiteContent::Collection(collection) = &self.content {
-            return collection.get_playlist(path)
+            return collection.get_playlist(site_path)
         }
 
         None
     }
 
-    /// Returns the video at the given path.
-    pub fn get_video(&self, path: &str) -> Option<Arc<Video>> {
-        if path.is_empty() {
+    /// Returns the video at the given site path.
+    pub fn get_video(&self, site_path: &SitePath) -> Option<Arc<Video>> {
+        if site_path.is_root_path() {
             if let SiteContent::Video(video) = &self.content {
                 return Some(Arc::clone(video));
             }
         } else if let SiteContent::Playlist(playlist) = &self.content {
-            return playlist.get_video(path)
+            return playlist.get_video(site_path)
         } else if let SiteContent::Collection(collection) = &self.content {
-            return collection.get_video(path)
+            return collection.get_video(site_path)
         }
 
         None

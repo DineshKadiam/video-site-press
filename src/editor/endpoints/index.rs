@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -95,7 +95,14 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         }
     };
 
-    let html = layout(&context, &language, None, &site, &body, site.title());
+    let html = layout(
+        &body,
+        &context,
+        &language,
+        &site,
+        None,
+        site.title()
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
@@ -115,10 +122,9 @@ fn storage_stats_html(translations: &Translations, videos: &Vec<Arc<Video>>) -> 
 
     for video in videos {
         for version in &video.versions {
-            let path = &video.path;
-            let link = format!("/video/{path}");
+            let link = format!("/video/{}", video.site_path.normalized());
             let size = version.file_meta.size;
-            let title = format!("{}: {}", video.label(translations), version.file_name);
+            let title = format!("{}: {}", video.title_or_slug_or_generic_label(translations), version.file_name);
             let e_title = html_escape_outside_attribute(&title);
             sizes.push((size, link, e_title));
             total_size += size;

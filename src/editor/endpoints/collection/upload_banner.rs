@@ -17,9 +17,9 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
     FileMeta,
-    JobKind
+    JobKind,
+    SitePath
 };
 use crate::editor::widgets::{error_page, not_found};
 use crate::util::{nanoid, supported_image_extension};
@@ -27,7 +27,7 @@ use crate::util::{nanoid, supported_image_extension};
 pub async fn upload_banner(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
     let language = context.get_editor_language();
 
@@ -43,7 +43,10 @@ pub async fn upload_banner(
                 // TODO: Generate a prettier filename - this goes into the site_dir!
                 //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
                 let storage_filename = format!("{}_{original_filename}", nanoid());
-                let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
+                let storage_path = context.site_dir
+                    .join(site_path.filesystem_relative())
+                    .join(&storage_filename);
+
                 let storage_path_moving = storage_path.clone();
 
                 // File::create is blocking operation, use threadpool
@@ -65,14 +68,14 @@ pub async fn upload_banner(
                     collection_mut.write_manifest(&context);
                 };
 
-                match context.update_collection(mutation, &path.path) {
+                match context.update_collection(mutation, &site_path) {
                     CollectionUpdate::Updated { collection_updated, .. } => {
                         let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection_updated));
                         context.push_job_queue(job_kind);
                     }
                     CollectionUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &language, &path.path);
+                        let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
                     }
                 }
@@ -80,7 +83,7 @@ pub async fn upload_banner(
         }
     }
 
-    let redirect_url = format!("/collection/{}", path.path);
+    let redirect_url = format!("/collection/{}", site_path.normalized());
 
     Ok(Either::Left(Redirect::to(redirect_url).see_other()))
 }

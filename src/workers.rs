@@ -25,9 +25,14 @@ use crate::{
 };
 use crate::transcode;
 
-fn compute_collection_banner_assets(context: &Context, collection: Arc<Collection>) -> Result<(), String> {
+fn compute_collection_banner_assets(
+    context: &Context,
+    collection: Arc<Collection>
+) -> Result<(), String> {
     if let Some(banner) = &collection.banner {
-        let source_path = context.site_dir.join(&collection.path).join(&banner.file_name);
+        let source_path = context.site_dir
+            .join(collection.site_path.filesystem_relative())
+            .join(&banner.file_name);
 
         match ImageProcessor::open(&source_path) {
             Ok(source_processor) => {
@@ -77,12 +82,17 @@ fn compute_collection_banner_assets(context: &Context, collection: Arc<Collectio
 
                 // TODO: This internally allocates a PosterAssetsCached which it then serializes,
                 //       but this could actually be re-used below (if we were to merge the two somehow would be good?)
-                banner_assets.write_cache_manifest(context, &banner.file_meta, &banner.file_name, &collection.path);
+                banner_assets.write_cache_manifest(
+                    context,
+                    &banner.file_meta,
+                    &banner.file_name,
+                    &collection.site_path
+                );
 
                 // Add/update poster assets in in-memory cache
                 // TODO: This looks vaguely in need of encapsulation
                 if let Ok(mut cache) = context.cache.lock() {
-                    let banner_path = format!("{}/{}", collection.path, banner.file_name);
+                    let banner_path = format!("{}{}", collection.site_path.normalized(), banner.file_name);
 
                     if let Some(poster_assets_cache) = cache.poster_assets
                         .iter_mut()
@@ -109,7 +119,7 @@ fn compute_collection_banner_assets(context: &Context, collection: Arc<Collectio
                     }
                 };
 
-                if let CollectionUpdate::NotFound = context.update_collection(mutation, &collection.path) {
+                if let CollectionUpdate::NotFound = context.update_collection(mutation, &collection.site_path) {
                     return Err("Banner assets could not be assigned in the site tree as the collection has meanwhile changed path.".to_string());
                 }
             }
@@ -128,13 +138,18 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
     for version in versions_mut.iter_mut() {
         if version.video_meta.is_some() { continue }
 
-        if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(&video.path).join(&version.file_name)) {
-            video_meta.write_cache_manifest(context, &version.file_meta, &version.file_name, &video.path);
+        if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(video.site_path.filesystem_relative()).join(&version.file_name)) {
+            video_meta.write_cache_manifest(
+                context,
+                &version.file_meta,
+                &version.file_name,
+                &video.site_path
+            );
 
             // Add/update video meta in in-memory cache
             // TODO: This looks vaguely in need of encapsulation
             if let Ok(mut cache) = context.cache.lock() {
-                let version_path = format!("{}/{}", &video.path, version.file_name);
+                let version_path = format!("{}{}", &video.site_path.normalized(), version.file_name);
 
                 if let Some(video_meta_cached) = cache.video_meta
                     .iter_mut()
@@ -165,7 +180,7 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
             video_mut.versions = versions_mut;
         };
 
-        if let Ok(video_updated) = context.update_video(mutation, &video.path) {
+        if let Ok(video_updated) = context.update_video(mutation, &video.site_path) {
             // TODO: Reactivate
             // context.create_version_jobs(&video);
             return video_updated;
@@ -177,7 +192,9 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
 
 fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(), String> {
     if let Some(banner) = &playlist.banner {
-        let source_path = context.site_dir.join(&playlist.path).join(&banner.file_name);
+        let source_path = context.site_dir
+            .join(playlist.site_path.filesystem_relative())
+            .join(&banner.file_name);
 
         match ImageProcessor::open(&source_path) {
             Ok(source_processor) => {
@@ -227,12 +244,17 @@ fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) ->
 
                 // TODO: This internally allocates a PosterAssetsCached which it then serializes,
                 //       but this could actually be re-used below (if we were to merge the two somehow would be good?)
-                banner_assets.write_cache_manifest(context, &banner.file_meta, &banner.file_name, &playlist.path);
+                banner_assets.write_cache_manifest(
+                    context,
+                    &banner.file_meta,
+                    &banner.file_name,
+                    &playlist.site_path
+                );
 
                 // Add/update poster assets in in-memory cache
                 // TODO: This looks vaguely in need of encapsulation
                 if let Ok(mut cache) = context.cache.lock() {
-                    let banner_path = format!("{}/{}", playlist.path, banner.file_name);
+                    let banner_path = format!("{}{}", playlist.site_path.normalized(), banner.file_name);
 
                     if let Some(poster_assets_cache) = cache.poster_assets
                         .iter_mut()
@@ -259,7 +281,7 @@ fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) ->
                     }
                 };
 
-                if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &playlist.path) {
+                if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &playlist.site_path) {
                     return Err("Banner assets could not be assigned in the site tree as the playlist has meanwhile changed path.".to_string());
                 }
             }
@@ -272,7 +294,10 @@ fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) ->
 
 fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc<Video> {
     if let Ok(file_name) = transcode::compute_poster(context, seek_offset, &video) {
-        let file_path = context.site_dir.join(&video.path).join(&file_name);
+        let file_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&file_name);
+
         let file_meta = FileMeta::new(&file_path);
         let poster_file = PosterFile::new(None, None, file_meta, file_name);
 
@@ -280,7 +305,7 @@ fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc
             video_mut.poster = Some(poster_file);
         };
 
-        if let Ok(video_updated) = context.update_video(mutation, &video.path) {
+        if let Ok(video_updated) = context.update_video(mutation, &video.site_path) {
             video_updated.write_manifest(context);
             return video_updated;
         }
@@ -309,7 +334,9 @@ fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, resize
 
 fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video>) -> Result<(), String> {
     if let Some(poster) = &video.poster {
-        let source_path = context.site_dir.join(&video.path).join(&poster.file_name);
+        let source_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&poster.file_name);
 
         match ImageProcessor::open(&source_path) {
             Ok(source_processor) => {
@@ -355,12 +382,17 @@ fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video
                     poster_aspect
                 };
 
-                poster_assets.write_cache_manifest(context, &poster.file_meta, &poster.file_name, &video.path);
+                poster_assets.write_cache_manifest(
+                    context,
+                    &poster.file_meta,
+                    &poster.file_name,
+                    &video.site_path
+                );
 
                 // Add/update poster assets in in-memory cache
                 // TODO: This looks vaguely in need of encapsulation
                 if let Ok(mut cache) = context.cache.lock() {
-                    let poster_path = format!("{}/{}", video.path, poster.file_name);
+                    let poster_path = format!("{}{}", video.site_path.normalized(), poster.file_name);
 
                     if let Some(poster_assets_cache) = cache.poster_assets
                         .iter_mut()
@@ -388,7 +420,7 @@ fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video
                     }
                 };
 
-                if let Err(()) = context.update_video(mutation, &video.path) {
+                if let Err(()) = context.update_video(mutation, &video.site_path) {
                     return Err("Poster assets could not be assigned in the site tree as the video has meanwhile changed path.".to_string());
                 }
             }
@@ -419,8 +451,8 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                 match job.kind {
                     JobKind::CollectionFastTasks(collection) => {
-                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &collection.path);
-                        let process_id = context.processing.lock().unwrap().push(&collection.path, label);
+                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &collection.site_path.normalized());
+                        let process_id = context.processing.lock().unwrap().push(collection.site_path.normalized(), label);
                         if let Some(banner) = &collection.banner {
                             if banner.assets.is_none() {
                                 if let Err(err) = compute_collection_banner_assets(&context, collection) {
@@ -432,8 +464,8 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         context.processing.lock().unwrap().remove(process_id);
                     }
                     JobKind::PlaylistFastTasks(playlist) => {
-                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &playlist.path);
-                        let process_id = context.processing.lock().unwrap().push(&playlist.path, label);
+                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &playlist.site_path.normalized());
+                        let process_id = context.processing.lock().unwrap().push(playlist.site_path.normalized(), label);
 
                         if let Some(banner) = &playlist.banner {
                             if banner.assets.is_none() {
@@ -446,8 +478,8 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         context.processing.lock().unwrap().remove(process_id);
                     }
                     JobKind::VideoFastTasks { poster_aspect, video } => {
-                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.path);
-                        let process_id = context.processing.lock().unwrap().push(&video.path, label);
+                        let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.site_path.normalized());
+                        let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
 
                         let video_with_metadata = compute_metadata(&context, video);
 
@@ -469,8 +501,8 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                     }
                     JobKind::VideoFormat { format, video } => {
                         let format_label = format.label(); // Implement Display so we can just drop it right into interpolation?
-                        let label = format!("[Worker {worker_number}] Computing version {format_label} for {}", video.path);
-                        let process_id = context.processing.lock().unwrap().push(&video.path, label);
+                        let label = format!("[Worker {worker_number}] Computing version {format_label} for {}", video.site_path.normalized());
+                        let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
 
                         match transcode::encode(&context, format, process_id, &video) {
                             Ok(version) => {
@@ -478,7 +510,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                     video_mut.versions.push(version);
                                 };
 
-                                match context.update_video(mutation, &video.path) {
+                                match context.update_video(mutation, &video.site_path) {
                                     Ok(video_updated) => {
                                         let site = context.get_site();
                                         let job_kind = JobKind::VideoFastTasks {
@@ -498,8 +530,8 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         context.processing.lock().unwrap().remove(process_id);
                     }
                     JobKind::VideoRandomPoster { poster_aspect, video } => {
-                        let label = format!("[Worker {worker_number}] Computing random poster for {}", &video.path);
-                        let process_id = context.processing.lock().unwrap().push(&video.path, label);
+                        let label = format!("[Worker {worker_number}] Computing random poster for {}", &video.site_path.normalized());
+                        let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
 
                         let video_with_metadata = compute_metadata(&context, video);
 

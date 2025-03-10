@@ -9,9 +9,9 @@ use serde_derive::Deserialize;
 
 use crate::{
     Context,
-    ContextPath,
     Playlist,
-    PlaylistUpdate
+    PlaylistUpdate,
+    SitePath
 };
 use crate::editor::widgets::not_found;
 
@@ -23,7 +23,7 @@ pub struct BannerUpdateForm {
 pub async fn update_banner(
     context: Data<Arc<Context>>,
     form: Form<BannerUpdateForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |playlist_mut: &mut Playlist| {
         if let Some(banner) = &mut playlist_mut.banner {
@@ -32,14 +32,14 @@ pub async fn update_banner(
         playlist_mut.write_manifest(&context);
     };
 
-    match context.update_playlist(mutation, &path.path) {
+    match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::Updated { playlist_updated, .. } => {
-            let redirect_url = format!("/playlist/{}", playlist_updated.path);
+            let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         PlaylistUpdate::NotFound => {
             let language = context.get_editor_language();
-            Either::Right(not_found(&context, &language, &path.path))
+            Either::Right(not_found(&context, &language, &site_path))
         }
     }
 }

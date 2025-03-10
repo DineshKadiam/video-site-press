@@ -150,7 +150,9 @@ pub fn links(language: &Language, links: &[Link]) -> String {
     format!(r#"<div class="links">{items}</div>"#)
 }
 
-/// Renders the video player
+/// Renders the video player.
+/// In the context of a playlist, [next_video] references the next video
+/// in the playlist, if there is one.
 pub fn player(
     next_video: Option<Arc<Video>>,
     site: &Site,
@@ -238,7 +240,7 @@ pub fn player(
 
     let t_next_video = site.language.translations.next_video;
     let next_video_button = match next_video {
-        Some(video) => format!(r#"<a href="{video_prefix}../{}{index_suffix}">{t_next_video}</a>"#, video.slug()),
+        Some(next_video) => format!(r#"<a href="{video_prefix}../{}{index_suffix}">{t_next_video}</a>"#, next_video.slug_unchecked()),
         None => String::new()
     };
 

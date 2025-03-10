@@ -11,7 +11,8 @@ use crate::{
     Context,
     FileMeta,
     PlatformIntegrationImage,
-    PosterAssetsCached
+    PosterAssetsCached,
+    SitePath
 };
 use crate::util::hash_closure;
 
@@ -153,9 +154,13 @@ impl PosterAssets {
         context: &Context,
         file_meta: &FileMeta,
         file_name: &str,
-        path: &str
+        site_path: &SitePath
     ) {
-        let poster_path = format!("{}/{}", path, file_name);
+        // TODO: These "paths" are actually abstract paths, used to retrieve
+        // the cached items under a certain "id" (which is this "path")
+        // but the code does not make that clear. (but should!) Here and else
+        // where needs refactoring.
+        let poster_path = format!("{}{}", site_path.normalized(), file_name);
 
         let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
             assets: self.clone(),

@@ -13,9 +13,9 @@ use crate::{
     Collection,
     CollectionUpdate,
     Context,
-    ContextPath,
     Field,
-    Playlist
+    Playlist,
+    SitePath
 };
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
@@ -32,7 +32,7 @@ pub struct CreatePlaylistForm {
 pub async fn create_playlist(
     context: Data<Arc<Context>>,
     form: Form<CreatePlaylistForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();
 
@@ -40,9 +40,9 @@ pub async fn create_playlist(
     let title_trimmed = form.title.trim();
 
     let error = |slug_error, title_error| -> _ {
-        let collection = match context.get_collection(&path.path) {
+        let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &path.path))
+            None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
         let form_feedback = CollectionFormFeedback::CreatePlaylist {
@@ -62,12 +62,12 @@ pub async fn create_playlist(
         );
     }
 
-    let succeed = |playlist_path: String, title: Option<&str>| {
-        let playlist_dir = context.site_dir.join(&playlist_path);
+    let succeed = |playlist_site_path: SitePath, title: Option<&str>| {
+        let playlist_dir = context.site_dir.join(playlist_site_path.filesystem_relative());
         fs::create_dir_all(&playlist_dir).unwrap();
 
         let mutation = |collection: &mut Collection| -> Arc<Playlist> {
-            let mut playlist_mut = Playlist::new(playlist_path, collection.propagate_options());
+            let mut playlist_mut = Playlist::new(collection.propagate_options(), playlist_site_path);
             if let Some(title) = title {
                 playlist_mut.title = Some(title.to_string());
             }
@@ -76,55 +76,43 @@ pub async fn create_playlist(
             playlist
         };
 
-        match context.update_collection(mutation, &path.path) {
+        match context.update_collection(mutation, &site_path) {
             CollectionUpdate::Updated { optional_return_value: playlist, .. } => {
                 playlist.write_manifest(&context);
 
-                let redirect_url = format!("/playlist/{}", playlist.path);
+                let redirect_url = format!("/playlist/{}", playlist.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &path.path))
+                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     };
 
     if slug_trimmed.is_empty() {
         let slug = slugify(title_trimmed);
-        let mut playlist_path = if path.path.is_empty() {
-            slug.to_string()
-        } else {
-            format!("{}/{slug}", &path.path)
-        };
+        let mut playlist_site_path = site_path.join(&slug);
 
         let mut duplicate = 1;
-        while context.site_dir.join(&playlist_path).exists() {
-            playlist_path = if path.path.is_empty() {
-                format!("{slug}_{duplicate}")
-            } else {
-                format!("{}/{slug}_{duplicate}", &path.path)
-            };
+        while context.site_dir.join(playlist_site_path.filesystem_relative()).exists() {
+            playlist_site_path = site_path.join(&format!("{slug}_{duplicate}"));
             duplicate += 1;
         }
 
-        succeed(playlist_path, Some(title_trimmed))
+        succeed(playlist_site_path, Some(title_trimmed))
     } else {
         if let Err(message) = validate_slug(slug_trimmed) {
             return error(Some(&message), None);
         }
 
-        let playlist_path = if path.path.is_empty() {
-            slug_trimmed.to_string()
-        } else {
-            format!("{}/{slug_trimmed}", &path.path)
-        };
+        let playlist_site_path = site_path.join(slug_trimmed);
 
-        if context.site_dir.join(&playlist_path).exists() {
+        if context.site_dir.join(playlist_site_path.filesystem_relative()).exists() {
             let message = language.translations.permalink_already_used_by_another_collection_playlist_or_video;
             error(Some(message), None)
         } else {
             let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };
-            succeed(playlist_path, title)
+            succeed(playlist_site_path, title)
         }
     }
 }

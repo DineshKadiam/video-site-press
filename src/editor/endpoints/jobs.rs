@@ -133,7 +133,14 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
 
     body.push_str("</ul>");
 
-    let html = layout(&context, &language, None, &site, &body, site.title());
+    let html = layout(
+        &body,
+        &context,
+        &language,
+        &site,
+        None,
+        site.title()
+    );
 
     HttpResponse::Ok()
         .content_type(ContentType::html())

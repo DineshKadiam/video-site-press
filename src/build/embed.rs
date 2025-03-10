@@ -26,7 +26,10 @@ pub fn embed_html(
 
     let html = embed_layout(asset_hashes, &body, site, traversal);
 
-    let embed_dir = context.build_dir.join(&video.path).join("embed");
+    let embed_dir = context.build_dir
+        .join(video.site_path.filesystem_relative())
+        .join("embed");
+
     fs::create_dir_all(&embed_dir).unwrap();
     let index_path = embed_dir.join("index.html");
     fs::write(index_path, html).unwrap();

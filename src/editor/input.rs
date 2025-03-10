@@ -5,7 +5,13 @@ use std::fmt::{Display, Formatter};
 
 use indoc::formatdoc;
 
-use crate::{Field, Site, Translations};
+use crate::{
+    Field,
+    Site,
+    SitePath,
+    SiteUrl,
+    Translations
+};
 use crate::util::html_escape_inside_attribute;
 
 pub struct Input<'a> {
@@ -60,17 +66,12 @@ impl<'a> Input<'a> {
     /// Initialize an input for a permalink
     pub fn permalink(
         key: &'a str,
-        parent_path: &str,
+        parent_site_path: &SitePath,
         site: &Site,
         translations: &'a Translations
     ) -> Input<'a> {
-        let prefix = site.absolute_url_prefix(parent_path)
-            .unwrap_or_else(|| {
-                match parent_path.is_empty() {
-                    true => String::from("https://example.com/"),
-                    false => format!("https://example.com/{parent_path}/")
-                }
-            });
+        let prefix = site.absolute_url_prefix(parent_site_path)
+            .unwrap_or_else(|| SiteUrl::example_url().join_prefix(parent_site_path));
 
         Input::new(key, translations.permalink, InputType::Permalink { prefix })
     }

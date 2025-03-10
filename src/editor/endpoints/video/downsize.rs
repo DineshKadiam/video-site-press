@@ -7,7 +7,12 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Context, ContextPath, JobKind, VideoFormat};
+use crate::{
+    Context,
+    JobKind,
+    SitePath,
+    VideoFormat
+};
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -23,13 +28,13 @@ pub struct DownsizeForm {
 pub async fn downsize(
     context: Data<Arc<Context>>,
     form: Form<DownsizeForm>,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let video = match context.get_video(&path.path) {
+    let video = match context.get_video(&site_path) {
         Some(video) => video,
         None => {
             let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &path.path))
+            return Either::Right(not_found(&context, &language, &site_path))
         }
     };
 
@@ -51,6 +56,6 @@ pub async fn downsize(
     let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
     context.push_job_queue(job_kind);
 
-    let redirect_url = format!("/video/{}", &path.path);
+    let redirect_url = format!("/video/{}", site_path.normalized());
     Either::Left(Redirect::to(redirect_url).see_other())
 }

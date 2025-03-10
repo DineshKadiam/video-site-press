@@ -15,11 +15,11 @@ use futures_util::TryStreamExt as _;
 use crate::{
     Banner,
     Context,
-    ContextPath,
     FileMeta,
     JobKind,
     Playlist,
-    PlaylistUpdate
+    PlaylistUpdate,
+    SitePath
 };
 use crate::editor::widgets::{error_page, not_found};
 use crate::util::{nanoid, supported_image_extension};
@@ -27,7 +27,7 @@ use crate::util::{nanoid, supported_image_extension};
 pub async fn upload_banner(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    path: ActixPath<ContextPath>
+    site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
     let language = context.get_editor_language();
 
@@ -43,7 +43,10 @@ pub async fn upload_banner(
                 // TODO: Generate a prettier filename - this goes into the site_dir!
                 //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
                 let storage_filename = format!("{}_{original_filename}", nanoid());
-                let storage_path = context.site_dir.join(&path.path).join(&storage_filename);
+                let storage_path = context.site_dir
+                    .join(site_path.filesystem_relative())
+                    .join(&storage_filename);
+
                 let storage_path_moving = storage_path.clone();
 
                 // File::create is blocking operation, use threadpool
@@ -65,14 +68,14 @@ pub async fn upload_banner(
                     playlist_mut.write_manifest(&context);
                 };
 
-                match context.update_playlist(mutation, &path.path) {
+                match context.update_playlist(mutation, &site_path) {
                     PlaylistUpdate::Updated { playlist_updated, .. } => {
                         let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist_updated));
                         context.push_job_queue(job_kind);
                     }
                     PlaylistUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &language, &path.path);
+                        let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
                     }
                 }
@@ -80,7 +83,7 @@ pub async fn upload_banner(
         }
     }
 
-    let redirect_url = format!("/playlist/{}", path.path);
+    let redirect_url = format!("/playlist/{}", site_path.normalized());
 
     Ok(Either::Left(Redirect::to(redirect_url).see_other()))
 }
