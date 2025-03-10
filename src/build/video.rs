@@ -48,7 +48,7 @@ pub fn video_html(
     let title = video.title_or_slug_or_generic_label(translations);
     let e_title = html_escape_outside_attribute(title);
 
-    let r_downloads = if video.download() {
+    let r_downloads = if video.download() && !video.versions.is_empty() {
         let t_download = site.language.translations.download;
         let t_download_permalink = site.language.translations.download_permalink;
         let download_icon = icons::download(t_download);
@@ -119,7 +119,7 @@ pub fn video_html(
         String::new()
     };
 
-    let r_embed = if video.embedding() && site.base_url.is_some() {
+    let r_embed = if video.embedding() && site.base_url.is_some() && !video.versions.is_empty() {
         let embed_icon = icons::embed();
 
         let t_embed = &site.language.translations.embed;
