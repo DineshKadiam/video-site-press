@@ -1099,38 +1099,6 @@ impl Collection {
         }
     }
 
-    pub fn update_collection<T>(
-        &mut self,
-        mutation: impl FnOnce(&mut Collection) -> T,
-        site_path: &SitePath
-    ) -> CollectionUpdate<T> {
-        if let Some(subcollection) = self.subcollections
-            .iter_mut()
-            .find(|subcollection| subcollection.site_path == *site_path) {
-            let mut subcollection_mut = (**subcollection).clone();
-
-            let result = subcollection_mut.update_collection(mutation, site_path);
-
-            if let CollectionUpdate::Updated { .. } = result {
-                *subcollection = Arc::new(subcollection_mut);
-                return result;
-            }
-        } else if let Some(subcollection) = self.subcollections
-            .iter_mut()
-            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
-            let mut subcollection_mut = (**subcollection).clone();
-            let optional_return_value = mutation(&mut subcollection_mut);
-            *subcollection = Arc::new(subcollection_mut);
-
-            return CollectionUpdate::Updated {
-                collection_updated: Arc::clone(subcollection),
-                optional_return_value
-            };
-        }
-
-        CollectionUpdate::NotFound
-    }
-
     /// The site path to be updated is intended to be that of a descendant of
     /// the collection, never the collection itself!
     pub fn update_descendant_from_filesystem(
@@ -1229,6 +1197,38 @@ impl Collection {
         }
 
         PlaylistUpdate::NotFound
+    }
+
+    pub fn update_subcollection<T>(
+        &mut self,
+        mutation: impl FnOnce(&mut Collection) -> T,
+        site_path: &SitePath
+    ) -> CollectionUpdate<T> {
+        if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| subcollection.site_path == *site_path) {
+            let mut subcollection_mut = (**subcollection).clone();
+            let optional_return_value = mutation(&mut subcollection_mut);
+            *subcollection = Arc::new(subcollection_mut);
+
+            return CollectionUpdate::Updated {
+                collection_updated: Arc::clone(subcollection),
+                optional_return_value
+            };
+        } else if let Some(subcollection) = self.subcollections
+            .iter_mut()
+            .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
+            let mut subcollection_mut = (**subcollection).clone();
+
+            let result = subcollection_mut.update_subcollection(mutation, site_path);
+
+            if let CollectionUpdate::Updated { .. } = result {
+                *subcollection = Arc::new(subcollection_mut);
+                return result;
+            }
+        }
+
+        CollectionUpdate::NotFound
     }
 
     pub fn update_video(

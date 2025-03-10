@@ -1154,7 +1154,7 @@ impl Context {
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            result = collection_mut.update_collection(mutation, site_path);
+            result = collection_mut.update_subcollection(mutation, site_path);
 
             if let CollectionUpdate::Updated { .. } = result {
                 *collection = Arc::new(collection_mut);
