@@ -1,16 +1,64 @@
 <!--
-    SPDX-FileCopyrightText: 2024 Simon Repp
+    SPDX-FileCopyrightText: 2024-2025 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
 # Changelog
+
+## 0.18
+
+### Embeds
+
+- Introduce video embedding (c344a14, 6cb87c3, 8fd51a1)
+
+### Metadata and platform integration
+
+- Introduce opt-in opengraph link previews (8a58980)
+- Introduce opt-in opengraph and "player card" content embeds (92238b5, bf08629)
+- Render noindex/nofollow robots meta tags on embed/unlisted pages (e1a0434)
+- Add generator meta to pages, include git revision with detailed version output (89b57b7)
+
+### Windows
+
+- Introduce support for Windows (implement cross-platform aware site path abstraction) (08cf0dd, 1913b55)
+- Canonicalize site directory without UNC form on windows when possible (5202482)
+
+### New options
+
+- Support enabling/disabling download buttons for videos (disabled by default) (c3e9c45)
+- Support enabling/disabling copy link buttons for videos (enabled by default) (fc9613d)
+- Indicate inherited state for options that propagate through the site tree (11cd60f)
+
+### Generated sites
+
+- Ensure vertically centered alignment of vertically cropped videos (b2c29cb)
+- Make header/footer non-overlapping, move theme toggle to header, display footer (91a91cd)
+- Hide volume controls when volume is read-only (primarily for browsers on iOS) (6129e1c)
+- Provide downloads on dedicated page, optimize index load times (9edd66d)
+
+### Misc additions
+
+- Allow serving the editor under a custom ip address (0fb0fed)
+- Introduce hash-based css/js asset invalidation (1ffdfb8)
+- Await complete metadata coverage in site tree before building (6eb11d7)
+- Improve manifest error coverage and messages (867549c)
+
+### Fixes
+
+- Fix broken realtime encoding progress reporting in editor (4ec176c)
+- Omit download/embed buttons for videos without versions (4e24410)
+- Implement post update propagation of options to site tree descendants (009e4a4)
+- Remove and guard against invalid conversions of videos in playlists (21dc9d9)
+- Fix feedback for collection to video conversion (fdb1381)
+- Correct ffprobe-specific error message (dcaf5d7)
+- Replace accidental eprint usage with eprintln (36ec0bf)
 
 ## 0.17.1
 
 - Handle ffprobe output variations caused by unrecognized data streams in video (d4afda7)
 - Play videos inline on iOS (Walter Ebert, feb8c65)
 
-## 0.17.0
+## 0.17
 
 - Fix critical playback issue in older Safari browsers (Walter Ebert, c835f43)
 - Propagate visibility upwards when moving video into new collection or playlist (a9ac6a3)
@@ -22,7 +70,7 @@
 - Fix computation of latest release dates in collections and playlists (ef0bd4c)
 - Allow creating videos without providing video files right away (3e25c57)
 
-## 0.16.0
+## 0.16
 
 - Minor vertical margin tweaks in build (ff55695)
 - Add dark warm, light deep and light warm theme variants (4f4aff9, 173b40a)
@@ -33,7 +81,7 @@
 - Disable autocompletion in new playlist/subcollection forms (97b7f05)
 - Fix title sometimes not being assigned when creating playlist/subcollection (80fdc47)
 
-## 0.15.0
+## 0.15
 
 - Offer automatic and forced original frame rate option for encoding (72149a0)
 - Display full public url context as prefix for all permalink input fields (6763d77)
@@ -62,7 +110,7 @@
 - Prompt user to confirm when they are about to discard changes made to a form (6796662)
 - Fix redirect after deleting nested collection or playlist (b669811)
 
-## 0.14.0
+## 0.14
 
 - Improve readability of form grouping and various editor widgets (5eaf037)
 - Link site url from deployment page (7fc88c8)
@@ -81,6 +129,6 @@
 - Improve presentation of collection hierarchies in built site (e1fab97)
 - Fix critical markdown subset parsing issue when encountering multiple inline links (a2e8ff6)
 
-## 0.13.0
+## 0.13
 
 First official beta release
