@@ -12,14 +12,12 @@ use url::Url;
 
 use crate::{
     CacheItem,
-    Collection,
     Context,
     FileMeta,
     HyperDir,
     InheritedOptions,
     Link,
     PlatformIntegration,
-    Playlist,
     PosterFile,
     Site,
     SitePath,
@@ -102,11 +100,6 @@ pub enum VideoOrder {
     SortNumberDesc,
     TitleAsc,
     TitleDesc
-}
-
-pub enum VideoParent {
-    Collection(Arc<Collection>),
-    Playlist(Arc<Playlist>)
 }
 
 impl Video {

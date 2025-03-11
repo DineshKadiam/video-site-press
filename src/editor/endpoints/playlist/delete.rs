@@ -15,8 +15,8 @@ pub async fn delete(
 ) -> Either<Redirect, HttpResponse> {
     if !context.delete_playlist(&site_path) {
         let language = context.get_editor_language();
-        return Either::Right(not_found(&context, &language, &site_path))
-    };
+        return Either::Right(not_found(&context, &language, &site_path));
+    }
 
     let redirect_url = if site_path.is_root_path() {
         String::from("/")

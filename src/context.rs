@@ -26,8 +26,7 @@ use crate::{
     SitePath,
     Theme,
     TreeViewOrder,
-    Video,
-    VideoParent
+    Video
 };
 use crate::util::{checked_remove_dir_all, nanoid};
 
@@ -906,9 +905,7 @@ impl Context {
         false
     }
 
-    /// Deletes the video at path (if found) and in case of success returns
-    // its parent (collection or playlist or none if it was at the site root).
-    pub fn delete_video(&self, site_path: &SitePath) -> Result<Option<VideoParent>, ()> {
+    pub fn delete_video(&self, site_path: &SitePath) -> bool {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
@@ -916,38 +913,27 @@ impl Context {
                 video.unpersist(self);
                 site_mut.content = SiteContent::Empty;
                 self.replace_site(site_mut);
-                return Ok(None);
+                return true;
             }
         } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
             let mut playlist_mut = (**playlist).clone();
 
             if playlist_mut.delete_video(self, site_path) {
-                let playlist_new = Arc::new(playlist_mut);
-                *playlist = Arc::clone(&playlist_new);
+                *playlist = Arc::new(playlist_mut);
                 self.replace_site(site_mut);
-                return Ok(Some(VideoParent::Playlist(playlist_new)));
+                return true;
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if let Ok(video_parent) = collection_mut.delete_video(self, site_path) {
-                match video_parent {
-                    Some(video_parent) => {
-                        *collection = Arc::new(collection_mut);
-                        self.replace_site(site_mut);
-                        return Ok(Some(video_parent));
-                    }
-                    None => {
-                        let collection_new = Arc::new(collection_mut);
-                        *collection = Arc::clone(&collection_new);
-                        self.replace_site(site_mut);
-                        return Ok(Some(VideoParent::Collection(collection_new)))
-                    }
-                }
+            if collection_mut.delete_video(self, site_path) {
+                *collection = Arc::new(collection_mut);
+                self.replace_site(site_mut);
+                return true;
             }
         }
 
-        Err(())
+        false
     }
 
 

@@ -69,7 +69,7 @@ use theme::{Theme, ThemeKind};
 use transcode::FFmpegEncodingStats;
 use translations::Translations;
 use util::Field;
-use video::{Video, VideoFile, VideoMeta, VideoOrder, VideoParent};
+use video::{Video, VideoFile, VideoMeta, VideoOrder};
 use video_format::{Codec, EncodingApproach, VideoFormat};
 
 fn main() {

@@ -26,8 +26,7 @@ use crate::{
     Translations,
     TreeViewOrder,
     Video,
-    VideoOrder,
-    VideoParent
+    VideoOrder
 };
 use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::checked_remove_dir_all;
@@ -538,20 +537,17 @@ impl Collection {
         false
     }
 
-    /// Deletes the video at site path (if found) and in case of success returns
-    /// its deeper parent (subcollection or playlist or None if it was a
-    /// direct child of this collection).
     pub fn delete_video(
         &mut self,
         context: &Context,
         site_path: &SitePath
-    ) -> Result<Option<VideoParent>, ()> {
+    ) -> bool {
         if let Some(video) = self.videos
             .iter()
             .position(|video| video.site_path == *site_path)
             .map(|index| self.videos.swap_remove(index)) {
             video.unpersist(context);
-            return Ok(None);
+            return true;
         } else if let Some(playlist) = self.playlists
             .iter_mut()
             .find(|playlist| site_path.starts_with(&playlist.site_path)) {
@@ -559,29 +555,20 @@ impl Collection {
 
             if playlist_mut.delete_video(context, site_path) {
                 *playlist = Arc::new(playlist_mut);
-                return Ok(Some(VideoParent::Playlist(Arc::clone(playlist))));
+                return true;
             }
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            if let Ok(video_parent) = subcollection_mut.delete_video(context, site_path) {
-                match video_parent {
-                    Some(video_parent) => {
-                        *subcollection = Arc::new(subcollection_mut);
-                        return Ok(Some(video_parent));
-                    }
-                    None => {
-                        let subcollection_new = Arc::new(subcollection_mut);
-                        *subcollection = Arc::clone(&subcollection_new);
-                        return Ok(Some(VideoParent::Collection(subcollection_new)))
-                    }
-                }
+            if subcollection_mut.delete_video(context, site_path) {
+                *subcollection = Arc::new(subcollection_mut);
+                return true;
             }
         }
 
-        Err(())
+        false
     }
 
     /// Get the download setting resolved in the context of the site tree
