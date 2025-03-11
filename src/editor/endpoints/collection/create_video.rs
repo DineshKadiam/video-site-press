@@ -67,7 +67,7 @@ pub async fn create_video(
         fs::create_dir_all(&video_dir).unwrap();
 
         let mutation = |collection: &mut Collection| -> Arc<Video> {
-            let mut video_mut = Video::new(collection.propagate_options(), video_site_path);
+            let mut video_mut = Video::new(collection.mutate_inherited_options(), video_site_path);
             if let Some(title) = title {
                 video_mut.title = Some(title.to_string());
             }

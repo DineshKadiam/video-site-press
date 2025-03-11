@@ -22,7 +22,7 @@ pub struct Embed {
     pub width: usize
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PlatformIntegration {
     ContentEmbeds,
     Disabled,

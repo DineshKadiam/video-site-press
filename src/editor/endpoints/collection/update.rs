@@ -74,15 +74,22 @@ pub async fn update(
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
         let mutation = |collection_mut: &mut Collection| {
-            collection_mut.copy_link_local_set(copy_link);
             collection_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            collection_mut.download_local_set(download);
-            collection_mut.embedding_local_set(embedding);
-            collection_mut.offline_local_set(offline);
-            collection_mut.platform_integration_local_set(platform_integration);
             collection_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            collection_mut.unlisted_local_set(unlisted);
             collection_mut.video_order = video_order;
+
+            let mut must_propagate = false;
+
+            must_propagate |= collection_mut.copy_link_local_set(copy_link);
+            must_propagate |= collection_mut.download_local_set(download);
+            must_propagate |= collection_mut.embedding_local_set(embedding);
+            must_propagate |= collection_mut.offline_local_set(offline);
+            must_propagate |= collection_mut.platform_integration_local_set(platform_integration);
+            must_propagate |= collection_mut.unlisted_local_set(unlisted);
+
+            if must_propagate {
+                collection_mut.propagate_options();
+            }
         };
 
         match context.update_collection(mutation, &site_path) {

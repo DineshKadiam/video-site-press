@@ -75,20 +75,27 @@ pub async fn update(
     // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
     if true {
         let mutation = |playlist_mut: &mut Playlist| {
-            playlist_mut.copy_link_local_set(copy_link);
             playlist_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
-            playlist_mut.download_local_set(download);
-            playlist_mut.embedding_local_set(embedding);
-            playlist_mut.offline_local_set(offline);
             playlist_mut.order = order;
-            playlist_mut.platform_integration_local_set(platform_integration);
             playlist_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
-            playlist_mut.unlisted_local_set(unlisted);
-            playlist_mut.write_manifest(&context);
+
+            let mut must_propagate = false;
+
+            must_propagate |= playlist_mut.copy_link_local_set(copy_link);
+            must_propagate |= playlist_mut.download_local_set(download);
+            must_propagate |= playlist_mut.embedding_local_set(embedding);
+            must_propagate |= playlist_mut.offline_local_set(offline);
+            must_propagate |= playlist_mut.platform_integration_local_set(platform_integration);
+            must_propagate |= playlist_mut.unlisted_local_set(unlisted);
+
+            if must_propagate {
+                playlist_mut.propagate_options();
+            }
         };
 
         match context.update_playlist(mutation, &site_path) {
             PlaylistUpdate::Updated { playlist_updated, .. } => {
+                playlist_updated.write_manifest(&context);
                 let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
                 Either::Left(Redirect::to(redirect_url).see_other())
             }

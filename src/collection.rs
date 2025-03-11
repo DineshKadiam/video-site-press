@@ -465,9 +465,17 @@ impl Collection {
         self.copy_link
     }
 
-    /// Set the copy_link setting locally on the collection.
-    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) {
+    /// Set the copy_link setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.copy_link) !=
+            self.copy_link.unwrap_or(self.inherited_options.copy_link);
+
         self.copy_link = enabled_option;
+
+        must_propagate
     }
 
     /// Recursively traverses the collection to determine if any published
@@ -592,9 +600,17 @@ impl Collection {
         self.download
     }
 
-    /// Set the download setting locally on the collection.
-    pub fn download_local_set(&mut self, enabled_option: Option<bool>) {
+    /// Set the download setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn download_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.download) !=
+            self.download.unwrap_or(self.inherited_options.download);
+
         self.download = enabled_option;
+
+        must_propagate
     }
 
     /// Traverses the collection tree to determine if any published video in
@@ -622,9 +638,17 @@ impl Collection {
         self.embedding
     }
 
-    /// Set the embedding setting locally on the collection.
-    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) {
+    /// Set the embedding setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.embedding) !=
+            self.embedding.unwrap_or(self.inherited_options.embedding);
+
         self.embedding = enabled_option;
+
+        must_propagate
     }
 
     /// Traverses the collection tree to determine if any published video in
@@ -716,6 +740,11 @@ impl Collection {
         None
     }
 
+    /// Sets new inherited options on the collection.
+    pub fn inherited_options_set(&mut self, inherited_options: InheritedOptions) {
+        self.inherited_options = inherited_options;
+    }
+
     pub fn latest_release_date(&self) -> Option<NaiveDate> {
         let latest_in_playlists = self.public_playlists()
             .fold(None, |latest_release_date, playlist| {
@@ -762,6 +791,13 @@ impl Collection {
             .unwrap()
     }
 
+    /// Mutates the options the collection inherited from its ancestors by
+    /// merging them with its own options, so they can be passed on to new
+    /// descendants.
+    pub fn mutate_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.merge_collection_options(self)
+    }
+
     pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Collection {
         Collection {
             banner: None,
@@ -800,9 +836,17 @@ impl Collection {
         self.offline
     }
 
-    /// Set the offline setting locally on the collection.
-    pub fn offline_local_set(&mut self, enabled: bool) {
+    /// Set the offline setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn offline_local_set(&mut self, enabled: bool) -> bool {
+        let must_propagate =
+            (enabled || self.inherited_options.offline) !=
+            (self.offline || self.inherited_options.offline);
+
         self.offline = enabled;
+
+        must_propagate
     }
 
     // Calling this on a root node returns the same site path again
@@ -826,9 +870,17 @@ impl Collection {
         self.platform_integration
     }
 
-    /// Set the platform_integration setting locally on the colletion.
-    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) {
+    /// Set the platform_integration setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) -> bool {
+        let must_propagate =
+            platform_integration_option.unwrap_or(self.inherited_options.platform_integration) !=
+            self.platform_integration.unwrap_or(self.inherited_options.platform_integration);
+
         self.platform_integration = platform_integration_option;
+
+        must_propagate
     }
 
     /// Determines if the collection or any of its descendants has platform_integration
@@ -855,10 +907,40 @@ impl Collection {
         playlists
     }
 
-    /// Merges the options the collection inherited from its ancestors with
-    /// its own options for hand-down to a (new) descendant.
-    pub fn propagate_options(&self) -> InheritedOptions {
-        self.inherited_options.merge_collection_options(self)
+    /// Recursively clones all descendants of this collection "in place"
+    /// (making them briefly mutable) to update their inherited setting
+    /// states (download, embedding, offline, unlisted, etc.).
+    pub fn propagate_options(&mut self) {
+        let mutated_options = self.mutate_inherited_options();
+
+        self.playlists = self.playlists
+            .drain(..)
+            .map(|playlist| {
+                let mut playlist_mut = Arc::unwrap_or_clone(playlist);
+                playlist_mut.inherited_options_set(mutated_options.clone());
+                playlist_mut.propagate_options();
+                Arc::new(playlist_mut)
+            })
+            .collect();
+
+        self.subcollections = self.subcollections
+            .drain(..)
+            .map(|subcollection| {
+                let mut subcollection_mut = Arc::unwrap_or_clone(subcollection);
+                subcollection_mut.inherited_options_set(mutated_options.clone());
+                subcollection_mut.propagate_options();
+                Arc::new(subcollection_mut)
+            })
+            .collect();
+
+        self.videos = self.videos
+            .drain(..)
+            .map(|video| {
+                let mut video_mut = Arc::unwrap_or_clone(video);
+                video_mut.inherited_options_set(mutated_options.clone());
+                Arc::new(video_mut)
+            })
+            .collect();
     }
 
     /// A collection is public in its local context if it is neither offline
@@ -992,7 +1074,7 @@ impl Collection {
                 let error = format!("Ignoring collection subdirectory {} because it contains conflicting manifest types (only one of collection.eno, playlist.eno and video.eno may exist in one directory)", hyper_subdir.path.display());
                 self.errors.push(error);
             } else {
-                let subcollection = Collection::read_dir(context, hyper_subdir, self.propagate_options(), site);
+                let subcollection = Collection::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
                 self.subcollections.push(subcollection);
             }
         } else if hyper_subdir.playlist_manifest.is_some() {
@@ -1000,17 +1082,17 @@ impl Collection {
                 let error = format!("Ignoring collection subdirectory {} because it contains both playlist.eno and video.eno (only one of the two may exist in one directory)", hyper_subdir.path.display());
                 self.errors.push(error);
             } else {
-                let playlist = Playlist::read_dir(context, hyper_subdir, self.propagate_options(), site);
+                let playlist = Playlist::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
                 self.playlists.push(playlist);
             }
         } else if hyper_subdir.video_manifest.is_some() {
-            let video = Video::read_dir(context, hyper_subdir, self.propagate_options(), site);
+            let video = Video::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
             self.videos.push(video);
         } else if !hyper_subdir.dirs.is_empty() {
-            let subcollection = Collection::read_dir(context, hyper_subdir, self.propagate_options(), site);
+            let subcollection = Collection::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
             self.subcollections.push(subcollection);
         } else if !hyper_subdir.video_files.is_empty() {
-            let video = Video::read_dir(context, hyper_subdir, self.propagate_options(), site);
+            let video = Video::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
             self.videos.push(video);
         } else {
             // TODO: We currently ignore an empty subdir, as if it didn't exist.
@@ -1064,9 +1146,17 @@ impl Collection {
         self.unlisted
     }
 
-    /// Set the unlisted setting locally on the collection.
-    pub fn unlisted_local_set(&mut self, enabled: bool) {
+    /// Set the unlisted setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn unlisted_local_set(&mut self, enabled: bool) -> bool {
+        let must_propagate =
+            (enabled || self.inherited_options.unlisted) !=
+            (self.unlisted || self.inherited_options.unlisted);
+
         self.unlisted = enabled;
+
+        must_propagate
     }
 
     pub fn unpersist(&self, context: &Context) {

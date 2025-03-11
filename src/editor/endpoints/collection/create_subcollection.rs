@@ -66,7 +66,7 @@ pub async fn create_subcollection(
         fs::create_dir_all(&subcollection_dir).unwrap();
 
         let mutation = |collection: &mut Collection| -> Arc<Collection> {
-            let mut subcollection_mut = Collection::new(collection.propagate_options(), subcollection_site_path);
+            let mut subcollection_mut = Collection::new(collection.mutate_inherited_options(), subcollection_site_path);
             if let Some(title) = title {
                 subcollection_mut.title = Some(title.to_string());
             }

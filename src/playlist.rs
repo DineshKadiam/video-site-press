@@ -467,9 +467,17 @@ impl Playlist {
         self.copy_link
     }
 
-    /// Set the copy_link setting locally on the playlist.
-    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) {
+    /// Set the copy_link setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn copy_link_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.copy_link) !=
+            self.copy_link.unwrap_or(self.inherited_options.copy_link);
+
         self.copy_link = enabled_option;
+
+        must_propagate
     }
 
     /// Determines if any published video in the playlist has copy_link enabled.
@@ -511,9 +519,17 @@ impl Playlist {
         self.download
     }
 
-    /// Set the download setting locally on the playlist.
-    pub fn download_local_set(&mut self, enabled_option: Option<bool>) {
+    /// Set the download setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn download_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.download) !=
+            self.download.unwrap_or(self.inherited_options.download);
+
         self.download = enabled_option;
+
+        must_propagate
     }
 
     /// Determines if any published video in the playlist needs to render
@@ -539,9 +555,17 @@ impl Playlist {
         self.embedding
     }
 
-    /// Set the embedding setting locally on the playlist.
-    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) {
+    /// Set the embedding setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn embedding_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.embedding) !=
+            self.embedding.unwrap_or(self.inherited_options.embedding);
+
         self.embedding = enabled_option;
+
+        must_propagate
     }
 
     /// Determines if any published video in the playlist needs to render
@@ -573,6 +597,11 @@ impl Playlist {
         None
     }
 
+    /// Sets new inherited options on the playlist.
+    pub fn inherited_options_set(&mut self, inherited_options: InheritedOptions) {
+        self.inherited_options = inherited_options;
+    }
+
     pub fn latest_release_date(&self) -> Option<NaiveDate> {
         self.public_videos()
             .fold(None, |latest_release_date, video| {
@@ -586,6 +615,13 @@ impl Playlist {
                     latest_release_date
                 }
             })
+    }
+
+    /// Mutates the options the playlist inherited from its ancestors by
+    /// merging them with its own options, so they can be passed on to new
+    /// descendants.
+    pub fn mutate_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.merge_playlist_options(self)
     }
 
 	pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Playlist {
@@ -624,9 +660,17 @@ impl Playlist {
         self.offline
     }
 
-    /// Set the offline setting locally on the playlist.
-    pub fn offline_local_set(&mut self, enabled: bool) {
+    /// Set the offline setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn offline_local_set(&mut self, enabled: bool) -> bool {
+        let must_propagate =
+            (enabled || self.inherited_options.offline) !=
+            (self.offline || self.inherited_options.offline);
+
         self.offline = enabled;
+
+        must_propagate
     }
 
     // Calling this on a root node returns the same site path again
@@ -650,9 +694,17 @@ impl Playlist {
         self.platform_integration
     }
 
-    /// Set the platform_integration setting locally on the playlist.
-    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) {
+    /// Set the platform_integration setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) -> bool {
+        let must_propagate =
+            platform_integration_option.unwrap_or(self.inherited_options.platform_integration) !=
+            self.platform_integration.unwrap_or(self.inherited_options.platform_integration);
+
         self.platform_integration = platform_integration_option;
+
+        must_propagate
     }
 
     /// Determines if the playlist or any published video in the playlist has
@@ -664,10 +716,20 @@ impl Playlist {
         self.published_videos().any(|video| video.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled()))
     }
 
-    /// Merges the options the playlist inherited from its ancestors with
-    /// its own options for hand-down to a (new) descendant.
-    pub fn propagate_options(&self) -> InheritedOptions {
-        self.inherited_options.merge_playlist_options(self)
+    /// Clones all videos in this playlist "in place" (making them briefly
+    /// mutable) to update their inherited setting states
+    /// (download, embedding, offline, unlisted, etc.).
+    pub fn propagate_options(&mut self) {
+        let mutated_options = self.mutate_inherited_options();
+
+        self.videos = self.videos
+            .drain(..)
+            .map(|video| {
+                let mut video_mut = Arc::unwrap_or_clone(video);
+                video_mut.inherited_options_set(mutated_options.clone());
+                Arc::new(video_mut)
+            })
+            .collect();
     }
 
     /// A playlist is public in its local context if it is neither offline
@@ -764,7 +826,7 @@ impl Playlist {
         } else if hyper_subdir.video_manifest.is_some() ||
             !hyper_subdir.video_files.is_empty() ||
             !hyper_subdir.audio_files.is_empty() {
-            let video = Video::read_dir(context, hyper_subdir, self.propagate_options(), site);
+            let video = Video::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
             self.videos.push(video);
         }
     }
@@ -800,9 +862,17 @@ impl Playlist {
         self.unlisted
     }
 
-    /// Set the unlisted setting locally on the playlist.
-    pub fn unlisted_local_set(&mut self, enabled: bool) {
+    /// Set the unlisted setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn unlisted_local_set(&mut self, enabled: bool) -> bool {
+        let must_propagate =
+            (enabled || self.inherited_options.unlisted) !=
+            (self.unlisted || self.inherited_options.unlisted);
+
         self.unlisted = enabled;
+
+        must_propagate
     }
 
     pub fn unpersist(&self, context: &Context) {

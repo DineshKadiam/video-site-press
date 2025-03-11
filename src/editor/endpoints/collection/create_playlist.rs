@@ -67,7 +67,7 @@ pub async fn create_playlist(
         fs::create_dir_all(&playlist_dir).unwrap();
 
         let mutation = |collection: &mut Collection| -> Arc<Playlist> {
-            let mut playlist_mut = Playlist::new(collection.propagate_options(), playlist_site_path);
+            let mut playlist_mut = Playlist::new(collection.mutate_inherited_options(), playlist_site_path);
             if let Some(title) = title {
                 playlist_mut.title = Some(title.to_string());
             }

@@ -708,6 +708,11 @@ impl Video {
         version_candidate.map(|pixels_version| pixels_version.1)
     }
 
+    /// Sets new inherited options on the video.
+    pub fn inherited_options_set(&mut self, inherited_options: InheritedOptions) {
+        self.inherited_options = inherited_options;
+    }
+
     pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Video {
         Video {
             copy_link: None,

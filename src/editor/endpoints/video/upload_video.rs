@@ -98,7 +98,7 @@ pub async fn upload_video(
                     let video = match &container {
                         GetAnyResult::Collection(collection) => {
                             let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                            let video = Video::read_dir(&context, &hyper_dir, collection.propagate_options(), &site);
+                            let video = Video::read_dir(&context, &hyper_dir, collection.mutate_inherited_options(), &site);
 
                             let video_moving = Arc::clone(&video);
                             let mutation = |collection: &mut Collection| {
@@ -114,7 +114,7 @@ pub async fn upload_video(
                         }
                         GetAnyResult::Playlist(playlist) => {
                             let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
-                            let video = Video::read_dir(&context, &hyper_dir, playlist.propagate_options(), &site);
+                            let video = Video::read_dir(&context, &hyper_dir, playlist.mutate_inherited_options(), &site);
 
                             let video_moving = Arc::clone(&video);
                             let mutation = |playlist: &mut Playlist| {
