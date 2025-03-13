@@ -182,6 +182,8 @@ impl Context {
                         Some(version) => {
                             slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                         }
+                        // TODO: Although unlikely, technically this could conflict, so we should probably
+                        //       check for collision and if so de-duplicate this slug before we go ahead.
                         None => String::from("video")
                     }
                 };
@@ -189,12 +191,17 @@ impl Context {
                 let video_dir = self.site_dir.join(&slug);
                 fs::create_dir(&video_dir).unwrap();
 
+                // Move existing files from the site_dir to the newly created video_dir
                 if let Ok(dir_entries) = self.site_dir.read_dir() {
                     for dir_entry_result in dir_entries {
                         if let Ok(dir_entry) = dir_entry_result {
-                            // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
-                            if dir_entry.file_name().to_string_lossy().starts_with('.') ||
-                                dir_entry.path() == video_dir {
+                            let file_name = dir_entry.file_name();
+                            let file_name_str = file_name.to_string_lossy();
+
+                            // Skip site.eno, hidden files (e.g. cache/build dir) and the dir we copy to
+                            if file_name_str.starts_with('.') ||
+                                file_name_str == "site.eno" ||
+                                file_name_str == slug {
                                 continue;
                             }
 
@@ -367,6 +374,8 @@ impl Context {
                         Some(version) => {
                             slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                         }
+                        // TODO: Although unlikely, technically this could conflict, so we should probably
+                        //       check for collision and if so de-duplicate this slug before we go ahead.
                         None => String::from("video")
                     }
                 };
@@ -374,12 +383,17 @@ impl Context {
                 let video_dir = self.site_dir.join(&slug);
                 fs::create_dir(&video_dir).unwrap();
 
+                // Move existing files from the site_dir to the newly created video_dir
                 if let Ok(dir_entries) = self.site_dir.read_dir() {
                     for dir_entry_result in dir_entries {
                         if let Ok(dir_entry) = dir_entry_result {
-                            // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
-                            if dir_entry.file_name().to_string_lossy().starts_with('.') ||
-                                dir_entry.path() == video_dir {
+                            let file_name = dir_entry.file_name();
+                            let file_name_str = file_name.to_string_lossy();
+
+                            // Skip site.eno, hidden files (e.g. cache/build dir) and the dir we copy to
+                            if file_name_str.starts_with('.') ||
+                                file_name_str == "site.eno" ||
+                                file_name_str == slug {
                                 continue;
                             }
 
@@ -523,15 +537,18 @@ impl Context {
                 let manifest_path = self.site_dir.join("collection.eno");
                 let _ = fs::remove_file(&manifest_path);
 
-                // If a (single) video dir exists in the collection, move every file/dir in it into the root,
-                // then delete it.
+                // If a (single) video dir exists in the collection, move
+                // every file/dir in it into the root, then delete it.
                 if let Some(video) = collection.videos.first() {
                     let temp_dir = self.site_dir.join(nanoid());
 
                     // Rename the video directory to unique temporary name, so we can copy
                     // files/folders within without any possible name collisions with the
                     // video directory name itself.
-                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
+                    fs::rename(
+                        self.site_dir.join(video.site_path.filesystem_relative()),
+                        &temp_dir
+                    ).unwrap();
 
                     if let Ok(dir_entries) = temp_dir.read_dir() {
                         for dir_entry_result in dir_entries {
