@@ -158,6 +158,7 @@ pub async fn start(
     let url = format!("http://{ip}:{port_bound}");
 
     println!("Serving the editor at {url} (open this address in your browser if it doesn't by itself)");
+    println!("Press Ctrl+C to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)");
 
     let open_browser = || async {
         if webbrowser::open(&url).is_err() {
