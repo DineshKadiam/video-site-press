@@ -1,3 +1,24 @@
+const maximizeIcon = document.querySelector('#maximize_icon').content;
+const minimizeIcon = document.querySelector('#minimize_icon').content;
+const playIcon = document.querySelector('#play_icon').content;
+const pauseIcon = document.querySelector('#pause_icon').content;
+const subtitlesIcon = document.querySelector('#subtitles_icon').content;
+const volumeLoudIcon = document.querySelector('#volume_loud_icon').content;
+const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
+const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
+
+const intro = document.querySelector('.player_intro');
+const outro = document.querySelector('.player_outro');
+const playerControls = document.querySelector('.player_controls');
+const playerWrapper = document.querySelector('.player_wrapper');
+const replayButton = document.querySelector('#replay');
+const timelineInput = document.querySelector('.timeline input');
+const selectResolutionButton = document.querySelector('#select_resolution');
+const selectSubtitlesButton = document.querySelector('#select_subtitles');
+const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
+const togglePlaybackButton = document.querySelector('#toggle_playback');
+const toggleSpeedButton = document.querySelector('#toggle_speed');
+const toggleVolumeButton = document.querySelector('#toggle_volume');
 const video = document.querySelector('video');
 
 // Before we even begin playback video.duration is NaN, so we use our own data throughout
@@ -22,50 +43,68 @@ function formatTime(time) {
     }
 }
 
-const intro = document.querySelector('.player_intro');
-const outro = document.querySelector('.player_outro');
-const playerControls = document.querySelector('.player_controls');
-const playerWrapper = document.querySelector('.player_wrapper');
-const replayButton = document.querySelector('#replay');
-const timelineInput = document.querySelector('.timeline input');
-const selectResolutionButton = document.querySelector('#select_resolution');
-const selectSubtitlesButton = document.querySelector('#select_subtitles');
-const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
-const togglePlaybackButton = document.querySelector('#toggle_playback');
-const toggleSpeedButton = document.querySelector('#toggle_speed');
-const toggleVolumeButton = document.querySelector('#toggle_volume');
+const volume = {
+    interactive: false,
+    value: 1
+};
 
-// When a page loads we start with the assumption that volume is read-only
-// (hence during the initial load, volume controls are hidden), but
-// immediately run an asynchronous routine to determine if volume is
-// adjustable - if it is we append a class to the volume control button
-// so that by the time the visitor initiates audio playback they can see the
-// volume controls. The reason for this quirky stuff is that Apple's iOS
+function updateVolume() {
+    let volumeIcon;
+
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            video.muted = false;
+            video.volume = 1;
+            volumeIcon = volumeLoudIcon;
+        } else if (volume.value > 0.333) {
+            video.muted = false;
+            video.volume = 0.5;
+            volumeIcon = volumeMediumIcon;
+        } else {
+            video.muted = true;
+            video.volume = 0;
+            volumeIcon = volumeMutedIcon;
+        }
+    } else {
+        if (volume.value > 0.5) {
+            video.muted = false;
+            volumeIcon = volumeLoudIcon
+        } else {
+            video.muted = true;
+            volumeIcon = volumeMutedIcon;
+        }
+    }
+
+    toggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
+}
+
+const persistedVolume = localStorage.getItem('hyper8Volume');
+if (persistedVolume !== null) {
+    volume.value = parseFloat(persistedVolume);
+    updateVolume();
+}
+
+// When a page loads we start with the assumption that volume is read-only,
+// but immediately run an asynchronous routine to determine if volume is
+// adjustable - if it is we register this in our global volume object and
+// restore any fine-grained volume adjustments that we previously persisted.
+// Also, by the time the visitor interacts with the volume control we know
+// whether to offer fine-grained volume control or just mute/unmute
+// functionality. The reason for this quirky stuff is that Apple's iOS
 // devices intentionally don't allow application-level volume control and
 // therefore the web audio API on these devices features a read-only volume
-// property on audio elements.
+// property on audio elements (the muted property however still works there
+// and we use it).
 let volumeProbe = new Audio();
 const volumeProbeHandler = () => {
-    toggleVolumeButton.classList.add('interactive');
+    volume.interactive = true;
+    updateVolume();
+
     volumeProbe.removeEventListener('volumechange', volumeProbeHandler);
     volumeProbe = null;
 };
 volumeProbe.addEventListener('volumechange', volumeProbeHandler);
 volumeProbe.volume = 0.123;
-
-const persistedVolume = localStorage.getItem('hyper8Volume');
-
-if (persistedVolume !== null) {
-    video.volume = parseFloat(persistedVolume);
-
-    if (video.volume > 0.666) {
-        toggleVolumeButton.replaceChildren(document.querySelector('#volume_loud_icon').content.cloneNode(true));
-    } else if (video.volume < 0.333) {
-        toggleVolumeButton.replaceChildren(document.querySelector('#volume_muted_icon').content.cloneNode(true));
-    } else {
-        toggleVolumeButton.replaceChildren(document.querySelector('#volume_medium_icon').content.cloneNode(true));
-    }
-}
 
 function playbackUpdate() {
     const time = video.currentTime;
@@ -96,7 +135,7 @@ function selectResolution(group) {
     }
 
     video.play();
-    togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
+    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
     playbackUpdateInterval = setInterval(playbackUpdate, 80); // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
                                                               //       Formula should/can take into account width of video on screen vs duration of video.
 }
@@ -104,10 +143,10 @@ function selectResolution(group) {
 function toggleFullscreen() {
     if (document.fullscreenElement) {
         document.exitFullscreen();
-        toggleFullscreenButton.replaceChildren(document.querySelector('#maximize_icon').content.cloneNode(true));
+        toggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
     } else {
         document.querySelector('.player_wrapper').requestFullscreen();
-        toggleFullscreenButton.replaceChildren(document.querySelector('#minimize_icon').content.cloneNode(true));
+        toggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
     }
 }
 
@@ -116,12 +155,12 @@ function togglePlayback() {
         intro.style.display = 'none';
         outro.classList.remove('active');
         video.play();
-        togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
+        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
         playbackUpdateInterval = setInterval(playbackUpdate, 80);
     } else {
         video.pause();
         clearInterval(playbackUpdateInterval);
-        togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
     }
 }
 
@@ -141,7 +180,7 @@ playerWrapper.addEventListener('mousemove', revealControls);
 replayButton.addEventListener('click', () => {
     outro.classList.remove('active');
     video.play();
-    togglePlaybackButton.replaceChildren(document.querySelector('#pause_icon').content.cloneNode(true));
+    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
     playbackUpdateInterval = setInterval(playbackUpdate, 80);
 });
 
@@ -152,7 +191,7 @@ selectResolutionButton.addEventListener('click', () => {
         if (!video.paused) {
             video.pause();
             clearInterval(playbackUpdateInterval);
-            togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
         }
     } else {
         intro.style.display = 'none';
@@ -166,7 +205,7 @@ if (selectSubtitlesButton) {
             const text = document.createElement('span');
             text.textContent = ' ' + (track.language || track.label);
             selectSubtitlesButton.replaceChildren(
-                document.querySelector('#subtitles_icon').content.cloneNode(true),
+                subtitlesIcon.cloneNode(true),
                 text
             );
         };
@@ -185,7 +224,7 @@ if (selectSubtitlesButton) {
         }
 
         if (prevTrackDisabled) {
-            selectSubtitlesButton.replaceChildren(document.querySelector('#subtitles_icon').content.cloneNode(true));
+            selectSubtitlesButton.replaceChildren(subtitlesIcon.cloneNode(true));
         } else {
             enableTrack(video.textTracks[0]);
         }
@@ -220,19 +259,24 @@ toggleSpeedButton.addEventListener('click', () => {
 });
 
 toggleVolumeButton.addEventListener('click', () => {
-    if (video.volume > 0.666) {
-        video.volume = 0;
-        toggleVolumeButton.replaceChildren(document.querySelector('#volume_muted_icon').content.cloneNode(true));
-        localStorage.setItem('hyper8Volume', '0');
-    } else if (video.volume < 0.333) {
-        video.volume = 0.5;
-        toggleVolumeButton.replaceChildren(document.querySelector('#volume_medium_icon').content.cloneNode(true));
-        localStorage.setItem('hyper8Volume', '0.5');
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            volume.value = 0;
+        } else if (volume.value > 0.333) {
+            volume.value = 1;
+        } else {
+            volume.value = 0.5;
+        }
     } else {
-        video.volume = 1;
-        toggleVolumeButton.replaceChildren(document.querySelector('#volume_loud_icon').content.cloneNode(true));
-        localStorage.setItem('hyper8Volume', '1');
+        if (volume.value > 0.5) {
+            volume.value = 0;
+        } else {
+            volume.value = 1;
+        }
     }
+
+    updateVolume();
+    localStorage.setItem('hyper8Volume', volume.value);
 });
 
 togglePlaybackButton.addEventListener('click', togglePlayback);
@@ -240,7 +284,7 @@ togglePlaybackButton.addEventListener('click', togglePlayback);
 video.addEventListener('ended', () => {
     outro.classList.add('active');
     clearInterval(playbackUpdateInterval);
-    togglePlaybackButton.replaceChildren(document.querySelector('#play_icon').content.cloneNode(true));
+    togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
 });
 
 video.addEventListener('click', togglePlayback);

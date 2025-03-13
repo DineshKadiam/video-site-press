@@ -440,7 +440,6 @@ svg {
     right: 3%;
 }
 #toggle_speed { font-weight: 500; }
-#toggle_volume:not(.interactive) { display: none; }
 .unlisted_badge {
     background-color: var(--bg-2);
     border-radius: .2rem;
