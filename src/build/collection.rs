@@ -144,13 +144,13 @@ pub fn collection_html(
             let mut meta = PlatformIntegrationMeta::new(title.to_string(), collection_url);
 
             if let Some(description) = &collection.description {
-                let plaintext = MarkdownSubset::to_plaintext(description);
+                let description_plaintext = MarkdownSubset::to_plaintext(description);
 
                 // As a somewhat arbitrary practical decision we currently
                 // only use "our" description as the description for platform integration
                 // when it is less than 256 characters long in plaintext.
-                if plaintext.len() < 256 {
-                    meta.description(description);
+                if description_plaintext.len() < 256 {
+                    meta.description(&description_plaintext);
                 }
             }
 
