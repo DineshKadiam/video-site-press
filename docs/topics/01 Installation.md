@@ -5,4 +5,4 @@
 
 # Installation
 
-Download and install Hyper 8 from the [download page](https://simonrepp.com/hyper8/download.html) on the [webite](https://simonrepp.com/hyper8/).
+Download and install Hyper 8 from the [download page](https://simonrepp.com/hyper8/download.html) on the [website](https://simonrepp.com/hyper8/).
