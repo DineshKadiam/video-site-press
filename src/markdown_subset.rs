@@ -6,35 +6,39 @@ use std::str::Chars;
 
 use crate::util::html_escape_outside_attribute;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum OutputFormat {
     Html,
     Plaintext
 }
 
+/// See the [to_html] and [to_plaintext] methods for a rough specification
+#[derive(Debug)]
 pub struct MarkdownSubset<'input> {
     chars: Chars<'input>,
     index: usize,
     input: &'input str,
     output: String,
     output_format: OutputFormat,
+    /// Helps us to track when to open/close paragraphs, respectively whether
+    /// to open one at all. Starts of as None, then with the first
+    /// non-whitespace content is intialized to Some(…) (and stays Some(…)).
     paragraph: Option<Paragraph>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Paragraph {
     /// This does not necessarily reflect the range from begin to end of the paragraph,
     /// e.g. in the case of a link appearing within the paragraph, afterwards the
     /// copy_range is just the content following in the paragraph right after the link.
     copy_range: Range<usize>,
     trailing_newlines: usize,
+    /// Refers to all whitespace except newlines
     trailing_whitespace: usize
 }
 
 impl MarkdownSubset<'_> {
     fn consume_newline(&mut self) {
-        self.next_char();
-
         if let Some(paragraph) = &mut self.paragraph {
             if paragraph.trailing_newlines == 0 && paragraph.trailing_whitespace == 0 {
                 paragraph.copy_range.end = self.index;
@@ -42,45 +46,16 @@ impl MarkdownSubset<'_> {
 
             paragraph.trailing_newlines += 1;
         }
+
+        self.next_char();
     }
 
     fn consume_non_whitespace(&mut self) {
-        match &mut self.paragraph {
-            Some(paragraph) => {
-                if paragraph.trailing_newlines > 1 {
-                    if !paragraph.copy_range.is_empty() {
-                        self.output.push_str(&MarkdownSubset::escape_and_link(self.output_format, &self.input[paragraph.copy_range.clone()]));
-                    }
-                    match self.output_format {
-                        OutputFormat::Html => self.output.push_str("</p><p>"),
-                        OutputFormat::Plaintext => self.output.push('\n')
-                    }
-                    paragraph.copy_range = self.index..self.index;
-                }
-
-                paragraph.trailing_newlines = 0;
-                paragraph.trailing_whitespace = 0;
-            }
-            None => {
-                if let OutputFormat::Html = self.output_format {
-                    self.output.push_str("<p>");
-                }
-
-                self.paragraph = Some(Paragraph {
-                    copy_range: self.index..self.index,
-                    trailing_newlines: 0,
-                    trailing_whitespace: 0
-                })
-            }
-        }
-
         self.next_char();
         self.paragraph.as_mut().unwrap().copy_range.end = self.index;
     }
 
     fn consume_whitespace(&mut self) {
-        self.next_char();
-
         if let Some(paragraph) = &mut self.paragraph {
             if paragraph.trailing_newlines == 0 && paragraph.trailing_whitespace == 0 {
                 paragraph.copy_range.end = self.index;
@@ -88,6 +63,8 @@ impl MarkdownSubset<'_> {
 
             paragraph.trailing_whitespace += 1;
         }
+
+        self.next_char();
     }
 
     fn escape_and_link(output_format: OutputFormat, string: &str) -> String {
@@ -156,6 +133,54 @@ impl MarkdownSubset<'_> {
         output
     }
 
+
+    fn flush_whitespace(&mut self) {
+        match &mut self.paragraph {
+            Some(paragraph) => {
+                if paragraph.trailing_newlines > 1 {
+                    if !paragraph.copy_range.is_empty() {
+                        self.output.push_str(&MarkdownSubset::escape_and_link(self.output_format, &self.input[paragraph.copy_range.clone()]));
+                    }
+                    paragraph.copy_range = self.index..self.index;
+                    match self.output_format {
+                        OutputFormat::Html => {
+                            self.output.push_str("</p><p>");
+                        }
+                        OutputFormat::Plaintext => {
+                            self.output.push_str("\n\n");
+                        }
+                    }
+                } else if paragraph.trailing_newlines > 0 {
+                    if !paragraph.copy_range.is_empty() {
+                        self.output.push_str(&MarkdownSubset::escape_and_link(self.output_format, &self.input[paragraph.copy_range.clone()]));
+                    }
+                    paragraph.copy_range = self.index..self.index;
+                    self.output.push('\n');
+                } else if paragraph.trailing_whitespace > 0 {
+                    if !paragraph.copy_range.is_empty() {
+                        self.output.push_str(&MarkdownSubset::escape_and_link(self.output_format, &self.input[paragraph.copy_range.clone()]));
+                    }
+                    paragraph.copy_range = self.index..self.index;
+                    self.output.push(' ');
+                }
+
+                paragraph.trailing_newlines = 0;
+                paragraph.trailing_whitespace = 0;
+            }
+            None => {
+                if let OutputFormat::Html = self.output_format {
+                    self.output.push_str("<p>");
+                }
+
+                self.paragraph = Some(Paragraph {
+                    copy_range: self.index..self.index,
+                    trailing_newlines: 0,
+                    trailing_whitespace: 0
+                })
+            }
+        }
+    }
+
     fn new(input: &str, output_format: OutputFormat) -> MarkdownSubset {
         MarkdownSubset {
             chars: input.chars(),
@@ -181,7 +206,9 @@ impl MarkdownSubset<'_> {
     /// all user-provided html that is found in the input itself is escaped.
     ///
     /// Right now these conversions are applied:
-    /// - Text is split into paragraphs, based on separation by any number of empty lines in between the text
+    /// - Horizontal whitespace characters inbetween words (one or multiple consecutive) are normalized to a single space
+    /// - Single linebreaks (except the last one trailing the input) are kept verbatim
+    /// - Text is split into paragraphs, based on separation of lines by two or more consecutive linbreaks
     /// - `http(s)://example.com` is turned into `<a href="http(s)://example.com" target="_blank">example.com</a>`
     /// - `[Link label][http(s)://example.com]` is turned into `<a href="http(s)://example.com" target="_blank">Link label</a>`
     pub fn to_html(input: &str) -> String {
@@ -194,7 +221,9 @@ impl MarkdownSubset<'_> {
     /// all user-provided html that is found in the input itself is escaped.
     ///
     /// Right now these conversions are applied:
-    /// - Text is split into paragraphs, based on separation by any number of empty lines in between the text
+    /// - Horizontal whitespace characters inbetween words (one or multiple consecutive) are normalized to a single space
+    /// - Single linebreaks (except the last one trailing the input) are kept verbatim
+    /// - Text is split into paragraphs, based on separation of lines by two or more consecutive linbreaks
     /// - `http(s)://example.com` is retained as `http(s)://example.com`
     /// - `[Link label][http(s)://example.com]` is turned into `Link label (http(s)://example.com)`
     pub fn to_plaintext(input: &str) -> String {
@@ -205,19 +234,23 @@ impl MarkdownSubset<'_> {
 
     fn parse(&mut self) {
         loop {
-            if self.chars.as_str().starts_with('[') {
-                self.parse_link();
-            } else if self.chars.as_str().starts_with("\\[") {
-                self.consume_non_whitespace();
-                self.consume_non_whitespace();
-            } else if self.chars.as_str().starts_with('\n') {
+            if self.chars.as_str().starts_with('\n') {
                 self.consume_newline();
-            } else if self.chars.as_str().starts_with(|c: char| c.is_whitespace()) {
-                self.consume_whitespace();
             } else if self.chars.as_str().is_empty() {
                 break;
+            } else if self.chars.as_str().starts_with(|c: char| c.is_whitespace()) {
+                self.consume_whitespace();
             } else {
-                self.consume_non_whitespace();
+                self.flush_whitespace();
+
+                if self.chars.as_str().starts_with('[') {
+                    self.parse_link();
+                } else if self.chars.as_str().starts_with("\\[") {
+                    self.consume_non_whitespace();
+                    self.consume_non_whitespace();
+                } else {
+                    self.consume_non_whitespace();
+                }
             }
         }
 
@@ -307,6 +340,30 @@ impl MarkdownSubset<'_> {
 }
 
 #[test]
+fn check_fix_case_a_to_html() {
+    let input = "Text 1 (Note 1), [Link 2](link_2), Text 2 (Note 2)\n\
+                 \n\
+                 [Link 3](link_3), [Link 4](link_4), Text 3 (Note 3)";
+
+    let output = "<p>Text 1 (Note 1), <a href=\"link_2\" target=\"_blank\">Link 2</a>, Text 2 (Note 2)</p>\
+                  <p><a href=\"link_3\" target=\"_blank\">Link 3</a>, <a href=\"link_4\" target=\"_blank\">Link 4</a>, Text 3 (Note 3)</p>";
+
+    assert_eq!(MarkdownSubset::to_html(input), output);
+}
+
+#[test]
+fn check_fix_case_a_to_plaintext() {
+    let input = "Text 1 (Note 1), [Link 2](link_2), Text 2 (Note 2)\n\
+                 \n\
+                 [Link 3](link_3), [Link 4](link_4), Text 3 (Note 3)";
+
+    let output =  "Text 1 (Note 1), Link 2 (link_2), Text 2 (Note 2)\n\n\
+                   Link 3 (link_3), Link 4 (link_4), Text 3 (Note 3)";
+
+    assert_eq!(MarkdownSubset::to_plaintext(input), output);
+}
+
+#[test]
 fn check_explicit_link_to_html() {
     let input = "[Label](https://example.com)";
     let output = r#"<p><a href="https://example.com" target="_blank">Label</a></p>"#;
@@ -372,16 +429,22 @@ fn check_implicit_link_inbetween_to_plaintext() {
 
 #[test]
 fn check_mixed_to_html() {
-    let input = "<Hello> [<World>](https://example.com)\nCheck this text & this address: https://example.com";
-    let output = "<p>&lt;Hello&gt; <a href=\"https://example.com\" target=\"_blank\">&lt;World&gt;</a>\nCheck this text &amp; this address: <a href=\"https://example.com\" target=\"_blank\">https://example.com</a></p>";
+    let input = "<Hello> [<World>](https://example.com)\n\
+                 Check this text & this address: https://example.com";
+
+    let output = "<p>&lt;Hello&gt; <a href=\"https://example.com\" target=\"_blank\">&lt;World&gt;</a>\n\
+                  Check this text &amp; this address: <a href=\"https://example.com\" target=\"_blank\">https://example.com</a></p>";
 
     assert_eq!(MarkdownSubset::to_html(input), output);
 }
 
 #[test]
 fn check_mixed_to_plaintext() {
-    let input = "<Hello> [<World>](https://example.com)\nCheck this text & this address: https://example.com";
-    let output = "&lt;Hello&gt; &lt;World&gt; (https://example.com)\nCheck this text &amp; this address: https://example.com";
+    let input = "<Hello> [<World>](https://example.com)\n\
+                 Check this text & this address: https://example.com";
+
+    let output = "&lt;Hello&gt; &lt;World&gt; (https://example.com)\n\
+                  Check this text &amp; this address: https://example.com";
 
     assert_eq!(MarkdownSubset::to_plaintext(input), output);
 }
@@ -404,32 +467,65 @@ fn check_two_explicit_links_to_plaintext() {
 
 #[test]
 fn check_two_paragraphs_to_html() {
-    let input = "Enter Alice.\n\nEnter Bob.";
-    let output = "<p>Enter Alice.\n</p><p>Enter Bob.</p>";
+    let input = "Enter Alice.\n\
+                 \n\
+                 Enter Bob.";
+
+    let output = "<p>Enter Alice.</p><p>Enter Bob.</p>";
 
     assert_eq!(MarkdownSubset::to_html(input), output);
 }
 
 #[test]
 fn check_two_paragraphs_to_plaintext() {
-    let input = "Enter Alice.\n\nEnter Bob.";
-    let output = "Enter Alice.\n\nEnter Bob.";
+    let input = "Enter Alice.\n\
+                 \n\
+                 Enter Bob.";
+
+    let output = "Enter Alice.\n\
+                  \n\
+                  Enter Bob.";
 
     assert_eq!(MarkdownSubset::to_plaintext(input), output);
 }
 
 #[test]
 fn check_two_paragraphs_with_links_to_html() {
-    let input = "Enter [Alice](https://example.com/alice).\n\nEnter [Bob](https://example.com/bob).";
-    let output = "<p>Enter <a href=\"https://example.com/alice\" target=\"_blank\">Alice</a>.\n</p><p>Enter <a href=\"https://example.com/bob\" target=\"_blank\">Bob</a>.</p>";
+    let input = "Enter [Alice](https://example.com/alice).\n\
+                 \n\
+                 Enter [Bob](https://example.com/bob).";
+
+    let output = "<p>Enter <a href=\"https://example.com/alice\" target=\"_blank\">Alice</a>.</p>\
+                  <p>Enter <a href=\"https://example.com/bob\" target=\"_blank\">Bob</a>.</p>";
 
     assert_eq!(MarkdownSubset::to_html(input), output);
 }
 
 #[test]
 fn check_two_paragraphs_with_links_to_plaintext() {
-    let input = "Enter [Alice](https://example.com/alice).\n\nEnter [Bob](https://example.com/bob).";
-    let output = "Enter Alice (https://example.com/alice).\n\nEnter Bob (https://example.com/bob).";
+    let input = "Enter [Alice](https://example.com/alice).\n\
+                 \n\
+                 Enter [Bob](https://example.com/bob).";
+
+    let output = "Enter Alice (https://example.com/alice).\n\
+                  \n\
+                  Enter Bob (https://example.com/bob).";
+
+    assert_eq!(MarkdownSubset::to_plaintext(input), output);
+}
+
+#[test]
+fn check_word_to_html() {
+    let input = "hello";
+    let output = r#"<p>hello</p>"#;
+
+    assert_eq!(MarkdownSubset::to_html(input), output);
+}
+
+#[test]
+fn check_word_to_plaintext() {
+    let input = "hello";
+    let output = "hello";
 
     assert_eq!(MarkdownSubset::to_plaintext(input), output);
 }
