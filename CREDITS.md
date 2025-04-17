@@ -19,5 +19,6 @@ Thanks everyone for your support!
 hatsch<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
 [Meljoann](https://www.meljoann.com/)<br>
+[Sam](https://ethicalrevolution.co.uk/)<br>
 [surface mount dove](https://taube.xyz/)<br>
 [Walter Ebert](https://walterebert.com/)
