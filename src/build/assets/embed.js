@@ -30,10 +30,15 @@ const replayButton = document.querySelector('#replay');
 const timelineInput = document.querySelector('.timeline input');
 const selectResolutionButton = document.querySelector('#select_resolution');
 const selectSubtitlesButton = document.querySelector('#select_subtitles');
+const speedControl = document.querySelector('#speed');
+const speedMultiplier = document.querySelector('#speed .multiplier');
 const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
-const toggleSpeedButton = document.querySelector('#toggle_speed');
 const toggleVolumeButton = document.querySelector('#toggle_volume');
+
+// We internally manage speed as (integer) percent values to avoid having to
+// deal with float rounding issues.
+let speed = 100;
 
 const persistedVolume = localStorage.getItem('hyper8Volume');
 
@@ -176,30 +181,72 @@ if (selectSubtitlesButton) {
 
 toggleFullscreenButton.addEventListener('click', toggleFullscreen);
 
-toggleSpeedButton.addEventListener('click', () => {
-    if (toggleSpeedButton.innerHTML === '1×') {
-        video.playbackRate = 1.25;
-        toggleSpeedButton.innerHTML = '1.25×'
-    } else if (toggleSpeedButton.innerHTML === '1.25×') {
-        video.playbackRate = 1.5;
-        toggleSpeedButton.innerHTML = '1.5×'
-    } else if (toggleSpeedButton.innerHTML === '1.5×') {
-        video.playbackRate = 1.75;
-        toggleSpeedButton.innerHTML = '1.75×'
-    } else if (toggleSpeedButton.innerHTML === '1.75×') {
-        video.playbackRate = 2;
-        toggleSpeedButton.innerHTML = '2×'
-    } else if (toggleSpeedButton.innerHTML === '2×') {
-        video.playbackRate = 0.5;
-        toggleSpeedButton.innerHTML = '0.5×'
-    } else if (toggleSpeedButton.innerHTML === '0.5×') {
-        video.playbackRate = 0.75;
-        toggleSpeedButton.innerHTML = '0.75×'
-    } else {
-        video.playbackRate = 1;
-        toggleSpeedButton.innerHTML = '1×'
-    }
+// Speed button handlers
+
+function updateSpeed() {
+    speedMultiplier.textContent = (speed / 100).toFixed(1);
+    // Our internal speed representation is in percent so we translate to a
+    // multiplication factor here
+    video.playbackRate = speed / 100;
+}
+
+speedControl.addEventListener('auxclick', event => {
+    speed = 100;
+    updateSpeed();
+    event.preventDefault();
 });
+
+speedControl.addEventListener('click', () => {
+    if (speed < 100) {
+        speed = 100;
+    } else if (speed < 120) {
+        speed = 120;
+    } else if (speed < 140) {
+        speed = 140;
+    } else if (speed < 160) {
+        speed = 160;
+    } else if (speed < 180) {
+        speed = 180;
+    } else if (speed < 200) {
+        speed = 200;
+    } else {
+        speed = 100;
+    }
+
+    updateSpeed();
+});
+
+// Prevent context menu opening when using right-click to reset speed
+speedControl.addEventListener('contextmenu', event => event.preventDefault());
+
+speedControl.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' && speed > 30) {
+        speed -= 10;
+    } else if (event.key === 'ArrowUp' && speed < 300) {
+        speed += 10;
+    } else {
+        return;
+    }
+
+    updateSpeed();
+
+    event.preventDefault();
+    event.stopPropagation();
+});
+
+speedControl.addEventListener('wheel', event => {
+    if (event.deltaY < 0 && speed < 300) {
+        speed += 10;
+    } else if (event.deltaY > 0 && speed > 30) {
+        speed -= 10;
+    }
+
+    updateSpeed();
+
+    event.preventDefault();
+});
+
+// Volume button handlers
 
 toggleVolumeButton.addEventListener('click', () => {
     if (video.volume > 0.666) {

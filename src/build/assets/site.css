@@ -402,6 +402,7 @@ img {
     color: var(--fg-2);
     font-size: 1.17rem;
 }
+#speed .x { font-size: .8em; }
 .split {
     display: flex;
     row-gap: 1rem;
@@ -439,7 +440,6 @@ svg {
     position: absolute;
     right: 3%;
 }
-#toggle_speed { font-weight: 500; }
 .unlisted_badge {
     background-color: var(--bg-2);
     border-radius: .2rem;

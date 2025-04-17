@@ -138,6 +138,7 @@ img {
 .player_wrapper button:hover { color: var(--fg-1); }
 .player_wrapper > *:not(video) { z-index: 1; }
 .reading_width { max-width: 32rem; }
+#speed .x { font-size: .8em; }
 .split {
     display: flex;
     row-gap: 1rem;
@@ -146,7 +147,6 @@ svg {
     fill: currentColor;
     display: block;
 }
-#toggle_speed { font-weight: 500; }
 video {
     border-radius: .5rem;
     display: block;

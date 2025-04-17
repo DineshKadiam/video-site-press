@@ -275,7 +275,7 @@ pub fn player(
                     <div>
                         <button id="toggle_playback">{play_icon}</button>
                         <button id="toggle_volume">{volume_loud_icon}</button>
-                        <button id="toggle_speed">1×</button>
+                        <button id="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
                         <div>
                             <span id="time_current">00:00</span> / <span id="time_total">{duration_formatted}</span>
                         </div>
