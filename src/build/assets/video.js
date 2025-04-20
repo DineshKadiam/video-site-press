@@ -20,6 +20,8 @@ const speedMultiplier = document.querySelector('#speed .multiplier');
 const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
 const toggleVolumeButton = document.querySelector('#toggle_volume');
+const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
+const versionsRing = document.querySelector('.versions_ring');
 const video = document.querySelector('video');
 
 // Before we even begin playback video.duration is NaN, so we use our own data throughout
@@ -169,13 +171,30 @@ function togglePlayback() {
     }
 }
 
-for (const group of document.querySelectorAll('.versions_ring g[data-src]')) {
-    group.addEventListener('click', () =>  selectResolution(group));
-    group.addEventListener('keypress', event =>  {
+for (const slice of versionSlices) {
+    slice.addEventListener('click', () => selectResolution(slice));
+
+    slice.addEventListener('focus', () => {
+        versionsRing.classList.add('interacting');
+    });
+
+    slice.addEventListener('blur', () => {
+        versionsRing.classList.remove('interacting');
+    });
+
+    slice.addEventListener('keypress', event =>  {
         if (event.key === 'Enter' || event.key === ' ') {
-            selectResolution(group);
+            selectResolution(slice);
             event.preventDefault();
         }
+    });
+
+    slice.addEventListener('mouseenter', () => {
+        versionsRing.classList.add('interacting');
+    });
+
+    slice.addEventListener('mouseleave', () => {
+        versionsRing.classList.remove('interacting');
     });
 }
 
@@ -362,3 +381,33 @@ timelineInput.addEventListener('input', _ => {
     video.currentTime = timelineInput.value;
     playbackUpdate();
 });
+
+const resizeObserver = new ResizeObserver(() => {
+    const BACKDROP_PADDING = 5;
+
+    for (const slice of versionSlices) {
+        let minX;
+        let minY;
+        let maxX;
+        let maxY;
+
+        for (const text of slice.querySelectorAll('text')) {
+            const svgRect = text.getBBox();
+            if (minX === undefined || svgRect.x < minX) { minX = svgRect.x; }
+            if (minY === undefined || svgRect.y < minY) { minY = svgRect.y; }
+            if (maxX === undefined || svgRect.x + svgRect.width > maxX) { maxX = svgRect.x + svgRect.width; }
+            if (maxY === undefined || svgRect.y + svgRect.height > maxY) { maxY = svgRect.y + svgRect.height; }
+        }
+
+        const backdrop = slice.querySelector('rect.backdrop');
+
+        backdrop.setAttribute('x', minX - BACKDROP_PADDING);
+        backdrop.setAttribute('y', minY - BACKDROP_PADDING);
+        backdrop.setAttribute('width', BACKDROP_PADDING + (maxX - minX) + BACKDROP_PADDING);
+        backdrop.setAttribute('height', BACKDROP_PADDING + (maxY - minY) + BACKDROP_PADDING);
+    }
+});
+
+// Trigger version slice backdrop recomputation on resize (this also triggers
+// the first draw after the initial page load).
+resizeObserver.observe(playerWrapper);

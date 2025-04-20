@@ -568,7 +568,7 @@ pub fn edit_page(
 
         <div class="form_group">
             <h2>{t_banner_image}</h2>
-            <p style="background: var(--danger); border-radius: .5rem; color: var(--light-1); padding: 1rem;">
+            <p style="background: var(--danger); border-radius: .5rem; color: var(--l-1); padding: 1rem;">
                 Heads up: Banner images are not yet used in the layout,<br>but this will be included in a future version of Hyper 8
             </p>
             {banner_form}

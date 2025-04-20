@@ -399,8 +399,16 @@ fn versions_ring(
     video: &Video,
     video_prefix: &str
 ) -> String {
-    let radius = 190.0;
-    let diameter = radius * 2.0;
+    const RADIUS: f32 = 190.0;
+    const DIAMETER: f32 = RADIUS * 2.0;
+    const GAP_ANGLE: f32 = 2.5;
+
+    // Radii between which the slices of the ring are placed
+    const INNER_RADIUS: f32 = RADIUS * 0.39;
+    const OUTER_RADIUS: f32 = RADIUS * 0.5;
+
+    const TEXT_RADIUS: f32 = RADIUS * 0.8;
+    const TEXT_SPACING: f32 = RADIUS * 0.12;
 
     let mut sizes = Vec::new();
     let mut total_size: u64 = 0;
@@ -421,7 +429,7 @@ fn versions_ring(
 
     sizes.sort_unstable_by(|a, b| a.2.cmp(&b.2));
 
-    // Draws a ring segment. In clock terms we start at 12 o'clock and we go clockwise.
+    // Draws a ring segment - we start at 12 o'clock and go clockwise.
     let slice = |
         arc_angle: f32,
         begin_angle: f32,
@@ -430,49 +438,60 @@ fn versions_ring(
         size: &str,
         src: &str
     | -> String {
-        let large_arc_flag = if arc_angle < 180.0 { 0 } else { 1 };
+        // Our specific drawing approach for a slice does not support drawing
+        // a mathematically perfect 360 degree slice, therefore we simulate
+        // it with a (visually indistinguishable) almost 360 degree slice.
+        let safe_arc_angle = if arc_angle < 360.0 { arc_angle } else { 359.999 };
 
-        let begin_angle_rad = begin_angle.to_radians();
-        let begin_x = begin_angle_rad.sin();
-        let begin_y = -begin_angle_rad.cos();
+        let slice = {
+            let large_arc_flag = if safe_arc_angle < 180.0 { 0 } else { 1 };
 
-        let end_angle_rad = (begin_angle + arc_angle).to_radians();
-        let end_x = end_angle_rad.sin();
-        let end_y = -end_angle_rad.cos();
+            let begin_angle_rad = begin_angle.to_radians();
+            let begin_x = begin_angle_rad.sin();
+            let begin_y = -begin_angle_rad.cos();
 
-        let outer_radius = radius * 0.5;
-        let segment_outer_begin_x = radius + begin_x * outer_radius;
-        let segment_outer_begin_y = radius + begin_y * outer_radius;
+            let end_angle_rad = (begin_angle + safe_arc_angle).to_radians();
+            let end_x = end_angle_rad.sin();
+            let end_y = -end_angle_rad.cos();
 
-        let segment_outer_end_x = radius + end_x * outer_radius;
-        let segment_outer_end_y = radius + end_y * outer_radius;
+            let segment_outer_begin_x = RADIUS + begin_x * OUTER_RADIUS;
+            let segment_outer_begin_y = RADIUS + begin_y * OUTER_RADIUS;
 
-        let inner_radius = radius * 0.4;
-        let segment_inner_begin_x = radius + begin_x * inner_radius;
-        let segment_inner_begin_y = radius + begin_y * inner_radius;
+            let segment_outer_end_x = RADIUS + end_x * OUTER_RADIUS;
+            let segment_outer_end_y = RADIUS + end_y * OUTER_RADIUS;
 
-        let segment_inner_end_x = radius + end_x * inner_radius;
-        let segment_inner_end_y = radius + end_y * inner_radius;
+            let segment_inner_begin_x = RADIUS + begin_x * INNER_RADIUS;
+            let segment_inner_begin_y = RADIUS + begin_y * INNER_RADIUS;
 
-        let text_radius = radius * 0.8;
-        let text_spacing = radius * 0.12;
-        let text_angle_rad = (begin_angle + 0.5 * arc_angle).to_radians();
-        let text_x = radius + text_angle_rad.sin() * text_radius;
-        let text_resolution_y = radius + -text_angle_rad.cos() * text_radius;
-        let text_size_y = radius + -text_angle_rad.cos() * text_radius + text_spacing;
+            let segment_inner_end_x = RADIUS + end_x * INNER_RADIUS;
+            let segment_inner_end_y = RADIUS + end_y * INNER_RADIUS;
+
+            formatdoc!(r#"
+                <path d="M {segment_outer_begin_x},{segment_outer_begin_y}
+                         A {OUTER_RADIUS} {OUTER_RADIUS} 0 {large_arc_flag} 1 {segment_outer_end_x},{segment_outer_end_y}
+                         L {segment_inner_end_x},{segment_inner_end_y}
+                         A {INNER_RADIUS} {INNER_RADIUS} 0 {large_arc_flag} 0 {segment_inner_begin_x},{segment_inner_begin_y}
+                         Z"/>
+            "#)
+        };
+
+        let text_angle_rad = (begin_angle + 0.5 * safe_arc_angle).to_radians();
+        let text_x = RADIUS + text_angle_rad.sin() * TEXT_RADIUS;
+        let text_resolution_y = RADIUS + -text_angle_rad.cos() * TEXT_RADIUS;
+        let text_size_y = RADIUS + -text_angle_rad.cos() * TEXT_RADIUS + TEXT_SPACING;
 
         let play_button = if default {
-            let ratio = 1.197655;
-            let width = radius * 0.2;
-            let height = ratio * width;
-            let a_x = radius - width * 0.5;
-            let a_y = radius - height * 0.5;
-            let b_x = radius + width * 0.5;
-            let b_y = radius;
-            let c_x = radius - width * 0.5;
-            let c_y = radius + height * 0.5;
+            const PLAY_BUTTON_RATIO: f32 = 1.197655;
+            const PLAY_BUTTON_WIDTH: f32 = RADIUS * 0.2;
+            const PLAY_BUTTON_HEIGHT: f32 = PLAY_BUTTON_RATIO * PLAY_BUTTON_WIDTH;
+            let a_x = RADIUS - PLAY_BUTTON_WIDTH * 0.5;
+            let a_y = RADIUS - PLAY_BUTTON_HEIGHT * 0.5;
+            let b_x = RADIUS + PLAY_BUTTON_WIDTH * 0.5;
+            let b_y = RADIUS;
+            let c_x = RADIUS - PLAY_BUTTON_WIDTH * 0.5;
+            let c_y = RADIUS + PLAY_BUTTON_HEIGHT * 0.5;
             formatdoc!(r#"
-                <circle cx="{radius}" cy="{radius}" fill="transparent" r="{inner_radius}"/>
+                <circle cx="{RADIUS}" cy="{RADIUS}" fill="transparent" r="{INNER_RADIUS}"/>
                 <path d="M {a_x},{a_y} L {b_x},{b_y} L {c_x},{c_y} Z"/>
             "#)
         } else {
@@ -480,38 +499,45 @@ fn versions_ring(
         };
 
         formatdoc!(r#"
-                <g
-                    data-label="{resolution}"
-                    data-src="{src}"
-                    tabindex="0">
-                    {play_button}
-                    <path d="M {segment_outer_begin_x},{segment_outer_begin_y}
-                           A {outer_radius} {outer_radius} 0 {large_arc_flag} 1 {segment_outer_end_x},{segment_outer_end_y}
-                           L {segment_inner_end_x},{segment_inner_end_y}
-                           A {inner_radius} {inner_radius} 0 {large_arc_flag} 0 {segment_inner_begin_x},{segment_inner_begin_y}
-                           Z">
-                    </path>
-                    <text text-anchor="middle" x="{text_x}" y="{text_resolution_y}">
-                        {resolution}
-                    </text>
-                    <text class="size" text-anchor="middle" x="{text_x}" y="{text_size_y}">
-                        {size}
-                    </text>
-                    <title>{resolution} {size}</title>
-                </g>
+            <g
+                data-label="{resolution}"
+                data-src="{src}"
+                tabindex="0">
+                {play_button}
+                {slice}
+                <rect class="backdrop" filter="url(#text_shadow)" rx="5"/>
+                <text text-anchor="middle" x="{text_x}" y="{text_resolution_y}">
+                    {resolution}
+                </text>
+                <text class="size" text-anchor="middle" x="{text_x}" y="{text_size_y}">
+                    {size}
+                </text>
+                <title>{resolution} {size}</title>
+            </g>
         "#)
     };
 
     let mut slices = String::new();
-    let gap_angle = 2.5;
-    let usable_angle = 360.0 - sizes.len() as f32 * gap_angle;
-    let mut begin_angle = gap_angle * 0.5;
+
+    let mut begin_angle = if sizes.len() == 1 {
+        0.0
+    } else if sizes.len() == 2 {
+        // With two slices we place them so that both slice midpoints lie
+        // exactly on the horziontal middle line of the ring, i.e. one
+        // (the bigger) version is exactly left, and the other one exactly
+        // right on the version ring.
+        90.0 - (sizes[0].2 as f32 / total_size as f32) * 180.0 - GAP_ANGLE * 0.5
+    } else {
+        // With 2+ slices we begin at 12 o'clock and then draw the slices
+        // in ascending size, going clockwise on the ring.
+        GAP_ANGLE * 0.5
+    };
 
     for (file_name, resolution, size) in sizes.iter() {
         let arc_angle = if sizes.len() == 1 {
-            usable_angle
+            360.0
         } else {
-            (*size as f32 / total_size as f32) * usable_angle
+            (*size as f32 / total_size as f32) * (360.0 - sizes.len() as f32 * GAP_ANGLE)
         };
 
         let size_humanized = human_size(*size);
@@ -528,11 +554,25 @@ fn versions_ring(
         );
         slices.push_str(&slice_rendered);
 
-        begin_angle += arc_angle + gap_angle;
+        begin_angle += arc_angle + GAP_ANGLE;
     }
 
+    const BLUR_DEVIATION: usize = 8;
+    const BLUR_Y_OFFSET: f32 = BLUR_DEVIATION as f32 / 2.0;
+    const BACKDROP_Y: f32 = RADIUS + BLUR_Y_OFFSET;
+    const BACKDROP_RADIUS: f32 = OUTER_RADIUS - (BLUR_DEVIATION as f32 / 2.0);
+
     formatdoc!(r#"
-        <svg class="versions_ring" width="{diameter}" height="{diameter}" version="1.1" viewBox="0 0 {diameter} {diameter}" xmlns="http://www.w3.org/2000/svg">
+        <svg class="versions_ring" width="{DIAMETER}" height="{DIAMETER}" version="1.1" viewBox="0 0 {DIAMETER} {DIAMETER}" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="ring_shadow">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="{BLUR_DEVIATION}" />
+                </filter>
+                <filter id="text_shadow">
+                    <feDropShadow dx="0" dy="3" flood-color="var(--d-2)" flood-opacity="0.4" stdDeviation="3"/>
+                </filter>
+            </defs>
+            <circle class="backdrop" cx="{RADIUS}" cy="{BACKDROP_Y}" filter="url(#ring_shadow)" r="{BACKDROP_RADIUS}"/>
             {slices}
         </svg>
     "#)

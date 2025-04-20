@@ -1,6 +1,3 @@
-:root {
-    --letterbox: #000;
-}
 a {
     color: var(--fg-1);
     text-decoration: none;
@@ -22,7 +19,7 @@ a:hover { color: var(--fg-3); }
 .actions a:hover,
 .actions button:focus-visible,
 .actions button:hover {
-    background-color: var(--bg-3);
+    background: var(--bg-3);
 }
 /* TODO: Temporarily hidden - unhide in an upcoming version when we figured out
          layout questions around banner. */
@@ -34,7 +31,7 @@ a:hover { color: var(--fg-3); }
     flex-wrap: wrap;
 }
 body {
-    background-color: var(--bg-1);
+    background: var(--bg-1);
     color: var(--fg-2);
     margin: 0;
 }
@@ -66,14 +63,14 @@ button {
 }
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
-.current { background-color: var(--bg-3); }
+.current { background: var(--bg-3); }
 .flex { display: flex; }
 .flex.align { align-items: center; }
 .flex.apart { justify-content: space-between; }
 .flex.space { column-gap: .3rem; }
 footer {
     align-items: center;
-    background-color: var(--bg-1);
+    background: var(--bg-1);
     column-gap: .7rem;
     display: flex;
     font-size: .9rem;
@@ -136,10 +133,10 @@ img {
 .links > a:not(:first-child) { margin-top: .5rem; }
 .links > a:focus-visible,
 .links > a:hover {
-    background-color: var(--bg-3);
+    background: var(--bg-3);
 }
 .logo {
-    background-color: var(--fg-2);
+    background: var(--fg-2);
     color: var(--bg-1);
     font-weight: 500;
     padding: .5rem;
@@ -160,11 +157,11 @@ img {
     border-radius: .6rem;
 }
 .outline > a > .placeholder {
-    background-color: var(--bg-2);
+    background: var(--bg-2);
     height: 12rem;
 }
 .outline .text {
-    background-color: var(--bg-1-overlay);
+    background: var(--bg-1-85);
     border-bottom-left-radius: .6rem;
     border-bottom-right-radius: .6rem;
     bottom: 0;
@@ -184,15 +181,19 @@ img {
     position: absolute;
     width: 100%;
 }
-.player_controls button { padding: .6rem; }
+.player_controls button { padding: .9rem .7rem; }
+.player_controls button:first-child { padding-left: .9rem; }
+.player_controls button:last-child { padding-right: .9rem; }
 .player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
-    background-color: var(--bg-1-overlay);
+    background: var(--d-1-85);
+    border-bottom-left-radius: .5rem;
+    border-bottom-right-radius: .5rem;
     display: flex;
-    font-size: .85rem;
+    font-size: .9rem;
     justify-content: space-between;
 }
-.player_controls .control_pane button { font-size: .85rem; }
+.player_controls .control_pane button { font-size: .9rem; }
 .player_controls .control_pane > div {
     align-items: center;
     display: flex;
@@ -220,7 +221,7 @@ img {
 }
 .player_controls .timeline:hover .bar { height: .35rem; }
 .player_controls .timeline .bar.backdrop {
-    background-color: var(--bg-mg);
+    background: var(--d-3);
     width: 100%;
     z-index: 1;
 }
@@ -228,9 +229,9 @@ img {
     width: 100%;
     z-index: 3;
 }
-.player_controls .timeline input:focus-visible + .bar.outline { outline: 1px solid var(--fg-1); }
+.player_controls .timeline input:focus-visible + .bar.outline { outline: 1px solid var(--l-1); }
 .player_controls .timeline .bar.progress {
-    background-color: var(--fg-1);
+    background: var(--l-1);
     width: 0;
     z-index: 2;
 }
@@ -249,7 +250,6 @@ img {
 .player_intro,
 .player_outro {
     align-items: center;
-    background-color: var(--bg-1-overlay);
     bottom: 2.9rem;
     display: flex;
     justify-content: center;
@@ -258,35 +258,24 @@ img {
     right: 0;
     top: 0;
 }
-.player_intro .versions_ring {
-    aspect-ratio: 1;
-    color: var(--fg-3);
-    height: min(20rem, 100%);
-    width: auto;
+.player_outro {
+    background: var(--d-1-85);
+    border-top-left-radius: .5rem;
+    border-top-right-radius: .5rem;
+    column-gap: 2rem;
 }
-.player_intro .versions_ring path { fill: currentColor; }
-.player_intro .versions_ring g { cursor: pointer; }
-.player_intro .versions_ring g:focus-visible,
-.player_intro .versions_ring g:hover {
-    color: var(--fg-1);
-    outline: none;
-}
-.player_intro .versions_ring text {
-    fill: currentColor;
-    font-size: 1.3rem;
-}
-.player_intro .versions_ring text.size { font-size: 1rem; }
-.player_intro .versions_ring g:not(:focus-visible):not(:hover) text { color: var(--fg-2); }
-.player_intro .versions_ring g:not(:focus-visible):not(:hover) text.size { color: var(--mg); }
-.player_outro { column-gap: 2rem; }
 .player_outro:not(.active) { display: none; }
-.player_wrapper { position: relative; }
+.player_wrapper {
+    color: var(--l-2);
+    position: relative;
+}
 .player_wrapper button {
     background: none;
     border: none;
+    color: var(--l-2);
     cursor: pointer;
 }
-.player_wrapper button:hover { color: var(--fg-1); }
+.player_wrapper button:hover { color: var(--l-1); }
 .player_wrapper > *:not(video) { z-index: 1; }
 .playlist {
     display: flex;
@@ -302,7 +291,7 @@ img {
     padding: .5rem;
 }
 .playlist > *:focus-visible,
-.playlist > *:hover { background-color: var(--bg-2); }
+.playlist > *:hover { background: var(--bg-2); }
 .playlist .description {
     align-items: center;
     color: var(--fg-1);
@@ -331,11 +320,11 @@ img {
 }
 .playlist_context > a:last-child img { border-bottom-left-radius: .4rem }
 .playlist_context > a:focus-visible,
-.playlist_context > a:hover { background-color: var(--bg-2); }
+.playlist_context > a:hover { background: var(--bg-2); }
 .playlist_context > a:not(:last-child) {
     border-bottom: 1px solid var(--bg-1);
 }
-.playlist_context .current { background-color: var(--bg-3); }
+.playlist_context .current { background: var(--bg-3); }
 .playlist_context .description {
     align-items: flex-start;
     color: var(--fg-1);
@@ -361,7 +350,7 @@ img {
     justify-content: center;
 }
 .playlist_context .number {
-    background-color: var(--bg-1);
+    background: var(--bg-1);
     border-bottom-left-radius: .2rem;
     color: var(--fg-3);
     font-size: .8rem;
@@ -372,7 +361,7 @@ img {
 }
 .playlist_context img {
     aspect-ratio: var(--poster-aspect);
-    background-color: var(--letterbox);
+    background: var(--d-1);
     border-radius: 0;
     display: block;
     flex-shrink: 0;
@@ -380,7 +369,7 @@ img {
     object-fit: contain;
 }
 .playlist_header {
-    background-color: var(--bg-1);
+    background: var(--bg-1);
     padding: .8rem;
 }
 .playlist_header .duration { color: var(--fg-3); }
@@ -424,14 +413,14 @@ svg {
 }
 .thumbnail {
     aspect-ratio: var(--poster-aspect);
-    background-color: var(--letterbox);
+    background: var(--d-1);
     border-radius: .5rem;
     flex-shrink: 0;
     object-fit: contain;
 }
 .thumbnail_wrapper { position: relative; }
 .thumbnail_wrapper .duration {
-    background-color: var(--bg-1-overlay);
+    background: var(--bg-1-85);
     border-radius: .2rem;
     bottom: calc(var(--poster-aspect) * 3%);
     color: var(--fg-1);
@@ -441,10 +430,40 @@ svg {
     right: 3%;
 }
 .unlisted_badge {
-    background-color: var(--bg-2);
+    background: var(--bg-2);
     border-radius: .2rem;
     padding: .3rem;
 }
+.versions_ring {
+    aspect-ratio: 1;
+    height: min(20rem, 100%);
+    opacity: .9;
+    width: auto;
+}
+.versions_ring circle.backdrop {
+    fill: var(--d-1);
+    opacity: .9;
+}
+.versions_ring path { fill: var(--l-1); }
+.versions_ring g {
+    cursor: pointer;
+    opacity: .9;
+}
+.versions_ring g:focus-visible,
+.versions_ring g:hover {
+    opacity: 1;
+    outline: none;
+}
+.versions_ring text {
+    fill: var(--d-1);
+    font-size: 1.3rem;
+}
+.versions_ring rect.backdrop { fill: var(--l-1); }
+.versions_ring text.size {
+    fill: var(--d-3);
+    font-size: 1rem;
+}
+.versions_ring.interacting g:not(:focus-visible):not(:hover) { opacity: .5; }
 video {
     border-radius: .5rem;
     display: block;
@@ -474,7 +493,7 @@ video {
     margin-top: 2rem;
 }
 .videos_grid .number {
-    background-color: var(--fg-3);
+    background: var(--fg-3);
     border-radius: .2rem;
     color: var(--bg-1);
     font-size: .8rem;

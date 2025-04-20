@@ -202,7 +202,7 @@ fn storage_stats_html(translations: &Translations, videos: &Vec<Arc<Video>>) -> 
         let size_humanized = human_size(*size);
         let list_text = formatdoc!(r#"
             <li>
-                <div style="background-color: hsl(0, 0%, {lightness}%);"></div> {size_humanized} <a href="{link}">{title}</a>
+                <div style="background: hsl(0, 0%, {lightness}%);"></div> {size_humanized} <a href="{link}">{title}</a>
             </li>
         "#);
 

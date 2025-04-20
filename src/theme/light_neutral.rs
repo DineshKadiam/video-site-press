@@ -1,7 +1,32 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{Color, ThemeVars};
+
+const D_1: Color = Color::Gray {
+    hsl_l: 0.0,
+    oklch_l: 0.0
+};
+
+const D_2: Color = Color::Gray {
+    hsl_l: 0.153,
+    oklch_l: 0.272
+};
+
+const D_3: Color = Color::Gray {
+    hsl_l: 0.267,
+    oklch_l: 0.386
+};
+
+const L_1: Color = Color::Gray {
+    hsl_l: 1.0,
+    oklch_l: 1.0
+};
+
+const L_2: Color = Color::Gray {
+    hsl_l: 0.933,
+    oklch_l: 0.95
+};
 
 pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
     action: Color::Gradient {
@@ -16,19 +41,8 @@ pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
         end_hsl: (229, 0.99, 0.615),
         end_oklch: (0.56, 0.24, 268)
     },
-    bg_1: Color::Gray {
-        hsl_l: 1.0,
-        oklch_l: 1.0
-    },
-    bg_1_overlay: Color::GrayAlpha {
-        a: 0.85,
-        hsl_l: 1.0,
-        oklch_l: 1.0
-    },
-    bg_2: Color::Gray {
-        hsl_l: 0.933,
-        oklch_l: 0.95
-    },
+    bg_1: L_1,
+    bg_2: L_2,
     bg_3: Color::Gray {
         hsl_l: 0.867,
         oklch_l: 0.9
@@ -37,6 +51,9 @@ pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
         hsl_l: 0.8,
         oklch_l: 0.85
     },
+    d_1: D_1,
+    d_2: D_2,
+    d_3: D_3,
     danger: Color::Gradient {
         begin_hsl: (336, 1.0, 0.273),
         begin_oklch: (0.45, 0.2, 374),
@@ -49,23 +66,15 @@ pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
         end_hsl: (352, 0.67, 0.488),
         end_oklch: (0.56, 0.2, 380)
     },
-    fg_1: Color::Gray {
-        hsl_l: 0.0,
-        oklch_l: 0.0
-    },
-    fg_2: Color::Gray {
-        hsl_l: 0.153,
-        oklch_l: 0.272
-    },
-    fg_3: Color::Gray {
-        hsl_l: 0.267,
-        oklch_l: 0.386
-    },
+    fg_1: D_1,
+    fg_2: D_2,
+    fg_3: D_3,
     fg_mg: Color::Gray {
         hsl_l: 0.4,
         oklch_l: 0.51
     },
-    light_1: "var(--bg-1)",
+    l_1: L_1,
+    l_2: L_2,
     mg: Color::Gray {
         hsl_l: 0.533,
         oklch_l: 0.627

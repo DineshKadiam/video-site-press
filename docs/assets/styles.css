@@ -29,14 +29,14 @@
 }
 a { color: var(--link); }
 blockquote {
-    background-color: var(--code);
+    background: var(--code);
     border-radius: .2rem;
     margin-left: 0;
     max-width: 33rem;
     padding: .001rem 1.4rem;
 }
 body {
-    background-color: var(--background);
+    background: var(--background);
     color: var(--text);
     display: flex;
     flex-direction: column;
@@ -64,7 +64,7 @@ h2 {
 }
 header {
     align-items: center;
-    background-color: var(--header);
+    background: var(--header);
     box-shadow: 0 0 1rem rgba(0, 0, 0, .1);
     box-sizing: border-box;
     display: flex;
@@ -97,7 +97,7 @@ nav {
 nav a { text-decoration: none; }
 nav a.active {
     align-self: normal;
-    background-color: var(--code);
+    background: var(--code);
     border-left: 0.2rem solid var(--link);
     padding: 0 0.5rem;
 }
@@ -123,14 +123,14 @@ p, ul {
 p code,
 h2 code,
 li code {
-    background-color: var(--code);
+    background: var(--code);
     border-radius: .2rem;
     padding: .15rem .3rem;
 }
 p code,
 li code { font-size: .9rem; }
 pre {
-    background-color: var(--code);
+    background: var(--code);
     box-shadow: inset 0 .5rem .5rem -.5rem hsla(0, 0%, 0%, .1),
                 inset 0 -.5rem .5rem -.5rem hsla(0, 0%, 0%, .1);
     font-size: .9rem;
@@ -166,7 +166,7 @@ pre {
     }
     nav:target {
         align-items: center;
-        background-color: var(--background);
+        background: var(--background);
         bottom: 0;
         display: flex;
         left: 0;
