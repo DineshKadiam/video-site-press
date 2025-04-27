@@ -111,4 +111,10 @@ impl SiteUrl {
             Err(err) => Err(err.to_string())
         }
     }
+
+    /// Returns this url without http(s):// and without trailing slash.
+    pub fn without_scheme_and_trailing_slash(&self) -> &str {
+        let without_scheme = self.normalized.split_once("://").unwrap().1;
+        &without_scheme[..(without_scheme.len() - 1)]
+    }
 }

@@ -49,9 +49,9 @@ pub fn video_html(
     let e_title = html_escape_outside_attribute(title);
 
     let r_downloads = if video.download() && !video.versions.is_empty() {
-        let t_download = site.language.translations.download;
-        let t_download_permalink = site.language.translations.download_permalink;
-        let download_icon = icons::download(t_download);
+        let t_download = translations.download;
+        let t_download_permalink = translations.download_permalink;
+        let download_icon = icons::download();
 
         formatdoc!(r#"
             <a href="{t_download_permalink}{index_suffix}">
@@ -108,13 +108,9 @@ pub fn video_html(
             None => ("dynamic-url", String::new())
         };
 
-        let t_copy_link = site.language.translations.copy_link;
-        let (button, templates) = copy_button(content_key, &content_value, t_copy_link, site);
-
         layout.add_clipboard_script();
-        layout.add_templates(&templates);
 
-        button
+        copy_button(content_key, &content_value, translations.copy_link)
     } else {
         String::new()
     };
@@ -122,8 +118,8 @@ pub fn video_html(
     let r_embed = if video.embedding() && site.base_url.is_some() && !video.versions.is_empty() {
         let embed_icon = icons::embed();
 
-        let t_embed = &site.language.translations.embed;
-        let t_embed_codes_permalink = &site.language.translations.embed_codes_permalink;
+        let t_embed = &translations.embed;
+        let t_embed_codes_permalink = &translations.embed_codes_permalink;
 
         format!(r#"
             <a href="{t_embed_codes_permalink}{index_suffix}">
@@ -144,7 +140,7 @@ pub fn video_html(
 
     let r_unlisted_badge = if video.unlisted() {
         layout.no_indexing();
-        unlisted_badge(&site.language.translations)
+        unlisted_badge(&translations)
     } else {
         String::new()
     };

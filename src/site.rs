@@ -140,6 +140,13 @@ impl Site {
             .map(|base_url| base_url.join_index(self, site_path))
     }
 
+    pub fn absolute_url_index_unchecked(&self, site_path: &SitePath) -> String {
+        self.base_url
+            .as_ref()
+            .map(|base_url| base_url.join_index(self, site_path))
+            .unwrap()
+    }
+
     pub fn absolute_url_prefix(&self, site_path: &SitePath) -> Option<String> {
         self.base_url
             .as_ref()
@@ -151,6 +158,13 @@ impl Site {
             .as_ref()
             .unwrap()
             .join_prefix(site_path)
+    }
+
+    pub fn absolute_url_unchecked(&self) -> &str {
+        &self.base_url
+            .as_ref()
+            .unwrap()
+            .normalized
     }
 
     pub fn all_metadata_computed(&self) -> bool {
@@ -382,6 +396,20 @@ impl Site {
             SiteContent::Video(video) => video.embeds_requested(),
             SiteContent::Empty |
             SiteContent::Invalid => false
+        }
+    }
+
+    /// Traverses the site tree to determine if any collection or playlist on
+    /// the site needs to render feeds. This information is used to check
+    /// whether we need to warn about base_url not being set and feeds
+    /// therefore not being available in spite of being activated.
+    pub fn feeds_requested(&self) -> bool {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.feeds_requested(),
+            SiteContent::Playlist(playlist) => playlist.feeds(),
+            SiteContent::Empty |
+            SiteContent::Invalid |
+            SiteContent::Video(_) => false
         }
     }
 

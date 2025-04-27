@@ -82,10 +82,9 @@ pub fn disk(label: &str) -> String {
 }
 
 /// Visually represented as a downward arrow
-pub fn download(label: &str) -> String {
+pub fn download() -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <title>{label}</title>
+        <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <path d="m32.016 9.0254a3.4285 3.4285 0 0 0-3.418 3.4395l0.09961 30.846-8.8867-8.9121a3.4285 3.4285 0 0 0-2.4238-1.0078 3.4285 3.4285 0 0 0-2.4258 1.002 3.4285 3.4285 0 0 0-0.00586 4.8477l14.664 14.703a3.4288 3.4288 0 0 0 4.8555 0l14.6-14.633a3.4285 3.4285 0 0 0-0.00586-4.8477 3.4285 3.4285 0 0 0-4.8477 0.003906l-8.668 8.6875-0.097656-30.711a3.4285 3.4285 0 0 0-3.4395-3.418z"/>
         </svg>
     "#)
@@ -114,6 +113,18 @@ pub fn failure(label: &str) -> String {
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m16.25 9.1797-7.0703 7.0703 15.75 15.75-15.75 15.75 7.0703 7.0703 15.75-15.75 15.75 15.75 7.0703-7.0703-15.75-15.75 15.75-15.75-7.0703-7.0703-15.75 15.75z"/>
+        </svg>
+    "#)
+}
+
+// The standard RSS icon with two semi-circle arcs radiating from a dot
+pub fn feed(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m41.597 22.351c-8.6734-8.6734-20.213-13.45-32.496-13.45v9.0364c9.8677 0 19.139 3.8367 26.106 10.803 6.9666 6.9667 10.803 16.238 10.803 26.106h9.0364c-1.5e-4 -12.281-4.7769-23.823-13.45-32.496z"/>
+            <path d="m9.0076 24.192v9.0364c11.92 0 21.618 9.6975 21.618 21.618h9.0364c0-16.902-13.751-30.654-30.654-30.654z"/>
+            <circle cx="15.423" cy="48.625" r="6.4721"/>
         </svg>
     "#)
 }

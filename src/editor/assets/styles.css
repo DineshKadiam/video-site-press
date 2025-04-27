@@ -241,6 +241,14 @@ h2.with_button + a svg {
     margin-right: .3rem;
     width: .8rem;
 }
+.hint {
+    background: var(--warning-bg);
+    border-radius: .3rem;
+    color: var(--warning-fg);
+    font-size: .8rem;
+    margin-top: .3rem;
+    padding: .5rem;
+}
 input, textarea {
     background: var(--bg-1);
     border: 1px solid var(--mg);

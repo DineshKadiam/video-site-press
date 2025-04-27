@@ -73,14 +73,14 @@ pub struct Video {
     pub versions: Vec<VideoFile>
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct VideoFile {
     pub file_meta: FileMeta,
     pub file_name: String,
     pub video_meta: Option<VideoMeta>
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct VideoMeta {
     pub audio_codec: Option<String>,
     /// Duration in seconds

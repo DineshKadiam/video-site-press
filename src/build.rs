@@ -23,11 +23,13 @@ mod collection;
 mod download;
 mod embed;
 mod embed_codes;
+mod feeds;
 mod layout;
 mod outline;
 mod playlist;
 mod scripts;
 mod styles;
+mod subscribe;
 mod video;
 mod widgets;
 
@@ -38,10 +40,14 @@ use embed_codes::embed_codes_html;
 use layout::Layout;
 use outline::Traversal;
 use playlist::playlist_html;
+use subscribe::subscribe_html;
 use video::video_html;
+
+pub const GENERATOR_INFO: &str = concat!("Hyper 8 Video System ", env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), ")");
 
 /// Placed in the head of each page to identify the Hyper 8 build that generated it.
 const META_GENERATOR: &str = concat!(r#"<meta name="generator" content="Hyper 8 Video System "#, env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), r#")">"#);
+
 const META_ROBOTS_NOINDEX_NOFOLLOW: &str = r#"<meta name="robots" content="noindex, nofollow">"#;
 
 /// When we link to assets on the rendered pages, we append a unique asset
@@ -90,33 +96,27 @@ pub fn perform_build(context: &Context) {
         scripts::generate_adaptive_theme_js(context);
     }
 
-    if site.embeds_requested() {
-        if site.base_url.is_some() {
-            scripts::generate_embed_js(context);
-            styles::generate_embed_css(&mut asset_hashes, context, &site);
-        } else {
-            // TODO: If we're using the graphical user interface this information needs to
-            //       be communicated earlier/differently. E.g. maybe the embedding select
-            //       should not even be accessible (= greyed out) with a note that the base_url
-            //       needs to be set for this to do anything.
-            //       Likewise for CLI usage it can be thought through further in which way this
-            //       warning can be registered and in which context it can/should be printed.
-            eprintln!("Embeds could not be generated because the site's base_url is not defined");
-        }
-    }
-
     if site.copy_link_requested() || (site.embed_codes_requested() && site.base_url.is_some()) {
         scripts::generate_clipboard_js(context);
     }
 
-    if site.platform_integration_requested() && site.base_url.is_none() {
-        // TODO: If we're using the graphical user interface this information needs to
-        //       be communicated earlier/differently. E.g. maybe the platform integration select
-        //       should not even be accessible (= greyed out) with a note that the base_url
-        //       needs to be set for this to do anything.
-        //       Likewise for CLI usage it can be thought through further in which way this
-        //       warning can be registered and in which context it can/should be printed.
-        eprintln!("Metadata for platform integration could not be generated because the site's base_url is not defined");
+    if site.base_url.is_some() {
+        if site.embeds_requested() {
+            scripts::generate_embed_js(context);
+            styles::generate_embed_css(&mut asset_hashes, context, &site);
+        }
+    } else {
+        if site.embeds_requested() {
+            eprintln!("Embeds could not be generated because the site's base_url is not defined");
+        }
+
+        if site.feeds_requested() {
+            eprintln!("Feeds could not be generated because the site's base_url is not defined");
+        }
+
+        if site.platform_integration_requested() {
+            eprintln!("Metadata for platform integration could not be generated because the site's base_url is not defined");
+        }
     }
 
     match &site.content {
@@ -163,15 +163,16 @@ fn build_collection(
     site: &Site,
     traversal_previous: &Traversal
 ) {
+    let translations = &site.language.translations;
     let traversal = traversal_previous.with_collection(collection);
 
+    let collection_build_dir = context.build_dir.join(collection.site_path.filesystem_relative());
+
+    if !collection.site_path.is_root_path() {
+        fs::create_dir_all(&collection_build_dir).unwrap();
+    }
+
     if let Some(banner) = &collection.banner {
-        let collection_build_dir = context.build_dir.join(collection.site_path.filesystem_relative());
-
-        if !collection.site_path.is_root_path() {
-            fs::create_dir_all(&collection_build_dir).unwrap();
-        }
-
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
                 hard_link_or_copy(
@@ -187,12 +188,43 @@ fn build_collection(
         }
     }
 
+    let subscribe_permalink = if collection.feeds() && site.base_url.is_some() {
+        let title = collection.title_or_slug_or_generic_label(translations);
+
+        feeds::generate(
+            context,
+            &collection.description,
+            site,
+            &collection.site_path,
+            title,
+            &collection.published_videos().cloned().collect()
+        );
+
+        let subscribe_permalink = collection.subscribe_permalink(translations);
+        let traversal_subscribe = traversal.with_virtual(translations.subscribe);
+
+        subscribe_html(
+            asset_hashes,
+            context,
+            site,
+            &collection.site_path,
+            &subscribe_permalink,
+            title,
+            &traversal_subscribe,
+            collection.unlisted()
+        );
+
+        Some(subscribe_permalink)
+    } else {
+        None
+    };
 
     collection_html(
         asset_hashes,
         context,
         collection,
         site,
+        subscribe_permalink,
         &traversal
     );
 
@@ -238,15 +270,16 @@ fn build_playlist(
     site: &Site,
     traversal_previous: &Traversal
 ) {
+    let translations = &site.language.translations;
     let traversal = traversal_previous.with_playlist(playlist);
 
+    let playlist_build_dir = context.build_dir.join(playlist.site_path.filesystem_relative());
+
+    if !playlist.site_path.is_root_path() {
+        fs::create_dir_all(&playlist_build_dir).unwrap();
+    }
+
     if let Some(banner) = &playlist.banner {
-        let playlist_build_dir = context.build_dir.join(playlist.site_path.filesystem_relative());
-
-        if !playlist.site_path.is_root_path() {
-            fs::create_dir_all(&playlist_build_dir).unwrap();
-        }
-
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
                 hard_link_or_copy(
@@ -262,11 +295,43 @@ fn build_playlist(
         }
     }
 
+    let subscribe_permalink = if playlist.feeds() && site.base_url.is_some() {
+        let title = playlist.title_or_slug_or_generic_label(translations);
+
+        feeds::generate(
+            context,
+            &playlist.description,
+            site,
+            &playlist.site_path,
+            &title,
+            &playlist.published_videos().cloned().collect()
+        );
+
+        let subscribe_permalink = playlist.subscribe_permalink(translations);
+        let traversal_subscribe = traversal.with_virtual(translations.subscribe);
+
+        subscribe_html(
+            asset_hashes,
+            context,
+            site,
+            &playlist.site_path,
+            &subscribe_permalink,
+            &title,
+            &traversal_subscribe,
+            playlist.unlisted()
+        );
+
+        Some(subscribe_permalink)
+    } else {
+        None
+    };
+
     playlist_html(
         asset_hashes,
         context,
         playlist,
         site,
+        subscribe_permalink,
         &traversal
     );
 

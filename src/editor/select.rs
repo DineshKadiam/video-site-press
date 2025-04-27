@@ -6,6 +6,7 @@ use std::fmt::{Display, Formatter};
 use indoc::formatdoc;
 
 pub struct Select<'a> {
+    hint: Option<String>,
     id: Option<&'a str>,
     key: &'a str,
     label: &'a str,
@@ -19,6 +20,11 @@ pub struct SelectOption {
 }
 
 impl<'a> Select<'a> {
+    /// An optional hint that is displayed right below the select.
+    pub fn hint(&mut self, text: impl Into<String>) {
+        self.hint = Some(text.into());
+    }
+
     pub fn id(&mut self, id: &'a str) -> &mut Select<'a> {
         self.id = Some(id);
         self
@@ -26,6 +32,7 @@ impl<'a> Select<'a> {
 
     pub fn new(key: &'a str, label: &'a str) -> Select<'a> {
         Select {
+            hint: None,
             id: None,
             key,
             label,
@@ -69,12 +76,18 @@ impl Display for Select<'_> {
         	.collect::<Vec<String>>()
         	.join("\n");
 
+        let hint = match &self.hint {
+            Some(text) => format!(r#"<span class="hint">{text}</span>"#),
+            None => String::new()
+        };
+
         let html = formatdoc!(r#"
             <div class="form_field">
                 <label for="{id}">{label}</label>
                 <select id="{id}" name="{key}">
                 	{options}
                 </select>
+                {hint}
             </div>
         "#);
 

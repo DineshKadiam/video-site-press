@@ -60,6 +60,7 @@ pub enum PlaylistFormFeedback<'a> {
         description: &'a str,
         download: Option<bool>,
         embedding: Option<bool>,
+        feeds: Option<bool>,
         offline: bool,
         order: &'a str,
         platform_integration: Option<PlatformIntegration>,
@@ -140,28 +141,38 @@ pub fn edit_page(
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
+    let mut select_feeds = Select::new("feeds", translations.feeds);
     let mut select_order = Select::new("order", translations.order);
     let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
     let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
 
     let t_disabled = translations.disabled;
     let t_enabled = translations.enabled;
-    let t_inherit = translations.inherit;
+
+    let t_default_or_inherited = match playlist.site_path.is_root_path() {
+        true => translations.default,
+        false => translations.inherited
+    };
 
     let t_copy_link_disabled_enabled = if playlist.copy_link_inherited() { t_enabled } else { t_disabled };
-    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("", format!("{t_copy_link_disabled_enabled} ({t_default_or_inherited})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if playlist.download_inherited() { t_enabled } else { t_disabled };
-    select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
+    select_download.option("", format!("{t_download_disabled_enabled} ({t_default_or_inherited})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
     let t_embedding_disabled_enabled = if playlist.embedding_inherited() { t_enabled } else { t_disabled };
-    select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    select_embedding.option("", format!("{t_embedding_disabled_enabled} ({t_default_or_inherited})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
+
+    let t_feeds_disabled_enabled = if playlist.feeds_inherited() { t_enabled } else { t_disabled };
+    select_feeds.option("", format!("{t_feeds_disabled_enabled} ({t_default_or_inherited})"));
+    select_feeds.option("enabled", t_enabled);
+    select_feeds.option("disabled", t_disabled);
 
     select_order.option("default", translations.default_sort_number_or_release_date_ascending);
     select_order.option("release_date_asc", translations.release_date_ascending);
@@ -173,18 +184,29 @@ pub fn edit_page(
 
     let platform_integration_inherited = playlist.platform_integration_inherited();
     let t_platform_integration_inherited_label = platform_integration_inherited.label(translations);
-    select_platform_integration.option("", format!("{t_inherit} ({t_platform_integration_inherited_label})"));
+    select_platform_integration.option("", format!("{t_platform_integration_inherited_label} ({t_default_or_inherited})"));
     select_platform_integration.option("disabled", t_disabled);
     select_platform_integration.option("link_previews", translations.link_previews_only);
     select_platform_integration.option("content_embeds", translations.link_previews_and_content_embeds);
 
     textarea_description.id("playlist_description");
 
+    if site.base_url.is_none() {
+        let failure_icon = icons::failure(translations.warning);
+        let t_public_address_not_configured_text = translations.public_address_not_configured_text;
+        let hint = format!("{failure_icon} {t_public_address_not_configured_text}");
+
+        select_embedding.hint(&hint);
+        select_feeds.hint(&hint);
+        select_platform_integration.hint(hint);
+    }
+
     let feedback_update = if let Some(PlaylistFormFeedback::Update {
         copy_link,
         description,
         download,
         embedding,
+        feeds,
         offline,
         order,
         platform_integration,
@@ -209,6 +231,12 @@ pub fn edit_page(
             None => ""
         };
 
+        let feeds_value = match feeds {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let platform_integration_value = match platform_integration {
             Some(platform_integration) => platform_integration.key(),
             None => ""
@@ -220,6 +248,7 @@ pub fn edit_page(
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
+        select_feeds.selected(feeds_value);
         select_order.selected(order);
         select_platform_integration.selected(platform_integration_value);
         textarea_description.value(description);
@@ -244,6 +273,12 @@ pub fn edit_page(
             None => ""
         };
 
+        let feeds = match playlist.feeds_local() {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
         let platform_integration = match playlist.platform_integration_local() {
             Some(platform_integration) => platform_integration.key(),
             None => ""
@@ -255,6 +290,7 @@ pub fn edit_page(
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
+        select_feeds.selected(feeds);
         select_order.selected(playlist.order.key());
         select_platform_integration.selected(platform_integration);
         textarea_description.value_option(&playlist.description);
@@ -431,11 +467,10 @@ pub fn edit_page(
                 {input_title}
                 {textarea_description}
                 {select_order}
-                <div class="form_split even">
-                    {select_copy_link}
-                    {select_download}
-                    {select_embedding}
-                </div>
+                {select_copy_link}
+                {select_download}
+                {select_embedding}
+                {select_feeds}
                 {select_platform_integration}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}

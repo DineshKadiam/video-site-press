@@ -5,6 +5,8 @@ use indoc::formatdoc;
 
 use crate::{PlatformIntegrationMeta, Site, ThemeKind};
 use crate::build::{AssetHashes, Traversal};
+use crate::build::feeds::meta_link_tags;
+use crate::build::widgets::{copy_button_icon_templates, player_icon_templates};
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
@@ -12,11 +14,9 @@ use super::{META_GENERATOR, META_ROBOTS_NOINDEX_NOFOLLOW};
 
 pub struct Layout {
     clipboard_script: bool,
+    feed_links: bool,
     indexing: bool,
     platform_integration_meta: Option<PlatformIntegrationMeta>,
-    /// <template> tags that are used in the scripting on the page, and
-    /// appended at the bottom of the body to optimize loading.
-    templates: String,
     video_script: bool
 }
 
@@ -25,12 +25,12 @@ impl Layout {
         self.clipboard_script = true;
     }
 
-    pub fn add_platform_integration_meta(&mut self, platform_integration_meta: PlatformIntegrationMeta) {
-        self.platform_integration_meta = Some(platform_integration_meta);
+    pub fn add_feed_links(&mut self) {
+        self.feed_links = true;
     }
 
-    pub fn add_templates(&mut self, templates: &str) {
-        self.templates.push_str(templates);
+    pub fn add_platform_integration_meta(&mut self, platform_integration_meta: PlatformIntegrationMeta) {
+        self.platform_integration_meta = Some(platform_integration_meta);
     }
 
     pub fn add_video_script(&mut self) {
@@ -40,9 +40,9 @@ impl Layout {
     pub fn new() -> Layout {
         Layout {
             clipboard_script: false,
+            feed_links: false,
             indexing: true,
             platform_integration_meta: None,
-            templates: String::new(),
             video_script: false
         }
     }
@@ -60,9 +60,18 @@ impl Layout {
         title: &str,
         traversal: &Traversal
     ) -> String {
-        let meta_generator = META_GENERATOR;
-        let meta_noindex_nofollow = if self.indexing { "" } else { META_ROBOTS_NOINDEX_NOFOLLOW };
         let root_prefix = traversal.prefix_asc();
+        let translations = &site.language.translations;
+
+        let mut extra_meta = String::new();
+
+        if !self.indexing {
+            extra_meta.push_str(META_ROBOTS_NOINDEX_NOFOLLOW);
+        }
+
+        if self.feed_links {
+            extra_meta.push_str(&meta_link_tags(translations));
+        }
 
         let adaptive_theme_script = if let ThemeKind::Adaptive { .. } = site.theme.kind {
             let adaptive_theme_js_asset_hash = AssetHashes::ADAPTIVE_THEME_JS;
@@ -78,10 +87,9 @@ impl Layout {
             String::new()
         };
 
-        let meta_platform_integration = match &self.platform_integration_meta {
-            Some(meta) => meta.tags(site),
-            None => String::new()
-        };
+        if let Some(meta) = &self.platform_integration_meta {
+            extra_meta.push_str(&meta.tags(site));
+        }
 
         let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
 
@@ -96,10 +104,9 @@ impl Layout {
             <head>
                 <title>{title}</title>
                 <meta charset="utf-8">
-                {meta_generator}
-                {meta_noindex_nofollow}
-                {meta_platform_integration}
                 <meta name="viewport" content="width=device-width, initial-scale=1">
+                {META_GENERATOR}
+                {extra_meta}
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
                 {adaptive_theme_script}
                 {clipboard_script}
@@ -116,8 +123,8 @@ impl Layout {
             .collect::<Vec<String>>()
             .join("");
 
-        let dark_icon = icons::dark(site.language.translations.dark_color_scheme);
-        let light_icon = icons::light(site.language.translations.light_color_scheme);
+        let dark_icon = icons::dark(translations.dark_color_scheme);
+        let light_icon = icons::light(translations.light_color_scheme);
         let theme_toggle = match &site.theme.kind {
             ThemeKind::Adaptive { .. } => formatdoc!(r#"
                 <div id="theme-toggles">
@@ -134,7 +141,15 @@ impl Layout {
 
         let e_site_title = html_escape_outside_attribute(site.title());
 
-        let templates = &self.templates;
+        let mut templates = String::new();
+
+        if self.clipboard_script {
+            templates.push_str(&copy_button_icon_templates(translations));
+        }
+
+        if self.video_script {
+            templates.push_str(&player_icon_templates(translations));
+        }
 
         let body = formatdoc!(r##"
             <body>

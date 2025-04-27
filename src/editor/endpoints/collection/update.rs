@@ -27,6 +27,7 @@ pub struct UpdateForm {
     description: String,
     download: String,
     embedding: String,
+    feeds: String,
     offline: Option<String>,
     platform_integration: String,
     title: String,
@@ -61,6 +62,12 @@ pub async fn update(
         _ => None
     };
 
+    let feeds = match form.feeds.as_str() {
+        "disabled" => Some(false),
+        "enabled" => Some(true),
+        _ => None
+    };
+
     let platform_integration = match form.platform_integration.as_str() {
         "" => None,
         other => Some(PlatformIntegration::from_key(other).unwrap())
@@ -83,6 +90,7 @@ pub async fn update(
             must_propagate |= collection_mut.copy_link_local_set(copy_link);
             must_propagate |= collection_mut.download_local_set(download);
             must_propagate |= collection_mut.embedding_local_set(embedding);
+            must_propagate |= collection_mut.feeds_local_set(feeds);
             must_propagate |= collection_mut.offline_local_set(offline);
             must_propagate |= collection_mut.platform_integration_local_set(platform_integration);
             must_propagate |= collection_mut.unlisted_local_set(unlisted);
@@ -113,6 +121,7 @@ pub async fn update(
             description: description_trimmed,
             download,
             embedding,
+            feeds,
             offline,
             platform_integration,
             title: Field::valid(title_trimmed),

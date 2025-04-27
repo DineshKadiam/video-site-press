@@ -14,15 +14,18 @@ use crate::{
     Site
 };
 use crate::build::outline::Traversal;
-use crate::util::localized_date_d_mmmm_yyyy;
 use crate::build::{AssetHashes, Layout};
 use crate::build::widgets::{
     banner_html,
     links,
+    subscribe_button,
     thumbnail,
     unlisted_badge
 };
-use crate::util::html_escape_outside_attribute;
+use crate::util::{
+    html_escape_outside_attribute,
+    localized_date_d_mmmm_yyyy
+};
 
 /// Generates and writes a collection index page to the build directory.
 pub fn collection_html(
@@ -30,9 +33,11 @@ pub fn collection_html(
     context: &Context,
     collection: &Collection,
     site: &Site,
+    subscribe_permalink: Option<String>,
     traversal: &Traversal
 ) {
     let mut layout = Layout::new();
+
     let translations = &site.language.translations;
 
     let mut body = String::new();
@@ -61,6 +66,11 @@ pub fn collection_html(
     if let Some(description) = &collection.description {
         let description_html = MarkdownSubset::to_html(description);
         body.push_str(&format!(r#"<div class="description reading_width">{description_html}</div>"#));
+    }
+
+    if let Some(subscribe_permalink) = &subscribe_permalink {
+        body.push_str(&subscribe_button(subscribe_permalink, site));
+        layout.add_feed_links();
     }
 
     if !collection.links.is_empty() {

@@ -41,5 +41,6 @@ serde_json = "1.0.127"
 slug = "0.1.6"
 sys-locale = "0.3.2"
 tokio = { features = ["macros", "rt-multi-thread"], version = "1.44.2" }
+uuid = { features = ["v5"], version = "1.16.0" }
 url = "2.5.4"
 webbrowser = "1.0.4"

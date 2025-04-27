@@ -53,6 +53,7 @@ pub struct Collection {
     download: Option<bool>,
     embedding: Option<bool>,
     pub errors: Vec<String>,
+    feeds: Option<bool>,
     /// Some options of a collection (e.g. copy_link, embedding and unlisted)
     /// are affected by both the local settings in the manifest as well as
     /// the inherited state from ancestors in the site tree. This stores
@@ -241,6 +242,33 @@ impl Collection {
                     let error = element_error(element, manifest_path, message);
                     self.errors.push(error);
                 }
+                "feeds" => 'feeds: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value {
+                                    "enabled" => {
+                                        self.feeds = Some(true);
+                                    }
+                                    "disabled" => {
+                                        self.feeds = Some(false);
+                                    }
+                                    other => {
+                                        let message = format!("The feeds option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'feeds;
+                            }
+                        }
+                    }
+
+                    let message = "feeds needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'feeds: enabled'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
                 "link" => 'link: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -418,12 +446,6 @@ impl Collection {
         }
     }
 
-    /// When we convert between types (collection, playlist, video) we pass
-    /// over existing inherited options using this method.
-    pub fn copy_inherited_options(&self) -> InheritedOptions {
-        self.inherited_options.clone()
-    }
-
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
         b.latest_release_date().cmp(&a.latest_release_date())
     }
@@ -446,6 +468,12 @@ impl Collection {
             (None, Some(_)) => Ordering::Less,
             (None, None) => b.slug().cmp(&a.slug())
         }
+    }
+
+    /// When we convert between types (collection, playlist, video) we pass
+    /// over existing inherited options using this method.
+    pub fn copy_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.clone()
     }
 
     /// Get the copy_link setting resolved in the context of the site tree
@@ -647,6 +675,44 @@ impl Collection {
         self.published_subcollections().any(|subcollection| subcollection.embeds_requested())
     }
 
+    /// Get the feeds setting resolved in the context of the site tree
+    /// (= as set locally on the collection or as inherited from an ancestor).
+    pub fn feeds(&self) -> bool {
+        self.feeds.unwrap_or(self.inherited_options.feeds)
+    }
+
+    /// Get the feeds setting as inherited from ancestors.
+    pub fn feeds_inherited(&self) -> bool {
+        self.inherited_options.feeds
+    }
+
+    /// Get the feeds setting as set locally on the collection.
+    pub fn feeds_local(&self) -> Option<bool> {
+        self.feeds
+    }
+
+    /// Set the feeds setting locally on the collection. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn feeds_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.feeds) !=
+            self.feeds.unwrap_or(self.inherited_options.feeds);
+
+        self.feeds = enabled_option;
+
+        must_propagate
+    }
+
+    /// Recursively traverses the collection to determine if any published
+    /// video in it has feeds enabled. This information is consecutively
+    /// used to determine whether we need to write clipboard css/js assets to the
+    /// build.
+    pub fn feeds_requested(&self) -> bool {
+        self.published_playlists().any(|playlist| playlist.feeds()) ||
+        self.published_subcollections().any(|subcollection| subcollection.feeds())
+    }
+
     /// Returns a collection, playlist or video at the given site path.
     pub fn get_any(&self, site_path: &SitePath) -> GetAnyResult {
         for subcollection in &self.subcollections {
@@ -793,6 +859,7 @@ impl Collection {
             download: None,
             embedding: None,
             errors: Vec::new(),
+            feeds: None,
             links: Vec::new(),
             inherited_options,
             offline: false,
@@ -994,6 +1061,35 @@ impl Collection {
         self.videos.iter().filter(|video| !video.offline_local())
     }
 
+    /// Returns all published videos (i.e. those that are not marked as
+    /// offline) in the collection and its playlists and subcollections,
+    /// recursively.
+    pub fn published_videos_recursive(&self) -> Vec<Arc<Video>> {
+        let mut videos = Vec::new();
+
+        fn recursive_append(collection: &Collection, videos: &mut Vec<Arc<Video>>) {
+            for subcollection in collection.published_subcollections() {
+                recursive_append(subcollection, videos);
+            }
+
+            for playlist in collection.published_playlists() {
+                for video in playlist.published_videos() {
+                    videos.push(video.clone());
+                }
+            }
+
+            for video in collection.published_videos() {
+                videos.push(video.clone());
+            }
+        }
+
+        recursive_append(self, &mut videos);
+
+        // TODO: Sorting
+
+        videos
+    }
+
     pub fn read_dir(
         context: &Context,
         hyper_dir: &HyperDir,
@@ -1108,6 +1204,26 @@ impl Collection {
         }
 
         subcollections
+    }
+
+    /// If the subscribe page permalink we have in our translations collides
+    /// with any of the permalinks in this collection, we prepend underscores
+    /// to it until there is no collision anymore.
+    pub fn subscribe_permalink(&self, translations: &Translations) -> String {
+        let mut subscribe_slug = translations.subscribe_permalink.to_string();
+
+        loop {
+            if !self.published_subcollections()
+                    .any(|subcollection| subcollection.slug_unchecked() == subscribe_slug) &&
+                !self.published_playlists()
+                    .any(|playlist| playlist.slug_unchecked() == subscribe_slug) &&
+                !self.published_videos()
+                    .any(|video| video.slug_unchecked() == subscribe_slug) {
+                return subscribe_slug;
+            }
+
+            subscribe_slug = format!("_{subscribe_slug}");
+        }
     }
 
     pub fn title_or_slug_or_generic_label(&self, translations: &Translations) -> &str {

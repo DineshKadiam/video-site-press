@@ -50,6 +50,7 @@ pub struct Playlist {
     download: Option<bool>,
     embedding: Option<bool>,
     pub errors: Vec<String>,
+    feeds: Option<bool>,
     /// Some options of a playlist (e.g. copy_link, embedding and unlisted)
     /// are affected by both the local settings in the manifest as well as
     /// the inherited state from ancestors in the site tree. This stores
@@ -244,6 +245,33 @@ impl Playlist {
                     let error = element_error(element, manifest_path, message);
                     self.errors.push(error);
                 }
+                "feeds" => 'feeds: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value {
+                                    "enabled" => {
+                                        self.feeds = Some(true);
+                                    }
+                                    "disabled" => {
+                                        self.feeds = Some(false);
+                                    }
+                                    other => {
+                                        let message = format!("The feeds option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+
+                                break 'feeds;
+                            }
+                        }
+                    }
+
+                    let message = "feeds needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'feeds: enabled'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
                 "link" => 'link: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -421,12 +449,6 @@ impl Playlist {
         }
     }
 
-    /// When we convert between types (collection, playlist, video) we pass
-    /// over existing inherited options using this method.
-    pub fn copy_inherited_options(&self) -> InheritedOptions {
-        self.inherited_options.clone()
-    }
-
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
         b.latest_release_date().cmp(&a.latest_release_date())
     }
@@ -449,6 +471,12 @@ impl Playlist {
             (None, Some(_)) => Ordering::Less,
             (None, None) => b.slug().cmp(&a.slug())
         }
+    }
+
+    /// When we convert between types (collection, playlist, video) we pass
+    /// over existing inherited options using this method.
+    pub fn copy_inherited_options(&self) -> InheritedOptions {
+        self.inherited_options.clone()
     }
 
     /// Get the copy_link setting resolved in the context of the site tree
@@ -586,6 +614,35 @@ impl Playlist {
         GetAnyResult::None
     }
 
+    /// Get the feeds setting resolved in the context of the site tree
+    /// (= as set locally on the playlist or as inherited from an ancestor).
+    pub fn feeds(&self) -> bool {
+        self.feeds.unwrap_or(self.inherited_options.feeds)
+    }
+
+    /// Get the feeds setting as inherited from ancestors.
+    pub fn feeds_inherited(&self) -> bool {
+        self.inherited_options.feeds
+    }
+
+    /// Get the feeds setting as set locally on the playlist.
+    pub fn feeds_local(&self) -> Option<bool> {
+        self.feeds
+    }
+
+    /// Set the feeds setting locally on the playlist. Returns whether
+    /// this change must be propagated to descendants due to a resulting
+    /// change in inherited settings.
+    pub fn feeds_local_set(&mut self, enabled_option: Option<bool>) -> bool {
+        let must_propagate =
+            enabled_option.unwrap_or(self.inherited_options.feeds) !=
+            self.feeds.unwrap_or(self.inherited_options.feeds);
+
+        self.feeds = enabled_option;
+
+        must_propagate
+    }
+
     /// Returns the video at the given path.
     pub fn get_video(&self, site_path: &SitePath) -> Option<Arc<Video>> {
         for video in &self.videos {
@@ -632,6 +689,7 @@ impl Playlist {
             download: None,
             embedding: None,
             errors: Vec::new(),
+            feeds: None,
             inherited_options,
             links: Vec::new(),
             offline: false,
@@ -837,6 +895,22 @@ impl Playlist {
 
     pub fn slug_unchecked(&self) -> &str {
         self.site_path.last_component_unchecked()
+    }
+
+    /// If the subscribe page permalink we have in our translations collides with
+    /// any of the video permalinks in this playlist, we prepend underscores to it
+    /// until there is no collision anymore.
+    pub fn subscribe_permalink(&self, translations: &Translations) -> String {
+        let mut subscribe_slug = translations.subscribe_permalink.to_string();
+
+        loop {
+            if !self.published_videos()
+                .any(|video| video.slug_unchecked() == subscribe_slug) {
+                return subscribe_slug;
+            }
+
+            subscribe_slug = format!("_{subscribe_slug}");
+        }
     }
 
     pub fn title_or_slug_or_generic_label(&self, translations: &Translations) -> &str {

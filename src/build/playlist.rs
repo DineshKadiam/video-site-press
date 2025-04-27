@@ -17,6 +17,7 @@ use crate::build::outline::Traversal;
 use crate::build::widgets::{
     banner_html,
     links,
+    subscribe_button,
     thumbnail,
     unlisted_badge
 };
@@ -30,9 +31,11 @@ pub fn playlist_html(
     context: &Context,
     playlist: &Playlist,
     site: &Site,
+    subscribe_permalink: Option<String>,
     traversal: &Traversal
 ) {
     let mut layout = Layout::new();
+
     let translations = &site.language.translations;
 
     let mut body = String::new();
@@ -51,7 +54,7 @@ pub fn playlist_html(
 
     let r_unlisted_badge = if playlist.unlisted() {
         layout.no_indexing();
-        unlisted_badge(&site.language.translations)
+        unlisted_badge(&translations)
     } else {
         String::new()
     };
@@ -61,6 +64,11 @@ pub fn playlist_html(
     if let Some(description) = &playlist.description {
         let description_html = MarkdownSubset::to_html(description);
         body.push_str(&format!(r#"<div class="description">{description_html}</div>"#));
+    }
+
+    if let Some(subscribe_permalink) = &subscribe_permalink {
+        body.push_str(&subscribe_button(subscribe_permalink, site));
+        layout.add_feed_links();
     }
 
     if !playlist.links.is_empty() {

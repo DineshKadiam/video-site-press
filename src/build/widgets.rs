@@ -46,26 +46,32 @@ pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     }
 }
 
-/// A button enriched with data attributes that client scripting can use
-/// to copy the content (embed code or link) to clipboard and display success/failure state.
-/// Returns a tuple `(button, templates)` where `button` contains the markup
-/// for the copy link button itself, and `templates` the markup for three
-/// template tags that are only used at runtime by the clipboard script to
-/// switch the button's icon for visual feedback. The template tags should
-/// only be appended at the bottom of the page to optimize page load.
-pub fn copy_button(content_key: &str, content_value: &str, label: &str, site: &Site) -> (String, String) {
+/// A button enriched with data attributes that client scripting can use to
+/// copy the content (embed code or link) to clipboard and display
+/// success/failure state.
+pub fn copy_button(
+    content_key: &str,
+    content_value: &str,
+    label: &str
+) -> String {
     let copy_icon = icons::copy();
-    let failure_icon = icons::failure(site.language.translations.failed);
-    let success_icon = icons::success(site.language.translations.copied);
-
-    let button = format!(r#"
+    format!(r#"
         <button data-{content_key}="{content_value}" data-copy>
             <span class="icon">{copy_icon}</span>
             <span>{label}</label>
         </button>
-    "#);
+    "#)
+}
 
-    let templates = format!(r#"
+/// <template> tags to be used in client-side (browser) scripting at runtime,
+/// these are injected to the end of the body in the regular page and embed
+/// layouts.
+pub fn copy_button_icon_templates(translations: &Translations) -> String {
+    let copy_icon = icons::copy();
+    let failure_icon = icons::failure(translations.failed);
+    let success_icon = icons::success(translations.copied);
+
+    formatdoc!(r#"
         <template id="copy_icon">
             {copy_icon}
         </template>
@@ -75,9 +81,7 @@ pub fn copy_button(content_key: &str, content_value: &str, label: &str, site: &S
         <template id="success_icon">
             {success_icon}
         </template>
-    "#);
-
-    (button, templates)
+    "#)
 }
 
 pub fn embed_layout(
@@ -112,11 +116,14 @@ pub fn embed_layout(
     let lang_code = &site.language.code;
     let dir_attribute = if site.language.is_rtl() { r#"dir="rtl""# } else { "" };
 
+    let templates = player_icon_templates(&site.language.translations);
+
     formatdoc!(r#"
         <!doctype html>
         <html {dir_attribute} lang="{lang_code}">
             {head}
             {body}
+            {templates}
         </html>
     "#)
 }
@@ -160,6 +167,7 @@ pub fn player(
     video_prefix: &str
 ) -> String {
     let index_suffix = site.index_suffix();
+    let translations = &site.language.translations;
 
     if video.versions.is_empty() {
         // TODO: Should use poster assets (different sizes)
@@ -176,7 +184,7 @@ pub fn player(
             None => String::new()
         };
 
-        let t_video_not_yet_available = site.language.translations.video_not_yet_available;
+        let t_video_not_yet_available = translations.video_not_yet_available;
 
         return formatdoc!(r#"
             <div style="border: 1px solid red; height: 12.8rem; width: 19.2rem;">
@@ -225,7 +233,7 @@ pub fn player(
         .collect::<Vec<String>>()
         .join("\n");
 
-    let subtitles_icon = icons::subtitles(site.language.translations.subtitles);
+    let subtitles_icon = icons::subtitles(translations.subtitles);
     let subtitle_select = match video.subtitles.is_empty() {
         true => String::new(),
         false => format!(r#"<button id="select_subtitles">{subtitles_icon}</button>"#)
@@ -238,20 +246,16 @@ pub fn player(
 
     let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
 
-    let t_next_video = site.language.translations.next_video;
+    let t_next_video = translations.next_video;
     let next_video_button = match next_video {
         Some(next_video) => format!(r#"<a href="{video_prefix}../{}{index_suffix}">{t_next_video}</a>"#, next_video.slug_unchecked()),
         None => String::new()
     };
 
-    let maximize_icon = icons::maximize(site.language.translations.maximize);
-    let minimize_icon = icons::minimize(site.language.translations.minimize);
-    let pause_icon = icons::pause(site.language.translations.pause);
-    let play_icon = icons::play(site.language.translations.play);
-    let volume_loud_icon = icons::volume_loud(site.language.translations.loud_volume);
-    let volume_medium_icon = icons::volume_medium(site.language.translations.medium_volume);
-    let volume_muted_icon = icons::volume_muted(site.language.translations.sound_muted);
-    let t_replay = site.language.translations.replay;
+    let maximize_icon = icons::maximize(translations.maximize);
+    let play_icon = icons::play(translations.play);
+    let volume_loud_icon = icons::volume_loud(translations.loud_volume);
+    let t_replay = translations.replay;
     formatdoc!(r#"
         <div class="player_wrapper">
             <div class="player_intro">
@@ -290,31 +294,48 @@ pub fn player(
             <video data-duration="{duration}" playsinline {poster} preload="none" src="{video_prefix}{src}">
                 {subtitles}
             </video>
-            <template id="maximize_icon">
-                {maximize_icon}
-            </template>
-            <template id="minimize_icon">
-                {minimize_icon}
-            </template>
-            <template id="pause_icon">
-                {pause_icon}
-            </template>
-            <template id="play_icon">
-                {play_icon}
-            </template>
-            <template id="subtitles_icon">
-                {subtitles_icon}
-            </template>
-            <template id="volume_loud_icon">
-                {volume_loud_icon}
-            </template>
-            <template id="volume_medium_icon">
-                {volume_medium_icon}
-            </template>
-            <template id="volume_muted_icon">
-                {volume_muted_icon}
-            </template>
         </div>
+    "#)
+}
+
+/// <template> tags to be used in client-side (browser) scripting at runtime,
+/// these are injected to the end of the body in the regular page and embed
+/// layouts.
+pub fn player_icon_templates(translations: &Translations) -> String {
+    let maximize_icon = icons::maximize(translations.maximize);
+    let minimize_icon = icons::minimize(translations.minimize);
+    let pause_icon = icons::pause(translations.pause);
+    let play_icon = icons::play(translations.play);
+    let subtitles_icon = icons::subtitles(translations.subtitles);
+    let volume_loud_icon = icons::volume_loud(translations.loud_volume);
+    let volume_medium_icon = icons::volume_medium(translations.medium_volume);
+    let volume_muted_icon = icons::volume_muted(translations.sound_muted);
+
+    formatdoc!(r#"
+        <template id="maximize_icon">
+            {maximize_icon}
+        </template>
+        <template id="minimize_icon">
+            {minimize_icon}
+        </template>
+        <template id="pause_icon">
+            {pause_icon}
+        </template>
+        <template id="play_icon">
+            {play_icon}
+        </template>
+        <template id="subtitles_icon">
+            {subtitles_icon}
+        </template>
+        <template id="volume_loud_icon">
+            {volume_loud_icon}
+        </template>
+        <template id="volume_medium_icon">
+            {volume_medium_icon}
+        </template>
+        <template id="volume_muted_icon">
+            {volume_muted_icon}
+        </template>
     "#)
 }
 
@@ -337,6 +358,26 @@ pub fn poster_html(poster: &PosterFile, video_prefix: &str) -> String {
             format!(r#"<img {alt} src="{video_prefix}poster.jpg">"#)
         }
     }
+}
+
+/// Assumes that subscribe_permalink is a subfolder of the current location,
+/// i.e. we render it from the perspective of /foo/bar/ and the subscribe
+/// page is assumed to be at /foo/bar/[subscribe_permalink]/.
+pub fn subscribe_button(
+    subscribe_permalink: &str,
+    site: &Site
+) -> String {
+    let index_suffix = site.index_suffix();
+    let feed_icon = icons::feed(site.language.translations.feed);
+    let t_subscribe = site.language.translations.subscribe;
+
+    formatdoc!(r#"
+        <div class="actions flex">
+            <a href="{subscribe_permalink}{index_suffix}">
+                {feed_icon} {t_subscribe}
+            </a>
+        </div>
+    "#)
 }
 
 pub fn thumbnail(

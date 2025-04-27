@@ -70,5 +70,10 @@ pub const DARK_DEEP_VARS: ThemeVars = ThemeVars {
     mg: Color::Gray {
         hsl_l: 0.533,
         oklch_l: 0.627
-    }
+    },
+    warning_bg: Color::Chromatic {
+        hsl: (5, 0.35, 0.15),
+        oklch: (0.25, 0.04, 384)
+    },
+    warning_fg: L_1
 };

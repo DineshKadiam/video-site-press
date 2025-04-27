@@ -19,6 +19,7 @@ pub struct InheritedOptions {
     pub copy_link: bool,
     pub download: bool,
     pub embedding: bool,
+    pub feeds: bool,
     pub offline: bool,
     pub platform_integration: PlatformIntegration,
     pub unlisted: bool
@@ -38,6 +39,10 @@ impl InheritedOptions {
 
         if let Some(embedding) = collection.embedding_local() {
             self.embedding = embedding;
+        }
+
+        if let Some(feeds) = collection.feeds_local() {
+            self.feeds = feeds;
         }
 
         self.offline |= collection.offline_local();
@@ -64,6 +69,10 @@ impl InheritedOptions {
             self.embedding = embedding;
         }
 
+        if let Some(feeds) = playlist.feeds_local() {
+            self.feeds = feeds;
+        }
+
         self.offline |= playlist.offline_local();
 
         if let Some(platform_integration) = playlist.platform_integration_local() {
@@ -79,6 +88,7 @@ impl InheritedOptions {
             copy_link: true,
             download: false,
             embedding: false,
+            feeds: true,
             offline: false,
             platform_integration: PlatformIntegration::Disabled,
             unlisted: false

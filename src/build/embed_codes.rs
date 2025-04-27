@@ -71,10 +71,9 @@ pub fn embed_codes_html(
     let (embed_copy_code, embed_display_code) = embed_code(aspect_ratio, &embed_url, &t_video_player_widget_for_xxx);
 
     let t_copy = translations.copy;
-    let (copy_code_button, copy_code_templates) = copy_button("content", &embed_copy_code, t_copy, site);
+    let copy_code_button = copy_button("content", &embed_copy_code, t_copy);
 
     layout.add_clipboard_script();
-    layout.add_templates(&copy_code_templates);
 
     let r_unlisted_badge = if video.unlisted() {
         layout.no_indexing();

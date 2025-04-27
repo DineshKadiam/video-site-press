@@ -424,31 +424,44 @@ pub fn edit_page(
 
     let t_disabled = translations.disabled;
     let t_enabled = translations.enabled;
-    let t_inherit = translations.inherit;
+
+    let t_default_or_inherited = match video.site_path.is_root_path() {
+        true => translations.default,
+        false => translations.inherited
+    };
 
     let t_copy_link_disabled_enabled = if video.copy_link_inherited() { t_enabled } else { t_disabled };
-    select_copy_link.option("", format!("{t_inherit} ({t_copy_link_disabled_enabled})"));
+    select_copy_link.option("", format!("{t_copy_link_disabled_enabled} ({t_default_or_inherited})"));
     select_copy_link.option("enabled", t_enabled);
     select_copy_link.option("disabled", t_disabled);
 
     let t_download_disabled_enabled = if video.download_inherited() { t_enabled } else { t_disabled };
-    select_download.option("", format!("{t_inherit} ({t_download_disabled_enabled})"));
+    select_download.option("", format!("{t_download_disabled_enabled} ({t_default_or_inherited})"));
     select_download.option("enabled", t_enabled);
     select_download.option("disabled", t_disabled);
 
     let t_embedding_disabled_enabled = if video.embedding_inherited() { t_enabled } else { t_disabled };
-    select_embedding.option("", format!("{t_inherit} ({t_embedding_disabled_enabled})"));
+    select_embedding.option("", format!("{t_embedding_disabled_enabled} ({t_default_or_inherited})"));
     select_embedding.option("enabled", t_enabled);
     select_embedding.option("disabled", t_disabled);
 
     let platform_integration_inherited = video.platform_integration_inherited();
     let t_platform_integration_inherited_label = platform_integration_inherited.label(translations);
-    select_platform_integration.option("", format!("{t_inherit} ({t_platform_integration_inherited_label})"));
+    select_platform_integration.option("", format!("{t_platform_integration_inherited_label} ({t_default_or_inherited})"));
     select_platform_integration.option("disabled", t_disabled);
     select_platform_integration.option("link_previews", translations.link_previews_only);
     select_platform_integration.option("content_embeds", translations.link_previews_and_content_embeds);
 
     textarea_description.id("video_description");
+
+    if site.base_url.is_none() {
+        let failure_icon = icons::failure(translations.warning);
+        let t_public_address_not_configured_text = translations.public_address_not_configured_text;
+        let hint = format!("{failure_icon} {t_public_address_not_configured_text}");
+
+        select_embedding.hint(&hint);
+        select_platform_integration.hint(hint);
+    }
 
     let feedback_update = if let Some(VideoFormFeedback::Update {
         copy_link,
@@ -666,11 +679,9 @@ pub fn edit_page(
                     {input_release_date}
                     {input_sort_number}
                 </div>
-                <div class="form_split even">
-                    {select_copy_link}
-                    {select_download}
-                    {select_embedding}
-                </div>
+                {select_copy_link}
+                {select_download}
+                {select_embedding}
                 {select_platform_integration}
                 {input_offline}
                 {input_unlisted_conditionally_hidden}
