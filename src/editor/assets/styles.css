@@ -82,6 +82,10 @@ button.danger:focus-visible,
 button.danger:hover {
     background: var(--danger-hover);
 }
+button.big {
+    font-size: 1.2rem;
+    padding: .6em 1em;
+}
 .button_group {
     column-gap: .5rem;
     display: flex;
@@ -333,6 +337,9 @@ nav a svg {
 nav a.active { background: var(--bg-3); }
 nav li { margin-top: .1rem; }
 .no_title { color: var(--mg); }
+p a {
+    text-decoration: underline;
+}
 .path_extension {
     background: var(--bg-2);
     border-radius: .3rem;
@@ -559,6 +566,10 @@ svg { fill: currentColor; }
 .tree_view_options #tree-view-order button {
     font-size: .8rem;
     padding: .3rem;
+}
+ul.semantic_only {
+    list-style: none;
+    padding: 0;
 }
 .updates { color: red; }
 .versions {

@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+pub const DOCS_LINK: &str = "https://simonrepp.com/hyper8/docs";
+
 #[derive(Clone, Debug)]
 pub struct Translations {
     pub a_permalink_forms_part_of_text: &'static str,
+    pub a_site_presenting_a_single_playlist_of_videos: &'static str,
+    pub a_site_presenting_any_number_of_videos_and_playlists: &'static str,
+    pub a_site_presenting_just_a_single_video: &'static str,
     pub about: &'static str,
     pub adaptive: &'static str,
     pub add_link: &'static str,
@@ -95,9 +100,11 @@ pub struct Translations {
     pub hyper8_logo: &'static str,
     pub idle: &'static str,
     pub inherited: &'static str,
-    pub initialize_site_as_collection: &'static str,
-    pub initialize_site_as_playlist: &'static str,
-    pub initialize_site_as_video: &'static str,
+    pub initialize_site_as_a_collection: &'static str,
+    pub initialize_site_as_a_playlist: &'static str,
+    pub initialize_site_as_a_video: &'static str,
+    pub invalid_site: &'static str,
+    pub invalid_site_text: &'static str,
     pub invalid_url: &'static str,
     pub label_optional: &'static str,
     pub language: &'static str,
@@ -169,6 +176,9 @@ pub struct Translations {
     pub sec: &'static str,
     pub site_order: &'static str,
     pub site_settings: &'static str,
+    pub site_setup: &'static str,
+    pub site_setup_change_note: &'static str,
+    site_setup_text: &'static str,
     pub sort_number: &'static str,
     pub sort_number_ascending: &'static str,
     pub sort_number_descending: &'static str,
@@ -216,6 +226,9 @@ impl Translations {
     pub fn de() -> Translations {
         Translations {
             a_permalink_forms_part_of_text: "Ein Permalink ist Teil der öffentlichen Adresse einer Unterseite deiner Website. Wenn du den Permalink änderst, hören alle Links die bereits auf diese spezifische Unterseite verweisen auf zu funktionieren.",
+            a_site_presenting_a_single_playlist_of_videos: "Eine Seite die eine einzige Playlist mit Videos präsentiert.",
+            a_site_presenting_any_number_of_videos_and_playlists: "Eine Seite die beliebig viele Videos und Playlists präsentiert.",
+            a_site_presenting_just_a_single_video: "Eine Seite die nur ein einziges Video präsentiert.",
             about: "Über",
             adaptive: "Adaptiv",
             add_link: "Link hinzufügen",
@@ -307,9 +320,11 @@ impl Translations {
             hyper8_logo: "Hyper 8 Logo",
             idle: "Inaktiv",
             inherited: "Übernommen",
-            initialize_site_as_collection: "Seite als Collection initialisieren",
-            initialize_site_as_playlist: "Seite als Playlist initialisieren",
-            initialize_site_as_video: "Seite als Video initialisieren",
+            initialize_site_as_a_collection: "Seite als Collection initialisieren",
+            initialize_site_as_a_playlist: "Seite als Playlist initialisieren",
+            initialize_site_as_a_video: "Seite als Video initialisieren",
+            invalid_site: "Fehlerhafte Seite",
+            invalid_site_text: r#"Dein Seitenverzeichnis hat ein Problem an der Basis dass manuell gelöst werden muss. Schau dir den/die Fehler unten an und folge gegebenenfalls der <a href="{docs_link}" target="_blank">Dokumentation</a> um das Problem zu beheben."#,
             invalid_url: "Ungültige URL",
             label_optional: "Linktext (Optional)",
             language: "Sprache",
@@ -381,6 +396,9 @@ impl Translations {
             sec: "sek",
             site_order: "Seitenreihenfolge",
             site_settings: "Seiteneinstellungen",
+            site_setup: "Seite einrichten",
+            site_setup_change_note: "Du kannst später jederzeit zwischen Collection, Playlist und Video wechseln, wähle einfach was jetzt gerade am meisten Sinn macht.",
+            site_setup_text: r#"Deine Seite ist aktuell leer. Du kannst sie initialisieren indem du eine der Optionen unten wählst oder indem du manuell Inhalte im Seitenverzeichnis platzierst - folge dafür der <a href="{docs_link}" target="_blank">Dokumentation</a>."#,
             sort_number: "Sortiernummer",
             sort_number_ascending: "Sortiernummer Aufsteigend (1, 2, 3)",
             sort_number_descending: "Sortiernummer Absteigend (3, 2, 1)",
@@ -428,6 +446,9 @@ impl Translations {
     pub fn en() -> Translations {
         Translations {
             a_permalink_forms_part_of_text: "A permalink forms part of the public address of a subpage on your site. When you modify a permalink, any links already pointing to that specific page will stop working.",
+            a_site_presenting_a_single_playlist_of_videos: "A site presenting a single playlist of videos.",
+            a_site_presenting_any_number_of_videos_and_playlists: "A site presenting any number of videos and playlists.",
+            a_site_presenting_just_a_single_video: "A site presenting just a single video.",
             about: "About",
             adaptive: "Adaptive",
             add_link: "Add Link",
@@ -519,9 +540,11 @@ impl Translations {
             hyper8_logo: "Hyper 8 Logo",
             idle: "Idle",
             inherited: "Inherited",
-            initialize_site_as_collection: "Initialize site as collection",
-            initialize_site_as_playlist: "Initialize site as playlist",
-            initialize_site_as_video: "Initialize site as video",
+            initialize_site_as_a_collection: "Initialize site as a collection",
+            initialize_site_as_a_playlist: "Initialize site as a playlist",
+            initialize_site_as_a_video: "Initialize site as a video",
+            invalid_site: "Invalid site",
+            invalid_site_text: r#"Your site directory has an issue at the root level that needs to be fixed manually. Check the error(s) below and if needed follow the <a href="{docs_link}" target="_blank">documentation</a> to resolve the issue."#,
             invalid_url: "Invalid URL",
             label_optional: "Label (optional)",
             language: "Language",
@@ -593,6 +616,9 @@ impl Translations {
             sec: "sec",
             site_order: "Site Order",
             site_settings: "Site Settings",
+            site_setup: "Site Setup",
+            site_setup_change_note: "Note that you can change between collection, playlist and video at any later point, just pick what makes most sense for you now.",
+            site_setup_text: r#"Your site is currently empty. You can initialize it by picking one of the options below or by manually placing content in the site directory following the <a href="{docs_link}" target="_blank">documentation</a>."#,
             sort_number: "Sort Number",
             sort_number_ascending: "Sort Number Ascending (1, 2, 3)",
             sort_number_descending: "Sort Number Descending (3, 2, 1)",
@@ -635,6 +661,14 @@ impl Translations {
             worst: "Worst",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
         }
+    }
+
+    pub fn invalid_site_text(&self) -> String {
+        self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
+    }
+
+    pub fn site_setup_text(&self) -> String {
+        self.site_setup_text.replace("{docs_link}", DOCS_LINK)
     }
 
     pub fn the_resource_xxx_was_not_found_message(&self, path: &str) -> String {

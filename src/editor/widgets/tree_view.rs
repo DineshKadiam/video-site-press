@@ -291,12 +291,9 @@ pub fn tree_view(
                 {collection_content}
             "#)
         }
-        SiteContent::Empty |
-        SiteContent::Invalid => {
+        SiteContent::Empty => {
             let t_empty_site = translations.empty_site;
-            // TODO: Dedicated icon for empty site?
-            let collection_icon = icons::collection(t_empty_site);
-
+            let collection_icon = icons::disk(t_empty_site);
             if site_path.is_some() {
                 breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
             }
@@ -308,6 +305,24 @@ pub fn tree_view(
                 &collection_icon,
                 site_dir,
                 Some(t_empty_site),
+                translations,
+                &Visibility::none()
+            )
+        }
+        SiteContent::Invalid => {
+            let t_invalid_site = translations.invalid_site;
+            let collection_icon = icons::configure(t_invalid_site);
+            if site_path.is_some() {
+                breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
+            }
+
+            tree_node(
+                root_active,
+                &Vec::new(),
+                "/",
+                &collection_icon,
+                site_dir,
+                Some(t_invalid_site),
                 translations,
                 &Visibility::none()
             )

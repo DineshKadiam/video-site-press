@@ -10,11 +10,14 @@ use indoc::formatdoc;
 
 use crate::{Collection, Context, SiteContent, Translations, Video};
 use crate::editor::widgets::layout;
+use crate::icons;
 use crate::util::{html_escape_outside_attribute, human_size};
 
 pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
     let language = context.get_editor_language();
     let site = context.get_site();
+
+    let translations = &language.translations;
 
     let body = match &site.content {
         SiteContent::Collection(collection) => {
@@ -42,56 +45,21 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             if videos.is_empty() {
                 String::new()
             } else {
-                storage_stats_html(&language.translations, &videos)
+                storage_stats_html(translations, &videos)
             }
         }
-        SiteContent::Empty => {
-            let t_empty_site = language.translations.empty_site;
-            let t_initialize_site_as_collection = language.translations.initialize_site_as_collection;
-            let t_initialize_site_as_playlist = language.translations.initialize_site_as_playlist;
-            let t_initialize_site_as_video = language.translations.initialize_site_as_video;
-            formatdoc!(r#"
-                <div class="form_group">
-                    <h2>{t_empty_site}</h2>
-
-                    Initialize your site by placing content in the site directory,
-                    or picking one of the options below:<br><br>
-
-                    <form action="/convert-to-collection/" method="post">
-                        <button>{t_initialize_site_as_collection}</button> As a collection the site holds videos, playlists and recursive subcollections.
-                    </form>
-
-                    <br><br>
-
-                    <form action="/convert-to-playlist/" method="post">
-                        <button>{t_initialize_site_as_playlist}</button> A site featuring a number of videos, presented as an ordered viewing list
-                    </form>
-
-                    <br><br>
-
-                    <form action="/convert-to-video/" method="post">
-                        <button>{t_initialize_site_as_video}</button> A site presenting just a single video
-                    </form>
-                </div>
-            "#)
-        }
-        SiteContent::Invalid => {
-            formatdoc!(r#"
-                <div class="form_group">
-                    Site is invalid - site folder content needs to be manually fixed.
-                </div>
-            "#)
-        }
+        SiteContent::Empty => empty_site_html(translations),
+        SiteContent::Invalid => invalid_site_html(&site.errors, translations),
         SiteContent::Playlist(playlist) => {
             if playlist.videos.is_empty() {
                 String::new()
             } else {
-                storage_stats_html(&language.translations, &playlist.videos)
+                storage_stats_html(translations, &playlist.videos)
             }
         }
         SiteContent::Video(video) => {
             let videos = vec![Arc::clone(video)];
-            storage_stats_html(&language.translations, &videos)
+            storage_stats_html(translations, &videos)
         }
     };
 
@@ -109,7 +77,70 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         .body(html)
 }
 
-fn storage_stats_html(translations: &Translations, videos: &Vec<Arc<Video>>) -> String {
+fn empty_site_html(translations: &Translations) -> String {
+    let collection_icon = icons::collection(translations.collection);
+    let playlist_icon = icons::playlist(translations.playlist);
+    let video_icon = icons::video(translations.video);
+
+    let t_a_site_presenting_a_single_playlist_of_videos = translations.a_site_presenting_a_single_playlist_of_videos;
+    let t_a_site_presenting_any_number_of_videos_and_playlists = translations.a_site_presenting_any_number_of_videos_and_playlists;
+    let t_a_site_presenting_just_a_single_video = translations.a_site_presenting_just_a_single_video;
+    let t_empty_site = translations.empty_site;
+    let t_initialize_site_as_a_collection = translations.initialize_site_as_a_collection;
+    let t_initialize_site_as_a_playlist = translations.initialize_site_as_a_playlist;
+    let t_initialize_site_as_a_video = translations.initialize_site_as_a_video;
+    let t_site_setup = translations.site_setup;
+    let t_site_setup_change_note = translations.site_setup_change_note;
+    let t_site_setup_text = translations.site_setup_text();
+    formatdoc!(r#"
+        <div class="form_group">
+            <h2>{t_site_setup}</h2>
+            <p>{t_site_setup_text}</p>
+            <p style="background: var(--warning-bg); border-radius: .5rem; color: var(--warning-fg); padding: 1rem;">
+                {t_site_setup_change_note}
+            </p>
+            <br>
+            <form action="/convert-to-collection/" method="post">
+                <button class="big">{collection_icon} {t_initialize_site_as_a_collection}</button>
+                <p>{t_a_site_presenting_any_number_of_videos_and_playlists}</p>
+            </form>
+            <br>
+            <form action="/convert-to-playlist/" method="post">
+                <button class="big">{playlist_icon} {t_initialize_site_as_a_playlist}</button>
+                <p>{t_a_site_presenting_a_single_playlist_of_videos}</p>
+            </form>
+            <br>
+            <form action="/convert-to-video/" method="post">
+                <button class="big">{video_icon} {t_initialize_site_as_a_video}</button>
+                <p>{t_a_site_presenting_just_a_single_video}</p>
+            </form>
+        </div>
+    "#)
+}
+
+fn invalid_site_html(errors: &Vec<String>, translations: &Translations) -> String {
+    let failure_icon = icons::failure(translations.error);
+    let t_invalid_site_text = translations.invalid_site_text();
+
+    let r_errors = errors
+        .iter()
+        .map(|error| format!(r#"<li><p class="error">{failure_icon} {error}</p></li>"#))
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    formatdoc!(r#"
+        <p>{t_invalid_site_text}</p>
+
+        <ul class="semantic_only">
+            {r_errors}
+        </ul>
+    "#)
+}
+
+fn storage_stats_html(
+    translations: &Translations,
+    videos: &Vec<Arc<Video>>
+) -> String {
     // TODO: Group entries by collection/playlist/video (maybe multiple rings? or multiple charts?)
     // TODO: Wire up chart hover with tabular row hover and vice versa
     // TODO: Tweak values/readability for pie chart further (e.g. colors too as additional for those who see it)

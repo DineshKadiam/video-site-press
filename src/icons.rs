@@ -3,6 +3,9 @@
 
 use indoc::formatdoc;
 
+/// A "grid of grids" where a square is technically split into 16 squares, but
+/// visually appears to be split into 4 squares, with each "sub-square"
+/// itself having been split into 4 squares again.
 pub fn collection(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -31,6 +34,7 @@ pub fn collection(label: &str) -> String {
     "#)
 }
 
+/// A cogwheel
 pub fn configure(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
