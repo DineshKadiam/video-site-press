@@ -51,7 +51,7 @@ pub fn video_html(
     let r_downloads = if video.download() && !video.versions.is_empty() {
         let t_download = translations.download;
         let t_download_permalink = translations.download_permalink;
-        let download_icon = icons::download();
+        let download_icon = icons::DOWNLOAD;
 
         formatdoc!(r#"
             <a href="{t_download_permalink}{index_suffix}">

@@ -14,6 +14,7 @@ use crate::{
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, unlisted_badge};
+use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
 use super::feeds::{
@@ -26,26 +27,28 @@ use super::feeds::{
 pub fn feed_choice(
     description: &str,
     filename: &str,
+    icon: &str,
     label: &str,
     site: &Site,
     site_path: &SitePath,
     translations: &Translations
 ) -> String {
     let url = site.absolute_url_file_unchecked(filename, site_path);
-    let copy_button = copy_button("content", &url, &translations.copy_link);
+    let copy_button = copy_button("content", &url, &translations.copy_url);
 
     formatdoc!(r#"
-        <div>
+        <div class="feed_card">
             <h2>
-                {label}
+                {icon}
+                <span>{label}</span>
+                <div class="actions">
+                    {copy_button}
+                </div>
             </h2>
-            <p>{description}</p>
             <a href="{url}">
                 {url}
             </a>
-            <div class="actions">
-                {copy_button}
-            </div>
+            <p>{description}</p>
         </div>
     "#)
 }
@@ -81,6 +84,7 @@ pub fn subscribe_html(
     let atom_feed_choice = feed_choice(
         translations.atom_description,
         ATOM_FILENAME,
+        icons::ATOM,
         "Atom",
         site,
         site_path,
@@ -90,6 +94,7 @@ pub fn subscribe_html(
     let media_rss_choice = feed_choice(
         translations.media_rss_description,
         MEDIA_RSS_FILENAME,
+        &icons::rss(None),
         "Media RSS",
         site,
         site_path,
@@ -99,6 +104,7 @@ pub fn subscribe_html(
     let plain_rss_feed_choice = feed_choice(
         translations.plain_rss_description,
         PLAIN_RSS_FILENAME,
+        &icons::rss(None),
         &translations.plain_rss,
         site,
         site_path,
@@ -108,6 +114,7 @@ pub fn subscribe_html(
     let podcast_rss_choice = feed_choice(
         translations.podcast_rss_description,
         PODCAST_RSS_FILENAME,
+        &icons::rss(None),
         "Podcast RSS",
         site,
         site_path,
@@ -117,10 +124,12 @@ pub fn subscribe_html(
     let body = format!(r#"
         <div class="video_info">
             <h1>{e_title} {r_unlisted_badge}</h1>
-            {atom_feed_choice}
-            {media_rss_choice}
-            {plain_rss_feed_choice}
-            {podcast_rss_choice}
+            <div class="feed_grid">
+                {atom_feed_choice}
+                {media_rss_choice}
+                {plain_rss_feed_choice}
+                {podcast_rss_choice}
+            </div>
         </div>
     "#);
 

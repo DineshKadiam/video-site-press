@@ -109,7 +109,7 @@ pub fn resource_actions(
         format!(r#"<span>{disk_icon} <span>{prefix}{MAIN_SEPARATOR}<span class="path_extension">{slug}</span>{MAIN_SEPARATOR}</span></span>"#)
     };
 
-    let copy_icon = icons::copy();
+    let copy_icon = icons::COPY;
 
     let copy_live_url;
     let live_url_displayed;

@@ -54,7 +54,7 @@ pub fn copy_button(
     content_value: &str,
     label: &str
 ) -> String {
-    let copy_icon = icons::copy();
+    let copy_icon = icons::COPY;
     format!(r#"
         <button data-{content_key}="{content_value}" data-copy>
             <span class="icon">{copy_icon}</span>
@@ -67,7 +67,7 @@ pub fn copy_button(
 /// these are injected to the end of the body in the regular page and embed
 /// layouts.
 pub fn copy_button_icon_templates(translations: &Translations) -> String {
-    let copy_icon = icons::copy();
+    let copy_icon = icons::COPY;
     let failure_icon = icons::failure(translations.failed);
     let success_icon = icons::success(translations.copied);
 
@@ -368,7 +368,7 @@ pub fn subscribe_button(
     site: &Site
 ) -> String {
     let index_suffix = site.index_suffix();
-    let feed_icon = icons::feed(site.language.translations.feed);
+    let feed_icon = icons::rss(Some(site.language.translations.feed));
     let t_subscribe = site.language.translations.subscribe;
 
     formatdoc!(r#"
