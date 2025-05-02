@@ -530,15 +530,27 @@ impl FFmpegEncodingStats {
 
         let mut parse_token = |key: &str, value: &str| {
             match key {
-                "frame" => if let Ok(number) = value.parse::<usize>() {
-                    frame = number;
+                "frame" => {
+                    if let Ok(number) = value.parse::<usize>() {
+                        frame = number;
+                    }
                 }
                 "time" => {
-                    // hh:mm:ss.ff (e.g. 00:01:06.54)
-                    let hours = value[0..2].parse::<usize>().unwrap();
-                    let minutes = value[3..5].parse::<usize>().unwrap();
-                    let seconds = value[6..11].parse::<f32>().unwrap();
-                    time = (hours * 3600) as f32 + (minutes * 60) as f32 + seconds;
+                    // We observed ffmpeg returning negative timecodes on rare occasions,
+                    // e.g. in this log sequence (showing full `line` values here):
+                    //
+                    // frame=    1 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x"
+                    // frame=   95 fps= 87 q=29.0 size=       0kB time=-00:00:00.04 bitrate=N/A speed=N/A"
+                    // frame=  145 fps= 67 q=29.0 size=     256kB time=00:00:02.04 bitrate=1027.3kbits/s speed=0.941x"
+                    // (...)
+                    //
+                    if !value.starts_with('-') {
+                        // hh:mm:ss.ff (e.g. 00:01:06.54)
+                        let hours = value[0..2].parse::<usize>().unwrap();
+                        let minutes = value[3..5].parse::<usize>().unwrap();
+                        let seconds = value[6..11].parse::<f32>().unwrap();
+                        time = (hours * 3600) as f32 + (minutes * 60) as f32 + seconds;
+                    }
                 }
                 _ => ()
             }
