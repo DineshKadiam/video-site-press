@@ -8,7 +8,16 @@ use actix_web::http::header::ContentType;
 use actix_web::web::Data;
 use indoc::formatdoc;
 
-use crate::{Collection, Context, SiteContent, Translations, Video};
+use crate::{
+    Collection,
+    Context,
+    SiteContent,
+    SitePath,
+    Translations,
+    Video
+};
+use crate::editor::Location;
+use crate::editor::routes;
 use crate::editor::widgets::layout;
 use crate::icons;
 use crate::util::{html_escape_outside_attribute, human_size};
@@ -67,8 +76,8 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
         &body,
         &context,
         &language,
+        Location::AuxiliaryPage,
         &site,
-        None,
         site.title()
     );
 
@@ -85,13 +94,18 @@ fn empty_site_html(translations: &Translations) -> String {
     let t_a_site_presenting_a_single_playlist_of_videos = translations.a_site_presenting_a_single_playlist_of_videos;
     let t_a_site_presenting_any_number_of_videos_and_playlists = translations.a_site_presenting_any_number_of_videos_and_playlists;
     let t_a_site_presenting_just_a_single_video = translations.a_site_presenting_just_a_single_video;
-    let t_empty_site = translations.empty_site;
     let t_initialize_site_as_a_collection = translations.initialize_site_as_a_collection;
     let t_initialize_site_as_a_playlist = translations.initialize_site_as_a_playlist;
     let t_initialize_site_as_a_video = translations.initialize_site_as_a_video;
     let t_site_setup = translations.site_setup;
     let t_site_setup_change_note = translations.site_setup_change_note;
     let t_site_setup_text = translations.site_setup_text();
+
+    let root_path = SitePath::root_path();
+    let convert_to_collection_action = routes::convert_to_collection(&root_path);
+    let convert_to_playlist_action = routes::convert_to_playlist(&root_path);
+    let convert_to_video_action = routes::convert_to_video(&root_path);
+
     formatdoc!(r#"
         <div class="form_group">
             <h2>{t_site_setup}</h2>
@@ -100,17 +114,17 @@ fn empty_site_html(translations: &Translations) -> String {
                 {t_site_setup_change_note}
             </p>
             <br>
-            <form action="/convert-to-collection/" method="post">
+            <form action="{convert_to_collection_action}" method="post">
                 <button class="big">{collection_icon} {t_initialize_site_as_a_collection}</button>
                 <p>{t_a_site_presenting_any_number_of_videos_and_playlists}</p>
             </form>
             <br>
-            <form action="/convert-to-playlist/" method="post">
+            <form action="{convert_to_playlist_action}" method="post">
                 <button class="big">{playlist_icon} {t_initialize_site_as_a_playlist}</button>
                 <p>{t_a_site_presenting_a_single_playlist_of_videos}</p>
             </form>
             <br>
-            <form action="/convert-to-video/" method="post">
+            <form action="{convert_to_video_action}" method="post">
                 <button class="big">{video_icon} {t_initialize_site_as_a_video}</button>
                 <p>{t_a_site_presenting_just_a_single_video}</p>
             </form>
@@ -153,7 +167,7 @@ fn storage_stats_html(
 
     for video in videos {
         for version in &video.versions {
-            let link = format!("/video/{}", video.site_path.normalized());
+            let link = routes::video_edit(video);
             let size = version.file_meta.size;
             let title = format!("{}: {}", video.title_or_slug_or_generic_label(translations), version.file_name);
             let e_title = html_escape_outside_attribute(&title);

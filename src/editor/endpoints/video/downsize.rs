@@ -13,6 +13,7 @@ use crate::{
     SitePath,
     VideoFormat
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -30,32 +31,32 @@ pub async fn downsize(
     form: Form<DownsizeForm>,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let video = match context.get_video(&site_path) {
-        Some(video) => video,
+    match context.get_video(&site_path) {
+        Some(video) => {
+            let frame_rate = if form.frame_rate.is_empty() {
+                None
+            } else {
+                Some(form.frame_rate.as_str())
+            };
+
+            let video_format = VideoFormat::new_video(
+                &form.codec,
+                "mp4",
+                &form.approach,
+                frame_rate,
+                &form.height,
+                &form.quality,
+            ).unwrap();
+
+            let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) };
+            context.push_job_queue(job_kind);
+
+            let redirect_url = routes::video_edit(&video);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
         None => {
             let language = context.get_editor_language();
-            return Either::Right(not_found(&context, &language, &site_path))
+            Either::Right(not_found(&context, &language, &site_path))
         }
-    };
-
-    let frame_rate = if form.frame_rate.is_empty() {
-        None
-    } else {
-        Some(form.frame_rate.as_str())
-    };
-
-    let video_format = VideoFormat::new_video(
-        &form.codec,
-        "mp4",
-        &form.approach,
-        frame_rate,
-        &form.height,
-        &form.quality,
-    ).unwrap();
-
-    let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) }; 
-    context.push_job_queue(job_kind);
-
-    let redirect_url = format!("/video/{}", site_path.normalized());
-    Either::Left(Redirect::to(redirect_url).see_other())
+    }
 }

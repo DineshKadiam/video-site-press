@@ -13,6 +13,7 @@ use crate::{
     Context,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -34,7 +35,7 @@ pub async fn update_banner(
 
     match context.update_collection(mutation, &site_path) {
         CollectionUpdate::Updated { collection_updated, .. } => {
-            let redirect_url = format!("/collection/{}", collection_updated.site_path.normalized());
+            let redirect_url = routes::collection_edit(&collection_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         CollectionUpdate::NotFound => {

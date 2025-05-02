@@ -233,7 +233,7 @@ pub fn player(
         .collect::<Vec<String>>()
         .join("\n");
 
-    let subtitles_icon = icons::subtitles(translations.subtitles);
+    let subtitles_icon = icons::subtitles(Some(translations.subtitles));
     let subtitle_select = match video.subtitles.is_empty() {
         true => String::new(),
         false => format!(r#"<button id="select_subtitles">{subtitles_icon}</button>"#)
@@ -306,7 +306,7 @@ pub fn player_icon_templates(translations: &Translations) -> String {
     let minimize_icon = icons::minimize(translations.minimize);
     let pause_icon = icons::pause(translations.pause);
     let play_icon = icons::play(translations.play);
-    let subtitles_icon = icons::subtitles(translations.subtitles);
+    let subtitles_icon = icons::subtitles(Some(translations.subtitles));
     let volume_loud_icon = icons::volume_loud(translations.loud_volume);
     let volume_medium_icon = icons::volume_medium(translations.medium_volume);
     let volume_muted_icon = icons::volume_muted(translations.sound_muted);

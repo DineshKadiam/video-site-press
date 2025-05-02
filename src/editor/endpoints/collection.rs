@@ -12,8 +12,8 @@ use crate::{
     Language,
     PlatformIntegration
 };
-use crate::editor::{Checkbox, Input, Select, Textarea};
-use crate::editor::endpoints;
+use crate::editor::{Checkbox, Input, Location, Select, Textarea};
+use crate::editor::routes;
 use crate::editor::widgets::{
     add_link_form,
     layout,
@@ -27,6 +27,7 @@ mod add_link;
 mod create_playlist;
 mod create_subcollection;
 mod create_video;
+mod dangerous_actions;
 mod delete;
 mod delete_banner;
 mod delete_link;
@@ -40,6 +41,7 @@ pub use add_link::add_link;
 pub use create_playlist::create_playlist;
 pub use create_subcollection::create_subcollection;
 pub use create_video::create_video;
+pub use dangerous_actions::dangerous_actions;
 pub use delete::delete;
 pub use delete_banner::delete_banner;
 pub use delete_link::delete_link;
@@ -62,11 +64,7 @@ pub enum CollectionFormFeedback<'a> {
         slug: Field,
         title: Field
     },
-    Move {
-        slug: Field
-    },
     None,
-    Site(endpoints::site::SiteFormFeedback),
     Update {
         copy_link: Option<bool>,
         description: &'a str,
@@ -88,7 +86,6 @@ pub fn edit_page(
     language: &Language
 ) -> HttpResponse {
     let site = context.get_site();
-    let site_path_normalized = collection.site_path.normalized();
     let translations = &language.translations;
     let t_not_saved = translations.not_saved;
 
@@ -107,7 +104,7 @@ pub fn edit_page(
     };
 
     let t_upload_banner = translations.upload_banner;
-    let banner_upload_button = upload_widget(&format!("/upload-collection-banner/{site_path_normalized}"), t_upload_banner);
+    let banner_upload_button = upload_widget(&routes::collection_upload_banner(collection), t_upload_banner);
     let banner_form = match &collection.banner {
         Some(banner) => {
             let alt = if let Some(description) = &banner.description {
@@ -118,7 +115,7 @@ pub fn edit_page(
 
             // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
             let file_name = &banner.file_name;
-            let src = format!("/poster/{site_path_normalized}{file_name}");
+            let src = routes::poster(file_name, &collection.site_path);
 
             let mut description = Textarea::image_description("description", translations.banner_description);
 
@@ -129,15 +126,19 @@ pub fn edit_page(
             let t_delete_banner = translations.delete_banner;
             let t_really_delete = translations.really_delete;
             let t_update_description = translations.update_description;
+
+            let delete_banner_action = routes::collection_delete_banner(collection);
+            let update_banner_action = routes::collection_update_banner(collection);
+
             format!(r#"
                 <img {alt} class="thumbnail" src="{src}">
                 <div class="button_group">
                     {banner_upload_button}
-                    <form action="/delete-collection-banner/{site_path_normalized}" data-confirm data-confirm-label="{t_delete_banner}" data-confirm-text="{t_really_delete}" method="post">
+                    <form action="{delete_banner_action}" data-confirm data-confirm-label="{t_delete_banner}" data-confirm-text="{t_really_delete}" method="post">
                         <button class="danger">{t_delete_banner}</button>
                     </form>
                 </div>
-                <form action="/update-collection-banner/{site_path_normalized}" data-warn-discard method="post">
+                <form action="{update_banner_action}" data-warn-discard method="post">
                     {description}
                     <button class="action">{t_update_description}</button>
                 </form>
@@ -310,59 +311,9 @@ pub fn edit_page(
         String::new()
     };
 
-    let slug_form = if collection.site_path.is_root_path() {
-        String::new()
-    } else {
-        let mut input_permalink = Input::permalink(
-            "slug",
-            &collection.parent_site_path_unchecked(),
-            &site,
-            translations
-        );
-
-        input_permalink
-            .id("slug_collection")
-            .required();
-
-        let feedback = if let CollectionFormFeedback::Move { slug } = &form_feedback {
-            input_permalink.validated_value(slug);
-            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-        } else {
-            input_permalink.value(collection.slug_unchecked());
-            String::new()
-        };
-
-        let t_a_permalink_forms_part_of_text = translations.a_permalink_forms_part_of_text;
-        let t_update_permalink = translations.update_permalink;
-        formatdoc!(r#"
-            <p>
-                {t_a_permalink_forms_part_of_text}
-            </p>
-
-            <form action="/move-collection/{site_path_normalized}" data-warn-discard method="post">
-                {input_permalink}
-
-                <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button class="danger">{t_update_permalink}</button> {feedback}
-                </div>
-            </form>
-        "#)
-    };
-
     let t_upload_new_video = translations.upload_new_video;
-    let upload_url = format!("/upload-video/{site_path_normalized}");
+    let upload_url = routes::upload_video(&collection.site_path);
     let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
-
-    let site_form_feedback = match &form_feedback {
-        CollectionFormFeedback::Site(site_form_feedback) => Some(site_form_feedback),
-        _ => None
-    };
-    let site_edit = endpoints::site::edit(
-        context,
-        site_form_feedback,
-        &collection.site_path,
-        translations
-    );
 
     let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
 
@@ -389,11 +340,13 @@ pub fn edit_page(
 
         let t_create_playlist = translations.create_playlist;
         let t_new_playlist = translations.new_playlist;
+
+        let create_playlist_action = routes::collection_create_playlist(collection);
         formatdoc!(r#"
             <div class="form_group">
                 <h2>{t_new_playlist}</h2>
 
-                <form action="/create-playlist/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
+                <form action="{create_playlist_action}" autocomplete="off" data-warn-discard method="post">
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
@@ -430,11 +383,13 @@ pub fn edit_page(
 
         let t_create_subcollection = translations.create_subcollection;
         let t_new_subcollection = translations.new_subcollection;
+
+        let create_subcollection_action = routes::collection_create_subcollection(collection);
         formatdoc!(r#"
             <div class="form_group">
                 <h2>{t_new_subcollection}</h2>
 
-                <form action="/create-subcollection/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
+                <form action="{create_subcollection_action}" autocomplete="off" data-warn-discard method="post">
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
@@ -471,11 +426,13 @@ pub fn edit_page(
 
         let t_create_video = translations.create_video;
         let t_new_video = translations.new_video;
+
+        let create_video_action = routes::collection_create_video(collection);
         formatdoc!(r#"
             <div class="form_group">
                 <h2>{t_new_video}</h2>
 
-                <form action="/create-collection-video/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
+                <form action="{create_video_action}" autocomplete="off" data-warn-discard method="post">
                     <p>
                         {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
                     </p>
@@ -489,44 +446,6 @@ pub fn edit_page(
         "#)
     };
 
-    let convert_to_playlist_form = if collection.playlists.is_empty() && collection.subcollections.is_empty() {
-        let t_convert_to_playlist = translations.convert_to_playlist;
-        formatdoc!(r#"
-            <p>
-                This collection contains no playlists or subcollections and can therefore
-                seamlessly be converted to a playlist.
-            </p>
-
-            <form action="/convert-to-playlist/{site_path_normalized}" method="post">
-                <button class="danger">{t_convert_to_playlist}</button>
-            </form>
-        "#)
-    } else {
-        String::new()
-    };
-
-    let convert_to_video_form = if
-        collection.playlists.is_empty() &&
-        collection.subcollections.is_empty() &&
-        collection.videos.len() < 2 {
-        let message = if collection.videos.is_empty() {
-            "This collection contains nothing and can therefore seamlessly be converted to a video."
-        } else {
-            "This collection contains only a single video and can therefore seamlessly be converted to a video."
-        };
-
-        let t_convert_to_video = translations.convert_to_video;
-        formatdoc!(r#"
-            <p>{message}</p>
-
-            <form action="/convert-to-video/{site_path_normalized}" method="post">
-                <button class="danger">{t_convert_to_video}</button>
-            </form>
-        "#)
-    } else {
-        String::new()
-    };
-
     let input_unlisted_conditionally_hidden = if !collection.site_path.is_root_path() {
         input_unlisted.to_string()
     } else if collection.unlisted_local() {
@@ -535,8 +454,8 @@ pub fn edit_page(
         String::new()
     };
 
-    let create_link_form = add_link_form(&format!("/add-collection-link/{site_path_normalized}"), translations);
-    let links_form = links(&collection.links, &format!("/delete-collection-link/{site_path_normalized}"), translations);
+    let create_link_form = add_link_form(&routes::collection_add_link(collection), translations);
+    let links_form = links(&collection.links, &routes::collection_delete_link(collection), translations);
 
     let r_resource_actions = resource_actions(
         context,
@@ -550,12 +469,11 @@ pub fn edit_page(
     let collection_title = collection.title_or_slug_or_generic_label(translations);
 
     let t_banner_image = translations.banner_image;
-    let t_danger_zone = translations.danger_zone;
-    let t_delete_collection = translations.delete_collection;
-    let t_deleting_the_collection_text = translations.deleting_the_collection_text;
     let t_new_video = translations.new_video;
-    let t_really_delete = translations.really_delete;
     let t_update_collection = translations.update_collection;
+
+    let update_action = routes::collection_edit(collection);
+
     let body = formatdoc!(r#"
         {errors}
 
@@ -568,7 +486,7 @@ pub fn edit_page(
         </div>
 
         <div class="form_group">
-            <form action="/collection/{site_path_normalized}" autocomplete="off" data-warn-discard method="post">
+            <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
                 {select_video_order}
@@ -608,39 +526,14 @@ pub fn edit_page(
             </p>
             {banner_form}
         </div>
-
-        {site_edit}
-
-        <div class="form_group">
-            <h2>{t_danger_zone}</h2>
-
-            {slug_form}
-
-            {convert_to_playlist_form}
-
-            {convert_to_video_form}
-
-            <p>
-                {t_deleting_the_collection_text}
-            </p>
-
-            <form
-                action="/delete-collection/{site_path_normalized}"
-                data-confirm
-                data-confirm-label="{t_delete_collection}"
-                data-confirm-text="{t_really_delete}"
-                method="post">
-                <button class="danger">{t_delete_collection}</button>
-            </form>
-        </div>
     "#);
 
     let html = layout(
         &body,
         context,
         language,
+        Location::edit(&collection.site_path),
         &site,
-        Some(&collection.site_path),
         collection.title_or_slug_or_generic_label(translations)
     );
 

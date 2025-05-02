@@ -16,6 +16,7 @@ use crate::{
     Field,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -79,7 +80,7 @@ pub async fn create_subcollection(
             CollectionUpdate::Updated { optional_return_value: subcollection, .. } => {
                 subcollection.write_manifest(&context);
 
-                let redirect_url = format!("/collection/{}", subcollection.site_path.normalized());
+                let redirect_url = routes::collection_edit(&subcollection);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {

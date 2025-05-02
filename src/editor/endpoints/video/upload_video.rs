@@ -28,6 +28,7 @@ use crate::{
     Video,
     VideoFile
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::{nanoid, supported_video_extension};
 
@@ -151,7 +152,7 @@ pub async fn upload_video(
                     };
                     context.push_job_queue(job_kind);
 
-                    let redirect_url = format!("/video/{}", video.site_path.normalized());
+                    let redirect_url = routes::video_edit(&video);
                     return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                 }
             }

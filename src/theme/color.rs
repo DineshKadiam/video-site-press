@@ -125,7 +125,7 @@ impl Color {
             }
             Color::Gray { oklch_l, .. } => {
                 let l = oklch_l * 100.0;
-                format!("oklch({l}% 0 0 / {a})")
+                format!("oklch({l}% 0 0 / {a}%)")
             }
         }
     }

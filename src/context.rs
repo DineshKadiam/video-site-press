@@ -81,6 +81,11 @@ pub enum PlaylistUpdate<T> {
     }
 }
 
+pub enum VideoParent {
+    Collection(Arc<Collection>),
+    Playlist(Arc<Playlist>)
+}
+
 impl Context {
     pub fn await_job_queue(&self) {
         let mut previous_pending_jobs = 0;
@@ -135,183 +140,203 @@ impl Context {
     /// empty, the empty site itself) and convert it to a collection. This
     /// may fail if we're converting from a video that is inside a playlist,
     /// as a playlist can not contain a collection.
-    pub fn convert_to_collection(&self, site_path: &SitePath) -> Result<(), String> {
+    pub fn convert_to_collection(&self, site_path: &SitePath) -> Result<Arc<Collection>, String> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
-            if let SiteContent::Empty = &site_mut.content {
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-                collection.write_manifest(self);
-                site_mut.content = SiteContent::Collection(collection);
-                self.replace_site(site_mut);
-            } else if let SiteContent::Playlist(playlist) = &site_mut.content {
-                let manifest_path = self.site_dir.join("playlist.eno");
-                let _ = fs::remove_file(&manifest_path);
+            match &site_mut.content {
+                SiteContent::Collection(collection) => Ok(Arc::clone(collection)),
+                SiteContent::Empty => {
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+                    collection.write_manifest(self);
+                    site_mut.content = SiteContent::Collection(Arc::clone(&collection));
+                    self.replace_site(site_mut);
 
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-
-                {
-                    let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
-
-                    if let Some(banner) = &playlist.banner {
-                        collection_mut.banner = Some(banner.clone());
-                    }
-                    if let Some(description) = &playlist.description {
-                        collection_mut.description = Some(description.clone());
-                    }
-                    if !playlist.links.is_empty() {
-                        collection_mut.links = playlist.links.clone();
-                    }
-                    collection_mut.offline_local_set(playlist.offline_local());
-                    if let Some(title) = &playlist.title {
-                        collection_mut.title = Some(title.clone());
-                    }
-                    collection_mut.unlisted_local_set(playlist.unlisted_local());
-                    collection_mut.video_order = playlist.order;
+                    Ok(collection)
                 }
+                SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
+                SiteContent::Playlist(playlist) => {
+                    let manifest_path = self.site_dir.join("playlist.eno");
+                    let _ = fs::remove_file(&manifest_path);
 
-                collection.write_manifest(self);
-                site_mut.content = SiteContent::Collection(collection);
-                self.replace_site(site_mut);
-            } else if let SiteContent::Video(video) = &site_mut.content {
-                let slug = match &video.title {
-                    Some(title) => slugify(title),
-                    None => match video.highest_quality_version() {
-                        Some(version) => {
-                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let mut collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
+
+                        if let Some(banner) = &playlist.banner {
+                            collection_mut.banner = Some(banner.clone());
                         }
-                        // TODO: Although unlikely, technically this could conflict, so we should probably
-                        //       check for collision and if so de-duplicate this slug before we go ahead.
-                        None => String::from("video")
+                        if let Some(description) = &playlist.description {
+                            collection_mut.description = Some(description.clone());
+                        }
+                        if !playlist.links.is_empty() {
+                            collection_mut.links = playlist.links.clone();
+                        }
+                        collection_mut.offline_local_set(playlist.offline_local());
+                        if let Some(title) = &playlist.title {
+                            collection_mut.title = Some(title.clone());
+                        }
+                        collection_mut.unlisted_local_set(playlist.unlisted_local());
+                        collection_mut.video_order = playlist.order;
                     }
-                };
 
-                let video_dir = self.site_dir.join(&slug);
-                fs::create_dir(&video_dir).unwrap();
+                    collection.write_manifest(self);
+                    site_mut.content = SiteContent::Collection(Arc::clone(&collection));
+                    self.replace_site(site_mut);
 
-                // Move existing files from the site_dir to the newly created video_dir
-                if let Ok(dir_entries) = self.site_dir.read_dir() {
-                    for dir_entry_result in dir_entries {
-                        if let Ok(dir_entry) = dir_entry_result {
-                            let file_name = dir_entry.file_name();
-                            let file_name_str = file_name.to_string_lossy();
-
-                            // Skip site.eno, hidden files (e.g. cache/build dir) and the dir we copy to
-                            if file_name_str.starts_with('.') ||
-                                file_name_str == "site.eno" ||
-                                file_name_str == slug {
-                                continue;
+                    Ok(collection)
+                }
+                SiteContent::Video(video) => {
+                    let slug = match &video.title {
+                        Some(title) => slugify(title),
+                        None => match video.highest_quality_version() {
+                            Some(version) => {
+                                slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
+                            // TODO: Although unlikely, technically this could conflict, so we should probably
+                            //       check for collision and if so de-duplicate this slug before we go ahead.
+                            None => String::from("video")
+                        }
+                    };
 
-                            let relocation_target_in_video_dir = video_dir.join(dir_entry.file_name());
-                            fs::rename(dir_entry.path(), &relocation_target_in_video_dir).unwrap();
+                    let video_dir = self.site_dir.join(&slug);
+                    fs::create_dir(&video_dir).unwrap();
+
+                    // Move existing files from the site_dir to the newly created video_dir
+                    if let Ok(dir_entries) = self.site_dir.read_dir() {
+                        for dir_entry_result in dir_entries {
+                            if let Ok(dir_entry) = dir_entry_result {
+                                let file_name = dir_entry.file_name();
+                                let file_name_str = file_name.to_string_lossy();
+
+                                // Skip site.eno, hidden files (e.g. cache/build dir) and the dir we copy to
+                                if file_name_str.starts_with('.') ||
+                                    file_name_str == "site.eno" ||
+                                    file_name_str == slug {
+                                    continue;
+                                }
+
+                                let relocation_target_in_video_dir = video_dir.join(dir_entry.file_name());
+                                fs::rename(dir_entry.path(), &relocation_target_in_video_dir).unwrap();
+                            }
                         }
                     }
+
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let mut collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
+                        let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
+                        collection_mut.offline_local_set(video.offline_local());
+                        collection_mut.unlisted_local_set(video.unlisted_local());
+                    }
+
+                    collection.write_manifest(self);
+                    site_mut.content = SiteContent::Collection(Arc::clone(&collection));
+                    self.replace_site(site_mut);
+
+                    Ok(collection)
                 }
-
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-
-                {
-                    // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
-                    let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
-                    collection_mut.offline_local_set(video.offline_local());
-                    collection_mut.unlisted_local_set(video.unlisted_local());
-                }
-
-                collection.write_manifest(self);
-                site_mut.content = SiteContent::Collection(collection);
-                self.replace_site(site_mut);
             }
         } else {
-            let node = self.get_any(site_path);
-
-            if let GetAnyResult::Playlist(playlist) = node {
-                let dir_converting = self.site_dir.join(playlist.site_path.filesystem_relative());
-
-                let manifest_path = dir_converting.join("playlist.eno");
-                let _ = fs::remove_file(&manifest_path);
-
-                let hyper_dir = HyperDir::read(&dir_converting);
-                let mut collection = Collection::read_dir(self, &hyper_dir, playlist.copy_inherited_options(), &site_mut);
-
-               {
-                    let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap();  // always succeeds, single-owned at this point
-
-                    if let Some(banner) = &playlist.banner {
-                        collection_mut.banner = Some(banner.clone());
-                    }
-                    if let Some(description) = &playlist.description {
-                        collection_mut.description = Some(description.clone());
-                    }
-                    if !playlist.links.is_empty() {
-                        collection_mut.links = playlist.links.clone();
-                    }
-                    collection_mut.offline_local_set(playlist.offline_local());
-                    if let Some(title) = &playlist.title {
-                        collection_mut.title = Some(title.clone());
-                    }
-                    collection_mut.unlisted_local_set(playlist.unlisted_local());
-                    collection_mut.video_order = playlist.order;
-                };
-
-                collection.write_manifest(self);
-
-                self.update_from_filesystem(&dir_converting, &site_mut);
-            } else if let GetAnyResult::Video(video) = node {
-                if self.get_any(&video.parent_site_path_unchecked()).is_playlist() {
-                    return Err("A video inside a playlist can not be converted to a collection".to_string());
+            match self.get_any(site_path) {
+                GetAnyResult::Collection(collection) => Ok(collection),
+                GetAnyResult::None => {
+                    let language = self.get_editor_language();
+                    Err(language.translations.the_resource_xxx_was_not_found_message(site_path.normalized()))
                 }
+                GetAnyResult::Playlist(playlist) => {
+                    let dir_converting = self.site_dir.join(playlist.site_path.filesystem_relative());
 
-                let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
+                    let manifest_path = dir_converting.join("playlist.eno");
+                    let _ = fs::remove_file(&manifest_path);
 
-                let slug = match &video.title {
-                    Some(title) => slugify(title),
-                    None => match video.highest_quality_version() {
-                        Some(version) => {
-                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
+                    let hyper_dir = HyperDir::read(&dir_converting);
+                    let mut collection = Collection::read_dir(self, &hyper_dir, playlist.copy_inherited_options(), &site_mut);
+
+                   {
+                        let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap();  // always succeeds, single-owned at this point
+
+                        if let Some(banner) = &playlist.banner {
+                            collection_mut.banner = Some(banner.clone());
                         }
-                        None => String::from("video")
+                        if let Some(description) = &playlist.description {
+                            collection_mut.description = Some(description.clone());
+                        }
+                        if !playlist.links.is_empty() {
+                            collection_mut.links = playlist.links.clone();
+                        }
+                        collection_mut.offline_local_set(playlist.offline_local());
+                        if let Some(title) = &playlist.title {
+                            collection_mut.title = Some(title.clone());
+                        }
+                        collection_mut.unlisted_local_set(playlist.unlisted_local());
+                        collection_mut.video_order = playlist.order;
+                    };
+
+                    collection.write_manifest(self);
+
+                    self.update_from_filesystem(&dir_converting, &site_mut);
+
+                    Ok(collection)
+                }
+                GetAnyResult::Video(video) => {
+                    if self.get_any(&video.parent_site_path_unchecked()).is_playlist() {
+                        return Err(String::from("A video inside a playlist can not be converted to a collection"));
                     }
-                };
 
-                let new_video_dir = dir_converting.join(&slug);
-                fs::create_dir(&new_video_dir).unwrap();
+                    let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
 
-                if let Ok(dir_entries) = dir_converting.read_dir() {
-                    for dir_entry_result in dir_entries {
-                        if let Ok(dir_entry) = dir_entry_result {
-                            // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
-                            if dir_entry.file_name().to_string_lossy().starts_with('.') ||
-                                dir_entry.path() == new_video_dir {
-                                continue;
+                    let slug = match &video.title {
+                        Some(title) => slugify(title),
+                        None => match video.highest_quality_version() {
+                            Some(version) => {
+                                slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
+                            None => String::from("video")
+                        }
+                    };
 
-                            let relocation_target_in_new_video_dir = new_video_dir.join(dir_entry.file_name());
-                            fs::rename(dir_entry.path(), &relocation_target_in_new_video_dir).unwrap();
+                    let new_video_dir = dir_converting.join(&slug);
+                    fs::create_dir(&new_video_dir).unwrap();
+
+                    if let Ok(dir_entries) = dir_converting.read_dir() {
+                        for dir_entry_result in dir_entries {
+                            if let Ok(dir_entry) = dir_entry_result {
+                                // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
+                                if dir_entry.file_name().to_string_lossy().starts_with('.') ||
+                                    dir_entry.path() == new_video_dir {
+                                    continue;
+                                }
+
+                                let relocation_target_in_new_video_dir = new_video_dir.join(dir_entry.file_name());
+                                fs::rename(dir_entry.path(), &relocation_target_in_new_video_dir).unwrap();
+                            }
                         }
                     }
+
+                    let hyper_dir = HyperDir::read(&dir_converting);
+                    let mut collection = Collection::read_dir(self, &hyper_dir, video.copy_inherited_options(), &site_mut);
+
+                    {
+                        // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
+                        let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
+                        collection_mut.offline_local_set(video.offline_local());
+                        collection_mut.unlisted_local_set(video.unlisted_local());
+                    }
+
+                    collection.write_manifest(self);
+
+                    self.update_from_filesystem(&dir_converting, &site_mut);
+
+                    Ok(collection)
                 }
-
-                let hyper_dir = HyperDir::read(&dir_converting);
-                let mut collection = Collection::read_dir(self, &hyper_dir, video.copy_inherited_options(), &site_mut);
-
-                {
-                    // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
-                    let collection_mut = Arc::<Collection>::get_mut(&mut collection).unwrap(); // always succeeds, single-owned at this point
-                    collection_mut.offline_local_set(video.offline_local());
-                    collection_mut.unlisted_local_set(video.unlisted_local());
-                }
-
-                collection.write_manifest(self);
-
-                self.update_from_filesystem(&dir_converting, &site_mut);
             }
         }
-
-        Ok(())
     }
 
     /// Take the collection or video at the given path (or if the site is
@@ -321,562 +346,604 @@ impl Context {
     /// playlist can not contain), or if we're converting from a video that
     /// is contained inside a playlist (as a playlist can not contain another
     /// playlist).
-    pub fn convert_to_playlist(&self, site_path: &SitePath) -> Result<(), String> {
+    pub fn convert_to_playlist(&self, site_path: &SitePath) -> Result<Arc<Playlist>, String> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
-            if let SiteContent::Empty = &site_mut.content {
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-                playlist.write_manifest(self);
-                site_mut.content = SiteContent::Playlist(playlist);
-                self.replace_site(site_mut);
-            } else if let SiteContent::Collection(collection) = &site_mut.content {
-                if !collection.playlists.is_empty() {
-                    return Err("A collection containing (a) playlist(s) can not be converted to a playlist".to_string());
-                } else if !collection.subcollections.is_empty() {
-                    return Err("A collection containing (a) subcollection(s) can not be converted to a playlist".to_string());
-                }
-
-                let manifest_path = self.site_dir.join("collection.eno");
-                let _ = fs::remove_file(&manifest_path);
-
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-
-                {
-                    let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
-
-                    if let Some(banner) = &collection.banner {
-                        playlist_mut.banner = Some(banner.clone());
+            match &site_mut.content {
+                SiteContent::Collection(collection) => {
+                    if !collection.playlists.is_empty() {
+                        return Err("A collection containing (a) playlist(s) can not be converted to a playlist".to_string());
+                    } else if !collection.subcollections.is_empty() {
+                        return Err("A collection containing (a) subcollection(s) can not be converted to a playlist".to_string());
                     }
-                    if let Some(description) = &collection.description {
-                        playlist_mut.description = Some(description.clone());
-                    }
-                    if !collection.links.is_empty() {
-                        playlist_mut.links = collection.links.clone();
-                    }
-                    playlist_mut.offline_local_set(collection.offline_local());
-                    playlist_mut.order = collection.video_order;
-                    if let Some(title) = &collection.title {
-                        playlist_mut.title = Some(title.clone());
-                    }
-                    playlist_mut.unlisted_local_set(collection.unlisted_local());
-                }
 
-                playlist.write_manifest(self);
-                site_mut.content = SiteContent::Playlist(playlist);
-                self.replace_site(site_mut);
-            } else if let SiteContent::Video(video) = &site_mut.content {
-                let slug = match &video.title {
-                    Some(title) => slugify(title),
-                    None => match video.highest_quality_version() {
-                        Some(version) => {
-                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
+                    let manifest_path = self.site_dir.join("collection.eno");
+                    let _ = fs::remove_file(&manifest_path);
+
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let mut playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
+
+                        if let Some(banner) = &collection.banner {
+                            playlist_mut.banner = Some(banner.clone());
                         }
-                        // TODO: Although unlikely, technically this could conflict, so we should probably
-                        //       check for collision and if so de-duplicate this slug before we go ahead.
-                        None => String::from("video")
+                        if let Some(description) = &collection.description {
+                            playlist_mut.description = Some(description.clone());
+                        }
+                        if !collection.links.is_empty() {
+                            playlist_mut.links = collection.links.clone();
+                        }
+                        playlist_mut.offline_local_set(collection.offline_local());
+                        playlist_mut.order = collection.video_order;
+                        if let Some(title) = &collection.title {
+                            playlist_mut.title = Some(title.clone());
+                        }
+                        playlist_mut.unlisted_local_set(collection.unlisted_local());
                     }
-                };
 
-                let video_dir = self.site_dir.join(&slug);
-                fs::create_dir(&video_dir).unwrap();
+                    playlist.write_manifest(self);
+                    site_mut.content = SiteContent::Playlist(Arc::clone(&playlist));
+                    self.replace_site(site_mut);
 
-                // Move existing files from the site_dir to the newly created video_dir
-                if let Ok(dir_entries) = self.site_dir.read_dir() {
-                    for dir_entry_result in dir_entries {
-                        if let Ok(dir_entry) = dir_entry_result {
-                            let file_name = dir_entry.file_name();
-                            let file_name_str = file_name.to_string_lossy();
+                    Ok(playlist)
+                }
+                SiteContent::Empty => {
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+                    playlist.write_manifest(self);
+                    site_mut.content = SiteContent::Playlist(Arc::clone(&playlist));
+                    self.replace_site(site_mut);
 
-                            // Skip site.eno, hidden files (e.g. cache/build dir) and the dir we copy to
-                            if file_name_str.starts_with('.') ||
-                                file_name_str == "site.eno" ||
-                                file_name_str == slug {
-                                continue;
+                    Ok(playlist)
+                }
+                SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
+                SiteContent::Playlist(playlist) => Ok(Arc::clone(playlist)),
+                SiteContent::Video(video) => {
+                    let slug = match &video.title {
+                        Some(title) => slugify(title),
+                        None => match video.highest_quality_version() {
+                            Some(version) => {
+                                slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
+                            // TODO: Although unlikely, technically this could conflict, so we should probably
+                            //       check for collision and if so de-duplicate this slug before we go ahead.
+                            None => String::from("video")
+                        }
+                    };
 
-                            let relocation_target_in_video_dir = video_dir.join(dir_entry.file_name());
-                            fs::rename(dir_entry.path(), &relocation_target_in_video_dir).unwrap();
+                    let video_dir = self.site_dir.join(&slug);
+                    fs::create_dir(&video_dir).unwrap();
+
+                    // Move existing files from the site_dir to the newly created video_dir
+                    if let Ok(dir_entries) = self.site_dir.read_dir() {
+                        for dir_entry_result in dir_entries {
+                            if let Ok(dir_entry) = dir_entry_result {
+                                let file_name = dir_entry.file_name();
+                                let file_name_str = file_name.to_string_lossy();
+
+                                // Skip site.eno, hidden files (e.g. cache/build dir) and the dir we copy to
+                                if file_name_str.starts_with('.') ||
+                                    file_name_str == "site.eno" ||
+                                    file_name_str == slug {
+                                    continue;
+                                }
+
+                                let relocation_target_in_video_dir = video_dir.join(dir_entry.file_name());
+                                fs::rename(dir_entry.path(), &relocation_target_in_video_dir).unwrap();
+                            }
                         }
                     }
+
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let mut playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
+                        let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
+                        playlist_mut.offline_local_set(video.offline_local());
+                        playlist_mut.unlisted_local_set(video.unlisted_local());
+                    }
+
+                    playlist.write_manifest(self);
+                    site_mut.content = SiteContent::Playlist(Arc::clone(&playlist));
+                    self.replace_site(site_mut);
+
+                    Ok(playlist)
                 }
-
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-
-                {
-                    // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
-                    let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
-                    playlist_mut.offline_local_set(video.offline_local());
-                    playlist_mut.unlisted_local_set(video.unlisted_local());
-                }
-
-                playlist.write_manifest(self);
-                site_mut.content = SiteContent::Playlist(playlist);
-                self.replace_site(site_mut);
-            } 
+            }
         } else {
-            let node = self.get_any(site_path);
-
-            if let GetAnyResult::Collection(collection) = node {
-                if !collection.playlists.is_empty() {
-                    return Err("A collection containing (a) playlist(s) can not be converted to a playlist".to_string());
-                } else if !collection.subcollections.is_empty() {
-                    return Err("A collection containing (a) subcollection(s) can not be converted to a playlist".to_string());
-                }
-
-                let dir_converting = self.site_dir.join(collection.site_path.filesystem_relative());
-
-                let manifest_path = dir_converting.join("collection.eno");
-                let _ = fs::remove_file(&manifest_path);
-
-                let hyper_dir = HyperDir::read(&dir_converting);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, collection.copy_inherited_options(), &site_mut);
-
-                {
-                    let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap();  // always succeeds, single-owned at this point
-
-                    if let Some(banner) = &collection.banner {
-                        playlist_mut.banner = Some(banner.clone());
+            match self.get_any(site_path) {
+                GetAnyResult::Collection(collection) => {
+                    if !collection.playlists.is_empty() {
+                        return Err("A collection containing (a) playlist(s) can not be converted to a playlist".to_string());
+                    } else if !collection.subcollections.is_empty() {
+                        return Err("A collection containing (a) subcollection(s) can not be converted to a playlist".to_string());
                     }
-                    if let Some(description) = &collection.description {
-                        playlist_mut.description = Some(description.clone());
-                    }
-                    if !collection.links.is_empty() {
-                        playlist_mut.links = collection.links.clone();
-                    }
-                    playlist_mut.offline_local_set(collection.offline_local());
-                    playlist_mut.order = collection.video_order;
-                    if let Some(title) = &collection.title {
-                        playlist_mut.title = Some(title.clone());
-                    }
-                    playlist_mut.unlisted_local_set(collection.unlisted_local());
-                }
 
-                playlist.write_manifest(self);
+                    let dir_converting = self.site_dir.join(collection.site_path.filesystem_relative());
 
-                self.update_from_filesystem(&dir_converting, &site_mut);
-            } else if let GetAnyResult::Video(video) = node {
-                if self.get_any(&video.parent_site_path_unchecked()).is_playlist() {
-                    return Err("A video inside a playlist can not be converted to a playlist".to_string());
-                }
+                    let manifest_path = dir_converting.join("collection.eno");
+                    let _ = fs::remove_file(&manifest_path);
 
-                let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
+                    let hyper_dir = HyperDir::read(&dir_converting);
+                    let mut playlist = Playlist::read_dir(self, &hyper_dir, collection.copy_inherited_options(), &site_mut);
 
-                let slug = match &video.title {
-                    Some(title) => slugify(title),
-                    None => match video.highest_quality_version() {
-                        Some(version) => {
-                            slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
+                    {
+                        let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap();  // always succeeds, single-owned at this point
+
+                        if let Some(banner) = &collection.banner {
+                            playlist_mut.banner = Some(banner.clone());
                         }
-                        None => String::from("video")
+                        if let Some(description) = &collection.description {
+                            playlist_mut.description = Some(description.clone());
+                        }
+                        if !collection.links.is_empty() {
+                            playlist_mut.links = collection.links.clone();
+                        }
+                        playlist_mut.offline_local_set(collection.offline_local());
+                        playlist_mut.order = collection.video_order;
+                        if let Some(title) = &collection.title {
+                            playlist_mut.title = Some(title.clone());
+                        }
+                        playlist_mut.unlisted_local_set(collection.unlisted_local());
                     }
-                };
 
-                let new_video_dir = dir_converting.join(&slug);
-                fs::create_dir(&new_video_dir).unwrap();
+                    playlist.write_manifest(self);
 
-                if let Ok(dir_entries) = dir_converting.read_dir() {
-                    for dir_entry_result in dir_entries {
-                        if let Ok(dir_entry) = dir_entry_result {
-                            // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
-                            if dir_entry.file_name().to_string_lossy().starts_with('.') ||
-                                dir_entry.path() == new_video_dir {
-                                continue;
+                    self.update_from_filesystem(&dir_converting, &site_mut);
+
+                    Ok(playlist)
+                }
+                GetAnyResult::None => {
+                    let language = self.get_editor_language();
+                    Err(language.translations.the_resource_xxx_was_not_found_message(site_path.normalized()))
+                }
+                GetAnyResult::Playlist(playlist) => Ok(playlist),
+                GetAnyResult::Video(video) => {
+                    if self.get_any(&video.parent_site_path_unchecked()).is_playlist() {
+                        return Err("A video inside a playlist can not be converted to a playlist".to_string());
+                    }
+
+                    let dir_converting = self.site_dir.join(video.site_path.filesystem_relative());
+
+                    let slug = match &video.title {
+                        Some(title) => slugify(title),
+                        None => match video.highest_quality_version() {
+                            Some(version) => {
+                                slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
+                            None => String::from("video")
+                        }
+                    };
 
-                            let relocation_target_in_new_video_dir = new_video_dir.join(dir_entry.file_name());
-                            fs::rename(dir_entry.path(), &relocation_target_in_new_video_dir).unwrap();
+                    let new_video_dir = dir_converting.join(&slug);
+                    fs::create_dir(&new_video_dir).unwrap();
+
+                    if let Ok(dir_entries) = dir_converting.read_dir() {
+                        for dir_entry_result in dir_entries {
+                            if let Ok(dir_entry) = dir_entry_result {
+                                // Skip the video dir itself, and any hidden files/dirs (e.g. cache/build dir!)
+                                if dir_entry.file_name().to_string_lossy().starts_with('.') ||
+                                    dir_entry.path() == new_video_dir {
+                                    continue;
+                                }
+
+                                let relocation_target_in_new_video_dir = new_video_dir.join(dir_entry.file_name());
+                                fs::rename(dir_entry.path(), &relocation_target_in_new_video_dir).unwrap();
+                            }
                         }
                     }
+
+                    let hyper_dir = HyperDir::read(&dir_converting);
+                    let mut playlist = Playlist::read_dir(self, &hyper_dir, video.copy_inherited_options(), &site_mut);
+
+                    {
+                        // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
+                        let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
+                        playlist_mut.offline_local_set(video.offline_local());
+                        playlist_mut.unlisted_local_set(video.unlisted_local());
+                    }
+
+                    playlist.write_manifest(self);
+
+                    self.update_from_filesystem(&dir_converting, &site_mut);
+
+                    Ok(playlist)
                 }
-
-                let hyper_dir = HyperDir::read(&dir_converting);
-                let mut playlist = Playlist::read_dir(self, &hyper_dir, video.copy_inherited_options(), &site_mut);
-
-                {
-                    // TODO: Would be quite elegant if offline+unlisted would in turn be removed from the video
-                    let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist).unwrap(); // always succeeds, single-owned at this point
-                    playlist_mut.offline_local_set(video.offline_local());
-                    playlist_mut.unlisted_local_set(video.unlisted_local());
-                }
-
-                playlist.write_manifest(self);
-
-                self.update_from_filesystem(&dir_converting, &site_mut);
             }
         }
-
-        Ok(())
     }
 
     /// Take the collection or playlist at the given path (or if the site is still empty,
     /// the empty site itself) and convert it to a video. This only succeeds if we're
     /// converting from a collection or playlist that contains exactly one video (or none).
-    pub fn convert_to_video(&self, site_path: &SitePath) -> Result<(), String> {
+    pub fn convert_to_video(&self, site_path: &SitePath) -> Result<Arc<Video>, String> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
-            if let SiteContent::Empty = &site_mut.content {
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-                video.write_manifest(self);
-                site_mut.content = SiteContent::Video(video);
-                self.replace_site(site_mut);
-            } else if let SiteContent::Collection(collection) = &site_mut.content {
-                if !collection.playlists.is_empty() {
-                    return Err("A collection containing (a) playlist(s) can not be converted to a single video".to_string());
-                } else if !collection.subcollections.is_empty() {
-                    return Err("A collection containing (a) subcollection(s) can not be converted to a single video".to_string());
-                } else if collection.videos.len() > 2 {
-                    return Err("A collection containing two or more videos can not be converted to a single video".to_string());
-                }
+            match &site_mut.content {
+                SiteContent::Collection(collection) => {
+                    if !collection.playlists.is_empty() {
+                        return Err("A collection containing (a) playlist(s) can not be converted to a single video".to_string());
+                    } else if !collection.subcollections.is_empty() {
+                        return Err("A collection containing (a) subcollection(s) can not be converted to a single video".to_string());
+                    } else if collection.videos.len() > 2 {
+                        return Err("A collection containing two or more videos can not be converted to a single video".to_string());
+                    }
 
-                let manifest_path = self.site_dir.join("collection.eno");
-                let _ = fs::remove_file(&manifest_path);
+                    let manifest_path = self.site_dir.join("collection.eno");
+                    let _ = fs::remove_file(&manifest_path);
 
-                // If a (single) video dir exists in the collection, move
-                // every file/dir in it into the root, then delete it.
-                if let Some(video) = collection.videos.first() {
-                    let temp_dir = self.site_dir.join(nanoid());
+                    // If a (single) video dir exists in the collection, move
+                    // every file/dir in it into the root, then delete it.
+                    if let Some(video) = collection.videos.first() {
+                        let temp_dir = self.site_dir.join(nanoid());
 
-                    // Rename the video directory to unique temporary name, so we can copy
-                    // files/folders within without any possible name collisions with the
-                    // video directory name itself.
-                    fs::rename(
-                        self.site_dir.join(video.site_path.filesystem_relative()),
-                        &temp_dir
-                    ).unwrap();
+                        // Rename the video directory to unique temporary name, so we can copy
+                        // files/folders within without any possible name collisions with the
+                        // video directory name itself.
+                        fs::rename(
+                            self.site_dir.join(video.site_path.filesystem_relative()),
+                            &temp_dir
+                        ).unwrap();
 
-                    if let Ok(dir_entries) = temp_dir.read_dir() {
-                        for dir_entry_result in dir_entries {
-                            if let Ok(dir_entry) = dir_entry_result {
-                                let relocation_target_in_parent = self.site_dir.join(dir_entry.file_name());
+                        if let Ok(dir_entries) = temp_dir.read_dir() {
+                            for dir_entry_result in dir_entries {
+                                if let Ok(dir_entry) = dir_entry_result {
+                                    let relocation_target_in_parent = self.site_dir.join(dir_entry.file_name());
 
-                                // If a file/dir with the same name exists in the parent directory, we delete the
-                                // one in the parent directory.
-                                if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
-                                    if metadata.file_type().is_dir() {
-                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
-                                    } else {
-                                        fs::remove_file(&relocation_target_in_parent).unwrap();
+                                    // If a file/dir with the same name exists in the parent directory, we delete the
+                                    // one in the parent directory.
+                                    if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
+                                        if metadata.file_type().is_dir() {
+                                            checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
+                                        } else {
+                                            fs::remove_file(&relocation_target_in_parent).unwrap();
+                                        }
                                     }
-                                }
 
-                                fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                                    fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                                }
                             }
                         }
+
+                        let _ = checked_remove_dir_all(self, &temp_dir);
                     }
 
-                    let _ = checked_remove_dir_all(self, &temp_dir);
-                }
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let mut video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+                    {
+                        let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
 
-                {
-                    let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
-
-                    // We only copy fields from the collection to the new video,
-                    // if the video was not initialized from a single video that
-                    // already existed in the collection.
-                    if collection.videos.is_empty() {
-                        // TODO: We could consider copying a collection banner to be the new video poster here
-                        if let Some(description) = &collection.description {
-                            video_mut.description = Some(description.clone());
-                        }
-                        if !collection.links.is_empty() {
-                            video_mut.links = collection.links.clone();
-                        }
-                        if let Some(title) = &collection.title {
-                            video_mut.title = Some(title.clone());
-                        }
-                    }
-
-                    // If the collection was offline, we ensure that the video
-                    // that was indirectly offline as its child, stays offline
-                    // when it replaces the collection
-                    if collection.offline_local() && !video_mut.offline_local() {
-                        video_mut.offline_local_set(true);
-                    }
-
-                    // If the collection was unlisted, we ensure that the video
-                    // that was indirectly unlisted as its child, stays unlisted
-                    // when it replaces the collection
-                    if collection.unlisted_local() && !video_mut.unlisted_local() {
-                        video_mut.unlisted_local_set(true);
-                    }
-                }
-
-                video.write_manifest(self);
-
-                site_mut.content = SiteContent::Video(video);
-                self.replace_site(site_mut);
-            } else if let SiteContent::Playlist(playlist) = &site_mut.content {
-                if playlist.videos.len() > 1 {
-                    return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
-                }
-
-                let manifest_path = self.site_dir.join("playlist.eno");
-                let _ = fs::remove_file(&manifest_path);
-
-                // If a (single) video dir exists in the playlist, move every file/dir in it into the root,
-                // then delete it.
-                if let Some(video) = playlist.videos.first() {
-                    let temp_dir = self.site_dir.join(nanoid());
-
-                    // Rename the video directory to unique temporary name, so we can copy
-                    // files/folders within without any possible name collisions with the
-                    // video directory name itself.
-                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
-
-                    if let Ok(dir_entries) = temp_dir.read_dir() {
-                        for dir_entry_result in dir_entries {
-                            if let Ok(dir_entry) = dir_entry_result {
-                                let relocation_target_in_parent = self.site_dir.join(dir_entry.file_name());
-
-                                // If a file/dir with the same name exists in the parent directory, we delete the
-                                // one in the parent directory.
-                                if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
-                                    if metadata.file_type().is_dir() {
-                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
-                                    } else {
-                                        fs::remove_file(&relocation_target_in_parent).unwrap();
-                                    }
-                                }
-
-                                fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                        // We only copy fields from the collection to the new video,
+                        // if the video was not initialized from a single video that
+                        // already existed in the collection.
+                        if collection.videos.is_empty() {
+                            // TODO: We could consider copying a collection banner to be the new video poster here
+                            if let Some(description) = &collection.description {
+                                video_mut.description = Some(description.clone());
+                            }
+                            if !collection.links.is_empty() {
+                                video_mut.links = collection.links.clone();
+                            }
+                            if let Some(title) = &collection.title {
+                                video_mut.title = Some(title.clone());
                             }
                         }
+
+                        // If the collection was offline, we ensure that the video
+                        // that was indirectly offline as its child, stays offline
+                        // when it replaces the collection
+                        if collection.offline_local() && !video_mut.offline_local() {
+                            video_mut.offline_local_set(true);
+                        }
+
+                        // If the collection was unlisted, we ensure that the video
+                        // that was indirectly unlisted as its child, stays unlisted
+                        // when it replaces the collection
+                        if collection.unlisted_local() && !video_mut.unlisted_local() {
+                            video_mut.unlisted_local_set(true);
+                        }
                     }
 
-                    let _ = checked_remove_dir_all(self, &temp_dir);
+                    video.write_manifest(self);
+
+                    site_mut.content = SiteContent::Video(Arc::clone(&video));
+                    self.replace_site(site_mut);
+
+                    Ok(video)
                 }
+                SiteContent::Empty => {
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+                    video.write_manifest(self);
+                    site_mut.content = SiteContent::Video(Arc::clone(&video));
+                    self.replace_site(site_mut);
 
-                let hyper_dir = HyperDir::read(&self.site_dir);
-                let mut video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-
-                // This always succeeds, as the Arc is guaranteed single-owner at this point.
-               {
-                    let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
-
-                    // We only copy fields from the playlist to the new video,
-                    // if the video was not initialized from a single video that
-                    // already existed in the playlist.
-                    if playlist.videos.is_empty() {
-                        // TODO: We could consider copying a playlist banner to be the new video poster here
-                        if let Some(description) = &playlist.description {
-                            video_mut.description = Some(description.clone());
-                        }
-                        if !playlist.links.is_empty() {
-                            video_mut.links = playlist.links.clone();
-                        }
-                        if let Some(title) = &playlist.title {
-                            video_mut.title = Some(title.clone());
-                        }
+                    Ok(video)
+                }
+                SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
+                SiteContent::Playlist(playlist) => {
+                    if playlist.videos.len() > 1 {
+                        return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
                     }
 
-                    // If the playlist was offline, we ensure that the video
-                    // that was indirectly offline as its child, stays offline
-                    // when it replaces the playlist
-                    if playlist.offline_local() && !video_mut.offline_local() {
-                        video_mut.offline_local_set(true);
+                    let manifest_path = self.site_dir.join("playlist.eno");
+                    let _ = fs::remove_file(&manifest_path);
+
+                    // If a (single) video dir exists in the playlist, move every file/dir in it into the root,
+                    // then delete it.
+                    if let Some(video) = playlist.videos.first() {
+                        let temp_dir = self.site_dir.join(nanoid());
+
+                        // Rename the video directory to unique temporary name, so we can copy
+                        // files/folders within without any possible name collisions with the
+                        // video directory name itself.
+                        fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
+
+                        if let Ok(dir_entries) = temp_dir.read_dir() {
+                            for dir_entry_result in dir_entries {
+                                if let Ok(dir_entry) = dir_entry_result {
+                                    let relocation_target_in_parent = self.site_dir.join(dir_entry.file_name());
+
+                                    // If a file/dir with the same name exists in the parent directory, we delete the
+                                    // one in the parent directory.
+                                    if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
+                                        if metadata.file_type().is_dir() {
+                                            checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
+                                        } else {
+                                            fs::remove_file(&relocation_target_in_parent).unwrap();
+                                        }
+                                    }
+
+                                    fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                                }
+                            }
+                        }
+
+                        let _ = checked_remove_dir_all(self, &temp_dir);
                     }
 
-                    // If the playlist was unlisted, we ensure that the video
-                    // that was indirectly unlisted as its child, stays unlisted
-                    // when it replaces the playlist
-                    if playlist.unlisted_local() && !video_mut.unlisted_local() {
-                        video_mut.unlisted_local_set(true);
-                    }
-                };
+                    let hyper_dir = HyperDir::read(&self.site_dir);
+                    let mut video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
 
-                video.write_manifest(self);
+                    // This always succeeds, as the Arc is guaranteed single-owner at this point.
+                   {
+                        let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
 
-                site_mut.content = SiteContent::Video(video);
-                self.replace_site(site_mut);
+                        // We only copy fields from the playlist to the new video,
+                        // if the video was not initialized from a single video that
+                        // already existed in the playlist.
+                        if playlist.videos.is_empty() {
+                            // TODO: We could consider copying a playlist banner to be the new video poster here
+                            if let Some(description) = &playlist.description {
+                                video_mut.description = Some(description.clone());
+                            }
+                            if !playlist.links.is_empty() {
+                                video_mut.links = playlist.links.clone();
+                            }
+                            if let Some(title) = &playlist.title {
+                                video_mut.title = Some(title.clone());
+                            }
+                        }
+
+                        // If the playlist was offline, we ensure that the video
+                        // that was indirectly offline as its child, stays offline
+                        // when it replaces the playlist
+                        if playlist.offline_local() && !video_mut.offline_local() {
+                            video_mut.offline_local_set(true);
+                        }
+
+                        // If the playlist was unlisted, we ensure that the video
+                        // that was indirectly unlisted as its child, stays unlisted
+                        // when it replaces the playlist
+                        if playlist.unlisted_local() && !video_mut.unlisted_local() {
+                            video_mut.unlisted_local_set(true);
+                        }
+                    };
+
+                    video.write_manifest(self);
+
+                    site_mut.content = SiteContent::Video(Arc::clone(&video));
+                    self.replace_site(site_mut);
+
+                    Ok(video)
+                }
+                SiteContent::Video(video) => Ok(Arc::clone(video))
             }
         } else {
-            let node = self.get_any(site_path);
+            match self.get_any(site_path) {
+                GetAnyResult::Collection(collection) => {
+                    if !collection.playlists.is_empty() {
+                        return Err("A collection containing (a) playlist(s) can not be converted to a single video".to_string());
+                    } else if !collection.subcollections.is_empty() {
+                        return Err("A collection containing (a) subcollection(s) can not be converted to a single video".to_string());
+                    } else if collection.videos.len() > 2 {
+                        return Err("A collection containing two or more videos can not be converted to a single video".to_string());
+                    }
 
-            if let GetAnyResult::Collection(collection) = node {
-                if !collection.playlists.is_empty() {
-                    return Err("A collection containing (a) playlist(s) can not be converted to a single video".to_string());
-                } else if !collection.subcollections.is_empty() {
-                    return Err("A collection containing (a) subcollection(s) can not be converted to a single video".to_string());
-                } else if collection.videos.len() > 2 {
-                    return Err("A collection containing two or more videos can not be converted to a single video".to_string());
-                }
+                    let dir_converting = self.site_dir.join(collection.site_path.filesystem_relative());
 
-                let dir_converting = self.site_dir.join(collection.site_path.filesystem_relative());
+                    let manifest_path = dir_converting.join("collection.eno");
+                    let _ = fs::remove_file(&manifest_path);
 
-                let manifest_path = dir_converting.join("collection.eno");
-                let _ = fs::remove_file(&manifest_path);
+                    // If a (single) video dir exists in the collection, move every file/dir in it into the root,
+                    // then delete it.
+                    if let Some(video) = collection.videos.first() {
+                        let temp_dir = dir_converting.join(nanoid());
 
-                // If a (single) video dir exists in the collection, move every file/dir in it into the root,
-                // then delete it.
-                if let Some(video) = collection.videos.first() {
-                    let temp_dir = dir_converting.join(nanoid());
+                        // Rename the video directory to unique temporary name, so we can copy
+                        // files/folders within without any possible name collisions with the
+                        // video directory name itself.
+                        fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
 
-                    // Rename the video directory to unique temporary name, so we can copy
-                    // files/folders within without any possible name collisions with the
-                    // video directory name itself.
-                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
+                        if let Ok(dir_entries) = temp_dir.read_dir() {
+                            for dir_entry_result in dir_entries {
+                                if let Ok(dir_entry) = dir_entry_result {
+                                    let relocation_target_in_parent = dir_converting.join(dir_entry.file_name());
 
-                    if let Ok(dir_entries) = temp_dir.read_dir() {
-                        for dir_entry_result in dir_entries {
-                            if let Ok(dir_entry) = dir_entry_result {
-                                let relocation_target_in_parent = dir_converting.join(dir_entry.file_name());
-
-                                // If a file/dir with the same name exists in the parent directory, we delete the
-                                // one in the parent directory.
-                                if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
-                                    if metadata.file_type().is_dir() {
-                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
-                                    } else {
-                                        fs::remove_file(&relocation_target_in_parent).unwrap();
+                                    // If a file/dir with the same name exists in the parent directory, we delete the
+                                    // one in the parent directory.
+                                    if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
+                                        if metadata.file_type().is_dir() {
+                                            checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
+                                        } else {
+                                            fs::remove_file(&relocation_target_in_parent).unwrap();
+                                        }
                                     }
-                                }
 
-                                fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                                    fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                                }
                             }
                         }
+
+                        let _ = checked_remove_dir_all(self, &temp_dir);
                     }
 
-                    let _ = checked_remove_dir_all(self, &temp_dir);
-                }
+                    let hyper_dir = HyperDir::read(&dir_converting);
+                    let mut video = Video::read_dir(self, &hyper_dir, collection.copy_inherited_options(), &site_mut);
 
-                let hyper_dir = HyperDir::read(&dir_converting);
-                let mut video = Video::read_dir(self, &hyper_dir, collection.copy_inherited_options(), &site_mut);
-
-                {
-                    let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
-                    // We only copy fields from the collection to the new video,
-                    // if the video was not initialized from a single video that
-                    // already existed in the collection.
-                    if collection.videos.is_empty() {
-                        // TODO: We could consider copying a collection banner to be the new video poster here
-                        if let Some(description) = &collection.description {
-                            video_mut.description = Some(description.clone());
-                        }
-                        if !collection.links.is_empty() {
-                            video_mut.links = collection.links.clone();
-                        }
-                        if let Some(title) = &collection.title {
-                            video_mut.title = Some(title.clone());
-                        }
-                    }
-
-                    // If the collection was offline, we ensure that the video
-                    // that was indirectly offline as its child, stays offline
-                    // when it replaces the collection
-                    if collection.offline_local() && !video_mut.offline_local() {
-                        video_mut.offline_local_set(true);
-                    }
-
-                    // If the collection was unlisted, we ensure that the video
-                    // that was indirectly unlisted as its child, stays unlisted
-                    // when it replaces the collection
-                    if collection.unlisted_local() && !video_mut.unlisted_local() {
-                        video_mut.unlisted_local_set(true);
-                    }
-                }
-
-                video.write_manifest(self);
-
-                self.update_from_filesystem(&dir_converting, &site_mut);
-            } else if let GetAnyResult::Playlist(playlist) = node {
-                if playlist.videos.len() > 1 {
-                    return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
-                }
-
-                let dir_converting = self.site_dir.join(playlist.site_path.filesystem_relative());
-
-                let manifest_path = dir_converting.join("playlist.eno");
-                let _ = fs::remove_file(&manifest_path);
-
-                // If a (single) video dir exists in the playlist, move every file/dir in it into the root,
-                // then delete it.
-                if let Some(video) = playlist.videos.first() {
-                    let temp_dir = dir_converting.join(nanoid());
-
-                    // Rename the video directory to unique temporary name, so we can copy
-                    // files/folders within without any possible name collisions with the
-                    // video directory name itself.
-                    fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
-
-                    if let Ok(dir_entries) = temp_dir.read_dir() {
-                        for dir_entry_result in dir_entries {
-                            if let Ok(dir_entry) = dir_entry_result {
-                                let relocation_target_in_parent = dir_converting.join(dir_entry.file_name());
-
-                                // If a file/dir with the same name exists in the parent directory, we delete the
-                                // one in the parent directory.
-                                if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
-                                    if metadata.file_type().is_dir() {
-                                        checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
-                                    } else {
-                                        fs::remove_file(&relocation_target_in_parent).unwrap();
-                                    }
-                                }
-
-                                fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                    {
+                        let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
+                        // We only copy fields from the collection to the new video,
+                        // if the video was not initialized from a single video that
+                        // already existed in the collection.
+                        if collection.videos.is_empty() {
+                            // TODO: We could consider copying a collection banner to be the new video poster here
+                            if let Some(description) = &collection.description {
+                                video_mut.description = Some(description.clone());
+                            }
+                            if !collection.links.is_empty() {
+                                video_mut.links = collection.links.clone();
+                            }
+                            if let Some(title) = &collection.title {
+                                video_mut.title = Some(title.clone());
                             }
                         }
+
+                        // If the collection was offline, we ensure that the video
+                        // that was indirectly offline as its child, stays offline
+                        // when it replaces the collection
+                        if collection.offline_local() && !video_mut.offline_local() {
+                            video_mut.offline_local_set(true);
+                        }
+
+                        // If the collection was unlisted, we ensure that the video
+                        // that was indirectly unlisted as its child, stays unlisted
+                        // when it replaces the collection
+                        if collection.unlisted_local() && !video_mut.unlisted_local() {
+                            video_mut.unlisted_local_set(true);
+                        }
                     }
 
-                    let _ = checked_remove_dir_all(self, &temp_dir);
+                    video.write_manifest(self);
+
+                    self.update_from_filesystem(&dir_converting, &site_mut);
+
+                    Ok(video)
                 }
-
-                let hyper_dir = HyperDir::read(&dir_converting);
-                let mut video = Video::read_dir(self, &hyper_dir, playlist.copy_inherited_options(), &site_mut);
-
-                {
-                    let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
-
-                    // We only copy fields from the playlist to the new video,
-                    // if the video was not initialized from a single video that
-                    // already existed in the playlist.
-                    if playlist.videos.is_empty() {
-                        // TODO: We could consider copying a playlist banner to be the new video poster here
-                        if let Some(description) = &playlist.description {
-                            video_mut.description = Some(description.clone());
-                        }
-                        if !playlist.links.is_empty() {
-                            video_mut.links = playlist.links.clone();
-                        }
-                        if let Some(title) = &playlist.title {
-                            video_mut.title = Some(title.clone());
-                        }
-                    }
-
-                    // If the playlist was offline, we ensure that the video
-                    // that was indirectly offline as its child, stays offline
-                    // when it replaces the playlist
-                    if playlist.offline_local() && !video_mut.offline_local() {
-                        video_mut.offline_local_set(true);
-                    }
-
-                    // If the playlist was unlisted, we ensure that the video
-                    // that was indirectly unlisted as its child, stays unlisted
-                    // when it replaces the playlist
-                    if playlist.unlisted_local() && !video_mut.unlisted_local() {
-                        video_mut.unlisted_local_set(true);
-                    }
+                GetAnyResult::None => {
+                    let language = self.get_editor_language();
+                    Err(language.translations.the_resource_xxx_was_not_found_message(site_path.normalized()))
                 }
+                GetAnyResult::Playlist(playlist) => {
+                    if playlist.videos.len() > 1 {
+                        return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
+                    }
 
-                video.write_manifest(self);
+                    let dir_converting = self.site_dir.join(playlist.site_path.filesystem_relative());
 
-                self.update_from_filesystem(&dir_converting, &site_mut);
+                    let manifest_path = dir_converting.join("playlist.eno");
+                    let _ = fs::remove_file(&manifest_path);
+
+                    // If a (single) video dir exists in the playlist, move every file/dir in it into the root,
+                    // then delete it.
+                    if let Some(video) = playlist.videos.first() {
+                        let temp_dir = dir_converting.join(nanoid());
+
+                        // Rename the video directory to unique temporary name, so we can copy
+                        // files/folders within without any possible name collisions with the
+                        // video directory name itself.
+                        fs::rename(self.site_dir.join(video.site_path.filesystem_relative()), &temp_dir).unwrap();
+
+                        if let Ok(dir_entries) = temp_dir.read_dir() {
+                            for dir_entry_result in dir_entries {
+                                if let Ok(dir_entry) = dir_entry_result {
+                                    let relocation_target_in_parent = dir_converting.join(dir_entry.file_name());
+
+                                    // If a file/dir with the same name exists in the parent directory, we delete the
+                                    // one in the parent directory.
+                                    if let Ok(metadata) = fs::metadata(&relocation_target_in_parent) {
+                                        if metadata.file_type().is_dir() {
+                                            checked_remove_dir_all(self, &relocation_target_in_parent).unwrap();
+                                        } else {
+                                            fs::remove_file(&relocation_target_in_parent).unwrap();
+                                        }
+                                    }
+
+                                    fs::rename(dir_entry.path(), &relocation_target_in_parent).unwrap();
+                                }
+                            }
+                        }
+
+                        let _ = checked_remove_dir_all(self, &temp_dir);
+                    }
+
+                    let hyper_dir = HyperDir::read(&dir_converting);
+                    let mut video = Video::read_dir(self, &hyper_dir, playlist.copy_inherited_options(), &site_mut);
+
+                    {
+                        let video_mut = Arc::<Video>::get_mut(&mut video).unwrap(); // always succeeds, single-owned at this point
+
+                        // We only copy fields from the playlist to the new video,
+                        // if the video was not initialized from a single video that
+                        // already existed in the playlist.
+                        if playlist.videos.is_empty() {
+                            // TODO: We could consider copying a playlist banner to be the new video poster here
+                            if let Some(description) = &playlist.description {
+                                video_mut.description = Some(description.clone());
+                            }
+                            if !playlist.links.is_empty() {
+                                video_mut.links = playlist.links.clone();
+                            }
+                            if let Some(title) = &playlist.title {
+                                video_mut.title = Some(title.clone());
+                            }
+                        }
+
+                        // If the playlist was offline, we ensure that the video
+                        // that was indirectly offline as its child, stays offline
+                        // when it replaces the playlist
+                        if playlist.offline_local() && !video_mut.offline_local() {
+                            video_mut.offline_local_set(true);
+                        }
+
+                        // If the playlist was unlisted, we ensure that the video
+                        // that was indirectly unlisted as its child, stays unlisted
+                        // when it replaces the playlist
+                        if playlist.unlisted_local() && !video_mut.unlisted_local() {
+                            video_mut.unlisted_local_set(true);
+                        }
+                    }
+
+                    video.write_manifest(self);
+
+                    self.update_from_filesystem(&dir_converting, &site_mut);
+
+                    Ok(video)
+                }
+                GetAnyResult::Video(video) => Ok(video)
             }
         }
-
-        Ok(())
     }
 
-    pub fn delete_collection(&self, site_path: &SitePath) -> bool {
+    /// If succeeding, the resulting Ok() contains the parent of the deleted
+    /// collection (if there is one).
+    pub fn delete_collection(&self, site_path: &SitePath) -> Result<Option<Arc<Collection>>, ()> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
@@ -884,22 +951,27 @@ impl Context {
                 collection.unpersist(self);
                 site_mut.content = SiteContent::Empty;
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(None);
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if collection_mut.delete_collection(self, site_path) {
+            if let Ok(deeper_parent) = collection_mut.delete_collection(self, site_path) {
                 *collection = Arc::new(collection_mut);
+                let parent = deeper_parent.or(Some(Arc::clone(collection)));
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(parent);
             }
         }
 
-        false
+        Err(())
     }
 
-    pub fn delete_playlist(&self, site_path: &SitePath) -> bool {
+    /// If succeeding, the resulting Ok() contains the parent of the deleted
+    /// playlist (if there is one).
+    pub fn delete_playlist(&self, site_path: &SitePath) -> Result<Option<Arc<Collection>>, ()> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
@@ -907,22 +979,27 @@ impl Context {
                 playlist.unpersist(self);
                 site_mut.content = SiteContent::Empty;
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(None);
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if collection_mut.delete_playlist(self, site_path) {
+            if let Ok(deeper_parent) = collection_mut.delete_playlist(self, site_path) {
                 *collection = Arc::new(collection_mut);
+                let parent = deeper_parent.or(Some(Arc::clone(collection)));
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(parent);
             }
         }
 
-        false
+        Err(())
     }
 
-    pub fn delete_video(&self, site_path: &SitePath) -> bool {
+    /// If succeeding, the resulting Ok() contains the parent of the deleted
+    /// video (if there is one).
+    pub fn delete_video(&self, site_path: &SitePath) -> Result<Option<VideoParent>, ()> {
         let mut site_mut = self.get_site_mut();
 
         if site_path.is_root_path() {
@@ -930,27 +1007,32 @@ impl Context {
                 video.unpersist(self);
                 site_mut.content = SiteContent::Empty;
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(None);
             }
         } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
             let mut playlist_mut = (**playlist).clone();
 
             if playlist_mut.delete_video(self, site_path) {
                 *playlist = Arc::new(playlist_mut);
+                let parent = Some(VideoParent::Playlist(Arc::clone(playlist)));
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(parent);
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if collection_mut.delete_video(self, site_path) {
+            if let Ok(deeper_parent) = collection_mut.delete_video(self, site_path) {
                 *collection = Arc::new(collection_mut);
+                let parent = deeper_parent.or(Some(VideoParent::Collection(Arc::clone(collection))));
                 self.replace_site(site_mut);
-                return true;
+
+                return Ok(parent);
             }
         }
 
-        false
+        Err(())
     }
 
 
@@ -1123,10 +1205,10 @@ impl Context {
                 job.assigned_at.is_none()
             })
             .reduce(|selected, iterated|
-                match iterated.cmp_priority(selected) { 
+                match iterated.cmp_priority(selected) {
                     Ordering::Greater => iterated,
                     _ => selected
-                } 
+                }
             )
             .map(|job| {
                 job.assigned_at = Some(SystemTime::now());

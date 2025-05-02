@@ -13,6 +13,7 @@ use crate::{
     PlaylistUpdate,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -44,7 +45,7 @@ pub async fn delete_link(
 
     match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::Updated { playlist_updated, .. } => {
-            let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
+            let redirect_url = routes::playlist_edit(&playlist_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         PlaylistUpdate::NotFound => {

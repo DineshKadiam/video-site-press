@@ -11,6 +11,7 @@ use crate::{
     JobKind,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 pub async fn random_poster(
@@ -26,7 +27,7 @@ pub async fn random_poster(
             };
             context.push_job_queue(job_kind);
 
-            let redirect_url = format!("/video/{}", video.site_path.normalized());
+            let redirect_url = routes::video_media(&video);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         None => {

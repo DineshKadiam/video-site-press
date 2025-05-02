@@ -21,6 +21,7 @@ use crate::{
     JobKind,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
 use crate::util::{nanoid, supported_image_extension};
 
@@ -72,10 +73,14 @@ pub async fn upload_banner(
                     CollectionUpdate::Updated { collection_updated, .. } => {
                         let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection_updated));
                         context.push_job_queue(job_kind);
+
+                        let redirect_url = routes::collection_edit(&collection_updated);
+                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
                     }
                     CollectionUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
+
                         return Ok(Either::Right(http_response));
                     }
                 }
@@ -83,7 +88,5 @@ pub async fn upload_banner(
         }
     }
 
-    let redirect_url = format!("/collection/{}", site_path.normalized());
-
-    Ok(Either::Left(Redirect::to(redirect_url).see_other()))
+    unreachable!()
 }

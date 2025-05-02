@@ -16,6 +16,7 @@ use crate::{
     SitePath,
     VideoOrder
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
@@ -103,7 +104,7 @@ pub async fn update(
         match context.update_collection(mutation, &site_path) {
             CollectionUpdate::Updated { collection_updated, .. } => {
                 collection_updated.write_manifest(&context);
-                let redirect_url = format!("/collection/{}", &collection_updated.site_path.normalized());
+                let redirect_url = routes::collection_edit(&collection_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {

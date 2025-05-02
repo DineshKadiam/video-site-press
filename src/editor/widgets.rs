@@ -14,6 +14,8 @@ use crate::{
     SitePath,
     Translations
 };
+use crate::editor::Location;
+use crate::editor::routes;
 use crate::icons;
 use crate::util::string_from_pathbuf;
 
@@ -33,12 +35,14 @@ pub fn error_page(
     message: &str
 ) -> HttpResponse {
     let t_back = language.translations.back;
+
+    let dashboard_url = routes::DASHBOARD;
     let body = formatdoc!(r#"
         <div>
             {message}
         </div>
 
-        <a href="/">{t_back}</a>
+        <a href="{dashboard_url}">{t_back}</a>
     "#);
 
     let site = &context.get_site();
@@ -48,8 +52,8 @@ pub fn error_page(
         &body,
         context,
         language,
+        Location::AuxiliaryPage,
         site,
-        None,
         t_error
     );
 
@@ -65,12 +69,14 @@ pub fn not_found(
 ) -> HttpResponse {
     let t_back = language.translations.back;
     let t_message = language.translations.the_resource_xxx_was_not_found_message(site_path.normalized());
+
+    let dashboard_url = routes::DASHBOARD;
     let body = formatdoc!(r#"
         <div>
             {t_message}
         </div>
 
-        <a href="/">{t_back}</a>
+        <a href="{dashboard_url}">{t_back}</a>
     "#);
 
     let site = &context.get_site();
@@ -80,8 +86,8 @@ pub fn not_found(
         &body,
         context,
         language,
+        Location::AuxiliaryPage,
         site,
-        None,
         t_resource_not_found
     );
 

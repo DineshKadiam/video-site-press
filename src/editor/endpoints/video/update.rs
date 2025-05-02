@@ -15,10 +15,11 @@ use crate::{
     SitePath,
     Video
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
-use super::VideoFormFeedback;
+use super::UpdateFormFeedback;
 
 #[derive(Deserialize)]
 pub struct VideoUpdateForm {
@@ -98,7 +99,7 @@ pub async fn update(
             None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
-        let form_feedback = VideoFormFeedback::Update {
+        let form_feedback = UpdateFormFeedback {
             copy_link,
             description: description_trimmed,
             download,
@@ -134,7 +135,7 @@ pub async fn update(
             Err(()) => return Either::Right(not_found(&context, &language, &site_path))
         };
 
-        let redirect_url = format!("/video/{}", video.site_path.normalized());
+        let redirect_url = routes::video_edit(&video);
         Either::Left(Redirect::to(redirect_url).see_other())
     }
 }

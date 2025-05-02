@@ -9,6 +9,7 @@ use actix_web::web::Data;
 use indoc::formatdoc;
 
 use crate::Context;
+use crate::editor::Location;
 use crate::editor::widgets::layout;
 
 pub async fn deployment(context: Data<Arc<Context>>) -> HttpResponse {
@@ -50,8 +51,8 @@ pub async fn deployment(context: Data<Arc<Context>>) -> HttpResponse {
         &body,
         &context,
         &language,
+        Location::AuxiliaryPage,
         &site,
-        None,
         site.title()
     );
 

@@ -15,11 +15,12 @@ use crate::{
     PlaylistUpdate,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
-use super::edit_page;
-use super::PlaylistFormFeedback;
+use super::dangerous_actions::dangerous_actions_page;
+use super::dangerous_actions::MoveFormFeedback;
 
 #[derive(Deserialize)]
 pub struct PlaylistMoveForm {
@@ -63,7 +64,7 @@ pub async fn r#move(
 
         match context.update_playlist(mutation, &site_path) {
             PlaylistUpdate::Updated { playlist_updated, .. } => {
-                let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
+                let redirect_url = routes::playlist_dangerous_actions(&playlist_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             PlaylistUpdate::NotFound => {
@@ -76,12 +77,12 @@ pub async fn r#move(
             None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
-        let form_feedback = PlaylistFormFeedback::Move {
+        let form_feedback = MoveFormFeedback {
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &playlist)
+            dangerous_actions_page(&context, Some(form_feedback), &language, &playlist)
         )
     }
 }

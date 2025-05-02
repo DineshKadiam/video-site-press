@@ -11,6 +11,7 @@ use chrono::offset::Local;
 use indoc::formatdoc;
 
 use crate::Context;
+use crate::editor::Location;
 use crate::editor::widgets::layout;
 use crate::util::precise_duration;
 
@@ -137,8 +138,8 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
         &body,
         &context,
         &language,
+        Location::AuxiliaryPage,
         &site,
-        None,
         site.title()
     );
 

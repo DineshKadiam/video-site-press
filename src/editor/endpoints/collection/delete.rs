@@ -7,22 +7,22 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
 use crate::{Context, SitePath};
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 pub async fn delete(
     context: Data<Arc<Context>>,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    if !context.delete_collection(&site_path) {
-        let language = context.get_editor_language();
-        return Either::Right(not_found(&context, &language, &site_path))
-    };
-
-    let redirect_url = if site_path.is_root_path() {
-        String::from("/")
-    } else {
-        format!("/collection/{}", site_path.parent_site_path_unchecked().normalized())
-    };
-
-    Either::Left(Redirect::to(redirect_url).see_other())
+    match context.delete_collection(&site_path) {
+        Ok(Some(parent_collection)) => {
+            let redirect_url = routes::collection_edit(&parent_collection);
+            Either::Left(Redirect::to(redirect_url).see_other())
+        }
+        Ok(None) => Either::Left(Redirect::to(routes::DASHBOARD).see_other()),
+        Err(()) => {
+            let language = context.get_editor_language();
+            Either::Right(not_found(&context, &language, &site_path))
+        }
+    }
 }

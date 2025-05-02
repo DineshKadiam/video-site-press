@@ -28,6 +28,7 @@ use crate::{
     Video,
     VideoOrder
 };
+use crate::context::VideoParent;
 use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::checked_remove_dir_all;
 
@@ -515,67 +516,82 @@ impl Collection {
         self.published_subcollections().any(|subcollection| subcollection.copy_link_requested())
     }
 
+    /// If the collection that is successfully deleted is a direct
+    /// subcollection of this one, `Ok(None)` is returned, otherwise the
+    /// deeper parent collection of the deleted collection is returned
+    /// as `Ok(Some(deeper_parent))`.
     pub fn delete_collection(
         &mut self,
         context: &Context,
         site_path: &SitePath
-    ) -> bool {
+    ) -> Result<Option<Arc<Collection>>, ()> {
         if let Some(subcollection) = self.subcollections
             .iter()
             .position(|subcollection| subcollection.site_path == *site_path)
             .map(|index| self.subcollections.swap_remove(index)) {
             subcollection.unpersist(context);
-            return true;
+
+            return Ok(None);
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            if subcollection_mut.delete_collection(context, site_path) {
+            if let Ok(deeper_parent) = subcollection_mut.delete_collection(context, site_path) {
                 *subcollection = Arc::new(subcollection_mut);
-                return true;
+                return Ok(deeper_parent.or(Some(Arc::clone(subcollection))));
             }
         }
 
-        false
+        Err(())
     }
 
+    /// If the playlist that is successfully deleted is directly
+    /// contained in this collection, `Ok(None)` is returned, otherwise the
+    /// deeper parent collection of the deleted playlist is returned
+    /// as `Ok(Some(deeper_parent))`.
     pub fn delete_playlist(
         &mut self,
         context: &Context,
         site_path: &SitePath
-    ) -> bool {
+    ) -> Result<Option<Arc<Collection>>, ()> {
         if let Some(playlist) = self.playlists
             .iter()
             .position(|playlist| playlist.site_path == *site_path)
             .map(|index| self.playlists.swap_remove(index)) {
             playlist.unpersist(context);
-            return true;
+
+            return Ok(None);
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            if subcollection_mut.delete_playlist(context, site_path) {
+            if let Ok(deeper_parent) = subcollection_mut.delete_playlist(context, site_path) {
                 *subcollection = Arc::new(subcollection_mut);
-                return true;
+                return Ok(deeper_parent.or(Some(Arc::clone(subcollection))));
             }
         }
 
-        false
+        Err(())
     }
 
+    /// If the video that is successfully deleted is directly
+    /// contained in this collection, `Ok(None)` is returned, otherwise the
+    /// deeper parent of the deleted video is returned
+    /// as `Ok(Some(deeper_parent))`.
     pub fn delete_video(
         &mut self,
         context: &Context,
         site_path: &SitePath
-    ) -> bool {
+    ) -> Result<Option<VideoParent>, ()> {
         if let Some(video) = self.videos
             .iter()
             .position(|video| video.site_path == *site_path)
             .map(|index| self.videos.swap_remove(index)) {
             video.unpersist(context);
-            return true;
+
+            return Ok(None);
         } else if let Some(playlist) = self.playlists
             .iter_mut()
             .find(|playlist| site_path.starts_with(&playlist.site_path)) {
@@ -583,20 +599,20 @@ impl Collection {
 
             if playlist_mut.delete_video(context, site_path) {
                 *playlist = Arc::new(playlist_mut);
-                return true;
+                return Ok(Some(VideoParent::Playlist(Arc::clone(playlist))));
             }
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            if subcollection_mut.delete_video(context, site_path) {
+            if let Ok(deeper_parent) = subcollection_mut.delete_video(context, site_path) {
                 *subcollection = Arc::new(subcollection_mut);
-                return true;
+                return Ok(deeper_parent.or(Some(VideoParent::Collection(Arc::clone(subcollection)))));
             }
         }
 
-        false
+        Err(())
     }
 
     /// Get the download setting resolved in the context of the site tree

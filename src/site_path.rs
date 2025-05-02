@@ -112,7 +112,7 @@ impl SitePath {
 		}
 	}
 
-	fn root_path() -> SitePath {
+	pub fn root_path() -> SitePath {
 		SitePath {
 			normalized: String::new()
 		}

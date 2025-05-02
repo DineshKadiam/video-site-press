@@ -6,26 +6,10 @@ use std::sync::Arc;
 use actix_web::HttpResponse;
 use actix_web::web::{Data, Either, Redirect};
 
-use crate::{Context, SiteContent};
+use crate::Context;
 use crate::build::perform_build;
 use crate::deploy::{config_probe, perform_deploy};
 use crate::editor::widgets::error_page;
-
-pub async fn configure(context: Data<Arc<Context>>) -> Redirect {
-    let site = context.get_site();
-
-    let redirect_url = match site.content {
-        SiteContent::Collection(_) => "/collection/#edit-site",
-        SiteContent::Playlist(_) => "/playlist/#edit-site",
-        SiteContent::Video(_) => "/video/#edit-site",
-        // TODO: Is there any point to implementing a site form for an uninitialized site?
-        //       (at this point offering a link to configure deployment, when there is no
-        //       way to configure anything, is anyhow definitely wrong).
-        _ => "/"
-    };
-
-    Redirect::to(redirect_url).see_other()
-}
 
 pub async fn deploy(context: Data<Arc<Context>>) -> Either<Redirect, HttpResponse> {
     let language = context.get_editor_language();

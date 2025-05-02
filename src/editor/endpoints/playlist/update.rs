@@ -16,6 +16,7 @@ use crate::{
     SitePath,
     VideoOrder
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 use super::edit_page;
@@ -104,7 +105,7 @@ pub async fn update(
         match context.update_playlist(mutation, &site_path) {
             PlaylistUpdate::Updated { playlist_updated, .. } => {
                 playlist_updated.write_manifest(&context);
-                let redirect_url = format!("/playlist/{}", playlist_updated.site_path.normalized());
+                let redirect_url = routes::playlist_edit(&playlist_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             PlaylistUpdate::NotFound => {

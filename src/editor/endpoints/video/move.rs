@@ -14,11 +14,12 @@ use crate::{
     SitePath,
     Video
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
-use super::edit_page;
-use super::VideoFormFeedback;
+use super::dangerous_actions::dangerous_actions_page;
+use super::dangerous_actions::MoveFormFeedback;
 
 #[derive(Deserialize)]
 pub struct VideoMoveForm {
@@ -56,25 +57,25 @@ pub async fn r#move(
             video.site_path = new_path;
         };
 
-        let video = match context.update_video(mutation, &site_path) {
-            Ok(video) => video,
-            Err(()) => return Either::Right(not_found(&context, &language, &site_path))
-        };
-
-        let redirect_url = format!("/video/{}", video.site_path.normalized());
-        Either::Left(Redirect::to(redirect_url).see_other())
+        match context.update_video(mutation, &site_path) {
+            Ok(video) => {
+                let redirect_url = routes::video_dangerous_actions(&video);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+            Err(()) => Either::Right(not_found(&context, &language, &site_path))
+        }
     } else {
         let video = match context.get_video(&site_path) {
             Some(video) => video,
             None => return Either::Right(not_found(&context, &language, &site_path))
         };
 
-        let form_feedback = VideoFormFeedback::Move {
+        let form_feedback = MoveFormFeedback {
             slug: Field::validated(slug_trimmed, slug_error)
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &video)
+            dangerous_actions_page(&context, Some(form_feedback), &language, &video)
         )
     }
 }

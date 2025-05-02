@@ -8,9 +8,10 @@ use crate::{
     Context,
     Language,
     Site,
-    SitePath,
     Translations
 };
+use crate::editor::Location;
+use crate::editor::routes;
 use crate::icons;
 use crate::util::{
     html_escape_outside_attribute,
@@ -26,7 +27,7 @@ fn controls(
     translations: &Translations
 ) -> String {
     let t_configure_deployment = translations.configure_deployment;
-    let configure_icon = icons::configure(translations.configure);
+    let configure_icon = icons::configure(Some(translations.configure));
     let deployment_icon = icons::deployment(translations.deployment);
     let deployment_button = match site.deploy_config.complete() {
         true => {
@@ -46,9 +47,11 @@ fn controls(
                 };
                 let t_deploy = translations.deploy;
                 let t_really_deploy = translations.really_deploy;
+
+                let deploy_action = routes::DEPLOY;
                 formatdoc!(r#"
                     <form
-                        action="/deploy"
+                        action="{deploy_action}"
                         data-confirm
                         data-confirm-label="{t_deploy}"
                         data-confirm-text="{t_really_deploy}{base_url}"
@@ -59,8 +62,9 @@ fn controls(
             }
         }
         false => {
+            let site_edit_url = routes::SITE_EDIT;
             formatdoc!(r#"
-                <a href="/configure-deployment">
+                <a href="{site_edit_url}">
                     {configure_icon} {t_configure_deployment}
                 </a>
             "#)
@@ -119,11 +123,11 @@ fn controls(
         </form>
     "#);
 
-    let storage_icon = icons::storage(translations.storage_usage);
+    let storage_icon = icons::storage(Some(translations.storage_usage));
     let storage_usage = human_size(site.storage_usage());
     let storage = format!(r#"<a href="/">{storage_icon} {storage_usage}</a>"#);
 
-    let logo_icon = icons::logo(translations.hyper8_logo);
+    let logo_icon = icons::logo(Some("Hyper 8"));
     let t_about = translations.about;
     let about = format!(r#"<button id="toggle-splash">{logo_icon} {t_about}</button>"#);
 
@@ -147,22 +151,20 @@ fn controls(
     "#)
 }
 
-/// When path is Some() that signifies we are viewing some node in the site tree.
-/// If it's None we are on some auxillary page such as the dashboard or 404 page.
 pub fn layout(
     body: &str,
     context: &Context,
     language: &Language,
+    location: Location,
     site: &Site,
-    site_path: Option<&SitePath>,
     title: &str
 ) -> String {
     let translations = &language.translations;
     let (breadcrumbs, tree) = tree_view(
         context,
+        location,
         site,
         &context.site_dir,
-        site_path,
         translations
     );
 

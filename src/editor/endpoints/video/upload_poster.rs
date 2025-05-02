@@ -20,11 +20,12 @@ use crate::{
     SitePath,
     Video
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::{nanoid, supported_image_extension};
 
-use super::edit_page;
-use super::VideoFormFeedback;
+use super::media::media_page;
+use super::media::UploadPosterFormFeedback;
 
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
@@ -40,8 +41,8 @@ pub async fn upload_poster(
                     match context.get_video(&site_path) {
                         Some(video) => {
                             let error = format!("Unsupported file extension in {filename}");
-                            let form_feedback = VideoFormFeedback::UploadPoster { error };
-                            let http_response = edit_page(&context, Some(form_feedback), &language, &video);
+                            let form_feedback = UploadPosterFormFeedback { error };
+                            let http_response = media_page(&context, Some(form_feedback), &language, &video);
                             return Ok(Either::Right(http_response))
                         }
                         None => {
@@ -85,24 +86,24 @@ pub async fn upload_poster(
                     video.write_manifest(&context);
                 };
 
-                let video = match context.update_video(mutation, &site_path) {
-                    Ok(video) => video,
+                match context.update_video(mutation, &site_path) {
+                    Ok(video) => {
+                        let site = context.get_site();
+                        let job_kind = JobKind::VideoFastTasks {
+                            poster_aspect: site.poster_aspect.numeric(),
+                            video: Arc::clone(&video)
+                        };
+                        context.push_job_queue(job_kind);
+
+                        let redirect_url = routes::video_media(&video);
+                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
+                    }
                     Err(()) => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
                     }
-                };
-
-                let site = context.get_site();
-                let job_kind = JobKind::VideoFastTasks {
-                    poster_aspect: site.poster_aspect.numeric(),
-                    video: Arc::clone(&video)
-                };
-                context.push_job_queue(job_kind);
-
-                let redirect_url = format!("/video/{}", site_path.normalized());
-                return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
+                }
             }
         }
     }

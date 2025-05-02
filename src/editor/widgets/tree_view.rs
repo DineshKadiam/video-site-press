@@ -16,6 +16,8 @@ use crate::{
     TreeViewOrder,
     Video
 };
+use crate::editor::{Location, Subpage};
+use crate::editor::routes;
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
@@ -25,6 +27,7 @@ struct Visibility {
     unlisted_inherited: bool,
     unlisted_local: bool
 }
+
 
 impl Visibility {
     pub fn from_collection(collection: &Collection) -> Visibility {
@@ -80,54 +83,57 @@ impl Visibility {
     }
 }
 
-fn collection_tree(
+/// For the root node `site_dir` is displayed instead of the slug, and it must
+/// be passed there too, otherwise this panics.
+fn collection_node(
     breadcrumbs: &mut Vec<String>,
     collection: &Collection,
-    site_path: Option<&SitePath>,
+    location: &Location,
+    site: &Site,
+    site_dir: Option<&str>,
     translations: &Translations,
-    tree_view_order: &TreeViewOrder,
+    tree_view_order: &TreeViewOrder
 ) -> String {
+    let edit_url = routes::collection_edit(collection);
+
+    if location.intersects(&collection.site_path) {
+        let breadcrumb_title = collection.title_or_slug_or_generic_label(translations);
+        let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
+        breadcrumbs.push(format!(r#"<a href="{edit_url}">{e_breadcrumb_title}</a>"#));
+    }
+
+    let active = location.active_subpage(&collection.site_path).is_some();
     let collection_icon = icons::collection(translations.collection);
-    let playlist_icon = icons::playlist(translations.playlist);
-    let video_icon = icons::video(translations.video);
+    let collection_visibility = Visibility::from_collection(collection);
+
+    let has_errors = !collection.errors.is_empty() ||
+        (collection.site_path.is_root_path() && !site.errors.is_empty());
+
+    let node = tree_node(
+        active,
+        has_errors,
+        &edit_url,
+        &collection_icon,
+        site_dir.unwrap_or_else(|| collection.slug_unchecked()),
+        collection.title.as_deref(),
+        translations,
+        &collection_visibility
+    );
+
     let subcollections = collection.subcollections_in_tree_view_order(tree_view_order)
         .iter()
         .map(|collection| {
-            let collection_visibility = Visibility::from_collection(collection);
-
-            let active = site_path.is_some_and(|site_path| *site_path == collection.site_path);
-            let href = format!("/collection/{}", collection.site_path.normalized());
-            let node = tree_node(
-                active,
-                &collection.errors,
-                &href,
-                &collection_icon,
-                collection.slug_unchecked(),
-                collection.title.as_deref(),
-                translations,
-                &collection_visibility
-            );
-
-            if !active && site_path.is_some_and(|site_path| site_path.starts_with(&collection.site_path)) {
-                let label = collection.title.as_deref().unwrap_or_else(|| collection.slug_unchecked());
-                let e_label = html_escape_outside_attribute(label);
-                breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
-            }
-
-            let collection_content = collection_tree(
+            let node = collection_node(
                 breadcrumbs,
                 collection,
-                site_path,
+                &location,
+                site,
+                None,
                 translations,
-                tree_view_order,
+                tree_view_order
             );
 
-            formatdoc!(r#"
-                <li>
-                    {node}
-                    {collection_content}
-                </li>
-            "#)
+            format!("<li>{node}</li>")
         })
         .collect::<Vec<String>>()
         .join("");
@@ -135,70 +141,17 @@ fn collection_tree(
     let playlists = collection.playlists_in_tree_view_order(tree_view_order)
         .iter()
         .map(|playlist| {
-            let playlist_visibility = Visibility::from_playlist(playlist);
-
-            let active = site_path.is_some_and(|site_path| *site_path == playlist.site_path);
-            let href = format!("/playlist/{}", playlist.site_path.normalized());
-            let node = tree_node(
-                active,
-                &playlist.errors,
-                &href,
-                &playlist_icon,
-                playlist.slug_unchecked(),
-                playlist.title.as_deref(),
+            let node = playlist_node(
+                breadcrumbs,
+                &location,
+                playlist,
+                site,
+                None,
                 translations,
-                &playlist_visibility
+                tree_view_order
             );
 
-            if !active && site_path.is_some_and(|site_path| site_path.starts_with(&playlist.site_path)) {
-                let label = playlist.title.as_deref().unwrap_or_else(|| playlist.slug_unchecked());
-                let e_label = html_escape_outside_attribute(label);
-                breadcrumbs.push(format!(r#"<a href="{href}">{e_label}</a>"#));
-            }
-
-            let children = if playlist.videos.is_empty() {
-                String::new()
-            } else {
-                let lis = playlist.videos_in_tree_view_order(tree_view_order)
-                    .iter()
-                    .map(|video| {
-                        let video_visibility = Visibility::from_video(video);
-
-                        let active = site_path.is_some_and(|site_path| *site_path == video.site_path);
-                        let href = format!("/video/{}", video.site_path.normalized());
-                        let node = tree_node(
-                            active,
-                            &video.errors,
-                            &href,
-                            &video_icon,
-                            video.slug_unchecked(),
-                            video.title.as_deref(),
-                            translations,
-                            &video_visibility
-                        );
-
-                        formatdoc!(r#"
-                            <li>
-                                {node}
-                            </li>
-                        "#)
-                    })
-                    .collect::<Vec<String>>()
-                    .join("");
-
-                formatdoc!(r#"
-                    <ul>
-                        {lis}
-                    </ul>
-                "#)
-            };
-
-            formatdoc!(r#"
-                <li>
-                    {node}
-                    {children}
-                </li>
-            "#)
+            format!("<li>{node}</li>")
         })
         .collect::<Vec<String>>()
         .join("");
@@ -206,31 +159,70 @@ fn collection_tree(
     let videos = collection.videos_in_tree_view_order(tree_view_order)
         .iter()
         .map(|video| {
-            let video_visibility = Visibility::from_video(video);
-
-            let active = site_path.is_some_and(|site_path| *site_path == video.site_path);
-            let href = format!("/video/{}", video.site_path.normalized());
-            let node = tree_node(
-                active,
-                &video.errors,
-                &href,
-                &video_icon,
-                video.slug_unchecked(),
-                video.title.as_deref(),
+            let node = video_node(
+                breadcrumbs,
+                location,
+                site,
+                None,
                 translations,
-                &video_visibility
+                video
             );
 
-            formatdoc!(r#"
-                <li>
-                    {node}
-                </li>
-            "#)
+            format!("<li>{node}</li>")
         })
         .collect::<Vec<String>>()
         .join("");
 
+    let node_with_subpages = if let Some(subpage) = location.active_subpage(&collection.site_path) {
+        let depth = edit_url.split('/').count() as f32 - 2.5;
+        let padding_left_rem = 0.4 + depth * 1.4;
+        let padding_left = format!("{}rem", padding_left_rem);
+
+        let dangerous_actions_url = routes::collection_dangerous_actions(collection);
+
+        let t_dangerous_actions = translations.dangerous_actions;
+        let t_general = translations.general;
+
+        let danger_icon = icons::DANGER;
+        let general_icon = icons::configure(None);
+
+        let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
+        let general_active = if *subpage == Subpage::Edit { "active" } else { "" };
+
+        let site_settings = if collection.site_path.is_root_path() {
+            let logo = icons::logo(None);
+            let t_site_settings = translations.site_settings;
+            let site_settings_url = routes::SITE_EDIT;
+            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
+            formatdoc!(r#"
+                <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
+                    {logo} {t_site_settings}
+                </a>
+            "#)
+        } else {
+            String::new()
+        };
+
+        formatdoc!(r#"
+            <div class="active">
+                {node}
+                <div class="subpages">
+                    <a class="{general_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
+                        {general_icon} {t_general}
+                    </a>
+                    {site_settings}
+                    <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
+                        {danger_icon} {t_dangerous_actions}
+                    </a>
+                </div>
+            </div>
+        "#)
+    } else {
+        node
+    };
+
     formatdoc!(r#"
+        {node_with_subpages}
         <ul>
             {subcollections}
             {playlists}
@@ -239,69 +231,158 @@ fn collection_tree(
     "#)
 }
 
+/// For the root node `site_dir` is displayed instead of the slug, and it must
+/// be passed there too, otherwise this panics.
+fn playlist_node(
+    breadcrumbs: &mut Vec<String>,
+    location: &Location,
+    playlist: &Playlist,
+    site: &Site,
+    site_dir: Option<&str>,
+    translations: &Translations,
+    tree_view_order: &TreeViewOrder
+) -> String {
+    let edit_url = routes::playlist_edit(playlist);
+
+    if location.intersects(&playlist.site_path) {
+        let breadcrumb_title = playlist.title_or_slug_or_generic_label(translations);
+        let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
+        breadcrumbs.push(format!(r#"<a href="{edit_url}">{e_breadcrumb_title}</a>"#));
+    }
+
+    let playlist_icon = icons::playlist(translations.playlist);
+    let playlist_visibility = Visibility::from_playlist(playlist);
+
+    let has_errors = !playlist.errors.is_empty() ||
+        (playlist.site_path.is_root_path() && !site.errors.is_empty());
+
+    let node = tree_node(
+        false,
+        has_errors,
+        &edit_url,
+        &playlist_icon,
+        site_dir.unwrap_or_else(|| playlist.slug_unchecked()),
+        playlist.title.as_deref(),
+        translations,
+        &playlist_visibility
+    );
+
+    let node_with_subpages = if let Some(subpage) = location.active_subpage(&playlist.site_path) {
+        let depth = edit_url.split('/').count() as f32 - 2.5;
+        let padding_left_rem = 0.4 + depth * 1.4;
+        let padding_left = format!("{}rem", padding_left_rem);
+
+        let dangerous_actions_url = routes::playlist_dangerous_actions(playlist);
+
+        let t_dangerous_actions = translations.dangerous_actions;
+        let t_general = translations.general;
+
+        let danger_icon = icons::DANGER;
+        let general_icon = icons::configure(None);
+
+        let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
+        let general_active = if *subpage == Subpage::Edit { "active" } else { "" };
+
+        let site_settings = if playlist.site_path.is_root_path() {
+            let logo = icons::logo(None);
+            let t_site_settings = translations.site_settings;
+            let site_settings_url = routes::SITE_EDIT;
+            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
+            formatdoc!(r#"
+                <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
+                    {logo} {t_site_settings}
+                </a>
+            "#)
+        } else {
+            String::new()
+        };
+
+        formatdoc!(r#"
+            <div class="active">
+                {node}
+                <div class="subpages">
+                    <a class="{general_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
+                        {general_icon} {t_general}
+                    </a>
+                    {site_settings}
+                    <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
+                        {danger_icon} {t_dangerous_actions}
+                    </a>
+                </div>
+            </div>
+        "#)
+    } else {
+        node
+    };
+
+    if playlist.videos.is_empty() {
+        node_with_subpages
+    } else {
+        let li_items = playlist.videos_in_tree_view_order(tree_view_order)
+            .iter()
+            .map(|video| {
+                let node = video_node(
+                    breadcrumbs,
+                    location,
+                    site,
+                    None,
+                    translations,
+                    video
+                );
+
+                format!("<li>{node}</li>")
+            })
+            .collect::<Vec<String>>()
+            .join("");
+
+        formatdoc!("
+            {node_with_subpages}
+            <ul>{li_items}</ul>
+        ")
+    }
+}
+
 pub fn tree_view(
     context: &Context,
+    location: Location,
     site: &Site,
     site_dir: &Path,
-    site_path: Option<&SitePath>,
     translations: &Translations
 ) -> (String, String) {
     let mut breadcrumbs = Vec::new();
 
-    let root_active = site_path.is_some_and(|site_path| site_path.is_root_path());
     let root_dir = site_dir.file_name().unwrap().to_string_lossy();
     let site_dir = &site_dir.to_string_lossy();
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
-            let t_collection = translations.collection;
-
-            if site_path.is_some() && !root_active {
-                let breadcrumb_title = collection.title.as_deref().unwrap_or(t_collection);
-                let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-                breadcrumbs.push(format!(r#"<a href="/collection/">{e_breadcrumb_title}</a>"#));
-            }
-
             let tree_view_order = context.get_editor_tree_view_order();
-
-            let collection_content = collection_tree(
+            collection_node(
                 &mut breadcrumbs,
                 collection,
-                site_path,
+                &location,
+                site,
+                Some(site_dir),
                 translations,
-                &tree_view_order,
-            );
-
-            let collection_icon = icons::collection(t_collection);
-            let collection_visibility = Visibility::from_collection(collection);
-            let errors = if collection.errors.is_empty() { &site.errors } else { &collection.errors };
-            let node = tree_node(
-                root_active,
-                errors,
-                "/collection/",
-                &collection_icon,
-                site_dir,
-                collection.title.as_deref(),
-                translations,
-                &collection_visibility
-            );
-
-            formatdoc!(r#"
-                {node}
-                {collection_content}
-            "#)
+                &tree_view_order
+            )
         }
         SiteContent::Empty => {
+            let dashboard_url = routes::DASHBOARD;
+
             let t_empty_site = translations.empty_site;
             let collection_icon = icons::disk(t_empty_site);
-            if site_path.is_some() {
-                breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
+
+            let active = location.active_subpage(&SitePath::root_path()).is_some();
+
+            if active {
+                breadcrumbs.push(format!(r#"<a href="{dashboard_url}">{root_dir}</a>"#));
             }
 
             tree_node(
-                root_active,
-                &Vec::new(),
-                "/",
+                active,
+                false,
+                dashboard_url,
                 &collection_icon,
                 site_dir,
                 Some(t_empty_site),
@@ -310,16 +391,21 @@ pub fn tree_view(
             )
         }
         SiteContent::Invalid => {
+            let dashboard_url = routes::DASHBOARD;
+
             let t_invalid_site = translations.invalid_site;
-            let collection_icon = icons::configure(t_invalid_site);
-            if site_path.is_some() {
-                breadcrumbs.push(format!(r#"<a href="/">{root_dir}</a>"#));
+            let collection_icon = icons::configure(Some(t_invalid_site));
+
+            let active = location.active_subpage(&SitePath::root_path()).is_some();
+
+            if active {
+                breadcrumbs.push(format!(r#"<a href="{dashboard_url}">{root_dir}</a>"#));
             }
 
             tree_node(
-                root_active,
-                &Vec::new(),
-                "/",
+                active,
+                true,
+                dashboard_url,
                 &collection_icon,
                 site_dir,
                 Some(t_invalid_site),
@@ -328,91 +414,25 @@ pub fn tree_view(
             )
         }
         SiteContent::Playlist(playlist) => {
-            let t_playlist = translations.playlist;
-
-            if site_path.is_some() && !root_active {
-                let breadcrumb_title = playlist.title.as_deref().unwrap_or(t_playlist);
-                let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-                breadcrumbs.push(format!(r#"<a href="/playlist/">{e_breadcrumb_title}</a>"#));
-            }
-
-            let playlist_visibility = Visibility::from_playlist(playlist);
-
-            let videos = if playlist.videos.is_empty() {
-                String::new()
-            } else {
-                let tree_view_order = context.get_editor_tree_view_order();
-                let video_icon = icons::video(translations.video);
-
-                playlist.videos_in_tree_view_order(&tree_view_order)
-                    .iter()
-                    .map(|video| {
-                        let active = site_path.is_some_and(|site_path| *site_path == video.site_path);
-                        let href = format!("/video/{}", video.site_path.normalized());
-
-                        let video_visibility = Visibility::from_video(video);
-
-                        let node = tree_node(
-                            active,
-                            &video.errors,
-                            &href,
-                            &video_icon,
-                            video.slug_unchecked(),
-                            video.title.as_deref(),
-                            translations,
-                            &video_visibility
-                        );
-
-                        formatdoc!(r#"
-                            <li>
-                                {node}
-                            </li>
-                        "#)
-                    })
-                    .collect::<Vec<String>>()
-                    .join("")
-            };
-
-            let playlist_icon = icons::playlist(t_playlist);
-            let node = tree_node(
-                root_active,
-                &playlist.errors,
-                "/playlist/",
-                &playlist_icon,
-                site_dir,
-                playlist.title.as_deref(),
+            let tree_view_order = context.get_editor_tree_view_order();
+            playlist_node(
+                &mut breadcrumbs,
+                &location,
+                playlist,
+                site,
+                Some(site_dir),
                 translations,
-                &playlist_visibility
-            );
-
-            formatdoc!(r#"
-                {node}
-                <ul>
-                    {videos}
-                </ul>
-            "#)
+                &tree_view_order
+            )
         }
         SiteContent::Video(video) => {
-            let t_video = translations.video;
-
-            if site_path.is_some() {
-                let breadcrumb_title = video.title.as_deref().unwrap_or(t_video);
-                let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-                breadcrumbs.push(format!(r#"<a href="/video/">{e_breadcrumb_title}</a>"#));
-            }
-
-            let video_visibility = Visibility::from_video(video);
-
-            let video_icon = icons::video(t_video);
-            tree_node(
-                root_active,
-                &video.errors,
-                "/video/",
-                &video_icon,
-                site_dir,
-                video.title.as_deref(),
+            video_node(
+                &mut breadcrumbs,
+                &location,
+                site,
+                Some(site_dir),
                 translations,
-                &video_visibility
+                video
             )
         }
     };
@@ -433,7 +453,7 @@ pub fn tree_view(
 
 fn tree_node(
     active: bool,
-    errors: &[String],
+    has_errors: bool,
     href: &str,
     icon: &str,
     slug_or_path: &str,
@@ -442,15 +462,15 @@ fn tree_node(
     visibility: &Visibility
 ) -> String {
     let active = if active { r#"class="active""# } else { "" };
-    let icon_container = if errors.is_empty() {
-        icon.to_string()
-    } else {
+    let icon_container = if has_errors {
         format!(r#"
             <span style="position: relative;">
                 <span class="errors_badge"></span>
                 {icon}
             </span>
         "#)
+    } else {
+        icon.to_string()
     };
 
     let e_title = title_option
@@ -479,7 +499,7 @@ fn tree_node(
         format!("{} {e_title}", badges.join(" "))
     };
 
-    let depth = if href == "/" { 0 } else { href.split('/').count() - 3 };
+    let depth = href.split('/').count() - 3;
     let padding_left_rem = 0.4 + depth as f32 * 1.4;
     let padding_left = format!("{}rem", padding_left_rem);
 
@@ -494,4 +514,102 @@ fn tree_node(
             </div>
         </a>
     "#)
+}
+
+/// For the root node `site_dir` is displayed instead of the slug, and it must
+/// be passed there too, otherwise this panics.
+fn video_node(
+    breadcrumbs: &mut Vec<String>,
+    location: &Location,
+    site: &Site,
+    site_dir: Option<&str>,
+    translations: &Translations,
+    video: &Video
+) -> String {
+    let edit_url = routes::video_edit(video);
+
+    if location.intersects(&video.site_path) {
+        let breadcrumb_title = video.title.as_deref().unwrap_or(translations.video);
+        let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
+        breadcrumbs.push(format!(r#"<a href="{edit_url}">{e_breadcrumb_title}</a>"#));
+    }
+
+    let video_icon = icons::video(translations.video);
+    let visibility = Visibility::from_video(video);
+
+    let has_errors = !video.errors.is_empty() ||
+        (video.site_path.is_root_path() && !site.errors.is_empty());
+
+    let node = tree_node(
+        false,
+        has_errors,
+        &edit_url,
+        &video_icon,
+        site_dir.unwrap_or_else(|| video.slug_unchecked()),
+        video.title.as_deref(),
+        translations,
+        &visibility
+    );
+
+    if let Some(subpage) = location.active_subpage(&video.site_path) {
+        let depth = edit_url.split('/').count() as f32 - 2.5;
+        let padding_left_rem = 0.4 + depth * 1.4;
+        let padding_left = format!("{}rem", padding_left_rem);
+
+        let dangerous_actions_url = routes::video_dangerous_actions(video);
+        let media_url = routes::video_media(video);
+        let subtitles_url = routes::video_subtitles(video);
+
+        let t_dangerous_actions = translations.dangerous_actions;
+        let t_general = translations.general;
+        let t_media = translations.media;
+        let t_subtitles = translations.subtitles;
+
+        let danger_icon = icons::DANGER;
+        let general_icon = icons::configure(None);
+        let media_icon = icons::storage(None);
+        let subtitles_icon = icons::subtitles(None);
+
+        let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
+        let general_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let media_active = if *subpage == Subpage::Media { "active" } else { "" };
+        let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
+
+        let site_settings = if video.site_path.is_root_path() {
+            let logo = icons::logo(None);
+            let t_site_settings = translations.site_settings;
+            let site_settings_url = routes::SITE_EDIT;
+            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
+            formatdoc!(r#"
+                <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
+                    {logo} {t_site_settings}
+                </a>
+            "#)
+        } else {
+            String::new()
+        };
+
+        formatdoc!(r#"
+            <div class="active">
+                {node}
+                <div class="subpages">
+                    <a class="{general_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
+                        {general_icon} {t_general}
+                    </a>
+                    <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
+                        {media_icon} {t_media}
+                    </a>
+                    <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
+                        {subtitles_icon} {t_subtitles}
+                    </a>
+                    {site_settings}
+                    <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
+                        {danger_icon} {t_dangerous_actions}
+                    </a>
+                </div>
+            </div>
+        "#)
+    } else {
+        node
+    }
 }

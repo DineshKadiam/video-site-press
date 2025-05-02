@@ -17,6 +17,7 @@ use crate::{
     SitePath,
     Video
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -80,7 +81,7 @@ pub async fn create_video(
             CollectionUpdate::Updated { optional_return_value: video, .. } => {
                 video.write_manifest(&context);
 
-                let redirect_url = format!("/video/{}", video.site_path.normalized());
+                let redirect_url = routes::video_edit(&video);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {

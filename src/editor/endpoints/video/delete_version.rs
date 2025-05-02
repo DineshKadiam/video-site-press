@@ -9,6 +9,7 @@ use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
 use crate::{Context, SitePath, Video};
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
@@ -39,7 +40,7 @@ pub async fn delete_version(
 
     match context.update_video(mutation, &site_path) {
         Ok(video) => {
-            let redirect_url = format!("/video/{}", video.site_path.normalized());
+            let redirect_url = routes::video_media(&video);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(()) => {

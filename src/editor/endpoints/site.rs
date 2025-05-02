@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
+use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Either, Form, Redirect};
 use indoc::formatdoc;
 use serde_derive::Deserialize;
@@ -17,11 +18,11 @@ use crate::{
     SiteContent,
     SitePath,
     SiteUrl,
-    Theme,
-    Translations
+    Theme
 };
-use crate::editor::{Checkbox, Input, Select};
-use crate::editor::endpoints;
+use crate::editor::{Checkbox, Input, Location, Select};
+use crate::editor::routes;
+use crate::editor::widgets::layout;
 
 #[derive(Deserialize)]
 pub struct SiteForm {
@@ -35,7 +36,7 @@ pub struct SiteForm {
     theme: String
 }
 
-pub struct SiteFormFeedback {
+pub struct UpdateFormFeedback {
     pub base_url: Field,
     pub clean_urls: bool,
     pub deployment_path: Field,
@@ -47,10 +48,13 @@ pub struct SiteFormFeedback {
 }
 
 fn edit_page(
-    form_feedback: Option<&SiteFormFeedback>,
-    site: &Site,
-    translations: &Translations
-) -> String {
+    context: &Context,
+    form_feedback: Option<UpdateFormFeedback>,
+    language: &Language,
+    site: &Site
+) -> HttpResponse {
+    let translations = &language.translations;
+
     let errors = if site.errors.is_empty() {
         String::new()
     } else {
@@ -113,70 +117,60 @@ fn edit_page(
     };
 
     let t_deployment_is_currently_supported_text = translations.deployment_is_currently_supported_text;
+    let t_general = translations.general;
     let t_site_settings = translations.site_settings;
+    let t_deployment = translations.deployment;
     let t_update_site = translations.update_site;
-    formatdoc!(r#"
+
+    let update_action = routes::SITE_EDIT;
+
+    let body = formatdoc!(r#"
         <div class="form_group">
-            <a id="edit-site"></a>
             <h2>{t_site_settings}</h2>
 
             {errors}
-
-            <p>{t_deployment_is_currently_supported_text}</p>
             
-            <form action="/site" autocomplete="off" data-warn-discard method="post">
+            <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
+                <h3>{t_general}</h3>
+                {input_language}
+                {input_poster_aspect}
+                {select_theme}
+                {clean_urls_checkbox}
+
+                <h3>{t_deployment}</h3>
+                <p>{t_deployment_is_currently_supported_text}</p>
                 {input_base_url}
                 {input_deployment_path}
                 {input_deployment_server}
                 {input_deployment_user}
-                {input_poster_aspect}
-                {input_language}
-                {select_theme}
-                {clean_urls_checkbox}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button class="action">{t_update_site}</button> {feedback}
                 </div>
             </form>
         </div>
-    "#)
+    "#);
+
+    let html = layout(
+        &body,
+        context,
+        language,
+        Location::site(&SitePath::root_path()),
+        &site,
+        t_site_settings
+    );
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
 }
 
-pub fn edit(
-    context: &Context,
-    form_feedback: Option<&SiteFormFeedback>,
-    site_path: &SitePath,
-    translations: &Translations
-) -> String {
-    if site_path.is_root_path() {
-        let site = context.get_site();
-        edit_page(form_feedback, &site, translations)
-    } else {
-        String::new()
-    }
+pub async fn edit(context: Data<Arc<Context>>) -> HttpResponse {
+    let language = context.get_editor_language();
+
+    let site = context.get_site();
+    edit_page(&context, None, &language, &site)
 }
-
-// pub async fn formats(context: Data<Arc<Context>>, payload: Bytes) -> Redirect {
-//     let mut formats = parse(&payload)
-//         .into_iter()
-//         .filter_map(|(format, _checked_value)|
-//             VideoFormat::parse(&format)
-//         )
-//         .collect();
-
-//     let site = {
-//         let mut site_mut = context.site.lock().unwrap();
-
-//         site_mut.formats.clear();
-//         site_mut.formats.append(&mut formats);
-
-//         site_mut.clone()
-//     };
-
-//     site.persist_in_site(&context.site_dir);
-
-//     Redirect::to("/site").see_other()
-// }
 
 pub async fn update(
     context: Data<Arc<Context>>,
@@ -212,7 +206,7 @@ pub async fn update(
     if base_url.as_ref().is_some_and(|base_url| base_url.is_err()) || poster_aspect.is_err() {
         let site = context.get_site();
 
-        let site_form_feedback = SiteFormFeedback {
+        let form_feedback = UpdateFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()))),
             clean_urls,
             deployment_path: Field::valid(deployment_path_trimmed),
@@ -223,24 +217,7 @@ pub async fn update(
             theme
         };
 
-        let http_response = match &site.content {
-            SiteContent::Collection(collection) => {
-                let form_feedback = endpoints::collection::CollectionFormFeedback::Site(site_form_feedback);
-                endpoints::collection::edit_page(collection, &context, form_feedback, &language)
-            }
-            SiteContent::Playlist(playlist) => {
-                let form_feedback = endpoints::playlist::PlaylistFormFeedback::Site(site_form_feedback);
-                endpoints::playlist::edit_page(&context, Some(form_feedback), &language, playlist)
-            }
-            SiteContent::Video(video) => {
-                let form_feedback = endpoints::video::VideoFormFeedback::Site(site_form_feedback);
-                endpoints::video::edit_page(&context, Some(form_feedback), &language, video)
-            }
-            // TODO: At best a time of check/time of use edge case possibility?
-            _ => unreachable!()
-        };
-
-        Either::Right(http_response)
+        Either::Right(edit_page(&context, Some(form_feedback), &language, &site))
     } else {
         let deployment_path = if deployment_path_trimmed.is_empty() {
             None

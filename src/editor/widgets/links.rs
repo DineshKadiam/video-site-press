@@ -8,7 +8,7 @@ use crate::editor::{Input, Select};
 use crate::icons;
 use crate::util::{html_escape_inside_attribute, html_escape_outside_attribute};
 
-/// Generic add link form, submit_url should be something like "/add-playlist-link/path/to/playlist"
+/// Generic add link form, submit_url should be something like "/playlist/add-link/[site-path]"
 pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
     let input_label = Input::text("label", translations.label_optional);
     let mut input_url = Input::url("url", translations.url);
@@ -44,7 +44,8 @@ pub fn add_link_form(submit_url: &str, translations: &Translations) -> String {
     "#)
 }
 
-/// Generic links listing with possibility to delete items, submit_url should be something like "/delete-playlist-link/path/to/playlist"
+/// Generic links listing with possibility to delete items,
+/// submit_url should be something like "/playlist/delete-link/[site-path]"
 pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> String {
     if links.is_empty() {
         return String::new();

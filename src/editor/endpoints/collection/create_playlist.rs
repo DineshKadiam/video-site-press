@@ -17,6 +17,7 @@ use crate::{
     Playlist,
     SitePath
 };
+use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
@@ -80,7 +81,7 @@ pub async fn create_playlist(
             CollectionUpdate::Updated { optional_return_value: playlist, .. } => {
                 playlist.write_manifest(&context);
 
-                let redirect_url = format!("/playlist/{}", playlist.site_path.normalized());
+                let redirect_url = routes::playlist_edit(&playlist);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
             CollectionUpdate::NotFound => {

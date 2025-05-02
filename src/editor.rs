@@ -5,11 +5,12 @@ use std::fs;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::Translations;
+use crate::{SitePath, Translations};
 
 mod checkbox;
 mod endpoints;
 mod input;
+mod routes;
 mod select;
 pub mod server;
 mod textarea;
@@ -25,6 +26,25 @@ pub struct EditorConfig {
     pub language_code: String,
     pub theme_key: String,
     pub tree_view_order: TreeViewOrder
+}
+
+/// Represents the page we are currently viewing, i.e. some element in the
+/// site tree or an auxiliary page like the jobs overview.
+pub enum Location<'a> {
+    AuxiliaryPage,
+    SiteTree {
+        site_path: &'a SitePath,
+        subpage: Subpage
+    }
+}
+
+#[derive(PartialEq)]
+pub enum Subpage {
+    DangerousActions,
+    Edit,
+    Media,
+    SiteSettings,
+    Subtitles
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -76,6 +96,64 @@ impl EditorConfig {
         }
 
         None
+    }
+}
+
+impl<'a> Location<'a> {
+    pub fn active_subpage(&self, site_path: &SitePath) -> Option<&Subpage> {
+        match self {
+            Location::AuxiliaryPage => None,
+            Location::SiteTree { site_path: location_site_path, subpage } => {
+                match site_path == *location_site_path {
+                    true => Some(subpage),
+                    false => None
+                }
+            }
+        }
+    }
+
+    pub fn dangerous_actions(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::DangerousActions
+        }
+    }
+
+    pub fn edit(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Edit
+        }
+    }
+
+    pub fn intersects(&self, site_path: &SitePath) -> bool {
+        match self {
+            Location::AuxiliaryPage => false,
+            Location::SiteTree { site_path: location_site_path, .. } => {
+                location_site_path.starts_with(site_path)
+            }
+        }
+    }
+
+    pub fn media(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Media
+        }
+    }
+
+    pub fn site(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::SiteSettings
+        }
+    }
+
+    pub fn subtitles(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Subtitles
+        }
     }
 }
 
