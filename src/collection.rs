@@ -38,6 +38,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
     "description",
     "download",
     "embedding",
+    "feeds",
     "link",
     "offline",
     "platform_integration",

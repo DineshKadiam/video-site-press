@@ -34,6 +34,7 @@ const PLAYLIST_OPTIONS: &[&str] = &[
     "description",
     "download",
     "embedding",
+    "feeds",
     "link",
     "offline",
     "order",

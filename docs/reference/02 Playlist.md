@@ -22,7 +22,7 @@ Naturally, an empty playlist is not much of a playlist, so in reality you will
 have video directories inside the playlist directory as well, but note that
 the presence of video directories itself does not make the directory a
 playlist by itself, because by default a directory containing video
-directories will be interpreted as a `Collection`. The `playlist.eno`
+directories will be interpreted as a [Collection](collection.html). The `playlist.eno`
 manifest is thus mandatory for every playlist.
 
 Generally speaking, a playlist is a list of videos primarily intended for
@@ -30,7 +30,7 @@ sequential playback.
 
 ## The playlist.eno manifest
 
-> All options at a glance: [banner](#banner), [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [order](#order), [platform_integration](#platform_integration), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [banner](#banner), [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [feeds](#feeds), [link](#link), [offline](#offline), [order](#order), [platform_integration](#platform_integration), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a playlist.
 
@@ -116,7 +116,7 @@ This allows visitors/you to copy embed codes (html) that they/you can use to
 embed your videos on their/your own sites.
 
 Embedding is disabled by default. If you want to enable it you also need to
-set the site's base_url (embeds work by displaying something from your site
+set the site's [base_url](site.html#base_url) (embeds work by displaying something from your site
 on another site, for this the other site needs to point to your site's
 address), and then set `embedding: enabled`, either at the collection,
 playlist or video level. If you set it `enabled` at the catalog or playlist
@@ -125,6 +125,26 @@ specific playlists or videos.
 
 ```eno
 embedding: enabled
+```
+
+## <a name="feeds"></a> `feeds`
+
+Hyper 8 offers four different types of feeds on your site:
+
+- Atom
+- Plain RSS
+- Podcast RSS
+- Media RSS
+
+Visitors can subscribe to the entire site (= to the root collection or
+playlist) or to each subcollection and playlist on a site individually.
+
+Feeds are enabled by default if you specified your site's [base_url](site.html#base_url).
+
+To disable them:
+
+```eno
+feeds: disabled
 ```
 
 ## <a name="link"></a> `link`

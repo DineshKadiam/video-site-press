@@ -12,6 +12,8 @@ placed.
 
 ## The site.eno manifest
 
+> All options at a glance: [base_url](#base_url), [deploy_config](#deploy_config), [disable_clean_urls](#disable_clean_urls), [language](#language), [poster_aspect](#poster_aspect), [theme](#theme)
+
 Manifest for configuring the site.
 
 ```eno
@@ -27,10 +29,45 @@ server = ssh-customer123.example.com
 user = customer123
 ```
 
+## <a name="base_url"></a> `base_url`
+
 With `base_url` you configure at which (sub)domain (respectively also
 subdirectory if not at the root) your site will be hosted, which is used for
 rendering certain features and for verifying that the deployment settings are
 correct.
+
+```eno
+base_url: https://example.com
+```
+
+## <a name="deploy_config"></a> `deploy_config`
+
+With `deploy_config` you can configure the (remote) `path`, `server` and `user`
+for an ssh/rsync based deployment. Note that for now only password-less
+(ssh public/private key) authentication is possible. In order to prevent
+accidental deployments to wrong remote servers and paths, deployment requires
+the `base_url` to be specified and the server to be set up so the contents
+at `deploy_config.path` are already accessible through the public `base_url`.
+(On deploment, Hyper 8 will do a test upload of a text file to the remote
+path and check if it's accessible through the public url - if it isn't, the
+file is removed and the deployment aborted).
+
+## <a name="disable_clean_urls"></a> `disable_clean_urls`
+
+With `disable_clean_urls` Hyper 8 can be instructed to create a build with
+fullly verbose internal (file) linking, meaning that each link on the site
+ends on `/index.html` instead of just `/` (e.g. `https://example.com/collection/index.html`
+instead of `https://example.com/collection/`). Although this arguably looks
+a little more raw, it has the advantage of links working in the widest range
+of environments - especially it enables the build to be browseable directly
+from disk without any webserver inbetween, which makes a lot of sense if
+you're planning to archive your page somewhere offline.
+
+```eno
+disable_clean_urls
+```
+
+## <a name="language"></a> `language`
 
 With `language` you can supply a language code (in BCP 47 format) that will
 identify the site's content for browsers and screenreaders. For supported
@@ -40,12 +77,28 @@ implemented texts will show up as translated in the final website. The Hyper
 rudimentarily developed right now!), for this see the command line arguments
 documentation.
 
+```eno
+language: es
+```
+
+## <a name="poster_aspect"></a> `poster_aspect`
+
 The `poster_aspect` option accepts either a numeric aspect ratio like `1.78`,
 or a dividend/divisor notation like `16/9` or `4:3`. On a Hyper 8 site, this
 controls the aspect ratios of video thumbnails everywhere. On an average
 site the default `16:9` aspect ratio is a good choice, but for wider cinematic
 material a wider aspect ratio is recommended, as is a portrait ratio like
 for instance `9:16` for exclusively mobile video content.
+
+```eno
+poster_aspect: 16:9
+```
+
+## <a name="theme"></a> `theme`
+
+```eno
+theme: adaptive_cool
+```
 
 The `theme` option can be set to any of these:
 - `adaptive_cool`,
@@ -70,22 +123,3 @@ needs, but of course for specific usecases this can be weighed off - e.g. it
 might still make sense to configure a trailer page for a horror movie with a
 dark theme only, as the imagery might be dark itself and a light theme would
 potentially collide with the desired aesthetics and visual impression intended.
-
-With `deploy_config` you can configure the (remote) `path`, `server` and `user`
-for an ssh/rsync based deployment. Note that for now only password-less
-(ssh public/private key) authentication is possible. In order to prevent
-accidental deployments to wrong remote servers and paths, deployment requires
-the `base_url` to be specified and the server to be set up so the contents
-at `deploy_config.path` are already accessible through the public `base_url`.
-(On deploment, Hyper 8 will do a test upload of a text file to the remote
-path and check if it's accessible through the public url - if it isn't, the
-file is removed and the deployment aborted).
-
-With `disable_clean_urls` Hyper 8 can be instructed to create a build with
-fullly verbose internal (file) linking, meaning that each link on the site
-ends on `/index.html` instead of just `/` (e.g. `https://example.com/collection/index.html`
-instead of `https://example.com/collection/`). Although this arguably looks
-a little more raw, it has the advantage of links working in the widest range
-of environments - especially it enables the build to be browseable directly
-from disk without any webserver inbetween, which makes a lot of sense if
-you're planning to archive your page somewhere offline.
