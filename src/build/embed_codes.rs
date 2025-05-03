@@ -25,7 +25,7 @@ fn embed_code(aspect_ratio: f32, embed_url: &str, title: &str) -> (String, Strin
     let title_double_escaped = html_double_escape_inside_attribute(title);
     let title_escaped = html_escape_inside_attribute(title);
 
-    let inline_style = format!("aspect-ratio: {aspect_ratio}; border: none; height: 100%; width: 100%;");
+    let inline_style = format!("aspect-ratio: {aspect_ratio}; border: none; width: 100%;");
 
     let copy_code = html_escape_inside_attribute(
         &format!(r#"<iframe allow="fullscreen" loading="lazy" src="{embed_url}" style="{inline_style}" title="{title_escaped}"></iframe>"#)
