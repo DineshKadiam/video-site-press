@@ -42,7 +42,9 @@ pub enum Location<'a> {
 pub enum Subpage {
     DangerousActions,
     Edit,
+    Manifest,
     Media,
+    SiteManifest,
     SiteSettings,
     Subtitles
 }
@@ -135,6 +137,13 @@ impl<'a> Location<'a> {
         }
     }
 
+    pub fn manifest(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Manifest
+        }
+    }
+
     pub fn media(site_path: &SitePath) -> Location {
         Location::SiteTree {
             site_path,
@@ -146,6 +155,13 @@ impl<'a> Location<'a> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::SiteSettings
+        }
+    }
+
+    pub fn site_manifest(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::SiteManifest
         }
     }
 

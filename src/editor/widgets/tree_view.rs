@@ -179,41 +179,64 @@ fn collection_node(
         let padding_left = format!("{}rem", padding_left_rem);
 
         let dangerous_actions_url = routes::collection_dangerous_actions(collection);
+        let edit_manifest_url = routes::collection_manifest(collection);
 
         let t_dangerous_actions = translations.dangerous_actions;
-        let t_general = translations.general;
+        let t_collection_manifest = translations.collection_manifest;
+        let t_collection_settings = translations.collection_settings;
 
+        let code_icon = icons::CODE;
         let danger_icon = icons::DANGER;
-        let general_icon = icons::configure(None);
+        let edit_icon = icons::EDIT;
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
-        let general_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
 
-        let site_settings = if collection.site_path.is_root_path() {
+        let (site_manifest, site_settings) = if collection.site_path.is_root_path() {
             let logo = icons::logo(None);
+
+            let t_site_manifest = translations.site_manifest;
             let t_site_settings = translations.site_settings;
+
+            let site_manifest_url = routes::SITE_MANIFEST;
             let site_settings_url = routes::SITE_EDIT;
+
+            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
             let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
-            formatdoc!(r#"
+
+            let site_manifest = formatdoc!(r#"
+                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
+                    {code_icon} {t_site_manifest}
+                </a>
+            "#);
+
+            let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
                     {logo} {t_site_settings}
                 </a>
-            "#)
+            "#);
+
+            (site_manifest, site_settings)
         } else {
-            String::new()
+            (String::new(), String::new())
         };
 
         formatdoc!(r#"
             <div class="active">
                 {node}
                 <div class="subpages">
-                    <a class="{general_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
-                        {general_icon} {t_general}
+                    <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
+                        {edit_icon} {t_collection_settings}
                     </a>
                     {site_settings}
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}
                     </a>
+                    <a class="{manifest_active} subpage" href="{edit_manifest_url}" style="padding-left: {padding_left};">
+                        {code_icon} {t_collection_manifest}
+                    </a>
+                    {site_manifest}
                 </div>
             </div>
         "#)
@@ -273,41 +296,64 @@ fn playlist_node(
         let padding_left = format!("{}rem", padding_left_rem);
 
         let dangerous_actions_url = routes::playlist_dangerous_actions(playlist);
+        let edit_manifest_url = routes::playlist_manifest(playlist);
 
         let t_dangerous_actions = translations.dangerous_actions;
-        let t_general = translations.general;
+        let t_playlist_manifest = translations.playlist_manifest;
+        let t_playlist_settings = translations.playlist_settings;
 
+        let code_icon = icons::CODE;
         let danger_icon = icons::DANGER;
-        let general_icon = icons::configure(None);
+        let edit_icon = icons::EDIT;
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
-        let general_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
 
-        let site_settings = if playlist.site_path.is_root_path() {
+        let (site_manifest, site_settings) = if playlist.site_path.is_root_path() {
             let logo = icons::logo(None);
+
+            let t_site_manifest = translations.site_manifest;
             let t_site_settings = translations.site_settings;
+
+            let site_manifest_url = routes::SITE_MANIFEST;
             let site_settings_url = routes::SITE_EDIT;
+
+            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
             let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
-            formatdoc!(r#"
+
+            let site_manifest = formatdoc!(r#"
+                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
+                    {code_icon} {t_site_manifest}
+                </a>
+            "#);
+
+            let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
                     {logo} {t_site_settings}
                 </a>
-            "#)
+            "#);
+
+            (site_manifest, site_settings)
         } else {
-            String::new()
+            (String::new(), String::new())
         };
 
         formatdoc!(r#"
             <div class="active">
                 {node}
                 <div class="subpages">
-                    <a class="{general_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
-                        {general_icon} {t_general}
+                    <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
+                        {edit_icon} {t_playlist_settings}
                     </a>
                     {site_settings}
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}
                     </a>
+                    <a class="{manifest_active} subpage" href="{edit_manifest_url}" style="padding-left: {padding_left};">
+                        {code_icon} {t_playlist_manifest}
+                    </a>
+                    {site_manifest}
                 </div>
             </div>
         "#)
@@ -557,55 +603,78 @@ fn video_node(
         let padding_left = format!("{}rem", padding_left_rem);
 
         let dangerous_actions_url = routes::video_dangerous_actions(video);
+        let edit_manifest_url = routes::video_manifest(video);
         let media_url = routes::video_media(video);
         let subtitles_url = routes::video_subtitles(video);
 
         let t_dangerous_actions = translations.dangerous_actions;
-        let t_general = translations.general;
         let t_media = translations.media;
         let t_subtitles = translations.subtitles;
+        let t_video_manifest = translations.video_manifest;
+        let t_video_settings = translations.video_settings;
 
+        let code_icon = icons::CODE;
         let danger_icon = icons::DANGER;
-        let general_icon = icons::configure(None);
+        let edit_icon = icons::EDIT;
         let media_icon = icons::storage(None);
         let subtitles_icon = icons::subtitles(None);
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
-        let general_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
         let media_active = if *subpage == Subpage::Media { "active" } else { "" };
         let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
 
-        let site_settings = if video.site_path.is_root_path() {
+        let (site_manifest, site_settings) = if video.site_path.is_root_path() {
             let logo = icons::logo(None);
+
+            let t_site_manifest = translations.site_manifest;
             let t_site_settings = translations.site_settings;
+
+            let site_manifest_url = routes::SITE_MANIFEST;
             let site_settings_url = routes::SITE_EDIT;
+
+            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
             let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
-            formatdoc!(r#"
+
+            let site_manifest = formatdoc!(r#"
+                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
+                    {code_icon} {t_site_manifest}
+                </a>
+            "#);
+
+            let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
                     {logo} {t_site_settings}
                 </a>
-            "#)
+            "#);
+
+            (site_manifest, site_settings)
         } else {
-            String::new()
+            (String::new(), String::new())
         };
 
         formatdoc!(r#"
             <div class="active">
                 {node}
                 <div class="subpages">
-                    <a class="{general_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
-                        {general_icon} {t_general}
+                    <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
+                        {edit_icon} {t_video_settings}
                     </a>
+                    {site_settings}
                     <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
                         {media_icon} {t_media}
                     </a>
                     <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
                         {subtitles_icon} {t_subtitles}
                     </a>
-                    {site_settings}
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}
                     </a>
+                    <a class="{manifest_active} subpage" href="{edit_manifest_url}" style="padding-left: {padding_left};">
+                        {code_icon} {t_video_manifest}
+                    </a>
+                    {site_manifest}
                 </div>
             </div>
         "#)

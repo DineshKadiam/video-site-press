@@ -18,8 +18,8 @@ use crate::{
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
-use super::edit_page;
-use super::UpdateFormFeedback;
+use super::edit::edit_page;
+use super::edit::UpdateFormFeedback;
 
 #[derive(Deserialize)]
 pub struct VideoUpdateForm {

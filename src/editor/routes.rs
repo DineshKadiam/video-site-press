@@ -47,6 +47,10 @@ pub fn collection_edit(collection: &Collection) -> String {
     format!("/collection/edit/{}", collection.site_path.normalized())
 }
 
+pub fn collection_manifest(collection: &Collection) -> String {
+    format!("/collection/manifest/{}", collection.site_path.normalized())
+}
+
 pub fn collection_move(collection: &Collection) -> String {
     format!("/collection/move/{}", collection.site_path.normalized())
 }
@@ -103,6 +107,10 @@ pub fn playlist_edit(playlist: &Playlist) -> String {
     format!("/playlist/edit/{}", playlist.site_path.normalized())
 }
 
+pub fn playlist_manifest(playlist: &Playlist) -> String {
+    format!("/playlist/manifest/{}", playlist.site_path.normalized())
+}
+
 pub fn playlist_move(playlist: &Playlist) -> String {
     format!("/playlist/move/{}", playlist.site_path.normalized())
 }
@@ -124,7 +132,9 @@ pub fn poster(file_name: &str, site_path: &SitePath) -> String {
     format!("/poster/{}{}", site_path.normalized(), file_name)
 }
 
-pub const SITE_EDIT: &str = "/site/edit";
+pub const SITE_EDIT: &str = "/site/edit/";
+
+pub const SITE_MANIFEST: &str = "/site/manifest/";
 
 // TODO: This is nested in the video endpoint, but currently this is called
 // from a collection, playlist and video context, so semantically it would
@@ -164,6 +174,10 @@ pub fn video_downsize(video: &Video) -> String {
 
 pub fn video_edit(video: &Video) -> String {
     format!("/video/edit/{}", video.site_path.normalized())
+}
+
+pub fn video_manifest(video: &Video) -> String {
+    format!("/video/manifest/{}", video.site_path.normalized())
 }
 
 pub fn video_media(video: &Video) -> String {

@@ -1253,6 +1253,10 @@ impl Context {
         result
     }
 
+    // TODO: This functions immutably borrows site, but then obtains its own
+    //       site_mut handle through get_site_mut() which could also be used.
+    //       Refactoring this however is probably not so easy because it looks
+    //       like we will run into parallel mutable/immutable borrow issues.
     /// Based on the passed (absolute) path determines from which site path
     /// downwards (e.g. from the root, from a subcollection, etc.) we need to
     /// update our site tree (picking up what changed in the filesystem).

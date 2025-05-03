@@ -1,27 +1,6 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use actix_web::HttpResponse;
-use actix_web::http::header::ContentType;
-use indoc::formatdoc;
-
-use crate::{
-    Context,
-    Field,
-    Language,
-    PlatformIntegration,
-    Video
-};
-use crate::editor::{Checkbox, Input, Location, Select, Textarea};
-use crate::editor::routes;
-use crate::editor::widgets::{
-    add_link_form,
-    layout,
-    links,
-    resource_actions
-};
-use crate::icons;
-
 mod add_link;
 mod dangerous_actions;
 mod delete;
@@ -30,12 +9,14 @@ mod delete_poster;
 mod delete_version;
 mod downsize;
 mod edit;
+mod edit_manifest;
 mod media;
 mod r#move;
 mod poster;
 mod random_poster;
 mod subtitles;
 mod update;
+mod update_manifest;
 mod update_poster;
 mod upload_poster;
 mod upload_video;
@@ -48,269 +29,14 @@ pub use delete_poster::delete_poster;
 pub use delete_version::delete_version;
 pub use downsize::downsize;
 pub use edit::edit;
+pub use edit_manifest::edit_manifest;
 pub use media::media;
 pub use r#move::r#move;
 pub use poster::poster;
 pub use random_poster::random_poster;
 pub use subtitles::subtitles;
 pub use update::update;
+pub use update_manifest::update_manifest;
 pub use update_poster::update_poster;
 pub use upload_poster::upload_poster;
 pub use upload_video::upload_video;
-
-pub struct UpdateFormFeedback<'a> {
-    pub copy_link: Option<bool>,
-    pub description: &'a str,
-    pub download: Option<bool>,
-    pub embedding: Option<bool>,
-    pub offline: bool,
-    pub platform_integration: Option<PlatformIntegration>,
-    pub release_date: Field,
-    pub sort_number: Field,
-    pub title: Field,
-    pub unlisted: bool
-}
-
-pub fn edit_page(
-    context: &Context,
-    form_feedback: Option<UpdateFormFeedback>,
-    language: &Language,
-    video: &Video
-) -> HttpResponse {
-    let site = context.get_site();
-    let translations = &language.translations;
-    let t_not_saved = translations.not_saved;
-
-    let errors = if video.errors.is_empty() {
-        String::new()
-    } else {
-        video.errors
-            .iter()
-            .map(|error| {
-                formatdoc!(r#"
-                    <pre class="error">{error}</pre>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("")
-    };
-
-    let mut input_offline = Checkbox::new("offline", translations.offline);
-    let mut input_release_date = Input::date("release_date", translations.release_date);
-    let mut input_sort_number = Input::number("sort_number", translations.sort_number);
-    let mut input_title = Input::text("title", translations.title);
-    let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
-    let mut select_copy_link = Select::new("copy_link", translations.copy_link);
-    let mut select_download = Select::new("download", translations.downloads);
-    let mut select_embedding = Select::new("embedding", translations.embedding);
-    let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
-    let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
-
-    let t_disabled = translations.disabled;
-    let t_enabled = translations.enabled;
-
-    let t_default_or_inherited = match video.site_path.is_root_path() {
-        true => translations.default,
-        false => translations.inherited
-    };
-
-    let t_copy_link_disabled_enabled = if video.copy_link_inherited() { t_enabled } else { t_disabled };
-    select_copy_link.option("", format!("{t_copy_link_disabled_enabled} ({t_default_or_inherited})"));
-    select_copy_link.option("enabled", t_enabled);
-    select_copy_link.option("disabled", t_disabled);
-
-    let t_download_disabled_enabled = if video.download_inherited() { t_enabled } else { t_disabled };
-    select_download.option("", format!("{t_download_disabled_enabled} ({t_default_or_inherited})"));
-    select_download.option("enabled", t_enabled);
-    select_download.option("disabled", t_disabled);
-
-    let t_embedding_disabled_enabled = if video.embedding_inherited() { t_enabled } else { t_disabled };
-    select_embedding.option("", format!("{t_embedding_disabled_enabled} ({t_default_or_inherited})"));
-    select_embedding.option("enabled", t_enabled);
-    select_embedding.option("disabled", t_disabled);
-
-    let platform_integration_inherited = video.platform_integration_inherited();
-    let t_platform_integration_inherited_label = platform_integration_inherited.label(translations);
-    select_platform_integration.option("", format!("{t_platform_integration_inherited_label} ({t_default_or_inherited})"));
-    select_platform_integration.option("disabled", t_disabled);
-    select_platform_integration.option("link_previews", translations.link_previews_only);
-    select_platform_integration.option("content_embeds", translations.link_previews_and_content_embeds);
-
-    textarea_description.id("video_description");
-
-    if site.base_url.is_none() {
-        let failure_icon = icons::failure(translations.warning);
-        let t_public_address_not_configured_text = translations.public_address_not_configured_text;
-        let hint = format!("{failure_icon} {t_public_address_not_configured_text}");
-
-        select_embedding.hint(&hint);
-        select_platform_integration.hint(hint);
-    }
-
-    let feedback_update = if let Some(UpdateFormFeedback {
-        copy_link,
-        description,
-        download,
-        embedding,
-        offline,
-        platform_integration,
-        release_date,
-        sort_number,
-        title,
-        unlisted
-    }) = &form_feedback {
-        let copy_link_value = match copy_link {
-            Some(true) => "enabled",
-            Some(false) => "disabled",
-            None => ""
-        };
-
-        let download_value = match download {
-            Some(true) => "enabled",
-            Some(false) => "disabled",
-            None => ""
-        };
-
-        let embedding_value = match embedding {
-            Some(true) => "enabled",
-            Some(false) => "disabled",
-            None => ""
-        };
-
-        let platform_integration_value = match platform_integration {
-            Some(platform_integration) => platform_integration.key(),
-            None => ""
-        };
-
-        input_offline.checked(*offline);
-        input_release_date.validated_value(release_date);
-        input_sort_number.validated_value(sort_number);
-        input_title.validated_value(title);
-        input_unlisted.checked(*unlisted);
-        select_copy_link.selected(copy_link_value);
-        select_download.selected(download_value);
-        select_embedding.selected(embedding_value);
-        select_platform_integration.selected(platform_integration_value);
-        textarea_description.value(description);
-
-        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
-    } else {
-        let copy_link = match video.copy_link_local() {
-            Some(true) => "enabled",
-            Some(false) => "disabled",
-            None => ""
-        };
-
-        let download = match video.download_local() {
-            Some(true) => "enabled",
-            Some(false) => "disabled",
-            None => ""
-        };
-
-        let embedding = match video.embedding_local() {
-            Some(true) => "enabled",
-            Some(false) => "disabled",
-            None => ""
-        };
-
-        let platform_integration = match video.platform_integration_local() {
-            Some(platform_integration) => platform_integration.key(),
-            None => ""
-        };
-
-        let release_date = video.release_date.as_ref().map(|date| date.to_string());
-        let sort_number = video.sort_number.as_ref().map(|number| number.to_string());
-
-        input_offline.checked(video.offline_local());
-        input_release_date.value_option(&release_date);
-        input_sort_number.value_option(&sort_number);
-        input_title.value_option(&video.title);
-        input_unlisted.checked(video.unlisted_local());
-        select_copy_link.selected(copy_link);
-        select_download.selected(download);
-        select_embedding.selected(embedding);
-        select_platform_integration.selected(platform_integration);
-        textarea_description.value_option(&video.description);
-
-        String::new()
-    };
-
-    let input_unlisted_conditionally_hidden = if !video.site_path.is_root_path() {
-        input_unlisted.to_string()
-    } else if video.unlisted_local() {
-        String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
-    } else {
-        String::new()
-    };
-
-    let create_link_form = add_link_form(&routes::video_add_link(video), translations);
-    let links_form = links(&video.links, &routes::video_delete_link(video), translations);
-
-    let r_resource_actions = resource_actions(
-        context,
-        video.offline(),
-        &site,
-        &video.site_path,
-        translations
-    );
-
-    let video_icon = icons::video(translations.video);
-    let video_title = video.title_or_slug_or_generic_label(translations);
-
-    let t_update_video = translations.update_video;
-
-    let update_action = routes::video_edit(video);
-
-    let body = formatdoc!(r#"
-        {errors}
-
-        <div class="form_group">
-            <h2 class="with_button">
-                {video_icon}
-                <span>{video_title}</span>
-            </h2>
-            {r_resource_actions}
-        </div>
-
-        <div class="form_group">
-            <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
-                {input_title}
-                {textarea_description}
-                <div class="form_split divide_3_1">
-                    {input_release_date}
-                    {input_sort_number}
-                </div>
-                {select_copy_link}
-                {select_download}
-                {select_embedding}
-                {select_platform_integration}
-                {input_offline}
-                {input_unlisted_conditionally_hidden}
-
-                <div style="align-items: center; column-gap: .5rem; display: flex;">
-                    <button class="action">{t_update_video}</button> {feedback_update}
-                </div>
-            </form>
-        </div>
-
-        {links_form}
-
-        {create_link_form}
-    "#);
-
-    let t_general = translations.general;
-    let video_title = video.title_or_slug_or_generic_label(translations);
-    let head_title = format!("{t_general} – {video_title}");
-    let html = layout(
-        &body,
-        context,
-        language,
-        Location::edit(&video.site_path),
-        &site,
-        &head_title
-    );
-
-    HttpResponse::Ok()
-        .content_type(ContentType::html())
-        .body(html)
-}

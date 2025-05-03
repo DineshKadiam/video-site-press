@@ -21,8 +21,8 @@ use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::validate_slug;
 
-use super::edit_page;
-use super::CollectionFormFeedback;
+use super::edit::edit_page;
+use super::edit::CollectionFormFeedback;
 
 #[derive(Deserialize)]
 pub struct CreateVideoForm {

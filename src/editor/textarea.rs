@@ -28,6 +28,11 @@ impl<'a> Textarea<'a> {
         Textarea::new(None, key, label, 5)
     }
 
+    /// Initialize a textarea for a manifest
+    pub fn manifest(key: &'a str, label: &'a str) -> Textarea<'a> {
+        Textarea::new(None, key, label, 16)
+    }
+
     /// Initialize a textarea for markdown subset text
     pub fn markdown_subset(language: &Language, key: &'a str, label: &'a str) -> Textarea<'a> {
         let hint = Some(language.translations.markdown_inline_links_are_supported_standalone_urls_are_automatically_linked);

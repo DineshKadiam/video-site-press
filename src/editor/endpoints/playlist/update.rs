@@ -19,8 +19,8 @@ use crate::{
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
-use super::edit_page;
-use super::PlaylistFormFeedback;
+use super::edit::edit_page;
+use super::edit::PlaylistFormFeedback;
 
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
