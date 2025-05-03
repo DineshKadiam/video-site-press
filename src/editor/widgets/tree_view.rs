@@ -654,6 +654,8 @@ fn video_node(
             (String::new(), String::new())
         };
 
+        let subtitles_count = video.subtitles.len();
+
         formatdoc!(r#"
             <div class="active">
                 {node}
@@ -666,7 +668,7 @@ fn video_node(
                         {media_icon} {t_media}
                     </a>
                     <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
-                        {subtitles_icon} {t_subtitles}
+                        {subtitles_icon} {t_subtitles} ({subtitles_count})
                     </a>
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}

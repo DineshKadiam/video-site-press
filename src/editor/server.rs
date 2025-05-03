@@ -130,6 +130,7 @@ pub async fn start(
                 .route("/video/delete/{site_path:.*}", post().to(video::delete))
                 .route("/video/delete-link/{site_path:.*}", post().to(video::delete_link))
                 .route("/video/delete-poster/{site_path:.*}", post().to(video::delete_poster))
+                .route("/video/delete-subtitles/{site_path:.*}", post().to(video::delete_subtitles))
                 .route("/video/delete-version/{site_path:.*}", post().to(video::delete_version))
                 .route("/video/downsize/{site_path:.*}", post().to(video::downsize))
                 .service(
@@ -149,6 +150,7 @@ pub async fn start(
                 // .route("/videos", get().to(index::videos))
                 .route("/video/update-poster/{site_path:.*}", post().to(video::update_poster))
                 .route("/video/upload-poster/{site_path:.*}", post().to(video::upload_poster))
+                .route("/video/upload-subtitles/{site_path:.*}", post().to(video::upload_subtitles))
                 .route("/video/upload-video/{site_path:.*}", post().to(video::upload_video))
         })
         .bind((ip, port))

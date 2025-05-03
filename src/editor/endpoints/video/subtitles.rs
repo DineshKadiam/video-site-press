@@ -6,10 +6,13 @@ use std::sync::Arc;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
+use indoc::formatdoc;
 
 use crate::{Context, SitePath};
 use crate::editor::Location;
-use crate::editor::widgets::{layout, not_found};
+use crate::editor::routes;
+use crate::editor::widgets::{layout, not_found, upload_widget};
+use crate::icons;
 
 pub async fn subtitles(
     context: Data<Arc<Context>>,
@@ -29,7 +32,55 @@ pub async fn subtitles(
 
     let t_subtitles = translations.subtitles;
 
-    let body = format!("<h2>{t_subtitles}</h2>");
+    let upload_url = routes::video_upload_subtitles(&video);
+    let subtitles_upload_button = upload_widget(&upload_url, translations.upload_new_subtitles);
+
+    let subtitles_list = video.subtitles
+        .iter()
+        .enumerate()
+        .map(|(index, subtitle_file)| {
+            let file_name = &subtitle_file.file_name;
+            // TODO: label needs to be escaped
+            let label = match &subtitle_file.language {
+                Some(code) => code,
+                None => &subtitle_file.file_name
+            };
+
+            let t_delete = translations.delete;
+            let t_really_delete = translations.really_delete;
+            let delete_icon = icons::failure(t_delete);
+            let delete_version_action = routes::video_delete_subtitles(&video);
+            let delete_form = formatdoc!(r#"
+                <form
+                action="{delete_version_action}"
+                data-confirm
+                data-confirm-label="{t_delete}"
+                data-confirm-text="{t_really_delete}"
+                method="post"
+                style="display: inline;">
+                    <input name="file_name" type="hidden" value="{file_name}">
+                    <button class="danger delete_button">{delete_icon}</button>
+                </form>
+            "#);
+
+            formatdoc!(r#"
+                <div>
+                    {label} ({index}.vtt) {delete_form}
+                </div>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let body = formatdoc!(r#"
+        <h2>{t_subtitles}</h2>
+
+        {subtitles_list}
+
+        <div class="form_group">
+            {subtitles_upload_button}
+        </div>
+    "#);
 
     let html = layout(
         &body,

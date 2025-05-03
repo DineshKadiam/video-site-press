@@ -72,6 +72,37 @@ pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Erro
     fs::remove_dir_all(path)
 }
 
+/// Takes an existing filename (that has elsewhere been identified to collide
+/// with another file with the same filename) and returns the filename,
+/// systematically altered as to resolve the existing collision and ideally
+/// avoid further ones.
+///
+/// Some examples:
+/// - "foo"            -> "foo(1)"
+/// - "foo.bar"        -> "foo(1).bar"
+/// - "foo.bar.baz"    -> "foo(1).bar.baz"
+/// - "foo(1)"         -> "foo(2)"
+/// - "foo(1).bar"     -> "foo(2).bar"
+/// - "foo(1).bar.baz" -> "foo(2).bar.baz"
+pub fn deduplicate_filename(filename: &str) -> String {
+    fn deduplicate_filestem(filestem: &str) -> String {
+        if filestem.ends_with(')') {
+            if let Some(index) = filestem.rfind('(') {
+                if let Ok(number) = &filestem[(index + 1)..(filestem.len() - 1)].parse::<usize>() {
+                    return format!("{}({})", &filestem[..index], number + 1);
+                }
+            }
+        }
+
+        return format!("{filestem}(1)");
+    }
+
+    match filename.split_once('.') {
+        Some((filestem, extension)) => deduplicate_filestem(filestem) + "." + extension,
+        None => deduplicate_filestem(filename)
+    }
+}
+
 pub fn ensure_dir(dir: &Path) {
     fs::create_dir_all(dir).unwrap();
 }
@@ -271,7 +302,7 @@ pub fn supported_image_extension(filename: &str) -> bool {
     }
 }
 
-pub fn supported_subtitle_extension(filename: &str) -> bool {
+pub fn supported_subtitles_extension(filename: &str) -> bool {
     match Path::new(filename).extension() {
         Some(extension) => {
             extension.eq_ignore_ascii_case("srt") ||

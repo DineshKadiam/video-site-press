@@ -30,7 +30,7 @@ use crate::{
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
-use crate::util::{nanoid, supported_video_extension};
+use crate::util::{deduplicate_filename, supported_video_extension};
 
 // TODO: Implementation wise this is very messy, refactoring candidate
 pub async fn upload_video(
@@ -77,7 +77,7 @@ pub async fn upload_video(
                         GetAnyResult::Video(video) => {
                             let mut candidate_filename = original_filename.clone();
                             while context.site_dir.join(video.site_path.filesystem_relative()).join(&candidate_filename).exists() {
-                                candidate_filename = Path::new(&candidate_filename).with_file_name(format!("{}.mp4", nanoid())).to_string_lossy().to_string();
+                                candidate_filename = deduplicate_filename(&candidate_filename);
                             }
                             context.site_dir.join(video.site_path.filesystem_relative()).join(&candidate_filename)
                         }

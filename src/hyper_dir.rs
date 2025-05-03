@@ -10,7 +10,7 @@ use crate::util::{
     supported_audio_extension,
     supported_font_extension,
     supported_image_extension,
-    supported_subtitle_extension,
+    supported_subtitles_extension,
     supported_video_extension,
     valid_slug_chars
 };
@@ -91,7 +91,7 @@ impl HyperDir {
                                         hyper_dir.image_files.push(dir_entry.path());
                                     } else if supported_audio_extension(file_name) {
                                         hyper_dir.audio_files.push(dir_entry.path());
-                                    } else if supported_subtitle_extension(file_name) {
+                                    } else if supported_subtitles_extension(file_name) {
                                         hyper_dir.subtitle_files.push(dir_entry.path());
                                     } else if supported_font_extension(file_name) {
                                         hyper_dir.font_files.push(dir_entry.path());
