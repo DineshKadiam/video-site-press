@@ -44,6 +44,7 @@ pub enum Subpage {
     Edit,
     Manifest,
     Media,
+    Poster,
     SiteManifest,
     SiteSettings,
     Subtitles
@@ -148,6 +149,13 @@ impl<'a> Location<'a> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Media
+        }
+    }
+
+    pub fn poster(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Poster
         }
     }
 

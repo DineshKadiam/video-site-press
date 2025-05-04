@@ -103,6 +103,9 @@ pub async fn start(
                 .route("/playlist/upload-banner/{site_path:.*}", post().to(playlist::upload_banner))
                 // .route("/playlist/{id}/add", post().to(playlist::add_video))
                 // .route("/playlists", get().to(index::playlists))
+                // TODO: This is strictly speaking not a site_path, but right now it's convenient
+                //       to use that abstraction, because it handles path separator normalization
+                //       across platforms. (also applies to video_stream)
                 .route("/poster/{site_path:.*}", get().to(video::poster))
                 .service(
                     // Static file serving of built site
@@ -145,7 +148,9 @@ pub async fn start(
                 )
                 .route("/video/media/{site_path:.*}", get().to(video::media))
                 .route("/video/move/{site_path:.*}", post().to(video::r#move))
-                .route("/video/random-poster/{site_path:.*}", post().to(video::random_poster))
+                .route("/video/pick-poster/{site_path:.*}", post().to(video::pick_poster))
+                .route("/video/poster/{site_path:.*}", get().to(video::edit_poster))
+                .route("/video/stream/{site_path:.*}", get().to(video::stream))
                 .route("/video/subtitles/{site_path:.*}", get().to(video::subtitles))
                 // .route("/videos", get().to(index::videos))
                 .route("/video/update-poster/{site_path:.*}", post().to(video::update_poster))

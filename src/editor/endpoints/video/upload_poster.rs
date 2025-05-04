@@ -24,8 +24,8 @@ use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::{nanoid, supported_image_extension};
 
-use super::media::media_page;
-use super::media::UploadPosterFormFeedback;
+use super::edit_poster::edit_poster_page;
+use super::edit_poster::UploadPosterFormFeedback;
 
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
@@ -42,7 +42,7 @@ pub async fn upload_poster(
                         Some(video) => {
                             let error = format!("Unsupported file extension in {filename}");
                             let form_feedback = UploadPosterFormFeedback { error };
-                            let http_response = media_page(&context, Some(form_feedback), &language, &video);
+                            let http_response = edit_poster_page(&context, Some(form_feedback), &language, &video);
                             return Ok(Either::Right(http_response))
                         }
                         None => {
@@ -95,7 +95,7 @@ pub async fn upload_poster(
                         };
                         context.push_job_queue(job_kind);
 
-                        let redirect_url = routes::video_media(&video);
+                        let redirect_url = routes::video_poster(&video);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
                     }
                     Err(()) => {

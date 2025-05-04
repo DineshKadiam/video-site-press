@@ -39,8 +39,9 @@ pub enum JobKind {
         format: VideoFormat,
         video: Arc<Video>
     },
-    VideoRandomPoster {
+    VideoPickPoster {
         poster_aspect: f32,
+        timecode: f32,
         video: Arc<Video>
     }
 }
@@ -110,21 +111,21 @@ impl Job {
                 JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
-                JobKind::VideoRandomPoster { .. } => return Ordering::Greater
+                JobKind::VideoPickPoster { .. } => return Ordering::Greater
             }
             JobKind::PlaylistFastTasks(_) => match other.kind {
                 JobKind::CollectionFastTasks(_) |
                 JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
-                JobKind::VideoRandomPoster { .. } => return Ordering::Greater
+                JobKind::VideoPickPoster { .. } => return Ordering::Greater
             }
             JobKind::VideoFastTasks { .. } => match other.kind {
                 JobKind::CollectionFastTasks(_) |
                 JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => (),
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
-                JobKind::VideoRandomPoster { .. } => return Ordering::Greater
+                JobKind::VideoPickPoster { .. } => return Ordering::Greater
             }
             JobKind::VideoFormat { format, .. } => match &other.kind {
                 JobKind::CollectionFastTasks(_) |
@@ -134,14 +135,14 @@ impl Job {
                     Ordering::Equal => (),
                     ordering => return ordering
                 },
-                JobKind::VideoRandomPoster { .. } => return Ordering::Less
+                JobKind::VideoPickPoster { .. } => return Ordering::Less
             }
-            JobKind::VideoRandomPoster { .. } => match other.kind {
+            JobKind::VideoPickPoster { .. } => match other.kind {
                 JobKind::CollectionFastTasks(_) |
                 JobKind::PlaylistFastTasks(_) |
                 JobKind::VideoFastTasks { .. } => return Ordering::Less,
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
-                JobKind::VideoRandomPoster { .. } => ()
+                JobKind::VideoPickPoster { .. } => ()
             }
         }
 
@@ -168,7 +169,7 @@ impl JobKind {
                 let label = video.title_or_slug_or_generic_label(translations);
                 format!("Compute additional format for video '{label}'")
             }
-            JobKind::VideoRandomPoster { video, .. } => {
+            JobKind::VideoPickPoster { video, .. } => {
                 let label = video.title_or_slug_or_generic_label(translations);
                 format!("Compute random poster for video '{label}'")
             }
@@ -198,8 +199,8 @@ impl PartialEq for JobKind {
                     video.site_path == other_video.site_path && format == other_format,
                 _ => false
             }
-            JobKind::VideoRandomPoster { video, .. } => match other {
-                JobKind::VideoRandomPoster { video: other_video, .. } => video.site_path == other_video.site_path,
+            JobKind::VideoPickPoster { video, .. } => match other {
+                JobKind::VideoPickPoster { video: other_video, .. } => video.site_path == other_video.site_path,
                 _ => false
             }
         }

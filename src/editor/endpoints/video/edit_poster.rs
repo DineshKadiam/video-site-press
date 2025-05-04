@@ -1,0 +1,190 @@
+// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::sync::Arc;
+
+use actix_web::HttpResponse;
+use actix_web::http::header::ContentType;
+use actix_web::web::{Data, Path as ActixPath};
+use indoc::formatdoc;
+
+use crate::{
+    Context,
+    Language,
+    SitePath,
+    Video
+};
+use crate::editor::{Location, Textarea};
+use crate::editor::routes;
+use crate::editor::widgets::{layout, not_found, upload_widget};
+
+pub struct UploadPosterFormFeedback {
+    pub error: String
+}
+
+pub async fn edit_poster(
+    context: Data<Arc<Context>>,
+    site_path: ActixPath<SitePath>
+) -> HttpResponse {
+    let language = context.get_editor_language();
+
+    match context.get_video(&site_path) {
+        Some(video) => {
+            edit_poster_page(
+                &context,
+                None,
+                &language,
+                &video
+            )
+        }
+        None => return not_found(&context, &language, &site_path)
+    }
+}
+
+pub fn edit_poster_page(
+    context: &Context,
+    form_feedback: Option<UploadPosterFormFeedback>,
+    language: &Language,
+    video: &Video
+) -> HttpResponse {
+    let site = context.get_site();
+    let translations = &language.translations;
+
+    let pick_poster_action = routes::video_pick_poster(video);
+
+    let t_upload_poster = translations.upload_poster;
+    let poster_upload_button = upload_widget(&routes::video_upload_poster(video), t_upload_poster);
+    let poster_upload_button_error = if let Some(UploadPosterFormFeedback { error }) = &form_feedback {
+        format!(r#"<span class="error">{error}</span>"#)
+    } else {
+        String::new()
+    };
+    let poster_form = match &video.poster {
+        Some(poster) => {
+            let alt = if let Some(description) = &poster.description {
+                format!(r#"alt="{description}" "#)
+            } else {
+                String::new()
+            };
+
+            // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
+            let file_name = &poster.file_name;
+            let src = routes::poster(file_name, &video.site_path);
+
+            let mut description = Textarea::image_description("description", translations.poster_description);
+
+            description
+                .id("poster_description")
+                .value_option(&poster.description);
+
+            let t_delete_poster = translations.delete_poster;
+            let t_really_delete = translations.really_delete;
+            let t_update_description = translations.update_description;
+
+            let delete_poster_action = routes::video_delete_poster(video);
+            let update_poster_action = routes::video_update_poster(video);
+
+            formatdoc!(r#"
+                <img {alt}class="thumbnail" src="{src}">
+                <div>{file_name}</div>
+                <div class="button_group">
+                    {poster_upload_button}
+                    <form action="{delete_poster_action}" data-confirm data-confirm-label="{t_delete_poster}" data-confirm-text="{t_really_delete}" method="post">
+                        <div style="align-items: center; column-gap: .5rem; display: flex;">
+                            <button class="danger">{t_delete_poster}</button>
+                        </div>
+                    </form>
+                </div>
+                {poster_upload_button_error}
+                <form action="{update_poster_action}" data-warn-discard method="post">
+                    {description}
+
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button class="action">{t_update_description}</button>
+                    </div>
+                </form>
+            "#)
+        }
+        None => {
+            formatdoc!(r#"
+                {poster_upload_button}
+                {poster_upload_button_error}
+            "#)
+        }
+    };
+
+    let t_poster_image = translations.poster_image;
+
+    let pick_from_video = if let Some(version) = video.highest_quality_version() {
+        let src = routes::video_stream(&version.file_name, &video);
+
+        let t_jump_to_a_random_frame = translations.jump_to_a_random_frame;
+        let t_pick_a_poster_from_the_video = translations.pick_a_poster_from_the_video;
+        let t_use_current_frame_as_poster = translations.set_current_frame_as_poster;
+        formatdoc!(r#"
+            <h2>{t_pick_a_poster_from_the_video}</h2>
+
+            <video controls preload="auto" src="{src}"></video>
+
+            <form action="{pick_poster_action}" method="post">
+                <input name="timecode" type="hidden" value="0">
+                <div class="button_group">
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button class="action">{t_use_current_frame_as_poster}</button>
+                    </div>
+                    <button class="action" id="random_frame">{t_jump_to_a_random_frame}</button>
+                </div>
+            </form>
+
+            <p style="background: var(--warning-bg); border-radius: .5rem; color: var(--warning-fg); padding: 1rem;">
+                Heads up: Poster changes do not immediately show up (this is due
+                to posters being computed in background job). Wait 1-2 seconds,
+                then refresh the page to see them. This will be improved in a
+                future version of Hyper 8.
+            </p>
+
+            <script>
+                const randomFrameButton = document.querySelector('#random_frame');
+                const timecode = document.querySelector('input[name="timecode"');
+                const video = document.querySelector('video');
+
+                randomFrameButton.addEventListener('click', event => {{
+                    video.currentTime = Math.random() * video.duration;
+                    event.preventDefault();
+                }});
+
+                video.addEventListener('timeupdate', () => {{
+                    timecode.setAttribute('value', video.currentTime.toString());
+                }});
+            </script>
+        "#)
+    } else {
+        String::new()
+    };
+
+    let body = formatdoc!(r#"
+        <h2>{t_poster_image}</h2>
+
+        <div class="form_group">
+            {poster_form}
+        </div>
+
+        {pick_from_video}
+    "#);
+
+    let t_poster_image = translations.poster_image;
+    let video_title = video.title_or_slug_or_generic_label(translations);
+    let head_title = format!("{t_poster_image} – {video_title}");
+    let html = layout(
+        &body,
+        context,
+        language,
+        Location::poster(&video.site_path),
+        &site,
+        &head_title
+    );
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
+}

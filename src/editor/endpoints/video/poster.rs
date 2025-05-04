@@ -12,7 +12,9 @@ use crate::{Context, SitePath};
 
 // TODO: We currently go through the video endpoint for poster for all posters
 //       (also playlist e.g.), this is unclean, make generic or change otherwise
-// TODO: Highly insecure b/c path arbitrary etc. you know
+// TODO: We should make this a little more secure (catch the worst path
+// injection attack stuff) because someone is going to leave this open
+// to the net at some point.
 pub async fn poster(
     context: Data<Arc<Context>>,
     site_path: ActixPath<SitePath>

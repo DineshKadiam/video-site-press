@@ -605,10 +605,12 @@ fn video_node(
         let dangerous_actions_url = routes::video_dangerous_actions(video);
         let edit_manifest_url = routes::video_manifest(video);
         let media_url = routes::video_media(video);
+        let poster_url = routes::video_poster(video);
         let subtitles_url = routes::video_subtitles(video);
 
         let t_dangerous_actions = translations.dangerous_actions;
-        let t_media = translations.media;
+        let t_video_files = translations.video_files;
+        let t_poster_image = translations.poster_image;
         let t_subtitles = translations.subtitles;
         let t_video_manifest = translations.video_manifest;
         let t_video_settings = translations.video_settings;
@@ -617,12 +619,14 @@ fn video_node(
         let danger_icon = icons::DANGER;
         let edit_icon = icons::EDIT;
         let media_icon = icons::storage(None);
+        let poster_icon = icons::EMBED; // TODO: Custom poster icon
         let subtitles_icon = icons::subtitles(None);
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
         let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
         let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
         let media_active = if *subpage == Subpage::Media { "active" } else { "" };
+        let poster_active = if *subpage == Subpage::Poster { "active" } else { "" };
         let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
 
         let (site_manifest, site_settings) = if video.site_path.is_root_path() {
@@ -656,6 +660,7 @@ fn video_node(
 
         let subtitles_count = video.subtitles.len();
 
+        // TODO: Indicate missing image description for poster image on the poster image subpage link entry
         formatdoc!(r#"
             <div class="active">
                 {node}
@@ -663,9 +668,12 @@ fn video_node(
                     <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
                         {edit_icon} {t_video_settings}
                     </a>
+                    <a class="{poster_active} subpage" href="{poster_url}" style="padding-left: {padding_left};">
+                        {poster_icon} {t_poster_image}
+                    </a>
                     {site_settings}
                     <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
-                        {media_icon} {t_media}
+                        {media_icon} {t_video_files}
                     </a>
                     <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
                         {subtitles_icon} {t_subtitles} ({subtitles_count})

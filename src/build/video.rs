@@ -116,7 +116,7 @@ pub fn video_html(
     };
 
     let r_embed = if video.embedding() && site.base_url.is_some() && !video.versions.is_empty() {
-        let embed_icon = icons::embed();
+        let embed_icon = icons::EMBED;
 
         let t_embed = &translations.embed;
         let t_embed_codes_permalink = &translations.embed_codes_permalink;

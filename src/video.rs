@@ -683,22 +683,38 @@ impl Video {
         self.embedding() || self.platform_integration().content_embeds()
     }
 
+    /// Return the "largest" version, that is the version with the maximum pixel
+    /// count (horizontal × vertical pixels), or in case of a tie, the version
+    /// that additionally has the larger file size.
     pub fn highest_quality_version(&self) -> Option<&VideoFile> {
-        let mut version_candidate: Option<(usize, &VideoFile)> = None;
+        struct Candidate<'a> {
+            pixel_count: usize,
+            video_file: &'a VideoFile
+        }
+
+        let mut version_candidate: Option<Candidate> = None;
 
         for version in &self.versions {
             if let Some(video_meta) = &version.video_meta {
-                let pixels = video_meta.width * video_meta.height;
-                if version_candidate.is_none() ||
-                    version_candidate.is_some_and(|pixels_version|
-                        pixels > pixels_version.0 ||
-                        (pixels == pixels_version.0 && version.file_meta.size > pixels_version.1.file_meta.size)) {
-                    version_candidate = Some((pixels, version));
+                let pixel_count = video_meta.width * video_meta.height;
+                if version_candidate.is_none() || version_candidate.as_ref().is_some_and(|candidate| {
+                        pixel_count > candidate.pixel_count ||
+                        (pixel_count == candidate.pixel_count && version.file_meta.size > candidate.video_file.file_meta.size)
+                }) {
+                    version_candidate = Some(Candidate {
+                        pixel_count: 0,
+                        video_file: version
+                    });
                 }
+            } else if version_candidate.is_none() {
+                version_candidate = Some(Candidate {
+                    pixel_count: 0,
+                    video_file: version
+                });
             }
         }
 
-        version_candidate.map(|pixels_version| pixels_version.1)
+        version_candidate.map(|pixels_version| pixels_version.video_file)
     }
 
     /// Sets new inherited options on the video.

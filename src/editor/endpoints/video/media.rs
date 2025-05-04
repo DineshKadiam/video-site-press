@@ -16,15 +16,11 @@ use crate::{
     Video
 };
 use crate::browser_support;
-use crate::editor::{Location, Select, Textarea};
+use crate::editor::{Location, Select};
 use crate::editor::routes;
 use crate::editor::widgets::{layout, not_found, upload_widget};
 use crate::icons;
 use crate::util::{precise_duration, human_size};
-
-pub struct UploadPosterFormFeedback {
-    pub error: String
-}
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
     let (aspect_ratio, highest_frame_rate, tallest_height) = if let Some(version) = video.highest_quality_version() {
@@ -166,7 +162,6 @@ pub async fn media(
         Some(video) => {
             media_page(
                 &context,
-                None,
                 &language,
                 &video
             )
@@ -177,11 +172,9 @@ pub async fn media(
 
 pub fn media_page(
     context: &Context,
-    form_feedback: Option<UploadPosterFormFeedback>,
     language: &Language,
     video: &Video
 ) -> HttpResponse {
-
     let site = context.get_site();
     let translations = &language.translations;
 
@@ -303,78 +296,11 @@ pub fn media_page(
         "#)
     };
 
-    let t_upload_poster = translations.upload_poster;
-    let poster_upload_button = upload_widget(&routes::video_upload_poster(video), t_upload_poster);
-    let poster_upload_button_error = if let Some(UploadPosterFormFeedback { error }) = &form_feedback {
-        format!(r#"<span class="error">{error}</span>"#)
-    } else {
-        String::new()
-    };
-    let poster_form = match &video.poster {
-        Some(poster) => {
-            let alt = if let Some(description) = &poster.description {
-                format!(r#"alt="{description}" "#)
-            } else {
-                String::new()
-            };
-
-            // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
-            let file_name = &poster.file_name;
-            let src = routes::poster(file_name, &video.site_path);
-
-            let mut description = Textarea::image_description("description", translations.poster_description);
-
-            description
-                .id("poster_description")
-                .value_option(&poster.description);
-
-            let t_delete_poster = translations.delete_poster;
-            let t_random_poster = translations.random_poster;
-            let t_really_delete = translations.really_delete;
-            let t_update_description = translations.update_description;
-
-            let delete_poster_action = routes::video_delete_poster(video);
-            let random_poster_action = routes::video_random_poster(video);
-            let update_poster_action = routes::video_update_poster(video);
-
-            format!(r#"
-                <img {alt}class="thumbnail" src="{src}">
-                <div class="button_group">
-                    {poster_upload_button}
-                    <form action="{random_poster_action}" method="post">
-                        <button class="action">{t_random_poster}</button>
-                    </form>
-                    <form action="{delete_poster_action}" data-confirm data-confirm-label="{t_delete_poster}" data-confirm-text="{t_really_delete}" method="post">
-                        <div style="align-items: center; column-gap: .5rem; display: flex;">
-                            <button class="danger">{t_delete_poster}</button>
-                        </div>
-                    </form>
-                </div>
-                {poster_upload_button_error}
-                <form action="{update_poster_action}" data-warn-discard method="post">
-                    {description}
-
-                    <div style="align-items: center; column-gap: .5rem; display: flex;">
-                        <button class="action">{t_update_description}</button>
-                    </div>
-                </form>
-            "#)
-        }
-        None => {
-            formatdoc!(r#"
-                {poster_upload_button}
-                {poster_upload_button_error}
-            "#)
-        }
-    };
-
     let t_upload_new_version = translations.upload_new_version;
     let upload_url = routes::upload_video(&video.site_path);
     let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
 
     let render_additional_formats = additional_formats_form(translations, video);
-
-    let t_poster_image = translations.poster_image;
 
     let body = formatdoc!(r#"
         <div class="form_group">
@@ -383,16 +309,11 @@ pub fn media_page(
         </div>
 
         {render_additional_formats}
-
-        <div class="form_group">
-            <h2>{t_poster_image}</h2>
-            {poster_form}
-        </div>
     "#);
 
-    let t_media = translations.media;
+    let t_video_files = translations.video_files;
     let video_title = video.title_or_slug_or_generic_label(translations);
-    let head_title = format!("{t_media} – {video_title}");
+    let head_title = format!("{t_video_files} – {video_title}");
     let html = layout(
         &body,
         context,

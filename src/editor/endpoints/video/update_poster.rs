@@ -34,7 +34,7 @@ pub async fn update_poster(
 
     match context.update_video(mutation, &site_path) {
         Ok(video) => {
-            let redirect_url = routes::video_media(&video);
+            let redirect_url = routes::video_poster(&video);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(()) => {

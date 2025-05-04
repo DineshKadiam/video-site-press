@@ -192,8 +192,16 @@ pub fn video_move(video: &Video) -> String {
     format!("/video/move/{}", video.site_path.normalized())
 }
 
-pub fn video_random_poster(video: &Video) -> String {
-    format!("/video/random-poster/{}", video.site_path.normalized())
+pub fn video_pick_poster(video: &Video) -> String {
+    format!("/video/pick-poster/{}", video.site_path.normalized())
+}
+
+pub fn video_poster(video: &Video) -> String {
+    format!("/video/poster/{}", video.site_path.normalized())
+}
+
+pub fn video_stream(file_name: &str, video: &Video) -> String {
+    format!("/video/stream/{}{}", video.site_path.normalized(), file_name)
 }
 
 pub fn video_subtitles(video: &Video) -> String {

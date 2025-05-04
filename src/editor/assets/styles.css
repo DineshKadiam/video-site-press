@@ -595,6 +595,7 @@ ul.semantic_only {
     color: var(--fg-1);
     cursor: help;
 }
+video { max-width: 100%; }
 .video {
     column-gap: .5rem;
     display: flex;

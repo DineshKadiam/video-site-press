@@ -22,7 +22,7 @@ use crate::{
     VideoFormat,
     VideoMeta
 };
-use crate::util::nanoid;
+use crate::util::{deduplicate_filename, nanoid};
 
 pub const FFMPEG: &str = if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" };
 pub const FFPROBE: &str = if cfg!(windows) { "ffprobe.exe" } else { "ffprobe" };
@@ -75,9 +75,9 @@ struct FFprobeStream {
     pub width: Option<usize>
 }
 
-/// With seek_offset (0.0-1.0) we determine at which point in the video (start to end)
-/// we take the snapshot for the poster
-pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Result<String, ()> {
+/// With `timecode` (in seconds) we specify at which point in the video we
+/// take the snapshot for the poster.
+pub fn compute_poster(context: &Context, timecode: f32, video: &Video) -> Result<String, ()> {
     if let Some(version) = &video.highest_quality_version() {
         let mut command = Command::new(FFMPEG);
 
@@ -85,33 +85,29 @@ pub fn compute_poster(context: &Context, seek_offset: f32, video: &Video) -> Res
             .join(video.site_path.filesystem_relative())
             .join(&version.file_name);
 
-        // If we know the duration (which conceptually speaking we should be guaranteed to know),
-        // we take the poster snapshot at halftime, otherwise at the start
-        let snapshot_seek_offset_seconds = version.video_meta
-            .as_ref()
-            .map(|video_meta| format!("{}", video_meta.duration * seek_offset))
-            .unwrap_or("0".to_string());
+        let mut output_filename = String::from("poster.jpg");
+        let mut output_path = context.site_dir
+                .join(video.site_path.filesystem_relative())
+                .join(&output_filename);
 
-        let output_filename = if !context.site_dir.join(video.site_path.filesystem_relative()).join("poster.jpg").exists() {
-            String::from("poster.jpg")
-        } else {
-            let timecoded = format!("poster_{}.jpg", snapshot_seek_offset_seconds);
+        if output_path.exists() {
+            output_filename = format!("poster_{}.jpg", timecode);
+            output_path = context.site_dir
+                .join(video.site_path.filesystem_relative())
+                .join(&output_filename);
 
-            if !context.site_dir.join(video.site_path.filesystem_relative()).join(&timecoded).exists() {
-                timecoded
-            } else {
-                format!("poster_{}.jpg", nanoid())
+            while output_path.exists() {
+                output_filename = deduplicate_filename(&output_filename);
+                output_path = context.site_dir
+                    .join(video.site_path.filesystem_relative())
+                    .join(&output_filename);
             }
-        };
-
-        let output_path = context.site_dir
-            .join(video.site_path.filesystem_relative())
-            .join(&output_filename);
+        }
 
         command
             .arg("-y")
             .arg("-ss")
-            .arg(snapshot_seek_offset_seconds)
+            .arg(timecode.to_string())
             .arg("-i")
             .arg(&input_path)
             .arg("-frames")

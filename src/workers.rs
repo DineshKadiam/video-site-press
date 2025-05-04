@@ -529,17 +529,31 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                         context.processing.lock().unwrap().remove(process_id);
                     }
-                    JobKind::VideoRandomPoster { poster_aspect, video } => {
+                    JobKind::VideoPickPoster { poster_aspect, timecode, video } => {
                         let label = format!("[Worker {worker_number}] Computing random poster for {}", &video.site_path.normalized());
                         let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
 
                         let video_with_metadata = compute_metadata(&context, video);
 
-                        let seek_offset = rand::random::<f32>(); // Produces a value between 0.0-0.1
-                        let video_with_random_poster = compute_poster(&context, seek_offset, video_with_metadata);
+                        if let Some(highest_quality_version) = &video_with_metadata.highest_quality_version() {
+                            let video_meta = highest_quality_version.video_meta.as_ref().unwrap();
 
-                        if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_random_poster) {
-                            context.processing_errors.lock().unwrap().push(err);
+                            let bounded_timecode = if timecode < 0.0 {
+                                0.0
+                            } else if timecode > video_meta.duration {
+                                video_meta.duration
+                            } else {
+                                timecode
+                            };
+
+                            let video_with_computed_poster = compute_poster(&context, bounded_timecode, video_with_metadata);
+
+                            if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_computed_poster) {
+                                context.processing_errors.lock().unwrap().push(err);
+                            }
+                        } else {
+                            let message = format!("There was no source video to compute a poster from. ({})", video_with_metadata.site_path.normalized());
+                            context.processing_errors.lock().unwrap().push(message);
                         }
 
                         context.processing.lock().unwrap().remove(process_id);
