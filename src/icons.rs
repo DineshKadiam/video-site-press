@@ -3,6 +3,16 @@
 
 use indoc::{formatdoc, indoc};
 
+/// A slim, vertical, slightly pill-shaped marker line, aligned to the left.
+pub fn active_marker(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m18.494 10.136c-3.5869 1e-6 -6.4945 2.9095-6.4945 6.4964v30.736c0 3.5869 2.9076 6.4964 6.4945 6.4964 3.5869 0 6.4945-2.9095 6.4945-6.4964v-30.736c0-3.5869-2.9076-6.4964-6.4945-6.4964z"/>
+        </svg>
+    "#)
+}
+
 /// The Atom feed format logo as used by rssboard.org (e.g. https://www.rssboard.org/news/213/atom-feed-format-born-20-years-ago)
 pub const ATOM: &str = indoc!(r#"
     <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

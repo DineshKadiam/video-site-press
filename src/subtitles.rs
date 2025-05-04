@@ -8,6 +8,7 @@ use language_tags::LanguageTag;
 #[derive(Clone, Debug)]
 pub struct SubtitleFile {
 	pub file_name: String,
+	pub file_stem: String,
 	/// Specified as BCP 47 code (e.g. 'en')
 	/// (see e.g. https://www.rfc-editor.org/info/bcp47)
 	pub language: Option<String>
@@ -16,7 +17,7 @@ pub struct SubtitleFile {
 impl SubtitleFile {
 	pub fn new(path: &Path) -> SubtitleFile {
 		let file_name = path.file_name().unwrap().to_string_lossy().to_string();
-		let file_stem = path.file_stem().unwrap().to_string_lossy();
+		let file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
 		let language = match LanguageTag::parse(&file_stem) {
 			Ok(language_tag) => Some(language_tag.to_string()),
@@ -30,6 +31,7 @@ impl SubtitleFile {
 
 		SubtitleFile {
 			file_name,
+			file_stem,
 			language
 		}
 	}

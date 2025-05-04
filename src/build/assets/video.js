@@ -14,11 +14,11 @@ const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
 const timelineInput = document.querySelector('.timeline input');
 const selectResolutionButton = document.querySelector('#select_resolution');
-const selectSubtitlesButton = document.querySelector('#select_subtitles');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
 const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
+const toggleSubtitlesButton = document.querySelector('#toggle_subtitles');
 const toggleVolumeButton = document.querySelector('#toggle_volume');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
 const versionsRing = document.querySelector('.versions_ring');
@@ -222,36 +222,47 @@ selectResolutionButton.addEventListener('click', () => {
     }
 });
 
-if (selectSubtitlesButton) {
-    selectSubtitlesButton.addEventListener('click', () => {
-        const enableTrack = track => {
-            track.mode = 'showing';
-            const text = document.createElement('span');
-            text.textContent = ' ' + (track.language || track.label);
-            selectSubtitlesButton.replaceChildren(
-                subtitlesIcon.cloneNode(true),
-                text
-            );
-        };
+if (toggleSubtitlesButton) {
+    const subtitleButtons = document.querySelectorAll('.subtitle_options button');
 
-        let prevTrackDisabled = false;
-        for (const track of video.textTracks) {
-            if (prevTrackDisabled) {
-                enableTrack(track);
-                return;
-            }
+    const subtitleOptions = [];
+    for (const [index, button] of subtitleButtons.entries()) {
+        const option = { button };
 
-            if (track.mode === 'showing') {
-                track.mode = 'disabled';
-                prevTrackDisabled = true;
-            }
+        if (index > 0) {
+            option.track = video.textTracks[index - 1];
         }
 
-        if (prevTrackDisabled) {
-            selectSubtitlesButton.replaceChildren(subtitlesIcon.cloneNode(true));
-        } else {
-            enableTrack(video.textTracks[0]);
+        subtitleOptions.push(option);
+    }
+
+    const noSubtitleOption = subtitleOptions[0];
+    let activeSubtitleOption = noSubtitleOption;
+
+    function activateOption(option) {
+        activeSubtitleOption.button.classList.remove('active');
+        if (activeSubtitleOption.track) {
+            activeSubtitleOption.track.mode = 'disabled';
         }
+
+        option.button.classList.add('active');
+        if (option.track) {
+            option.track.mode = 'showing';
+        }
+        activeSubtitleOption = option;
+    }
+
+    for (const option of subtitleOptions) {
+        option.button.addEventListener('click', () => {
+            if (option !== activeSubtitleOption) {
+                activateOption(option);
+            }
+        });
+    }
+
+    toggleSubtitlesButton.addEventListener('click', () => {
+        const activeSubtitleOptionIndex = subtitleOptions.indexOf(activeSubtitleOption);
+        activateOption(subtitleOptions[(activeSubtitleOptionIndex + 1) % subtitleOptions.length]);
     });
 }
 

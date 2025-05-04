@@ -20,6 +20,7 @@ use crate::build::{AssetHashes, Traversal};
 use crate::icons;
 use crate::util::{
     casual_duration,
+    html_escape_inside_attribute,
     html_escape_outside_attribute,
     human_size,
     precise_duration
@@ -210,33 +211,66 @@ pub fn player(
         None => String::new()
     };
 
-    let subtitles = video.subtitles
-        .iter()
-        .enumerate()
-        .map(|(index, subtitle_file)| {
-            // TODO: label needs to be escaped
-            let (label, srclang) = match &subtitle_file.language {
-                Some(code) => (code, format!(r#"srclang="{code}""#)),
-                None => (&subtitle_file.file_name, String::new())
-            };
 
-            // TODO: Dynamic sourcing from user-supplied data for kind/label
-            // TODO: Maybe use 'default' attribute (but based on what?)
-            formatdoc!(r#"
-                <track
-                    kind="subtitles"
-                    label="{label}"
-                    src="{video_prefix}{index}.vtt"
-                    {srclang}/>
-            "#)
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    let subtitle_controls;
+    let subtitle_tracks;
+    if !video.subtitles.is_empty() {
+        subtitle_tracks = video.subtitles
+            .iter()
+            .enumerate()
+            .map(|(index, subtitle_file)| {
+                let (label, srclang) = match &subtitle_file.language {
+                    Some(code) => (code.to_string(), format!(r#"srclang="{code}""#)),
+                    None => (html_escape_inside_attribute(&subtitle_file.file_stem), String::new())
+                };
 
-    let subtitles_icon = icons::subtitles(Some(translations.subtitles));
-    let subtitle_select = match video.subtitles.is_empty() {
-        true => String::new(),
-        false => format!(r#"<button id="select_subtitles">{subtitles_icon}</button>"#)
+                // TODO: Maybe use 'default' attribute (but based on what?)
+                formatdoc!(r#"
+                    <track
+                        kind="subtitles"
+                        label="{label}"
+                        src="{video_prefix}{index}.vtt"
+                        {srclang}/>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let active_marker_icon = icons::active_marker(translations.active);
+
+        let subtitle_options = video.subtitles
+            .iter()
+            .map(|subtitle_file| {
+                let label = match &subtitle_file.language {
+                    Some(code) => code.to_string(),
+                    None => html_escape_outside_attribute(&subtitle_file.file_stem)
+                };
+
+                formatdoc!(r#"
+                    <button>
+                        <span class="active_marker_container">{active_marker_icon}</span> {label}
+                    </button>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let subtitles_icon = icons::subtitles(Some(translations.subtitles));
+        let t_no_subtitles = translations.no_subtitles;
+        subtitle_controls = formatdoc!(r#"
+            <div class="subtitle_controls">
+                <button id="toggle_subtitles" tabindex="-1">{subtitles_icon}</button>
+                <div class="subtitle_options">
+                    <button class="active">
+                        <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
+                    </button>
+                    {subtitle_options}
+                </div>
+            </div>
+        "#);
+    } else {
+        subtitle_controls = String::new();
+        subtitle_tracks = String::new();
     };
 
     let duration = recommended_version.video_meta.as_ref().unwrap().duration;
@@ -276,7 +310,7 @@ pub fn player(
                     <div class="bar outline"></div>
                 </div>
                 <div class="control_pane">
-                    <div>
+                    <div class="left_side_controls">
                         <button id="toggle_playback">{play_icon}</button>
                         <button id="toggle_volume">{volume_loud_icon}</button>
                         <button id="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
@@ -284,15 +318,15 @@ pub fn player(
                             <span id="time_current">00:00</span> / <span id="time_total">{duration_formatted}</span>
                         </div>
                     </div>
-                    <div>
+                    <div class="right_side_controls">
                         <button id="select_resolution">{default_resolution_label}</button>
-                        {subtitle_select}
+                        {subtitle_controls}
                         <button id="toggle_fullscreen">{maximize_icon}</button>
                     </div>
                 </div>
             </div>
             <video data-duration="{duration}" playsinline {poster} preload="none" src="{video_prefix}{src}">
-                {subtitles}
+                {subtitle_tracks}
             </video>
         </div>
     "#)
