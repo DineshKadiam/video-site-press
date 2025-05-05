@@ -39,7 +39,7 @@ subtitles while `fr.vtt` would indicate french subtitles.
 
 ## The video.eno manifest
 
-> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [platform_integration](#platform_integration), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [title](#title), [unlisted](#unlisted)
+> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [platform_integration](#platform_integration), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [subtitles](#subtitles), [title](#title), [unlisted](#unlisted)
 
 Manifest for tagging and configuring a video, which can be placed inside the
 video directory. A video directory can be identified as a video directory
@@ -221,6 +221,25 @@ ascending, then by `release_date` ascending), but the `order` field in a
 playlist manifest can be used to modify this behavior - e.g. to use
 descending order or to sort by release date even if `sort_number` is present
 on videos, to sort alphabetically by title, etc.
+
+## <a name="subtitles"></a> `subtitles`
+
+Subtitles can currently be supplied as `.srt` or `.vtt` files - simply putting
+such files into a video directory already includes them in the video player
+on your site. If the filename is a valid language code¹ (e.g. `en.srt` or
+`de-at.srt`), its language info and label will be auto-inferred.
+
+To manually annotate the display label and language info for a subtitle file,
+use the `subtitles` option like this:
+
+```eno
+subtitles:
+file = en_0.srt
+label = English (closed captions)
+language = en
+```
+
+¹ Following the BCP 47 standard (https://www.rfc-editor.org/info/bcp47)
 
 ## <a name="title"></a> `title`
 

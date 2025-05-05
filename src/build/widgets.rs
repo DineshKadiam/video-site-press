@@ -219,9 +219,11 @@ pub fn player(
             .iter()
             .enumerate()
             .map(|(index, subtitle_file)| {
-                let (label, srclang) = match &subtitle_file.language {
-                    Some(code) => (code.to_string(), format!(r#"srclang="{code}""#)),
-                    None => (html_escape_inside_attribute(&subtitle_file.file_stem), String::new())
+                let label = html_escape_inside_attribute(&subtitle_file.label);
+
+                let srclang = match &subtitle_file.language {
+                    Some(code) => format!(r#"srclang="{code}""#),
+                    None => String::new()
                 };
 
                 // TODO: Maybe use 'default' attribute (but based on what?)
@@ -241,10 +243,7 @@ pub fn player(
         let subtitle_options = video.subtitles
             .iter()
             .map(|subtitle_file| {
-                let label = match &subtitle_file.language {
-                    Some(code) => code.to_string(),
-                    None => html_escape_outside_attribute(&subtitle_file.file_stem)
-                };
+                let label = html_escape_outside_attribute(&subtitle_file.label);
 
                 formatdoc!(r#"
                     <button>

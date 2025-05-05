@@ -63,12 +63,12 @@ pub async fn upload_subtitles(
                     }
 
                     let mutation = |video: &mut Video| {
-                        video.subtitles.push(SubtitleFile::new(&storage_path));
+                        video.subtitles.push(SubtitleFile::from_path(&storage_path));
                     };
 
                     match context.update_video(mutation, &site_path) {
                         Ok(video) => {
-                            let redirect_url = routes::video_edit(&video);
+                            let redirect_url = routes::video_subtitles(&video);
                             return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                         }
                         // TODO: Can only happen in weird time of check vs. time of use edge cases

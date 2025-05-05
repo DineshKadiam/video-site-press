@@ -13,6 +13,7 @@ use crate::editor::Location;
 use crate::editor::routes;
 use crate::editor::widgets::{layout, not_found, upload_widget};
 use crate::icons;
+use crate::util::html_escape_outside_attribute;
 
 // TODO: Allow user to specify language or label for each subtitle track.
 //       Possibly also possibility to order or specify a default track.
@@ -39,13 +40,13 @@ pub async fn subtitles(
 
     let subtitles_list = video.subtitles
         .iter()
-        .enumerate()
-        .map(|(index, subtitle_file)| {
-            let file_name = &subtitle_file.file_name;
-            // TODO: label needs to be escaped
-            let label = match &subtitle_file.language {
+        .map(|subtitle_file| {
+            let file_name = html_escape_outside_attribute(&subtitle_file.file_name);
+            let label = html_escape_outside_attribute(&subtitle_file.label);
+
+            let language = match &subtitle_file.language {
                 Some(code) => code,
-                None => &subtitle_file.file_name
+                None => translations.no_language_info
             };
 
             let t_delete = translations.delete;
@@ -67,7 +68,7 @@ pub async fn subtitles(
 
             formatdoc!(r#"
                 <div>
-                    {label} ({index}.vtt) {delete_form}
+                    <strong>{label}</strong> ({file_name}, {language}) {delete_form}
                 </div>
             "#)
         })
@@ -77,7 +78,9 @@ pub async fn subtitles(
     let body = formatdoc!(r#"
         <h2>{t_subtitles}</h2>
 
-        {subtitles_list}
+        <div style="margin-block: 1rem;">
+            {subtitles_list}
+        </div>
 
         <div class="form_group">
             {subtitles_upload_button}

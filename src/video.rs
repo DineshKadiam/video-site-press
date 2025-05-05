@@ -25,8 +25,13 @@ use crate::{
     Translations,
     VideoMetaCached
 };
+use language_tags::LanguageTag;
 use crate::manifest::{attribute_error, element_error, not_supported_error};
-use crate::util::{checked_remove_dir_all, hash};
+use crate::util::{
+    checked_remove_dir_all,
+    hash,
+    supported_subtitles_extension
+};
 
 const VIDEO_OPTIONS: &[&str] = &[
     "copy_link",
@@ -39,6 +44,7 @@ const VIDEO_OPTIONS: &[&str] = &[
     "poster",
     "release_date",
     "sort_number",
+    "subtitles",
     "title",
     "unlisted"
 ];
@@ -436,6 +442,76 @@ impl Video {
                     }
 
                     let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
+                    let error = element_error(element, manifest_path, message);
+                    self.errors.push(error);
+                }
+                "subtitles" => 'subtitles: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            let mut file = None;
+                            let mut label = None;
+                            let mut language = None;
+
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "file" => {
+                                        if let Some(value) = attribute.value() {
+                                            let absolute_path = manifest_path.parent().unwrap().join(value);
+
+                                            if absolute_path.exists() {
+                                                if supported_subtitles_extension(value) {
+                                                    file = Some(value.to_string());
+                                                } else {
+                                                    let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.errors.push(error);
+                                                }
+                                            } else {
+                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.errors.push(error);
+                                            }
+                                        }
+                                    }
+                                    "label" => {
+                                        if let Some(value) = attribute.value() {
+                                            label = Some(value.to_string());
+                                        }
+                                    }
+                                    "language" => {
+                                        if let Some(value) = attribute.value() {
+                                            match LanguageTag::parse(value) {
+                                                Ok(language_tag) => language = Some(language_tag.to_string()),
+                                                Err(err) => {
+                                                    let message = format!("The language code supplied for the subtitles was not recognized ({err})");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    other => {
+                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file', 'label' and 'language'");
+                                        let error = attribute_error(attribute, manifest_path, &message);
+                                        self.errors.push(error);
+                                    }
+                                }
+                            }
+
+                            if let Some(file) = file {
+                                let subtitles = SubtitleFile::from_manifest(file, label, language);
+                                self.subtitles.push(subtitles);
+                            } else {
+                                let message = "The subtitles option must supply a file attribute at least, e.g.:\n\nsubtitles:\nfile = en.srt";
+                                let error = element_error(element, manifest_path, message);
+                                self.errors.push(error);
+                            }
+
+                            break 'subtitles;
+                        }
+                    }
+
+                    let message = "subtitles must be provided as a field with attributes, e.g.:\n\nsubtitles:\nfile = en.srt\nlabel = English (closed captions)\nlanguage = en";
                     let error = element_error(element, manifest_path, message);
                     self.errors.push(error);
                 }
@@ -841,8 +917,12 @@ impl Video {
             video.poster = Some(poster_file);
         }
 
-        for subtitle_file in &hyper_dir.subtitle_files {
-            video.subtitles.push(SubtitleFile::new(subtitle_file));
+        for path in &hyper_dir.subtitle_files {
+            if !video.subtitles
+                .iter()
+                .any(|subtitle_file| *subtitle_file.file_name == *path.file_name().unwrap()) {
+                video.subtitles.push(SubtitleFile::from_path(path));
+            }
         }
 
         for video_file in &hyper_dir.video_files {
@@ -1014,16 +1094,6 @@ impl Video {
             eno.push_str(&format!("platform_integration: {}\n", platform_integration.key()));
         }
 
-        if let Some(poster) = &self.poster {
-            eno.push_str("poster:\n");
-
-            if let Some(description) = &poster.description {
-                eno.push_str(&format!("description = {}\n", description));
-            }
-
-            eno.push_str(&format!("file = {}\n", poster.file_name));
-        }
-
         if let Some(release_date) = &self.release_date {
             eno.push_str(&format!("release_date: {}\n", release_date));
         }
@@ -1038,6 +1108,31 @@ impl Video {
 
         if self.unlisted {
             eno.push_str("unlisted\n");
+        }
+
+        if let Some(poster) = &self.poster {
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str("poster:\n");
+
+            if let Some(description) = &poster.description {
+                eno.push_str(&format!("description = {}\n", description));
+            }
+
+            eno.push_str(&format!("file = {}\n", poster.file_name));
+        }
+
+        for subtitle_file in &self.subtitles {
+            if !subtitle_file.explicitly_defined { continue; }
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str("subtitles:\n");
+            eno.push_str(&format!("file = {}\n", subtitle_file.file_name));
+            eno.push_str(&format!("label = {}\n", subtitle_file.label));
+
+            if let Some(language) = &subtitle_file.language {
+                eno.push_str(&format!("language = {}\n", language));
+            }
         }
 
         if let Some(description) = &self.description {
