@@ -64,7 +64,7 @@ pub async fn update_subtitles(
         };
 
         let form_feedback = UpdateFormFeedback {
-            content: &content,
+            content: content,
             label: Field::validated(label_trimmed, label_error),
             language: Field::validated(language_trimmed, language_error)
         };

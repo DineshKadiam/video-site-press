@@ -126,7 +126,7 @@ fn collection_node(
             let node = collection_node(
                 breadcrumbs,
                 collection,
-                &location,
+                location,
                 site,
                 None,
                 translations,
@@ -143,7 +143,7 @@ fn collection_node(
         .map(|playlist| {
             let node = playlist_node(
                 breadcrumbs,
-                &location,
+                location,
                 playlist,
                 site,
                 None,

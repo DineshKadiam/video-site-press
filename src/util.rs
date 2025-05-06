@@ -94,7 +94,7 @@ pub fn deduplicate_filename(filename: &str) -> String {
             }
         }
 
-        return format!("{filestem}(1)");
+        format!("{filestem}(1)")
     }
 
     match filename.split_once('.') {

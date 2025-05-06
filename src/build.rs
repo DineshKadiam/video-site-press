@@ -303,7 +303,7 @@ fn build_playlist(
             &playlist.description,
             site,
             &playlist.site_path,
-            &title,
+            title,
             &playlist.published_videos().cloned().collect()
         );
 
@@ -316,7 +316,7 @@ fn build_playlist(
             site,
             &playlist.site_path,
             &subscribe_permalink,
-            &title,
+            title,
             &traversal_subscribe,
             playlist.unlisted()
         );

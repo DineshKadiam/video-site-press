@@ -37,7 +37,7 @@ pub async fn edit_poster(
                 &video
             )
         }
-        None => return not_found(&context, &language, &site_path)
+        None => not_found(&context, &language, &site_path)
     }
 }
 
@@ -116,7 +116,7 @@ pub fn edit_poster_page(
     let t_poster_image = translations.poster_image;
 
     let pick_from_video = if let Some(version) = video.highest_quality_version() {
-        let src = routes::video_stream(&version.file_name, &video);
+        let src = routes::video_stream(&version.file_name, video);
 
         let t_jump_to_a_random_frame = translations.jump_to_a_random_frame;
         let t_pick_a_poster_from_the_video = translations.pick_a_poster_from_the_video;

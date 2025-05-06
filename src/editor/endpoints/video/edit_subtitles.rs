@@ -37,7 +37,7 @@ pub async fn edit_subtitles(
 
     match context.get_video(&site_path) {
         Some(video) => edit_subtitles_page(&context, &file_name, None, &language, &video),
-        None => return not_found(&context, &language, &site_path)
+        None => not_found(&context, &language, &site_path)
     }
 }
 

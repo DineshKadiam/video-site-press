@@ -166,7 +166,7 @@ pub async fn media(
                 &video
             )
         }
-        None => return not_found(&context, &language, &site_path)
+        None => not_found(&context, &language, &site_path)
     }
 }
 

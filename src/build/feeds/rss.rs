@@ -15,13 +15,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use indoc::formatdoc;
 
-use crate::{
-    Context,
-    MarkdownSubset,
-    Site,
-    SitePath,
-    Video
-};
+use crate::{MarkdownSubset, Site, Video};
 use crate::build::GENERATOR_INFO;
 use crate::util::html_escape_outside_attribute;
 
@@ -30,7 +24,6 @@ pub fn rss(
     // Specific channel-level extension markup added by the caller (e.g. media
     // rss or podcast rss specific markup).
     channel_extensions: &str,
-    context: &Context,
     description: &Option<String>,
     // E.g. to pass specific media or podcast namespaces
     extra_namespaces: &[&str],
@@ -39,9 +32,8 @@ pub fn rss(
     feed_url: &str,
     item_extensions: &mut impl FnMut(DateTime<Utc>, &Site, &Video) -> String,
     site: &Site,
-    site_path: &SitePath,
     title: &str,
-    videos: &Vec<Arc<Video>>
+    videos: &[Arc<Video>]
 ) -> String {
     let items = videos
         .iter()
@@ -65,7 +57,7 @@ pub fn rss(
         format!("Hyper 8 Video System {}", env!("HYPER8_VERSION_DISPLAY"))
     };
 
-    let title_escaped = html_escape_outside_attribute(&title);
+    let title_escaped = html_escape_outside_attribute(title);
 
     let link = site.absolute_url_unchecked();
 
@@ -137,7 +129,7 @@ fn item(
 
     let link = site.absolute_url_index_unchecked(&video.site_path);
 
-    let title_escaped = html_escape_outside_attribute(&site.title());
+    let title_escaped = html_escape_outside_attribute(site.title());
 
     // Execute closure that may add e.g. media rss or podcast rss specific
     // markup.

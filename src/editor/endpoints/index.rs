@@ -132,7 +132,7 @@ fn empty_site_html(translations: &Translations) -> String {
     "#)
 }
 
-fn invalid_site_html(errors: &Vec<String>, translations: &Translations) -> String {
+fn invalid_site_html(errors: &[String], translations: &Translations) -> String {
     let failure_icon = icons::failure(translations.error);
     let t_invalid_site_text = translations.invalid_site_text();
 

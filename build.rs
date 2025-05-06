@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-/// Build hyper8 with (e.g.) HYPER8_VERSION=2.0.0~pre1 to override
-/// the version that is displayed and reported in resulting builds.
+//! Build hyper8 with (e.g.) HYPER8_VERSION=2.0.0~pre1 to override
+//! the version that is displayed and reported in resulting builds.
 
 use std::env;
 use std::hash::{DefaultHasher, Hash, Hasher};

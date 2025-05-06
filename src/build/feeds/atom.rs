@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-/// Atom specification for reference:
-/// - https://validator.w3.org/feed/docs/atom.html (more approachable)
-/// - https://datatracker.ietf.org/doc/html/rfc4287 (more formal)
+//! Atom specification for reference:
+//! - https://validator.w3.org/feed/docs/atom.html (more approachable)
+//! - https://datatracker.ietf.org/doc/html/rfc4287 (more formal)
 
 use std::fs;
 use std::sync::Arc;
@@ -30,7 +30,7 @@ pub fn atom(
     site: &Site,
     site_path: &SitePath,
     title: &str,
-    videos: &Vec<Arc<Video>>
+    videos: &[Arc<Video>]
 ) {
     let atom_feed_url = site.absolute_url_file_unchecked(ATOM_FILENAME, site_path);
 
@@ -59,7 +59,7 @@ pub fn atom(
             entry(
                 build_time,
                 site,
-                &video
+                video
             )
         })
         .collect::<Vec<String>>()
@@ -80,7 +80,7 @@ pub fn atom(
         String::new()
     };
 
-    let title_escaped = html_escape_outside_attribute(&title);
+    let title_escaped = html_escape_outside_attribute(title);
 
     let version_detailed = env!("HYPER8_VERSION_DETAILED");
     let xml = formatdoc!(r#"
@@ -136,7 +136,7 @@ fn entry(
     };
 
     let title = video.title_or_slug_or_generic_label(&site.language.translations);
-    let title_escaped = html_escape_outside_attribute(&title);
+    let title_escaped = html_escape_outside_attribute(title);
 
     // TODO: Link can include things like language, type, enclosure (!), etc.,
     // we maybe should make use of that

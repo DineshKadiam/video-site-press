@@ -174,7 +174,7 @@ impl Context {
 
                     {
                         // Apply the name of the site_dir as initial title
-                        let mut collection_mut = Arc::<Collection>::get_mut(&mut collection_arc).unwrap(); // always succeeds, single-owned at this point
+                        let collection_mut = Arc::<Collection>::get_mut(&mut collection_arc).unwrap(); // always succeeds, single-owned at this point
                         collection_mut.title = Some(string_from_os_str(self.site_dir.file_name().unwrap()));
                     }
 
@@ -425,7 +425,7 @@ impl Context {
 
                     {
                         // Apply the name of the site_dir as initial title
-                        let mut playlist_mut = Arc::<Playlist>::get_mut(&mut playlist_arc).unwrap(); // always succeeds, single-owned at this point
+                        let playlist_mut = Arc::<Playlist>::get_mut(&mut playlist_arc).unwrap(); // always succeeds, single-owned at this point
                         playlist_mut.title = Some(string_from_os_str(self.site_dir.file_name().unwrap()));
                     }
 
@@ -699,7 +699,7 @@ impl Context {
 
                     {
                         // Apply the name of the site_dir as initial title
-                        let mut video_mut = Arc::<Video>::get_mut(&mut video_arc).unwrap(); // always succeeds, single-owned at this point
+                        let video_mut = Arc::<Video>::get_mut(&mut video_arc).unwrap(); // always succeeds, single-owned at this point
                         video_mut.title = Some(string_from_os_str(self.site_dir.file_name().unwrap()));
                     }
 

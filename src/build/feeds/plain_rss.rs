@@ -26,7 +26,7 @@ pub fn plain_rss(
     site: &Site,
     site_path: &SitePath,
     title: &str,
-    videos: &Vec<Arc<Video>>
+    videos: &[Arc<Video>]
 ) {
     let feed_url = site.absolute_url_file_unchecked(PLAIN_RSS_FILENAME, site_path);
 
@@ -39,13 +39,11 @@ pub fn plain_rss(
     let xml = rss(
         build_time,
         channel_extensions,
-        context,
         description,
         extra_namespaces,
         &feed_url,
         &mut item_extensions,
         site,
-        site_path,
         title,
         videos
     );

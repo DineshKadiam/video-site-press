@@ -48,7 +48,7 @@ pub async fn edit(
 
     match context.get_video(&site_path) {
         Some(video) => edit_page(&context, None, &language, &video),
-        None => return not_found(&context, &language, &site_path)
+        None => not_found(&context, &language, &site_path)
     }
 }
 

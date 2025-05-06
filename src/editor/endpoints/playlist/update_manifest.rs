@@ -37,6 +37,6 @@ pub async fn update_manifest(
             let redirect_url = routes::playlist_manifest(&playlist);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
-        None => return Either::Right(not_found(&context, &language, &site_path))
+        None => Either::Right(not_found(&context, &language, &site_path))
     }
 }

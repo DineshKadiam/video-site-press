@@ -148,7 +148,7 @@ pub fn edit_page(
         context,
         language,
         Location::site(&SitePath::root_path()),
-        &site,
+        site,
         t_site_settings
     );
 

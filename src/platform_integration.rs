@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-/// Various abstractions for integrating hyper8 with platforms (e.g. mastodon
-/// and commercial walled gardens) by way of Open Graph metadata for link
-/// previews, automatic audio/video embeds in timelines, and so on.
-///
-/// Reference documentation and specifications:
-/// - https://ogp.me/
-/// - https://developers.facebook.com/docs/sharing/webmasters/#video
+//! Various abstractions for integrating hyper8 with platforms (e.g. mastodon
+//! and commercial walled gardens) by way of Open Graph metadata for link
+//! previews, automatic audio/video embeds in timelines, and so on.
+//!
+//! Reference documentation and specifications:
+//! - https://ogp.me/
+//! - https://developers.facebook.com/docs/sharing/webmasters/#video
 
 use crate::{Site, Translations};
 use crate::util::html_escape_inside_attribute;

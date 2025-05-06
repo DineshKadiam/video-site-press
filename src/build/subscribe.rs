@@ -34,7 +34,7 @@ pub fn feed_choice(
     translations: &Translations
 ) -> String {
     let url = site.absolute_url_file_unchecked(filename, site_path);
-    let copy_button = copy_button("content", &url, &translations.copy_url);
+    let copy_button = copy_button("content", &url, translations.copy_url);
 
     formatdoc!(r#"
         <div class="feed_card">
@@ -105,7 +105,7 @@ pub fn subscribe_html(
         translations.plain_rss_description,
         PLAIN_RSS_FILENAME,
         &icons::rss(None),
-        &translations.plain_rss,
+        translations.plain_rss,
         site,
         site_path,
         translations

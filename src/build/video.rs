@@ -140,7 +140,7 @@ pub fn video_html(
 
     let r_unlisted_badge = if video.unlisted() {
         layout.no_indexing();
-        unlisted_badge(&translations)
+        unlisted_badge(translations)
     } else {
         String::new()
     };
