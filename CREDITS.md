@@ -13,10 +13,13 @@ listed here, just say the word.
 Thanks everyone for your support!
 
 [BMKÖS](https://www.bmkoes.gv.at/)<br>
+[Christian Pacaud](https://www.christianpacaud.com/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
 [dérive](https://derive.at)<br>
 [Edgar Aichinger](https://build.opensuse.org/users/edogawa)<br>
 hatsch<br>
+[Ian Menz](https://norcal.social/@CallMePlayer)<br>
+[Internet Stiftung](https://www.internetstiftung.at/)
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
 [Meljoann](https://www.meljoann.com/)<br>
 [Sam](https://ethicalrevolution.co.uk/)<br>
