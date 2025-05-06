@@ -521,7 +521,10 @@ fn tree_node(
 
     let e_title = title_option
         .map(html_escape_outside_attribute)
-        .unwrap_or(String::from(r#"<span aria-hidden="true" class="no_title">…</span>"#));
+        .unwrap_or_else(|| {
+            let t_no_title = translations.no_title;
+            format!(r#"<span aria-hidden="true" class="no_title">{t_no_title}</span>"#)
+        });
 
     let mut badges = Vec::new();
 
