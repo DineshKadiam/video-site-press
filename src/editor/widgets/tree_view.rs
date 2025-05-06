@@ -174,8 +174,8 @@ fn collection_node(
         .join("");
 
     let node_with_subpages = if let Some(subpage) = location.active_subpage(&collection.site_path) {
-        let depth = edit_url.split('/').count() as f32 - 2.5;
-        let padding_left_rem = 0.4 + depth * 1.4;
+        let depth = edit_url.split('/').count() as f32 - 3.5;
+        let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
         let dangerous_actions_url = routes::collection_dangerous_actions(collection);
@@ -291,8 +291,8 @@ fn playlist_node(
     );
 
     let node_with_subpages = if let Some(subpage) = location.active_subpage(&playlist.site_path) {
-        let depth = edit_url.split('/').count() as f32 - 2.5;
-        let padding_left_rem = 0.4 + depth * 1.4;
+        let depth = edit_url.split('/').count() as f32 - 3.5;
+        let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
         let dangerous_actions_url = routes::playlist_dangerous_actions(playlist);
@@ -545,8 +545,8 @@ fn tree_node(
         format!("{} {e_title}", badges.join(" "))
     };
 
-    let depth = href.split('/').count() - 3;
-    let padding_left_rem = 0.4 + depth as f32 * 1.4;
+    let depth = std::cmp::max(href.split('/').count() as i32, 4) - 4;
+    let padding_left_rem = 0.6 + depth as f32 * 1.4;
     let padding_left = format!("{}rem", padding_left_rem);
 
     formatdoc!(r#"
@@ -598,8 +598,8 @@ fn video_node(
     );
 
     if let Some(subpage) = location.active_subpage(&video.site_path) {
-        let depth = edit_url.split('/').count() as f32 - 2.5;
-        let padding_left_rem = 0.4 + depth * 1.4;
+        let depth = edit_url.split('/').count() as f32 - 3.5;
+        let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
         let dangerous_actions_url = routes::video_dangerous_actions(video);
