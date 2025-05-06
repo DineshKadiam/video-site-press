@@ -36,11 +36,10 @@ Hyper 8 is in beta and some things are knowingly incomplete, this is an overview
 
 - Banner images are well implemented on the backend, but not included in the layout of built sites yet
 - Unfinished background encoding jobs are not persisted when you shut down the Hyper 8 server
-- Some background jobs do not necessarily give immediate feedback of them happening, these include:
-  - `Random Poster` button: After clicking wait a few seconds, then refresh - a new poster should be there
-  - `Render Format` button: After clicking you see the background job on the jobs page, but not on the video page itself (yet)
-  - Some other smaller tasks like metadata computation or image resizing might not communicate themselves well,
-    in general if anything is off you can always wait a few seconds and refresh the page to work around such glitches.
+- Some background jobs do not necessarily give immediate feedback of them
+  happening, e.g. after requesting a new video format to be rendered you'll
+  see the background job on the jobs page, but not (yet) on the video page
+  itself
 - The cache system (which by default puts its data in a hidden `.hyper8_cache`
   folder in your site directory) removes some, but not all, stale data it
   creates. As a result, minor amounts of cache data can accumulate
@@ -55,10 +54,6 @@ Hyper 8 is in beta and some things are knowingly incomplete, this is an overview
   their repspective pages), make sure to resolve these errors manually before
   performing any consecutive updates from the browser interface, as Hyper 8
   can not yet keep/persist malformed manifest data during updates.
-- In rare circumstances various foreground or background processes
-  (building, deploying, encoding, etc.) might still crash - you will usually
-  find some feedback on this in the terminal window which you can include
-  with bug reports
 
 ## Documentation
 
