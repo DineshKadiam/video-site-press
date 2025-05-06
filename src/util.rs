@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::{Error, ErrorKind};
@@ -250,17 +250,22 @@ pub fn precise_duration(seconds: f32) -> String {
     }
 }
 
-/// Efficient, reusable implementation of the annoying OsString to String conversion
-pub fn string_from_os(os_string: OsString) -> String {
+/// Reusable, efficient implementation of the annoying &OsStr to String conversion
+pub fn string_from_os_str(os_str: &OsStr) -> String {
+    os_str.to_string_lossy().into()
+}
+
+/// Reusable, efficient implementation of the annoying OsString to String conversion
+pub fn string_from_os_string(os_string: OsString) -> String {
     match os_string.into_string() {
         Ok(string) => string,
-        Err(os_string) => os_string.to_string_lossy().to_string()
+        Err(os_string) => os_string.to_string_lossy().into()
     }
 }
 
-/// Efficient, reusable implementation of the annoying PathBuf to String conversion
+/// Reusable, efficient implementation of the annoying PathBuf to String conversion
 pub fn string_from_pathbuf(path: PathBuf) -> String {
-    string_from_os(path.into_os_string())
+    string_from_os_string(path.into_os_string())
 }
 
 pub fn supported_audio_extension(filename: &str) -> bool {

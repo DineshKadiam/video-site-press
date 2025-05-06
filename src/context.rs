@@ -28,7 +28,11 @@ use crate::{
     TreeViewOrder,
     Video
 };
-use crate::util::{checked_remove_dir_all, nanoid};
+use crate::util::{
+    checked_remove_dir_all,
+    nanoid,
+    string_from_os_str
+};
 
 pub struct Context {
     pub build_dir: PathBuf,
@@ -166,12 +170,19 @@ impl Context {
                 SiteContent::Collection(collection) => Ok(Arc::clone(collection)),
                 SiteContent::Empty => {
                     let hyper_dir = HyperDir::read(&self.site_dir);
-                    let collection = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-                    collection.write_manifest(self);
-                    site_mut.content = SiteContent::Collection(Arc::clone(&collection));
+                    let mut collection_arc = Collection::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        // Apply the name of the site_dir as initial title
+                        let mut collection_mut = Arc::<Collection>::get_mut(&mut collection_arc).unwrap(); // always succeeds, single-owned at this point
+                        collection_mut.title = Some(string_from_os_str(self.site_dir.file_name().unwrap()));
+                    }
+
+                    collection_arc.write_manifest(self);
+                    site_mut.content = SiteContent::Collection(Arc::clone(&collection_arc));
                     self.replace_site(site_mut);
 
-                    Ok(collection)
+                    Ok(collection_arc)
                 }
                 SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
                 SiteContent::Playlist(playlist) => {
@@ -410,12 +421,19 @@ impl Context {
                 }
                 SiteContent::Empty => {
                     let hyper_dir = HyperDir::read(&self.site_dir);
-                    let playlist = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-                    playlist.write_manifest(self);
-                    site_mut.content = SiteContent::Playlist(Arc::clone(&playlist));
+                    let mut playlist_arc = Playlist::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        // Apply the name of the site_dir as initial title
+                        let mut playlist_mut = Arc::<Playlist>::get_mut(&mut playlist_arc).unwrap(); // always succeeds, single-owned at this point
+                        playlist_mut.title = Some(string_from_os_str(self.site_dir.file_name().unwrap()));
+                    }
+
+                    playlist_arc.write_manifest(self);
+                    site_mut.content = SiteContent::Playlist(Arc::clone(&playlist_arc));
                     self.replace_site(site_mut);
 
-                    Ok(playlist)
+                    Ok(playlist_arc)
                 }
                 SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
                 SiteContent::Playlist(playlist) => Ok(Arc::clone(playlist)),
@@ -677,12 +695,19 @@ impl Context {
                 }
                 SiteContent::Empty => {
                     let hyper_dir = HyperDir::read(&self.site_dir);
-                    let video = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
-                    video.write_manifest(self);
-                    site_mut.content = SiteContent::Video(Arc::clone(&video));
+                    let mut video_arc = Video::read_dir(self, &hyper_dir, InheritedOptions::default(), &site_mut);
+
+                    {
+                        // Apply the name of the site_dir as initial title
+                        let mut video_mut = Arc::<Video>::get_mut(&mut video_arc).unwrap(); // always succeeds, single-owned at this point
+                        video_mut.title = Some(string_from_os_str(self.site_dir.file_name().unwrap()));
+                    }
+
+                    video_arc.write_manifest(self);
+                    site_mut.content = SiteContent::Video(Arc::clone(&video_arc));
                     self.replace_site(site_mut);
 
-                    Ok(video)
+                    Ok(video_arc)
                 }
                 SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
                 SiteContent::Playlist(playlist) => {
