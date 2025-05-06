@@ -5,6 +5,47 @@
 
 # Changelog
 
+## 0.19
+
+### Feeds
+
+- Introduce Atom and RSS feeds for the site, (sub)collections and playlists (c935aa4, df3746e)
+
+### Subtitles
+
+- Implement listing, uploading and deleting subtitles (aefb68d)
+- Implement manifest option for explicitly setting subtitle label and language (7ad2d8e)
+- Implement subtitle edit page in the editor (37f6cde)
+- Improve usability and accessibility of the video player subtitle controls (7bbee82)
+
+### Design/usability (Generated sites)
+
+- Always use a light-on-dark player interface, remove version selector backdrop (d894034)
+- Redesign and extend speed control with keyboard and mousewheel interaction (a14e75d)
+- Fall back to mute/unmute functionality in browsers with read-only volume (34cd608)
+
+### Design/usability (Editor)
+
+- Introduce editor subpages for collections, playlists and videos (f1d3f80, b712772, 8862d8e, b7ccca8)
+- Introduce video poster frame picker (8862d8e)
+- Translate and improve usability for site setup and invalid site pages (1afda0f)
+- Display "No title" label for tree view nodes without title (0885fda)
+
+### Fixes
+
+- Prevent embedded player using up additional, unneeded vertical space (b8c50d1)
+- Remove accidental leading/trailing whitespace in embed copy codes (28d7b34)
+- Revise markdown subset whitespace handling, fix accidental token duplication (bfad302)
+- Fix plaintext descriptions being built but not used for platform integration (ebc0dee)
+- Prevent portrait videos overflowing the player beyond the viewport height (664b123)
+- Handle negative time values in ffmpeg encoding stats (f955cad)
+- Retain site.eno when converting to collection/playlist at the site root (a339554)
+
+### Misc
+
+- Apply the site_dir name as initial title when converting from empty site (b6c4c01)
+- Print Ctrl+C termination hint when starting server (aad087a)
+
 ## 0.18
 
 ### Embeds
