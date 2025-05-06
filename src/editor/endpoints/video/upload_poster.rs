@@ -18,7 +18,8 @@ use crate::{
     JobKind,
     PosterFile,
     SitePath,
-    Video
+    Video,
+    VideoUpdate
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
@@ -84,24 +85,27 @@ pub async fn upload_poster(
                 let mutation = |video: &mut Video| {
                     video.poster = Some(poster_file);
                     video.write_manifest(&context);
+
+                    Ok(())
                 };
 
                 match context.update_video(mutation, &site_path) {
-                    Ok(video) => {
-                        let site = context.get_site();
-                        let job_kind = JobKind::VideoFastTasks {
-                            poster_aspect: site.poster_aspect.numeric(),
-                            video: Arc::clone(&video)
-                        };
-                        context.push_job_queue(job_kind);
-
-                        let redirect_url = routes::video_poster(&video);
-                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
-                    }
-                    Err(()) => {
+                    VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+                    VideoUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
+                    }
+                    VideoUpdate::Success { video_updated, .. } => {
+                        let site = context.get_site();
+                        let job_kind = JobKind::VideoFastTasks {
+                            poster_aspect: site.poster_aspect.numeric(),
+                            video: Arc::clone(&video_updated)
+                        };
+                        context.push_job_queue(job_kind);
+
+                        let redirect_url = routes::video_poster(&video_updated);
+                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
                     }
                 }
             }

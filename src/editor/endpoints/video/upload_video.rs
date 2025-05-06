@@ -26,7 +26,8 @@ use crate::{
     PlaylistUpdate,
     SitePath,
     Video,
-    VideoFile
+    VideoFile,
+    VideoUpdate
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
@@ -135,12 +136,16 @@ pub async fn upload_video(
 
                             let mutation = |video: &mut Video| {
                                 video.versions.push(VideoFile::new(file_meta, file_name, None));
+                                Ok(())
                             };
 
                             match context.update_video(mutation, &site_path) {
-                                Ok(video) => video,
+                                VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+                                VideoUpdate::Success { video_updated, .. } => video_updated,
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                Err(()) => return Ok(Either::Right(not_found(&context, &language, &site_path)))
+                                VideoUpdate::NotFound => {
+                                    return Ok(Either::Right(not_found(&context, &language, &site_path)));
+                                }
                             }
                         }
                         GetAnyResult::None => unreachable!()

@@ -46,7 +46,7 @@ use args::Args;
 use banner::Banner;
 use cache::{Cache, CacheItem, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
-use context::{CollectionUpdate, Context, GetAnyResult, PlaylistUpdate};
+use context::{CollectionUpdate, Context, GetAnyResult, PlaylistUpdate, VideoUpdate};
 use deploy::DeploymentState;
 use editor::{EditorConfig, TreeViewOrder};
 use file_meta::FileMeta;

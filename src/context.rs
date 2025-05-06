@@ -81,6 +81,24 @@ pub enum PlaylistUpdate<T> {
     }
 }
 
+/// An update to a video happens by cloning the existing video, running a
+/// closure on it that mutates it into a new, updated state and lastly
+/// replacing the existing video in the site tree with our new, updated
+/// version. The closure either confirms success by returning Ok(T) in which
+/// T is an optional return value or can signal failure by returning Err(String).
+/// The calling code receives a reference to the new video, and if
+/// it returned anything in the closure that performed the mutation, it is
+/// passed back that value through `optional_return_value` (or the Error(String)
+/// variant value in case of failure).
+pub enum VideoUpdate<T> {
+    Error(String),
+    NotFound,
+    Success {
+        optional_return_value: T,
+        video_updated: Arc<Video>
+    }
+}
+
 pub enum VideoParent {
     Collection(Arc<Collection>),
     Playlist(Arc<Playlist>)
@@ -1352,44 +1370,54 @@ impl Context {
         site_new
     }
 
-    pub fn update_video(
+    pub fn update_video<T>(
         &self,
-        mutation: impl FnOnce(&mut Video),
+        mutation: impl FnOnce(&mut Video) -> Result<T, String>,
         site_path: &SitePath
-    ) -> Result<Arc<Video>, ()> {
+    ) -> VideoUpdate<T> {
         let mut site_mut = self.get_site_mut();
 
-        let mut video_new = None;
+        let mut result = VideoUpdate::NotFound;
 
         if site_path.is_root_path() {
             if let SiteContent::Video(video) = &mut site_mut.content {
                 let mut video_mut = (**video).clone();
-                mutation(&mut video_mut);
-                *video = Arc::new(video_mut);
-                video_new = Some(Arc::clone(video));
+
+                result = match mutation(&mut video_mut) {
+                    Ok(optional_return_value) => {
+                        *video = Arc::new(video_mut);
+
+                        VideoUpdate::Success {
+                            optional_return_value,
+                            video_updated: Arc::clone(video)
+                        }
+                    }
+                    Err(err) => VideoUpdate::Error(err)
+                };
             }
         } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
             let mut playlist_mut = (**playlist).clone();
 
-            if let Ok(video) = playlist_mut.update_video(mutation, site_path) {
+            result = playlist_mut.update_video(mutation, site_path);
+
+            if let VideoUpdate::Success { .. } = result {
                 *playlist = Arc::new(playlist_mut);
-                video_new = Some(video);
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            if let Ok(video) = collection_mut.update_video(mutation, site_path) {
+            result = collection_mut.update_video(mutation, site_path);
+
+            if let VideoUpdate::Success { .. } = result {
                 *collection = Arc::new(collection_mut);
-                video_new = Some(video);
             }
         }
 
-        if let Some(video) = video_new {
+        if let VideoUpdate::Success { .. } = result {
             self.replace_site(site_mut);
-            return Ok(video);
         }
 
-        Err(())
+        result
     }
 }
 

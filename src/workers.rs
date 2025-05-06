@@ -21,7 +21,8 @@ use crate::{
     PosterFile,
     ResizeMode,
     Video,
-    VideoMetaCached
+    VideoMetaCached,
+    VideoUpdate
 };
 use crate::transcode;
 
@@ -178,9 +179,10 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
     if made_changes {
         let mutation = |video_mut: &mut Video| {
             video_mut.versions = versions_mut;
+            Ok(())
         };
 
-        if let Ok(video_updated) = context.update_video(mutation, &video.site_path) {
+        if let VideoUpdate::Success { video_updated, .. } = context.update_video(mutation, &video.site_path) {
             // TODO: Reactivate
             // context.create_version_jobs(&video);
             return video_updated;
@@ -303,9 +305,10 @@ fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc
 
         let mutation = |video_mut: &mut Video| {
             video_mut.poster = Some(poster_file);
+            Ok(())
         };
 
-        if let Ok(video_updated) = context.update_video(mutation, &video.site_path) {
+        if let VideoUpdate::Success { video_updated, .. } = context.update_video(mutation, &video.site_path) {
             video_updated.write_manifest(context);
             return video_updated;
         }
@@ -417,11 +420,20 @@ fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video
                     // If it's missing that is an edge case with (likely) user interaction.
                     if let Some(poster) = &mut video.poster {
                         poster.assets = Some(poster_assets);
+                        Ok(())
+                    } else {
+                        Err(String::from("Poster assets could not be assigned as the poster was meanwhile removed"))
                     }
                 };
 
-                if let Err(()) = context.update_video(mutation, &video.site_path) {
-                    return Err("Poster assets could not be assigned in the site tree as the video has meanwhile changed path.".to_string());
+                match context.update_video(mutation, &video.site_path) {
+                    VideoUpdate::Error(err) => {
+                        return Err(err)
+                    }
+                    VideoUpdate::NotFound => {
+                        return Err(String::from("Poster assets could not be assigned in the site tree as the video has meanwhile changed path."));
+                    }
+                    VideoUpdate::Success { .. } => ()
                 }
             }
             Err(err) => return Err(err)
@@ -508,10 +520,16 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                             Ok(version) => {
                                 let mutation = |video_mut: &mut Video| {
                                     video_mut.versions.push(version);
+                                    Ok(())
                                 };
 
                                 match context.update_video(mutation, &video.site_path) {
-                                    Ok(video_updated) => {
+                                    VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+                                    VideoUpdate::NotFound => {
+                                        let err = String::from("Video could not be updated with newly computed version.");
+                                        context.processing_errors.lock().unwrap().push(err);
+                                    }
+                                    VideoUpdate::Success { video_updated, .. } => {
                                         let site = context.get_site();
                                         let job_kind = JobKind::VideoFastTasks {
                                             poster_aspect: site.poster_aspect.numeric(),
@@ -519,7 +537,6 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                         };
                                         context.push_job_queue(job_kind);
                                     }
-                                    Err(()) => context.processing_errors.lock().unwrap().push("Video could not be updated with newly computed version.".to_string())
                                 }
                             }
                             Err(()) => {

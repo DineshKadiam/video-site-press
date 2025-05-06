@@ -7,7 +7,7 @@ use std::sync::Arc;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
-use crate::{Context, SitePath, Video};
+use crate::{Context, SitePath, Video, VideoUpdate};
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
@@ -25,16 +25,19 @@ pub async fn delete_poster(
             video_mut.write_manifest(&context);
             let _ = fs::remove_file(poster_path);
         }
+
+        Ok(())
     };
 
     match context.update_video(mutation, &site_path) {
-        Ok(video) => {
-            let redirect_url = routes::video_media(&video);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
-        Err(()) => {
+        VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+        VideoUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
+        }
+        VideoUpdate::Success { video_updated, .. } => {
+            let redirect_url = routes::video_poster(&video_updated);
+            Either::Left(Redirect::to(redirect_url).see_other())
         }
     }
 }

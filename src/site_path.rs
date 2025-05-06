@@ -86,7 +86,7 @@ impl SitePath {
 		self.normalized.rsplit_terminator('/').next().unwrap()
 	}
 
-	fn new(normalized: String) -> SitePath {
+	pub fn new(normalized: String) -> SitePath {
 		SitePath {
 			normalized
 		}

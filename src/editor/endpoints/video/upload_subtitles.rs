@@ -15,7 +15,8 @@ use crate::{
     Context,
     SitePath,
     SubtitleFile,
-    Video
+    Video,
+    VideoUpdate
 };
 use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
@@ -64,15 +65,19 @@ pub async fn upload_subtitles(
 
                     let mutation = |video: &mut Video| {
                         video.subtitles.push(SubtitleFile::from_path(&storage_path));
+                        Ok(())
                     };
 
                     match context.update_video(mutation, &site_path) {
-                        Ok(video) => {
-                            let redirect_url = routes::video_subtitles(&video);
+                        VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+                        // TODO: Can only happen in weird time of check vs. time of use edge cases
+                        VideoUpdate::NotFound => {
+                            return Ok(Either::Right(not_found(&context, &language, &site_path)))
+                        }
+                        VideoUpdate::Success { video_updated, .. } => {
+                            let redirect_url = routes::video_subtitles(&video_updated);
                             return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                         }
-                        // TODO: Can only happen in weird time of check vs. time of use edge cases
-                        Err(()) => return Ok(Either::Right(not_found(&context, &language, &site_path)))
                     }
                 } else {
                     // TODO: Translate

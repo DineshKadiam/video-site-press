@@ -13,7 +13,8 @@ use crate::{
     Field,
     PlatformIntegration,
     SitePath,
-    Video
+    Video,
+    VideoUpdate
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
@@ -128,14 +129,19 @@ pub async fn update(
             video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             video_mut.unlisted_local_set(unlisted);
             video_mut.write_manifest(&context);
+
+            Ok(())
         };
 
-        let video = match context.update_video(mutation, &site_path) {
-            Ok(video) => video,
-            Err(()) => return Either::Right(not_found(&context, &language, &site_path))
-        };
-
-        let redirect_url = routes::video_edit(&video);
-        Either::Left(Redirect::to(redirect_url).see_other())
+        match context.update_video(mutation, &site_path) {
+            VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+            VideoUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            VideoUpdate::Success { video_updated, .. } => {
+                let redirect_url = routes::video_edit(&video_updated);
+                Either::Left(Redirect::to(redirect_url).see_other())
+            }
+        }
     }
 }

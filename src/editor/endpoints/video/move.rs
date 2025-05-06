@@ -12,10 +12,11 @@ use crate::{
     Context,
     Field,
     SitePath,
-    Video
+    Video,
+    VideoUpdate
 };
 use crate::editor::routes;
-use crate::editor::widgets::not_found;
+use crate::editor::widgets::{error_page, not_found};
 use crate::util::validate_slug;
 
 use super::dangerous_actions::dangerous_actions_page;
@@ -49,20 +50,30 @@ pub async fn r#move(
 
     if slug_error.is_none() {
         let mutation = |video: &mut Video| {
-            fs::rename(
+            match fs::rename(
                 context.site_dir.join(video.site_path.filesystem_relative()),
                 context.site_dir.join(new_path.filesystem_relative())
-            ).unwrap();
-
-            video.site_path = new_path;
+            ) {
+                Ok(()) => {
+                    video.site_path = new_path;
+                    Ok(())
+                }
+                Err(err) => Err(err.to_string())
+            }
         };
 
         match context.update_video(mutation, &site_path) {
-            Ok(video) => {
-                let redirect_url = routes::video_dangerous_actions(&video);
+            VideoUpdate::Error(err) => {
+                let language = context.get_editor_language();
+                Either::Right(error_page(&context, &language, &err))
+            }
+            VideoUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            VideoUpdate::Success { video_updated, .. } => {
+                let redirect_url = routes::video_dangerous_actions(&video_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
-            Err(()) => Either::Right(not_found(&context, &language, &site_path))
         }
     } else {
         let video = match context.get_video(&site_path) {

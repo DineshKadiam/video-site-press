@@ -23,7 +23,8 @@ use crate::{
     Translations,
     TreeViewOrder,
     Video,
-    VideoOrder
+    VideoOrder,
+    VideoUpdate
 };
 use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::checked_remove_dir_all;
@@ -1011,19 +1012,31 @@ impl Playlist {
     /// Performs the passed mutation on the video under the given site path
     /// (if it exists). Should not be called directly, instead only through a
     /// cascade call originating from `update_video` on [Context].
-    pub fn update_video(
+    pub fn update_video<T>(
         &mut self,
-        mutation: impl FnOnce(&mut Video),
+        mutation: impl FnOnce(&mut Video) -> Result<T, String>,
         site_path: &SitePath
-    ) -> Result<Arc<Video>, ()> {
-        if let Some(video) = self.videos.iter_mut().find(|video| video.site_path == *site_path) {
-            let mut video_mut = (**video).clone();
-            mutation(&mut video_mut);
-            *video = Arc::new(video_mut);
-            return Ok(Arc::clone(video));
-        }
+    ) -> VideoUpdate<T> {
+        match self.videos
+            .iter_mut()
+            .find(|video| video.site_path == *site_path) {
+            Some(video) => {
+                let mut video_mut = (**video).clone();
 
-        Err(())
+                match mutation(&mut video_mut) {
+                    Ok(optional_return_value) => {
+                        *video = Arc::new(video_mut);
+
+                        VideoUpdate::Success {
+                            optional_return_value,
+                            video_updated: Arc::clone(video)
+                        }
+                    }
+                    Err(err) => VideoUpdate::Error(err)
+                }
+            }
+            None => VideoUpdate::NotFound
+        }
     }
 
     pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {

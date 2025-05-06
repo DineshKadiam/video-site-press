@@ -7,9 +7,9 @@ use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
-use crate::{Context, SitePath, Video};
+use crate::{Context, SitePath, Video, VideoUpdate};
 use crate::editor::routes;
-use crate::editor::widgets::not_found;
+use crate::editor::widgets::{error_page, not_found};
 
 #[derive(Deserialize)]
 pub struct DeleteLinkForm {
@@ -35,17 +35,26 @@ pub async fn delete_link(
             .map(|index| video_mut.links.remove(index))
             .is_some() {
             video_mut.write_manifest(&context);
+
+            Ok(())
+        } else {
+            let language = context.get_editor_language();
+            Err(language.translations.the_link_requested_for_deletion_was_not_found.to_string())
         }
     };
 
     match context.update_video(mutation, &site_path) {
-        Ok(video) => {
-            let redirect_url = routes::video_edit(&video);
-            Either::Left(Redirect::to(redirect_url).see_other())
+        VideoUpdate::Error(err) => {
+            let language = context.get_editor_language();
+            Either::Right(error_page(&context, &language, &err))
         }
-        Err(()) => {
+        VideoUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
+        }
+        VideoUpdate::Success { video_updated, .. } => {
+            let redirect_url = routes::video_edit(&video_updated);
+            Either::Left(Redirect::to(redirect_url).see_other())
         }
     }
 }

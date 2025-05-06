@@ -46,12 +46,10 @@ pub async fn edit(
 ) -> HttpResponse {
     let language = context.get_editor_language();
 
-    let video = match context.get_video(&site_path) {
-        Some(video) => video,
+    match context.get_video(&site_path) {
+        Some(video) => edit_page(&context, None, &language, &video),
         None => return not_found(&context, &language, &site_path)
-    };
-
-    edit_page(&context, None, &language, &video)
+    }
 }
 
 pub fn edit_page(
@@ -281,9 +279,9 @@ pub fn edit_page(
         {create_link_form}
     "#);
 
-    let t_general = translations.general;
+    let t_video_settings = translations.video_settings;
     let video_title = video.title_or_slug_or_generic_label(translations);
-    let head_title = format!("{t_general} – {video_title}");
+    let head_title = format!("{t_video_settings} – {video_title}");
     let html = layout(
         &body,
         context,

@@ -129,7 +129,7 @@ pub fn playlist_upload_banner(playlist: &Playlist) -> String {
 // either "monomorphize" it into three endpoints or extract the single
 // universal endpoint from the video context.
 pub fn poster(file_name: &str, site_path: &SitePath) -> String {
-    format!("/poster/{}{}", site_path.normalized(), file_name)
+    format!("/poster/{}{}", site_path.normalized(),  urlencoding::encode(file_name))
 }
 
 pub const SITE_EDIT: &str = "/site/edit/";
@@ -180,6 +180,10 @@ pub fn video_edit(video: &Video) -> String {
     format!("/video/edit/{}", video.site_path.normalized())
 }
 
+pub fn video_edit_subtitles(file_name: &str, video: &Video) -> String {
+    format!("/video/edit-subtitles/{}/{}", urlencoding::encode(file_name), video.site_path.normalized())
+}
+
 pub fn video_manifest(video: &Video) -> String {
     format!("/video/manifest/{}", video.site_path.normalized())
 }
@@ -201,7 +205,7 @@ pub fn video_poster(video: &Video) -> String {
 }
 
 pub fn video_stream(file_name: &str, video: &Video) -> String {
-    format!("/video/stream/{}{}", video.site_path.normalized(), file_name)
+    format!("/video/stream/{}{}", video.site_path.normalized(), urlencoding::encode(file_name))
 }
 
 pub fn video_subtitles(video: &Video) -> String {

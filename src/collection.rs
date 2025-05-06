@@ -26,7 +26,8 @@ use crate::{
     Translations,
     TreeViewOrder,
     Video,
-    VideoOrder
+    VideoOrder,
+    VideoUpdate
 };
 use crate::context::VideoParent;
 use crate::manifest::{attribute_error, element_error, not_supported_error};
@@ -1441,39 +1442,54 @@ impl Collection {
         CollectionUpdate::NotFound
     }
 
-    pub fn update_video(
+    pub fn update_video<T>(
         &mut self,
-        mutation: impl FnOnce(&mut Video),
+        mutation: impl FnOnce(&mut Video) -> Result<T, String>,
         site_path: &SitePath
-    ) -> Result<Arc<Video>, ()> {
+    ) -> VideoUpdate<T> {
         if let Some(video) = self.videos
             .iter_mut()
             .find(|video| video.site_path == *site_path) {
             let mut video_mut = (**video).clone();
-            mutation(&mut video_mut);
-            *video = Arc::new(video_mut);
-            return Ok(Arc::clone(video));
+
+            match mutation(&mut video_mut) {
+                Ok(optional_return_value) => {
+                    *video = Arc::new(video_mut);
+
+                    VideoUpdate::Success {
+                        optional_return_value,
+                        video_updated: Arc::clone(video)
+                    }
+                }
+                Err(err) => VideoUpdate::Error(err)
+            }
         } else if let Some(playlist) = self.playlists
             .iter_mut()
             .find(|playlist| site_path.starts_with(&playlist.site_path)) {
             let mut playlist_mut = (**playlist).clone();
 
-            if let Ok(video) = playlist_mut.update_video(mutation, site_path) {
+            let result = playlist_mut.update_video(mutation, site_path);
+
+            if let VideoUpdate::Success { .. } = result {
                 *playlist = Arc::new(playlist_mut);
-                return Ok(video);
             }
+
+            result
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            if let Ok(video) = subcollection_mut.update_video(mutation, site_path) {
-                *subcollection = Arc::new(subcollection_mut);
-                return Ok(video);
-            }
-        }
+            let result = subcollection_mut.update_video(mutation, site_path);
 
-        Err(())
+            if let VideoUpdate::Success { .. } = result {
+                *subcollection = Arc::new(subcollection_mut);
+            }
+
+            result
+        } else {
+            VideoUpdate::NotFound
+        }
     }
 
     pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {

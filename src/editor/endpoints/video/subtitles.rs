@@ -66,9 +66,11 @@ pub async fn subtitles(
                 </form>
             "#);
 
+            let edit_subtitles_url = routes::video_edit_subtitles(&subtitle_file.file_name, &video);
+
             formatdoc!(r#"
                 <div>
-                    <strong>{label}</strong> ({file_name}, {language}) {delete_form}
+                    <a href="{edit_subtitles_url}" style="text-decoration: underline;">{label}</a> ({file_name}, {language}) {delete_form}
                 </div>
             "#)
         })

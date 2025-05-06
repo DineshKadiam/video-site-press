@@ -142,6 +142,11 @@ pub async fn start(
                         .route(post().to(video::update))
                 )
                 .service(
+                    resource("/video/edit-subtitles/{file_name}/{site_path:.*}")
+                        .route(get().to(video::edit_subtitles))
+                        .route(post().to(video::update_subtitles))
+                )
+                .service(
                     resource("/video/manifest/{site_path:.*}")
                         .route(get().to(video::edit_manifest))
                         .route(post().to(video::update_manifest))

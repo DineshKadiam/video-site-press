@@ -10,10 +10,11 @@ use serde_derive::Deserialize;
 use crate::{
     Context,
     SitePath,
-    Video
+    Video,
+    VideoUpdate
 };
 use crate::editor::routes;
-use crate::editor::widgets::not_found;
+use crate::editor::widgets::{error_page, not_found};
 
 #[derive(Deserialize)]
 pub struct PosterUpdateForm {
@@ -28,18 +29,27 @@ pub async fn update_poster(
     let mutation = |video: &mut Video| {
         if let Some(poster) = &mut video.poster {
             poster.description = Some(form.description.clone());
+            video.write_manifest(&context);
+
+            Ok(())
+        } else {
+            let language = context.get_editor_language();
+            Err(language.translations.the_poster_to_be_updated_was_not_found.to_string())
         }
-        video.write_manifest(&context);
     };
 
     match context.update_video(mutation, &site_path) {
-        Ok(video) => {
-            let redirect_url = routes::video_poster(&video);
-            Either::Left(Redirect::to(redirect_url).see_other())
+        VideoUpdate::Error(err) => {
+            let language = context.get_editor_language();
+            Either::Right(error_page(&context, &language, &err))
         }
-        Err(()) => {
+        VideoUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
+        }
+        VideoUpdate::Success { video_updated, .. } => {
+            let redirect_url = routes::video_poster(&video_updated);
+            Either::Left(Redirect::to(redirect_url).see_other())
         }
     }
 }
