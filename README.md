@@ -13,51 +13,51 @@ site, or do it all from your text editor and terminal, or both. Hyper 8
 generates sites that require no database, no programming, no maintenance, and
 are compatible with virtually every webhost on this planet.
 
-Latest Release: **`0.18`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
+Latest Release: **`0.19`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
 
 <img src="https://simonrepp.com/hyper8/readme.png?2" alt="Screenshot showing the Hyper 8 browser editor and a built page"/>
 
-## Overview
+## Documentation
 
-Check out videos showcasing Hyper 8 at [simonrepp.com/video/hyper8](https://simonrepp.com/video/hyper8/) - which is at the same time a Hyper 8 demo, because that site is itself using Hyper 8!
+The [website](https://simonrepp.com/hyper8) is the central information hub:
 
-See the [website](https://simonrepp.com/hyper8) for more screenshots and information.
+- Feature overview
+- Downloads
+- Showcase of sites using Hyper 8
+- Links to further resources
+
+The [docs](https://simonrepp.com/hyper8/docs) cover specific aspects:
+
+- Usage instructions
+- Reference
+- Examples
+- Information on various topics
 
 ## Hyper 8 is in Beta
 
-Hyper 8 can be stably built and run from the main branch, just keep in mind
-that it's not production grade software (yet) and things are still moving.
-Making backups of your Hyper 8 site directory is recommended while Hyper 8 is
-still in beta.
+Hyper 8 provides a solid, working foundation for video publishing already, just
+keep in mind that it's not production grade software (yet) and things are
+still moving around a bit occasionally. Making backups of your Hyper 8 site
+directory is generally recommended while Hyper 8 is still in beta.
 
 ### Known issues
 
-Hyper 8 is in beta and some things are knowingly incomplete, this is an overview:
+Some things are still knowingly incomplete, a few worth mentioning are:
 
-- Banner images are well implemented on the backend, but not included in the layout of built sites yet
-- Unfinished background encoding jobs are not persisted when you shut down the Hyper 8 server
-- Some background jobs do not necessarily give immediate feedback of them
-  happening, e.g. after requesting a new video format to be rendered you'll
-  see the background job on the jobs page, but not (yet) on the video page
-  itself
-- The cache system (which by default puts its data in a hidden `.hyper8_cache`
-  folder in your site directory) removes some, but not all, stale data it
-  creates. As a result, minor amounts of cache data can accumulate
-  (this merely includes transcoded images and serialized *metadata* for video
-  though, never any large files). Until this is fully implemented you can
-  choose to occasionally delete the cache to clear out stale data.
-- The `--deploy` option in the CLI is not correctly implemented yet, for now
-  use this from the interactive browser interface only
-- If you manually edit a `collection.eno`, `playlist.eno`, `site.eno` or
+- Banner images are fully implemented on the backend, but not included in the
+  generated sites themselves yet (an open design/layout task mostly)
+- Unfinished background encoding jobs are not persisted when you shut down the
+  Hyper 8 server
+- After requesting a new video format to be rendered you'll see the background
+  job progress in the header, but not (yet) on the video page itself
+- If you manually edited a `collection.eno`, `playlist.eno`, `site.eno` or
   `video.eno` manifest *and* there are errors displayed in the browser
   interface (= colored dots in the left sidebar, prominent messages on
-  their repspective pages), make sure to resolve these errors manually before
-  performing any consecutive updates from the browser interface, as Hyper 8
+  their respective pages), make sure to resolve these errors manually before
+  performing updates from the browser interface, as Hyper 8
   can not yet keep/persist malformed manifest data during updates.
-
-## Documentation
-
-Available at [simonrepp.com/hyper8/docs](https://simonrepp.com/hyper8/docs).
+- The `--deploy` option in the CLI is not fully implemented yet, for now
+  use this from the interactive browser interface only
 
 ## Development in 2025
 
