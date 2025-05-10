@@ -78,6 +78,7 @@ pub async fn update_subtitles(
                 .iter_mut()
                 .find(|subtitle_file| subtitle_file.file_name == *file_name) {
                 Some(subtitle_file) => {
+                    subtitle_file.explicitly_defined = true;
                     subtitle_file.label = label_trimmed.to_string();
                     subtitle_file.language = Some(language_trimmed.to_string());
 
