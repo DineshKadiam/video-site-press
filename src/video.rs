@@ -481,9 +481,20 @@ impl Video {
                                     "language" => {
                                         if let Some(value) = attribute.value() {
                                             match LanguageTag::parse(value) {
-                                                Ok(language_tag) => language = Some(language_tag.to_string()),
+                                                Ok(language_tag) => {
+                                                    match language_tag.validate() {
+                                                        Ok(()) => {
+                                                            language = Some(language_tag.to_string())
+                                                        }
+                                                        Err(err) => {
+                                                            let message = format!("The language code supplied for the subtitles is not recognized ({err})");
+                                                            let error = attribute_error(attribute, manifest_path, &message);
+                                                            self.errors.push(error);
+                                                        }
+                                                    }
+                                                }
                                                 Err(err) => {
-                                                    let message = format!("The language code supplied for the subtitles was not recognized ({err})");
+                                                    let message = format!("The language code supplied for the subtitles is not properly formatted ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
                                                     self.errors.push(error);
                                                 }

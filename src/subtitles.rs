@@ -38,14 +38,10 @@ impl SubtitleFile {
 		let file_name = path.file_name().unwrap().to_string_lossy().to_string();
 		let file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
-		let language = match LanguageTag::parse(&file_stem) {
-			Ok(language_tag) => Some(language_tag.to_string()),
-			Err(_) => {
-				// Entirely ok, using a BCP 47 code as file stem is just an
-				// option, but not required at all - the language code can
-				// also be specified through the manifest.
-				None
-			}
+		// If the file stem is a valid BCP 47 language code we automatically derive the language from it
+		let language = match LanguageTag::parse(&file_stem).is_ok_and(|language_tag| language_tag.is_valid()) {
+			true => Some(file_stem.clone()),
+			false => None
 		};
 
 		SubtitleFile {
