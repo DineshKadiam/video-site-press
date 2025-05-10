@@ -68,6 +68,16 @@ label = My Social Media
 url = https://social.example.com
 verification = rel-me
 
+subtitles:
+file = en.srt
+label = English
+language = en
+
+subtitles:
+file = fr.srt
+label = Français
+language = fr
+
 -- description
 An unsettling truth comes to light as three old friends
 reunite at an unexpected gathering.
