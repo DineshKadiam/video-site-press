@@ -12,7 +12,7 @@ placed.
 
 ## The site.eno manifest
 
-> All options at a glance: [base_url](#base_url), [deploy_config](#deploy_config), [disable_clean_urls](#disable_clean_urls), [language](#language), [poster_aspect](#poster_aspect), [theme](#theme)
+> All options at a glance: [base_url](#base_url), [disable_clean_urls](#disable_clean_urls), [ftp_config](#ftp_config), [language](#language), [poster_aspect](#poster_aspect), [rsync_config](#rsync_config), [theme](#theme)
 
 Manifest for configuring the site.
 
@@ -23,10 +23,13 @@ language: es
 poster_aspect: 16:9
 theme: adaptive_cool
 
-deploy_config:
-path = /data/web/customer123/html
-server = ssh-customer123.example.com
-user = customer123
+ftp_config:
+mode = secure
+password = SuchExquisitelyLongSecret
+path = /data/web/user123/html
+port = 21
+server = ftp-user123.example.com
+user = user123
 ```
 
 ## <a name="base_url"></a> `base_url`
@@ -39,18 +42,6 @@ correct.
 ```eno
 base_url: https://example.com
 ```
-
-## <a name="deploy_config"></a> `deploy_config`
-
-With `deploy_config` you can configure the (remote) `path`, `server` and `user`
-for an ssh/rsync based deployment. Note that for now only password-less
-(ssh public/private key) authentication is possible. In order to prevent
-accidental deployments to wrong remote servers and paths, deployment requires
-the `base_url` to be specified and the server to be set up so the contents
-at `deploy_config.path` are already accessible through the public `base_url`.
-(On deploment, Hyper 8 will do a test upload of a text file to the remote
-path and check if it's accessible through the public url - if it isn't, the
-file is removed and the deployment aborted).
 
 ## <a name="disable_clean_urls"></a> `disable_clean_urls`
 
@@ -66,6 +57,43 @@ you're planning to archive your page somewhere offline.
 ```eno
 disable_clean_urls
 ```
+
+## <a name="ftp_config"></a> `ftp_config`
+
+With `ftp_config` you can configure the remote `server`, `path`, `user`,
+`password`, `port` and `mode` for FTP/SFTP deployment.
+
+In order to prevent accidental deployments to wrong remote servers or paths,
+deployment requires the [base_url](#base_url) to be specified and the server to be set
+up so the contents at `ftp_config.path` are already accessible through the
+public [base_url](#base_url). Before deployment, Hyper 8 will do a test upload of a text
+file to the remote path and check if it's accessible through the public url -
+if it isn't, the test file is removed and the deployment aborted.
+
+```eno
+ftp_config:
+mode = secure
+password = SuchExquisitelyLongSecret
+path = /data/web/user123/html
+port = 21
+server = ftp-user123.example.com
+user = user123
+```
+
+The `mode` option can be `secure` (also the default) or `insecure`, but the
+latter should only be used in exceptional circumstances, as it will transmit
+your password and all transferred data through the network in plaintext.
+
+The `port` is optional, by default Hyper 8 will use the default FTP port (21).
+
+Note that you should only configure and use FTP deployment through Hyper 8 if
+your local Hyper 8 site directory is accessible only to you or people that
+you 100% trust with the FTP password, as it obviously will be plainly
+accessible to everyone with access to the `site.eno` file.
+
+An on-demand password prompt option will be implemented in the future to also
+allow deployment in environments where the passwords needs to be kept hidden
+from other people with access to the site directory.
 
 ## <a name="language"></a> `language`
 
@@ -92,6 +120,28 @@ for instance `9:16` for exclusively mobile video content.
 
 ```eno
 poster_aspect: 16:9
+```
+
+## <a name="rsync_config"></a> `rsync_config`
+
+With `rsync_config` you can configure the remote server, path and user for an
+ssh/rsync based deployment.
+
+Note that for now only password-less (ssh public/private key) authentication
+is possible for this option.
+
+In order to prevent accidental deployments to wrong remote servers and paths,
+deployment requires the [base_url](#base_url) to be specified and the server to be set
+up so the contents at `rsync_config.path` are already accessible through the
+public [base_url](#base_url). Before deployment, Hyper 8 will do a test upload of a text file
+to the remote path and check if it's accessible through the public url - if
+it isn't, the test file is removed and the deployment aborted.
+
+```eno
+rsync_config:
+path = /data/web/user123/html
+server = ssh-user123.example.com
+user = user123
 ```
 
 ## <a name="theme"></a> `theme`

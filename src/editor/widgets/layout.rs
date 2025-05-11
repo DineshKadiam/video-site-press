@@ -29,7 +29,7 @@ fn controls(
     let t_configure_deployment = translations.configure_deployment;
     let configure_icon = icons::configure(Some(translations.configure));
     let deployment_icon = icons::deployment(translations.deployment);
-    let deployment_button = match site.deploy_config.complete() {
+    let deployment_button = match site.complete_deployment_config() {
         true => {
             let deployment = &context.deploying.lock().unwrap();
             if deployment.active() {

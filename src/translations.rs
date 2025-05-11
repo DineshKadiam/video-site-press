@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use indoc::indoc;
+
 pub const DOCS_LINK: &str = "https://simonrepp.com/hyper8/docs";
 
 #[derive(Clone, Debug)]
@@ -13,6 +15,7 @@ pub struct Translations {
     pub active: &'static str,
     pub adaptive: &'static str,
     pub add_link: &'static str,
+    adding_xxx: &'static str,
     pub advanced_settings: &'static str,
     pub already_deploying_can_only_deploy_again_when_current_deployment_is_finished: &'static str,
     pub atom_description: &'static str,
@@ -63,15 +66,19 @@ pub struct Translations {
     pub deleting_the_collection_text: &'static str,
     pub deleting_the_playlist_text: &'static str,
     pub deleting_the_video_text: &'static str,
+    deleting_xxx: &'static str,
     pub deploy: &'static str,
     pub deploying: &'static str,
     pub deployment: &'static str,
     pub deployment_configuration_could_not_be_verified: &'static str,
     pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
-    pub deployment_is_currently_supported_text: &'static str,
-    pub deployment_path_label: &'static str,
-    pub deployment_server_label: &'static str,
-    pub deployment_user_label: &'static str,
+    pub ftp_config_password_label: &'static str,
+    pub ftp_config_path_label: &'static str,
+    pub ftp_config_port_label: &'static str,
+    pub ftp_config_secure_label: &'static str,
+    pub ftp_config_server_label: &'static str,
+    pub ftp_config_user_label: &'static str,
+    pub ftp_deployment: &'static str,
     pub description: &'static str,
     pub disabled: &'static str,
     pub documentation: &'static str,
@@ -171,6 +178,7 @@ pub struct Translations {
     pub preview_is_only_available_again_after_the_current_deployment_is_finished: &'static str,
     pub processing: &'static str,
     pub public_address_label: &'static str,
+    pub public_address_must_be_configured_for_deployment_text: &'static str,
     pub public_address_not_configured_text: &'static str,
     pub quality: &'static str,
     pub really_delete: &'static str,
@@ -181,13 +189,19 @@ pub struct Translations {
     pub release_date_descending: &'static str,
     pub render_additional_format: &'static str,
     pub render_format: &'static str,
+    replacing_xxx: &'static str,
     pub replay: &'static str,
     pub report_a_bug: &'static str,
     pub resolution: &'static str,
     resolve_the_issue_on_disk_or_on_manifest_page: &'static str,
     pub resource_not_found: &'static str,
+    pub rsync_deployment: &'static str,
+    pub rsync_deployment_text: &'static str,
     pub sec: &'static str,
     pub set_current_frame_as_poster: &'static str,
+    pub ssh_config_path_label: &'static str,
+    pub ssh_config_server_label: &'static str,
+    pub ssh_config_user_label: &'static str,
     pub site_manifest: &'static str,
     pub site_order: &'static str,
     pub site_settings: &'static str,
@@ -202,6 +216,7 @@ pub struct Translations {
     pub subscribe: &'static str,
     pub subscribe_permalink: &'static str,
     pub subtitles: &'static str,
+    test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
     the_resource_xxx_was_not_found_message: &'static str,
@@ -253,6 +268,10 @@ pub struct Translations {
 }
 
 impl Translations {
+    pub fn adding_xxx(&self, path: &str) -> String {
+        self.adding_xxx.replace("{path}", path)
+    }
+
     pub fn de() -> Translations {
         Translations {
             a_permalink_forms_part_of_text: "Ein Permalink ist Teil der öffentlichen Adresse einer Unterseite deiner Website. Wenn du den Permalink änderst, hören alle Links die bereits auf diese spezifische Unterseite verweisen auf zu funktionieren.",
@@ -263,6 +282,7 @@ impl Translations {
             active: "Aktiv",
             adaptive: "Adaptiv",
             add_link: "Link hinzufügen",
+            adding_xxx: "{path} wird hinzugefügt",
             advanced_settings: "Erweiterte Einstellungen",
             already_deploying_can_only_deploy_again_when_current_deployment_is_finished: "Deployment läuft bereits, es kann erst wieder deployed werden wen das aktuelle Deployment abgeschlossen ist.",
             atom_description: "Ein simpler, hauptsächlich textbasierter Feed der nur zu den Video und Audio-Inhalten auf der Website linkt.",
@@ -313,15 +333,12 @@ impl Translations {
             deleting_the_collection_text: "Beim Löschen der Collection werden das Collection Manifest, das Banner und alle Subcollections, Playlisten und Videos in der Collection gelöscht. Wenn die Collection die Seite selbst ist, werden das Seitenmanifest und die Seite selbst nicht gelöscht, die Seite kann also anschließend als Collection, Playlist oder Video reinitialisiert werden.",
             deleting_the_playlist_text: "Beim Löschen der Playlist werden das Playlist Manifest, das Banner und alle Videos in der Playlist gelöscht. Wenn die Seite selbst eine Playlist ist, werden das Seitenmanifest und die Seite selbst nicht gelöscht, die Seite kann also anschließend als Collection, Playlist oder Video reinitialisiert werden.",
             deleting_the_video_text: "Beim Löschen des Videos werden das Video Manifest, das Poster und alle Versionen des Videos gelöscht. Wenn die Seite selbst ein Video ist, werden das Seitenmanifest und die Seite selbst nicht gelöscht, die Seite kann also anschließend als Collection, Playlist oder Video reinitialisiert werden.",
+            deleting_xxx: "{path} wird gelöscht",
             deploy: "Deployen",
             deploying: "Am Deployen",
             deployment: "Deployment",
             deployment_configuration_could_not_be_verified: "Die Deployment Konfiguration konnte nicht verifiziert werden.",
             deployment_configuration_is_incomplete_can_not_deploy: "Die Deployment Konfiguration ist nicht vollständig, deshalb kann nicht deployed werden.",
-            deployment_is_currently_supported_text: "Deployment wird aktuell nur durch SSH Keyfile-basierte rsync Hintergrundsynchronisation unterstützt. Vor dem ersten Deployment sollte ein manueller Login durchgeführt werden um interaktive Prompts wie das Bestätigen der Server Identität zu erledigen. Zuletzt, der Deployment Ordner am Server muss manuell erstellt werden und die öffentliche Adresse der Seite gesetzt sein - das hat Sicherheitsgründe, damit Hyper 8 ein Testdeployment zum Bestätigen der Einstellungen durchführen kann bevor die eigentliche Filesynchronisierung erfolgt.",
-            deployment_path_label: "Deployment Pfad (z.b. /data/web/customer123/html",
-            deployment_server_label: "Deployment Server (z.b. ssh-customer123.example.com)",
-            deployment_user_label: "Deployment Benutzername (z.b. customer123)",
             description: "Beschreibung",
             disabled: "Deaktiviert",
             documentation: "Dokumentation",
@@ -342,6 +359,13 @@ impl Translations {
             feeds: "Feeds",
             filter: "Filtern",
             frame_rate: "Bildfrequenz",
+            ftp_config_password_label: "Passwort (nur in einem vertrauenswürdigen Umfeld eingeben - die Speicherung erfolgt unverschlüsselt)",
+            ftp_config_path_label: "Verzeichnis am Server (z.b. /data/web/user123/html)",
+            ftp_config_port_label: "Port Nummer (falls unklar einfach leerlassen, ein Standardport wird für dich gewählt)",
+            ftp_config_secure_label: "Sichere Verbindung über SSL/TLS (sollte nur in begründeten Ausnahmefällen deaktiviert werden)",
+            ftp_config_server_label: "Serveradresse (z.b. ftp-user123.example.com)",
+            ftp_config_user_label: "Benutzername (z.b. user123)",
+            ftp_deployment: "FTP Deployment",
             general: "Allgemein",
             generally_contains_codecs_supported_in_browsers: "Enthält Codecs die generell von Browsern unterstützt werden",
             generally_supported_in_browsers: "Generell von Browsern unterstützt",
@@ -421,6 +445,7 @@ impl Translations {
             preview_is_only_available_again_after_the_current_deployment_is_finished: "Die Vorschau ist erst wieder verfügbar wenn das aktuelle Deployment abgeschlossen ist.",
             processing: "Berechnung",
             public_address_label: "Öffentliche Adresse (z.b. https://example.com/videos/)",
+            public_address_must_be_configured_for_deployment_text: r#"Die öffentliche Adresse der Seite muss in den <a href="{site_settings_url}">Seiteneinstellungen</a> konfiguriert werden damit Hyper 8 die Deploymenteinstellungen überprüfen kann."#,
             public_address_not_configured_text: "Die öffentliche Adresse der Seite ist nicht konfiguriert, deswegen kann dieses Feature aktuell nicht generiert werden",
             quality: "Qualität",
             really_delete: "Wirklich löschen?",
@@ -431,13 +456,19 @@ impl Translations {
             release_date_descending: "Veröffentlichungsdatum Absteigend (Dez, Nov, Okt)",
             render_additional_format: "Zusätzliches Format rendern",
             render_format: "Format rendern",
+            replacing_xxx: "{path} wird ersetzt",
             replay: "Erneut abspielen",
             report_a_bug: "Problem melden",
             resolution: "Auflösung",
             resolve_the_issue_on_disk_or_on_manifest_page: r#"Löse den/die Fehler indem du die Datei direkt editierst oder mache die nötigen Änderungen auf der <a href="{manifest_url}">Manifest Seite</a>."#,
             resource_not_found: "Resource nicht gefunden",
+            rsync_deployment: "rsync Deployment",
+            rsync_deployment_text: "rsync-basiertes Deployment wird aktuell nur durch SSH Keyfile-basierte rsync Hintergrundsynchronisation unterstützt. Vor dem ersten Deployment sollte ein manueller Login durchgeführt werden um interaktive Prompts wie das Bestätigen der Server Identität manuell zu bestätigen. Der Deployment Ordner am Server muss manuell erstellt werden und die öffentliche Adresse der Seite gesetzt sein - Hyper 8 führt damit ein Testdeployment zum Bestätigen der Einstellungen durch bevor die eigentliche Filesynchronisierung erfolgt.",
             sec: "sek",
             set_current_frame_as_poster: "Aktuelles Standbild als Poster setzen",
+            ssh_config_path_label: "Verzeichnis am Server (z.b. /data/web/user123/html)",
+            ssh_config_server_label: "Serveradresse (z.b. ssh-user123.example.com)",
+            ssh_config_user_label: "Benutzername (z.b. user123)",
             site_manifest: "Seitenmanifest",
             site_order: "Seitenreihenfolge",
             site_settings: "Seiteneinstellungen",
@@ -452,6 +483,12 @@ impl Translations {
             subscribe: "Abonnieren",
             subscribe_permalink: "abonnieren",
             subtitles: "Untertitel",
+            test_file_successfully_uploaded_but_remote_verification_failed_message: indoc!("
+                Eine Testdatei wurde erfolgreich an der Adresse {remote_path} am Server hochgeladen, über die designierte öffentliche Adresse {public_address} konnte ihr Vorhandensein allerdings nicht verifiziert werden.
+                Bitte überprüfe ob das Serververzeichnis in den Seiteneinstellungen korrekt konfiguriert ist und ob deine (Sub)domain auch in deinen Hostingprovider-Einstellungen auf dieses selbe Verzeichnis verweist.
+
+                Fehlerdetails: {error}
+            "),
             the_link_requested_for_deletion_was_not_found: "Der zu löschende Link wurde nicht gefunden",
             the_poster_to_be_updated_was_not_found: "Das Poster das aktualisiert werden sollte wurde nicht gefunden",
             the_resource_xxx_was_not_found_message: "Die Resource {path} wurde nicht gefunden, vielleicht wurde sie umbenannt, verschoben oder gelöscht?",
@@ -503,6 +540,10 @@ impl Translations {
         }
     }
 
+    pub fn deleting_xxx(&self, path: &str) -> String {
+        self.deleting_xxx.replace("{path}", path)
+    }
+
     pub fn en() -> Translations {
         Translations {
             a_permalink_forms_part_of_text: "A permalink forms part of the public address of a subpage on your site. When you modify a permalink, any links already pointing to that specific page will stop working.",
@@ -513,6 +554,7 @@ impl Translations {
             active: "Active",
             adaptive: "Adaptive",
             add_link: "Add Link",
+            adding_xxx: "Adding {path}",
             advanced_settings: "Advanced Settings",
             already_deploying_can_only_deploy_again_when_current_deployment_is_finished: "Already deploying, can only deploy again when the current deployment is finished.",
             atom_description: "A simple, mostly text based feed that only links to video and audio content on the website.",
@@ -563,15 +605,12 @@ impl Translations {
             deleting_the_collection_text: "Deleting the collection removes the collection manifest, banner image, and all subcollections, playlists and videos in the collection. If the collection is the site itself, the site manifest and the site itself is not removed, so the site can afterwards be reinitialized as a collection, playlist or video.",
             deleting_the_playlist_text: "Deleting the playlist removes the playlist manifest, banner image, and all videos contained in the playlist. If the site itself is a playlist, the site manifest and the site itself is not removed, so the site can afterwards be reinitialized as a collection, playlist or video.",
             deleting_the_video_text: "Deleting the video removes the video manifest, poster image, and all versions of the video. If the site itself is a video, the site manifest and the site itself is not removed, so the site can afterwards be reinitialized as a collection, playlist or video.",
+            deleting_xxx: "Deleting {path}",
             deploy: "Deploy",
             deploying: "Deploying",
             deployment: "Deployment",
             deployment_configuration_could_not_be_verified: "The deployment configuration could not be verified.",
             deployment_configuration_is_incomplete_can_not_deploy: "The deployment configuration is not complete, therefore deployment is not possible.",
-            deployment_is_currently_supported_text: "Deployment is currently supported only through ssh keyfile-authenticated rsync in the background. Before the first deployment a manual login should be performed to complete interactive prompts such as trusting the authenticity of the server. Lastly, the remote folder needs to created manually and the public site adress configured - this is for safety reasons so Hyper 8 can do a test deploy to verify correctness of your settings before performing actual file synchronization.",
-            deployment_path_label: "Deployment Path (e.g. /data/web/customer123/html",
-            deployment_server_label: "Deployment Server (e.g. ssh-customer123.example.com)",
-            deployment_user_label: "Deployment User (e.g. customer123)",
             description: "Description",
             disabled: "Disabled",
             documentation: "Documentation",
@@ -592,6 +631,13 @@ impl Translations {
             feeds: "Feeds",
             filter: "Filter",
             frame_rate: "Frame Rate",
+            ftp_config_password_label: "Password (only enter in a trusted environment - storage is unencrypted)",
+            ftp_config_path_label: "Remote server directory (e.g. /data/web/user123/html)",
+            ftp_config_port_label: "Port number (leave empty if unsure, a default port will be picked for you)",
+            ftp_config_secure_label: "Secure connection over SSL/TLS (should only be disabled in extraordinary circumstances)",
+            ftp_config_server_label: "Server address (e.g. ftp-user123.example.com)",
+            ftp_config_user_label: "Username (e.g. user123)",
+            ftp_deployment: "FTP Deployment",
             general: "General",
             generally_contains_codecs_supported_in_browsers: "Contains codecs generally supported in browsers",
             generally_supported_in_browsers: "Generally supported in browsers",
@@ -671,6 +717,7 @@ impl Translations {
             preview_is_only_available_again_after_the_current_deployment_is_finished: "Preview is only available again after the current deployment is finished.",
             processing: "Processing",
             public_address_label: "Public Address (e.g. https://example.com/videos/)",
+            public_address_must_be_configured_for_deployment_text: r#"The public address of your site needs to be configured in the <a href="{site_settings_url}">site settings</a> so that Hyper 8 can check whether your deployment settings are correct."#,
             public_address_not_configured_text: "The public address of your site is not configured, therefore this currently can not be generated.",
             quality: "Quality",
             really_delete: "Really delete?",
@@ -681,13 +728,19 @@ impl Translations {
             release_date_descending: "Release Date Descending (Dec, Nov, Oct)",
             render_additional_format: "Render Additional Format",
             render_format: "Render Format",
+            replacing_xxx: "Replacing {path}",
             replay: "Replay",
             report_a_bug: "Report a bug",
             resolution: "Resolution",
             resolve_the_issue_on_disk_or_on_manifest_page: r#"You can either resolve the issue(s) by editing the file on disk or by making the necessary changes on the <a href="{manifest_url}">manifest page</a>."#,
             resource_not_found: "Resource not found",
+            rsync_deployment: "rsync Deployment",
+            rsync_deployment_text: "rsync-basd deployment is currently supported only through ssh keyfile-authenticated rsync in the background. Before the first deployment a manual login should be performed to complete interactive prompts such as trusting the authenticity of the server. The remote directory needs to created manually and the public site adress configured - with this Hyper 8 can perform a test deployment to verify correctness of your settings before performing actual file synchronization.",
             sec: "sec",
             set_current_frame_as_poster: "Set current frame as poster",
+            ssh_config_path_label: "Remote server directory (e.g. /data/web/user123/html)",
+            ssh_config_server_label: "Server address (e.g. ssh-user123.example.com)",
+            ssh_config_user_label: "Username (e.g. user123)",
             site_manifest: "Site manifest",
             site_order: "Site Order",
             site_settings: "Site settings",
@@ -702,6 +755,13 @@ impl Translations {
             subscribe: "Subscribe",
             subscribe_permalink: "subscribe",
             subtitles: "Subtitles",
+            test_file_successfully_uploaded_but_remote_verification_failed_message: indoc!("
+                A test file was successfully uploaded to the remote server directory at {remote_path} but verifying its presence at the designated public address {public_address} failed.
+                Please review if the remote server directory is correctly configured in your site settings and whether your (sub)domain is pointing to that same
+                directory in your hosting provider settings as well.
+
+                Error details: {error}
+            "),
             the_link_requested_for_deletion_was_not_found: "The link requested for deletion was not found",
             the_poster_to_be_updated_was_not_found: "The poster to be updated was not found",
             the_resource_xxx_was_not_found_message: "The resource {path} was not found, maybe it has been renamed, moved, or deleted?",
@@ -757,6 +817,18 @@ impl Translations {
         self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
     }
 
+    pub fn public_address_must_be_configured_for_deployment_text(
+        &self,
+        site_settings_url: &str
+    ) -> String {
+        self.public_address_must_be_configured_for_deployment_text
+            .replace("{site_settings_url}", site_settings_url)
+    }
+
+    pub fn replacing_xxx(&self, path: &str) -> String {
+        self.replacing_xxx.replace("{path}", path)
+    }
+
     pub fn resolve_the_issue_on_disk_or_on_manifest_page(
         &self,
         manifest_url: &str
@@ -767,6 +839,18 @@ impl Translations {
 
     pub fn site_setup_text(&self) -> String {
         self.site_setup_text.replace("{docs_link}", DOCS_LINK)
+    }
+
+    pub fn test_file_successfully_uploaded_but_remote_verification_failed_message(
+        &self,
+        error: &str,
+        public_address: &str,
+        remote_path: &str
+    ) -> String {
+        self.test_file_successfully_uploaded_but_remote_verification_failed_message
+            .replace("{error}", error)
+            .replace("{public_address}", public_address)
+            .replace("{remote_path}", remote_path)
     }
 
     pub fn the_resource_xxx_was_not_found_message(&self, path: &str) -> String {
@@ -828,9 +912,15 @@ fn check_translations() {
     ];
 
     for translations in &locales {
+        assert!(&translations.adding_xxx.contains("{path}"));
+        assert!(&translations.deleting_xxx.contains("{path}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
+        assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
         assert!(&translations.site_setup_text.contains("{docs_link}"));
+        assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{error}"));
+        assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{public_address}"));
+        assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{remote_path}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));

@@ -5,10 +5,13 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
+use indoc::indoc;
+
 use crate::{
     Context,
     Collection,
     Font,
+    FtpConfig,
     GetAnyResult,
     HyperDir,
     InheritedOptions,
@@ -16,6 +19,7 @@ use crate::{
     Playlist,
     SitePath,
     SiteUrl,
+    SshConfig,
     Theme,
     Video
 };
@@ -25,10 +29,11 @@ use crate::util::supported_font_extension;
 const SITE_OPTIONS: &[&str] = &[
     "base_url",
     "disable_clean_urls",
-    "deploy_config",
     "font",
+    "ftp_config",
     "language",
     "poster_aspect",
+    "ssh_config",
     "theme"
 ];
 
@@ -42,25 +47,19 @@ pub enum AspectRatio {
 }
 
 #[derive(Clone, Debug)]
-pub struct DeployConfig {
-    pub path: Option<String>,
-    pub server: Option<String>,
-    pub user: Option<String>
-}
-
-#[derive(Clone, Debug)]
 pub struct Site {
     pub base_url: Option<SiteUrl>,
     pub clean_urls: bool,
     pub content: SiteContent,
-    pub deploy_config: DeployConfig,
     pub font: Font,
+    pub ftp_config: FtpConfig,
     pub language: Language,
     /// Syntactical and semantic errors inside the manifest for displaying to
     /// the user as well as to prevent programmatic updates to the site and
     /// its manifest while such errors are present.
     pub manifest_errors: Vec<String>,
     pub poster_aspect: AspectRatio,
+    pub ssh_config: SshConfig,
     pub theme: Theme
 }
 
@@ -109,20 +108,6 @@ impl AspectRatio {
         match self {
             AspectRatio::Default => 16.0/9.0,
             AspectRatio::Custom { value, .. } => *value
-        }
-    }
-}
-
-impl DeployConfig {
-    pub fn complete(&self) -> bool {
-        self.path.is_some() && self.server.is_some() && self.user.is_some()
-    }
-
-    pub fn new() -> DeployConfig {
-        DeployConfig {
-            path: None,
-            server: None,
-            user: None
         }
     }
 }
@@ -222,42 +207,6 @@ impl Site {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
-                "deploy_config" => 'deploy_config: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "path" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.deploy_config.path = Some(value.to_string());
-                                        }
-                                    }
-                                    "server" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.deploy_config.server = Some(value.to_string());
-                                        }
-                                    }
-                                    "user" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.deploy_config.user = Some(value.to_string());
-                                        }
-                                    }
-                                    _ => {
-                                        let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside a deploy_config field";
-                                        let error = attribute_error(attribute, manifest_path, message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            break 'deploy_config;
-                        }
-                    }
-
-                    let message = "deploy_config needs to be provided as a field with attributes, e.g.:\n\ndeploy_config:\npath = /var/www/example/\nserver = example.com\nuser = alice";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
                 "disable_clean_urls" => {
                     if element.is_flag() {
                         self.clean_urls = false;
@@ -292,6 +241,84 @@ impl Site {
                     }
 
                     let message = "font needs to be provided as a field with a value specifying the woff or woff2 font file name, e.g.: 'font: custom_sans.woff2'";
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
+                "ftp_config" => 'ftp_config: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "mode" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value {
+                                                "insecure" => {
+                                                    self.ftp_config.secure = Some(false);
+                                                }
+                                                "secure" => {
+                                                    self.ftp_config.secure = Some(true);
+                                                }
+                                                other => {
+                                                    let message = format!("The mode option only supports the value 'insecure' or 'secure'. The given value '{other}' was not recognized.");
+                                                    let error = element_error(element, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "password" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ftp_config.password = Some(value.to_string());
+                                        }
+                                    }
+                                    "path" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ftp_config.path = Some(value.to_string());
+                                        }
+                                    }
+                                    "port" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value.parse::<usize>() {
+                                                Ok(number) => self.ftp_config.port = Some(number),
+                                                Err(err) => {
+                                                    let message = format!("The port option only accepts positive integer numbers ({err})");
+                                                    let error = element_error(element, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "server" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ftp_config.server = Some(value.to_string());
+                                        }
+                                    }
+                                    "user" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ftp_config.user = Some(value.to_string());
+                                        }
+                                    }
+                                    _ => {
+                                        let message = "The key/name of this attribute was not recognized, only 'password', 'path', 'server' and 'user' are recognized inside an ftp_config field";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'ftp_config;
+                        }
+                    }
+
+                    let message = indoc!("
+                        ftp_config needs to be provided as a field with attributes, e.g.:
+
+                        ftp_config:
+                        password = SuchExquisitelyLongSecret
+                        path = /data/web/user123/html
+                        server = ftp-user123.example.com
+                        user = user123
+                    ");
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
@@ -331,6 +358,57 @@ impl Site {
                     }
 
                     let message = "poster_aspect needs to be provided as a field with a value, e.g.: 'poster_aspect: 16:9'";
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
+                "deploy_config" |
+                "ssh_config" => 'ssh_config: {
+                    // TODO: Eventually implement a message about the
+                    // deploy_config key being deprecated (or hard-deprecate
+                    // it right away then), for now we rely on the option
+                    // still silently working and being automatically
+                    // upgraded through users saving the site settings in the
+                    // editor.
+
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "path" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ssh_config.path = Some(value.to_string());
+                                        }
+                                    }
+                                    "server" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ssh_config.server = Some(value.to_string());
+                                        }
+                                    }
+                                    "user" => {
+                                        if let Some(value) = attribute.value() {
+                                            self.ssh_config.user = Some(value.to_string());
+                                        }
+                                    }
+                                    _ => {
+                                        let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside an ssh_config field";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'ssh_config;
+                        }
+                    }
+
+                    let message = indoc!("
+                        ssh_config needs to be provided as a field with attributes, e.g.:
+
+                        ssh_config:
+                        path = /data/web/user123/html
+                        server = ssh-user123.example.com
+                        user = user123
+                    ");
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
@@ -379,6 +457,11 @@ impl Site {
             SiteContent::Empty |
             SiteContent::Invalid { .. } => false
         }
+    }
+
+    pub fn complete_deployment_config(&self) -> bool {
+        // TODO: We could possibly check for base_url here already as well?
+        self.ftp_config.complete() || self.ssh_config.complete()
     }
 
     /// Traverses the site tree to determine if any published video on the
@@ -497,11 +580,12 @@ impl Site {
             base_url: None,
             content: SiteContent::Empty,
             clean_urls: true,
-            deploy_config: DeployConfig::new(),
+            ftp_config: FtpConfig::new(),
             font: Font::Default,
             language: Language::default(),
             manifest_errors: Vec::new(),
             poster_aspect: AspectRatio::Default,
+            ssh_config: SshConfig::new(),
             theme: Theme::default()
         }
     }
@@ -636,23 +720,6 @@ impl Site {
             eno.push_str(&format!("base_url: {}\n", base_url.representation));
         }
 
-        if self.deploy_config.server.is_some() ||
-            self.deploy_config.user.is_some() {
-            eno.push_str("deploy_config:\n");
-
-            if let Some(path) = &self.deploy_config.path {
-                eno.push_str(&format!("path = {}\n", path));
-            }
-
-            if let Some(server) = &self.deploy_config.server {
-                eno.push_str(&format!("server = {}\n", server));
-            }
-
-            if let Some(user) = &self.deploy_config.user {
-                eno.push_str(&format!("user = {}\n", user));
-            }
-        }
-
         if !self.clean_urls {
             eno.push_str("disable_clean_urls\n");
         }
@@ -670,6 +737,54 @@ impl Site {
         }
 
         eno.push_str(&format!("theme: {}\n", self.theme.key));
+
+        if !self.ftp_config.is_empty() {
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str("ftp_config:\n");
+
+            if let Some(secure) = self.ftp_config.secure {
+                eno.push_str(&format!("mode = {}\n", if secure { "secure" } else { "insecure" }));
+            }
+
+            if let Some(password) = &self.ftp_config.password {
+                eno.push_str(&format!("password = {}\n", password));
+            }
+
+            if let Some(path) = &self.ftp_config.path {
+                eno.push_str(&format!("path = {}\n", path));
+            }
+
+            if let Some(port) = &self.ftp_config.port {
+                eno.push_str(&format!("port = {}\n", port));
+            }
+
+            if let Some(server) = &self.ftp_config.server {
+                eno.push_str(&format!("server = {}\n", server));
+            }
+
+            if let Some(user) = &self.ftp_config.user {
+                eno.push_str(&format!("user = {}\n", user));
+            }
+        }
+
+        if !self.ssh_config.is_empty() {
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str("ssh_config:\n");
+
+            if let Some(path) = &self.ssh_config.path {
+                eno.push_str(&format!("path = {}\n", path));
+            }
+
+            if let Some(server) = &self.ssh_config.server {
+                eno.push_str(&format!("server = {}\n", server));
+            }
+
+            if let Some(user) = &self.ssh_config.user {
+                eno.push_str(&format!("user = {}\n", user));
+            }
+        }
 
         let manifest_path = context.site_dir.join("site.eno");
 

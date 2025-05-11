@@ -47,7 +47,7 @@ use banner::Banner;
 use cache::{Cache, CacheItem, PosterAssetsCached, VideoMetaCached};
 use collection::Collection;
 use context::{CollectionUpdate, Context, GetAnyResult, PlaylistUpdate, SiteUpdate, VideoUpdate};
-use deploy::DeploymentState;
+use deploy::{DeploymentState, FtpConfig, SshConfig};
 use editor::{EditorConfig, TreeViewOrder};
 use file_meta::FileMeta;
 use font::Font;
@@ -73,6 +73,8 @@ use video::{Video, VideoFile, VideoMeta, VideoOrder};
 use video_format::{Codec, EncodingApproach, VideoFormat};
 
 fn main() {
+    env_logger::init();
+
     let args: Args = Args::parse();
     let editor_config = EditorConfig::retrieve();
 
@@ -151,10 +153,11 @@ fn main() {
 
         if args.deploy {
             let site = context.get_site();
+            let language = context.get_editor_language();
 
             // TODO: Deployment is async now (this call immediately returns).
             //       Need to switch to a blocking version that also reports output to the console (?)
-            match deploy::perform_deploy(&context, &site) {
+            match deploy::perform_deploy(&context, &site, &language.translations) {
                 Ok(()) => (),
                 Err(err) => eprintln!("{err}")
             };

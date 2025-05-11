@@ -74,7 +74,7 @@ pub async fn processing(context: Data<Arc<Context>>) -> Json<Report> {
         let deployment_info = {
             let site = context.get_site();
 
-            if site.deploy_config.complete() {
+            if site.complete_deployment_config() {
                 let deployment_state = context.deploying.lock().unwrap();
                 DeploymentInfo::configured(&deployment_state)
             } else {

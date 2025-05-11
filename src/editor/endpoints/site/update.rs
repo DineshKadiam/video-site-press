@@ -27,11 +27,17 @@ use super::pending_manifest_errors;
 pub struct UpdateForm {
     base_url: String,
     clean_urls: Option<String>,
-    deployment_path: String,
-    deployment_server: String,
-    deployment_user: String,
+    ftp_config_password: String,
+    ftp_config_path: String,
+    ftp_config_port: String,
+    ftp_config_secure: Option<String>,
+    ftp_config_server: String,
+    ftp_config_user: String,
     language: String,
     poster_aspect: String,
+    ssh_config_path: String,
+    ssh_config_server: String,
+    ssh_config_user: String,
     theme: String
 }
 
@@ -41,11 +47,16 @@ pub async fn update(
 ) -> Either<Redirect, HttpResponse> {
     let base_url_trimmed = form.base_url.trim();
     let clean_urls = form.clean_urls.is_some();
-    let deployment_path_trimmed = form.deployment_path.trim();
-    let deployment_server_trimmed = form.deployment_server.trim();
-    let deployment_user_trimmed = form.deployment_user.trim();
+    let ftp_config_password_trimmed = form.ftp_config_password.trim();
+    let ftp_config_path_trimmed = form.ftp_config_path.trim();
+    let ftp_config_secure = form.ftp_config_secure.is_some();
+    let ftp_config_server_trimmed = form.ftp_config_server.trim();
+    let ftp_config_user_trimmed = form.ftp_config_user.trim();
     let language_trimmed = form.language.trim();
     let poster_aspect_trimmed = form.poster_aspect.trim();
+    let ssh_config_path_trimmed = form.ssh_config_path.trim();
+    let ssh_config_server_trimmed = form.ssh_config_server.trim();
+    let ssh_config_user_trimmed = form.ssh_config_user.trim();
     let theme = match Theme::from_key(&form.theme) {
         Ok(theme) => theme,
         Err(_) => Theme::default()
@@ -64,40 +75,46 @@ pub async fn update(
             .map_err(|err| err.to_string())
     };
 
-    if base_url.as_ref().is_some_and(|base_url| base_url.is_err()) || poster_aspect.is_err() {
+    let ftp_config_port_trimmed = form.ftp_config_port.trim();
+    let ftp_config_port = if ftp_config_port_trimmed.is_empty() {
+        None
+    } else {
+        Some(
+            ftp_config_port_trimmed.parse::<usize>().map_err(|err| err.to_string())
+        )
+    };
+
+    if base_url.as_ref().is_some_and(|base_url| base_url.is_err()) ||
+        poster_aspect.is_err() ||
+        ftp_config_port.as_ref().is_some_and(|ftp_config_port| ftp_config_port.is_err()) {
         let site = context.get_site();
 
         let form_feedback = UpdateFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()))),
             clean_urls,
-            deployment_path: Field::valid(deployment_path_trimmed),
-            deployment_server: Field::valid(deployment_server_trimmed),
-            deployment_user: Field::valid(deployment_user_trimmed),
+            ftp_config_password: Field::valid(ftp_config_password_trimmed),
+            ftp_config_path: Field::valid(ftp_config_path_trimmed),
+            ftp_config_port: Field::validated(ftp_config_port_trimmed, ftp_config_port.and_then(|ftp_config_port| ftp_config_port.err())),
+            ftp_config_secure,
+            ftp_config_server: Field::valid(ftp_config_server_trimmed),
+            ftp_config_user: Field::valid(ftp_config_user_trimmed),
             language: Field::valid(language_trimmed),
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
+            ssh_config_path: Field::valid(ssh_config_path_trimmed),
+            ssh_config_server: Field::valid(ssh_config_server_trimmed),
+            ssh_config_user: Field::valid(ssh_config_user_trimmed),
             theme
         };
 
         let editor_language = context.get_editor_language();
         Either::Right(edit_page(&context, Some(form_feedback), &editor_language, &site))
     } else {
-        let deployment_path = if deployment_path_trimmed.is_empty() {
-            None
-        } else {
-            Some(deployment_path_trimmed.to_string())
-        };
-
-        let deployment_server = if deployment_server_trimmed.is_empty() {
-            None
-        } else {
-            Some(deployment_server_trimmed.to_string())
-        };
-
-        let deployment_user = if deployment_user_trimmed.is_empty() {
-            None
-        } else {
-            Some(deployment_user_trimmed.to_string())
-        };
+        fn to_option(trimmed: &str) -> Option<String> {
+            match trimmed.is_empty() {
+                true => None,
+                false => Some(trimmed.to_string())
+            }
+        }
 
         let language = if language_trimmed.is_empty() {
             Language::default()
@@ -108,11 +125,17 @@ pub async fn update(
         let mutation = |site_mut: &mut Site| {
             site_mut.base_url = base_url.map(|base_url| base_url.unwrap());
             site_mut.clean_urls = clean_urls;
-            site_mut.deploy_config.path = deployment_path;
-            site_mut.deploy_config.server = deployment_server;
-            site_mut.deploy_config.user = deployment_user;
+            site_mut.ftp_config.password = to_option(ftp_config_password_trimmed);
+            site_mut.ftp_config.path = to_option(ftp_config_path_trimmed);
+            site_mut.ftp_config.port = ftp_config_port.and_then(|ftp_config_port| ftp_config_port.ok());
+            site_mut.ftp_config.secure = Some(ftp_config_secure);
+            site_mut.ftp_config.server = to_option(ftp_config_server_trimmed);
+            site_mut.ftp_config.user = to_option(ftp_config_user_trimmed);
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
+            site_mut.ssh_config.path = to_option(ssh_config_path_trimmed);
+            site_mut.ssh_config.server = to_option(ssh_config_server_trimmed);
+            site_mut.ssh_config.user = to_option(ssh_config_user_trimmed);
             site_mut.theme = theme;
         };
 
