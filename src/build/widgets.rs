@@ -134,7 +134,7 @@ pub fn links(language: &Language, links: &[Link]) -> String {
         return String::new();
     }
 
-    let external_icon = icons::external(language.translations.external_link);
+    let link_icon = icons::link(Some(language.translations.external_link));
 
     let items = links
         .iter()
@@ -148,7 +148,7 @@ pub fn links(language: &Language, links: &[Link]) -> String {
                 let label = link.pretty_label();
                 let e_label = html_escape_outside_attribute(&label);
                 formatdoc!(r#"
-                    <a href="{url}" {rel_me} target="_blank">{external_icon} <span>{e_label}</span></a>
+                    <a href="{url}" {rel_me} target="_blank">{link_icon} <span>{e_label}</span></a>
                 "#)
             }
         })

@@ -58,7 +58,7 @@ pub async fn add_link(
 
     match context.update_collection(mutation, &site_path) {
         CollectionUpdate::Updated { collection_updated, .. } => {
-            let redirect_url = routes::collection_edit(&collection_updated);
+            let redirect_url = routes::collection_links(&collection_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         CollectionUpdate::NotFound => {

@@ -19,9 +19,7 @@ use crate::{
 use crate::editor::{Checkbox, Input, Location, Select, Textarea};
 use crate::editor::routes;
 use crate::editor::widgets::{
-    add_link_form,
     layout,
-    links,
     not_found,
     resource_actions
 };
@@ -224,9 +222,6 @@ pub fn edit_page(
         String::new()
     };
 
-    let create_link_form = add_link_form(&routes::video_add_link(video), translations);
-    let links_form = links(&video.links, &routes::video_delete_link(video), translations);
-
     let r_resource_actions = resource_actions(
         context,
         video.offline(),
@@ -273,10 +268,6 @@ pub fn edit_page(
                 </div>
             </form>
         </div>
-
-        {links_form}
-
-        {create_link_form}
     "#);
 
     let t_video_settings = translations.video_settings;

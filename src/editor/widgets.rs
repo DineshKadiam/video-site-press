@@ -124,10 +124,10 @@ pub fn resource_actions(
             let t_offline = translations.offline;
             let offline_label = if offline { format!(" ({t_offline})") } else { String::new() };
 
-            let external_icon = icons::external(translations.external_link);
+            let link_icon = icons::link(Some(translations.external_link));
             let live_url = base_url.join_index(site, site_path);
             if site_path.is_root_path() {
-                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {live_url}{offline_label}</a>"#);
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{link_icon} {live_url}{offline_label}</a>"#);
             } else {
                 let mut rsplitn = live_url.rsplitn(3, '/');
 
@@ -135,7 +135,7 @@ pub fn resource_actions(
                 let slug = rsplitn.next().unwrap();
                 let prefix = rsplitn.next().unwrap();
 
-                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{external_icon} {prefix}/<span class="path_extension">{slug}</span>/{index_html}{offline_label}</a>"#);
+                live_url_displayed = format!(r#"<a href="{live_url}" target="_blank">{link_icon} {prefix}/<span class="path_extension">{slug}</span>/{index_html}{offline_label}</a>"#);
             };
 
             let t_copy_link = translations.copy_link;

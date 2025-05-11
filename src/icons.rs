@@ -144,15 +144,6 @@ pub const EMBED: &str = indoc!(r#"
     </svg>
 "#);
 
-pub fn external(label: &str) -> String {
-    formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <title>{label}</title>
-            <path d="m55.258 55.088v-21.334h-6.2832v15.074h-33.691v-33.697h15.066v-6.2832h-21.35v46.266zm0-46.24h-20.184v6.2832h9.6582l-19.932 19.932 4.4434 4.4453 19.73-19.73v9.2793h6.2832z"/>
-        </svg>
-    "#)
-}
-
 /// Visually represented as a fully symetric X
 pub fn failure(label: &str) -> String {
     formatdoc!(r#"
@@ -169,6 +160,24 @@ pub fn light(label: &str) -> String {
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m29.68 3.6836v9.2344h4.6406v-9.2344h-4.6406zm-16.199 6.5156-3.2812 3.2832 6.5996 6.5957 3.2812-3.2812-6.5996-6.5977zm37.039 0-6.5996 6.5977 3.2812 3.2812 6.5996-6.5957-3.2812-3.2832zm-18.52 10.086a11.715 11.715 0 0 0-11.715 11.715 11.715 11.715 0 0 0 11.715 11.713 11.715 11.715 0 0 0 11.715-11.713 11.715 11.715 0 0 0-11.715-11.715zm-28.316 9.3926v4.6426h9.2324v-4.6426h-9.2324zm47.4 0v4.6426h9.2324v-4.6426h-9.2324zm-34.285 14.242-6.5996 6.5957 3.2812 3.2832 6.5996-6.5977-3.2812-3.2812zm30.402 0-3.2812 3.2812 6.5996 6.5977 3.2812-3.2832-6.5996-6.5957zm-17.521 7.1602v9.2344h4.6406v-9.2344h-4.6406z"/>
+        </svg>
+    "#)
+}
+
+/// Two interconnected chain links (as in common "link" iconography)
+/// For `label` provide either a label that should be read for screen readers,
+/// or None to declare the icon invisible to screenreaders (e.g. when it would
+/// only contain duplicate content).
+pub fn link(label: Option<&str>) -> String {
+    let (aria_hidden, title) = match label {
+        Some(label) => ("", format!("<title>{label}</title>")),
+        None => (r#"aria-hidden="true""#, String::new())
+    };
+
+    formatdoc!(r#"
+        <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            {title}
+            <path d="m55.258 55.088v-21.334h-6.2832v15.074h-33.691v-33.697h15.066v-6.2832h-21.35v46.266zm0-46.24h-20.184v6.2832h9.6582l-19.932 19.932 4.4434 4.4453 19.73-19.73v9.2793h6.2832z"/>
         </svg>
     "#)
 }

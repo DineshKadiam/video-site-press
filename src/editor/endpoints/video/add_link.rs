@@ -65,7 +65,7 @@ pub async fn add_link(
             Either::Right(not_found(&context, &language, &site_path))
         }
         VideoUpdate::Success { video_updated, .. } => {
-            let redirect_url = routes::video_edit(&video_updated);
+            let redirect_url = routes::video_links(&video_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
     }

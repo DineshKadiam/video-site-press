@@ -180,17 +180,21 @@ fn collection_node(
 
         let dangerous_actions_url = routes::collection_dangerous_actions(collection);
         let edit_manifest_url = routes::collection_manifest(collection);
+        let links_url = routes::collection_links(collection);
 
         let t_dangerous_actions = translations.dangerous_actions;
         let t_collection_manifest = translations.collection_manifest;
         let t_collection_settings = translations.collection_settings;
+        let t_links = translations.links;
 
         let code_icon = icons::CODE;
         let danger_icon = icons::DANGER;
         let edit_icon = icons::EDIT;
+        let link_icon = icons::link(None);
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
         let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let links_active = if *subpage == Subpage::Links { "active" } else { "" };
         let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
 
         let (site_manifest, site_settings) = if collection.site_path.is_root_path() {
@@ -222,6 +226,8 @@ fn collection_node(
             (String::new(), String::new())
         };
 
+        let links_count = collection.links.len();
+
         formatdoc!(r#"
             <div class="active">
                 {node}
@@ -230,6 +236,9 @@ fn collection_node(
                         {edit_icon} {t_collection_settings}
                     </a>
                     {site_settings}
+                    <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
+                        {link_icon} {t_links} ({links_count})
+                    </a>
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}
                     </a>
@@ -297,17 +306,21 @@ fn playlist_node(
 
         let dangerous_actions_url = routes::playlist_dangerous_actions(playlist);
         let edit_manifest_url = routes::playlist_manifest(playlist);
+        let links_url = routes::playlist_links(playlist);
 
         let t_dangerous_actions = translations.dangerous_actions;
+        let t_links = translations.links;
         let t_playlist_manifest = translations.playlist_manifest;
         let t_playlist_settings = translations.playlist_settings;
 
         let code_icon = icons::CODE;
         let danger_icon = icons::DANGER;
         let edit_icon = icons::EDIT;
+        let link_icon = icons::link(None);
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
         let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let links_active = if *subpage == Subpage::Links { "active" } else { "" };
         let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
 
         let (site_manifest, site_settings) = if playlist.site_path.is_root_path() {
@@ -339,6 +352,8 @@ fn playlist_node(
             (String::new(), String::new())
         };
 
+        let links_count = playlist.links.len();
+
         formatdoc!(r#"
             <div class="active">
                 {node}
@@ -347,6 +362,9 @@ fn playlist_node(
                         {edit_icon} {t_playlist_settings}
                     </a>
                     {site_settings}
+                    <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
+                        {link_icon} {t_links} ({links_count})
+                    </a>
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}
                     </a>
@@ -607,26 +625,30 @@ fn video_node(
 
         let dangerous_actions_url = routes::video_dangerous_actions(video);
         let edit_manifest_url = routes::video_manifest(video);
+        let links_url = routes::video_links(video);
         let media_url = routes::video_media(video);
         let poster_url = routes::video_poster(video);
         let subtitles_url = routes::video_subtitles(video);
 
         let t_dangerous_actions = translations.dangerous_actions;
-        let t_video_files = translations.video_files;
+        let t_links = translations.links;
         let t_poster_image = translations.poster_image;
         let t_subtitles = translations.subtitles;
+        let t_video_files = translations.video_files;
         let t_video_manifest = translations.video_manifest;
         let t_video_settings = translations.video_settings;
 
         let code_icon = icons::CODE;
         let danger_icon = icons::DANGER;
         let edit_icon = icons::EDIT;
+        let link_icon = icons::link(None);
         let media_icon = icons::storage(None);
         let poster_icon = icons::EMBED; // TODO: Custom poster icon
         let subtitles_icon = icons::subtitles(None);
 
         let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
         let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
+        let links_active = if *subpage == Subpage::Links { "active" } else { "" };
         let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
         let media_active = if *subpage == Subpage::Media { "active" } else { "" };
         let poster_active = if *subpage == Subpage::Poster { "active" } else { "" };
@@ -661,6 +683,7 @@ fn video_node(
             (String::new(), String::new())
         };
 
+        let links_count = video.links.len();
         let subtitles_count = video.subtitles.len();
         let video_files_count = video.versions.len();
 
@@ -672,15 +695,18 @@ fn video_node(
                     <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
                         {edit_icon} {t_video_settings}
                     </a>
-                    <a class="{poster_active} subpage" href="{poster_url}" style="padding-left: {padding_left};">
-                        {poster_icon} {t_poster_image}
-                    </a>
                     {site_settings}
                     <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
                         {media_icon} {t_video_files} ({video_files_count})
                     </a>
                     <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
                         {subtitles_icon} {t_subtitles} ({subtitles_count})
+                    </a>
+                    <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
+                        {link_icon} {t_links} ({links_count})
+                    </a>
+                    <a class="{poster_active} subpage" href="{poster_url}" style="padding-left: {padding_left};">
+                        {poster_icon} {t_poster_image}
                     </a>
                     <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
                         {danger_icon} {t_dangerous_actions}

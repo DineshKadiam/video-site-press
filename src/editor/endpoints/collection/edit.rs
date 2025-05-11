@@ -19,9 +19,7 @@ use crate::{
 use crate::editor::{Checkbox, Input, Location, Select, Textarea};
 use crate::editor::routes;
 use crate::editor::widgets::{
-    add_link_form,
     layout,
-    links,
     not_found,
     resource_actions,
     upload_widget
@@ -443,9 +441,6 @@ pub fn edit_page(
         String::new()
     };
 
-    let create_link_form = add_link_form(&routes::collection_add_link(collection), translations);
-    let links_form = links(&collection.links, &routes::collection_delete_link(collection), translations);
-
     let r_resource_actions = resource_actions(
         context,
         collection.offline(),
@@ -492,10 +487,6 @@ pub fn edit_page(
                 </div>
             </form>
         </div>
-
-        {links_form}
-
-        {create_link_form}
 
         {new_subcollection_form}
 

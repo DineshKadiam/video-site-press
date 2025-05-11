@@ -23,7 +23,7 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
     }
     select_theme.selected(theme.key);
 
-    let external_icon = icons::external(translations.external_link);
+    let link_icon = icons::link(Some(translations.external_link));
     let version_adaptive = env!("HYPER8_VERSION_ADAPTIVE");
     let t_documentation = translations.documentation;
     let t_close = translations.close;
@@ -36,7 +36,7 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
                 <div class="image_wrapper">
                     <img alt="Hyper 8 Video System" src="/splash_logo.svg?{version_adaptive}">
                     <a class="version" href="https://codeberg.org/simonrepp/hyper8/src/branch/main/CHANGELOG.md" target="_blank">
-                        {external_icon}
+                        {link_icon}
                         <span>{t_version} {version_adaptive}</span>
                     </a>
                 </div>
@@ -51,27 +51,27 @@ pub fn splash_screen(language: &Language, theme: Theme) -> String {
                     <ul autofocus>
                         <li>
                             <a href="https://simonrepp.com/hyper8" target="_blank">
-                                {external_icon} {t_website}
+                                {link_icon} {t_website}
                             </a>
                         </li>
                         <li>
                             <a href="https://simonrepp.com/hyper8/docs" target="_blank">
-                                {external_icon} {t_documentation}
+                                {link_icon} {t_documentation}
                             </a>
                         </li>
                         <li>
                             <a href="https://codeberg.org/simonrepp/hyper8/issues" target="_blank">
-                                {external_icon} {t_report_a_bug}
+                                {link_icon} {t_report_a_bug}
                             </a>
                         </li>
                         <li>
                             <a href="https://liberapay.com/simonrepp" target="_blank">
-                                {external_icon} Liberapay
+                                {link_icon} Liberapay
                             </a>
                         </li>
                         <li>
                             <a href="https://ko-fi.com/simonrepp" target="_blank">
-                                {external_icon} Ko-fi
+                                {link_icon} Ko-fi
                             </a>
                         </li>
                     </ul>

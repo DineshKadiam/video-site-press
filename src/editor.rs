@@ -42,6 +42,7 @@ pub enum Location<'a> {
 pub enum Subpage {
     DangerousActions,
     Edit,
+    Links,
     Manifest,
     Media,
     Poster,
@@ -135,6 +136,13 @@ impl<'a> Location<'a> {
             Location::SiteTree { site_path: location_site_path, .. } => {
                 location_site_path.starts_with(site_path)
             }
+        }
+    }
+
+    pub fn links(site_path: &SitePath) -> Location {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Links
         }
     }
 

@@ -47,6 +47,10 @@ pub fn collection_edit(collection: &Collection) -> String {
     format!("/collection/edit/{}", collection.site_path.normalized())
 }
 
+pub fn collection_links(collection: &Collection) -> String {
+    format!("/collection/links/{}", collection.site_path.normalized())
+}
+
 pub fn collection_manifest(collection: &Collection) -> String {
     format!("/collection/manifest/{}", collection.site_path.normalized())
 }
@@ -105,6 +109,10 @@ pub fn playlist_delete_link(playlist: &Playlist) -> String {
 
 pub fn playlist_edit(playlist: &Playlist) -> String {
     format!("/playlist/edit/{}", playlist.site_path.normalized())
+}
+
+pub fn playlist_links(playlist: &Playlist) -> String {
+    format!("/playlist/links/{}", playlist.site_path.normalized())
 }
 
 pub fn playlist_manifest(playlist: &Playlist) -> String {
@@ -182,6 +190,10 @@ pub fn video_edit(video: &Video) -> String {
 
 pub fn video_edit_subtitles(file_name: &str, video: &Video) -> String {
     format!("/video/edit-subtitles/{}/{}", urlencoding::encode(file_name), video.site_path.normalized())
+}
+
+pub fn video_links(video: &Video) -> String {
+    format!("/video/links/{}", video.site_path.normalized())
 }
 
 pub fn video_manifest(video: &Video) -> String {

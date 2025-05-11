@@ -68,6 +68,7 @@ pub async fn start(
                         .route(get().to(collection::edit))
                         .route(post().to(collection::update))
                 )
+                .route("/collection/links/{site_path:.*}", get().to(collection::links))
                 .service(
                     resource("/collection/manifest/{site_path:.*}")
                         .route(get().to(collection::edit_manifest))
@@ -93,6 +94,7 @@ pub async fn start(
                         .route(get().to(playlist::edit))
                         .route(post().to(playlist::update))
                 )
+                .route("/playlist/links/{site_path:.*}", get().to(playlist::links))
                 .service(
                     resource("/playlist/manifest/{site_path:.*}")
                         .route(get().to(playlist::edit_manifest))
@@ -146,6 +148,7 @@ pub async fn start(
                         .route(get().to(video::edit_subtitles))
                         .route(post().to(video::update_subtitles))
                 )
+                .route("/video/links/{site_path:.*}", get().to(video::links))
                 .service(
                     resource("/video/manifest/{site_path:.*}")
                         .route(get().to(video::edit_manifest))

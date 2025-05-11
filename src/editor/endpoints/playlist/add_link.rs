@@ -58,7 +58,7 @@ pub async fn add_link(
 
     match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::Updated { playlist_updated, .. } => {
-            let redirect_url = routes::playlist_edit(&playlist_updated);
+            let redirect_url = routes::playlist_links(&playlist_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         PlaylistUpdate::NotFound => {
