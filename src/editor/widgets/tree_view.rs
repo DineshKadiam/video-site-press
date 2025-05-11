@@ -662,6 +662,7 @@ fn video_node(
         };
 
         let subtitles_count = video.subtitles.len();
+        let video_files_count = video.versions.len();
 
         // TODO: Indicate missing image description for poster image on the poster image subpage link entry
         formatdoc!(r#"
@@ -676,7 +677,7 @@ fn video_node(
                     </a>
                     {site_settings}
                     <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
-                        {media_icon} {t_video_files}
+                        {media_icon} {t_video_files} ({video_files_count})
                     </a>
                     <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
                         {subtitles_icon} {t_subtitles} ({subtitles_count})
