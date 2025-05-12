@@ -541,6 +541,10 @@ select {
     color: var(--l-1);
 }
 .subpages { padding-block: .7rem; }
+.subpages .errors_badge {
+    bottom: .1em;
+    right: -.1em;
+}
 summary {
     color: var(--fg-1);
     cursor: pointer;

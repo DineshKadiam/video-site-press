@@ -94,25 +94,31 @@ fn collection_node(
     translations: &Translations,
     tree_view_order: &TreeViewOrder
 ) -> String {
-    let edit_url = routes::collection_edit(collection);
+    let collection_manifest_url = routes::collection_manifest(collection);
+    let collection_settings_url = routes::collection_edit(collection);
+    let site_manifest_url = routes::SITE_MANIFEST;
 
-    if location.intersects(&collection.site_path) {
-        let breadcrumb_title = collection.title_or_slug_or_generic_label(translations);
-        let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-        breadcrumbs.push(format!(r#"<a href="{edit_url}">{e_breadcrumb_title}</a>"#));
-    }
-
-    let active = location.active_subpage(&collection.site_path).is_some();
-    let collection_icon = icons::collection(translations.collection);
-    let collection_visibility = Visibility::from_collection(collection);
+    let exposed_edit_url = if collection.errors.is_empty() {
+        &collection_settings_url
+    } else {
+        &collection_manifest_url
+    };
 
     let has_errors = !collection.errors.is_empty() ||
         (collection.site_path.is_root_path() && !site.errors.is_empty());
 
+    if location.intersects(&collection.site_path) {
+        let breadcrumb_title = collection.title_or_slug_or_generic_label(translations);
+        let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
+        breadcrumbs.push(format!(r#"<a href="{exposed_edit_url}">{e_breadcrumb_title}</a>"#));
+    }
+
+    let collection_icon = icons::collection(translations.collection);
+    let collection_visibility = Visibility::from_collection(collection);
+
     let node = tree_node(
-        active,
         has_errors,
-        &edit_url,
+        exposed_edit_url,
         &collection_icon,
         site_dir.unwrap_or_else(|| collection.slug_unchecked()),
         collection.title.as_deref(),
@@ -174,46 +180,29 @@ fn collection_node(
         .join("");
 
     let node_with_subpages = if let Some(subpage) = location.active_subpage(&collection.site_path) {
-        let depth = edit_url.split('/').count() as f32 - 3.5;
+        let mut subpages = Vec::new();
+
+        let depth = collection_settings_url.split('/').count() as f32 - 3.5;
         let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
-        let dangerous_actions_url = routes::collection_dangerous_actions(collection);
-        let edit_manifest_url = routes::collection_manifest(collection);
-        let links_url = routes::collection_links(collection);
-
-        let t_dangerous_actions = translations.dangerous_actions;
-        let t_collection_manifest = translations.collection_manifest;
-        let t_collection_settings = translations.collection_settings;
-        let t_links = translations.links;
-
-        let code_icon = icons::CODE;
-        let danger_icon = icons::DANGER;
-        let edit_icon = icons::EDIT;
-        let link_icon = icons::link(None);
-
-        let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
-        let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
-        let links_active = if *subpage == Subpage::Links { "active" } else { "" };
-        let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
-
-        let (site_manifest, site_settings) = if collection.site_path.is_root_path() {
-            let logo = icons::logo(None);
-
-            let t_site_manifest = translations.site_manifest;
-            let t_site_settings = translations.site_settings;
-
-            let site_manifest_url = routes::SITE_MANIFEST;
-            let site_settings_url = routes::SITE_EDIT;
-
-            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
-            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
-
-            let site_manifest = formatdoc!(r#"
-                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
-                    {code_icon} {t_site_manifest}
+        if collection.errors.is_empty() {
+            let collection_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
+            let collection_settings_icon = icons::EDIT;
+            let t_collection_settings = translations.collection_settings;
+            let collection_settings = formatdoc!(r#"
+                <a class="{collection_settings_active} subpage" href="{collection_settings_url}" style="padding-left: {padding_left};">
+                    {collection_settings_icon} {t_collection_settings}
                 </a>
             "#);
+            subpages.push(collection_settings);
+        }
+
+        if collection.site_path.is_root_path() && site.errors.is_empty() {
+            let logo = icons::logo(None);
+            let t_site_settings = translations.site_settings;
+            let site_settings_url = routes::SITE_EDIT;
+            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
 
             let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
@@ -221,31 +210,73 @@ fn collection_node(
                 </a>
             "#);
 
-            (site_manifest, site_settings)
-        } else {
-            (String::new(), String::new())
+            subpages.push(site_settings);
         };
 
-        let links_count = collection.links.len();
+        if collection.errors.is_empty() {
+            let links_active = if *subpage == Subpage::Links { "active" } else { "" };
+            let links_count = collection.links.len();
+            let link_icon = icons::link(None);
+            let links_url = routes::collection_links(collection);
+            let t_links = translations.links;
+            let links = formatdoc!(r#"
+                <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
+                    {link_icon} {t_links} ({links_count})
+                </a>
+            "#);
+            subpages.push(links);
+
+            let danger_icon = icons::DANGER;
+            let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
+            let dangerous_actions_url = routes::collection_dangerous_actions(collection);
+            let t_dangerous_actions = translations.dangerous_actions;
+            let dangerous_actions = formatdoc!(r#"
+                <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
+                    {danger_icon} {t_dangerous_actions}
+                </a>
+            "#);
+            subpages.push(dangerous_actions);
+        }
+
+        let collection_manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
+        let collection_manifest_icon = if collection.errors.is_empty() {
+            String::from(icons::CODE)
+        } else {
+            icon_with_error(icons::CODE)
+        };
+        let t_collection_manifest = translations.collection_manifest;
+        let collection_manifest = formatdoc!(r#"
+            <a class="{collection_manifest_active} subpage" href="{collection_manifest_url}" style="padding-left: {padding_left};">
+                {collection_manifest_icon} {t_collection_manifest}
+            </a>
+        "#);
+        subpages.push(collection_manifest);
+
+        if collection.site_path.is_root_path() {
+            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
+            let site_manifest_icon = if site.errors.is_empty() {
+                String::from(icons::CODE)
+            } else {
+                icon_with_error(icons::CODE)
+            };
+            let t_site_manifest = translations.site_manifest;
+
+            let site_manifest = formatdoc!(r#"
+                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
+                    {site_manifest_icon} {t_site_manifest}
+                </a>
+            "#);
+
+            subpages.push(site_manifest);
+        };
+
+        let r_subpages = subpages.join("\n");
 
         formatdoc!(r#"
             <div class="active">
                 {node}
                 <div class="subpages">
-                    <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
-                        {edit_icon} {t_collection_settings}
-                    </a>
-                    {site_settings}
-                    <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
-                        {link_icon} {t_links} ({links_count})
-                    </a>
-                    <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
-                        {danger_icon} {t_dangerous_actions}
-                    </a>
-                    <a class="{manifest_active} subpage" href="{edit_manifest_url}" style="padding-left: {padding_left};">
-                        {code_icon} {t_collection_manifest}
-                    </a>
-                    {site_manifest}
+                    {r_subpages}
                 </div>
             </div>
         "#)
@@ -263,6 +294,15 @@ fn collection_node(
     "#)
 }
 
+fn icon_with_error(icon: &str) -> String {
+    format!(r#"
+        <span style="position: relative;">
+            <span class="errors_badge"></span>
+            {icon}
+        </span>
+    "#)
+}
+
 /// For the root node `site_dir` is displayed instead of the slug, and it must
 /// be passed there too, otherwise this panics.
 fn playlist_node(
@@ -274,24 +314,31 @@ fn playlist_node(
     translations: &Translations,
     tree_view_order: &TreeViewOrder
 ) -> String {
-    let edit_url = routes::playlist_edit(playlist);
+    let playlist_manifest_url = routes::playlist_manifest(playlist);
+    let playlist_settings_url = routes::playlist_edit(playlist);
+    let site_manifest_url = routes::SITE_MANIFEST;
+
+    let exposed_edit_url = if playlist.errors.is_empty() {
+        &playlist_settings_url
+    } else {
+        &playlist_manifest_url
+    };
+
+    let has_errors = !playlist.errors.is_empty() ||
+        playlist.site_path.is_root_path() && !site.errors.is_empty();
 
     if location.intersects(&playlist.site_path) {
         let breadcrumb_title = playlist.title_or_slug_or_generic_label(translations);
         let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-        breadcrumbs.push(format!(r#"<a href="{edit_url}">{e_breadcrumb_title}</a>"#));
+        breadcrumbs.push(format!(r#"<a href="{exposed_edit_url}">{e_breadcrumb_title}</a>"#));
     }
 
     let playlist_icon = icons::playlist(translations.playlist);
     let playlist_visibility = Visibility::from_playlist(playlist);
 
-    let has_errors = !playlist.errors.is_empty() ||
-        (playlist.site_path.is_root_path() && !site.errors.is_empty());
-
     let node = tree_node(
-        false,
         has_errors,
-        &edit_url,
+        exposed_edit_url,
         &playlist_icon,
         site_dir.unwrap_or_else(|| playlist.slug_unchecked()),
         playlist.title.as_deref(),
@@ -300,46 +347,29 @@ fn playlist_node(
     );
 
     let node_with_subpages = if let Some(subpage) = location.active_subpage(&playlist.site_path) {
-        let depth = edit_url.split('/').count() as f32 - 3.5;
+        let mut subpages = Vec::new();
+
+        let depth = playlist_settings_url.split('/').count() as f32 - 3.5;
         let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
-        let dangerous_actions_url = routes::playlist_dangerous_actions(playlist);
-        let edit_manifest_url = routes::playlist_manifest(playlist);
-        let links_url = routes::playlist_links(playlist);
-
-        let t_dangerous_actions = translations.dangerous_actions;
-        let t_links = translations.links;
-        let t_playlist_manifest = translations.playlist_manifest;
-        let t_playlist_settings = translations.playlist_settings;
-
-        let code_icon = icons::CODE;
-        let danger_icon = icons::DANGER;
-        let edit_icon = icons::EDIT;
-        let link_icon = icons::link(None);
-
-        let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
-        let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
-        let links_active = if *subpage == Subpage::Links { "active" } else { "" };
-        let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
-
-        let (site_manifest, site_settings) = if playlist.site_path.is_root_path() {
-            let logo = icons::logo(None);
-
-            let t_site_manifest = translations.site_manifest;
-            let t_site_settings = translations.site_settings;
-
-            let site_manifest_url = routes::SITE_MANIFEST;
-            let site_settings_url = routes::SITE_EDIT;
-
-            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
-            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
-
-            let site_manifest = formatdoc!(r#"
-                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
-                    {code_icon} {t_site_manifest}
+        if playlist.errors.is_empty() {
+            let playlist_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
+            let playlist_settings_icon = icons::EDIT;
+            let t_playlist_settings = translations.playlist_settings;
+            let playlist_settings = formatdoc!(r#"
+                <a class="{playlist_settings_active} subpage" href="{playlist_settings_url}" style="padding-left: {padding_left};">
+                    {playlist_settings_icon} {t_playlist_settings}
                 </a>
             "#);
+            subpages.push(playlist_settings);
+        }
+
+        if playlist.site_path.is_root_path() && site.errors.is_empty() {
+            let logo = icons::logo(None);
+            let t_site_settings = translations.site_settings;
+            let site_settings_url = routes::SITE_EDIT;
+            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
 
             let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
@@ -347,31 +377,73 @@ fn playlist_node(
                 </a>
             "#);
 
-            (site_manifest, site_settings)
-        } else {
-            (String::new(), String::new())
+            subpages.push(site_settings);
         };
 
-        let links_count = playlist.links.len();
+        if playlist.errors.is_empty() {
+            let links_active = if *subpage == Subpage::Links { "active" } else { "" };
+            let links_count = playlist.links.len();
+            let link_icon = icons::link(None);
+            let links_url = routes::playlist_links(playlist);
+            let t_links = translations.links;
+            let links = formatdoc!(r#"
+                <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
+                    {link_icon} {t_links} ({links_count})
+                </a>
+            "#);
+            subpages.push(links);
+
+            let danger_icon = icons::DANGER;
+            let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
+            let dangerous_actions_url = routes::playlist_dangerous_actions(playlist);
+            let t_dangerous_actions = translations.dangerous_actions;
+            let dangerous_actions = formatdoc!(r#"
+                <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
+                    {danger_icon} {t_dangerous_actions}
+                </a>
+            "#);
+            subpages.push(dangerous_actions);
+        }
+
+        let playlist_manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
+        let playlist_manifest_icon = if playlist.errors.is_empty() {
+            String::from(icons::CODE)
+        } else {
+            icon_with_error(icons::CODE)
+        };
+        let t_playlist_manifest = translations.playlist_manifest;
+        let playlist_manifest = formatdoc!(r#"
+            <a class="{playlist_manifest_active} subpage" href="{playlist_manifest_url}" style="padding-left: {padding_left};">
+                {playlist_manifest_icon} {t_playlist_manifest}
+            </a>
+        "#);
+        subpages.push(playlist_manifest);
+
+        if playlist.site_path.is_root_path() {
+            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
+            let site_manifest_icon = if site.errors.is_empty() {
+                String::from(icons::CODE)
+            } else {
+                icon_with_error(icons::CODE)
+            };
+            let t_site_manifest = translations.site_manifest;
+
+            let site_manifest = formatdoc!(r#"
+                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
+                    {site_manifest_icon} {t_site_manifest}
+                </a>
+            "#);
+
+            subpages.push(site_manifest);
+        };
+
+        let r_subpages = subpages.join("\n");
 
         formatdoc!(r#"
             <div class="active">
                 {node}
                 <div class="subpages">
-                    <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
-                        {edit_icon} {t_playlist_settings}
-                    </a>
-                    {site_settings}
-                    <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
-                        {link_icon} {t_links} ({links_count})
-                    </a>
-                    <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
-                        {danger_icon} {t_dangerous_actions}
-                    </a>
-                    <a class="{manifest_active} subpage" href="{edit_manifest_url}" style="padding-left: {padding_left};">
-                        {code_icon} {t_playlist_manifest}
-                    </a>
-                    {site_manifest}
+                    {r_subpages}
                 </div>
             </div>
         "#)
@@ -444,7 +516,6 @@ pub fn tree_view(
             }
 
             tree_node(
-                active,
                 false,
                 dashboard_url,
                 &collection_icon,
@@ -467,7 +538,6 @@ pub fn tree_view(
             }
 
             tree_node(
-                active,
                 true,
                 dashboard_url,
                 &collection_icon,
@@ -516,7 +586,6 @@ pub fn tree_view(
 }
 
 fn tree_node(
-    active: bool,
     has_errors: bool,
     href: &str,
     icon: &str,
@@ -525,14 +594,8 @@ fn tree_node(
     translations: &Translations,
     visibility: &Visibility
 ) -> String {
-    let active = if active { r#"class="active""# } else { "" };
     let icon_container = if has_errors {
-        format!(r#"
-            <span style="position: relative;">
-                <span class="errors_badge"></span>
-                {icon}
-            </span>
-        "#)
+        icon_with_error(icon)
     } else {
         icon.to_string()
     };
@@ -571,7 +634,7 @@ fn tree_node(
     let padding_left = format!("{}rem", padding_left_rem);
 
     formatdoc!(r#"
-        <a {active} href="{href}" style="padding-left: {padding_left};">
+        <a href="{href}" style="padding-left: {padding_left};">
             <div class="icon">
                 {icon_container}
             </div>
@@ -593,24 +656,31 @@ fn video_node(
     translations: &Translations,
     video: &Video
 ) -> String {
-    let edit_url = routes::video_edit(video);
+    let site_manifest_url = routes::SITE_MANIFEST;
+    let video_manifest_url = routes::video_manifest(video);
+    let video_settings_url = routes::video_edit(video);
+
+    let exposed_edit_url = if video.errors.is_empty() {
+        &video_settings_url
+    } else {
+        &video_manifest_url
+    };
+
+    let has_errors = !video.errors.is_empty() ||
+        video.site_path.is_root_path() && !site.errors.is_empty();
 
     if location.intersects(&video.site_path) {
         let breadcrumb_title = video.title.as_deref().unwrap_or(translations.video);
         let e_breadcrumb_title = html_escape_outside_attribute(breadcrumb_title);
-        breadcrumbs.push(format!(r#"<a href="{edit_url}">{e_breadcrumb_title}</a>"#));
+        breadcrumbs.push(format!(r#"<a href="{exposed_edit_url}">{e_breadcrumb_title}</a>"#));
     }
 
     let video_icon = icons::video(translations.video);
     let visibility = Visibility::from_video(video);
 
-    let has_errors = !video.errors.is_empty() ||
-        (video.site_path.is_root_path() && !site.errors.is_empty());
-
     let node = tree_node(
-        false,
         has_errors,
-        &edit_url,
+        exposed_edit_url,
         &video_icon,
         site_dir.unwrap_or_else(|| video.slug_unchecked()),
         video.title.as_deref(),
@@ -619,58 +689,29 @@ fn video_node(
     );
 
     if let Some(subpage) = location.active_subpage(&video.site_path) {
-        let depth = edit_url.split('/').count() as f32 - 3.5;
+        let mut subpages = Vec::new();
+
+        let depth = video_settings_url.split('/').count() as f32 - 3.5;
         let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
-        let dangerous_actions_url = routes::video_dangerous_actions(video);
-        let edit_manifest_url = routes::video_manifest(video);
-        let links_url = routes::video_links(video);
-        let media_url = routes::video_media(video);
-        let poster_url = routes::video_poster(video);
-        let subtitles_url = routes::video_subtitles(video);
-
-        let t_dangerous_actions = translations.dangerous_actions;
-        let t_links = translations.links;
-        let t_poster_image = translations.poster_image;
-        let t_subtitles = translations.subtitles;
-        let t_video_files = translations.video_files;
-        let t_video_manifest = translations.video_manifest;
-        let t_video_settings = translations.video_settings;
-
-        let code_icon = icons::CODE;
-        let danger_icon = icons::DANGER;
-        let edit_icon = icons::EDIT;
-        let link_icon = icons::link(None);
-        let media_icon = icons::storage(None);
-        let poster_icon = icons::EMBED; // TODO: Custom poster icon
-        let subtitles_icon = icons::subtitles(None);
-
-        let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
-        let edit_active = if *subpage == Subpage::Edit { "active" } else { "" };
-        let links_active = if *subpage == Subpage::Links { "active" } else { "" };
-        let manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
-        let media_active = if *subpage == Subpage::Media { "active" } else { "" };
-        let poster_active = if *subpage == Subpage::Poster { "active" } else { "" };
-        let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
-
-        let (site_manifest, site_settings) = if video.site_path.is_root_path() {
-            let logo = icons::logo(None);
-
-            let t_site_manifest = translations.site_manifest;
-            let t_site_settings = translations.site_settings;
-
-            let site_manifest_url = routes::SITE_MANIFEST;
-            let site_settings_url = routes::SITE_EDIT;
-
-            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
-            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
-
-            let site_manifest = formatdoc!(r#"
-                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
-                    {code_icon} {t_site_manifest}
+        if video.errors.is_empty() {
+            let video_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
+            let video_settings_icon = icons::EDIT;
+            let t_video_settings = translations.video_settings;
+            let video_settings = formatdoc!(r#"
+                <a class="{video_settings_active} subpage" href="{video_settings_url}" style="padding-left: {padding_left};">
+                    {video_settings_icon} {t_video_settings}
                 </a>
             "#);
+            subpages.push(video_settings);
+        }
+
+        if video.site_path.is_root_path() && site.errors.is_empty() {
+            let logo = icons::logo(None);
+            let t_site_settings = translations.site_settings;
+            let site_settings_url = routes::SITE_EDIT;
+            let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
 
             let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
@@ -678,43 +719,109 @@ fn video_node(
                 </a>
             "#);
 
-            (site_manifest, site_settings)
-        } else {
-            (String::new(), String::new())
+            subpages.push(site_settings);
         };
 
-        let links_count = video.links.len();
-        let subtitles_count = video.subtitles.len();
-        let video_files_count = video.versions.len();
+        if video.errors.is_empty() {
+            let media_active = if *subpage == Subpage::Media { "active" } else { "" };
+            let media_url = routes::video_media(video);
+            let video_files_icon = icons::storage(None);
+            let video_files_count = video.versions.len();
+            let t_video_files = translations.video_files;
+            let video_files = formatdoc!(r#"
+                <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
+                    {video_files_icon} {t_video_files} ({video_files_count})
+                </a>
+            "#);
+            subpages.push(video_files);
 
-        // TODO: Indicate missing image description for poster image on the poster image subpage link entry
+            let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
+            let subtitles_count = video.subtitles.len();
+            let subtitles_icon = icons::subtitles(None);
+            let subtitles_url = routes::video_subtitles(video);
+             let t_subtitles = translations.subtitles;
+            let subtitles = formatdoc!(r#"
+                <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
+                    {subtitles_icon} {t_subtitles} ({subtitles_count})
+                </a>
+            "#);
+            subpages.push(subtitles);
+
+            let links_active = if *subpage == Subpage::Links { "active" } else { "" };
+            let links_count = video.links.len();
+            let link_icon = icons::link(None);
+            let links_url = routes::video_links(video);
+            let t_links = translations.links;
+            let links = formatdoc!(r#"
+                <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
+                    {link_icon} {t_links} ({links_count})
+                </a>
+            "#);
+            subpages.push(links);
+
+            // TODO: Indicate missing image description for poster image on the subpage link itself
+            let poster_active = if *subpage == Subpage::Poster { "active" } else { "" };
+            let poster_icon = icons::EMBED; // TODO: Custom poster icon
+            let poster_url = routes::video_poster(video);
+            let t_poster_image = translations.poster_image;
+            let poster_image = formatdoc!(r#"
+                <a class="{poster_active} subpage" href="{poster_url}" style="padding-left: {padding_left};">
+                    {poster_icon} {t_poster_image}
+                </a>
+            "#);
+            subpages.push(poster_image);
+
+            let danger_icon = icons::DANGER;
+            let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
+            let dangerous_actions_url = routes::video_dangerous_actions(video);
+            let t_dangerous_actions = translations.dangerous_actions;
+            let dangerous_actions = formatdoc!(r#"
+                <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
+                    {danger_icon} {t_dangerous_actions}
+                </a>
+            "#);
+            subpages.push(dangerous_actions);
+        }
+
+        let video_manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
+        let video_manifest_icon = if video.errors.is_empty() {
+            String::from(icons::CODE)
+        } else {
+            icon_with_error(icons::CODE)
+        };
+        let t_video_manifest = translations.video_manifest;
+        let video_manifest = formatdoc!(r#"
+            <a class="{video_manifest_active} subpage" href="{video_manifest_url}" style="padding-left: {padding_left};">
+                {video_manifest_icon} {t_video_manifest}
+            </a>
+        "#);
+        subpages.push(video_manifest);
+
+        if video.site_path.is_root_path() {
+            let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
+            let site_manifest_icon = if site.errors.is_empty() {
+                String::from(icons::CODE)
+            } else {
+                icon_with_error(icons::CODE)
+            };
+            let t_site_manifest = translations.site_manifest;
+
+            let site_manifest = formatdoc!(r#"
+                <a class="{site_manifest_active} subpage" href="{site_manifest_url}" style="padding-left: {padding_left};">
+                    {site_manifest_icon} {t_site_manifest}
+                </a>
+            "#);
+
+            subpages.push(site_manifest);
+        };
+
+        let r_subpages = subpages.join("\n");
+
         formatdoc!(r#"
             <div class="active">
                 {node}
                 <div class="subpages">
-                    <a class="{edit_active} subpage" href="{edit_url}" style="padding-left: {padding_left};">
-                        {edit_icon} {t_video_settings}
-                    </a>
-                    {site_settings}
-                    <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
-                        {media_icon} {t_video_files} ({video_files_count})
-                    </a>
-                    <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
-                        {subtitles_icon} {t_subtitles} ({subtitles_count})
-                    </a>
-                    <a class="{links_active} subpage" href="{links_url}" style="padding-left: {padding_left};">
-                        {link_icon} {t_links} ({links_count})
-                    </a>
-                    <a class="{poster_active} subpage" href="{poster_url}" style="padding-left: {padding_left};">
-                        {poster_icon} {t_poster_image}
-                    </a>
-                    <a class="{dangerous_actions_active} subpage" href="{dangerous_actions_url}" style="padding-left: {padding_left};">
-                        {danger_icon} {t_dangerous_actions}
-                    </a>
-                    <a class="{manifest_active} subpage" href="{edit_manifest_url}" style="padding-left: {padding_left};">
-                        {code_icon} {t_video_manifest}
-                    </a>
-                    {site_manifest}
+                    {r_subpages}
                 </div>
             </div>
         "#)

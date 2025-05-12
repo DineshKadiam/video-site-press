@@ -42,22 +42,13 @@ directory is generally recommended while Hyper 8 is still in beta.
 
 ### Known issues
 
-Some things are still knowingly incomplete, a few worth mentioning are:
+A few minor things are incomplete, two worth mentioning are:
 
-- Banner images are fully implemented on the backend, but not included in the
-  generated sites themselves yet (an open design/layout task mostly)
-- Unfinished background encoding jobs are not persisted when you shut down the
-  Hyper 8 server
-- After requesting a new video format to be rendered you'll see the background
-  job progress in the header, but not (yet) on the video page itself
-- If you manually edited a `collection.eno`, `playlist.eno`, `site.eno` or
-  `video.eno` manifest *and* there are errors displayed in the browser
-  interface (= colored dots in the left sidebar, prominent messages on
-  their respective pages), make sure to resolve these errors manually before
-  performing updates from the browser interface, as Hyper 8
-  can not yet keep/persist malformed manifest data during updates.
-- The `--deploy` option in the CLI is not fully implemented yet, for now
-  use this from the interactive browser interface only
+- In the editor, after requesting a new video format to be rendered, you'll
+  see the background job progress in the header, but not (yet) on the video
+  page itself
+- The `--deploy` option in the CLI is not fully implemented yet, for now use
+  this from the interactive browser interface only
 
 ## Development in 2025
 
