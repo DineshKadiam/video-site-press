@@ -98,13 +98,15 @@ fn collection_node(
     let collection_settings_url = routes::collection_edit(collection);
     let site_manifest_url = routes::SITE_MANIFEST;
 
-    let exposed_edit_url = if collection.errors.is_empty() {
+    let exposed_edit_url = if collection.manifest_errors.is_empty() {
         &collection_settings_url
     } else {
         &collection_manifest_url
     };
 
-    let has_errors = !collection.errors.is_empty() ||
+    let has_errors =
+        !collection.dir_errors.is_empty() ||
+        !collection.manifest_errors.is_empty() ||
         (collection.site_path.is_root_path() && !site.manifest_errors.is_empty());
 
     if location.intersects(&collection.site_path) {
@@ -186,7 +188,7 @@ fn collection_node(
         let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
-        if collection.errors.is_empty() {
+        if collection.manifest_errors.is_empty() {
             let collection_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
             let collection_settings_icon = icons::EDIT;
             let t_collection_settings = translations.collection_settings;
@@ -213,7 +215,7 @@ fn collection_node(
             subpages.push(site_settings);
         };
 
-        if collection.errors.is_empty() {
+        if collection.manifest_errors.is_empty() {
             let links_active = if *subpage == Subpage::Links { "active" } else { "" };
             let links_count = collection.links.len();
             let link_icon = icons::link(None);
@@ -239,7 +241,7 @@ fn collection_node(
         }
 
         let collection_manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
-        let collection_manifest_icon = if collection.errors.is_empty() {
+        let collection_manifest_icon = if collection.manifest_errors.is_empty() {
             String::from(icons::CODE)
         } else {
             icon_with_error(icons::CODE)
@@ -318,13 +320,15 @@ fn playlist_node(
     let playlist_settings_url = routes::playlist_edit(playlist);
     let site_manifest_url = routes::SITE_MANIFEST;
 
-    let exposed_edit_url = if playlist.errors.is_empty() {
+    let exposed_edit_url = if playlist.manifest_errors.is_empty() {
         &playlist_settings_url
     } else {
         &playlist_manifest_url
     };
 
-    let has_errors = !playlist.errors.is_empty() ||
+    let has_errors =
+        !playlist.dir_errors.is_empty() ||
+        !playlist.manifest_errors.is_empty() ||
         playlist.site_path.is_root_path() && !site.manifest_errors.is_empty();
 
     if location.intersects(&playlist.site_path) {
@@ -353,7 +357,7 @@ fn playlist_node(
         let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
-        if playlist.errors.is_empty() {
+        if playlist.manifest_errors.is_empty() {
             let playlist_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
             let playlist_settings_icon = icons::EDIT;
             let t_playlist_settings = translations.playlist_settings;
@@ -380,7 +384,7 @@ fn playlist_node(
             subpages.push(site_settings);
         };
 
-        if playlist.errors.is_empty() {
+        if playlist.manifest_errors.is_empty() {
             let links_active = if *subpage == Subpage::Links { "active" } else { "" };
             let links_count = playlist.links.len();
             let link_icon = icons::link(None);
@@ -406,7 +410,7 @@ fn playlist_node(
         }
 
         let playlist_manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
-        let playlist_manifest_icon = if playlist.errors.is_empty() {
+        let playlist_manifest_icon = if playlist.manifest_errors.is_empty() {
             String::from(icons::CODE)
         } else {
             icon_with_error(icons::CODE)
@@ -660,13 +664,15 @@ fn video_node(
     let video_manifest_url = routes::video_manifest(video);
     let video_settings_url = routes::video_edit(video);
 
-    let exposed_edit_url = if video.errors.is_empty() {
+    let exposed_edit_url = if video.manifest_errors.is_empty() {
         &video_settings_url
     } else {
         &video_manifest_url
     };
 
-    let has_errors = !video.errors.is_empty() ||
+    let has_errors =
+        !video.dir_errors.is_empty() ||
+        !video.manifest_errors.is_empty() ||
         video.site_path.is_root_path() && !site.manifest_errors.is_empty();
 
     if location.intersects(&video.site_path) {
@@ -695,7 +701,7 @@ fn video_node(
         let padding_left_rem = 0.6 + depth * 1.4;
         let padding_left = format!("{}rem", padding_left_rem);
 
-        if video.errors.is_empty() {
+        if video.manifest_errors.is_empty() {
             let video_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
             let video_settings_icon = icons::EDIT;
             let t_video_settings = translations.video_settings;
@@ -722,7 +728,7 @@ fn video_node(
             subpages.push(site_settings);
         };
 
-        if video.errors.is_empty() {
+        if video.manifest_errors.is_empty() {
             let media_active = if *subpage == Subpage::Media { "active" } else { "" };
             let media_url = routes::video_media(video);
             let video_files_icon = icons::storage(None);
@@ -784,7 +790,7 @@ fn video_node(
         }
 
         let video_manifest_active = if *subpage == Subpage::Manifest { "active" } else { "" };
-        let video_manifest_icon = if video.errors.is_empty() {
+        let video_manifest_icon = if video.manifest_errors.is_empty() {
             String::from(icons::CODE)
         } else {
             icon_with_error(icons::CODE)

@@ -53,9 +53,11 @@ pub struct Collection {
     pub banner: Option<Banner>,
     copy_link: Option<bool>,
     pub description: Option<String>,
+    /// Errors related to files within the collection directory, outside of
+    /// the collection manifest which uses `manifest_errors`.
+    pub dir_errors: Vec<String>,
     download: Option<bool>,
     embedding: Option<bool>,
-    pub errors: Vec<String>,
     feeds: Option<bool>,
     /// Some options of a collection (e.g. copy_link, embedding and unlisted)
     /// are affected by both the local settings in the manifest as well as
@@ -63,6 +65,10 @@ pub struct Collection {
     /// the options interited by this collection from its ancestors.
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
+    /// Syntactical and semantic errors inside the manifest for displaying to
+    /// the user as well as to prevent programmatic updates to the site and
+    /// its manifest while such errors are present.
+    pub manifest_errors: Vec<String>,
     offline: bool,
     platform_integration: Option<PlatformIntegration>,
     pub playlists: Vec<Arc<Playlist>>,
@@ -88,7 +94,7 @@ impl Collection {
         let document = match enolib::parse(&content) {
             Ok(document) => document,
             Err(err) => {
-                self.errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
+                self.manifest_errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
                 return
             }
         };
@@ -117,14 +123,14 @@ impl Collection {
                                             } else {
                                                 let message = format!("The referenced file was not found ({})", absolute_path.display());
                                                 let error = attribute_error(attribute, manifest_path, &message);
-                                                self.errors.push(error);
+                                                self.manifest_errors.push(error);
                                             }
                                         }
                                     }
                                     _ => {
                                         let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an banner field";
                                         let error = attribute_error(attribute, manifest_path, message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -149,7 +155,7 @@ impl Collection {
 
                     let message = "banner needs to be provided as a field with attributes, e.g.:\n\nbanner:\ndescription = Strange geometric patterns\nfile = patterns.jpg";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "copy_link" => 'copy_link: {
                     if let Ok(field) = element.as_field() {
@@ -165,7 +171,7 @@ impl Collection {
                                     other => {
                                         let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -176,7 +182,7 @@ impl Collection {
 
                     let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "description" => {
                     if let Ok(embed) = element.as_embed() {
@@ -188,7 +194,7 @@ impl Collection {
                     } else {
                         let message = "The 'description' option needs to be provided as an embed, e.g.:\n-- description\nA description text\n--description";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "download" => 'download: {
@@ -205,7 +211,7 @@ impl Collection {
                                     other => {
                                         let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -216,7 +222,7 @@ impl Collection {
 
                     let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "embedding" => 'embedding: {
                     if let Ok(field) = element.as_field() {
@@ -232,7 +238,7 @@ impl Collection {
                                     other => {
                                         let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -243,7 +249,7 @@ impl Collection {
 
                     let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "feeds" => 'feeds: {
                     if let Ok(field) = element.as_field() {
@@ -259,7 +265,7 @@ impl Collection {
                                     other => {
                                         let message = format!("The feeds option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -270,7 +276,7 @@ impl Collection {
 
                     let message = "feeds needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'feeds: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "link" => 'link: {
                     if let Ok(field) = element.as_field() {
@@ -284,7 +290,7 @@ impl Collection {
                                     Err(err) => {
                                         let message = format!("The url supplied for the link seems to be malformed ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -310,7 +316,7 @@ impl Collection {
                                                 Err(err) => {
                                                     let message = format!("The url supplied for the link seems to be malformed ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -329,7 +335,7 @@ impl Collection {
                                                 _ => {
                                                     let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -337,7 +343,7 @@ impl Collection {
                                     other => {
                                         let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
                                         let error = attribute_error(attribute, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -348,7 +354,7 @@ impl Collection {
                             } else {
                                 let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
                                 let error = element_error(element, manifest_path, message);
-                                self.errors.push(error);
+                                self.manifest_errors.push(error);
                             }
 
                             break 'link;
@@ -357,7 +363,7 @@ impl Collection {
 
                     let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "offline" => {
                     if element.is_flag() {
@@ -365,7 +371,7 @@ impl Collection {
                     } else {
                         let message = "offline needs to be provided as a flag, that is, exactly as 'offline' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "platform_integration" => 'platform_integration: {
@@ -379,7 +385,7 @@ impl Collection {
                                     None => {
                                         let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -390,7 +396,7 @@ impl Collection {
 
                     let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
@@ -405,7 +411,7 @@ impl Collection {
 
                     let message = "title needs to be provided as a field with a value, e.g.: 'title: The 90ies clip collection'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "unlisted" => {
                     if element.is_flag() {
@@ -413,7 +419,7 @@ impl Collection {
                     } else {
                         let message = "unlisted needs to be provided as a flag, that is, exactly as 'unlisted' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "video_order" => 'video_order: {
@@ -427,7 +433,7 @@ impl Collection {
                                     Err(err) => {
                                         let message = format!("The supplied order was not recognized ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -438,12 +444,12 @@ impl Collection {
 
                     let message = "video_order needs to be provided as a field with a value, e.g.: 'video_order: release_date_asc'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 other => {
                     let message = not_supported_error("collection.eno", other, &[COLLECTION_OPTIONS]);
                     let error = element_error(element, manifest_path, &message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
             }
         }
@@ -874,12 +880,13 @@ impl Collection {
             banner: None,
             copy_link: None,
             description: None,
+            dir_errors: Vec::new(),
             download: None,
             embedding: None,
-            errors: Vec::new(),
             feeds: None,
-            links: Vec::new(),
             inherited_options,
+            links: Vec::new(),
+            manifest_errors: Vec::new(),
             offline: false,
             platform_integration: None,
             playlists: Vec::new(),
@@ -1153,7 +1160,7 @@ impl Collection {
                 error.push_str(&format!("\n- {}", video_file.display()));
             }
 
-            collection.errors.push(error);
+            collection.dir_errors.push(error);
         }
 
         if !hyper_dir.errors.is_empty() {
@@ -1163,7 +1170,7 @@ impl Collection {
                 error.push_str(&format!("\n- {}", message));
             }
 
-            collection.errors.push(error);
+            collection.dir_errors.push(error);
         }
 
         Arc::new(collection)
@@ -1173,7 +1180,7 @@ impl Collection {
         if hyper_subdir.collection_manifest.is_some() {
             if hyper_subdir.playlist_manifest.is_some() || hyper_subdir.video_manifest.is_some() {
                 let error = format!("Ignoring collection subdirectory {} because it contains conflicting manifest types (only one of collection.eno, playlist.eno and video.eno may exist in one directory)", hyper_subdir.path.display());
-                self.errors.push(error);
+                self.dir_errors.push(error);
             } else {
                 let subcollection = Collection::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
                 self.subcollections.push(subcollection);
@@ -1181,7 +1188,7 @@ impl Collection {
         } else if hyper_subdir.playlist_manifest.is_some() {
             if hyper_subdir.video_manifest.is_some() {
                 let error = format!("Ignoring collection subdirectory {} because it contains both playlist.eno and video.eno (only one of the two may exist in one directory)", hyper_subdir.path.display());
-                self.errors.push(error);
+                self.dir_errors.push(error);
             } else {
                 let playlist = Playlist::read_dir(context, hyper_subdir, self.mutate_inherited_options(), site);
                 self.playlists.push(playlist);
@@ -1386,7 +1393,7 @@ impl Collection {
         if let Some(playlist) = self.playlists
             .iter_mut()
             .find(|playlist| playlist.site_path == *site_path) {
-            if playlist.errors.is_empty() {
+            if playlist.manifest_errors.is_empty() {
                 let mut playlist_mut = (**playlist).clone();
                 let optional_return_value = mutation(&mut playlist_mut);
                 *playlist = Arc::new(playlist_mut);
@@ -1425,7 +1432,7 @@ impl Collection {
         if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| subcollection.site_path == *site_path) {
-            if subcollection.errors.is_empty() {
+            if subcollection.manifest_errors.is_empty() {
                 let mut subcollection_mut = (**subcollection).clone();
                 let optional_return_value = mutation(&mut subcollection_mut);
                 *subcollection = Arc::new(subcollection_mut);
@@ -1464,7 +1471,7 @@ impl Collection {
         if let Some(video) = self.videos
             .iter_mut()
             .find(|video| video.site_path == *site_path) {
-            if video.errors.is_empty() {
+            if video.manifest_errors.is_empty() {
                 let mut video_mut = (**video).clone();
 
                 match mutation(&mut video_mut) {

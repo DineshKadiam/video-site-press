@@ -16,7 +16,7 @@ pub fn pending_manifest_errors(
     video: &Video
 ) -> HttpResponse {
     let translations = &language.translations;
-    let t_pending_errors = translations.pending_errors;
+    let t_pending_manifest_errors = translations.pending_manifest_errors;
 
     let video_title = video.title_or_slug_or_generic_label(translations);
 
@@ -32,7 +32,7 @@ pub fn pending_manifest_errors(
             &manifest_path.to_string_lossy()
         );
 
-    let errors = video.errors
+    let manifest_errors = video.manifest_errors
         .iter()
         .map(|error| {
             format!(r#"<pre class="error">{error}</pre>"#)
@@ -44,11 +44,11 @@ pub fn pending_manifest_errors(
         translations.resolve_the_issue_on_disk_or_on_manifest_page(&manifest_url);
 
     let body = formatdoc!(r#"
-        <h2>{t_pending_errors}</h2>
+        <h2>{t_pending_manifest_errors}</h2>
         <p>
             {t_updating_video_from_editor_currently_not_allowed}
         </p>
-        {errors}
+        {manifest_errors}
         <p>
             {t_resolve_the_issue_on_disk_or_on_manifest_page}
         </p>
@@ -62,7 +62,7 @@ pub fn pending_manifest_errors(
         language,
         Location::AuxiliaryPage,
         site,
-        t_pending_errors
+        t_pending_manifest_errors
     );
 
     HttpResponse::Ok()

@@ -76,19 +76,15 @@ pub fn edit_page(
     let translations = &language.translations;
     let t_not_saved = translations.not_saved;
 
-    let errors = if collection.errors.is_empty() {
-        String::new()
-    } else {
-        collection.errors
-            .iter()
-            .map(|error| {
-                formatdoc!(r#"
-                    <pre class="error">{error}</pre>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("")
-    };
+    let mut errors = String::new();
+
+    for dir_error in &collection.dir_errors {
+        errors.push_str(&format!(r#"<pre class="error">{dir_error}</pre>"#));
+    }
+
+    for manifest_error in &collection.manifest_errors {
+        errors.push_str(&format!(r#"<pre class="error">{manifest_error}</pre>"#));
+    }
 
     let t_upload_banner = translations.upload_banner;
     let banner_upload_button = upload_widget(&routes::collection_upload_banner(collection), t_upload_banner);

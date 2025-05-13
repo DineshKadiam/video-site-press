@@ -49,9 +49,11 @@ pub struct Playlist {
 	pub banner: Option<Banner>,
     copy_link: Option<bool>,
 	pub description: Option<String>,
+    /// Errors related to files within the playlist directory, outside of
+    /// the playlist manifest which uses `manifest_errors`.
+    pub dir_errors: Vec<String>,
     download: Option<bool>,
     embedding: Option<bool>,
-    pub errors: Vec<String>,
     feeds: Option<bool>,
     /// Some options of a playlist (e.g. copy_link, embedding and unlisted)
     /// are affected by both the local settings in the manifest as well as
@@ -59,6 +61,10 @@ pub struct Playlist {
     /// the options interited by this playlist from its ancestors.
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
+    /// Syntactical and semantic errors inside the manifest for displaying to
+    /// the user as well as to prevent programmatic updates to the site and
+    /// its manifest while such errors are present.
+    pub manifest_errors: Vec<String>,
     offline: bool,
     pub order: VideoOrder,
     platform_integration: Option<PlatformIntegration>,
@@ -90,7 +96,7 @@ impl Playlist {
         let document = match enolib::parse(&content) {
             Ok(document) => document,
             Err(err) => {
-                self.errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
+                self.manifest_errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
                 return
             }
         };
@@ -119,14 +125,14 @@ impl Playlist {
                                             } else {
                                                 let message = format!("The referenced file was not found ({})", absolute_path.display());
                                                 let error = attribute_error(attribute, manifest_path, &message);
-                                                self.errors.push(error);
+                                                self.manifest_errors.push(error);
                                             }
                                         }
                                     }
                                     _ => {
                                         let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an banner field";
                                         let error = attribute_error(attribute, manifest_path, message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -151,7 +157,7 @@ impl Playlist {
 
                     let message = "banner needs to be provided as a field with attributes, e.g.:\n\nbanner:\ndescription = Strange geometric patterns\nfile = patterns.jpg";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "copy_link" => 'copy_link: {
                     if let Ok(field) = element.as_field() {
@@ -167,7 +173,7 @@ impl Playlist {
                                     other => {
                                         let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -178,7 +184,7 @@ impl Playlist {
 
                     let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "description" => {
                     if let Ok(embed) = element.as_embed() {
@@ -190,7 +196,7 @@ impl Playlist {
                     } else {
                         let message = "The 'description' option needs to be provided as an embed, e.g.:\n-- description\nA description text\n--description";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "download" => 'download: {
@@ -207,7 +213,7 @@ impl Playlist {
                                     other => {
                                         let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -218,7 +224,7 @@ impl Playlist {
 
                     let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "embedding" => 'embedding: {
                     if let Ok(field) = element.as_field() {
@@ -234,7 +240,7 @@ impl Playlist {
                                     other => {
                                         let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -245,7 +251,7 @@ impl Playlist {
 
                     let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "feeds" => 'feeds: {
                     if let Ok(field) = element.as_field() {
@@ -261,7 +267,7 @@ impl Playlist {
                                     other => {
                                         let message = format!("The feeds option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -272,7 +278,7 @@ impl Playlist {
 
                     let message = "feeds needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'feeds: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "link" => 'link: {
                     if let Ok(field) = element.as_field() {
@@ -286,7 +292,7 @@ impl Playlist {
                                     Err(err) => {
                                         let message = format!("The url supplied for the link seems to be malformed ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -312,7 +318,7 @@ impl Playlist {
                                                 Err(err) => {
                                                     let message = format!("The url supplied for the link seems to be malformed ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -331,7 +337,7 @@ impl Playlist {
                                                 _ => {
                                                     let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -339,7 +345,7 @@ impl Playlist {
                                     other => {
                                         let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
                                         let error = attribute_error(attribute, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -350,7 +356,7 @@ impl Playlist {
                             } else {
                                 let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
                                 let error = element_error(element, manifest_path, message);
-                                self.errors.push(error);
+                                self.manifest_errors.push(error);
                             }
 
                             break 'link;
@@ -359,7 +365,7 @@ impl Playlist {
 
                     let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "offline" => {
                     if element.is_flag() {
@@ -367,7 +373,7 @@ impl Playlist {
                     } else {
                         let message = "offline needs to be provided as a flag, that is, exactly as 'offline' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "order" => 'order: {
@@ -381,7 +387,7 @@ impl Playlist {
                                     Err(err) => {
                                         let message = format!("The supplied order was not recognized ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -392,7 +398,7 @@ impl Playlist {
 
                     let message = "order needs to be provided as a field with a value, e.g.: 'order: release_date_asc'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "platform_integration" => 'platform_integration: {
                     if let Ok(field) = element.as_field() {
@@ -405,7 +411,7 @@ impl Playlist {
                                     None => {
                                         let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -416,7 +422,7 @@ impl Playlist {
 
                     let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
@@ -431,7 +437,7 @@ impl Playlist {
 
                     let message = "title needs to be provided as a field with a value, e.g.: 'title: Best clips from the 90ies'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "unlisted" => {
                     if element.is_flag() {
@@ -439,13 +445,13 @@ impl Playlist {
                     } else {
                         let message = "unlisted needs to be provided as a flag, that is, exactly as 'unlisted' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 other => {
                     let message = not_supported_error("playlist.eno", other, &[PLAYLIST_OPTIONS]);
                     let error = element_error(element, manifest_path, &message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
             }
         }
@@ -688,12 +694,13 @@ impl Playlist {
             banner: None,
             copy_link: None,
             description: None,
+            dir_errors: Vec::new(),
             download: None,
             embedding: None,
-            errors: Vec::new(),
             feeds: None,
             inherited_options,
             links: Vec::new(),
+            manifest_errors: Vec::new(),
             offline: false,
             order: VideoOrder::Default,
             platform_integration: None,
@@ -860,7 +867,7 @@ impl Playlist {
                 error.push_str(&format!("\n- {}", video_file.display()));
             }
 
-            playlist.errors.push(error);
+            playlist.dir_errors.push(error);
         }
 
         if !hyper_dir.errors.is_empty() {
@@ -870,7 +877,7 @@ impl Playlist {
                 error.push_str(&format!("\n- {}", message));
             }
 
-            playlist.errors.push(error);
+            playlist.dir_errors.push(error);
         }
 
         Arc::new(playlist)
@@ -879,10 +886,10 @@ impl Playlist {
     fn read_subdir(&mut self, context: &Context, hyper_subdir: &HyperDir, site: &Site) {
         if hyper_subdir.collection_manifest.is_some() {
             let error = format!("Ignoring playlist subdirectory {} because it contains collection.eno (only video.eno may exist in a playlist subdirectory).", hyper_subdir.path.display());
-            self.errors.push(error);
+            self.dir_errors.push(error);
         } else if hyper_subdir.playlist_manifest.is_some() {
             let error = format!("Ignoring playlist subdirectory {} because it contains playlist.eno (only video.eno may exist in a playlist subdirectory).", hyper_subdir.path.display());
-            self.errors.push(error);
+            self.dir_errors.push(error);
         } else if hyper_subdir.video_manifest.is_some() ||
             !hyper_subdir.video_files.is_empty() ||
             !hyper_subdir.audio_files.is_empty() {
@@ -1021,7 +1028,7 @@ impl Playlist {
             .iter_mut()
             .find(|video| video.site_path == *site_path) {
             Some(video) => {
-                if video.errors.is_empty() {
+                if video.manifest_errors.is_empty() {
                     let mut video_mut = (**video).clone();
 
                     match mutation(&mut video_mut) {

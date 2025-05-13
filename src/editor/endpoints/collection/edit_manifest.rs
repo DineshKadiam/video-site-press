@@ -40,15 +40,13 @@ pub fn edit_manifest_page(
     let site = context.get_site();
     let translations = &language.translations;
 
-    let errors = if collection.errors.is_empty() {
+    let manifest_errors = if collection.manifest_errors.is_empty() {
         String::new()
     } else {
-        collection.errors
+        collection.manifest_errors
             .iter()
             .map(|error| {
-                formatdoc!(r#"
-                    <pre class="error">{error}</pre>
-                "#)
+                format!(r#"<pre class="error">{error}</pre>"#)
             })
             .collect::<Vec<String>>()
             .join("")
@@ -72,7 +70,7 @@ pub fn edit_manifest_page(
     let body = formatdoc!(r#"
         <h2>{t_collection_manifest}</h2>
 
-        {errors}
+        {manifest_errors}
 
         <div class="form_group">
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">

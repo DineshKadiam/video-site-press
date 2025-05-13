@@ -1314,7 +1314,7 @@ impl Context {
 
         let result = if site_path.is_root_path() {
             if let SiteContent::Collection(collection) = &mut site_mut.content {
-                if collection.errors.is_empty() {
+                if collection.manifest_errors.is_empty() {
                     let mut collection_mut = (**collection).clone();
                     let optional_return_value = mutation(&mut collection_mut);
                     *collection = Arc::new(collection_mut);
@@ -1408,7 +1408,7 @@ impl Context {
 
         let result = if site_path.is_root_path() {
             if let SiteContent::Playlist(playlist) = &mut site_mut.content {
-                if playlist.errors.is_empty() {
+                if playlist.manifest_errors.is_empty() {
                     let mut playlist_mut = (**playlist).clone();
                     let optional_return_value = mutation(&mut playlist_mut);
                     *playlist = Arc::new(playlist_mut);
@@ -1476,7 +1476,7 @@ impl Context {
 
         let result = if site_path.is_root_path() {
             if let SiteContent::Video(video) = &mut site_mut.content {
-                if video.errors.is_empty() {
+                if video.manifest_errors.is_empty() {
                     let mut video_mut = (**video).clone();
 
                     match mutation(&mut video_mut) {

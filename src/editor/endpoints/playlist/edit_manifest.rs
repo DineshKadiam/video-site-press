@@ -40,10 +40,10 @@ pub fn edit_manifest_page(
     let site = context.get_site();
     let translations = &language.translations;
 
-    let errors = if playlist.errors.is_empty() {
+    let manifest_errors = if playlist.manifest_errors.is_empty() {
         String::new()
     } else {
-        playlist.errors
+        playlist.manifest_errors
             .iter()
             .map(|error| {
                 formatdoc!(r#"
@@ -72,7 +72,7 @@ pub fn edit_manifest_page(
     let body = formatdoc!(r#"
         <h2>{t_playlist_manifest}</h2>
 
-        {errors}
+        {manifest_errors}
 
         <div class="form_group">
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">

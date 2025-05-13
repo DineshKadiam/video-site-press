@@ -60,19 +60,15 @@ pub fn edit_page(
     let translations = &language.translations;
     let t_not_saved = translations.not_saved;
 
-    let errors = if video.errors.is_empty() {
-        String::new()
-    } else {
-        video.errors
-            .iter()
-            .map(|error| {
-                formatdoc!(r#"
-                    <pre class="error">{error}</pre>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("")
-    };
+    let mut errors = String::new();
+
+    for dir_error in &video.dir_errors {
+        errors.push_str(&format!(r#"<pre class="error">{dir_error}</pre>"#));
+    }
+
+    for manifest_error in &video.manifest_errors {
+        errors.push_str(&format!(r#"<pre class="error">{manifest_error}</pre>"#));
+    }
 
     let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_release_date = Input::date("release_date", translations.release_date);

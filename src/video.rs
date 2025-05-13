@@ -53,15 +53,21 @@ const VIDEO_OPTIONS: &[&str] = &[
 pub struct Video {
     copy_link: Option<bool>,
     pub description: Option<String>,
+    /// Errors related to files within the video directory, outside of
+    /// the video manifest which uses `manifest_errors`.
+    pub dir_errors: Vec<String>,
     download: Option<bool>,
     embedding: Option<bool>,
-    pub errors: Vec<String>,
     /// Some options of a video (e.g. copy_link, embedding and unlisted)
     /// are affected by both the local settings in the manifest as well as
     /// the inherited state from ancestors in the site tree. This stores
     /// the options interited by this video from its ancestors.
     inherited_options: InheritedOptions,
     pub links: Vec<Link>,
+    /// Syntactical and semantic errors inside the manifest for displaying to
+    /// the user as well as to prevent programmatic updates to the site and
+    /// its manifest while such errors are present.
+    pub manifest_errors: Vec<String>,
     offline: bool,
     platform_integration: Option<PlatformIntegration>,
     pub poster: Option<PosterFile>,
@@ -120,7 +126,7 @@ impl Video {
         let document = match enolib::parse(&content) {
             Ok(document) => document,
             Err(err) => {
-                self.errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
+                self.manifest_errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
                 return
             }
         };
@@ -141,7 +147,7 @@ impl Video {
                                     other => {
                                         let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -152,7 +158,7 @@ impl Video {
 
                     let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "description" => {
                     if let Ok(embed) = element.as_embed() {
@@ -164,7 +170,7 @@ impl Video {
                     } else {
                         let message = "The 'description' option needs to be provided as an embed, e.g.:\n-- description\nA description text\n--description";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "download" => 'download: {
@@ -181,7 +187,7 @@ impl Video {
                                     other => {
                                         let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -192,7 +198,7 @@ impl Video {
 
                     let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "embedding" => 'embedding: {
                     if let Ok(field) = element.as_field() {
@@ -208,7 +214,7 @@ impl Video {
                                     other => {
                                         let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -219,7 +225,7 @@ impl Video {
 
                     let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "link" => 'link: {
                     if let Ok(field) = element.as_field() {
@@ -233,7 +239,7 @@ impl Video {
                                     Err(err) => {
                                         let message = format!("The url supplied for the link seems to be malformed ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -259,7 +265,7 @@ impl Video {
                                                 Err(err) => {
                                                     let message = format!("The url supplied for the link seems to be malformed ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -278,7 +284,7 @@ impl Video {
                                                 _ => {
                                                     let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -286,7 +292,7 @@ impl Video {
                                     other => {
                                         let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
                                         let error = attribute_error(attribute, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -297,7 +303,7 @@ impl Video {
                             } else {
                                 let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
                                 let error = element_error(element, manifest_path, message);
-                                self.errors.push(error);
+                                self.manifest_errors.push(error);
                             }
 
                             break 'link;
@@ -306,7 +312,7 @@ impl Video {
 
                     let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "offline" => {
                     if element.is_flag() {
@@ -314,7 +320,7 @@ impl Video {
                     } else {
                         let message = "offline needs to be provided as a flag, that is, exactly as 'offline' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "platform_integration" => 'platform_integration: {
@@ -328,7 +334,7 @@ impl Video {
                                     None => {
                                         let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
 
@@ -339,7 +345,7 @@ impl Video {
 
                     let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "poster" => 'poster: {
                     if let Ok(field) = element.as_field() {
@@ -363,14 +369,14 @@ impl Video {
                                             } else {
                                                 let message = format!("The referenced file was not found ({})", absolute_path.display());
                                                 let error = attribute_error(attribute, manifest_path, &message);
-                                                self.errors.push(error);
+                                                self.manifest_errors.push(error);
                                             }
                                         }
                                     }
                                     _ => {
                                         let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an poster field";
                                         let error = attribute_error(attribute, manifest_path, message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -395,7 +401,7 @@ impl Video {
 
                     let message = "poster needs to be provided as a field with attributes, e.g.:\n\nposter:\ndescription = Denis, giggling uncontrollably\nfile = denis.jpg";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "release_date" => 'title: {
                     if let Ok(field) = element.as_field() {
@@ -408,7 +414,7 @@ impl Video {
                                     Err(err) => {
                                         let message = format!("Invalid date value '{value}': {err}");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -419,7 +425,7 @@ impl Video {
 
                     let message = "release_date needs to be provided as a field with a date value in the format YYYY-MM-DD, e.g.: 'release_date: 2025-02-17'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "sort_number" => 'title: {
                     if let Ok(field) = element.as_field() {
@@ -432,7 +438,7 @@ impl Video {
                                     Err(err) => {
                                         let message = format!("Invalid number value '{value}': {err}");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -443,7 +449,7 @@ impl Video {
 
                     let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "subtitles" => 'subtitles: {
                     if let Ok(field) = element.as_field() {
@@ -464,12 +470,12 @@ impl Video {
                                                 } else {
                                                     let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             } else {
                                                 let message = format!("The referenced file was not found ({})", absolute_path.display());
                                                 let error = attribute_error(attribute, manifest_path, &message);
-                                                self.errors.push(error);
+                                                self.manifest_errors.push(error);
                                             }
                                         }
                                     }
@@ -489,14 +495,14 @@ impl Video {
                                                         Err(err) => {
                                                             let message = format!("The language code supplied for the subtitles is not recognized ({err})");
                                                             let error = attribute_error(attribute, manifest_path, &message);
-                                                            self.errors.push(error);
+                                                            self.manifest_errors.push(error);
                                                         }
                                                     }
                                                 }
                                                 Err(err) => {
                                                     let message = format!("The language code supplied for the subtitles is not properly formatted ({err})");
                                                     let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.errors.push(error);
+                                                    self.manifest_errors.push(error);
                                                 }
                                             }
                                         }
@@ -504,7 +510,7 @@ impl Video {
                                     other => {
                                         let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file', 'label' and 'language'");
                                         let error = attribute_error(attribute, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -515,7 +521,7 @@ impl Video {
                             } else {
                                 let message = "The subtitles option must supply a file attribute at least, e.g.:\n\nsubtitles:\nfile = en.srt";
                                 let error = element_error(element, manifest_path, message);
-                                self.errors.push(error);
+                                self.manifest_errors.push(error);
                             }
 
                             break 'subtitles;
@@ -524,7 +530,7 @@ impl Video {
 
                     let message = "subtitles must be provided as a field with attributes, e.g.:\n\nsubtitles:\nfile = en.srt\nlabel = English (closed captions)\nlanguage = en";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
@@ -539,7 +545,7 @@ impl Video {
 
                     let message = "title needs to be provided as a field with a value, e.g.: 'title: Denis Supercut'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "unlisted" => {
                     if element.is_flag() {
@@ -547,13 +553,13 @@ impl Video {
                     } else {
                         let message = "unlisted needs to be provided as a flag, that is, exactly as 'unlisted' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 other => {
                     let message = not_supported_error("video.eno", other, &[VIDEO_OPTIONS]);
                     let error = element_error(element, manifest_path, &message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
             }
         }
@@ -813,11 +819,12 @@ impl Video {
         Video {
             copy_link: None,
             description: None,
+            dir_errors: Vec::new(),
             download: None,
             embedding: None,
-            errors: Vec::new(),
             inherited_options,
             links: Vec::new(),
+            manifest_errors: Vec::new(),
             offline: false,
             platform_integration: None,
             poster: None,
@@ -906,7 +913,7 @@ impl Video {
                 .collect::<Vec<String>>()
                 .join(", ");
 
-            video.errors.push(format!("Ignoring folders {folder_names} inside video folder {} (only files may be placed inside a video folder).", hyper_dir.path.display()));
+            video.dir_errors.push(format!("Ignoring folders {folder_names} inside video folder {} (only files may be placed inside a video folder).", hyper_dir.path.display()));
         }
 
         // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
@@ -950,13 +957,13 @@ impl Video {
         }
 
         if !hyper_dir.errors.is_empty() {
-            let mut error = "Directories and/or files inside this video directory have issues:".to_string();
+            let mut error = String::from("Directories and/or files inside this video directory have issues:");
 
             for message in &hyper_dir.errors {
                 error.push_str(&format!("\n- {}", message));
             }
 
-            video.errors.push(error);
+            video.dir_errors.push(error);
         }
 
         Arc::new(video)

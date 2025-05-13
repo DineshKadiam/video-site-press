@@ -68,19 +68,15 @@ pub fn edit_page(
 
     let t_not_saved = translations.not_saved;
 
-    let errors = if playlist.errors.is_empty() {
-        String::new()
-    } else {
-        playlist.errors
-            .iter()
-            .map(|error| {
-                formatdoc!(r#"
-                    <pre class="error">{error}</pre>
-                "#)
-            })
-            .collect::<Vec<String>>()
-            .join("")
-    };
+    let mut errors = String::new();
+
+    for dir_error in &playlist.dir_errors {
+        errors.push_str(&format!(r#"<pre class="error">{dir_error}</pre>"#));
+    }
+
+    for manifest_error in &playlist.manifest_errors {
+        errors.push_str(&format!(r#"<pre class="error">{manifest_error}</pre>"#));
+    }
 
     let t_upload_banner = translations.upload_banner;
     let banner_upload_button = upload_widget(&routes::playlist_upload_banner(playlist), t_upload_banner);

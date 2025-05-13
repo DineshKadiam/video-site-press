@@ -16,7 +16,7 @@ pub fn pending_manifest_errors(
     site: &Site
 ) -> HttpResponse {
     let translations = &language.translations;
-    let t_pending_errors = translations.pending_errors;
+    let t_pending_manifest_errors = translations.pending_manifest_errors;
 
     let manifest_path = context.site_dir
         .join("site.eno");
@@ -40,7 +40,7 @@ pub fn pending_manifest_errors(
         translations.resolve_the_issue_on_disk_or_on_manifest_page(&manifest_url);
 
     let body = formatdoc!(r#"
-        <h2>{t_pending_errors}</h2>
+        <h2>{t_pending_manifest_errors}</h2>
         <p>
             {t_updating_site_from_editor_currently_not_allowed}
         </p>
@@ -58,7 +58,7 @@ pub fn pending_manifest_errors(
         language,
         Location::AuxiliaryPage,
         site,
-        t_pending_errors
+        t_pending_manifest_errors
     );
 
     html_response(html)

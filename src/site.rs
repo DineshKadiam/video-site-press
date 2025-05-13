@@ -56,7 +56,7 @@ pub struct Site {
     pub deploy_config: DeployConfig,
     pub font: Font,
     pub language: Language,
-    /// Syntactical and semantic errors inside the manifest, for displaying to
+    /// Syntactical and semantic errors inside the manifest for displaying to
     /// the user as well as to prevent programmatic updates to the site and
     /// its manifest while such errors are present.
     pub manifest_errors: Vec<String>,
