@@ -15,6 +15,10 @@ pub fn collection_add_link(collection: &Collection) -> String {
     format!("/collection/add-link/{}", collection.site_path.normalized())
 }
 
+pub fn collection_banner(collection: &Collection) -> String {
+    format!("/collection/banner/{}", collection.site_path.normalized())
+}
+
 pub fn collection_create_playlist(collection: &Collection) -> String {
     format!("/collection/create-playlist/{}", collection.site_path.normalized())
 }
@@ -85,6 +89,10 @@ pub const DEPLOY: &str = "/deploy";
 
 pub fn playlist_add_link(playlist: &Playlist) -> String {
     format!("/playlist/add-link/{}", playlist.site_path.normalized())
+}
+
+pub fn playlist_banner(playlist: &Playlist) -> String {
+    format!("/playlist/banner/{}", playlist.site_path.normalized())
 }
 
 pub fn playlist_create_video(playlist: &Playlist) -> String {

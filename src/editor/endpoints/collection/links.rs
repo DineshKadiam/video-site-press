@@ -4,7 +4,6 @@
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
-use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
 
@@ -14,6 +13,7 @@ use crate::{
     Language,
     SitePath
 };
+use crate::editor::actix::html_response;
 use crate::editor::Location;
 use crate::editor::routes;
 use crate::editor::widgets::{
@@ -63,7 +63,5 @@ pub fn edit_links_page(
         &head_title
     );
 
-    HttpResponse::Ok()
-        .content_type(ContentType::html())
-        .body(html)
+    html_response(html)
 }

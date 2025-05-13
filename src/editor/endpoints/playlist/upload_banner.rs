@@ -85,7 +85,7 @@ pub async fn upload_banner(
                         let job_kind = JobKind::PlaylistFastTasks(Arc::clone(&playlist_updated));
                         context.push_job_queue(job_kind);
 
-                        let redirect_url = routes::playlist_edit(&playlist_updated);
+                        let redirect_url = routes::playlist_banner(&playlist_updated);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
                     }
                 }

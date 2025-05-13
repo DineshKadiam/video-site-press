@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod add_link;
+mod banner;
 mod create_video;
 mod dangerous_actions;
 mod delete;
@@ -18,6 +19,7 @@ mod update_manifest;
 mod upload_banner;
 
 pub use add_link::add_link;
+pub use banner::banner;
 pub use create_video::create_video;
 pub use dangerous_actions::dangerous_actions;
 pub use delete::delete;

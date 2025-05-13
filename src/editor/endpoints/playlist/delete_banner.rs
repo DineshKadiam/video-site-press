@@ -44,7 +44,7 @@ pub async fn delete_banner(
             Either::Right(pending_manifest_errors(&context, &language, &playlist))
         }
         PlaylistUpdate::Updated { playlist_updated, .. } => {
-            let redirect_url = routes::playlist_edit(&playlist_updated);
+            let redirect_url = routes::playlist_banner(&playlist_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
     }

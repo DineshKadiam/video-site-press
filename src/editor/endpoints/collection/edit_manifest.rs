@@ -5,7 +5,6 @@ use std::fs;
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
-use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
 
@@ -15,6 +14,7 @@ use crate::{
     Language,
     SitePath
 };
+use crate::editor::actix::html_response;
 use crate::editor::{Location, Textarea};
 use crate::editor::routes;
 use crate::editor::widgets::{layout, not_found};
@@ -83,16 +83,16 @@ pub fn edit_manifest_page(
         </div>
     "#);
 
+    let collection_title = collection.title_or_slug_or_generic_label(translations);
+    let head_title = format!("{t_collection_manifest} – {collection_title}");
     let html = layout(
         &body,
         context,
         language,
         Location::manifest(&collection.site_path),
         &site,
-        collection.title_or_slug_or_generic_label(translations)
+        &head_title
     );
 
-    HttpResponse::Ok()
-        .content_type(ContentType::html())
-        .body(html)
+    html_response(html)
 }

@@ -85,7 +85,7 @@ pub async fn upload_banner(
                         let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection_updated));
                         context.push_job_queue(job_kind);
 
-                        let redirect_url = routes::collection_edit(&collection_updated);
+                        let redirect_url = routes::collection_banner(&collection_updated);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
                     }
                 }

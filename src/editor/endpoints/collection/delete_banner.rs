@@ -44,7 +44,7 @@ pub async fn delete_banner(
             Either::Right(pending_manifest_errors(&collection, &context, &language))
         }
         CollectionUpdate::Updated { collection_updated, .. } => {
-            let redirect_url = routes::collection_edit(&collection_updated);
+            let redirect_url = routes::collection_banner(&collection_updated);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
     }

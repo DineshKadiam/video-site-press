@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod add_link;
+mod banner;
 mod create_playlist;
 mod create_subcollection;
 mod create_video;
@@ -20,6 +21,7 @@ mod update_manifest;
 mod upload_banner;
 
 pub use add_link::add_link;
+pub use banner::banner;
 pub use create_playlist::create_playlist;
 pub use create_subcollection::create_subcollection;
 pub use create_video::create_video;

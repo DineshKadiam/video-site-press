@@ -228,6 +228,17 @@ fn collection_node(
             "#);
             subpages.push(links);
 
+            let banner_active = if *subpage == Subpage::Poster { "active" } else { "" };
+            let banner_icon = icons::EMBED; // TODO: Custom banner/image icon
+            let banner_url = routes::collection_banner(collection);
+            let t_banner_image = translations.banner_image;
+            let banner_image = formatdoc!(r#"
+                <a class="{banner_active} subpage" href="{banner_url}" style="padding-left: {padding_left};">
+                    {banner_icon} {t_banner_image}
+                </a>
+            "#);
+            subpages.push(banner_image);
+
             let danger_icon = icons::DANGER;
             let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };
             let dangerous_actions_url = routes::collection_dangerous_actions(collection);
@@ -396,6 +407,17 @@ fn playlist_node(
                 </a>
             "#);
             subpages.push(links);
+
+            let banner_active = if *subpage == Subpage::Poster { "active" } else { "" };
+            let banner_icon = icons::EMBED; // TODO: Custom banner/image icon
+            let banner_url = routes::playlist_banner(playlist);
+            let t_banner_image = translations.banner_image;
+            let banner_image = formatdoc!(r#"
+                <a class="{banner_active} subpage" href="{banner_url}" style="padding-left: {padding_left};">
+                    {banner_icon} {t_banner_image}
+                </a>
+            "#);
+            subpages.push(banner_image);
 
             let danger_icon = icons::DANGER;
             let dangerous_actions_active = if *subpage == Subpage::DangerousActions { "active" } else { "" };

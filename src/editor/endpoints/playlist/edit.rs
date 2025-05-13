@@ -4,7 +4,6 @@
 use std::sync::Arc;
 
 use actix_web::HttpResponse;
-use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
 
@@ -16,6 +15,7 @@ use crate::{
     Playlist,
     SitePath
 };
+use crate::editor::actix::html_response;
 use crate::editor::{Checkbox, Input, Location, Select, Textarea};
 use crate::editor::routes;
 use crate::editor::widgets::{
@@ -77,49 +77,6 @@ pub fn edit_page(
     for manifest_error in &playlist.manifest_errors {
         errors.push_str(&format!(r#"<pre class="error">{manifest_error}</pre>"#));
     }
-
-    let t_upload_banner = translations.upload_banner;
-    let banner_upload_button = upload_widget(&routes::playlist_upload_banner(playlist), t_upload_banner);
-    let banner_form = match &playlist.banner {
-        Some(banner) => {
-            let alt = if let Some(description) = &banner.description {
-                format!(r#"alt="{description}""#)
-            } else {
-                String::new()
-            };
-
-            // TODO: Could/should also use computed assets (also elsewhere, videos etc.)
-            let file_name = &banner.file_name;
-            let src = routes::poster(file_name, &playlist.site_path);
-
-            let mut description = Textarea::image_description("description", translations.banner_description);
-
-            description
-                .id("banner_description")
-                .value_option(&banner.description);
-
-            let t_delete_banner = translations.delete_banner;
-            let t_really_delete = translations.really_delete;
-            let t_update_description = translations.update_description;
-
-            let delete_banner_action = routes::playlist_delete_banner(playlist);
-            let update_banner_action = routes::playlist_update_banner(playlist);
-            format!(r#"
-                <img {alt} class="thumbnail" src="{src}">
-                <div class="button_group">
-                    {banner_upload_button}
-                    <form action="{delete_banner_action}" data-confirm data-confirm-label="{t_delete_banner}" data-confirm-text="{t_really_delete}" method="post">
-                        <button class="danger">{t_delete_banner}</button>
-                    </form>
-                </div>
-                <form action="{update_banner_action}" data-warn-discard method="post">
-                    {description}
-                    <button class="action">{t_update_description}</button>
-                </form>
-            "#)
-        }
-        None => banner_upload_button
-    };
 
     let mut input_offline = Checkbox::new("offline", translations.offline);
     let mut input_title = Input::text("title", translations.title);
@@ -351,8 +308,6 @@ pub fn edit_page(
     let playlist_icon = icons::playlist(translations.playlist);
     let playlist_title = playlist.title_or_slug_or_generic_label(translations);
 
-    let t_banner_image = translations.banner_image;
-
     let t_new_video = translations.new_video;
     let t_update_playlist = translations.update_playlist;
 
@@ -395,26 +350,19 @@ pub fn edit_page(
 
             {video_upload_button}
         </div>
-
-        <div class="form_group">
-            <h2>{t_banner_image}</h2>
-            <p style="background: var(--warning-bg); border-radius: .5rem; color: var(--warning-fg); padding: 1rem;">
-                Heads up: Banner images are not yet used in the layout,<br>but this will be included in a future version of Hyper 8
-            </p>
-            {banner_form}
-        </div>
     "#);
 
+    let t_playlist_settings = translations.playlist_settings;
+    let playlist_title = playlist.title_or_slug_or_generic_label(translations);
+    let head_title = format!("{t_playlist_settings} – {playlist_title}");
     let html = layout(
         &body,
         context,
         language,
         Location::edit(&playlist.site_path),
         &site,
-        playlist.title_or_slug_or_generic_label(translations)
+        &head_title
     );
 
-    HttpResponse::Ok()
-        .content_type(ContentType::html())
-        .body(html)
+    html_response(html)
 }
