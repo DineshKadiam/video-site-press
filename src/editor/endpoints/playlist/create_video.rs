@@ -23,6 +23,7 @@ use crate::util::validate_slug;
 
 use super::edit::edit_page;
 use super::edit::PlaylistFormFeedback;
+use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
 pub struct CreateVideoForm {
@@ -78,14 +79,17 @@ pub async fn create_video(
         };
 
         match context.update_playlist(mutation, &site_path) {
+            PlaylistUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            PlaylistUpdate::PendingErrors { playlist } => {
+                Either::Right(pending_manifest_errors(&context, &language, &playlist))
+            }
             PlaylistUpdate::Updated { optional_return_value: video, .. } => {
                 video.write_manifest(&context);
 
                 let redirect_url = routes::video_edit(&video);
                 Either::Left(Redirect::to(redirect_url).see_other())
-            }
-            PlaylistUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     };

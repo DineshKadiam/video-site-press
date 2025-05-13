@@ -1021,18 +1021,24 @@ impl Playlist {
             .iter_mut()
             .find(|video| video.site_path == *site_path) {
             Some(video) => {
-                let mut video_mut = (**video).clone();
+                if video.errors.is_empty() {
+                    let mut video_mut = (**video).clone();
 
-                match mutation(&mut video_mut) {
-                    Ok(optional_return_value) => {
-                        *video = Arc::new(video_mut);
+                    match mutation(&mut video_mut) {
+                        Ok(optional_return_value) => {
+                            *video = Arc::new(video_mut);
 
-                        VideoUpdate::Success {
-                            optional_return_value,
-                            video_updated: Arc::clone(video)
+                            VideoUpdate::Success {
+                                optional_return_value,
+                                video_updated: Arc::clone(video)
+                            }
                         }
+                        Err(err) => VideoUpdate::Error(err)
                     }
-                    Err(err) => VideoUpdate::Error(err)
+                } else {
+                    VideoUpdate::PendingErrors {
+                        video: Arc::clone(video)
+                    }
                 }
             }
             None => VideoUpdate::NotFound

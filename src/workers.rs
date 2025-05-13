@@ -120,8 +120,14 @@ fn compute_collection_banner_assets(
                     }
                 };
 
-                if let CollectionUpdate::NotFound = context.update_collection(mutation, &collection.site_path) {
-                    return Err("Banner assets could not be assigned in the site tree as the collection has meanwhile changed path.".to_string());
+                match context.update_collection(mutation, &collection.site_path) {
+                    CollectionUpdate::NotFound => {
+                        return Err(String::from("Banner assets could not be assigned in the site tree as the collection has meanwhile changed path."));
+                    }
+                    CollectionUpdate::PendingErrors { .. } => {
+                        return Err(String::from("Banner assets could not be assigned in the site tree as the collection manifest currently has pending errors."));
+                    }
+                    CollectionUpdate::Updated { .. } => ()
                 }
             }
             Err(err) => return Err(err)
@@ -178,14 +184,27 @@ fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
 
     if made_changes {
         let mutation = |video_mut: &mut Video| {
+            // TODO: It would be better to make granular updates, seeking just
+            // the versions that we need to update and only updating those.
+            // Right now we could discard newly added versions that weren't
+            // present the moment we began looking for metadata.
             video_mut.versions = versions_mut;
             Ok(())
         };
 
-        if let VideoUpdate::Success { video_updated, .. } = context.update_video(mutation, &video.site_path) {
-            // TODO: Reactivate
-            // context.create_version_jobs(&video);
-            return video_updated;
+        match context.update_video(mutation, &video.site_path) {
+            VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
+            VideoUpdate::NotFound => {
+                eprintln!("Metadata for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+            }
+            VideoUpdate::PendingErrors { .. } => {
+                eprintln!("Metadata for video {} could not be assigned in the site tree as the video currently has pending errors.", video.site_path.normalized());
+            }
+            VideoUpdate::Success { video_updated, .. } => {
+                // TODO: Reactivate
+                // context.create_version_jobs(&video);
+                return video_updated;
+            }
         }
     }
 
@@ -283,8 +302,14 @@ fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) ->
                     }
                 };
 
-                if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &playlist.site_path) {
-                    return Err("Banner assets could not be assigned in the site tree as the playlist has meanwhile changed path.".to_string());
+                match context.update_playlist(mutation, &playlist.site_path) {
+                    PlaylistUpdate::NotFound => {
+                        return Err(String::from("Banner assets could not be assigned in the site tree as the playlist has meanwhile changed path."));
+                    }
+                    PlaylistUpdate::PendingErrors { .. } => {
+                        return Err(String::from("Banner assets could not be assigned in the site tree as the playlist has meanwhile changed path."));
+                    }
+                    PlaylistUpdate::Updated { .. } => ()
                 }
             }
             Err(err) => return Err(err)
@@ -308,9 +333,18 @@ fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc
             Ok(())
         };
 
-        if let VideoUpdate::Success { video_updated, .. } = context.update_video(mutation, &video.site_path) {
-            video_updated.write_manifest(context);
-            return video_updated;
+        match context.update_video(mutation, &video.site_path) {
+            VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
+            VideoUpdate::NotFound => {
+                eprintln!("Poster for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+            }
+            VideoUpdate::PendingErrors { .. } => {
+                eprintln!("Poster for video {} could not be assigned in the site tree as there are currently errors in the video manifest.", video.site_path.normalized());
+            }
+            VideoUpdate::Success { video_updated, .. } => {
+                video_updated.write_manifest(context);
+                return video_updated;
+            }
         }
     }
 
@@ -433,6 +467,9 @@ fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video
                     VideoUpdate::NotFound => {
                         return Err(String::from("Poster assets could not be assigned in the site tree as the video has meanwhile changed path."));
                     }
+                    VideoUpdate::PendingErrors { .. } => {
+                        return Err(String::from("Poster assets could not be assigned in the site tree as the video currently has pending errors."));
+                    }
                     VideoUpdate::Success { .. } => ()
                 }
             }
@@ -526,7 +563,11 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                 match context.update_video(mutation, &video.site_path) {
                                     VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
                                     VideoUpdate::NotFound => {
-                                        let err = String::from("Video could not be updated with newly computed version.");
+                                        let err = String::from("Video could not be updated with newly computed version because it was not found at its site path anymore.");
+                                        context.processing_errors.lock().unwrap().push(err);
+                                    }
+                                    VideoUpdate::PendingErrors { .. } => {
+                                        let err = String::from("Video could not be updated with newly computed version as the video currently has pending errors.");
                                         context.processing_errors.lock().unwrap().push(err);
                                     }
                                     VideoUpdate::Success { video_updated, .. } => {

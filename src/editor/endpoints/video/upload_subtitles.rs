@@ -22,6 +22,8 @@ use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
 use crate::util::{deduplicate_filename, supported_subtitles_extension};
 
+use super::pending_manifest_errors;
+
 pub async fn upload_subtitles(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
@@ -73,6 +75,9 @@ pub async fn upload_subtitles(
                         // TODO: Can only happen in weird time of check vs. time of use edge cases
                         VideoUpdate::NotFound => {
                             return Ok(Either::Right(not_found(&context, &language, &site_path)))
+                        }
+                        VideoUpdate::PendingErrors { video } => {
+                            return Ok(Either::Right(pending_manifest_errors(&context, &language, &video)))
                         }
                         VideoUpdate::Success { video_updated, .. } => {
                             let redirect_url = routes::video_subtitles(&video_updated);

@@ -21,6 +21,7 @@ use crate::editor::widgets::not_found;
 
 use super::edit::edit_page;
 use super::edit::PlaylistFormFeedback;
+use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
 pub struct PlaylistUpdateForm {
@@ -103,13 +104,16 @@ pub async fn update(
         };
 
         match context.update_playlist(mutation, &site_path) {
+            PlaylistUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            PlaylistUpdate::PendingErrors { playlist } => {
+                Either::Right(pending_manifest_errors(&context, &language, &playlist))
+            }
             PlaylistUpdate::Updated { playlist_updated, .. } => {
                 playlist_updated.write_manifest(&context);
                 let redirect_url = routes::playlist_edit(&playlist_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
-            }
-            PlaylistUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {

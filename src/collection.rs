@@ -1386,28 +1386,35 @@ impl Collection {
         if let Some(playlist) = self.playlists
             .iter_mut()
             .find(|playlist| playlist.site_path == *site_path) {
-            let mut playlist_mut = (**playlist).clone();
-            let optional_return_value = mutation(&mut playlist_mut);
-            *playlist = Arc::new(playlist_mut);
+            if playlist.errors.is_empty() {
+                let mut playlist_mut = (**playlist).clone();
+                let optional_return_value = mutation(&mut playlist_mut);
+                *playlist = Arc::new(playlist_mut);
 
-            return PlaylistUpdate::Updated {
-                optional_return_value,
-                playlist_updated: Arc::clone(playlist)
-            };
+                PlaylistUpdate::Updated {
+                    optional_return_value,
+                    playlist_updated: Arc::clone(playlist)
+                }
+            } else {
+                PlaylistUpdate::PendingErrors {
+                    playlist: Arc::clone(playlist)
+                }
+            }
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            let result = subcollection_mut.update_playlist(mutation, site_path);
+            let deeper_result = subcollection_mut.update_playlist(mutation, site_path);
 
-            if let PlaylistUpdate::Updated { .. } = result {
+            if let PlaylistUpdate::Updated { .. } = deeper_result {
                 *subcollection = Arc::new(subcollection_mut);
-                return result;
             }
-        }
 
-        PlaylistUpdate::NotFound
+            deeper_result
+        } else {
+            PlaylistUpdate::NotFound
+        }
     }
 
     pub fn update_subcollection<T>(
@@ -1418,28 +1425,35 @@ impl Collection {
         if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| subcollection.site_path == *site_path) {
-            let mut subcollection_mut = (**subcollection).clone();
-            let optional_return_value = mutation(&mut subcollection_mut);
-            *subcollection = Arc::new(subcollection_mut);
+            if subcollection.errors.is_empty() {
+                let mut subcollection_mut = (**subcollection).clone();
+                let optional_return_value = mutation(&mut subcollection_mut);
+                *subcollection = Arc::new(subcollection_mut);
 
-            return CollectionUpdate::Updated {
-                collection_updated: Arc::clone(subcollection),
-                optional_return_value
-            };
+                CollectionUpdate::Updated {
+                    collection_updated: Arc::clone(subcollection),
+                    optional_return_value
+                }
+            } else {
+                CollectionUpdate::PendingErrors {
+                    collection: Arc::clone(subcollection)
+                }
+            }
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            let result = subcollection_mut.update_subcollection(mutation, site_path);
+            let deeper_result = subcollection_mut.update_subcollection(mutation, site_path);
 
-            if let CollectionUpdate::Updated { .. } = result {
+            if let CollectionUpdate::Updated { .. } = deeper_result {
                 *subcollection = Arc::new(subcollection_mut);
-                return result;
             }
-        }
 
-        CollectionUpdate::NotFound
+            deeper_result
+        } else {
+            CollectionUpdate::NotFound
+        }
     }
 
     pub fn update_video<T>(
@@ -1450,43 +1464,49 @@ impl Collection {
         if let Some(video) = self.videos
             .iter_mut()
             .find(|video| video.site_path == *site_path) {
-            let mut video_mut = (**video).clone();
+            if video.errors.is_empty() {
+                let mut video_mut = (**video).clone();
 
-            match mutation(&mut video_mut) {
-                Ok(optional_return_value) => {
-                    *video = Arc::new(video_mut);
+                match mutation(&mut video_mut) {
+                    Ok(optional_return_value) => {
+                        *video = Arc::new(video_mut);
 
-                    VideoUpdate::Success {
-                        optional_return_value,
-                        video_updated: Arc::clone(video)
+                        VideoUpdate::Success {
+                            optional_return_value,
+                            video_updated: Arc::clone(video)
+                        }
                     }
+                    Err(err) => VideoUpdate::Error(err)
                 }
-                Err(err) => VideoUpdate::Error(err)
+            } else {
+                VideoUpdate::PendingErrors {
+                    video: Arc::clone(video)
+                }
             }
         } else if let Some(playlist) = self.playlists
             .iter_mut()
             .find(|playlist| site_path.starts_with(&playlist.site_path)) {
             let mut playlist_mut = (**playlist).clone();
 
-            let result = playlist_mut.update_video(mutation, site_path);
+            let deeper_result = playlist_mut.update_video(mutation, site_path);
 
-            if let VideoUpdate::Success { .. } = result {
+            if let VideoUpdate::Success { .. } = deeper_result {
                 *playlist = Arc::new(playlist_mut);
             }
 
-            result
+            deeper_result
         } else if let Some(subcollection) = self.subcollections
             .iter_mut()
             .find(|subcollection| site_path.starts_with(&subcollection.site_path)) {
             let mut subcollection_mut = (**subcollection).clone();
 
-            let result = subcollection_mut.update_video(mutation, site_path);
+            let deeper_result = subcollection_mut.update_video(mutation, site_path);
 
-            if let VideoUpdate::Success { .. } = result {
+            if let VideoUpdate::Success { .. } = deeper_result {
                 *subcollection = Arc::new(subcollection_mut);
             }
 
-            result
+            deeper_result
         } else {
             VideoUpdate::NotFound
         }

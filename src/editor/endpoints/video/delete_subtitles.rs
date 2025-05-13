@@ -12,6 +12,8 @@ use crate::{Context, SitePath, Video, VideoUpdate};
 use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct DeleteSubtitlesForm {
     file_name: String
@@ -49,6 +51,10 @@ pub async fn delete_subtitles(
         VideoUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
+        }
+        VideoUpdate::PendingErrors { video } => {
+            let language = context.get_editor_language();
+            Either::Right(pending_manifest_errors(&context, &language, &video))
         }
         VideoUpdate::Success { video_updated, .. } => {
             let redirect_url = routes::video_subtitles(&video_updated);

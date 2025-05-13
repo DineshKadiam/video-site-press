@@ -16,6 +16,8 @@ use crate::{
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
+use super::pending_manifest_errors;
+
 pub async fn delete_banner(
     context: Data<Arc<Context>>,
     site_path: ActixPath<SitePath>
@@ -33,13 +35,17 @@ pub async fn delete_banner(
     };
 
     match context.update_collection(mutation, &site_path) {
-        CollectionUpdate::Updated { collection_updated, .. } => {
-            let redirect_url = routes::collection_edit(&collection_updated);
-            Either::Left(Redirect::to(redirect_url).see_other())
-        }
         CollectionUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
+        }
+        CollectionUpdate::PendingErrors { collection } => {
+            let language = context.get_editor_language();
+            Either::Right(pending_manifest_errors(&collection, &context, &language))
+        }
+        CollectionUpdate::Updated { collection_updated, .. } => {
+            let redirect_url = routes::collection_edit(&collection_updated);
+            Either::Left(Redirect::to(redirect_url).see_other())
         }
     }
 }

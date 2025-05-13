@@ -29,9 +29,13 @@ use crate::{
     VideoFile,
     VideoUpdate
 };
+use crate::editor::endpoints::collection::pending_manifest_errors as pending_collection_manifest_errors;
+use crate::editor::endpoints::playlist::pending_manifest_errors as pending_playlist_manifest_errors;
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
 use crate::util::{deduplicate_filename, supported_video_extension};
+
+use super::pending_manifest_errors as pending_video_manifest_errors;
 
 // TODO: Implementation wise this is very messy, refactoring candidate
 pub async fn upload_video(
@@ -60,6 +64,7 @@ pub async fn upload_video(
                         GetAnyResult::Collection(collection) => {
                             let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
                             while context.site_dir.join(collection.site_path.filesystem_relative()).join(&candidate_dir_name).exists() {
+                                // TODO: Use a nice deduplicate_filename() like approach as well
                                 candidate_dir_name.push_str("-duplicate");
                             }
                             let candidate_dir = context.site_dir.join(collection.site_path.filesystem_relative()).join(&candidate_dir_name);
@@ -69,6 +74,7 @@ pub async fn upload_video(
                         GetAnyResult::Playlist(playlist) => {
                             let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
                             while context.site_dir.join(playlist.site_path.filesystem_relative()).join(&candidate_dir_name).exists() {
+                                // TODO: Use a nice deduplicate_filename() like approach as well
                                 candidate_dir_name.push_str("-duplicate");
                             }
                             let candidate_dir = context.site_dir.join(playlist.site_path.filesystem_relative()).join(&candidate_dir_name);
@@ -107,9 +113,15 @@ pub async fn upload_video(
                                 collection.videos.push(video_moving);
                             };
 
-                            if let CollectionUpdate::NotFound = context.update_collection(mutation, &site_path) {
-                                // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                return Ok(Either::Right(not_found(&context, &language, &site_path)));
+                            match context.update_collection(mutation, &site_path) {
+                                CollectionUpdate::NotFound => {
+                                    // TODO: Can only happen in weird time of check vs. time of use edge cases
+                                    return Ok(Either::Right(not_found(&context, &language, &site_path)));
+                                }
+                                CollectionUpdate::PendingErrors { collection } => {
+                                    return Ok(Either::Right(pending_collection_manifest_errors(&collection, &context, &language)))
+                                }
+                                CollectionUpdate::Updated { .. } => ()
                             }
 
                             video
@@ -123,9 +135,15 @@ pub async fn upload_video(
                                 playlist.videos.push(video_moving);
                             };
 
-                            if let PlaylistUpdate::NotFound = context.update_playlist(mutation, &site_path) {
-                                // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                return Ok(Either::Right(not_found(&context, &language, &site_path)));
+                            match context.update_playlist(mutation, &site_path) {
+                                PlaylistUpdate::NotFound => {
+                                    // TODO: Can only happen in weird time of check vs. time of use edge cases
+                                    return Ok(Either::Right(not_found(&context, &language, &site_path)));
+                                }
+                                PlaylistUpdate::PendingErrors { playlist } => {
+                                    return Ok(Either::Right(pending_playlist_manifest_errors(&context, &language, &playlist)))
+                                }
+                                PlaylistUpdate::Updated { .. } => ()
                             }
 
                             video
@@ -141,11 +159,14 @@ pub async fn upload_video(
 
                             match context.update_video(mutation, &site_path) {
                                 VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
-                                VideoUpdate::Success { video_updated, .. } => video_updated,
+                                VideoUpdate::PendingErrors { video } => {
+                                    return Ok(Either::Right(pending_video_manifest_errors(&context, &language, &video)))
+                                }
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
                                 VideoUpdate::NotFound => {
                                     return Ok(Either::Right(not_found(&context, &language, &site_path)));
                                 }
+                                VideoUpdate::Success { video_updated, .. } => video_updated
                             }
                         }
                         GetAnyResult::None => unreachable!()

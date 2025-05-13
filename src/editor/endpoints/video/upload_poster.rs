@@ -28,6 +28,8 @@ use crate::util::{nanoid, supported_image_extension};
 use super::edit_poster::edit_poster_page;
 use super::edit_poster::UploadPosterFormFeedback;
 
+use super::pending_manifest_errors;
+
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
@@ -95,6 +97,9 @@ pub async fn upload_poster(
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
+                    }
+                    VideoUpdate::PendingErrors { video } => {
+                        return Ok(Either::Right(pending_manifest_errors(&context, &language, &video)))
                     }
                     VideoUpdate::Success { video_updated, .. } => {
                         let site = context.get_site();

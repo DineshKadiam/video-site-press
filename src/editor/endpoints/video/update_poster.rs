@@ -16,6 +16,8 @@ use crate::{
 use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct PosterUpdateForm {
     description: String
@@ -46,6 +48,10 @@ pub async fn update_poster(
         VideoUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
+        }
+        VideoUpdate::PendingErrors { video } => {
+            let language = context.get_editor_language();
+            Either::Right(pending_manifest_errors(&context, &language, &video))
         }
         VideoUpdate::Success { video_updated, .. } => {
             let redirect_url = routes::video_poster(&video_updated);

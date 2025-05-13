@@ -7,6 +7,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::{SitePath, Translations};
 
+mod actix;
 mod checkbox;
 mod endpoints;
 mod input;

@@ -21,6 +21,7 @@ use crate::util::validate_slug;
 
 use super::dangerous_actions::dangerous_actions_page;
 use super::dangerous_actions::MoveFormFeedback;
+use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
 pub struct PlaylistMoveForm {
@@ -63,12 +64,15 @@ pub async fn r#move(
         };
 
         match context.update_playlist(mutation, &site_path) {
+            PlaylistUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            PlaylistUpdate::PendingErrors { playlist } => {
+                Either::Right(pending_manifest_errors(&context, &language, &playlist))
+            }
             PlaylistUpdate::Updated { playlist_updated, .. } => {
                 let redirect_url = routes::playlist_dangerous_actions(&playlist_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
-            }
-            PlaylistUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {

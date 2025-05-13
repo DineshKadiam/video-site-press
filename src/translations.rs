@@ -153,6 +153,7 @@ pub struct Translations {
     pub order: &'static str,
     pub original: &'static str,
     pub pause: &'static str,
+    pub pending_errors: &'static str,
     pub permalink: &'static str,
     pub permalink_already_used_by_another_collection_playlist_or_video: &'static str,
     pub pick_a_poster_from_the_video: &'static str,
@@ -183,6 +184,7 @@ pub struct Translations {
     pub replay: &'static str,
     pub report_a_bug: &'static str,
     pub resolution: &'static str,
+    resolve_the_issue_on_disk_or_on_manifest_page: &'static str,
     pub resource_not_found: &'static str,
     pub sec: &'static str,
     pub set_current_frame_as_poster: &'static str,
@@ -223,6 +225,9 @@ pub struct Translations {
     pub update_site: &'static str,
     pub update_subtitles: &'static str,
     pub update_video: &'static str,
+    updating_collection_from_editor_currently_not_allowed: &'static str,
+    updating_playlist_from_editor_currently_not_allowed: &'static str,
+    updating_video_from_editor_currently_not_allowed: &'static str,
     pub upload_banner: &'static str,
     pub upload_new_subtitles: &'static str,
     pub upload_new_version: &'static str,
@@ -397,6 +402,7 @@ impl Translations {
             order: "Reihenfolge",
             original: "Original",
             pause: "Pausieren",
+            pending_errors: "Ungelöste Fehler",
             permalink: "Permalink",
             permalink_already_used_by_another_collection_playlist_or_video: "Dieser Permalink wird bereits von einer anderen Collection, Playlist oder Video verwendet.",
             pick_a_poster_from_the_video: "Poster aus dem Videomaterial wählen",
@@ -427,6 +433,7 @@ impl Translations {
             replay: "Erneut abspielen",
             report_a_bug: "Problem melden",
             resolution: "Auflösung",
+            resolve_the_issue_on_disk_or_on_manifest_page: r#"Löse den/die Fehler indem du die Datei direkt editierst oder mache die nötigen Änderungen auf der <a href="{manifest_url}">Manifest Seite</a>."#,
             resource_not_found: "Resource nicht gefunden",
             sec: "sek",
             set_current_frame_as_poster: "Aktuelles Standbild als Poster setzen",
@@ -467,6 +474,9 @@ impl Translations {
             update_site: "Seite speichern",
             update_subtitles: "Untertitel speichern",
             update_video: "Video speichern",
+            updating_collection_from_editor_currently_not_allowed: r#"Die Collection '{collection_title}' kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
+            updating_playlist_from_editor_currently_not_allowed: r#"Die Playlist '{playlist_title}' kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
+            updating_video_from_editor_currently_not_allowed: r#"Das Video '{video_title}' kann im Editor aktuell nicht aktualisiert werden da sein Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
             upload_banner: "Banner hochladen",
             upload_new_subtitles: "Neue Untertitel hochladen",
             upload_new_version: "Neue Version hochladen",
@@ -641,6 +651,7 @@ impl Translations {
             order: "Order",
             original: "Original",
             pause: "Pause",
+            pending_errors: "Pending errors",
             permalink: "Permalink",
             permalink_already_used_by_another_collection_playlist_or_video: "This permalink is already used by another collection, playlist or video.",
             pick_a_poster_from_the_video: "Pick a poster from the video",
@@ -671,6 +682,7 @@ impl Translations {
             replay: "Replay",
             report_a_bug: "Report a bug",
             resolution: "Resolution",
+            resolve_the_issue_on_disk_or_on_manifest_page: r#"You can either resolve the issue(s) by editing the file on disk or by making the necessary changes on the <a href="{manifest_url}">manifest page</a>."#,
             resource_not_found: "Resource not found",
             sec: "sec",
             set_current_frame_as_poster: "Set current frame as poster",
@@ -711,6 +723,9 @@ impl Translations {
             update_site: "Update Site",
             update_subtitles: "Update Subtitles",
             update_video: "Update Video",
+            updating_collection_from_editor_currently_not_allowed: r#"Updating the collection '{collection_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
+            updating_playlist_from_editor_currently_not_allowed: r#"Updating the playlist '{playlist_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
+            updating_video_from_editor_currently_not_allowed: r#"Updating the video '{video_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
             upload_banner: "Upload Banner",
             upload_new_subtitles: "Upload New Subtitles",
             upload_new_version: "Upload New Version",
@@ -739,6 +754,14 @@ impl Translations {
         self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
     }
 
+    pub fn resolve_the_issue_on_disk_or_on_manifest_page(
+        &self,
+        manifest_url: &str
+    ) -> String {
+        self.resolve_the_issue_on_disk_or_on_manifest_page
+            .replace("{manifest_url}", manifest_url)
+    }
+
     pub fn site_setup_text(&self) -> String {
         self.site_setup_text.replace("{docs_link}", DOCS_LINK)
     }
@@ -749,6 +772,36 @@ impl Translations {
 
     pub fn unsupported_file_extension_in_xxx(&self, file_name: &str) -> String {
         self.unsupported_file_extension_in_xxx.replace("{file_name}", file_name)
+    }
+
+    pub fn updating_collection_from_editor_currently_not_allowed(
+        &self,
+        collection_title: &str,
+        manifest_path: &str
+    ) -> String {
+        self.updating_collection_from_editor_currently_not_allowed
+            .replace("{collection_title}", collection_title)
+            .replace("{manifest_path}", manifest_path)
+    }
+
+    pub fn updating_playlist_from_editor_currently_not_allowed(
+        &self,
+        playlist_title: &str,
+        manifest_path: &str
+    ) -> String {
+        self.updating_playlist_from_editor_currently_not_allowed
+            .replace("{playlist_title}", playlist_title)
+            .replace("{manifest_path}", manifest_path)
+    }
+
+    pub fn updating_video_from_editor_currently_not_allowed(
+        &self,
+        video_title: &str,
+        manifest_path: &str
+    ) -> String {
+        self.updating_video_from_editor_currently_not_allowed
+            .replace("{video_title}", video_title)
+            .replace("{manifest_path}", manifest_path)
     }
 
     pub fn video_player_widget_for_xxx(&self, title: &str) -> String {
@@ -764,8 +817,17 @@ fn check_translations() {
     ];
 
     for translations in &locales {
+        assert!(&translations.invalid_site_text.contains("{docs_link}"));
+        assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
+        assert!(&translations.site_setup_text.contains("{docs_link}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
+        assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));
+        assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{manifest_path}"));
+        assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{playlist_title}"));
+        assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{manifest_path}"));
+        assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{video_title}"));
+        assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
 
         let disallowed_char = |c: char| !c.is_ascii_alphanumeric() && c != '-';

@@ -57,14 +57,22 @@ pub enum GetAnyResult {
     Video(Arc<Video>)
 }
 
-/// An update to a collection happens by cloning the existing collection, running
-/// a closure on it that mutates it into the new, updated state and lastly
-/// replacing the existing collection in the site tree with our new, updated
-/// version. The calling code then receives a reference to the new collection,
-/// and if it returned anything in the closure that performed the mutation,
-/// it is passed back that value through `optional_return_value`.
+/// An update to a collection happens by cloning the existing collection,
+/// running a closure on it that mutates it into the new, updated state and
+/// lastly replacing the existing collection in the site tree with our new,
+/// updated version. The calling code then receives a reference to the new
+/// collection, and if it returned anything in the closure that performed the
+/// mutation, it is passed back that value through `optional_return_value`.
+/// Any persistence on disk (manifest, assets) must be performed by the
+/// caller after a successful update.
 pub enum CollectionUpdate<T> {
+    /// When either nothing, or something else (a playlist or video), exists
+    /// at the provided site_path.
     NotFound,
+    /// Updating is prohibited while there are pending (manifest) errors as
+    /// this could potentially discard the entire manifest content due to
+    /// just a simple simple syntax error.
+    PendingErrors { collection: Arc<Collection> },
     Updated {
         collection_updated: Arc<Collection>,
         optional_return_value: T,
@@ -76,9 +84,17 @@ pub enum CollectionUpdate<T> {
 /// replacing the existing playlist in the site tree with our new, updated
 /// version. The calling code then receives a reference to the new playlist,
 /// and if it returned anything in the closure that performed the mutation,
-/// it is passed back that value through `optional_return_value`.
+/// it is passed back that value through `optional_return_value`. Any
+/// persistence on disk (manifest, assets) must be performed by the caller
+/// after a successful update.
 pub enum PlaylistUpdate<T> {
+    /// When either nothing, or something else (a collection or video), exists
+    /// at the provided site_path.
     NotFound,
+    /// Updating is prohibited while there are pending (manifest) errors as
+    /// this could potentially discard the entire manifest content due to
+    /// just a simple simple syntax error.
+    PendingErrors { playlist: Arc<Playlist> },
     Updated {
         optional_return_value: T,
         playlist_updated: Arc<Playlist>
@@ -93,10 +109,18 @@ pub enum PlaylistUpdate<T> {
 /// The calling code receives a reference to the new video, and if
 /// it returned anything in the closure that performed the mutation, it is
 /// passed back that value through `optional_return_value` (or the Error(String)
-/// variant value in case of failure).
+/// variant value in case of failure). Any persistence on disk
+/// (manifest, assets) must be performed by the caller after a successful
+/// update.
 pub enum VideoUpdate<T> {
     Error(String),
+    /// When either nothing, or something else (a collection or playlist),
+    /// exists at the provided site_path.
     NotFound,
+    /// Updating is prohibited while there are pending (manifest) errors as
+    /// this could potentially discard the entire manifest content due to
+    /// just a simple simple syntax error.
+    PendingErrors { video: Arc<Video> },
     Success {
         optional_return_value: T,
         video_updated: Arc<Video>
@@ -1266,28 +1290,38 @@ impl Context {
     ) -> CollectionUpdate<T> {
         let mut site_mut = self.get_site_mut();
 
-        let mut result = CollectionUpdate::NotFound;
-
-        if site_path.is_root_path() {
+        let result = if site_path.is_root_path() {
             if let SiteContent::Collection(collection) = &mut site_mut.content {
-                let mut collection_mut = (**collection).clone();
-                let optional_return_value = mutation(&mut collection_mut);
-                *collection = Arc::new(collection_mut);
+                if collection.errors.is_empty() {
+                    let mut collection_mut = (**collection).clone();
+                    let optional_return_value = mutation(&mut collection_mut);
+                    *collection = Arc::new(collection_mut);
 
-                result = CollectionUpdate::Updated {
-                    collection_updated: Arc::clone(collection),
-                    optional_return_value
-                };
+                    CollectionUpdate::Updated {
+                        collection_updated: Arc::clone(collection),
+                        optional_return_value
+                    }
+                } else {
+                    CollectionUpdate::PendingErrors {
+                        collection: Arc::clone(collection)
+                    }
+                }
+            } else {
+                CollectionUpdate::NotFound
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            result = collection_mut.update_subcollection(mutation, site_path);
+            let deeper_result = collection_mut.update_subcollection(mutation, site_path);
 
-            if let CollectionUpdate::Updated { .. } = result {
+            if let CollectionUpdate::Updated { .. } = deeper_result {
                 *collection = Arc::new(collection_mut);
             }
-        }
+
+            deeper_result
+        } else {
+            CollectionUpdate::NotFound
+        };
 
         if let CollectionUpdate::Updated { .. } = result {
              self.replace_site(site_mut);
@@ -1350,28 +1384,38 @@ impl Context {
     ) -> PlaylistUpdate<T> {
         let mut site_mut = self.get_site_mut();
 
-        let mut result = PlaylistUpdate::NotFound;
-
-        if site_path.is_root_path() {
+        let result = if site_path.is_root_path() {
             if let SiteContent::Playlist(playlist) = &mut site_mut.content {
-                let mut playlist_mut = (**playlist).clone();
-                let optional_return_value = mutation(&mut playlist_mut);
-                *playlist = Arc::new(playlist_mut);
+                if playlist.errors.is_empty() {
+                    let mut playlist_mut = (**playlist).clone();
+                    let optional_return_value = mutation(&mut playlist_mut);
+                    *playlist = Arc::new(playlist_mut);
 
-                result = PlaylistUpdate::Updated {
-                    optional_return_value,
-                    playlist_updated: Arc::clone(playlist)
-                };
+                    PlaylistUpdate::Updated {
+                        optional_return_value,
+                        playlist_updated: Arc::clone(playlist)
+                    }
+                } else {
+                    PlaylistUpdate::PendingErrors {
+                        playlist: Arc::clone(playlist)
+                    }
+                }
+            } else {
+                PlaylistUpdate::NotFound
             }
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            result = collection_mut.update_playlist(mutation, site_path);
+            let deeper_result = collection_mut.update_playlist(mutation, site_path);
 
-            if let PlaylistUpdate::Updated { .. } = result {
+            if let PlaylistUpdate::Updated { .. } = deeper_result {
                 *collection = Arc::new(collection_mut);
             }
-        }
+
+            deeper_result
+        } else {
+            PlaylistUpdate::NotFound
+        };
 
         if let PlaylistUpdate::Updated { .. } = result {
              self.replace_site(site_mut);
@@ -1402,41 +1446,53 @@ impl Context {
     ) -> VideoUpdate<T> {
         let mut site_mut = self.get_site_mut();
 
-        let mut result = VideoUpdate::NotFound;
-
-        if site_path.is_root_path() {
+        let result = if site_path.is_root_path() {
             if let SiteContent::Video(video) = &mut site_mut.content {
-                let mut video_mut = (**video).clone();
+                if video.errors.is_empty() {
+                    let mut video_mut = (**video).clone();
 
-                result = match mutation(&mut video_mut) {
-                    Ok(optional_return_value) => {
-                        *video = Arc::new(video_mut);
+                    match mutation(&mut video_mut) {
+                        Ok(optional_return_value) => {
+                            *video = Arc::new(video_mut);
 
-                        VideoUpdate::Success {
-                            optional_return_value,
-                            video_updated: Arc::clone(video)
+                            VideoUpdate::Success {
+                                optional_return_value,
+                                video_updated: Arc::clone(video)
+                            }
                         }
+                        Err(err) => VideoUpdate::Error(err)
                     }
-                    Err(err) => VideoUpdate::Error(err)
-                };
+                } else {
+                    VideoUpdate::PendingErrors {
+                        video: Arc::clone(video)
+                    }
+                }
+            } else {
+                VideoUpdate::NotFound
             }
         } else if let SiteContent::Playlist(playlist) = &mut site_mut.content {
             let mut playlist_mut = (**playlist).clone();
 
-            result = playlist_mut.update_video(mutation, site_path);
+            let deeper_result = playlist_mut.update_video(mutation, site_path);
 
-            if let VideoUpdate::Success { .. } = result {
+            if let VideoUpdate::Success { .. } = deeper_result {
                 *playlist = Arc::new(playlist_mut);
             }
+
+            deeper_result
         } else if let SiteContent::Collection(collection) = &mut site_mut.content {
             let mut collection_mut = (**collection).clone();
 
-            result = collection_mut.update_video(mutation, site_path);
+            let deeper_result = collection_mut.update_video(mutation, site_path);
 
-            if let VideoUpdate::Success { .. } = result {
+            if let VideoUpdate::Success { .. } = deeper_result {
                 *collection = Arc::new(collection_mut);
             }
-        }
+
+            deeper_result
+        } else {
+            VideoUpdate::NotFound
+        };
 
         if let VideoUpdate::Success { .. } = result {
             self.replace_site(site_mut);

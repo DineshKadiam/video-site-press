@@ -22,6 +22,8 @@ use crate::editor::widgets::{error_page, not_found};
 use super::edit_subtitles::edit_subtitles_page;
 use super::edit_subtitles::UpdateFormFeedback;
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct SubtitlesUpdateForm {
     content: String,
@@ -112,6 +114,10 @@ pub async fn update_subtitles(
             VideoUpdate::NotFound => {
                 let editor_language = context.get_editor_language();
                 Either::Right(not_found(&context, &editor_language, &site_path))
+            }
+            VideoUpdate::PendingErrors { video } => {
+                let editor_language = context.get_editor_language();
+                Either::Right(pending_manifest_errors(&context, &editor_language, &video))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_subtitles(&video_updated);

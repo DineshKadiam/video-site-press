@@ -22,6 +22,8 @@ use crate::editor::widgets::not_found;
 use super::edit::edit_page;
 use super::edit::CollectionFormFeedback;
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct UpdateForm {
     copy_link: String,
@@ -102,13 +104,16 @@ pub async fn update(
         };
 
         match context.update_collection(mutation, &site_path) {
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            CollectionUpdate::PendingErrors { collection } => {
+                Either::Right(pending_manifest_errors(&collection, &context, &language))
+            }
             CollectionUpdate::Updated { collection_updated, .. } => {
                 collection_updated.write_manifest(&context);
                 let redirect_url = routes::collection_edit(&collection_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
-            }
-            CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {

@@ -25,6 +25,8 @@ use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
 use crate::util::{nanoid, supported_image_extension};
 
+use super::pending_manifest_errors;
+
 pub async fn upload_banner(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
@@ -70,18 +72,21 @@ pub async fn upload_banner(
                 };
 
                 match context.update_collection(mutation, &site_path) {
+                    CollectionUpdate::NotFound => {
+                        let _ = fs::remove_file(&storage_path);
+                        let http_response = not_found(&context, &language, &site_path);
+
+                        return Ok(Either::Right(http_response));
+                    }
+                    CollectionUpdate::PendingErrors { collection } => {
+                        return Ok(Either::Right(pending_manifest_errors(&collection, &context, &language)))
+                    }
                     CollectionUpdate::Updated { collection_updated, .. } => {
                         let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection_updated));
                         context.push_job_queue(job_kind);
 
                         let redirect_url = routes::collection_edit(&collection_updated);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
-                    }
-                    CollectionUpdate::NotFound => {
-                        let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &language, &site_path);
-
-                        return Ok(Either::Right(http_response));
                     }
                 }
             }

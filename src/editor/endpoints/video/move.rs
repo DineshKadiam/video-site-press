@@ -22,6 +22,8 @@ use crate::util::validate_slug;
 use super::dangerous_actions::dangerous_actions_page;
 use super::dangerous_actions::MoveFormFeedback;
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct VideoMoveForm {
     slug: String
@@ -69,6 +71,9 @@ pub async fn r#move(
             }
             VideoUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
+            }
+            VideoUpdate::PendingErrors { video } => {
+                Either::Right(pending_manifest_errors(&context, &language, &video))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_dangerous_actions(&video_updated);

@@ -22,6 +22,8 @@ use crate::editor::widgets::not_found;
 use super::edit::edit_page;
 use super::edit::UpdateFormFeedback;
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct VideoUpdateForm {
     copy_link: String,
@@ -137,6 +139,9 @@ pub async fn update(
             VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
             VideoUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
+            }
+            VideoUpdate::PendingErrors { video } => {
+                Either::Right(pending_manifest_errors(&context, &language, &video))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_edit(&video_updated);

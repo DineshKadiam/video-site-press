@@ -24,6 +24,8 @@ use crate::util::validate_slug;
 use super::edit::edit_page;
 use super::edit::CollectionFormFeedback;
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct CreateVideoForm {
     slug: String,
@@ -78,14 +80,17 @@ pub async fn create_video(
         };
 
         match context.update_collection(mutation, &site_path) {
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            CollectionUpdate::PendingErrors { collection } => {
+                Either::Right(pending_manifest_errors(&collection, &context, &language))
+            }
             CollectionUpdate::Updated { optional_return_value: video, .. } => {
                 video.write_manifest(&context);
 
                 let redirect_url = routes::video_edit(&video);
                 Either::Left(Redirect::to(redirect_url).see_other())
-            }
-            CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     };

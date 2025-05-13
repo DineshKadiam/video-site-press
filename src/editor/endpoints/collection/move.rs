@@ -22,6 +22,8 @@ use crate::util::validate_slug;
 use super::dangerous_actions::dangerous_actions_page;
 use super::dangerous_actions::MoveFormFeedback;
 
+use super::pending_manifest_errors;
+
 #[derive(Deserialize)]
 pub struct MoveForm {
     slug: String
@@ -59,12 +61,15 @@ pub async fn r#move(
         };
 
         match context.update_collection(mutation, &site_path) {
+            CollectionUpdate::NotFound => {
+                Either::Right(not_found(&context, &language, &site_path))
+            }
+            CollectionUpdate::PendingErrors { collection } => {
+                Either::Right(pending_manifest_errors(&collection, &context, &language))
+            }
             CollectionUpdate::Updated { collection_updated, .. } => {
                 let redirect_url = routes::collection_dangerous_actions(&collection_updated);
                 Either::Left(Redirect::to(redirect_url).see_other())
-            }
-            CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &language, &site_path))
             }
         }
     } else {
