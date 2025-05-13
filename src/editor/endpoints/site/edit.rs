@@ -47,10 +47,10 @@ pub fn edit_page(
 ) -> HttpResponse {
     let translations = &language.translations;
 
-    let errors = if site.errors.is_empty() {
+    let manifest_errors = if site.manifest_errors.is_empty() {
         String::new()
     } else {
-        site.errors
+        site.manifest_errors
             .iter()
             .map(|error| {
                 formatdoc!(r#"
@@ -120,7 +120,7 @@ pub fn edit_page(
         <div class="form_group">
             <h2>{t_site_settings}</h2>
 
-            {errors}
+            {manifest_errors}
 
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
                 <h3>{t_general}</h3>

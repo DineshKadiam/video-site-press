@@ -101,6 +101,19 @@ pub enum PlaylistUpdate<T> {
     }
 }
 
+/// An update to the site happens by cloning the existing site, running a
+/// closure on it that mutates it into a new, updated state and lastly
+/// replacing the existing site with our new, updated version. Any
+/// persistence on disk (manifest) must be performed by the caller after a
+/// successful update.
+pub enum SiteUpdate {
+    /// Updating is prohibited while there are pending (manifest) errors as
+    /// this could potentially discard the entire manifest content due to
+    /// just a simple simple syntax error.
+    PendingErrors { site: Arc<Site> },
+    Success { site_updated: Arc<Site> }
+}
+
 /// An update to a video happens by cloning the existing video, running a
 /// closure on it that mutates it into a new, updated state and lastly
 /// replacing the existing video in the site tree with our new, updated
@@ -208,7 +221,10 @@ impl Context {
 
                     Ok(collection_arc)
                 }
-                SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
+                SiteContent::Invalid { error } => {
+                    let message = format!("The site is currently in an invalid state that needs to be manually resolved first ({error})");
+                    Err(message)
+                }
                 SiteContent::Playlist(playlist) => {
                     let manifest_path = self.site_dir.join("playlist.eno");
                     let _ = fs::remove_file(&manifest_path);
@@ -459,7 +475,10 @@ impl Context {
 
                     Ok(playlist_arc)
                 }
-                SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
+                SiteContent::Invalid { error } => {
+                    let message = format!("The site is currently in an invalid state that needs to be manually resolved first ({error})");
+                    Err(message)
+                }
                 SiteContent::Playlist(playlist) => Ok(Arc::clone(playlist)),
                 SiteContent::Video(video) => {
                     let slug = match &video.title {
@@ -733,7 +752,10 @@ impl Context {
 
                     Ok(video_arc)
                 }
-                SiteContent::Invalid => Err(String::from("The site is currently in an invalid state that needs to be manually resolved first")),
+                SiteContent::Invalid { error } => {
+                    let message = format!("The site is currently in an invalid state that needs to be manually resolved first ({error})");
+                    Err(message)
+                }
                 SiteContent::Playlist(playlist) => {
                     if playlist.videos.len() > 1 {
                         return Err("A playlist containing two or more videos can not be converted to a single video".to_string());
@@ -1427,16 +1449,22 @@ impl Context {
     pub fn update_site(
         &self,
         mutation: impl FnOnce(&mut Site),
-    ) -> Arc<Site> {
-        let mut site_mut = self.get_site_mut();
+    ) -> SiteUpdate {
+        let site = self.get_site();
 
-        mutation(&mut site_mut);
+        if site.manifest_errors.is_empty() {
+            let mut site_mut = (*site).clone();
 
-        let site_new = Arc::new(site_mut);
+            mutation(&mut site_mut);
 
-        *self.site.lock().unwrap() = Arc::clone(&site_new);
+            let site_updated = Arc::new(site_mut);
 
-        site_new
+            *self.site.lock().unwrap() = Arc::clone(&site_updated);
+
+            SiteUpdate::Success { site_updated }
+        } else {
+            SiteUpdate::PendingErrors { site }
+        }
     }
 
     pub fn update_video<T>(

@@ -58,7 +58,7 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
             }
         }
         SiteContent::Empty => empty_site_html(translations),
-        SiteContent::Invalid => invalid_site_html(&site.errors, translations),
+        SiteContent::Invalid { error } => invalid_site_html(error, translations),
         SiteContent::Playlist(playlist) => {
             if playlist.videos.is_empty() {
                 String::new()
@@ -132,22 +132,13 @@ fn empty_site_html(translations: &Translations) -> String {
     "#)
 }
 
-fn invalid_site_html(errors: &[String], translations: &Translations) -> String {
+fn invalid_site_html(error: &str, translations: &Translations) -> String {
     let failure_icon = icons::failure(translations.error);
     let t_invalid_site_text = translations.invalid_site_text();
 
-    let r_errors = errors
-        .iter()
-        .map(|error| format!(r#"<li><p class="error">{failure_icon} {error}</p></li>"#))
-        .collect::<Vec<String>>()
-        .join("\n");
-
     formatdoc!(r#"
         <p>{t_invalid_site_text}</p>
-
-        <ul class="semantic_only">
-            {r_errors}
-        </ul>
+        <p class="error">{failure_icon} {error}</p>
     "#)
 }
 

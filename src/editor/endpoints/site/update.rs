@@ -13,6 +13,7 @@ use crate::{
     Field,
     Language,
     Site,
+    SiteUpdate,
     SiteUrl,
     Theme
 };
@@ -20,6 +21,7 @@ use crate::editor::routes;
 
 use super::edit::edit_page;
 use super::edit::UpdateFormFeedback;
+use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
 pub struct UpdateForm {
@@ -37,8 +39,6 @@ pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<UpdateForm>
 ) -> Either<Redirect, HttpResponse> {
-    let language = context.get_editor_language();
-
     let base_url_trimmed = form.base_url.trim();
     let clean_urls = form.clean_urls.is_some();
     let deployment_path_trimmed = form.deployment_path.trim();
@@ -78,7 +78,8 @@ pub async fn update(
             theme
         };
 
-        Either::Right(edit_page(&context, Some(form_feedback), &language, &site))
+        let editor_language = context.get_editor_language();
+        Either::Right(edit_page(&context, Some(form_feedback), &editor_language, &site))
     } else {
         let deployment_path = if deployment_path_trimmed.is_empty() {
             None
@@ -113,15 +114,22 @@ pub async fn update(
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
             site_mut.theme = theme;
-            site_mut.write_manifest(&context);
         };
 
-        context.update_site(mutation);
+        match context.update_site(mutation) {
+            SiteUpdate::PendingErrors { site } => {
+                let editor_language = context.get_editor_language();
+                Either::Right(pending_manifest_errors(&context, &editor_language, &site))
+            }
+            SiteUpdate::Success { site_updated } => {
+                site_updated.write_manifest(&context).unwrap();
 
-        // Banner/Poster assets need recomputation when site.poster_aspect
-        // changes (which could have happened here).
-        context.compute_job_queue();
+                // Banner/Poster assets need recomputation when site.poster_aspect
+                // changes (which could have happened here).
+                context.compute_job_queue();
 
-        Either::Left(Redirect::to(routes::SITE_EDIT).see_other())
+                Either::Left(Redirect::to(routes::SITE_EDIT).see_other())
+            }
+        }
     }
 }

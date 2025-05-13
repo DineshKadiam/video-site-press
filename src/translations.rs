@@ -227,6 +227,7 @@ pub struct Translations {
     pub update_video: &'static str,
     updating_collection_from_editor_currently_not_allowed: &'static str,
     updating_playlist_from_editor_currently_not_allowed: &'static str,
+    updating_site_from_editor_currently_not_allowed: &'static str,
     updating_video_from_editor_currently_not_allowed: &'static str,
     pub upload_banner: &'static str,
     pub upload_new_subtitles: &'static str,
@@ -476,6 +477,7 @@ impl Translations {
             update_video: "Video speichern",
             updating_collection_from_editor_currently_not_allowed: r#"Die Collection '{collection_title}' kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
             updating_playlist_from_editor_currently_not_allowed: r#"Die Playlist '{playlist_title}' kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
+            updating_site_from_editor_currently_not_allowed: r#"Die Seite kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
             updating_video_from_editor_currently_not_allowed: r#"Das Video '{video_title}' kann im Editor aktuell nicht aktualisiert werden da sein Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
             upload_banner: "Banner hochladen",
             upload_new_subtitles: "Neue Untertitel hochladen",
@@ -725,6 +727,7 @@ impl Translations {
             update_video: "Update Video",
             updating_collection_from_editor_currently_not_allowed: r#"Updating the collection '{collection_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
             updating_playlist_from_editor_currently_not_allowed: r#"Updating the playlist '{playlist_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
+            updating_site_from_editor_currently_not_allowed: r#"Updating the site from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
             updating_video_from_editor_currently_not_allowed: r#"Updating the video '{video_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
             upload_banner: "Upload Banner",
             upload_new_subtitles: "Upload New Subtitles",
@@ -794,6 +797,14 @@ impl Translations {
             .replace("{manifest_path}", manifest_path)
     }
 
+    pub fn updating_site_from_editor_currently_not_allowed(
+        &self,
+        manifest_path: &str
+    ) -> String {
+        self.updating_site_from_editor_currently_not_allowed
+            .replace("{manifest_path}", manifest_path)
+    }
+
     pub fn updating_video_from_editor_currently_not_allowed(
         &self,
         video_title: &str,
@@ -826,6 +837,7 @@ fn check_translations() {
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{playlist_title}"));
         assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{manifest_path}"));
+        assert!(&translations.updating_site_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{video_title}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));

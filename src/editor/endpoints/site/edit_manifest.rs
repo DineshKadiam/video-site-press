@@ -28,10 +28,10 @@ pub fn edit_manifest_page(context: &Context, language: &Language) -> HttpRespons
     let site = context.get_site();
     let translations = &language.translations;
 
-    let errors = if site.errors.is_empty() {
+    let manifest_errors = if site.manifest_errors.is_empty() {
         String::new()
     } else {
-        site.errors
+        site.manifest_errors
             .iter()
             .map(|error| {
                 formatdoc!(r#"
@@ -58,7 +58,7 @@ pub fn edit_manifest_page(context: &Context, language: &Language) -> HttpRespons
     let body = formatdoc!(r#"
         <h2>{t_site_manifest}</h2>
 
-        {errors}
+        {manifest_errors}
 
         <div class="form_group">
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">

@@ -54,9 +54,12 @@ pub struct Site {
     pub clean_urls: bool,
     pub content: SiteContent,
     pub deploy_config: DeployConfig,
-    pub errors: Vec<String>,
     pub font: Font,
     pub language: Language,
+    /// Syntactical and semantic errors inside the manifest, for displaying to
+    /// the user as well as to prevent programmatic updates to the site and
+    /// its manifest while such errors are present.
+    pub manifest_errors: Vec<String>,
     pub poster_aspect: AspectRatio,
     pub theme: Theme
 }
@@ -65,7 +68,12 @@ pub struct Site {
 pub enum SiteContent {
     Collection(Arc<Collection>),
     Empty,
-    Invalid,
+    /// A site has invalid content when the basic specification of the data
+    /// model is not adhered to, e.g. when the site directory contains both a
+    /// collection.eno and a playlist.eno manifest. As such error conditions
+    /// can only be manually created, they need to be manually resolved as
+    /// well.
+    Invalid { error: String },
     Playlist(Arc<Playlist>),
     Video(Arc<Video>)
 }
@@ -173,7 +181,7 @@ impl Site {
             SiteContent::Playlist(playlist) => playlist.all_metadata_computed(),
             SiteContent::Video(video) => video.all_metadata_computed(),
             SiteContent::Empty |
-            SiteContent::Invalid => true
+            SiteContent::Invalid { .. } => true
         }
     }
 
@@ -183,7 +191,7 @@ impl Site {
         let document = match enolib::parse(&content) {
             Ok(document) => document,
             Err(err) => {
-                self.errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
+                self.manifest_errors.push(format!("Syntax error in {}:{} ({})", manifest_path.display(), err.line, err));
                 return;
             }
         };
@@ -201,7 +209,7 @@ impl Site {
                                     Err(err) => {
                                         let message = format!("The supplied url seems to be malformed ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -212,7 +220,7 @@ impl Site {
 
                     let message = "base_url needs to be provided as a field with a value, e.g.: 'base_url: https://example.com'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "deploy_config" => 'deploy_config: {
                     if let Ok(field) = element.as_field() {
@@ -237,7 +245,7 @@ impl Site {
                                     _ => {
                                         let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside a deploy_config field";
                                         let error = attribute_error(attribute, manifest_path, message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -248,7 +256,7 @@ impl Site {
 
                     let message = "deploy_config needs to be provided as a field with attributes, e.g.:\n\ndeploy_config:\npath = /var/www/example/\nserver = example.com\nuser = alice";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "disable_clean_urls" => {
                     if element.is_flag() {
@@ -256,7 +264,7 @@ impl Site {
                     } else {
                         let message = "disable_clean_urls needs to be provided as a flag, that is, exactly as 'disable_clean_urls' (without colon and without value)";
                         let error = element_error(element, manifest_path, message);
-                        self.errors.push(error);
+                        self.manifest_errors.push(error);
                     }
                 }
                 "font" => 'font: {
@@ -270,12 +278,12 @@ impl Site {
                                     } else {
                                         let message = "The provided font file extension is not supported, only woff and woff2 are";
                                         let error = element_error(element, manifest_path, message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 } else {
                                     let message = "The provided font file name is invalid - the file was not found";
                                     let error = element_error(element, manifest_path, message);
-                                    self.errors.push(error);
+                                    self.manifest_errors.push(error);
                                 }
                             }
 
@@ -285,7 +293,7 @@ impl Site {
 
                     let message = "font needs to be provided as a field with a value specifying the woff or woff2 font file name, e.g.: 'font: custom_sans.woff2'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "language" => 'language: {
                     if let Ok(field) = element.as_field() {
@@ -300,7 +308,7 @@ impl Site {
 
                     let message = "language needs to be provided as a field with a value, e.g.: 'language: de'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "poster_aspect" => 'poster_aspect: {
                     if let Ok(field) = element.as_field() {
@@ -313,7 +321,7 @@ impl Site {
                                     Err(err) => {
                                         let message = format!("The supplied aspect ratio was not recognized ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -324,7 +332,7 @@ impl Site {
 
                     let message = "poster_aspect needs to be provided as a field with a value, e.g.: 'poster_aspect: 16:9'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 "theme" => 'theme: {
                     if let Ok(field) = element.as_field() {
@@ -337,7 +345,7 @@ impl Site {
                                     Err(err) => {
                                         let message = format!("The supplied theme key was no recognized ({err})");
                                         let error = element_error(element, manifest_path, &message);
-                                        self.errors.push(error);
+                                        self.manifest_errors.push(error);
                                     }
                                 }
                             }
@@ -348,12 +356,12 @@ impl Site {
 
                     let message = "theme needs to be provided as a field with a value, e.g.: 'theme: light_warm'";
                     let error = element_error(element, manifest_path, message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
                 other => {
                     let message = not_supported_error("site.eno", other, &[SITE_OPTIONS]);
                     let error = element_error(element, manifest_path, &message);
-                    self.errors.push(error);
+                    self.manifest_errors.push(error);
                 }
             }
         }
@@ -369,7 +377,7 @@ impl Site {
             SiteContent::Playlist(playlist) => playlist.copy_link_requested(),
             SiteContent::Video(video) => video.copy_link(),
             SiteContent::Empty |
-            SiteContent::Invalid => false
+            SiteContent::Invalid { .. } => false
         }
     }
 
@@ -382,7 +390,7 @@ impl Site {
             SiteContent::Playlist(playlist) => playlist.embed_codes_requested(),
             SiteContent::Video(video) => video.embedding(),
             SiteContent::Empty |
-            SiteContent::Invalid => false
+            SiteContent::Invalid { .. } => false
         }
     }
 
@@ -395,7 +403,7 @@ impl Site {
             SiteContent::Playlist(playlist) => playlist.embeds_requested(),
             SiteContent::Video(video) => video.embeds_requested(),
             SiteContent::Empty |
-            SiteContent::Invalid => false
+            SiteContent::Invalid { .. } => false
         }
     }
 
@@ -408,7 +416,7 @@ impl Site {
             SiteContent::Collection(collection) => collection.feeds_requested(),
             SiteContent::Playlist(playlist) => playlist.feeds(),
             SiteContent::Empty |
-            SiteContent::Invalid |
+            SiteContent::Invalid { .. } |
             SiteContent::Video(_) => false
         }
     }
@@ -490,9 +498,9 @@ impl Site {
             content: SiteContent::Empty,
             clean_urls: true,
             deploy_config: DeployConfig::new(),
-            errors: Vec::new(),
             font: Font::Default,
             language: Language::default(),
+            manifest_errors: Vec::new(),
             poster_aspect: AspectRatio::Default,
             theme: Theme::default()
         }
@@ -508,7 +516,7 @@ impl Site {
             SiteContent::Playlist(playlist) => playlist.platform_integration_requested(),
             SiteContent::Video(video) => video.platform_integration_local().is_some_and(|platform_integration| platform_integration.enabled()),
             SiteContent::Empty |
-            SiteContent::Invalid => false
+            SiteContent::Invalid { .. } => false
         }
     }
 
@@ -525,18 +533,16 @@ impl Site {
 
         if hyper_dir.collection_manifest.is_some() {
             if hyper_dir.playlist_manifest.is_some() || hyper_dir.video_manifest.is_some() {
-                let error = "Only one of collection.eno, playlist.eno and video.eno may exist in the site directory, site is not read until this is manually resolved.".to_string();
-                site.errors.push(error);
-                site.content = SiteContent::Invalid;
+                let error = String::from("Only one of collection.eno, playlist.eno and video.eno may exist in the site directory, site is not read until this is manually resolved.");
+                site.content = SiteContent::Invalid { error };
             } else {
                 let collection = Collection::read_dir(context, &hyper_dir, default_options, &site);
                 site.content = SiteContent::Collection(collection);
             }
         } else if hyper_dir.playlist_manifest.is_some() {
             if hyper_dir.video_manifest.is_some() {
-                let error = "Only one of collection.eno, playlist.eno and video.eno may exist in the site directory, site is not read until this is manually resolved.".to_string();
-                site.errors.push(error);
-                site.content = SiteContent::Invalid;
+                let error = String::from("Only one of collection.eno, playlist.eno and video.eno may exist in the site directory, site is not read until this is manually resolved.");
+                site.content = SiteContent::Invalid { error };
             } else {
                 let playlist = Playlist::read_dir(context, &hyper_dir, default_options, &site);
                 site.content = SiteContent::Playlist(playlist);
@@ -602,7 +608,7 @@ impl Site {
         }
     }
 
-    /// Creates a relative link to go 0 (= refresh current page) or
+    /// Creates a relative link to go zero (= refresh current page) or
     /// more levels upwards towards the site root, taking into account
     /// whether we use clean urls or not. Some example output would be
     /// "", "../", "../../../", "../index.html", etc.
@@ -618,7 +624,12 @@ impl Site {
     }
 
     /// Writes `site.eno` in the site directory
-    pub fn write_manifest(&self, context: &Context) {
+    pub fn write_manifest(&self, context: &Context) -> Result<(), String> {
+        if !self.manifest_errors.is_empty() {
+            let error = String::from("Writing to the manifest rejected as there are pending manifest errors");
+            return Err(error);
+        }
+
         let mut eno = String::new();
 
         if let Some(base_url) = &self.base_url {
@@ -660,7 +671,8 @@ impl Site {
 
         eno.push_str(&format!("theme: {}\n", self.theme.key));
 
-        let path = context.site_dir.join("site.eno");
-        fs::write(path, eno).unwrap();
+        let manifest_path = context.site_dir.join("site.eno");
+
+        fs::write(manifest_path, eno).map_err(|err| err.to_string())
     }
 }

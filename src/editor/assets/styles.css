@@ -580,10 +580,6 @@ svg { fill: currentColor; }
     font-size: .8rem;
     padding: .3rem;
 }
-ul.semantic_only {
-    list-style: none;
-    padding: 0;
-}
 .updates { color: red; }
 .versions {
     list-style: none;

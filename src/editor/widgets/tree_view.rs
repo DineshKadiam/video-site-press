@@ -105,7 +105,7 @@ fn collection_node(
     };
 
     let has_errors = !collection.errors.is_empty() ||
-        (collection.site_path.is_root_path() && !site.errors.is_empty());
+        (collection.site_path.is_root_path() && !site.manifest_errors.is_empty());
 
     if location.intersects(&collection.site_path) {
         let breadcrumb_title = collection.title_or_slug_or_generic_label(translations);
@@ -198,7 +198,7 @@ fn collection_node(
             subpages.push(collection_settings);
         }
 
-        if collection.site_path.is_root_path() && site.errors.is_empty() {
+        if collection.site_path.is_root_path() && site.manifest_errors.is_empty() {
             let logo = icons::logo(None);
             let t_site_settings = translations.site_settings;
             let site_settings_url = routes::SITE_EDIT;
@@ -254,7 +254,7 @@ fn collection_node(
 
         if collection.site_path.is_root_path() {
             let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
-            let site_manifest_icon = if site.errors.is_empty() {
+            let site_manifest_icon = if site.manifest_errors.is_empty() {
                 String::from(icons::CODE)
             } else {
                 icon_with_error(icons::CODE)
@@ -325,7 +325,7 @@ fn playlist_node(
     };
 
     let has_errors = !playlist.errors.is_empty() ||
-        playlist.site_path.is_root_path() && !site.errors.is_empty();
+        playlist.site_path.is_root_path() && !site.manifest_errors.is_empty();
 
     if location.intersects(&playlist.site_path) {
         let breadcrumb_title = playlist.title_or_slug_or_generic_label(translations);
@@ -365,7 +365,7 @@ fn playlist_node(
             subpages.push(playlist_settings);
         }
 
-        if playlist.site_path.is_root_path() && site.errors.is_empty() {
+        if playlist.site_path.is_root_path() && site.manifest_errors.is_empty() {
             let logo = icons::logo(None);
             let t_site_settings = translations.site_settings;
             let site_settings_url = routes::SITE_EDIT;
@@ -421,7 +421,7 @@ fn playlist_node(
 
         if playlist.site_path.is_root_path() {
             let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
-            let site_manifest_icon = if site.errors.is_empty() {
+            let site_manifest_icon = if site.manifest_errors.is_empty() {
                 String::from(icons::CODE)
             } else {
                 icon_with_error(icons::CODE)
@@ -525,7 +525,7 @@ pub fn tree_view(
                 &Visibility::none()
             )
         }
-        SiteContent::Invalid => {
+        SiteContent::Invalid { .. } => {
             let dashboard_url = routes::DASHBOARD;
 
             let t_invalid_site = translations.invalid_site;
@@ -667,7 +667,7 @@ fn video_node(
     };
 
     let has_errors = !video.errors.is_empty() ||
-        video.site_path.is_root_path() && !site.errors.is_empty();
+        video.site_path.is_root_path() && !site.manifest_errors.is_empty();
 
     if location.intersects(&video.site_path) {
         let breadcrumb_title = video.title.as_deref().unwrap_or(translations.video);
@@ -707,7 +707,7 @@ fn video_node(
             subpages.push(video_settings);
         }
 
-        if video.site_path.is_root_path() && site.errors.is_empty() {
+        if video.site_path.is_root_path() && site.manifest_errors.is_empty() {
             let logo = icons::logo(None);
             let t_site_settings = translations.site_settings;
             let site_settings_url = routes::SITE_EDIT;
@@ -799,7 +799,7 @@ fn video_node(
 
         if video.site_path.is_root_path() {
             let site_manifest_active = if *subpage == Subpage::SiteManifest { "active" } else { "" };
-            let site_manifest_icon = if site.errors.is_empty() {
+            let site_manifest_icon = if site.manifest_errors.is_empty() {
                 String::from(icons::CODE)
             } else {
                 icon_with_error(icons::CODE)

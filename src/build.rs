@@ -130,6 +130,8 @@ pub fn perform_build(context: &Context) {
                 &traversal
             );
         }
+        SiteContent::Empty => (),
+        SiteContent::Invalid { .. } => unimplemented!(),
         SiteContent::Playlist(playlist) => {
             if playlist.offline() { return; }
             build_playlist(
@@ -151,8 +153,6 @@ pub fn perform_build(context: &Context) {
                 video
             );
         }
-        SiteContent::Empty => (),
-        SiteContent::Invalid => todo!()
     }
 }
 
