@@ -15,8 +15,6 @@ use crate::editor::widgets::{layout, not_found, upload_widget};
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
-// TODO: Allow user to specify language or label for each subtitle track.
-//       Possibly also possibility to order or specify a default track.
 pub async fn subtitles(
     context: Data<Arc<Context>>,
     site_path: ActixPath<SitePath>
