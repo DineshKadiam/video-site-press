@@ -795,7 +795,7 @@ impl Video {
                         (pixel_count == candidate.pixel_count && version.file_meta.size > candidate.video_file.file_meta.size)
                 }) {
                     version_candidate = Some(Candidate {
-                        pixel_count: 0,
+                        pixel_count,
                         video_file: version
                     });
                 }
