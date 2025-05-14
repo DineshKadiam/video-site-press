@@ -51,7 +51,7 @@ pub async fn downsize(
             let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) };
             context.push_job_queue(job_kind);
 
-            let redirect_url = routes::video_edit(&video);
+            let redirect_url = routes::video_media(&video);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         None => {
