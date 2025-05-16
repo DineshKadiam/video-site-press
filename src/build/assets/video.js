@@ -203,10 +203,8 @@ cycleVersionButton.addEventListener('click', () => {
 function toggleFullscreen() {
     if (document.fullscreenElement) {
         document.exitFullscreen();
-        toggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
     } else {
-        document.querySelector('.player_wrapper').requestFullscreen();
-        toggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
+        playerWrapper.requestFullscreen();
     }
 }
 
@@ -253,6 +251,15 @@ for (const slice of versionSlices) {
 }
 
 window.addEventListener('keydown', revealControls);
+
+playerWrapper.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+        toggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
+    } else {
+        toggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
+    }
+});
+
 playerWrapper.addEventListener('mousemove', revealControls);
 
 replayButton.addEventListener('click', () => {
