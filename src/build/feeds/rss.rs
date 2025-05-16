@@ -129,7 +129,7 @@ fn item(
 
     let link = site.absolute_url_index_unchecked(&video.site_path);
 
-    let title_escaped = html_escape_outside_attribute(site.title());
+    let title_escaped = html_escape_outside_attribute(video.title_or_slug_unchecked());
 
     // Execute closure that may add e.g. media rss or podcast rss specific
     // markup.

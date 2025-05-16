@@ -1021,6 +1021,18 @@ impl Video {
         }
     }
 
+    /// Call this when you need a title or slug and you're sure that a
+    /// fallback slug will always be available. For instance: The videos in a
+    /// feed are always children of a collection or playlist (because feeds
+    /// are only avilable for those two), so in that context this is the best
+    /// method to get a title for videos.
+    pub fn title_or_slug_unchecked(&self) -> &str {
+        match &self.title {
+            Some(title) => title,
+            None => self.slug_unchecked()
+        }
+    }
+
     /// Get the unlisted setting resolved in the context of the site tree
     /// (= as set locally on the video or as inherited from an ancestor).
     pub fn unlisted(&self) -> bool {
