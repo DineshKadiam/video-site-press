@@ -1199,6 +1199,10 @@ impl VideoFile {
             None => String::new()
         }
     }
+
+    pub fn video_meta_unchecked(&self) -> &VideoMeta {
+        self.video_meta.as_ref().unwrap()
+    }
 }
 
 impl VideoMeta {

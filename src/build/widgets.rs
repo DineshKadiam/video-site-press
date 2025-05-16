@@ -211,6 +211,7 @@ pub fn player(
         None => String::new()
     };
 
+    let active_marker_icon = icons::active_marker(translations.active);
 
     let subtitle_controls;
     let subtitle_tracks;
@@ -238,9 +239,8 @@ pub fn player(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let active_marker_icon = icons::active_marker(translations.active);
 
-        let subtitle_options = video.subtitles
+        let selector_options = video.subtitles
             .iter()
             .map(|subtitle_file| {
                 let label = html_escape_outside_attribute(&subtitle_file.label);
@@ -257,13 +257,13 @@ pub fn player(
         let subtitles_icon = icons::subtitles(Some(translations.subtitles));
         let t_no_subtitles = translations.no_subtitles;
         subtitle_controls = formatdoc!(r#"
-            <div class="subtitle_controls">
-                <button id="toggle_subtitles" tabindex="-1">{subtitles_icon}</button>
-                <div class="subtitle_options">
+            <div class="selector_control subtitles">
+                <button id="cycle_subtitles" tabindex="-1">{subtitles_icon}</button>
+                <div class="selector_options right_aligned">
                     <button class="active">
                         <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
                     </button>
-                    {subtitle_options}
+                    {selector_options}
                 </div>
             </div>
         "#);
@@ -272,9 +272,37 @@ pub fn player(
         subtitle_tracks = String::new();
     };
 
+    let version_selector_options = video.versions
+        .iter()
+        .map(|version| {
+            let video_meta = version.video_meta_unchecked();
+
+            let file_name = &version.file_name;
+            let height = video_meta.height;
+
+            let size_humanized = human_size(version.file_meta.size);
+
+            formatdoc!(r#"
+                <button data-label="{height}p" data-src="{video_prefix}{file_name}">
+                    <span class="active_marker_container">{active_marker_icon}</span> <strong>{height}p</strong>&nbsp;&nbsp;<small>{size_humanized}</small>
+                </button>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let default_version_label = recommended_version.vertical_resolution_label();
+    let version_controls = formatdoc!(r#"
+        <div class="selector_control version" style="position: relative;">
+            <button id="cycle_versions" tabindex="-1">{default_version_label}</button>
+            <div class="selector_options centered">
+                {version_selector_options}
+            </div>
+        </div>
+    "#);
+
     let duration = recommended_version.video_meta.as_ref().unwrap().duration;
     let duration_formatted = precise_duration(duration);
-    let default_resolution_label = recommended_version.vertical_resolution_label();
     let src = &recommended_version.file_name;
 
     let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
@@ -290,7 +318,7 @@ pub fn player(
     let volume_loud_icon = icons::volume_loud(translations.loud_volume);
     let t_replay = translations.replay;
     formatdoc!(r#"
-        <div class="player_wrapper">
+        <div class="player_wrapper" data-state="intro">
             <div class="player_intro">
                 {versions_ring_rendered}
             </div>
@@ -318,7 +346,7 @@ pub fn player(
                         </div>
                     </div>
                     <div class="right_side_controls">
-                        <button id="select_resolution">{default_resolution_label}</button>
+                        {version_controls}
                         {subtitle_controls}
                         <button id="toggle_fullscreen">{maximize_icon}</button>
                     </div>

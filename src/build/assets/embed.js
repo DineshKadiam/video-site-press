@@ -7,19 +7,18 @@ const volumeLoudIcon = document.querySelector('#volume_loud_icon').content;
 const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
 const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
 
-const intro = document.querySelector('.player_intro');
-const outro = document.querySelector('.player_outro');
+const cycleVersionButton = document.querySelector('#cycle_versions');
 const playerControls = document.querySelector('.player_controls');
 const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
 const timelineInput = document.querySelector('.timeline input');
-const selectResolutionButton = document.querySelector('#select_resolution');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
+const subtitlesSelectorControl = document.querySelector('.selector_control.subtitles');
 const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
-const toggleSubtitlesButton = document.querySelector('#toggle_subtitles');
 const toggleVolumeButton = document.querySelector('#toggle_volume');
+const versionSelectorControl = document.querySelector('.selector_control.version');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
 const versionsRing = document.querySelector('.versions_ring');
 const video = document.querySelector('video');
@@ -85,19 +84,73 @@ function revealControls() {
     playerControls.style.display = null;
 }
 
-function selectResolution(group) {
-    intro.style.display = 'none';
+versionSelectorControl.addEventListener('mouseenter', () => {
+    versionSelectorControl.classList.add('active');
+});
 
-    if (video.getAttribute('src') !== group.dataset.src) {
-        video.src = group.dataset.src;
-        selectResolutionButton.innerHTML = group.dataset.label;
+versionSelectorControl.addEventListener('mouseleave', () => {
+    versionSelectorControl.classList.remove('active');
+});
+
+const versionButtons = versionSelectorControl.querySelectorAll('.selector_options button');
+
+const versionOptions = [];
+for (const [index, button] of versionButtons.entries()) {
+    const option = { button };
+    option.slice = [...versionSlices].find(slice => slice.dataset.src === button.dataset.src)
+    versionOptions.push(option);
+}
+
+let activeVersionOption = versionOptions.find(option =>
+    option.button.dataset.src === video.getAttribute('src')
+);
+activeVersionOption.button.classList.add('active');
+
+// Receives the slice group from the version ring. We always initially pass
+// through this function when the video is first started, so we also use it
+// to remove the poster (because this would otherwise briefly flash into
+// being visible when resolution is changed on-the-go).
+function selectVersion(slice) {
+    video.removeAttribute('poster');
+
+    const option = versionOptions.find(option => option.slice === slice);
+    activateVersionOption(option);
+}
+
+function activateVersionOption(option) {
+    if (activeVersionOption !== null) {
+        activeVersionOption.button.classList.remove('active');
     }
 
-    video.play();
-    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
-    playbackUpdateInterval = setInterval(playbackUpdate, 80); // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
-                                                              //       Formula should/can take into account width of video on screen vs duration of video.
+    if (!video.paused) {
+        togglePlayback();
+    }
+
+    const currentTimeMemorized = video.currentTime;
+    video.src = option.button.dataset.src;
+    video.currentTime = currentTimeMemorized;
+    cycleVersionButton.textContent = option.button.dataset.label;
+
+    togglePlayback();
+
+    option.button.classList.add('active');
+    activeVersionOption = option;
 }
+
+for (const option of versionOptions) {
+    option.button.addEventListener('click', () => {
+        if (option !== activeVersionOption) {
+            activateVersionOption(option);
+        }
+        versionSelectorControl.classList.remove('active');
+        option.button.blur();
+    });
+}
+
+cycleVersionButton.addEventListener('click', () => {
+    const activeVersionOptionIndex = versionOptions.indexOf(activeVersionOption);
+    activateVersionOption(versionOptions[(activeVersionOptionIndex + 1) % versionOptions.length]);
+});
 
 function toggleFullscreen() {
     if (document.fullscreenElement) {
@@ -111,10 +164,11 @@ function toggleFullscreen() {
 
 function togglePlayback() {
     if (video.paused) {
-        intro.style.display = 'none';
-        outro.classList.remove('active');
+        playerWrapper.dataset.state = 'playing';
         video.play();
         togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+        // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
+        //       Formula should/can take into account width of video on screen vs duration of video.
         playbackUpdateInterval = setInterval(playbackUpdate, 80);
     } else {
         video.pause();
@@ -124,7 +178,7 @@ function togglePlayback() {
 }
 
 for (const slice of versionSlices) {
-    slice.addEventListener('click', () => selectResolution(slice));
+    slice.addEventListener('click', () => selectVersion(slice));
 
     slice.addEventListener('focus', () => {
         versionsRing.classList.add('interacting');
@@ -136,7 +190,7 @@ for (const slice of versionSlices) {
 
     slice.addEventListener('keypress', event =>  {
         if (event.key === 'Enter' || event.key === ' ') {
-            selectResolution(slice);
+            selectVersion(slice);
             event.preventDefault();
         }
     });
@@ -154,28 +208,23 @@ window.addEventListener('keydown', revealControls);
 playerWrapper.addEventListener('mousemove', revealControls);
 
 replayButton.addEventListener('click', () => {
-    outro.classList.remove('active');
+    playerWrapper.dataset.state = 'playing';
     video.play();
     togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
     playbackUpdateInterval = setInterval(playbackUpdate, 80);
 });
 
-selectResolutionButton.addEventListener('click', () => {
-    if (intro.style.display === 'none') {
-        outro.classList.remove('active');
-        intro.style.display = null;
-        if (!video.paused) {
-            video.pause();
-            clearInterval(playbackUpdateInterval);
-            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
-        }
-    } else {
-        intro.style.display = 'none';
-    }
-});
+if (subtitlesSelectorControl) {
+    const cycleSubtitlesButton = document.querySelector('#cycle_subtitles');
+    const subtitleButtons = subtitlesSelectorControl.querySelectorAll('.selector_options button');
 
-if (toggleSubtitlesButton) {
-    const subtitleButtons = document.querySelectorAll('.subtitle_options button');
+    subtitlesSelectorControl.addEventListener('mouseenter', () => {
+        subtitlesSelectorControl.classList.add('active');
+    });
+
+    subtitlesSelectorControl.addEventListener('mouseleave', () => {
+        subtitlesSelectorControl.classList.remove('active');
+    });
 
     const subtitleOptions = [];
     for (const [index, button] of subtitleButtons.entries()) {
@@ -209,10 +258,12 @@ if (toggleSubtitlesButton) {
             if (option !== activeSubtitleOption) {
                 activateOption(option);
             }
+            subtitlesSelectorControl.classList.remove('active');
+            option.button.blur();
         });
     }
 
-    toggleSubtitlesButton.addEventListener('click', () => {
+    cycleSubtitlesButton.addEventListener('click', () => {
         const activeSubtitleOptionIndex = subtitleOptions.indexOf(activeSubtitleOption);
         activateOption(subtitleOptions[(activeSubtitleOptionIndex + 1) % subtitleOptions.length]);
     });
@@ -306,7 +357,7 @@ toggleVolumeButton.addEventListener('click', () => {
 togglePlaybackButton.addEventListener('click', togglePlayback);
 
 video.addEventListener('ended', () => {
-    outro.classList.add('active');
+    playerWrapper.dataset.state = 'outro';
     clearInterval(playbackUpdateInterval);
     togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
 });
@@ -335,7 +386,6 @@ window.addEventListener('keydown', event => {
 });
 
 timelineInput.addEventListener('input', _ => {
-    intro.style.display = 'none';
     video.currentTime = timelineInput.value;
     playbackUpdate();
 });
