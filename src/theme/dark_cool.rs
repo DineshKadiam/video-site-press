@@ -28,6 +28,11 @@ const L_2: Color = Color::Chromatic {
     oklch: (0.84, 0.012, 260)
 };
 
+const L_3: Color = Color::Chromatic {
+    hsl: (217, 0.08, 0.71),
+    oklch: (0.77, 0.012, 260)
+};
+
 pub const DARK_COOL_VARS: ThemeVars = ThemeVars {
     action: Color::Chromatic {
         hsl: (225, 0.39, 0.4),
@@ -57,16 +62,14 @@ pub const DARK_COOL_VARS: ThemeVars = ThemeVars {
     },
     fg_1: L_1,
     fg_2: L_2,
-    fg_3: Color::Chromatic {
-        hsl: (217, 0.08, 0.71),
-        oklch: (0.77, 0.012, 260)
-    },
+    fg_3: L_3,
     fg_mg: Color::Chromatic {
         hsl: (217, 0.06, 0.6),
         oklch: (0.68, 0.012, 260)
     },
     l_1: L_1,
     l_2: L_2,
+    l_3: L_3,
     mg: Color::Chromatic {
         hsl: (217, 0.05, 0.54),
         oklch: (0.627, 0.012, 260)

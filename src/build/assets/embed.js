@@ -50,19 +50,69 @@ function formatTime(time) {
 // deal with float rounding issues.
 let speed = 100;
 
-const persistedVolume = localStorage.getItem('hyper8Volume');
+const volume = {
+    interactive: false,
+    value: 1
+};
 
-if (persistedVolume !== null) {
-    video.volume = parseFloat(persistedVolume);
+function updateVolume() {
+    let volumeIcon;
 
-    if (video.volume > 0.666) {
-        toggleVolumeButton.replaceChildren(volumeLoudIcon.cloneNode(true));
-    } else if (video.volume < 0.333) {
-        toggleVolumeButton.replaceChildren(volumeMutedIcon.cloneNode(true));
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            video.muted = false;
+            video.volume = 1;
+            volumeIcon = volumeLoudIcon;
+        } else if (volume.value > 0.333) {
+            video.muted = false;
+            video.volume = 0.5;
+            volumeIcon = volumeMediumIcon;
+        } else {
+            video.muted = true;
+            video.volume = 0;
+            volumeIcon = volumeMutedIcon;
+        }
     } else {
-        toggleVolumeButton.replaceChildren(volumeMediumIcon.cloneNode(true));
+        if (volume.value > 0.5) {
+            video.muted = false;
+            volumeIcon = volumeLoudIcon
+        } else {
+            video.muted = true;
+            volumeIcon = volumeMutedIcon;
+        }
     }
+
+    toggleVolumeButton.classList.toggle('dimmed', video.muted);
+    toggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
 }
+
+const persistedVolume = localStorage.getItem('hyper8Volume');
+if (persistedVolume !== null) {
+    volume.value = parseFloat(persistedVolume);
+    updateVolume();
+}
+
+// When a page loads we start with the assumption that volume is read-only,
+// but immediately run an asynchronous routine to determine if volume is
+// adjustable - if it is we register this in our global volume object and
+// restore any fine-grained volume adjustments that we previously persisted.
+// Also, by the time the visitor interacts with the volume control we know
+// whether to offer fine-grained volume control or just mute/unmute
+// functionality. The reason for this quirky stuff is that Apple's iOS
+// devices intentionally don't allow application-level volume control and
+// therefore the web audio API on these devices features a read-only volume
+// property on audio elements (the muted property however still works there
+// and we use it).
+let volumeProbe = new Audio();
+const volumeProbeHandler = () => {
+    volume.interactive = true;
+    updateVolume();
+
+    volumeProbe.removeEventListener('volumechange', volumeProbeHandler);
+    volumeProbe = null;
+};
+volumeProbe.addEventListener('volumechange', volumeProbeHandler);
+volumeProbe.volume = 0.123;
 
 function playbackUpdate() {
     const time = video.currentTime;
@@ -248,11 +298,14 @@ if (subtitlesSelectorControl) {
     let activeSubtitleOption = noSubtitleOption;
 
     function activateOption(option) {
+        // Reset previously active option
         activeSubtitleOption.button.classList.remove('active');
         if (activeSubtitleOption.track) {
             activeSubtitleOption.track.mode = 'disabled';
         }
 
+        // Activate new option
+        cycleSubtitlesButton.classList.toggle('dimmed', option === noSubtitleOption);
         option.button.classList.add('active');
         if (option.track) {
             option.track.mode = 'showing';
@@ -346,19 +399,24 @@ speedControl.addEventListener('wheel', event => {
 // Volume button handlers
 
 toggleVolumeButton.addEventListener('click', () => {
-    if (video.volume > 0.666) {
-        video.volume = 0;
-        toggleVolumeButton.replaceChildren(volumeMutedIcon.cloneNode(true));
-        localStorage.setItem('hyper8Volume', '0');
-    } else if (video.volume < 0.333) {
-        video.volume = 0.5;
-        toggleVolumeButton.replaceChildren(volumeMediumIcon.cloneNode(true));
-        localStorage.setItem('hyper8Volume', '0.5');
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            volume.value = 0;
+        } else if (volume.value > 0.333) {
+            volume.value = 1;
+        } else {
+            volume.value = 0.5;
+        }
     } else {
-        video.volume = 1;
-        toggleVolumeButton.replaceChildren(volumeLoudIcon.cloneNode(true));
-        localStorage.setItem('hyper8Volume', '1');
+        if (volume.value > 0.5) {
+            volume.value = 0;
+        } else {
+            volume.value = 1;
+        }
     }
+
+    updateVolume();
+    localStorage.setItem('hyper8Volume', volume.value);
 });
 
 togglePlaybackButton.addEventListener('click', togglePlayback);

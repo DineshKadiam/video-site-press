@@ -125,6 +125,8 @@ img {
     cursor: pointer;
 }
 .player_wrapper button:hover { color: var(--l-1); }
+.player_wrapper button.dimmed { color: var(--mg); }
+.player_wrapper button.dimmed:hover { color: var(--l-3); }
 .player_wrapper > *:not(video) { z-index: 1; }
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
 .player_wrapper:not([data-state="playing"]) .player_controls { display: none; }

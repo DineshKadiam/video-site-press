@@ -50,6 +50,8 @@ pub struct ThemeVars {
     pub l_1: Color,
     /// Light 2 (medium bright)
     pub l_2: Color,
+    /// Light 3 (darkest bright)
+    pub l_3: Color,
     /// Middleground  (in between)
     pub mg: Color,
     /// Warning background (like pointing out a feature that needs additional
@@ -99,6 +101,7 @@ impl ThemeVars {
         let fg_mg = self.fg_mg.hsl();
         let l_1 = self.l_1.hsl();
         let l_2 = self.l_2.hsl();
+        let l_3 = self.l_3.hsl();
         let mg = self.mg.hsl();
         let warning_bg = self.warning_bg.hsl();
         let warning_fg = self.warning_fg.hsl();
@@ -124,6 +127,7 @@ impl ThemeVars {
             --fg-mg: {fg_mg};
             --l-1: {l_1};
             --l-2: {l_2};
+            --l-3: {l_3};
             --mg: {mg};
             --warning-bg: {warning_bg};
             --warning-fg: {warning_fg};
@@ -151,6 +155,7 @@ impl ThemeVars {
         let fg_mg = self.fg_mg.oklch();
         let l_1 = self.l_1.oklch();
         let l_2 = self.l_2.oklch();
+        let l_3 = self.l_3.oklch();
         let mg = self.mg.oklch();
         let warning_bg = self.warning_bg.oklch();
         let warning_fg = self.warning_fg.oklch();
@@ -176,6 +181,7 @@ impl ThemeVars {
             --fg-mg: {fg_mg};
             --l-1: {l_1};
             --l-2: {l_2};
+            --l-3: {l_3};
             --mg: {mg};
             --warning-bg: {warning_bg};
             --warning-fg: {warning_fg};

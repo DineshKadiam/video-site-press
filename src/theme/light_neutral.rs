@@ -28,6 +28,11 @@ const L_2: Color = Color::Gray {
     oklch_l: 0.95
 };
 
+const L_3: Color = Color::Gray {
+    hsl_l: 0.867,
+    oklch_l: 0.9
+};
+
 pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
     action: Color::Gradient {
         begin_hsl: (194, 1.0, 0.137),
@@ -43,10 +48,7 @@ pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
     },
     bg_1: L_1,
     bg_2: L_2,
-    bg_3: Color::Gray {
-        hsl_l: 0.867,
-        oklch_l: 0.9
-    },
+    bg_3: L_3,
     bg_mg: Color::Gray {
         hsl_l: 0.8,
         oklch_l: 0.85
@@ -75,6 +77,7 @@ pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
     },
     l_1: L_1,
     l_2: L_2,
+    l_3: L_3,
     mg: Color::Gray {
         hsl_l: 0.533,
         oklch_l: 0.627

@@ -81,6 +81,7 @@ function updateVolume() {
         }
     }
 
+    toggleVolumeButton.classList.toggle('dimmed', video.muted);
     toggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
 }
 
@@ -296,11 +297,14 @@ if (subtitlesSelectorControl) {
     let activeSubtitleOption = noSubtitleOption;
 
     function activateOption(option) {
+        // Reset previously active option
         activeSubtitleOption.button.classList.remove('active');
         if (activeSubtitleOption.track) {
             activeSubtitleOption.track.mode = 'disabled';
         }
 
+        // Activate new option
+        cycleSubtitlesButton.classList.toggle('dimmed', option === noSubtitleOption);
         option.button.classList.add('active');
         if (option.track) {
             option.track.mode = 'showing';

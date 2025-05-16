@@ -258,7 +258,7 @@ pub fn player(
         let t_no_subtitles = translations.no_subtitles;
         subtitle_controls = formatdoc!(r#"
             <div class="selector_control subtitles">
-                <button id="cycle_subtitles" tabindex="-1">{subtitles_icon}</button>
+                <button class="dimmed" id="cycle_subtitles" tabindex="-1">{subtitles_icon}</button>
                 <div class="selector_options right_aligned">
                     <button class="active">
                         <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
