@@ -510,7 +510,7 @@ svg {
 }
 .versions_ring {
     aspect-ratio: 1;
-    height: min(20rem, 100%);
+    height: min(20rem, 85%);
     opacity: .9;
     width: auto;
 }

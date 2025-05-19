@@ -365,7 +365,7 @@ pub fn player(
 
         formatdoc!(r#"
             <a class="intro_heading" href="{video_url}" target="_blank">
-                {link_icon} <span class="label">{video_title_escaped} ({site_url})</span>
+                {link_icon} <span class="label">{video_title_escaped} – {site_url}</span>
             </a>
             <div class="intro_controls_wrapper">
                 <div class="intro_controls">

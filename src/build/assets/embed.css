@@ -75,7 +75,7 @@ img {
     display: flex;
     font-size: .8rem;
     left: 0;
-    max-width: 70%;
+    max-width: 30%;
     opacity: .8;
     padding: .4em .6em;
     position: absolute;
@@ -255,7 +255,7 @@ svg {
 }
 .versions_ring {
     aspect-ratio: 1;
-    height: min(20rem, 100%);
+    height: min(20rem, 85%);
     opacity: .9;
     width: auto;
 }
@@ -304,4 +304,8 @@ video {
     display: flex;
     flex-flow: row wrap;
     row-gap: 1rem;
+}
+
+@media (min-height: 25rem) {
+    .intro_heading { max-width: 70%; }
 }
