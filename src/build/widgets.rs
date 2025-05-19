@@ -162,6 +162,10 @@ pub fn links(language: &Language, links: &[Link]) -> String {
 /// In the context of a playlist, [next_video] references the next video
 /// in the playlist, if there is one.
 pub fn player(
+    // In the embedded player, the intro screen has additional
+    // (redundant) volume/subtitles/fullscreen controls, next to the
+    // resolution selector.
+    embed_extensions: bool,
     next_video: Option<Arc<Video>>,
     site: &Site,
     video: &Video,
@@ -258,7 +262,7 @@ pub fn player(
         let t_no_subtitles = translations.no_subtitles;
         subtitle_controls = formatdoc!(r#"
             <div class="selector_control subtitles">
-                <button class="dimmed" id="cycle_subtitles" tabindex="-1">{subtitles_icon}</button>
+                <button class="cycle_subtitles dimmed" tabindex="-1">{subtitles_icon}</button>
                 <div class="selector_options right_aligned">
                     <button class="active">
                         <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
@@ -314,13 +318,74 @@ pub fn player(
     };
 
     let maximize_icon = icons::maximize(translations.maximize);
-    let play_icon = icons::play(translations.play);
     let volume_loud_icon = icons::volume_loud(translations.loud_volume);
+
+    let embed_intro_extensions = if embed_extensions {
+        let link_icon = icons::link(Some(translations.external_link));
+        let site_url = site.absolute_url_unchecked();
+        let video_title = video.title_or_slug_or_generic_label(translations);
+        let video_title_escaped = html_escape_outside_attribute(video_title);
+        let video_url = match site.clean_urls {
+            true => video_prefix.to_string(),
+            false => format!("{video_prefix}index.html")
+        };
+
+        let intro_subtitle_controls = if video.subtitles.is_empty() {
+            String::new()
+        } else {
+            let selector_options = video.subtitles
+                .iter()
+                .map(|subtitle_file| {
+                    let label = html_escape_outside_attribute(&subtitle_file.label);
+
+                    formatdoc!(r#"
+                        <button>
+                            <span class="active_marker_container">{active_marker_icon}</span> {label}
+                        </button>
+                    "#)
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            let subtitles_icon = icons::subtitles(Some(translations.subtitles));
+            let t_no_subtitles = translations.no_subtitles;
+
+            formatdoc!(r#"
+                <div class="selector_control subtitles">
+                    <button class="cycle_subtitles dimmed icon_button" tabindex="-1">{subtitles_icon}</button>
+                    <div class="selector_options right_aligned">
+                        <button class="active">
+                            <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
+                        </button>
+                        {selector_options}
+                    </div>
+                </div>
+            "#)
+        };
+
+        formatdoc!(r#"
+            <a class="intro_heading" href="{video_url}" target="_blank">
+                {link_icon} <span class="label">{video_title_escaped} ({site_url})</span>
+            </a>
+            <div class="intro_controls_wrapper">
+                <div class="intro_controls">
+                    <button class="icon_button toggle_volume">{volume_loud_icon}</button>
+                    {intro_subtitle_controls}
+                    <button class="icon_button toggle_fullscreen">{maximize_icon}</button>
+                </div>
+            </div>
+        "#)
+    } else {
+        String::new()
+    };
+
+    let play_icon = icons::play(translations.play);
     let t_replay = translations.replay;
     formatdoc!(r#"
         <div class="player_wrapper" data-state="intro">
             <div class="player_intro">
                 {versions_ring_rendered}
+                {embed_intro_extensions}
             </div>
             <div class="player_outro">
                 <button class="align flex space" id="replay">
@@ -337,18 +402,18 @@ pub fn player(
                     <div class="bar outline"></div>
                 </div>
                 <div class="control_pane">
-                    <div class="left_side_controls">
+                    <div class="left_playback_controls">
                         <button id="toggle_playback">{play_icon}</button>
-                        <button id="toggle_volume">{volume_loud_icon}</button>
+                        <button class="toggle_volume">{volume_loud_icon}</button>
                         <button id="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
                         <div>
                             <span id="time_current">00:00</span> / <span id="time_total">{duration_formatted}</span>
                         </div>
                     </div>
-                    <div class="right_side_controls">
+                    <div class="right_playback_controls">
                         {version_controls}
                         {subtitle_controls}
-                        <button id="toggle_fullscreen">{maximize_icon}</button>
+                        <button class="toggle_fullscreen">{maximize_icon}</button>
                     </div>
                 </div>
             </div>

@@ -8,16 +8,19 @@ const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
 const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
 
 const cycleVersionButton = document.querySelector('#cycle_versions');
+const introSubtitlesSelectorControl = document.querySelector('.intro_controls .selector_control.subtitles');
+const introToggleFullscreenButton = document.querySelector('.intro_controls .toggle_fullscreen');
+const introToggleVolumeButton = document.querySelector('.intro_controls .toggle_volume');
+const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
+const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
+const playbackToggleVolumeButton = document.querySelector('.left_playback_controls .toggle_volume');
 const playerControls = document.querySelector('.player_controls');
 const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
 const timelineInput = document.querySelector('.timeline input');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
-const subtitlesSelectorControl = document.querySelector('.selector_control.subtitles');
-const toggleFullscreenButton = document.querySelector('#toggle_fullscreen');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
-const toggleVolumeButton = document.querySelector('#toggle_volume');
 const versionSelectorControl = document.querySelector('.selector_control.version');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
 const versionsRing = document.querySelector('.versions_ring');
@@ -54,37 +57,6 @@ const volume = {
     interactive: false,
     value: 1
 };
-
-function updateVolume() {
-    let volumeIcon;
-
-    if (volume.interactive) {
-        if (volume.value > 0.666) {
-            video.muted = false;
-            video.volume = 1;
-            volumeIcon = volumeLoudIcon;
-        } else if (volume.value > 0.333) {
-            video.muted = false;
-            video.volume = 0.5;
-            volumeIcon = volumeMediumIcon;
-        } else {
-            video.muted = true;
-            video.volume = 0;
-            volumeIcon = volumeMutedIcon;
-        }
-    } else {
-        if (volume.value > 0.5) {
-            video.muted = false;
-            volumeIcon = volumeLoudIcon
-        } else {
-            video.muted = true;
-            volumeIcon = volumeMutedIcon;
-        }
-    }
-
-    toggleVolumeButton.classList.toggle('dimmed', video.muted);
-    toggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
-}
 
 const persistedVolume = localStorage.getItem('hyper8Volume');
 if (persistedVolume !== null) {
@@ -225,6 +197,61 @@ function togglePlayback() {
     }
 }
 
+function toggleVolume() {
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            volume.value = 0;
+        } else if (volume.value > 0.333) {
+            volume.value = 1;
+        } else {
+            volume.value = 0.5;
+        }
+    } else {
+        if (volume.value > 0.5) {
+            volume.value = 0;
+        } else {
+            volume.value = 1;
+        }
+    }
+
+    updateVolume();
+    localStorage.setItem('hyper8Volume', volume.value);
+}
+
+function updateVolume() {
+    let volumeIcon;
+
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            video.muted = false;
+            video.volume = 1;
+            volumeIcon = volumeLoudIcon;
+        } else if (volume.value > 0.333) {
+            video.muted = false;
+            video.volume = 0.5;
+            volumeIcon = volumeMediumIcon;
+        } else {
+            video.muted = true;
+            video.volume = 0;
+            volumeIcon = volumeMutedIcon;
+        }
+    } else {
+        if (volume.value > 0.5) {
+            video.muted = false;
+            volumeIcon = volumeLoudIcon
+        } else {
+            video.muted = true;
+            volumeIcon = volumeMutedIcon;
+        }
+    }
+
+    introToggleVolumeButton.classList.toggle('dimmed', video.muted);
+    introToggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
+
+    playbackToggleVolumeButton.classList.toggle('dimmed', video.muted);
+    playbackToggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
+}
+
 for (const slice of versionSlices) {
     slice.addEventListener('click', () => selectVersion(slice));
 
@@ -254,12 +281,16 @@ for (const slice of versionSlices) {
 
 window.addEventListener('keydown', revealControls);
 
+introToggleFullscreenButton.addEventListener('click', toggleFullscreen);
+introToggleVolumeButton.addEventListener('click', toggleVolume);
+
+playbackToggleFullscreenButton.addEventListener('click', toggleFullscreen);
+playbackToggleVolumeButton.addEventListener('click', toggleVolume);
+
 playerWrapper.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement) {
-        toggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
-    } else {
-        toggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
-    }
+    const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
+    introToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
+    playbackToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
 });
 
 playerWrapper.addEventListener('mousemove', revealControls);
@@ -271,21 +302,37 @@ replayButton.addEventListener('click', () => {
     playbackUpdateInterval = setInterval(playbackUpdate, 80);
 });
 
-if (subtitlesSelectorControl) {
-    const cycleSubtitlesButton = document.querySelector('#cycle_subtitles');
-    const subtitleButtons = subtitlesSelectorControl.querySelectorAll('.selector_options button');
+if (playbackSubtitlesSelectorControl) {
+    const introCycleSubtitlesButton = document.querySelector('.intro_controls .cycle_subtitles');
+    const introSubtitleButtons = [...introSubtitlesSelectorControl.querySelectorAll('.intro_controls .selector_options button')];
+    const playbackCycleSubtitlesButton = document.querySelector('.right_playback_controls .cycle_subtitles');
+    const playbackSubtitleButtons = [...playbackSubtitlesSelectorControl.querySelectorAll('.selector_options button')];
 
-    subtitlesSelectorControl.addEventListener('mouseenter', () => {
-        subtitlesSelectorControl.classList.add('active');
+    introSubtitlesSelectorControl.addEventListener('mouseenter', () => {
+        introSubtitlesSelectorControl.classList.add('active');
     });
 
-    subtitlesSelectorControl.addEventListener('mouseleave', () => {
-        subtitlesSelectorControl.classList.remove('active');
+    introSubtitlesSelectorControl.addEventListener('mouseleave', () => {
+        introSubtitlesSelectorControl.classList.remove('active');
     });
+
+    playbackSubtitlesSelectorControl.addEventListener('mouseenter', () => {
+        playbackSubtitlesSelectorControl.classList.add('active');
+    });
+
+    playbackSubtitlesSelectorControl.addEventListener('mouseleave', () => {
+        playbackSubtitlesSelectorControl.classList.remove('active');
+    });
+
 
     const subtitleOptions = [];
-    for (const [index, button] of subtitleButtons.entries()) {
-        const option = { button };
+
+    let index = 0;
+    for (let index = 0; index < video.textTracks.length + 1; index++) {
+        const introButton = introSubtitleButtons[index];
+        const playbackButton = playbackSubtitleButtons[index];
+
+        const option = { introButton, playbackButton };
 
         if (index > 0) {
             option.track = video.textTracks[index - 1];
@@ -299,14 +346,17 @@ if (subtitlesSelectorControl) {
 
     function activateOption(option) {
         // Reset previously active option
-        activeSubtitleOption.button.classList.remove('active');
+        activeSubtitleOption.introButton.classList.remove('active');
+        activeSubtitleOption.playbackButton.classList.remove('active');
         if (activeSubtitleOption.track) {
             activeSubtitleOption.track.mode = 'disabled';
         }
 
         // Activate new option
-        cycleSubtitlesButton.classList.toggle('dimmed', option === noSubtitleOption);
-        option.button.classList.add('active');
+        introCycleSubtitlesButton.classList.toggle('dimmed', option === noSubtitleOption);
+        playbackCycleSubtitlesButton.classList.toggle('dimmed', option === noSubtitleOption);
+        option.introButton.classList.add('active');
+        option.playbackButton.classList.add('active');
         if (option.track) {
             option.track.mode = 'showing';
         }
@@ -314,22 +364,31 @@ if (subtitlesSelectorControl) {
     }
 
     for (const option of subtitleOptions) {
-        option.button.addEventListener('click', () => {
+        option.introButton.addEventListener('click', () => {
             if (option !== activeSubtitleOption) {
                 activateOption(option);
             }
-            subtitlesSelectorControl.classList.remove('active');
-            option.button.blur();
+            playbackSubtitlesSelectorControl.classList.remove('active');
+            option.introButton.blur();
+        });
+
+        option.playbackButton.addEventListener('click', () => {
+            if (option !== activeSubtitleOption) {
+                activateOption(option);
+            }
+            playbackSubtitlesSelectorControl.classList.remove('active');
+            option.playbackButton.blur();
         });
     }
 
-    cycleSubtitlesButton.addEventListener('click', () => {
+    function cycleSubtitles() {
         const activeSubtitleOptionIndex = subtitleOptions.indexOf(activeSubtitleOption);
         activateOption(subtitleOptions[(activeSubtitleOptionIndex + 1) % subtitleOptions.length]);
-    });
-}
+    }
 
-toggleFullscreenButton.addEventListener('click', toggleFullscreen);
+    introCycleSubtitlesButton.addEventListener('click', cycleSubtitles);
+    playbackCycleSubtitlesButton.addEventListener('click', cycleSubtitles);
+}
 
 // Speed button handlers
 
@@ -394,29 +453,6 @@ speedControl.addEventListener('wheel', event => {
     updateSpeed();
 
     event.preventDefault();
-});
-
-// Volume button handlers
-
-toggleVolumeButton.addEventListener('click', () => {
-    if (volume.interactive) {
-        if (volume.value > 0.666) {
-            volume.value = 0;
-        } else if (volume.value > 0.333) {
-            volume.value = 1;
-        } else {
-            volume.value = 0.5;
-        }
-    } else {
-        if (volume.value > 0.5) {
-            volume.value = 0;
-        } else {
-            volume.value = 1;
-        }
-    }
-
-    updateVolume();
-    localStorage.setItem('hyper8Volume', volume.value);
 });
 
 togglePlaybackButton.addEventListener('click', togglePlayback);

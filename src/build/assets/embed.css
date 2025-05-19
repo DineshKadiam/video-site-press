@@ -23,6 +23,70 @@ img {
     display: block;
     max-width: 100%;
 }
+.intro_controls {
+    column-gap: .6rem;
+    display: flex;
+    position: relative;
+}
+.intro_controls .icon_button {
+    align-items: center;
+    background: var(--d-1-85);
+    border-radius: 50%;
+    color: var(--l-2);
+    display: flex;
+    height: 2.2em;
+    justify-content: center;
+    opacity: .8;
+    width: 2.2em;
+}
+.intro_controls .icon_button:hover {
+    color: var(--l-1);
+    opacity: .9;
+}
+.intro_controls .selector_options { padding-bottom: .8rem; }
+.intro_controls .selector_options.right_aligned { right: 0; }
+.intro_controls .selector_options:focus-within .selector_options button,
+.intro_controls .selector_control.active:hover .selector_options button {
+    opacity: .8;
+}
+.intro_controls .selector_control.active:hover .selector_options button:focus,
+.intro_controls .selector_control.active:hover .selector_options button:hover {
+    color: var(--l-1);
+    opacity: .9;
+}
+.intro_controls .selector_options:focus-within,
+.intro_controls .selector_control.active:hover .selector_options {
+    pointer-events: auto;
+}
+.intro_controls .selector_options button { padding: .9rem .7rem; }
+.intro_controls_wrapper {
+    bottom: 1rem;
+    position: absolute;
+    right: 1rem;
+}
+.intro_heading {
+    align-items: center;
+    background: var(--l-1);
+    border-bottom-left-radius: .5rem;
+    border-top-right-radius: .5rem;
+    bottom: 0;
+    color: var(--d-1);
+    column-gap: .2rem;
+    display: flex;
+    font-size: .8rem;
+    left: 0;
+    max-width: 70%;
+    opacity: .8;
+    padding: .4em .6em;
+    position: absolute;
+}
+.intro_heading:hover { opacity: .9; }
+.intro_heading .label {
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.intro_heading svg { flex-shrink: 0; }
 .player_controls {
     bottom: 0;
     display: flex;
@@ -31,8 +95,8 @@ img {
     width: 100%;
 }
 .player_controls button { padding: .9rem .7rem; }
-.player_controls .left_side_controls button:first-child { padding-left: .9rem; }
-.player_controls .right_side_controls button:last-child { padding-right: .9rem; }
+.player_controls .left_playback_controls button:first-child { padding-left: .9rem; }
+.player_controls .right_playback_controls button:last-child { padding-right: .9rem; }
 .player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
     background: var(--d-1-85);
@@ -132,7 +196,7 @@ img {
 .player_wrapper:not([data-state="playing"]) .player_controls { display: none; }
 .player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
 .reading_width { max-width: 32rem; }
-.right_side_controls { position: relative; }
+.right_playback_controls { position: relative; }
 #speed .x { font-size: .8em; }
 .split {
     display: flex;
@@ -170,12 +234,12 @@ img {
     white-space: nowrap;
 }
 .selector_options button:first-child {
-    border-top-left-radius: .2em;
-    border-top-right-radius: .2em;
+    border-top-left-radius: .4em;
+    border-top-right-radius: .4em;
 }
 .selector_options button:last-child {
-    border-bottom-left-radius: .2em;
-    border-bottom-right-radius: .2em;
+    border-bottom-left-radius: .4em;
+    border-bottom-right-radius: .4em;
 }
 .selector_options button .active_marker_container {
     height: 1em;

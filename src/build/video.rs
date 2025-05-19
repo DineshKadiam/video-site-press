@@ -100,7 +100,7 @@ pub fn video_html(
     // "#);
 
     let video_prefix = "";
-    let player_rendered = player(next_video, site, video, video_prefix);
+    let player_rendered = player(false, next_video, site, video, video_prefix);
 
     let copy_link_button = if video.copy_link() {
         let (content_key, content_value) = match &site.base_url {

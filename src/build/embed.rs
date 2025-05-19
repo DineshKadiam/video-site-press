@@ -18,7 +18,7 @@ pub fn embed_html(
     traversal: &Traversal
 ) {
     let video_prefix = "../";
-    let player_rendered = player(None, site, video, video_prefix);
+    let player_rendered = player(true, None, site, video, video_prefix);
 
     let body = format!(r#"
         {player_rendered}

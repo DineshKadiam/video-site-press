@@ -223,8 +223,8 @@ img {
     position: absolute;
     width: 100%;
 }
-.player_controls .left_side_controls button:first-child { padding-left: .9rem; }
-.player_controls .right_side_controls button:last-child { padding-right: .9rem; }
+.player_controls .left_playback_controls button:first-child { padding-left: .9rem; }
+.player_controls .right_playback_controls button:last-child { padding-right: .9rem; }
 .player_controls #select_subtitles {
     align-items: center;
     column-gap: .3rem;
@@ -409,7 +409,7 @@ img {
     display: inline-block;
     margin-top: .2rem;
 }
-.right_side_controls { position: relative; }
+.right_playback_controls { position: relative; }
 .sidebar {
     display: flex;
     flex-direction: column;
@@ -455,12 +455,12 @@ img {
     white-space: nowrap;
 }
 .selector_options button:first-child {
-    border-top-left-radius: .2em;
-    border-top-right-radius: .2em;
+    border-top-left-radius: .4em;
+    border-top-right-radius: .4em;
 }
 .selector_options button:last-child {
-    border-bottom-left-radius: .2em;
-    border-bottom-right-radius: .2em;
+    border-bottom-left-radius: .4em;
+    border-bottom-right-radius: .4em;
 }
 .selector_options button .active_marker_container {
     height: 1em;
