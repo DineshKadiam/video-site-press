@@ -648,14 +648,18 @@ fn versions_ring(
         let text_size_y = RADIUS + -text_angle_rad.cos() * TEXT_RADIUS + TEXT_SPACING;
 
         let play_button = if default {
+            // The perceived visual center of the triangle lies slightly
+            // off-center, this factor is used to shift it a bit to make it
+            // look perfectly centered.
+            const PLAY_BUTTON_X_CENTER_OFFSET: f32 = 0.59;
             const PLAY_BUTTON_RATIO: f32 = 1.197655;
             const PLAY_BUTTON_WIDTH: f32 = RADIUS * 0.2;
             const PLAY_BUTTON_HEIGHT: f32 = PLAY_BUTTON_RATIO * PLAY_BUTTON_WIDTH;
-            let a_x = RADIUS - PLAY_BUTTON_WIDTH * 0.5;
+            let a_x = RADIUS - PLAY_BUTTON_WIDTH * (1.0 - PLAY_BUTTON_X_CENTER_OFFSET);
             let a_y = RADIUS - PLAY_BUTTON_HEIGHT * 0.5;
-            let b_x = RADIUS + PLAY_BUTTON_WIDTH * 0.5;
+            let b_x = RADIUS + PLAY_BUTTON_WIDTH * PLAY_BUTTON_X_CENTER_OFFSET;
             let b_y = RADIUS;
-            let c_x = RADIUS - PLAY_BUTTON_WIDTH * 0.5;
+            let c_x = RADIUS - PLAY_BUTTON_WIDTH * (1.0 - PLAY_BUTTON_X_CENTER_OFFSET);
             let c_y = RADIUS + PLAY_BUTTON_HEIGHT * 0.5;
             formatdoc!(r#"
                 <circle cx="{RADIUS}" cy="{RADIUS}" fill="transparent" r="{INNER_RADIUS}"/>
