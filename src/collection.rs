@@ -1557,6 +1557,10 @@ impl Collection {
             eno.push_str(&format!("embedding: {}\n", if embedding { "enabled" } else { "disabled" }));
         }
 
+        if let Some(feeds) = self.feeds {
+            eno.push_str(&format!("feeds: {}\n", if feeds { "enabled" } else { "disabled" }));
+        }
+
         if self.offline {
             eno.push_str("offline\n");
         }

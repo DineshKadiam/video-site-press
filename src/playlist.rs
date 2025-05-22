@@ -1088,6 +1088,10 @@ impl Playlist {
             eno.push_str(&format!("embedding: {}\n", if embedding { "enabled" } else { "disabled" }));
         }
 
+        if let Some(feeds) = self.feeds {
+            eno.push_str(&format!("feeds: {}\n", if feeds { "enabled" } else { "disabled" }));
+        }
+
         for link in &self.links {
             eno.push_str(&link.to_eno());
         }
