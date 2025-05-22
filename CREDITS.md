@@ -13,6 +13,7 @@ listed here, just say the word.
 Thanks everyone for your support!
 
 [BMKÖS](https://www.bmkoes.gv.at/)<br>
+[Bri Hefele](https://brhfl.com)<br>
 [Christian Pacaud](https://www.christianpacaud.com/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
 [dérive](https://derive.at)<br>
@@ -23,5 +24,6 @@ hatsch<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
 [Meljoann](https://www.meljoann.com/)<br>
 [Sam](https://ethicalrevolution.co.uk/)<br>
+[sknob](https://sknob.fr/)<br>
 [surface mount dove](https://taube.xyz/)<br>
 [Walter Ebert](https://walterebert.com/)

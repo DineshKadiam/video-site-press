@@ -5,6 +5,37 @@
 
 # Changelog
 
+## 0.20
+
+### Player improvements
+
+- Allow on-the-fly resolution switching during video playback (a9a6ebe)
+- Introduce pre-playback controls and video title/backlink on embedded player intro screen (7826508, aa2ff26)
+- Dim inactive subtitle/volume controls, port adaptive volume controls to embeds (9a7cbe9)
+
+### Data integrity and safeguards
+
+Disable graphical editing/prevent graphical updates from editor while there are manifest errors (ece90f3, 1c208f8, 47f0361, 569b044)
+
+### Editor improvements
+
+- Move links to separate editor subpages (6187910)
+- Move collection and playlist banner image editing to separate editor pages (67af786)
+- Validate subtitle languages against IANA language tag registry (c8c5edc)
+- Display video file count in tree view (63b263f)
+
+### Fixes
+
+- Fix collection feed not sourcing its recursively built list of videos (fd4f23d)
+- Fix RSS feed title accidentally being used as title for items (97088a8)
+- Fix pixel count initialization in highest quality video version getter (4700463)
+- Fix subtitles not being written to manifest when first explicity set in editor (6142dd2)
+- Fix incomplete adaptation of the endpoint code for site manifest updates (07fe771)
+- Port missing subtitle control css/js adjustments to embeds (67f31ef)
+- Ensure fullscreen button icon updates regardless how fullscreen state changes (2284dd9)
+- Redirect to video files page after successful downsize request (2a8b59e)
+- Perceptionally tweak horizontal centering of resolution selector play icon (6ce9510)
+
 ## 0.19
 
 ### Feeds
