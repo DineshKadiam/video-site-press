@@ -197,7 +197,7 @@ fn build_collection(
             site,
             &collection.site_path,
             title,
-            &collection.published_videos_recursive()
+            &collection.public_videos_recursive()
         );
 
         let subscribe_permalink = collection.subscribe_permalink(translations);
@@ -304,7 +304,7 @@ fn build_playlist(
             site,
             &playlist.site_path,
             title,
-            &playlist.published_videos().cloned().collect()
+            &playlist.public_videos().cloned().collect()
         );
 
         let subscribe_permalink = playlist.subscribe_permalink(translations);

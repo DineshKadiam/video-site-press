@@ -1086,24 +1086,24 @@ impl Collection {
         self.videos.iter().filter(|video| !video.offline_local())
     }
 
-    /// Returns all published videos (i.e. those that are not marked as
-    /// offline) in the collection and its playlists and subcollections,
+    /// Returns all public videos (i.e. those that are not marked as offline
+    /// or unlisted) in the collection and its playlists and subcollections,
     /// recursively.
-    pub fn published_videos_recursive(&self) -> Vec<Arc<Video>> {
+    pub fn public_videos_recursive(&self) -> Vec<Arc<Video>> {
         let mut videos = Vec::new();
 
         fn recursive_append(collection: &Collection, videos: &mut Vec<Arc<Video>>) {
-            for subcollection in collection.published_subcollections() {
+            for subcollection in collection.public_subcollections() {
                 recursive_append(subcollection, videos);
             }
 
-            for playlist in collection.published_playlists() {
-                for video in playlist.published_videos() {
+            for playlist in collection.public_playlists() {
+                for video in playlist.public_videos() {
                     videos.push(video.clone());
                 }
             }
 
-            for video in collection.published_videos() {
+            for video in collection.public_videos() {
                 videos.push(video.clone());
             }
         }
