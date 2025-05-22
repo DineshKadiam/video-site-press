@@ -5,6 +5,11 @@
 
 # Changelog
 
+## 0.20.1
+
+- Source feeds from public (instead of published) videos (9fac2ad)
+- Add missing persistence of feeds option to collection/playlist manifests (ddae340)
+
 ## 0.20
 
 ### Player improvements
