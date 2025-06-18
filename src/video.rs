@@ -1075,25 +1075,15 @@ impl Video {
         }
     }
 
-    pub fn versions_desc_by_quality(&self) -> Vec<VideoFile> {
+    pub fn versions_asc_by_fidelity(&self) -> Vec<VideoFile> {
         let mut versions: Vec<VideoFile> = self.versions.clone();
-        versions.sort_unstable_by(|a, b| {
-            match (&a.video_meta, &b.video_meta) {
-                (Some(a_video_meta), Some(b_video_meta)) => {
-                    if a_video_meta.height != b_video_meta.height {
-                        b_video_meta.height.cmp(&a_video_meta.height)
-                    } else if a_video_meta.video_frame_rate != b_video_meta.video_frame_rate {
-                        b_video_meta.video_frame_rate.partial_cmp(&a_video_meta.video_frame_rate)
-                            .unwrap_or_else(|| b.file_meta.size.cmp(&a.file_meta.size))
-                    } else {
-                        b.file_meta.size.cmp(&a.file_meta.size)
-                    }
-                }
-                (Some(_), None) => Ordering::Greater,
-                (None, Some(_)) => Ordering::Less,
-                (None, None) => b.file_meta.size.cmp(&a.file_meta.size)
-            }
-        });
+        versions.sort_unstable_by(|a, b| VideoFile::cmp_by_fidelity_desc(b, a));
+        versions
+    }
+
+    pub fn versions_desc_by_fidelity(&self) -> Vec<VideoFile> {
+        let mut versions: Vec<VideoFile> = self.versions.clone();
+        versions.sort_unstable_by(|a, b| VideoFile::cmp_by_fidelity_desc(a, b));
         versions
     }
 
@@ -1176,6 +1166,27 @@ impl Video {
 }
 
 impl VideoFile {
+    /// Determine the ordering between two [VideoFile] based on dimensions
+    /// (height), frame rate and size (in that priority). As fallback rely on
+    /// presence of metadata and raw filesize to determine some ordering.
+    pub fn cmp_by_fidelity_desc(a: &VideoFile, b: &VideoFile) -> Ordering {
+        match (&a.video_meta, &b.video_meta) {
+            (Some(a_video_meta), Some(b_video_meta)) => {
+                if a_video_meta.height != b_video_meta.height {
+                    b_video_meta.height.cmp(&a_video_meta.height)
+                } else if a_video_meta.video_frame_rate != b_video_meta.video_frame_rate {
+                    b_video_meta.video_frame_rate.partial_cmp(&a_video_meta.video_frame_rate)
+                        .unwrap_or_else(|| b.file_meta.size.cmp(&a.file_meta.size))
+                } else {
+                    b.file_meta.size.cmp(&a.file_meta.size)
+                }
+            }
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => b.file_meta.size.cmp(&a.file_meta.size)
+        }
+    }
+
     pub fn mime_type(&self) -> &'static str {
         let (_stem, extension) = self.file_name.rsplit_once('.').unwrap();
 

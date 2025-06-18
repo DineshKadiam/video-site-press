@@ -276,7 +276,7 @@ pub fn player(
         subtitle_tracks = String::new();
     };
 
-    let version_selector_options = video.versions
+    let version_selector_options = video.versions_desc_by_fidelity()
         .iter()
         .map(|version| {
             let video_meta = version.video_meta_unchecked();
@@ -561,6 +561,9 @@ pub fn unlisted_badge(translations: &Translations) -> String {
     format!(r#"<span class="unlisted_badge">{t_not_public}</span>"#)
 }
 
+/// A ring with slices and a play button in the middle, displayed on
+/// the "intro" screen of the video player. Lets people choose the resolution
+/// to watch the video in (and simultaneously start playback).
 fn versions_ring(
     recommended_version: &VideoFile,
     video: &Video,
@@ -582,7 +585,9 @@ fn versions_ring(
 
     let mut largest_size = 0;
 
-    for version in &video.versions {
+    let versions = video.versions_asc_by_fidelity();
+
+    for version in &versions {
         let file_name = &version.file_name;
         let size = version.file_meta.size;
         let resolution = version.vertical_resolution_label();
@@ -593,8 +598,6 @@ fn versions_ring(
             largest_size = size;
         }
     }
-
-    sizes.sort_unstable_by(|a, b| a.2.cmp(&b.2));
 
     // Draws a ring segment - we start at 12 o'clock and go clockwise.
     let slice = |

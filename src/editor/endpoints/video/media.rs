@@ -181,7 +181,7 @@ pub fn media_page(
     let versions = if video.versions.is_empty() {
         String::new()
     } else {
-        let versions = video.versions_desc_by_quality();
+        let versions = video.versions_desc_by_fidelity();
 
         let mut duration_range = None;
 
