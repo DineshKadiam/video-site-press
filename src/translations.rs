@@ -15,7 +15,7 @@ pub struct Translations {
     pub active: &'static str,
     pub adaptive: &'static str,
     pub add_link: &'static str,
-    adding_xxx: &'static str,
+    adding_file_xxx: &'static str,
     pub advanced_settings: &'static str,
     pub already_deploying_can_only_deploy_again_when_current_deployment_is_finished: &'static str,
     pub atom_description: &'static str,
@@ -27,6 +27,8 @@ pub struct Translations {
     pub background_jobs: &'static str,
     pub banner_description: &'static str,
     pub banner_image: &'static str,
+    pub beginning_deployment_over_secure_ftp_tls_ssl: &'static str,
+    pub beginning_deployment_over_insecure_ftp_unencrypted: &'static str,
     pub best: &'static str,
     pub browser_support_unclear: &'static str,
     pub cancel: &'static str,
@@ -51,6 +53,7 @@ pub struct Translations {
     pub create_playlist: &'static str,
     pub create_subcollection: &'static str,
     pub create_video: &'static str,
+    creating_directory_xxx: &'static str,
     pub dangerous_actions: &'static str,
     pub dark: &'static str,
     pub dark_color_scheme: &'static str,
@@ -66,12 +69,15 @@ pub struct Translations {
     pub deleting_the_collection_text: &'static str,
     pub deleting_the_playlist_text: &'static str,
     pub deleting_the_video_text: &'static str,
-    deleting_xxx: &'static str,
+    deleting_directory_xxx: &'static str,
+    deleting_file_xxx: &'static str,
     pub deploy: &'static str,
     pub deploying: &'static str,
     pub deployment: &'static str,
+    pub deployment_completed_successfully: &'static str,
     pub deployment_configuration_could_not_be_verified: &'static str,
     pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
+    pub deployment_steps_successfully_determined_file_synchronization_will_now_commence: &'static str,
     pub ftp_config_password_label: &'static str,
     pub ftp_config_path_label: &'static str,
     pub ftp_config_port_label: &'static str,
@@ -189,7 +195,6 @@ pub struct Translations {
     pub release_date_descending: &'static str,
     pub render_additional_format: &'static str,
     pub render_format: &'static str,
-    replacing_xxx: &'static str,
     pub replay: &'static str,
     pub report_a_bug: &'static str,
     pub resolution: &'static str,
@@ -241,6 +246,7 @@ pub struct Translations {
     pub update_subtitles: &'static str,
     pub update_video: &'static str,
     updating_collection_from_editor_currently_not_allowed: &'static str,
+    updating_file_xxx: &'static str,
     updating_playlist_from_editor_currently_not_allowed: &'static str,
     updating_site_from_editor_currently_not_allowed: &'static str,
     updating_video_from_editor_currently_not_allowed: &'static str,
@@ -268,8 +274,12 @@ pub struct Translations {
 }
 
 impl Translations {
-    pub fn adding_xxx(&self, path: &str) -> String {
-        self.adding_xxx.replace("{path}", path)
+    pub fn adding_file_xxx(&self, path: &str) -> String {
+        self.adding_file_xxx.replace("{path}", path)
+    }
+
+    pub fn creating_directory_xxx(&self, path: &str) -> String {
+        self.creating_directory_xxx.replace("{path}", path)
     }
 
     pub fn de() -> Translations {
@@ -282,7 +292,7 @@ impl Translations {
             active: "Aktiv",
             adaptive: "Adaptiv",
             add_link: "Link hinzufügen",
-            adding_xxx: "{path} wird hinzugefügt",
+            adding_file_xxx: "Datei {path} wird hinzugefügt",
             advanced_settings: "Erweiterte Einstellungen",
             already_deploying_can_only_deploy_again_when_current_deployment_is_finished: "Deployment läuft bereits, es kann erst wieder deployed werden wen das aktuelle Deployment abgeschlossen ist.",
             atom_description: "Ein simpler, hauptsächlich textbasierter Feed der nur zu den Video und Audio-Inhalten auf der Website linkt.",
@@ -294,6 +304,8 @@ impl Translations {
             background_jobs: "Hintergrund Berechnungen",
             banner_description: "Banner Beschreibung",
             banner_image: "Banner",
+            beginning_deployment_over_secure_ftp_tls_ssl: "Initiiere Deployment über sicheres FTPS (TLS/SSL)",
+            beginning_deployment_over_insecure_ftp_unencrypted: "Initiiere Deployment über unsicheres FTP (unverschlüsselt)",
             best: "Beste",
             browser_support_unclear: "Browserunterstützung unklar",
             cancel: "Abbrechen",
@@ -318,6 +330,7 @@ impl Translations {
             create_playlist: "Playlist erstellen",
             create_subcollection: "Collection erstellen",
             create_video: "Video erstellen",
+            creating_directory_xxx: "Verzeichnis {path} wird erstellt",
             dangerous_actions: "Gefährliche Aktionen",
             dark: "Dunkel",
             dark_color_scheme: "Dunkles Farbschema",
@@ -333,12 +346,15 @@ impl Translations {
             deleting_the_collection_text: "Beim Löschen der Collection werden das Collection Manifest, das Banner und alle Subcollections, Playlisten und Videos in der Collection gelöscht. Wenn die Collection die Seite selbst ist, werden das Seitenmanifest und die Seite selbst nicht gelöscht, die Seite kann also anschließend als Collection, Playlist oder Video reinitialisiert werden.",
             deleting_the_playlist_text: "Beim Löschen der Playlist werden das Playlist Manifest, das Banner und alle Videos in der Playlist gelöscht. Wenn die Seite selbst eine Playlist ist, werden das Seitenmanifest und die Seite selbst nicht gelöscht, die Seite kann also anschließend als Collection, Playlist oder Video reinitialisiert werden.",
             deleting_the_video_text: "Beim Löschen des Videos werden das Video Manifest, das Poster und alle Versionen des Videos gelöscht. Wenn die Seite selbst ein Video ist, werden das Seitenmanifest und die Seite selbst nicht gelöscht, die Seite kann also anschließend als Collection, Playlist oder Video reinitialisiert werden.",
-            deleting_xxx: "{path} wird gelöscht",
+            deleting_directory_xxx: "Verzeichnis {path} wird gelöscht",
+            deleting_file_xxx: "Datei {path} wird gelöscht",
             deploy: "Deployen",
             deploying: "Am Deployen",
             deployment: "Deployment",
+            deployment_completed_successfully: "Deployment erfolgreich abgeschlossen",
             deployment_configuration_could_not_be_verified: "Die Deployment Konfiguration konnte nicht verifiziert werden.",
             deployment_configuration_is_incomplete_can_not_deploy: "Die Deployment Konfiguration ist nicht vollständig, deshalb kann nicht deployed werden.",
+            deployment_steps_successfully_determined_file_synchronization_will_now_commence: "Erforderliche Deploymentschritte erfolgreich ermittelt, die Dateiensynchronisation beginnt nun",
             description: "Beschreibung",
             disabled: "Deaktiviert",
             documentation: "Dokumentation",
@@ -456,7 +472,6 @@ impl Translations {
             release_date_descending: "Veröffentlichungsdatum Absteigend (Dez, Nov, Okt)",
             render_additional_format: "Zusätzliches Format rendern",
             render_format: "Format rendern",
-            replacing_xxx: "{path} wird ersetzt",
             replay: "Erneut abspielen",
             report_a_bug: "Problem melden",
             resolution: "Auflösung",
@@ -513,6 +528,7 @@ impl Translations {
             update_subtitles: "Untertitel speichern",
             update_video: "Video speichern",
             updating_collection_from_editor_currently_not_allowed: r#"Die Collection '{collection_title}' kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
+            updating_file_xxx: "Datei {path} wird aktualisiert",
             updating_playlist_from_editor_currently_not_allowed: r#"Die Playlist '{playlist_title}' kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
             updating_site_from_editor_currently_not_allowed: r#"Die Seite kann im Editor aktuell nicht aktualisiert werden da ihr Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
             updating_video_from_editor_currently_not_allowed: r#"Das Video '{video_title}' kann im Editor aktuell nicht aktualisiert werden da sein Manifest ({manifest_path}) mindestens einen Fehler enthält."#,
@@ -540,8 +556,12 @@ impl Translations {
         }
     }
 
-    pub fn deleting_xxx(&self, path: &str) -> String {
-        self.deleting_xxx.replace("{path}", path)
+    pub fn deleting_directory_xxx(&self, path: &str) -> String {
+        self.deleting_directory_xxx.replace("{path}", path)
+    }
+
+    pub fn deleting_file_xxx(&self, path: &str) -> String {
+        self.deleting_file_xxx.replace("{path}", path)
     }
 
     pub fn en() -> Translations {
@@ -554,7 +574,7 @@ impl Translations {
             active: "Active",
             adaptive: "Adaptive",
             add_link: "Add Link",
-            adding_xxx: "Adding {path}",
+            adding_file_xxx: "Adding file {path}",
             advanced_settings: "Advanced Settings",
             already_deploying_can_only_deploy_again_when_current_deployment_is_finished: "Already deploying, can only deploy again when the current deployment is finished.",
             atom_description: "A simple, mostly text based feed that only links to video and audio content on the website.",
@@ -566,6 +586,8 @@ impl Translations {
             background_jobs: "Background Jobs",
             banner_description: "Banner Description",
             banner_image: "Banner Image",
+            beginning_deployment_over_secure_ftp_tls_ssl: "Beginning deployment over secure FTP (TLS/SSL)",
+            beginning_deployment_over_insecure_ftp_unencrypted: "Beginning deployment over insecure FTP (unencrypted)",
             best: "Best",
             browser_support_unclear: "Browser support unclear",
             cancel: "Cancel",
@@ -590,6 +612,7 @@ impl Translations {
             create_playlist: "Create Playlist",
             create_subcollection: "Create Subcollection",
             create_video: "Create Video",
+            creating_directory_xxx: "Creating directory {path}",
             dangerous_actions: "Dangerous actions",
             dark: "Dark",
             dark_color_scheme: "Dark Color Scheme",
@@ -605,12 +628,15 @@ impl Translations {
             deleting_the_collection_text: "Deleting the collection removes the collection manifest, banner image, and all subcollections, playlists and videos in the collection. If the collection is the site itself, the site manifest and the site itself is not removed, so the site can afterwards be reinitialized as a collection, playlist or video.",
             deleting_the_playlist_text: "Deleting the playlist removes the playlist manifest, banner image, and all videos contained in the playlist. If the site itself is a playlist, the site manifest and the site itself is not removed, so the site can afterwards be reinitialized as a collection, playlist or video.",
             deleting_the_video_text: "Deleting the video removes the video manifest, poster image, and all versions of the video. If the site itself is a video, the site manifest and the site itself is not removed, so the site can afterwards be reinitialized as a collection, playlist or video.",
-            deleting_xxx: "Deleting {path}",
+            deleting_directory_xxx: "Deleting directory {path}",
+            deleting_file_xxx: "Deleting file {path}",
             deploy: "Deploy",
             deploying: "Deploying",
             deployment: "Deployment",
+            deployment_completed_successfully: "Deployment completed successfully",
             deployment_configuration_could_not_be_verified: "The deployment configuration could not be verified.",
             deployment_configuration_is_incomplete_can_not_deploy: "The deployment configuration is not complete, therefore deployment is not possible.",
+            deployment_steps_successfully_determined_file_synchronization_will_now_commence: "Deployment steps successfully determined, file synchronization will now commence",
             description: "Description",
             disabled: "Disabled",
             documentation: "Documentation",
@@ -728,7 +754,6 @@ impl Translations {
             release_date_descending: "Release Date Descending (Dec, Nov, Oct)",
             render_additional_format: "Render Additional Format",
             render_format: "Render Format",
-            replacing_xxx: "Replacing {path}",
             replay: "Replay",
             report_a_bug: "Report a bug",
             resolution: "Resolution",
@@ -786,6 +811,7 @@ impl Translations {
             update_subtitles: "Update Subtitles",
             update_video: "Update Video",
             updating_collection_from_editor_currently_not_allowed: r#"Updating the collection '{collection_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
+            updating_file_xxx: "Updating file {path}",
             updating_playlist_from_editor_currently_not_allowed: r#"Updating the playlist '{playlist_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
             updating_site_from_editor_currently_not_allowed: r#"Updating the site from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
             updating_video_from_editor_currently_not_allowed: r#"Updating the video '{video_title}' from the editor is currently not allowed because its manifest ({manifest_path}) contains at least one error."#,
@@ -823,10 +849,6 @@ impl Translations {
     ) -> String {
         self.public_address_must_be_configured_for_deployment_text
             .replace("{site_settings_url}", site_settings_url)
-    }
-
-    pub fn replacing_xxx(&self, path: &str) -> String {
-        self.replacing_xxx.replace("{path}", path)
     }
 
     pub fn resolve_the_issue_on_disk_or_on_manifest_page(
@@ -871,6 +893,10 @@ impl Translations {
             .replace("{manifest_path}", manifest_path)
     }
 
+    pub fn updating_file_xxx(&self, path: &str) -> String {
+        self.updating_file_xxx.replace("{path}", path)
+    }
+
     pub fn updating_playlist_from_editor_currently_not_allowed(
         &self,
         playlist_title: &str,
@@ -912,8 +938,10 @@ fn check_translations() {
     ];
 
     for translations in &locales {
-        assert!(&translations.adding_xxx.contains("{path}"));
-        assert!(&translations.deleting_xxx.contains("{path}"));
+        assert!(&translations.adding_file_xxx.contains("{path}"));
+        assert!(&translations.creating_directory_xxx.contains("{path}"));
+        assert!(&translations.deleting_file_xxx.contains("{path}"));
+        assert!(&translations.deleting_directory_xxx.contains("{path}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
@@ -925,6 +953,7 @@ fn check_translations() {
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{manifest_path}"));
+        assert!(&translations.updating_file_xxx.contains("{path}"));
         assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{playlist_title}"));
         assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.updating_site_from_editor_currently_not_allowed.contains("{manifest_path}"));
