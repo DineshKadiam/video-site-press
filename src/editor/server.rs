@@ -131,7 +131,6 @@ pub async fn start(
                 )
                 .route("/splash_logo.svg", get().to(splash_logo))
                 .route("/styles.css", get().to(styles))
-                .route("/styles.css", get().to(styles))
                 .route("/video/add-link/{site_path:.*}", post().to(video::add_link))
                 .route("/video/dangerous-actions/{site_path:.*}", get().to(video::dangerous_actions))
                 .route("/video/delete/{site_path:.*}", post().to(video::delete))
