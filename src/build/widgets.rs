@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::path::Path;
 use std::sync::Arc;
 
 use indoc::formatdoc;
@@ -203,14 +204,16 @@ pub fn player(
     let recommended_version = video.recommended_version().unwrap();
 
     let poster = match &video.poster {
-        Some(poster) => match &poster.assets {
-            Some(poster_assets) => {
-                let largest = poster_assets.largest();
-                let height = largest.height;
-                let width = largest.width;
-                format!(r#"poster="{video_prefix}poster_{width}x{height}.jpg""#)
-            }
-            None => format!(r#"poster="{video_prefix}poster.jpg""#)
+        Some(poster) => {
+            // TODO: Compute, cache and use a compressed/normalized (high-res, but
+            // still constrained to a maximum resolution) version of the poster
+            // for use here
+            let original_extension = Path::new(&poster.file_name)
+                .extension()
+                .unwrap()
+                .to_string_lossy();
+
+            format!(r#"poster="{video_prefix}poster.{original_extension}""#)
         }
         None => String::new()
     };
@@ -305,7 +308,10 @@ pub fn player(
         </div>
     "#);
 
-    let duration = recommended_version.video_meta.as_ref().unwrap().duration;
+    let recommended_version_meta = recommended_version.video_meta.as_ref().unwrap();
+
+    let aspect_ratio = recommended_version_meta.aspect_ratio();
+    let duration = recommended_version_meta.duration;
     let duration_formatted = precise_duration(duration);
     let src_escaped = urlencoding::encode(&recommended_version.file_name);
 
@@ -382,6 +388,9 @@ pub fn player(
     let play_icon = icons::play(translations.play);
     let t_replay = translations.replay;
     formatdoc!(r#"
+        <style>
+            :root {{ --video-aspect: {aspect_ratio}; }}
+        </style>
         <div class="player_wrapper" data-state="intro">
             <div class="player_intro">
                 {versions_ring_rendered}

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
+use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
@@ -380,12 +381,21 @@ fn build_video(
                     video_build_dir.join(format!("poster_{}x{}.jpg", asset.width, asset.height))
                 );
             }
-        } else {
-            hard_link_or_copy(
-                context.site_dir.join(video.site_path.filesystem_relative()).join(&poster.file_name),
-                video_build_dir.join("poster.jpg")
-            );
         }
+
+        // TODO: Compute, cache and use a compressed/normalized (high-res, but
+        // still constrained to a maximum resolution) version of the poster
+        // for use here
+        let original_extension = Path::new(&poster.file_name)
+            .extension()
+            .unwrap()
+            .to_string_lossy();
+        let original_filename = format!("poster.{original_extension}");
+
+        hard_link_or_copy(
+            context.site_dir.join(video.site_path.filesystem_relative()).join(&poster.file_name),
+            video_build_dir.join(original_filename)
+        );
     }
 
     for (index, subtitle_file) in video.subtitles.iter().enumerate() {

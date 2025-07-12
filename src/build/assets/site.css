@@ -288,6 +288,7 @@ img {
 }
 .player_wrapper {
     color: var(--l-2);
+    margin-top: 4rem;
     position: relative;
 }
 .player_wrapper button {
@@ -302,7 +303,17 @@ img {
 .player_wrapper > *:not(video) { z-index: 1; }
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
 .player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
-.player_wrapper:not(:fullscreen) video { max-height: 80vh; }
+.player_wrapper:not(:fullscreen) video {
+    aspect-ratio: var(--video-aspect);
+    max-height: 60dvh;
+}
+/* With portrait (tablet/mobile) viewports we allow videos to be taller */
+@media (max-aspect-ratio: 1/1) {
+    .player_wrapper:not(:fullscreen) video { max-height: 68dvh; }
+}
+@media (max-aspect-ratio: 2/3) {
+    .player_wrapper:not(:fullscreen) video { max-height: 76dvh; }
+}
 .playlist {
     display: flex;
     flex-direction: column;
@@ -617,13 +628,9 @@ video {
 @media (max-width: 66rem) {
     footer { width: calc(100% - 2rem); }
 }
-@media (max-width: 99.999rem) {
-    .player_wrapper { margin-top: 4rem; }
-}
 @media (min-width: 100rem) {
     .center { max-width: 64vw; }
     footer { width: 64vw; }
-    .player_wrapper { margin-top: calc(50dvh - 50% / var(--poster-aspect) - 6rem); }
 }
 @media (min-width: 110rem) {
     .videos_grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
