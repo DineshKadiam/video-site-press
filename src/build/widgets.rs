@@ -281,13 +281,13 @@ pub fn player(
         .map(|version| {
             let video_meta = version.video_meta_unchecked();
 
-            let file_name = &version.file_name;
+            let file_name_escaped = urlencoding::encode(&version.file_name);
             let height = video_meta.height;
 
             let size_humanized = human_size(version.file_meta.size);
 
             formatdoc!(r#"
-                <button data-label="{height}p" data-src="{video_prefix}{file_name}">
+                <button data-label="{height}p" data-src="{video_prefix}{file_name_escaped}">
                     <span class="active_marker_container">{active_marker_icon}</span> <strong>{height}p</strong>&nbsp;&nbsp;<small>{size_humanized}</small>
                 </button>
             "#)
@@ -307,7 +307,7 @@ pub fn player(
 
     let duration = recommended_version.video_meta.as_ref().unwrap().duration;
     let duration_formatted = precise_duration(duration);
-    let src = &recommended_version.file_name;
+    let src_escaped = urlencoding::encode(&recommended_version.file_name);
 
     let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
 
@@ -417,7 +417,7 @@ pub fn player(
                     </div>
                 </div>
             </div>
-            <video data-duration="{duration}" playsinline {poster} preload="none" src="{video_prefix}{src}">
+            <video data-duration="{duration}" playsinline {poster} preload="none" src="{video_prefix}{src_escaped}">
                 {subtitle_tracks}
             </video>
         </div>
@@ -717,7 +717,8 @@ fn versions_ring(
         let size_humanized = human_size(*size);
 
         let default = &recommended_version.file_name == *file_name;
-        let src = format!("{video_prefix}{file_name}");
+        let file_name_escaped = urlencoding::encode(file_name);
+        let src = format!("{video_prefix}{file_name_escaped}");
         let slice_rendered = slice(
             arc_angle,
             begin_angle,
