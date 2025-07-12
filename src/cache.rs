@@ -22,8 +22,10 @@ use crate::util;
 ///
 /// History:
 /// 1->2 (2024-04-27): VideoMeta fields changed, but bincode did not pick it up, resulting in faulty decodes
-/// 2->3 (2024-05-4): VideoMeta fields changed, likely faulty decodes from bincode
-const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_3";
+/// 2->3 (2024-05-04): VideoMeta fields changed, likely faulty decodes from bincode
+/// 3->4 (2025-07-12): Our ffprobe routine now detects rotation side data, we invalidate the cache to ensure
+///                    previously (wrongly) computed height/width is recomputed to take this into account.
+const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_4";
 
 pub struct Cache {
     pub poster_assets: Vec<PosterAssetsCached>,

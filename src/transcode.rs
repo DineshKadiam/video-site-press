@@ -72,7 +72,17 @@ struct FFprobeStream {
     pub nb_frames: Option<String>, // int
     pub pix_fmt: Option<String>,
     pub sample_rate: Option<String>, // int
+    pub side_data_list: Option<Vec<FFprobeStreamSideData>>,
     pub width: Option<usize>
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+struct FFprobeStreamSideData {
+    pub displaymatrix: Option<String>,
+    pub rotation: Option<i16>,
+    /// We are currently only interested in "Display Matrix"
+    pub side_data_type: String
 }
 
 /// With `timecode` (in seconds) we specify at which point in the video we
@@ -396,7 +406,7 @@ pub fn encode(
                 fs::rename(&temp_path, &output_path).unwrap();
 
                 let file_meta = FileMeta::new(&output_path);
-                
+
                 let video_version = VideoFile {
                     file_meta,
                     file_name: output_file,
@@ -476,6 +486,25 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
 
                                     if height.is_none() { height = stream.height; }
                                     if width.is_none() { width = stream.width; }
+
+                                    // If there is side data that indicates the video needs to be
+                                    // rotated for display, we flip width and height in our metadata
+                                    if stream.side_data_list
+                                        .as_ref()
+                                        .is_some_and(|side_data_list| {
+                                            side_data_list
+                                                .iter()
+                                                .any(|side_data| {
+                                                    side_data.side_data_type == "Display Matrix" &&
+                                                    side_data.rotation.is_some_and(|rotation|
+                                                        rotation.abs() % 180 == 90
+                                                    )
+                                                })
+                                        }) {
+                                        let height_memo = height;
+                                        height = width;
+                                        width = height_memo;
+                                    }
                                 }
                                 // For now crash in this case, just to be aware if there
                                 // are other things that we might want to leverage here.
