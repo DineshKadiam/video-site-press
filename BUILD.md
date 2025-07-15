@@ -13,6 +13,13 @@ What you need to have installed to build and run hyper8:
 
   Install [rust](https://rust-lang.org) on your system following the official [installation instructions](https://www.rust-lang.org/tools/install).
 
+- **OpenSSL (including headers)**
+
+  This will likely already be installed on your system.
+
+  If it isn't, your search engine will probably hint you in the right direction with the query "[your-system-name] openssl headers".
+  For example, on Debian 12, the command for installation is: `apt install libssl-dev`
+
 - **FFmpeg (any somewhat recent version, ffprobe must be included)**
 
   Install [ffmpeg](https://ffmpeg.org) (including the ffprobe binary) on your system, see [this page](https://ffmpeg.org/download.html) for instructions for various platforms.
