@@ -16,14 +16,19 @@ Thanks everyone for your support!
 [Bri Hefele](https://brhfl.com)<br>
 [Christian Pacaud](https://www.christianpacaud.com/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
+[dec23k](https://mastodon.ie/@dec23k)<br>
 [dérive](https://derive.at)<br>
 [Edgar Aichinger](https://build.opensuse.org/users/edogawa)<br>
 hatsch<br>
 [Ian Menz](https://norcal.social/@CallMePlayer)<br>
-[Internet Stiftung](https://www.internetstiftung.at/)
+[Internet Stiftung](https://www.internetstiftung.at/)<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
+[Mads Kjeldgaard](https://madskjeldgaard.dk/)<br>
+[Matthias Bilger](https://codeberg.org/m42e)<br>
 [Meljoann](https://www.meljoann.com/)<br>
+[Robert Pfotenhauer](https://pftnhr.xyz)<br>
 [Sam](https://ethicalrevolution.co.uk/)<br>
 [sknob](https://sknob.fr/)<br>
 [surface mount dove](https://taube.xyz/)<br>
-[Walter Ebert](https://walterebert.com/)
+[Walter Ebert](https://walterebert.com/)<br>
+[Wolfgang Dorninger](https://dorninger.servus.at)
