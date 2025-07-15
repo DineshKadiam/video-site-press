@@ -5,12 +5,32 @@
 
 # Changelog
 
+## 0.21
+
+Released on July 15, 2025
+
+### Built-in FTP deployment
+
+- Introduce built-in FTP deployment (4a4d62c)
+- Use content-aware syncing to minimize service interruptions during deployment (a272944)
+
+### Fixes and improvements
+
+- Improve responsive behavior and fix glitches with portrait aspect ratio videos (b02a1e8)
+- Ensure version selector in player controls is ordered descending by fidelity (28960a7)
+- Url-encode arbitrary video filenames for src attribute usage (b791dbc)
+- Transpose resolution when rotational side data in video stream is present (aa1888b)
+
 ## 0.20.1
+
+Released on May 22, 2025
 
 - Source feeds from public (instead of published) videos (9fac2ad)
 - Add missing persistence of feeds option to collection/playlist manifests (ddae340)
 
 ## 0.20
+
+Released on May 22, 2025
 
 ### Player improvements
 
@@ -42,6 +62,8 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 - Perceptionally tweak horizontal centering of resolution selector play icon (6ce9510)
 
 ## 0.19
+
+Released on May 06, 2025
 
 ### Feeds
 
@@ -83,6 +105,8 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 - Print Ctrl+C termination hint when starting server (aad087a)
 
 ## 0.18
+
+Released on Mar 11, 2025
 
 ### Embeds
 
@@ -132,10 +156,14 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 
 ## 0.17.1
 
+Released on Aug 25, 2024
+
 - Handle ffprobe output variations caused by unrecognized data streams in video (d4afda7)
 - Play videos inline on iOS (Walter Ebert, feb8c65)
 
 ## 0.17
+
+Released on Jul 15, 2024
 
 - Fix critical playback issue in older Safari browsers (Walter Ebert, c835f43)
 - Propagate visibility upwards when moving video into new collection or playlist (a9ac6a3)
@@ -149,6 +177,8 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 
 ## 0.16
 
+Released on Jul 02, 2024
+
 - Minor vertical margin tweaks in build (ff55695)
 - Add dark warm, light deep and light warm theme variants (4f4aff9, 173b40a)
 - Communicate inherited visibility (offline/unlisted) in build and tree view (c03ad47)
@@ -159,6 +189,8 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 - Fix title sometimes not being assigned when creating playlist/subcollection (80fdc47)
 
 ## 0.15
+
+Released on Jun 28, 2024
 
 - Offer automatic and forced original frame rate option for encoding (72149a0)
 - Display full public url context as prefix for all permalink input fields (6763d77)
@@ -189,6 +221,8 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 
 ## 0.14
 
+Released on Jun 17, 2024
+
 - Improve readability of form grouping and various editor widgets (5eaf037)
 - Link site url from deployment page (7fc88c8)
 - Open external links in new tabs (790f033)
@@ -207,5 +241,7 @@ Disable graphical editing/prevent graphical updates from editor while there are 
 - Fix critical markdown subset parsing issue when encountering multiple inline links (a2e8ff6)
 
 ## 0.13
+
+Released on May 28, 2024
 
 First official beta release
