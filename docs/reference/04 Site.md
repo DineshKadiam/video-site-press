@@ -151,10 +151,10 @@ theme: adaptive_cool
 ```
 
 The `theme` option can be set to any of these:
-- `adaptive_cool`,
-- `adaptive_deep`,
-- `adaptive_neutral`,
-- `adaptive_warm`,
+- `adaptive_cool`
+- `adaptive_deep`
+- `adaptive_neutral`
+- `adaptive_warm`
 - `dark_cool`
 - `dark_deep`
 - `dark_neutral`
