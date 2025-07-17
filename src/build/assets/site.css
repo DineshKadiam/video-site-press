@@ -291,13 +291,19 @@ img {
     margin-top: 4rem;
     position: relative;
 }
+.player_wrapper a,
+.player_wrapper button {
+    color: var(--l-2);
+}
+.player_wrapper a:hover,
+.player_wrapper button:hover {
+    color: var(--l-1);
+}
 .player_wrapper button {
     background: none;
     border: none;
-    color: var(--l-2);
     cursor: pointer;
 }
-.player_wrapper button:hover { color: var(--l-1); }
 .player_wrapper button.dimmed { color: var(--mg); }
 .player_wrapper button.dimmed:hover { color: var(--l-3); }
 .player_wrapper > *:not(video) { z-index: 1; }
