@@ -195,6 +195,7 @@ img {
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
 .player_wrapper:not([data-state="playing"]) .player_controls { display: none; }
 .player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
+.player_wrapper:not(:fullscreen) video { aspect-ratio: var(--video-aspect); }
 .reading_width { max-width: 32rem; }
 .right_playback_controls { position: relative; }
 #speed .x { font-size: .8em; }
