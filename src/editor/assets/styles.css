@@ -372,6 +372,83 @@ p a {
 .permalink_split {
     display: flex;
 }
+.poster_preview_outer {
+    aspect-ratio: 1.78;
+    background: top left/1rem var(--checkerboard);
+}
+.poster_preview_outer img {
+    display: block;
+    max-height: 100%;
+    max-width: 100%;
+}
+.poster_preview_outer .poster_frame {
+    margin-inline: auto;
+    max-height: 100%;
+    max-width: 100%;
+    position: relative;
+}
+.poster_preview_outer .thumbnail_frame_outer {
+    align-items: center;
+    bottom: 0;
+    container-type: size;
+    display: flex;
+    justify-content: center;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 2;
+}
+.poster_preview_outer .thumbnail_frame {
+    aspect-ratio: var(--poster-aspect);
+    background: hsla(202.5, 100%, 49.6%, 0.5);
+    box-sizing: border-box;
+    border: 2px dashed #fff;
+    height: 100%;
+    width: auto;
+}
+@container (aspect-ratio < 1) {
+    .poster_preview_outer .thumbnail_frame {
+        height: auto;
+        width: 100%;
+    }
+}
+.poster_preview_outer .video_frame_outer {
+    align-items: center;
+    aspect-ratio: var(--video-aspect);
+    display: flex;
+    justify-content: center;
+    margin-inline: auto;
+    max-height: 100%;
+    max-width: 100%;
+    position: relative;
+}
+.poster_preview_outer .video_frame {
+    bottom: 0;
+    background: hsla(331.8, 100%, 50%, 0.5);
+    border: 2px dashed #fff;
+    box-sizing: border-box;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 1;
+}
+.poster_preview_legend { margin-block: 1rem; }
+.poster_preview_legend .dot {
+    border-radius: 50%;
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+}
+.poster_preview_legend .dot.thumbnail_frame {
+    background: hsla(202.5, 100%, 49.6%, 0.5);
+    border: 2px dashed #fff;
+}
+.poster_preview_legend .dot.video_frame {
+    background: hsla(331.8, 100%, 50%, 0.5);
+    border: 2px dashed #fff;
+}
 pre.error {
     background: var(--danger);
     border-radius: .2rem;
@@ -561,12 +638,6 @@ svg { fill: currentColor; }
     color: var(--fg-3);
     font-size: .8rem;
     text-align: right;
-}
-.thumbnail {
-    aspect-ratio: 1.78;
-    background: top left/1rem var(--checkerboard);
-    object-fit: contain;
-    width: 100%;
 }
 #toggle-splash svg { pointer-events: none; }
 .tree_view_options {

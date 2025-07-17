@@ -9,6 +9,7 @@ use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
 
 use crate::{
+    AspectRatio,
     Context,
     Language,
     SitePath,
@@ -84,9 +85,43 @@ pub fn edit_poster_page(
             let delete_poster_action = routes::video_delete_poster(video);
             let update_poster_action = routes::video_update_poster(video);
 
+            let poster_aspect_numeric = site.poster_aspect.numeric();
+            let poster_aspect_representation = site.poster_aspect.representation();
+            let video_aspect_numeric = video.recommended_version()
+                .and_then(|video_file| video_file.video_meta.as_ref())
+                .map(|video_meta| video_meta.aspect_ratio())
+                .unwrap_or(poster_aspect_numeric);
+            let video_aspect_representation = AspectRatio::approximate_representation(video_aspect_numeric);
+
+            let t_thumbnail_format = translations.thumbnail_format;
+            let t_video_format = translations.video_format;
             formatdoc!(r#"
-                <img {alt}class="thumbnail" src="{src}">
+                <style>
+                    :root {{
+                        --poster-aspect: {poster_aspect_numeric};
+                        --video-aspect: {video_aspect_numeric};
+                    }}
+                </style>
+                <div class="poster_preview_outer">
+                    <div class="video_frame_outer">
+                        <div class="video_frame"></div>
+                        <div class="poster_frame">
+                            <div class="thumbnail_frame_outer">
+                                <div class="thumbnail_frame"></div>
+                            </div>
+                            <img {alt} src="{src}">
+                        </div>
+                    </div>
+                </div>
                 <div>{file_name}</div>
+                <div class="poster_preview_legend">
+                    <div>
+                        <span class="dot video_frame"></span> {t_video_format} ({video_aspect_representation})
+                    </div>
+                    <div>
+                        <span class="dot thumbnail_frame"></span> {t_thumbnail_format} ({poster_aspect_representation})
+                    </div>
+                </div>
                 <div class="button_group">
                     {poster_upload_button}
                     <form action="{delete_poster_action}" data-confirm data-confirm-label="{t_delete_poster}" data-confirm-text="{t_really_delete}" method="post">
