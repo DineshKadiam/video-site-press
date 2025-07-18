@@ -948,6 +948,7 @@ fn order_sync_actions_quality_approach(actions: &mut Vec<SyncAction>) {
     })
 }
 
+// TODO: Implement
 // Tight storage quota strategy (prioritize keeping used storage as low as possible at every point of the deployment)
 // "Prioritize avoidance of storage quota overflows during deployment"
 //
@@ -956,9 +957,9 @@ fn order_sync_actions_quality_approach(actions: &mut Vec<SyncAction>) {
 // 3. Delete all directories (recursively - going from deepest to shallowest path)
 // 4. Replace updated files, going from biggest to smallest
 // 5. Upload all completely NEW files, going from biggest to smallest
-fn order_sync_actions_survival_approach(actions: &mut Vec<SyncAction>) {
-    unimplemented!()
-}
+// fn order_sync_actions_survival_approach(actions: &mut Vec<SyncAction>) {
+//     unimplemented!()
+// }
 
 pub fn perform_deploy(
     context_ref: &Arc<Context>,

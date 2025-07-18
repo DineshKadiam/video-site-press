@@ -199,10 +199,6 @@ img {
 .reading_width { max-width: 32rem; }
 .right_playback_controls { position: relative; }
 #speed .x { font-size: .8em; }
-.split {
-    display: flex;
-    row-gap: 1rem;
-}
 .selector_control {
     align-items: center;
     display: flex;

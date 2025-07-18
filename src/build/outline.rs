@@ -638,7 +638,7 @@ impl TraversalStep<'_> {
         "#)
     }
 
-    fn crumb_playlist(
+    pub fn crumb_playlist(
         playlist: &Playlist,
         prefix: &str,
         site: &Site,

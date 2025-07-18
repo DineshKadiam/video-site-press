@@ -15,7 +15,7 @@ use crate::{
     Video
 };
 use crate::build::{AssetHashes, Layout};
-use crate::build::outline::Traversal;
+use crate::build::outline::{Traversal, TraversalStep};
 use crate::build::widgets::{copy_button, links, player, unlisted_badge};
 use crate::icons;
 use crate::util::{
@@ -23,6 +23,9 @@ use crate::util::{
     localized_date_d_mmmm_yyyy
 };
 
+/// Renders a video page. If the video is part of a playlist, the layout is
+/// split in two columns (respectively rows, on mobile), to additionally
+/// display the playlist sidebar.
 pub fn video_html(
     asset_hashes: &AssetHashes,
     context: &Context,
@@ -147,24 +150,48 @@ pub fn video_html(
 
     let links_rendered = links(&site.language, &video.links);
 
-    let body = formatdoc!(r#"
-        {player_rendered}
-        <div class="video_info">
-            <div class="align apart flex" style="margin-top: 2rem;">
-                <div>
-                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
-                    {release_date}
+    let video_content = formatdoc!(r#"
+        <div>
+            {player_rendered}
+            <div class="video_info">
+                <div class="align apart flex" style="margin-top: 2rem;">
+                    <div>
+                        <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
+                        {release_date}
+                    </div>
+                    <div class="actions align flex space">
+                        {copy_link_button}
+                        {r_embed}
+                        {r_downloads}
+                    </div>
                 </div>
-                <div class="actions align flex space">
-                    {copy_link_button}
-                    {r_embed}
-                    {r_downloads}
-                </div>
+                {description}
+                {links_rendered}
             </div>
-            {description}
-            {links_rendered}
         </div>
     "#);
+
+    let body = match playlist {
+        Some(playlist) => {
+            let prefix = "../";
+            let playlist_context = TraversalStep::crumb_playlist(
+                playlist,
+                &prefix,
+                site,
+                Some(video)
+            );
+
+            formatdoc!(r#"
+                <div class="layout_split">
+                    {video_content}
+                    <div class="outline">
+                        {playlist_context}
+                    </div>
+                </div>
+            "#)
+        }
+        None => video_content
+    };
 
     let platform_integration = video.platform_integration();
     if platform_integration.enabled() {

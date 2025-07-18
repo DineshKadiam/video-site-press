@@ -137,8 +137,6 @@ impl Layout {
 
         let version_display = env!("HYPER8_VERSION_DISPLAY");
 
-        let with_sidebar = if traversal.steps.len() > 1 { "with_sidebar" } else { "" };
-
         let e_site_title = html_escape_outside_attribute(site.title());
 
         let mut templates = String::new();
@@ -153,7 +151,7 @@ impl Layout {
 
         let body = formatdoc!(r##"
             <body>
-                <div class="layout {with_sidebar}">
+                <div class="layout">
                     <header>
                         <div class="breadcrumbs">
                             {breadcrumbs}
