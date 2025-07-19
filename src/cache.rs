@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use log::info;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
@@ -27,19 +28,17 @@ use crate::util;
 /// 3->4 (2025-07-12): Our ffprobe routine now detects rotation side data, we invalidate the cache to ensure
 ///                    previously (wrongly) computed height/width is recomputed to take this into account.
 /// 4->5 (2025-07-19): The base CacheItem enum gained another variant (PosterSource)
-const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_5";
+/// "CACHE_VERSION_MARKER_5" -> "cache1.marker" (2025-07-19):
+///     We refactored the entire cache logic to discretely de/serialize and
+///     consider/discard manifests of each content type by their extension
+///     (cache serialization key). We can still reset the entire cache but it
+///     will be needed much less from here on out.
+const CACHE_VERSION_MARKER: &str = "cache1.marker";
 
 pub struct Cache {
     pub poster_assets: Vec<PosterAssetsCached>,
     pub poster_sources: Vec<PosterSourceCached>,
     pub video_meta: Vec<VideoMetaCached>
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum CacheItem {
-    PosterAssets(PosterAssetsCached),
-    PosterSource(PosterSourceCached),
-    VideoMeta(VideoMetaCached)
 }
 
 /// Caches differently sized, preprocessed versions of a poster.
@@ -72,6 +71,13 @@ pub struct PosterSourceCached {
     /// if the site dir directory moves around on disk.
     pub path: String,
     pub poster_meta: PosterMeta
+}
+
+/// Tracks all assets (images and such) and manifests (serialized bincode)
+/// present in the cache directory during the cache retrieval process.
+pub struct Registry {
+    assets: HashMap<String, bool>,
+    manifests: Vec<String>
 }
 
 /// Caches metadata for a video that was (somewhat expensively) computed
@@ -126,11 +132,13 @@ impl Cache {
             .map(|cached| cached.poster_meta.clone())
     }
 
-    /// Scans the cache dir and initializes a HashMap that tracks
-    /// all filenames, mapping them to a usage count (initialized to 0).
-    /// The asset cache version marker is explicitly excluded from this.
-    fn fill_registry(cache_dir: &Path) -> HashMap<String, usize> {
-        let mut artifact_registry: HashMap<String, usize> = HashMap::new();
+    /// Scans the cache dir and initializes:
+    /// 1. A HashMap that tracks all assets, mapping them to a usage count (initialized to 0)
+    /// 2. A Vec that stores all manifests
+    /// The asset cache version marker is explicitly excluded from this, not being
+    /// included in either of the two.
+    fn fill_registry(cache_dir: &Path) -> Registry {
+        let mut registry = Registry::new();
 
         if let Ok(dir_entries) = cache_dir.read_dir() {
             for dir_entry_result in dir_entries {
@@ -141,15 +149,17 @@ impl Cache {
                         .unwrap_or(false) {
                         let file_name = dir_entry.file_name().to_str().unwrap().to_string();
 
-                        if !file_name.ends_with(".bincode") && file_name != CACHE_VERSION_MARKER {
-                            artifact_registry.insert(file_name, 0);
+                        if file_name.ends_with(".bincode") {
+                            registry.manifests.push(file_name);
+                        } else if file_name != CACHE_VERSION_MARKER {
+                            registry.assets.insert(file_name, false);
                         }
                     }
                 }
             }
         }
 
-        artifact_registry
+        registry
     }
 
     fn new() -> Cache {
@@ -160,9 +170,9 @@ impl Cache {
         }
     }
 
-    fn remove_orphaned(artifact_registry: HashMap<String, usize>, cache_dir: &Path) {
-        for (filename, usage_counter) in artifact_registry {
-            if usage_counter == 0 {
+    fn remove_orphaned_assets(cache_dir: &Path, registry: Registry) {
+        for (filename, used) in registry.assets {
+            if !used {
                 eprintln!(
                     "Removing orphaned cache artifact ({}) - it was probably created with a different version of hyper8 or stems from a cancelled background job.",
                     filename
@@ -187,71 +197,109 @@ impl Cache {
             fs::write(version_marker_file, "").unwrap();
         }
 
-        // We register all files found in the cache (except manifests =
-        // bincode files) here before we read the cache manifests. Files
-        // referenced in the manifests that do not appear in the registry
-        // mean that the cache entry is corrupt (we then remove it). The
-        // other way around, every time we find a file in the registry we
-        // increase its usage count (the value in the HashMap). At the end of
-        // the cache retrieval process we know that all files in the registry
-        // with a usage count of 0 are orphaned and can therefore be
-        // removed.
-        let mut artifact_registry = Cache::fill_registry(cache_dir);
+        // We register all assets and manifests found in the cache here before
+        // we begin. Assets referenced in the manifests that do not appear in
+        // the registry mean that the cache entry is corrupt (we then remove
+        // it). The other way around, every time we find an asset in the
+        // registry we mark it as used (inside the value in the HashMap). At
+        // the end of the cache retrieval process we know that all files in
+        // the registry we did not tag as used are orphaned and can therefore
+        // be removed.
+        let mut registry = Cache::fill_registry(cache_dir);
 
-        if let Ok(dir_entries) = cache_dir.read_dir() {
-            for dir_entry_result in dir_entries {
-                if let Ok(dir_entry) = dir_entry_result {
-                    if !dir_entry.file_type().is_ok_and(|file_type| file_type.is_file()) {
-                        continue
-                    }
-
-                    let filename = dir_entry.file_name().to_string_lossy().to_string();
-
-                    if !filename.ends_with(".bincode") { continue }
-
-                    let serialized = fs::read(dir_entry.path()).unwrap();
-
-                    if let Ok(cache_item) = bincode::deserialize(&serialized) {
-                        match cache_item {
-                            CacheItem::PosterAssets(poster_assets) => {
-                                let all_assets = poster_assets.assets.all();
-                                for asset in &all_assets {
-                                    if let Some(usage_counter) = artifact_registry.get_mut(&asset.file_name) {
-                                        *usage_counter += 1;
-                                    } else {
-                                        // If a single asset is in a corrupt state (cached file missing)
-                                        // we delete all other assets and remove the cache entry altogether.
-
-                                        for asset_to_delete in &all_assets {
-                                            let asset_path = cache_dir.join(&asset_to_delete.file_name);
-                                            let _ = fs::remove_file(&asset_path);
-                                        }
-
-                                        eprintln!("Removing corrupted cache item {filename}");
-                                        let _ = fs::remove_file(dir_entry.path());
-                                        break;
-                                    }
-                                }
-
-                                cache.poster_assets.push(poster_assets);
-                            }
-                            CacheItem::PosterSource(poster_source) => {
-                                cache.poster_sources.push(poster_source);
-                            }
-                            CacheItem::VideoMeta(video_meta) => {
-                                cache.video_meta.push(video_meta);
-                            }
-                        }
-                    } else {
-                        eprintln!("Removing incompatible cache item {filename}");
-                        let _ = fs::remove_file(dir_entry.path());
-                    }
-                }
+        for file_name in &registry.manifests {
+            if file_name.ends_with(&format!(".{}.bincode", PosterAssets::CACHE_SERIALIZATION_KEY)) {
+                cache.retrieve_poster_assets(&mut registry.assets, cache_dir, &file_name);
+            } else if file_name.ends_with(&format!(".{}.bincode", PosterMeta::CACHE_SERIALIZATION_KEY)) {
+                cache.retrieve_poster_source(cache_dir, &file_name);
+            } else if file_name.ends_with(&format!(".{}.bincode", VideoMeta::CACHE_SERIALIZATION_KEY)) {
+                cache.retrieve_video_meta(cache_dir, &file_name);
+            } else {
+                info!(
+                    "Removing incompatible cache manifest {file_name} - it was probably created with a different version of Hyper 8."
+                );
+                let _ = fs::remove_file(cache_dir.join(&file_name));
             }
         }
 
-        Cache::remove_orphaned(artifact_registry, cache_dir);
+        Cache::remove_orphaned_assets(cache_dir, registry);
 
         cache
+    }
+
+    fn retrieve_poster_assets(
+        &mut self,
+        assets: &mut HashMap<String, bool>,
+        cache_dir: &Path,
+        file_name: &str
+    ) {
+        let manifest_path = cache_dir.join(file_name);
+
+        if let Some(poster_assets) = PosterAssets::deserialize_cached(&manifest_path) {
+            let all_assets = poster_assets.assets.all();
+            for asset in &all_assets {
+                if let Some(used) = assets.get_mut(&asset.file_name) {
+                    *used = true;
+                } else {
+                    // If a single asset is in a corrupt state (cached file missing)
+                    // we delete all other assets and remove the cache entry altogether.
+
+                    for asset_to_delete in &all_assets {
+                        let asset_path = cache_dir.join(&asset_to_delete.file_name);
+                        let _ = fs::remove_file(&asset_path);
+                    }
+
+                    eprintln!("Removing corrupted poster assets cache item {}", manifest_path.display());
+                    let _ = fs::remove_file(&manifest_path);
+                    return;
+                }
+            }
+
+            self.poster_assets.push(poster_assets);
+        } else {
+            info!(
+                "Removing incompatible poster assets cache manifest ({file_name}) - it was probably created with a different version of Hyper 8."
+            );
+            let _ = fs::remove_file(&manifest_path);
+        }
+    }
+
+    fn retrieve_poster_source(
+        &mut self,
+        cache_dir: &Path,
+        file_name: &str
+    ) {
+        let manifest_path = cache_dir.join(file_name);
+
+        if let Some(poster_source) = PosterMeta::deserialize_cached(&manifest_path) {
+            self.poster_sources.push(poster_source);
+        } else {
+            info!("Removing incompatible poster source cache manifest ({file_name}) - it was probably created with a different version of Hyper 8.");
+            let _ = fs::remove_file(&manifest_path);
+        }
+    }
+
+    fn retrieve_video_meta(
+        &mut self,
+        cache_dir: &Path,
+        file_name: &str
+    ) {
+        let manifest_path = cache_dir.join(file_name);
+
+        if let Some(video_meta) = VideoMeta::deserialize_cached(&manifest_path) {
+            self.video_meta.push(video_meta);
+        } else {
+            info!("Removing incompatible poster source cache manifest ({file_name}) - it was probably created with a different version of Hyper 8.");
+            let _ = fs::remove_file(&manifest_path);
+        }
+    }
+}
+
+impl Registry {
+    pub fn new() -> Registry {
+        Registry {
+            assets: HashMap::new(),
+            manifests: Vec::new()
+        }
     }
 }

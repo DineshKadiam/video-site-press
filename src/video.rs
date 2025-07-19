@@ -11,7 +11,6 @@ use serde_derive::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    CacheItem,
     Context,
     FileMeta,
     HyperDir,
@@ -1270,8 +1269,23 @@ impl VideoFile {
 }
 
 impl VideoMeta {
+    /// Increment this cache serialization key when:
+    /// - The data layout of [VideoMeta] changes
+    /// - The way we compute [VideoMeta] changes
+    ///
+    /// This automatically lets the cache discard poster assets manifests that
+    /// hold incorrect, incompatible or outdated data.
+    pub const CACHE_SERIALIZATION_KEY: &'static str = "video_meta1";
+
     pub fn aspect_ratio(&self) -> f32 {
         self.width as f32 / self.height as f32
+    }
+
+    pub fn deserialize_cached(path: &Path) -> Option<VideoMetaCached> {
+        match fs::read(path) {
+            Ok(bytes) => bincode::deserialize::<VideoMetaCached>(&bytes).ok(),
+            Err(_) => None
+        }
     }
 
     pub fn new(
@@ -1301,15 +1315,18 @@ impl VideoMeta {
     ) {
         let version_path = format!("{}{}", site_path.normalized(), file_name);
 
-        let cache_item = CacheItem::VideoMeta(VideoMetaCached {
+        let cache_item = VideoMetaCached {
             file_meta: file_meta.clone(),
             path: version_path.clone(),
             video_meta: self.clone()
-        });
+        };
 
         let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
 
-        let cache_item_file_name = format!("{}.bincode", hash(&version_path));
+        let cache_item_stem = hash(&version_path);
+        let cache_item_key = VideoMeta::CACHE_SERIALIZATION_KEY;
+
+        let cache_item_file_name = format!("{cache_item_stem}.{cache_item_key}.bincode");
         let cache_item_path = context.cache_dir.join(cache_item_file_name);
 
         fs::write(cache_item_path, cache_item_serialized).unwrap();

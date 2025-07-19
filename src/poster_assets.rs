@@ -3,16 +3,15 @@
 
 use std::fs;
 use std::hash::{DefaultHasher, Hash};
+use std::path::Path;
 
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    CacheItem,
     Context,
     FileMeta,
     PlatformIntegrationImage,
     PosterAssetsCached,
-    PosterMeta,
     SitePath
 };
 use crate::util::hash_closure;
@@ -41,15 +40,6 @@ pub struct PosterAssets {
     pub max_800: Option<PosterAsset>,
     pub max_1280: Option<PosterAsset>,
     pub poster_aspect: f32
-}
-
-#[derive(Clone, Debug)]
-pub struct PosterFile {
-    pub assets: Option<PosterAssets>,
-    pub description: Option<String>,
-    pub file_meta: FileMeta,
-    pub file_name: String,
-    pub poster_meta: Option<PosterMeta>
 }
 
 impl ImgAttributes {
@@ -83,6 +73,14 @@ impl ImgAttributes {
 }
 
 impl PosterAssets {
+    /// Increment this cache serialization key when:
+    /// - The data layout of [PosterAssets] changes
+    /// - The way we compute [PosterAssets] changes
+    ///
+    /// This automatically lets the cache discard poster assets manifests that
+    /// hold incorrect, incompatible or outdated data.
+    pub const CACHE_SERIALIZATION_KEY: &'static str = "poster_assets1";
+
     pub fn all(&self) -> Vec<&PosterAsset> {
         let mut result = Vec::with_capacity(4);
 
@@ -93,6 +91,13 @@ impl PosterAssets {
         if let Some(asset) = &self.max_1280 { result.push(asset); }
 
         result
+    }
+
+    pub fn deserialize_cached(path: &Path) -> Option<PosterAssetsCached> {
+        match fs::read(path) {
+            Ok(bytes) => bincode::deserialize::<PosterAssetsCached>(&bytes).ok(),
+            Err(_) => None
+        }
     }
 
     pub fn img_attributes_up_to_480(&self, base_name: &str, prefix: &str) -> ImgAttributes {
@@ -164,11 +169,11 @@ impl PosterAssets {
         // where needs refactoring.
         let poster_path = format!("{}{}", site_path.normalized(), file_name);
 
-        let cache_item = CacheItem::PosterAssets(PosterAssetsCached {
+        let cache_item = PosterAssetsCached {
             assets: self.clone(),
             file_meta: file_meta.clone(),
             path: poster_path.clone()
-        });
+        };
 
         let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
 
@@ -178,27 +183,12 @@ impl PosterAssets {
             self.poster_aspect.to_string().hash(hasher);
         };
 
-        let cache_item_file_name = format!("{}.bincode", hash_closure(hash));
+        let cache_item_stem = hash_closure(hash);
+        let cache_item_key = PosterAssets::CACHE_SERIALIZATION_KEY;
+
+        let cache_item_file_name = format!("{cache_item_stem}.{cache_item_key}.bincode");
         let cache_item_path = context.cache_dir.join(cache_item_file_name);
 
         fs::write(cache_item_path, cache_item_serialized).unwrap();
-    }
-}
-
-impl PosterFile {
-    pub fn new(
-        assets: Option<PosterAssets>,
-        description: Option<String>,
-        file_meta: FileMeta,
-        file_name: String,
-        poster_meta: Option<PosterMeta>
-    ) -> PosterFile {
-        PosterFile {
-            assets,
-            description,
-            file_meta,
-            file_name,
-            poster_meta
-        }
     }
 }
