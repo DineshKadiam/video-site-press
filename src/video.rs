@@ -384,14 +384,34 @@ impl Video {
                             if let Some((absolute_path, file_name)) = file {
                                 let file_meta = FileMeta::new(&absolute_path);
 
-                                let assets = context.cache.lock().unwrap().fetch_poster_assets(
-                                    &file_meta,
-                                    &file_name,
-                                    site.poster_aspect.numeric(),
-                                    &self.site_path
-                                );
+                                let assets;
+                                let poster_meta;
 
-                                let poster = PosterFile::new(assets, description, file_meta, file_name);
+                                {
+                                    // Obtain lock on the cache, immediately drop it afterwards
+                                    let cache = context.cache.lock().unwrap();
+
+                                    assets = cache.fetch_poster_assets(
+                                        &file_meta,
+                                        &file_name,
+                                        site.poster_aspect.numeric(),
+                                        &self.site_path
+                                    );
+
+                                    poster_meta = cache.fetch_poster_source(
+                                        &file_meta,
+                                        &file_name,
+                                        &self.site_path
+                                    );
+                                }
+
+                                let poster = PosterFile::new(
+                                    assets,
+                                    description,
+                                    file_meta,
+                                    file_name,
+                                    poster_meta
+                                );
                                 self.poster = Some(poster);
                             }
 
@@ -916,21 +936,42 @@ impl Video {
             video.dir_errors.push(format!("Ignoring folders {folder_names} inside video folder {} (only files may be placed inside a video folder).", hyper_dir.path.display()));
         }
 
-        // TODO: Some strategy what we do with multiple images (e.g. heuristic to pick most probable poster, use additional ones, etc.)
+        // TODO: Some strategy what we do with multiple images, e.g.: A heuristic
+        // to pick the most probable poster, using additional ones, etc.
         if !hyper_dir.image_files.is_empty() && video.poster.is_none() {
             let first_image = hyper_dir.image_files.first().unwrap();
 
             let file_meta = FileMeta::new(first_image);
             let file_name = first_image.file_name().unwrap().to_string_lossy().to_string();
 
-            let assets = context.cache.lock().unwrap().fetch_poster_assets(
-                &file_meta,
-                &file_name,
-                site.poster_aspect.numeric(),
-                &video.site_path
-            );
+            let assets;
+            let poster_meta;
 
-            let poster_file = PosterFile::new(assets, None, file_meta, file_name);
+            {
+                // Obtain lock on the cache, immediately drop it afterwards
+                let cache = context.cache.lock().unwrap();
+
+                assets = cache.fetch_poster_assets(
+                    &file_meta,
+                    &file_name,
+                    site.poster_aspect.numeric(),
+                    &video.site_path
+                );
+
+                poster_meta = cache.fetch_poster_source(
+                    &file_meta,
+                    &file_name,
+                    &video.site_path
+                );
+            }
+
+            let poster_file = PosterFile::new(
+                assets,
+                None,
+                file_meta,
+                file_name,
+                poster_meta
+            );
 
             video.poster = Some(poster_file);
         }

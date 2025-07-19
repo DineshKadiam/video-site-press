@@ -19,6 +19,7 @@ use crate::{
     PosterAssets,
     PosterAssetsCached,
     PosterFile,
+    PosterSourceCached,
     ResizeMode,
     Video,
     VideoMetaCached,
@@ -326,7 +327,7 @@ fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc
             .join(&file_name);
 
         let file_meta = FileMeta::new(&file_path);
-        let poster_file = PosterFile::new(None, None, file_meta, file_name);
+        let poster_file = PosterFile::new(None, None, file_meta, file_name, None);
 
         let mutation = |video_mut: &mut Video| {
             video_mut.poster = Some(poster_file);
@@ -351,7 +352,11 @@ fn compute_poster(context: &Context, seek_offset: f32, video: Arc<Video>) -> Arc
     video
 }
 
-fn compute_poster_asset(context: &Context, source_image: &ImageProcessor, resize_mode: ResizeMode) -> Result<PosterAsset, String> {
+fn compute_poster_asset(
+    context: &Context,
+    source_image: &ImageProcessor,
+    resize_mode: ResizeMode
+) -> Result<PosterAsset, String> {
     let (file_name, dimensions) = source_image.resize(context, resize_mode);
 
     let filesize_bytes = match fs::metadata(context.cache_dir.join(&file_name)) {
@@ -480,6 +485,80 @@ fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video
     Ok(())
 }
 
+fn compute_poster_meta(
+    context: &Context,
+    video: &Arc<Video>
+) -> Result<(), String> {
+    if let Some(poster) = &video.poster {
+        let source_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&poster.file_name);
+
+        match ImageProcessor::open(&source_path) {
+            Ok(source_processor) => {
+                let poster_meta = source_processor.compute_poster_meta();
+
+                poster_meta.write_cache_manifest(
+                    context,
+                    &poster.file_meta,
+                    &poster.file_name,
+                    &video.site_path
+                );
+
+                // Add/update poster source in in-memory cache
+                // TODO: This looks vaguely in need of encapsulation
+                if let Ok(mut cache) = context.cache.lock() {
+                    let poster_path = format!("{}{}", video.site_path.normalized(), poster.file_name);
+
+                    if let Some(poster_source_cached) = cache.poster_sources
+                        .iter_mut()
+                        .find(|cached| cached.path == poster_path) {
+                        poster_source_cached.poster_meta = poster_meta.clone();
+                        // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                        poster_source_cached.file_meta = poster.file_meta.clone();
+
+                    } else {
+                        let poster_source_cached = PosterSourceCached {
+                            file_meta: poster.file_meta.clone(),
+                            path: poster_path,
+                            poster_meta: poster_meta.clone(),
+                        };
+
+                        cache.poster_sources.push(poster_source_cached);
+                    }
+                }
+
+                let mutation = |video: &mut Video| {
+                    // Note that we expect the poster to be Some(), virtually always.
+                    // If it's missing that is an edge case with (likely) user interaction.
+                    if let Some(poster) = &mut video.poster {
+                        poster.poster_meta = Some(poster_meta);
+                        Ok(())
+                    } else {
+                        Err(String::from("Poster meta could not be assigned as the poster was meanwhile removed"))
+                    }
+                };
+
+                match context.update_video(mutation, &video.site_path) {
+                    VideoUpdate::Error(err) => {
+                        return Err(err)
+                    }
+                    VideoUpdate::NotFound => {
+                        return Err(String::from("Poster meta could not be assigned in the site tree as the video has meanwhile changed path."));
+                    }
+                    VideoUpdate::PendingErrors { .. } => {
+                        return Err(String::from("Poster meta could not be assigned in the site tree as the video currently has pending errors."));
+                    }
+                    VideoUpdate::Success { .. } => ()
+                }
+            }
+            Err(err) => return Err(err)
+        }
+    }
+
+    Ok(())
+}
+
 pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 	for index in 0..count {
         let context = Arc::clone(context_ref);
@@ -528,11 +607,20 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                     }
                     JobKind::VideoFastTasks { poster_aspect, video } => {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.site_path.normalized());
-                        let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
+                        let process_id = context.processing
+                            .lock()
+                            .unwrap()
+                            .push(video.site_path.normalized(), label);
 
                         let video_with_metadata = compute_metadata(&context, video);
 
                         if let Some(poster) = &video_with_metadata.poster {
+                            if poster.poster_meta.is_none() {
+                                if let Err(err) = compute_poster_meta(&context, &video_with_metadata) {
+                                    context.processing_errors.lock().unwrap().push(err);
+                                }
+                            }
+
                             if poster.assets.is_none() {
                                 if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_metadata) {
                                     context.processing_errors.lock().unwrap().push(err);
@@ -540,6 +628,10 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                             }
                         } else {
                             let video_with_poster = compute_poster(&context, 0.5, video_with_metadata);
+
+                            if let Err(err) = compute_poster_meta(&context, &video_with_poster) {
+                                context.processing_errors.lock().unwrap().push(err);
+                            }
 
                             if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_poster) {
                                 context.processing_errors.lock().unwrap().push(err);

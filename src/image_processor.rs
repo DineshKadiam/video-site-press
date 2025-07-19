@@ -1,20 +1,20 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs::File;
 use std::path::Path;
 
-use image::{DynamicImage, ImageFormat};
+use image::{DynamicImage, GenericImageView, ImageFormat};
 use image::imageops::FilterType;
 
-use crate::Context;
+use crate::{Context, Lqip, PosterMeta};
 use crate::util::nanoid;
 
 
 pub enum ResizeMode {
     /// Perform a crop to a rectangle with the minimum target aspect ratio (if needed),
     /// then resize to a maximum width.
-    /// Aspect ratio is width / height, e.g. 16/9 = 1.7777777    
+    /// Aspect ratio is width / height, e.g. 16/9 = 1.7777777
     CoverCroppedRectangle { max_width: u32, min_aspect: f32 },
     /// Perform a crop to a rectangle with the target aspect ratio (if needed),
     /// then resize to a maximum width.
@@ -29,6 +29,31 @@ pub struct ImageProcessor {
 }
 
 impl ImageProcessor {
+    pub fn compute_poster_meta(&self) -> PosterMeta {
+        let height = self.source_height;
+        let width = self.source_width;
+
+        let resized_2x2 = self.source_image.resize_exact(2, 2, FilterType::Lanczos3);
+
+        let mut lqip = Lqip::new();
+
+        for (y, x, pixel) in resized_2x2.pixels() {
+            match (x, y) {
+                (0, 0) => lqip.nw = (pixel[0], pixel[1], pixel[2]),
+                (0, 1) => lqip.ne = (pixel[0], pixel[1], pixel[2]),
+                (1, 0) => lqip.sw = (pixel[0], pixel[1], pixel[2]),
+                (1, 1) => lqip.se = (pixel[0], pixel[1], pixel[2]),
+                _ => unreachable!()
+            }
+        }
+
+        PosterMeta {
+            height,
+            lqip,
+            width
+        }
+    }
+
     fn export(
         &self,
         context: &Context,
@@ -44,25 +69,6 @@ impl ImageProcessor {
         resized_image.write_to(&mut output_file, ImageFormat::Jpeg).unwrap();
 
         (output_filename, result_dimensions)
-    }
-
-    fn resize_and_export(
-        &self,
-        context: &Context,
-        max_width: u32,
-        cropped_image: &DynamicImage
-    ) -> (String, (u32, u32)) {
-        let cropped_width = cropped_image.width();
-        
-        if cropped_width > max_width {
-            let resize_factor = max_width as f32 / cropped_width as f32;
-            let new_width = (self.source_width as f32 * resize_factor) as u32;
-            let new_height = (self.source_height as f32 * resize_factor) as u32;
-            let resized_image = cropped_image.resize(new_width, new_height, FilterType::Lanczos3);
-            self.export(context, &resized_image)
-        } else {
-            self.export(context, cropped_image)
-        }
     }
 
     pub fn open(path: &Path) -> Result<ImageProcessor, String> {
@@ -122,6 +128,25 @@ impl ImageProcessor {
                     self.resize_and_export(context, max_width, &self.source_image)
                 }
             }
+        }
+    }
+
+    fn resize_and_export(
+        &self,
+        context: &Context,
+        max_width: u32,
+        cropped_image: &DynamicImage
+    ) -> (String, (u32, u32)) {
+        let cropped_width = cropped_image.width();
+
+        if cropped_width > max_width {
+            let resize_factor = max_width as f32 / cropped_width as f32;
+            let new_width = (self.source_width as f32 * resize_factor) as u32;
+            let new_height = (self.source_height as f32 * resize_factor) as u32;
+            let resized_image = cropped_image.resize(new_width, new_height, FilterType::Lanczos3);
+            self.export(context, &resized_image)
+        } else {
+            self.export(context, cropped_image)
         }
     }
 }

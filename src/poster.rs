@@ -12,6 +12,7 @@ use crate::{
     FileMeta,
     PlatformIntegrationImage,
     PosterAssetsCached,
+    PosterMeta,
     SitePath
 };
 use crate::util::hash_closure;
@@ -47,7 +48,8 @@ pub struct PosterFile {
     pub assets: Option<PosterAssets>,
     pub description: Option<String>,
     pub file_meta: FileMeta,
-    pub file_name: String
+    pub file_name: String,
+    pub poster_meta: Option<PosterMeta>
 }
 
 impl ImgAttributes {
@@ -188,13 +190,15 @@ impl PosterFile {
         assets: Option<PosterAssets>,
         description: Option<String>,
         file_meta: FileMeta,
-        file_name: String
+        file_name: String,
+        poster_meta: Option<PosterMeta>
     ) -> PosterFile {
         PosterFile {
             assets,
             description,
             file_meta,
-            file_name
+            file_name,
+            poster_meta
         }
     }
 }

@@ -10,6 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{
     FileMeta,
     PosterAssets,
+    PosterMeta,
     SitePath,
     VideoMeta
 };
@@ -25,16 +26,19 @@ use crate::util;
 /// 2->3 (2024-05-04): VideoMeta fields changed, likely faulty decodes from bincode
 /// 3->4 (2025-07-12): Our ffprobe routine now detects rotation side data, we invalidate the cache to ensure
 ///                    previously (wrongly) computed height/width is recomputed to take this into account.
-const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_4";
+/// 4->5 (2025-07-19): The base CacheItem enum gained another variant (PosterSource)
+const CACHE_VERSION_MARKER: &str = "CACHE_VERSION_MARKER_5";
 
 pub struct Cache {
     pub poster_assets: Vec<PosterAssetsCached>,
+    pub poster_sources: Vec<PosterSourceCached>,
     pub video_meta: Vec<VideoMetaCached>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum CacheItem {
     PosterAssets(PosterAssetsCached),
+    PosterSource(PosterSourceCached),
     VideoMeta(VideoMetaCached)
 }
 
@@ -51,6 +55,23 @@ pub struct PosterAssetsCached {
     /// that we can correctly re-associate files on each build, even
     /// if the site dir directory moves around on disk. 
     pub path: String
+}
+
+/// Caches poster image metadata such as the dimensions of the source image
+/// and a reduced set of predominant colors found in the image (these can
+/// be used for very small and/or very fast low fidelity display).
+/// In order to reassociate a cached poster with
+/// its source image, this is the strategy:
+/// - If the path, modified and size match, we assume it's the same file
+/// - For now there is no other strategy
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PosterSourceCached {
+    pub file_meta: FileMeta,
+    /// The path is relative to the site_dir. This ensures
+    /// that we can correctly re-associate files on each build, even
+    /// if the site dir directory moves around on disk.
+    pub path: String,
+    pub poster_meta: PosterMeta
 }
 
 /// Caches metadata for a video that was (somewhat expensively) computed
@@ -88,6 +109,23 @@ impl Cache {
             .map(|cached| cached.assets.clone())
     }
 
+    pub fn fetch_poster_source(
+        &self,
+        file_meta: &FileMeta,
+        file_name: &str,
+        site_path: &SitePath
+    ) -> Option<PosterMeta> {
+        let poster_path = format!("{}{file_name}", site_path.normalized());
+
+        self.poster_sources
+            .iter()
+            .find(|cached|
+                cached.path == poster_path &&
+                cached.file_meta == *file_meta
+            )
+            .map(|cached| cached.poster_meta.clone())
+    }
+
     /// Scans the cache dir and initializes a HashMap that tracks
     /// all filenames, mapping them to a usage count (initialized to 0).
     /// The asset cache version marker is explicitly excluded from this.
@@ -117,6 +155,7 @@ impl Cache {
     fn new() -> Cache {
         Cache {
             poster_assets: Vec::new(),
+            poster_sources: Vec::new(),
             video_meta: Vec::new()
         }
     }
@@ -195,6 +234,9 @@ impl Cache {
                                 }
 
                                 cache.poster_assets.push(poster_assets);
+                            }
+                            CacheItem::PosterSource(poster_source) => {
+                                cache.poster_sources.push(poster_source);
                             }
                             CacheItem::VideoMeta(video_meta) => {
                                 cache.video_meta.push(video_meta);

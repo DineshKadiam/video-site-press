@@ -1258,9 +1258,11 @@ impl Context {
         if video.versions.iter().any(|version| version.video_meta.is_none()) ||
            (video.poster.is_none() && !video.versions.is_empty()) ||
            video.poster.as_ref().is_some_and(|poster|
-                poster.assets.is_none() || poster.assets.as_ref().is_some_and(|assets|
+                poster.assets.is_none() ||
+                poster.assets.as_ref().is_some_and(|assets|
                     assets.poster_aspect != site.poster_aspect.numeric()
-                )
+                ) ||
+                poster.poster_meta.is_none()
             ) {
             let job_kind = JobKind::VideoFastTasks {
                 poster_aspect: site.poster_aspect.numeric(),

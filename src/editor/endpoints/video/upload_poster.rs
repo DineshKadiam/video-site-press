@@ -82,7 +82,13 @@ pub async fn upload_poster(
                 }
 
                 let file_meta = FileMeta::new(&storage_path);
-                let poster_file = PosterFile::new(None, None, file_meta, storage_filename);
+                let poster_file = PosterFile::new(
+                    None,
+                    None,
+                    file_meta,
+                    storage_filename,
+                    None
+                );
 
                 let mutation = |video: &mut Video| {
                     video.poster = Some(poster_file);
