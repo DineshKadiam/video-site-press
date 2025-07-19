@@ -61,7 +61,7 @@ function fetchProcessing() {
             if (!deploymentInfo.configured) {
                 if (!deploymentElement.querySelector('a[href="/site/edit"]')) {
                     const a = document.createElement('a');
-                    a.href = '/site/edit';
+                    a.href = '/site/edit/';
 
                     a.append(configureIcon.content.cloneNode(true));
 
