@@ -85,20 +85,36 @@ pub fn edit_poster_page(
             let delete_poster_action = routes::video_delete_poster(video);
             let update_poster_action = routes::video_update_poster(video);
 
-            let poster_aspect_numeric = site.poster_aspect.numeric();
-            let poster_aspect_representation = site.poster_aspect.representation();
+            let thumbnail_aspect_numeric = site.poster_aspect.numeric();
+            let thumbnail_aspect_representation = site.poster_aspect.representation();
+
             let video_aspect_numeric = video.recommended_version()
                 .and_then(|video_file| video_file.video_meta.as_ref())
                 .map(|video_meta| video_meta.aspect_ratio())
-                .unwrap_or(poster_aspect_numeric);
+                .unwrap_or(thumbnail_aspect_numeric);
             let video_aspect_representation = AspectRatio::approximate_representation(video_aspect_numeric);
+
+            let poster_format = if let Some(poster_meta) = &poster.poster_meta {
+                let background = poster_meta.lqip.gradient_radial();
+                let poster_aspect_numeric = poster_meta.aspect_ratio();
+                let poster_aspect_representation = AspectRatio::approximate_representation(poster_aspect_numeric);
+
+                let t_poster_format = translations.poster_format;
+                formatdoc!(r#"
+                    <div>
+                        <span class="dot" style="{background}"></span> {t_poster_format} ({poster_aspect_representation})
+                    </div>
+                "#)
+            } else {
+                String::new()
+            };
 
             let t_thumbnail_format = translations.thumbnail_format;
             let t_video_format = translations.video_format;
             formatdoc!(r#"
                 <style>
                     :root {{
-                        --poster-aspect: {poster_aspect_numeric};
+                        --poster-aspect: {thumbnail_aspect_numeric};
                         --video-aspect: {video_aspect_numeric};
                     }}
                 </style>
@@ -118,8 +134,9 @@ pub fn edit_poster_page(
                     <div>
                         <span class="dot video_frame"></span> {t_video_format} ({video_aspect_representation})
                     </div>
+                    {poster_format}
                     <div>
-                        <span class="dot thumbnail_frame"></span> {t_thumbnail_format} ({poster_aspect_representation})
+                        <span class="dot thumbnail_frame"></span> {t_thumbnail_format} ({thumbnail_aspect_representation})
                     </div>
                 </div>
                 <div class="button_group">

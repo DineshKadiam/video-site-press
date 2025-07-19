@@ -33,6 +33,10 @@ impl PosterMeta {
     /// hold incorrect, incompatible or outdated data.
     pub const CACHE_SERIALIZATION_KEY: &'static str = "poster_source1";
 
+    pub fn aspect_ratio(&self) -> f32 {
+        self.width as f32 / self.height as f32
+    }
+
     pub fn deserialize_cached(path: &Path) -> Option<PosterSourceCached> {
         match fs::read(path) {
             Ok(bytes) => bincode::deserialize::<PosterSourceCached>(&bytes).ok(),

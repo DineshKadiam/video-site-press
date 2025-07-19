@@ -437,6 +437,7 @@ p a {
 .poster_preview_legend { margin-block: 1rem; }
 .poster_preview_legend .dot {
     border-radius: 50%;
+    box-sizing: border-box;
     display: inline-block;
     height: 1em;
     width: 1em;
