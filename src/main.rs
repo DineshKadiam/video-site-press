@@ -7,6 +7,7 @@ use clap::Parser;
 use sys_locale::get_locale;
 
 mod args;
+mod aspect_ratio;
 mod banner;
 mod browser_support;
 mod build;
@@ -46,6 +47,7 @@ mod watcher;
 mod workers;
 
 use args::Args;
+use aspect_ratio::AspectRatio;
 use banner::Banner;
 use cache::{Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
 use collection::Collection;
@@ -67,7 +69,7 @@ use poster_assets::{PosterAsset, PosterAssets};
 use poster_file::PosterFile;
 use poster_meta::PosterMeta;
 use processing::{Job, JobKind, Processing, Progress};
-use site::{AspectRatio, Site, SiteContent};
+use site::{Site, SiteContent};
 use site_path::SitePath;
 use site_url::SiteUrl;
 use subtitles::SubtitleFile;

@@ -8,6 +8,7 @@ use std::sync::Arc;
 use indoc::indoc;
 
 use crate::{
+    AspectRatio,
     Context,
     Collection,
     Font,
@@ -38,15 +39,6 @@ const SITE_OPTIONS: &[&str] = &[
 ];
 
 #[derive(Clone, Debug)]
-pub enum AspectRatio {
-    Custom {
-        representation: String,
-        value: f32
-    },
-    Default
-}
-
-#[derive(Clone, Debug)]
 pub struct Site {
     pub base_url: Option<SiteUrl>,
     pub clean_urls: bool,
@@ -75,77 +67,6 @@ pub enum SiteContent {
     Invalid { error: String },
     Playlist(Arc<Playlist>),
     Video(Arc<Video>)
-}
-
-impl AspectRatio {
-    /// For some common, handpicked aspect ratios we try to automatically display
-    /// them to the user (e.g. 16:9 instead of 1.7777778 or such).
-    pub fn approximate_representation(numeric_ratio: f32) -> String {
-        const RATIOS: [(f32, &str); 10] = [
-            (2.37, "64:27"),
-            (1.78, "16:9"),
-            (1.66, "5:3"),
-            (1.5, "3:2"),
-            (1.33, "4:3"),
-            (0.75, "3:4"),
-            (0.67, "2:3"),
-            (0.6, "3:5"),
-            (0.56, "9:16"),
-            (0.42, "27:64")
-        ];
-
-        // Could be adjusted up/down if we feel our approximations are too
-        // strictly/loosely determined.
-        const TOLERANCE: f32 = 0.01;
-
-        for ratio in RATIOS {
-            if (ratio.0 - numeric_ratio).abs() <= TOLERANCE {
-                return ratio.1.to_string();
-            }
-        }
-
-        format!("{numeric_ratio:.2}")
-    }
-
-    pub fn from_representation(representation: &str) -> Result<AspectRatio, String> {
-        if let Ok(ratio) = representation.parse::<f32>() {
-            let aspect_ratio = AspectRatio::Custom {
-                representation: representation.to_owned(),
-                value: ratio
-            };
-
-            return Ok(aspect_ratio);
-        }
-
-        let mut parts = representation.split(|c| c == '/' || c == ':');
-        if let (Some(dividend), Some(divisor), None) = (parts.next(), parts.next(), parts.next()) {
-            if let (Ok(dividend), Ok(divisor)) = (dividend.parse::<f32>(), divisor.parse::<f32>()) {
-                let aspect_ratio = AspectRatio::Custom {
-                    representation: representation.to_owned(),
-                    value: dividend / divisor
-                };
-
-                return Ok(aspect_ratio);
-            }
-        }
-
-        let error = format!("'{representation}' is not understood, allowed aspect formats are e.g. '1.78', '16:9' or '16/9')");
-        Err(error)
-    }
-
-    pub fn numeric(&self) -> f32 {
-        match self {
-            AspectRatio::Default => 16.0/9.0,
-            AspectRatio::Custom { value, .. } => *value
-        }
-    }
-
-    pub fn representation(&self) -> &str {
-        match self {
-            AspectRatio::Default => "16:9",
-            AspectRatio::Custom { representation, .. } => representation
-        }
-    }
 }
 
 impl Site {

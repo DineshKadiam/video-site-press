@@ -1050,8 +1050,8 @@ impl Collection {
         subcollections
     }
 
-    /// Returns all public videos in the collection, i.e. those that are not
-    /// marked as offline or unlisted.
+    /// Returns all public videos (= not marked as offline or unlisted)
+    /// contained directly in the collection.
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
         self.videos.iter().filter(|video| video.public_local())
     }
