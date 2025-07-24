@@ -487,6 +487,7 @@ impl Collection {
 
     /// Get the copy_link setting resolved in the context of the site tree
     /// (= as set locally on the collection or as inherited from an ancestor).
+    #[allow(dead_code)]
     pub fn copy_link(&self) -> bool {
         self.copy_link.unwrap_or(self.inherited_options.copy_link)
     }
@@ -625,6 +626,7 @@ impl Collection {
 
     /// Get the download setting resolved in the context of the site tree
     /// (= as set locally on the collection or as inherited from an ancestor).
+    #[allow(dead_code)]
     pub fn download(&self) -> bool {
         self.download.unwrap_or(self.inherited_options.download)
     }
@@ -663,6 +665,7 @@ impl Collection {
 
     /// Get the embedding setting resolved in the context of the site tree
     /// (= as set locally on the collection or as inherited from an ancestor).
+    #[allow(dead_code)]
     pub fn embedding(&self) -> bool {
         self.embedding.unwrap_or(self.inherited_options.embedding)
     }

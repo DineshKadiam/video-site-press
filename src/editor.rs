@@ -191,15 +191,6 @@ impl<'a> Location<'a> {
 }
 
 impl TreeViewOrder {
-    pub fn from_key(key: &str) -> TreeViewOrder {
-        match key {
-            "site_order" => TreeViewOrder::SiteOrder,
-            "title_asc" => TreeViewOrder::TitleAsc,
-            "title_desc" => TreeViewOrder::TitleDesc,
-            _ => TreeViewOrder::Default
-        }
-    }
-
     pub fn key(&self, translations: &Translations) -> String {
         match self {
             TreeViewOrder::Default |
