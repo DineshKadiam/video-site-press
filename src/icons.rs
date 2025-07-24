@@ -294,6 +294,16 @@ pub fn rss(label: Option<&str>) -> String {
     "#)
 }
 
+/// A standard "looking glass" icon
+pub fn search(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m28.144 6.9499a21.197 21.197 0 0 0-21.197 21.197 21.197 21.197 0 0 0 21.197 21.197 21.197 21.197 0 0 0 11.999-3.7292l10.307 10.302c1.5105 1.5101 3.9592 1.5098 5.4693-6.29e-4 1.5101-1.5105 1.5099-3.9591-4.55e-4 -5.4693l-10.307-10.302a21.197 21.197 0 0 0 3.7287-11.999 21.197 21.197 0 0 0-21.197-21.197zm0 7.7512a13.446 13.446 0 0 1 13.446 13.446 13.446 13.446 0 0 1-13.446 13.446 13.446 13.446 0 0 1-13.446-13.446 13.446 13.446 0 0 1 13.446-13.446z"/>
+        </svg>
+    "#)
+}
+
 /// A ring with separate segments.
 /// For `label` provide either a label that should be read for screen readers,
 /// or None to declare the icon invisible to screenreaders (e.g. when it would

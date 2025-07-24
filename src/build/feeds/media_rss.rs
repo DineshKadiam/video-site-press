@@ -105,11 +105,13 @@ pub fn item_extensions(
 
     if let Some(poster) = &video.poster {
         if let Some(poster_assets) = &poster.assets {
-            let largest = poster_assets.largest();
-            let height = largest.height;
-            let width = largest.width;
-            let image_filename = format!("poster_{width}x{height}.jpg");
-            let image_url = site.absolute_url_file_unchecked(&image_filename, &video.site_path);
+            let largest_asset = poster_assets.largest();
+            let target_filename = largest_asset.target_filename("poster");
+            let image_url = site.absolute_url_file_unchecked(&target_filename, &video.site_path);
+
+            let height = largest_asset.height;
+            let width = largest_asset.width;
+
             let media_thumbnail = format!(r#"<media:thumbnail height="{height}" url="{image_url}" width="{width}"/>"#);
 
             extensions.push(media_thumbnail);

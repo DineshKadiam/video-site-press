@@ -55,13 +55,13 @@ impl ImgAttributes {
         let mut asset_peek_iter = assets_ascending_by_size.iter().peekable();
 
         while let Some(asset) = asset_peek_iter.next() {
-            let height = asset.height;
-            let width = asset.width;
+            let target_filename = asset.target_filename(base_name);
 
-            srcset.push(format!("{prefix}{base_name}_{width}x{height}.jpg {width}w"));
+            let width = asset.width;
+            srcset.push(format!("{prefix}{target_filename} {width}w"));
 
             if asset_peek_iter.peek().is_none() {
-                src = format!("{prefix}{base_name}_{width}x{height}.jpg");
+                src = format!("{prefix}{target_filename}");
             }
         }
 
@@ -69,6 +69,16 @@ impl ImgAttributes {
             src,
             srcset: srcset.join(",")
         }
+    }
+}
+
+impl PosterAsset {
+    /// base_name is either "banner" or "poster"
+    pub fn target_filename(&self, base_name: &str) -> String {
+        let height = self.height;
+        let width = self.width;
+
+        format!("{base_name}_{width}x{height}.jpg")
     }
 }
 
@@ -138,7 +148,8 @@ impl PosterAssets {
         }
     }
 
-    pub fn platform_integration_image(&self, type_key: &str, url_prefix: &String) -> PlatformIntegrationImage {
+    /// base_name is either "banner" or "poster"
+    pub fn platform_integration_image(&self, base_name: &str, url_prefix: &String) -> PlatformIntegrationImage {
         let asset = if let Some(max_800) = &self.max_800 {
             max_800
         } else if let Some(max_480) = &self.max_480 {
@@ -149,9 +160,11 @@ impl PosterAssets {
             &self.max_160
         };
 
+        let target_filename = asset.target_filename(base_name);
+
         PlatformIntegrationImage {
             height: asset.height,
-            url: format!("{url_prefix}{type_key}_{}x{}.jpg", asset.width, asset.height),
+            url: format!("{url_prefix}{target_filename}"),
             width: asset.width
         }
     }

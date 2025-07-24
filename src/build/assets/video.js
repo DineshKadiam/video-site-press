@@ -14,9 +14,10 @@ const playbackToggleVolumeButton = document.querySelector('.left_playback_contro
 const playerControls = document.querySelector('.player_controls');
 const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
-const timelineInput = document.querySelector('.timeline input');
+const searchContainer = document.querySelector('.search');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
+const timelineInput = document.querySelector('.timeline input');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
 const versionSelectorControl = document.querySelector('.selector_control.version');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
@@ -427,6 +428,8 @@ video.addEventListener('ended', () => {
 video.addEventListener('click', togglePlayback);
 
 window.addEventListener('keydown', event => {
+    if (searchContainer.contains(event.target)) return;
+
     if (event.key === ' ') {
         togglePlayback();
         event.preventDefault();

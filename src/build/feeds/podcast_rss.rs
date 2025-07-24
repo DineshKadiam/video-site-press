@@ -73,11 +73,8 @@ pub fn item_extensions(
             // According to apple's specification "Artwork must be a minimum size
             // of 1400 x 1400 pixels and a maximum size of 3000 x 3000 pixels, in
             // JPEG or PNG format".
-            let largest = poster_assets.largest();
-            let height = largest.height;
-            let width = largest.width;
-            let image_filename = format!("poster_{width}x{height}.jpg");
-            let image_url = site.absolute_url_file_unchecked(&image_filename, &video.site_path);
+            let target_filename = poster_assets.largest().target_filename("poster");
+            let image_url = site.absolute_url_file_unchecked(&target_filename, &video.site_path);
             let itunes_image = format!(r#"<itunes:image href="{image_url}"/>"#);
 
             extensions.push(itunes_image);

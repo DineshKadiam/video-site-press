@@ -58,6 +58,7 @@ const META_ROBOTS_NOINDEX_NOFOLLOW: &str = r#"<meta name="robots" content="noind
 /// groups together those hashes for all assets we use.
 pub struct AssetHashes {
     pub embed_css: Option<String>,
+    pub search_js: Option<String>,
     pub site_css: Option<String>
 }
 
@@ -70,6 +71,7 @@ impl AssetHashes {
     pub fn new() -> AssetHashes {
         AssetHashes {
             embed_css: None,
+            search_js: None,
             site_css: None
         }
     }
@@ -100,6 +102,8 @@ pub fn perform_build(context: &Context) {
     if site.copy_link_requested() || (site.embed_codes_requested() && site.base_url.is_some()) {
         scripts::generate_clipboard_js(context);
     }
+
+    scripts::generate_search_js(&mut asset_hashes, context, &site);
 
     if site.base_url.is_some() {
         if site.embeds_requested() {
@@ -176,9 +180,10 @@ fn build_collection(
     if let Some(banner) = &collection.banner {
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
+                let target_filename = asset.target_filename("banner");
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
-                    collection_build_dir.join(format!("banner_{}x{}.jpg", asset.width, asset.height))
+                    collection_build_dir.join(&target_filename)
                 );
             }
         } else {
@@ -283,9 +288,10 @@ fn build_playlist(
     if let Some(banner) = &playlist.banner {
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
+                let target_filename = asset.target_filename("banner");
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
-                    playlist_build_dir.join(format!("banner_{}x{}.jpg", asset.width, asset.height))
+                    playlist_build_dir.join(&target_filename)
                 );
             }
         } else {
@@ -376,9 +382,10 @@ fn build_video(
     if let Some(poster) = &video.poster {
         if let Some(poster_assets) = &poster.assets {
             for asset in &poster_assets.all() {
+                let target_filename = asset.target_filename("poster");
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
-                    video_build_dir.join(format!("poster_{}x{}.jpg", asset.width, asset.height))
+                    video_build_dir.join(&target_filename)
                 );
             }
         }

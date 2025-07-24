@@ -100,6 +100,8 @@ impl Layout {
             String::new()
         };
 
+        let search_js_asset_hash = asset_hashes.search_js.as_ref().unwrap();
+
         let head = formatdoc!(r#"
             <head>
                 <title>{title}</title>
@@ -111,6 +113,7 @@ impl Layout {
                 {adaptive_theme_script}
                 {clipboard_script}
                 {video_script}
+                <script defer src="{root_prefix}search.js?{search_js_asset_hash}"></script>
             </head>
         "#);
 
@@ -149,6 +152,9 @@ impl Layout {
             templates.push_str(&player_icon_templates(translations));
         }
 
+        let search_icon = icons::search(translations.search);
+        let close_icon = icons::failure(translations.close);
+        let t_search = translations.search;
         let body = formatdoc!(r##"
             <body>
                 <div class="layout">
@@ -164,12 +170,25 @@ impl Layout {
                         </div>
                     </div>
                     <footer>
-                        <span>
-                            {e_site_title}
-                        </span>
-                        <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
-                            Hyper 8 Video System {version_display}
-                        </a>
+                        <div>
+                            <span>
+                                {e_site_title}
+                            </span>
+                            <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
+                                Hyper 8 Video System {version_display}
+                            </a>
+                        </div>
+                        <div class="search" data-root-prefix="{root_prefix}">
+                            <div class="icon">{search_icon}</div>
+                            <input autocomplete="off" placeholder="{t_search} (s)" type="search">
+                            <button>
+                                {close_icon}
+                            </button>
+                            <div class="pane">
+                                <div role="status"></div>
+                                <div class="results"></div>
+                            </div>
+                        </div>
                     </footer>
                 </div>
                 {templates}

@@ -69,6 +69,12 @@ pub enum SiteContent {
     Video(Arc<Video>)
 }
 
+pub enum SiteItem<'a> {
+    Collection(&'a Collection),
+    Playlist(&'a Playlist),
+    Video(&'a Video)
+}
+
 impl Site {
     pub fn absolute_url_dir_unchecked(&self, dir: &str, site_path: &SitePath) -> String {
         self.base_url
@@ -661,6 +667,51 @@ impl Site {
             }
         } else {
             String::from("")
+        }
+    }
+
+    /// Recursively walks the entire site hierarchy, yielding all content of
+    /// the site in a flattened sequence to the passed callback. E.g. a
+    /// collection containing a playlist containing two videos will yield the
+    /// following sequence to the callback: Collection > Playlist > Video >
+    /// Video.
+    pub fn walk_recursive(&self, callback: &mut impl FnMut(SiteItem)) {
+        fn walk_collection(
+            callback: &mut impl FnMut(SiteItem),
+            collection: &Collection
+        ) {
+            callback(SiteItem::Collection(collection));
+
+            for subcollection in collection.public_subcollections_desc_by_release_date() {
+                walk_collection(callback, &subcollection);
+            }
+
+            for playlist in collection.public_playlists_desc_by_release_date() {
+                walk_playlist(callback, &playlist);
+            }
+
+            for video in collection.public_videos_in_collection_video_order() {
+                callback(SiteItem::Video(&video))
+            }
+        }
+
+        fn walk_playlist(
+            callback: &mut impl FnMut(SiteItem),
+            playlist: &Playlist
+        ) {
+            callback(SiteItem::Playlist(&playlist));
+
+            for video in playlist.public_videos_in_playlist_order() {
+                callback(SiteItem::Video(&video))
+            }
+        }
+
+        match &self.content {
+            SiteContent::Collection(collection) => walk_collection(callback, collection),
+            SiteContent::Playlist(playlist) => walk_playlist(callback, playlist),
+            SiteContent::Video(video) => callback(SiteItem::Video(&video)),
+            SiteContent::Empty |
+            SiteContent::Invalid { .. } => ()
         }
     }
 

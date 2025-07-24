@@ -45,7 +45,7 @@ button {
 }
 .center {
     margin: 0 auto;
-    padding: 0 1rem 4rem;
+    padding-inline: 1rem;
 }
 .center .banner {
     border-radius: .5rem;
@@ -92,13 +92,21 @@ button {
 footer {
     align-items: center;
     background: var(--bg-1);
-    column-gap: .7rem;
+    box-sizing: border-box;
     display: flex;
     font-size: .9rem;
-    height: 2rem;
+    flex-wrap: wrap;
+    gap: .7rem;
+    justify-content: space-between;
     margin: 2rem auto 0 auto;
     padding: 1rem;
-    width: 64rem;
+    width: 100%;
+}
+footer > div {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7rem;
 }
 h1 {
     color: var(--fg-1);
@@ -430,6 +438,72 @@ img {
     margin-top: .2rem;
 }
 .right_playback_controls { position: relative; }
+.search { position: relative; }
+.search button {
+    background: transparent;
+    border: none;
+    color: var(--fg-3);
+    cursor: pointer;
+    padding: .2em;
+    position: absolute;
+    right: .5em;
+}
+.search .icon {
+    color: var(--fg-3);
+    left: 1em;
+    position: absolute;
+}
+.search input {
+    background: var(--bg-2);
+    border: 1px solid var(--mg);
+    border-radius: 1.2em;
+    color: var(--fg-1);
+    font-size: 1em;
+    padding: .3em 2.4em;
+    width: calc(8rem + 4vw);
+}
+.search .pane {
+    background: var(--bg-1);
+    border: 1px solid var(--bg-3);
+    border-radius: .5em;
+    bottom: calc(100% + 1em);
+    display: flex;
+    max-height: 80dvh;
+    min-width: 20rem;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    z-index: 1;
+}
+.search .results {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+.search .results > a {
+    display: flex;
+    column-gap: .5rem;
+}
+.search .results a {
+    align-items: center;
+    column-gap: .7rem;
+    display: flex;
+}
+.search .results > a:focus-visible,
+.search .results > a:hover {
+    background: var(--bg-2);
+    outline: none;
+}
+.search .results a > :nth-child(1) {
+    aspect-ratio: var(--poster-aspect);
+    height: 3rem;
+}
+.search .results a > :nth-child(2) { flex: 1; }
+.search .results .placeholder { background: var(--bg-3); }
+.search:not(.open) button,
+.search:not(.open) .pane {
+    display: none;
+}
 .sidebar {
     display: flex;
     flex-direction: column;
@@ -629,9 +703,6 @@ video {
         overflow-y: auto;
         width: 24rem;
     }
-}
-@media (max-width: 66rem) {
-    footer { width: calc(100% - 2rem); }
 }
 @media (min-width: 100rem) {
     .center { max-width: 80vw; }
