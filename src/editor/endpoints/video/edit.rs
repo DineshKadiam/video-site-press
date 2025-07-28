@@ -34,6 +34,7 @@ pub struct UpdateFormFeedback<'a> {
     pub platform_integration: Option<PlatformIntegration>,
     pub release_date: Field,
     pub sort_number: Field,
+    pub synopsis: Field,
     pub title: Field,
     pub unlisted: bool
 }
@@ -79,7 +80,8 @@ pub fn edit_page(
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
-    let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+    let mut textarea_description = Textarea::markdown_subset(translations, "description", translations.description);
+    let mut textarea_synopsis = Textarea::synopsis(translations, "synopsis", translations.synopsis);
 
     let t_disabled = translations.disabled;
     let t_enabled = translations.enabled;
@@ -131,6 +133,7 @@ pub fn edit_page(
         platform_integration,
         release_date,
         sort_number,
+        synopsis,
         title,
         unlisted
     }) = &form_feedback {
@@ -167,6 +170,7 @@ pub fn edit_page(
         select_embedding.selected(embedding_value);
         select_platform_integration.selected(platform_integration_value);
         textarea_description.value(description);
+        textarea_synopsis.validated_value(synopsis);
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
@@ -206,6 +210,7 @@ pub fn edit_page(
         select_embedding.selected(embedding);
         select_platform_integration.selected(platform_integration);
         textarea_description.value_option(&video.description);
+        textarea_synopsis.value_option(&video.synopsis);
 
         String::new()
     };
@@ -247,6 +252,7 @@ pub fn edit_page(
         <div class="form_group">
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
+                {textarea_synopsis}
                 {textarea_description}
                 <div class="form_split divide_3_1">
                     {input_release_date}

@@ -225,6 +225,7 @@ pub struct Translations {
     pub subscribe: &'static str,
     pub subscribe_permalink: &'static str,
     pub subtitles: &'static str,
+    pub synopsis: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
@@ -276,6 +277,7 @@ pub struct Translations {
     pub warning: &'static str,
     pub website: &'static str,
     pub worst: &'static str,
+    xxx_characters_maximum: &'static str,
     pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str
 }
 
@@ -508,6 +510,7 @@ impl Translations {
             subscribe: "Abonnieren",
             subscribe_permalink: "abonnieren",
             subtitles: "Untertitel",
+            synopsis: "Kurzbeschreibung",
             test_file_successfully_uploaded_but_remote_verification_failed_message: indoc!("
                 Eine Testdatei wurde erfolgreich an der Adresse {remote_path} am Server hochgeladen, über die designierte öffentliche Adresse {public_address} konnte ihr Vorhandensein allerdings nicht verifiziert werden.
                 Bitte überprüfe ob das Serververzeichnis in den Seiteneinstellungen korrekt konfiguriert ist und ob deine (Sub)domain auch in deinen Hostingprovider-Einstellungen auf dieses selbe Verzeichnis verweist.
@@ -564,6 +567,7 @@ impl Translations {
             warning: "Warnung",
             website: "Website",
             worst: "Schlechteste",
+            xxx_characters_maximum: "Maximal {maximum} Zeichen",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "Du musst nicht sowohl einen Titel als auch einen Permalink angeben, aber eines von beiden muss ausgefüllt sein."
         }
     }
@@ -796,6 +800,7 @@ impl Translations {
             subscribe: "Subscribe",
             subscribe_permalink: "subscribe",
             subtitles: "Subtitles",
+            synopsis: "Synopsis",
             test_file_successfully_uploaded_but_remote_verification_failed_message: indoc!("
                 A test file was successfully uploaded to the remote server directory at {remote_path} but verifying its presence at the designated public address {public_address} failed.
                 Please review if the remote server directory is correctly configured in your site settings and whether your (sub)domain is pointing to that same
@@ -853,6 +858,7 @@ impl Translations {
             warning: "Warning",
             website: "Website",
             worst: "Worst",
+            xxx_characters_maximum: "{maximum} characters maximum",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
         }
     }
@@ -946,6 +952,10 @@ impl Translations {
     pub fn video_player_widget_for_xxx(&self, title: &str) -> String {
         self.video_player_widget_for_xxx.replace("{title}", title)
     }
+
+    pub fn xxx_characters_maximum(&self, maximum: usize) -> String {
+        self.xxx_characters_maximum.replace("{maximum}", &maximum.to_string())
+    }
 }
 
 #[test]
@@ -978,6 +988,7 @@ fn check_translations() {
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{video_title}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
+        assert!(&translations.xxx_characters_maximum.contains("{maximum}"));
 
         let disallowed_char = |c: char| !c.is_ascii_alphanumeric() && c != '-';
 

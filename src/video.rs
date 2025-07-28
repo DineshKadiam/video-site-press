@@ -25,6 +25,7 @@ use crate::{
     VideoMetaCached
 };
 use language_tags::LanguageTag;
+use crate::manifest::MAX_SYNOPSIS_CHARS;
 use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::{
     checked_remove_dir_all,
@@ -44,6 +45,7 @@ const VIDEO_OPTIONS: &[&str] = &[
     "release_date",
     "sort_number",
     "subtitles",
+    "synopsis",
     "title",
     "unlisted"
 ];
@@ -74,6 +76,7 @@ pub struct Video {
     pub site_path: SitePath,
     pub sort_number: Option<i32>,
     pub subtitles: Vec<SubtitleFile>,
+    pub synopsis: Option<String>,
     pub title: Option<String>,
     /// Unlisted videos are not linked from the site anywhere, one needs to
     /// know the link to access them. This property propagates downwards in
@@ -551,6 +554,27 @@ impl Video {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
+                "synopsis" => {
+                    if let Ok(embed) = element.as_embed() {
+                        if let Some(value) = embed.value() {
+                            let synopsis_chars = value.chars().count();
+
+                            if synopsis_chars <= MAX_SYNOPSIS_CHARS {
+                                self.synopsis = Some(value.to_string());
+                            } else {
+                                let message = format!("Synopsis is too long ({synopsis_chars}/{MAX_SYNOPSIS_CHARS} characters)");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        } else {
+                            self.synopsis = None;
+                        }
+                    } else {
+                        let message = "The 'synopsis' option needs to be provided as an embed, e.g.:\n-- synopsis\nA synopsis text\n--synopsis";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -851,6 +875,7 @@ impl Video {
             site_path,
             sort_number: None,
             subtitles: Vec::new(),
+            synopsis: None,
             title: None,
             unlisted: false,
             versions: Vec::new()
@@ -1198,6 +1223,11 @@ impl Video {
         if let Some(description) = &self.description {
             if !eno.is_empty() { eno.push('\n'); }
             eno.push_str(&format!("-- description\n{}\n-- description\n", description));
+        }
+
+        if let Some(synopsis) = &self.synopsis {
+            if !eno.is_empty() { eno.push('\n'); }
+            eno.push_str(&format!("-- synopsis\n{}\n-- synopsis\n", synopsis));
         }
 
         let path = context.site_dir.join(self.site_path.filesystem_relative()).join("video.eno");

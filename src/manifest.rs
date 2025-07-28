@@ -5,6 +5,8 @@ use std::path::Path;
 
 use enolib::{Attribute, SectionElement};
 
+pub const MAX_SYNOPSIS_CHARS: usize = 256;
+
 // TODO: Use attribute.snippet(), i.e. make this a attribute_error_with_snippet() (?) – Need to make sure this nicely displays also in interface
 pub fn attribute_error(
     attribute: &Attribute,

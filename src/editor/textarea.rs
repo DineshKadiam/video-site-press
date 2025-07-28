@@ -5,14 +5,17 @@ use std::fmt::{Display, Formatter};
 
 use indoc::formatdoc;
 
-use crate::Language;
+use crate::{Field, Translations};
+use crate::manifest::MAX_SYNOPSIS_CHARS;
 use crate::util::html_escape_outside_attribute;
 
 pub struct Textarea<'a> {
-    hint: Option<&'a str>,
+    error: String,
+    hint: Option<String>,
     id: Option<&'a str>,
     key: &'a str,
     label: &'a str,
+    limit: Option<usize>,
     rows: usize,
     value: String
 }
@@ -25,29 +28,85 @@ impl<'a> Textarea<'a> {
 
     /// Initialize a textarea for an image description
     pub fn image_description(key: &'a str, label: &'a str) -> Textarea<'a> {
-        Textarea::new(None, key, label, 5)
+        Textarea::new(
+            None,
+            key,
+            label,
+            None,
+            5
+        )
     }
 
     /// Initialize a textarea for a manifest
     pub fn manifest(key: &'a str, label: &'a str) -> Textarea<'a> {
-        Textarea::new(None, key, label, 16)
+        Textarea::new(
+            None,
+            key,
+            label,
+            None,
+            16
+        )
     }
 
     /// Initialize a textarea for markdown subset text
-    pub fn markdown_subset(language: &Language, key: &'a str, label: &'a str) -> Textarea<'a> {
-        let hint = Some(language.translations.markdown_inline_links_are_supported_standalone_urls_are_automatically_linked);
-        Textarea::new(hint, key, label, 8)
+    pub fn markdown_subset(
+        translations: &Translations,
+        key: &'a str,
+        label: &'a str
+    ) -> Textarea<'a> {
+        let hint = Some(
+            translations.markdown_inline_links_are_supported_standalone_urls_are_automatically_linked.to_string()
+        );
+        Textarea::new(
+            hint,
+            key,
+            label,
+            None,
+            8
+        )
     }
 
-    fn new(hint: Option<&'a str>, key: &'a str, label: &'a str, rows: usize) -> Textarea<'a> {
+    fn new(
+        hint: Option<String>,
+        key: &'a str,
+        label: &'a str,
+        limit: Option<usize>,
+        rows: usize
+    ) -> Textarea<'a> {
         Textarea {
+            error: String::new(),
             hint,
             id: None,
             key,
             label,
+            limit,
             rows,
             value: String::new()
         }
+    }
+
+    /// Initialize a textarea for a synopsis text
+    pub fn synopsis(
+        translations: &Translations,
+        key: &'a str,
+        label: &'a str
+    ) -> Textarea<'a> {
+        let hint = Some(translations.xxx_characters_maximum(MAX_SYNOPSIS_CHARS));
+        Textarea::new(
+            hint,
+            key,
+            label,
+            Some(MAX_SYNOPSIS_CHARS),
+            3
+        )
+    }
+
+    pub fn validated_value(&mut self, field: &Field) {
+        if let Some(error) = &field.error {
+            self.error = format!(r#"<span class="error">{error}</span>"#);
+        }
+
+        self.value(&field.value);
     }
 
     pub fn value(&mut self, value: &str) {
@@ -63,17 +122,25 @@ impl<'a> Textarea<'a> {
 
 impl Display for Textarea<'_> {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        let error = &self.error;
         let key = self.key;
-        let id = if let Some(id) = self.id { id } else { self.key };
         let label = self.label;
         let rows = self.rows;
         let value = &self.value;
 
+        let id = if let Some(id) = self.id { id } else { self.key };
+
+        let maxlength = if let Some(limit) = self.limit {
+            format!(r#"maxlength="{limit}""#)
+        } else {
+            String::new()
+        };
+
         let textarea = formatdoc!(r#"
-            <textarea id="{id}" name="{key}" rows="{rows}">{value}</textarea>
+            <textarea id="{id}" {maxlength} name="{key}" rows="{rows}">{value}</textarea>
         "#);
 
-        let textarea_wrapped = if let Some(hint) = self.hint {
+        let textarea_wrapped = if let Some(hint) = &self.hint {
             formatdoc!(r#"
                 <div class="textarea_with_hint">
                     <span>{hint}</span>
@@ -88,6 +155,7 @@ impl Display for Textarea<'_> {
             <div class="form_field">
                 <label for="{id}">{label}</label>
                 {textarea_wrapped}
+                {error}
             </div>
         "#);
 

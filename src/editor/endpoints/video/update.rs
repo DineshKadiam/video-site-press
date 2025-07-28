@@ -18,10 +18,10 @@ use crate::{
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
+use crate::manifest::MAX_SYNOPSIS_CHARS;
 
 use super::edit::edit_page;
 use super::edit::UpdateFormFeedback;
-
 use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
@@ -34,6 +34,7 @@ pub struct VideoUpdateForm {
     platform_integration: String,
     release_date: String,
     sort_number: String,
+    synopsis: String,
     title: String,
     unlisted: Option<String>
 }
@@ -91,12 +92,22 @@ pub async fn update(
         )
     };
 
+    let synopsis_trimmed = form.synopsis.trim();
+    let synopsis = if synopsis_trimmed.is_empty() {
+        None
+    } else if synopsis_trimmed.chars().count() <= MAX_SYNOPSIS_CHARS {
+        Some(Ok(synopsis_trimmed.to_string()))
+    } else {
+        Some(Err(language.translations.xxx_characters_maximum(MAX_SYNOPSIS_CHARS)))
+    };
+
     let title_trimmed = form.title.trim();
 
     let unlisted = form.unlisted.is_some();
 
     if release_date.as_ref().is_some_and(|release_date| release_date.is_err()) ||
-        sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
+        sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) ||
+        synopsis.as_ref().is_some_and(|synopsis| synopsis.is_err()) {
         let video = match context.get_video(&site_path) {
             Some(video) => video,
             None => return Either::Right(not_found(&context, &language, &site_path))
@@ -111,6 +122,7 @@ pub async fn update(
             platform_integration,
             release_date: Field::validated(release_date_trimmed, release_date.and_then(|release_date| release_date.err())),
             sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
+            synopsis: Field::validated(synopsis_trimmed, synopsis.and_then(|synopsis| synopsis.err())),
             title: Field::valid(title_trimmed),
             unlisted
         };
@@ -128,6 +140,7 @@ pub async fn update(
             video_mut.platform_integration_local_set(platform_integration);
             video_mut.release_date = release_date.and_then(|release_date| release_date.ok());
             video_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
+            video_mut.synopsis = synopsis.and_then(|synopsis| synopsis.ok());
             video_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             video_mut.unlisted_local_set(unlisted);
             video_mut.write_manifest(&context);

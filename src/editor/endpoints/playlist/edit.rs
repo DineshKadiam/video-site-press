@@ -87,7 +87,7 @@ pub fn edit_page(
     let mut select_feeds = Select::new("feeds", translations.feeds);
     let mut select_order = Select::new("order", translations.order);
     let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
-    let mut textarea_description = Textarea::markdown_subset(language, "description", translations.description);
+    let mut textarea_description = Textarea::markdown_subset(translations, "description", translations.description);
 
     let t_disabled = translations.disabled;
     let t_enabled = translations.enabled;
