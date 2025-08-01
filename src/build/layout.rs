@@ -108,11 +108,13 @@ impl Layout {
             let t_search = translations.search;
             search = formatdoc!(r#"
                 <div class="search" data-root-prefix="{root_prefix}">
-                    <div class="icon">{search_icon}</div>
-                    <input autocomplete="off" placeholder="{t_search} (s)" type="search">
-                    <button>
-                        {close_icon}
-                    </button>
+                    <div>
+                        <div class="icon">{search_icon}</div>
+                        <input autocomplete="off" placeholder="{t_search}" type="search">
+                        <button>
+                            {close_icon}
+                        </button>
+                    </div>
                     <div class="pane">
                         <div role="status"></div>
                         <div class="results"></div>
@@ -182,7 +184,10 @@ impl Layout {
                         <div class="breadcrumbs">
                             {breadcrumbs}
                         </div>
-                        {theme_toggle}
+                        {search}
+                        <div>
+                            {theme_toggle}
+                        </div>
                     </header>
                     <div class="growing">
                         <div class="center">
@@ -198,7 +203,6 @@ impl Layout {
                                 Hyper 8 Video System {version_display}
                             </a>
                         </div>
-                        {search}
                     </footer>
                 </div>
                 {templates}
