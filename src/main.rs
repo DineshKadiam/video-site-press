@@ -69,7 +69,7 @@ use poster_assets::{PosterAsset, PosterAssets};
 use poster_file::PosterFile;
 use poster_meta::PosterMeta;
 use processing::{Job, JobKind, Processing, Progress};
-use site::{Site, SiteContent, SiteItem};
+use site::{Site, SiteContent};
 use site_path::SitePath;
 use site_url::SiteUrl;
 use subtitles::SubtitleFile;
