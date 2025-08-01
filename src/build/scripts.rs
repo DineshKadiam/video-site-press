@@ -5,7 +5,15 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Context, Site, SiteItem};
+use crate::{
+    Collection,
+    Context,
+    Playlist,
+    Site,
+    SiteContent,
+    Translations,
+    Video
+};
 use crate::util::url_safe_hash_base64;
 
 use super::AssetHashes;
@@ -38,82 +46,109 @@ pub fn generate_search_js(
 ) {
     let translations = &site.language.translations;
 
-    let mut items = Vec::new();
-
-    let mut visit = |item: SiteItem| {
-        let image;
-        let kind;
-        let title;
-        let site_path;
-
-        match item {
-            SiteItem::Collection(collection) => {
-                image = None;
-                kind = "collection";
-                title = collection.title_or_slug_or_generic_label(&translations);
-                site_path = collection.site_path.normalized();
-            }
-            SiteItem::Playlist(playlist) => {
-                image = None;
-                kind = "playlist";
-                title = playlist.title_or_slug_or_generic_label(&translations);
-                site_path = playlist.site_path.normalized();
-            }
-            SiteItem::Video(video) => {
-                image = video.poster
-                    .as_ref()
-                    .and_then(|poster| poster.assets.as_ref())
-                    .map(|assets| assets.max_160.target_filename("poster"));
-                kind = "video";
-                title = video.title_or_slug_or_generic_label(&translations);
-                site_path = video.site_path.normalized();
-            }
-        }
+    fn video_js(translations: &Translations, video: &Video) -> String {
+        let image = video.poster
+            .as_ref()
+            .and_then(|poster| poster.assets.as_ref())
+            .map(|assets| assets.max_160.target_filename("poster"));
+        let title = video.title_or_slug_or_generic_label(&translations);
+        let site_path = video.site_path.normalized();
 
         let r_image = if let Some(file_name) = image {
-            format!("image: '{file_name}',")
+            format!("image:'{file_name}',")
         } else {
             String::new()
         };
 
         let title_escaped = js_escape_inside_single_quoted_string(title);
-        let r_item = formatdoc!(r#"
-            {{
-                kind: '{kind}',
-                {r_image}
-                title: '{title_escaped}',
-                url: '{site_path}'
-            }}
-        "#);
 
-        items.push(r_item);
+        format!("{{{r_image}sitePath:'{site_path}',title:'{title_escaped}'}}")
+    }
+
+    fn playlist_js(playlist: &Playlist, translations: &Translations) -> String {
+        let title = playlist.title_or_slug_or_generic_label(&translations);
+        let site_path = playlist.site_path.normalized();
+
+        let title_escaped = js_escape_inside_single_quoted_string(title);
+
+        let videos = playlist.public_videos_in_playlist_order()
+            .iter()
+            .map(|video| video_js(translations, &video))
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        format!("{{sitePath:'{site_path}',title:'{title_escaped}',videos:[{videos}]}}")
+    }
+
+    fn collection_js(collection: &Collection, translations: &Translations) -> String {
+        let title = collection.title_or_slug_or_generic_label(&translations);
+        let site_path = collection.site_path.normalized();
+
+        let title_escaped = js_escape_inside_single_quoted_string(title);
+
+        let playlists = collection.public_playlists_desc_by_release_date()
+            .iter()
+            .map(|playlist| playlist_js(&playlist, translations))
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        let subcollections = collection.public_subcollections_desc_by_release_date()
+            .iter()
+            .map(|subcollection| collection_js(&subcollection, translations))
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        let videos = collection.public_videos_in_collection_video_order()
+            .iter()
+            .map(|video| video_js(translations, &video))
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        format!("{{\
+            playlists:[{playlists}],\
+            sitePath:'{site_path}',\
+            subcollections:[{subcollections}],\
+            title:'{title_escaped}',\
+            videos:[{videos}]\
+        }}")
+    }
+
+    let site_content = match &site.content {
+        SiteContent::Collection(collection) => {
+            let r_collection = collection_js(collection, translations);
+            let site_content = format!("{{collection:{r_collection}}}");
+            Some(site_content)
+        }
+        SiteContent::Empty => None,
+        SiteContent::Invalid { .. } => None,
+        SiteContent::Playlist(playlist) => {
+            let r_playlist = playlist_js(playlist, translations);
+            let site_content = format!("{{playlist:{r_playlist}}}");
+            Some(site_content)
+        }
+        SiteContent::Video(_) => None
     };
 
-    site.walk_recursive(&mut visit);
+    if let Some(site_content) = site_content {
+        let t_nothing_found_for_xxx = js_escape_inside_single_quoted_string(translations.nothing_found_for_xxx);
+        let t_showing_xxx_results_for_xxx = js_escape_inside_single_quoted_string(translations.showing_xxx_results_for_xxx);
+        let mut js = formatdoc!(r#"
+            const SEARCH_JS_T = {{
+                nothingFoundForXxx: query => '{t_nothing_found_for_xxx}'.replace('{{query}}', query),
+                showingXxxResultsForXxx: (count, query) => '{t_showing_xxx_results_for_xxx}'.replace('{{count}}', count).replace('{{query}}', query)
+            }};
+            const siteContent = {site_content};
+        "#);
 
-    let r_items = items.join(",\n");
+        js.push_str(include_str!("assets/search.js"));
 
-    let t_nothing_found_for_xxx = js_escape_inside_single_quoted_string(translations.nothing_found_for_xxx);
-    let t_showing_xxx_results_for_xxx = js_escape_inside_single_quoted_string(translations.showing_xxx_results_for_xxx);
-    let mut js = formatdoc!(r#"
-        const SEARCH_JS_T = {{
-            nothingFoundForXxx: query => '{t_nothing_found_for_xxx}'.replace('{{query}}', query),
-            showingXxxResultsForXxx: (count, query) => '{t_showing_xxx_results_for_xxx}'.replace('{{count}}', count).replace('{{query}}', query)
-        }};
+        asset_hashes.search_js = Some(url_safe_hash_base64(&js));
 
-        const SITE_ITEMS = [
-            {r_items}
-        ];
-    "#);
-
-    js.push_str(include_str!("assets/search.js"));
-
-    asset_hashes.search_js = Some(url_safe_hash_base64(&js));
-
-    fs::write(
-        context.build_dir.join("search.js"),
-        js
-    ).unwrap();
+        fs::write(
+            context.build_dir.join("search.js"),
+            js
+        ).unwrap();
+    }
 }
 
 pub fn generate_video_js(context: &Context) {

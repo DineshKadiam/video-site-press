@@ -428,7 +428,7 @@ video.addEventListener('ended', () => {
 video.addEventListener('click', togglePlayback);
 
 window.addEventListener('keydown', event => {
-    if (searchContainer.contains(event.target)) return;
+    if (searchContainer?.contains(event.target)) return;
 
     if (event.key === ' ') {
         togglePlayback();

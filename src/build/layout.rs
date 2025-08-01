@@ -100,7 +100,30 @@ impl Layout {
             String::new()
         };
 
-        let search_js_asset_hash = asset_hashes.search_js.as_ref().unwrap();
+        let search;
+        let search_script;
+        if let Some(search_js_asset_hash) = &asset_hashes.search_js {
+            let search_icon = icons::search(translations.search);
+            let close_icon = icons::failure(translations.close);
+            let t_search = translations.search;
+            search = formatdoc!(r#"
+                <div class="search" data-root-prefix="{root_prefix}">
+                    <div class="icon">{search_icon}</div>
+                    <input autocomplete="off" placeholder="{t_search} (s)" type="search">
+                    <button>
+                        {close_icon}
+                    </button>
+                    <div class="pane">
+                        <div role="status"></div>
+                        <div class="results"></div>
+                    </div>
+                </div>
+            "#);
+            search_script = format!(r#"<script defer src="{root_prefix}search.js?{search_js_asset_hash}"></script>"#);
+        } else {
+            search = String::new();
+            search_script = String::new();
+        };
 
         let head = formatdoc!(r#"
             <head>
@@ -113,7 +136,7 @@ impl Layout {
                 {adaptive_theme_script}
                 {clipboard_script}
                 {video_script}
-                <script defer src="{root_prefix}search.js?{search_js_asset_hash}"></script>
+                {search_script}
             </head>
         "#);
 
@@ -152,9 +175,6 @@ impl Layout {
             templates.push_str(&player_icon_templates(translations));
         }
 
-        let search_icon = icons::search(translations.search);
-        let close_icon = icons::failure(translations.close);
-        let t_search = translations.search;
         let body = formatdoc!(r##"
             <body>
                 <div class="layout">
@@ -178,17 +198,7 @@ impl Layout {
                                 Hyper 8 Video System {version_display}
                             </a>
                         </div>
-                        <div class="search" data-root-prefix="{root_prefix}">
-                            <div class="icon">{search_icon}</div>
-                            <input autocomplete="off" placeholder="{t_search} (s)" type="search">
-                            <button>
-                                {close_icon}
-                            </button>
-                            <div class="pane">
-                                <div role="status"></div>
-                                <div class="results"></div>
-                            </div>
-                        </div>
+                        {search}
                     </footer>
                 </div>
                 {templates}

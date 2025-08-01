@@ -112,7 +112,7 @@ pub fn playlist_html(
             .join("\n");
 
         let videos_rendered = formatdoc!(r#"
-            <div class="playlist">
+            <div class="playlist_page">
                 {videos}
             </div>
         "#);
