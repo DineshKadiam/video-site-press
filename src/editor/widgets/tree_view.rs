@@ -201,14 +201,14 @@ fn collection_node(
         }
 
         if collection.site_path.is_root_path() && site.manifest_errors.is_empty() {
-            let logo = icons::logo(None);
+            let logo_monochrome = icons::logo_monochrome(None);
             let t_site_settings = translations.site_settings;
             let site_settings_url = routes::SITE_EDIT;
             let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
 
             let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
-                    {logo} {t_site_settings}
+                    {logo_monochrome} {t_site_settings}
                 </a>
             "#);
 
@@ -381,14 +381,14 @@ fn playlist_node(
         }
 
         if playlist.site_path.is_root_path() && site.manifest_errors.is_empty() {
-            let logo = icons::logo(None);
+            let logo_monochrome = icons::logo_monochrome(None);
             let t_site_settings = translations.site_settings;
             let site_settings_url = routes::SITE_EDIT;
             let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
 
             let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
-                    {logo} {t_site_settings}
+                    {logo_monochrome} {t_site_settings}
                 </a>
             "#);
 
@@ -736,14 +736,14 @@ fn video_node(
         }
 
         if video.site_path.is_root_path() && site.manifest_errors.is_empty() {
-            let logo = icons::logo(None);
+            let logo_monochrome = icons::logo_monochrome(None);
             let t_site_settings = translations.site_settings;
             let site_settings_url = routes::SITE_EDIT;
             let site_settings_active = if *subpage == Subpage::SiteSettings { "active" } else { "" };
 
             let site_settings = formatdoc!(r#"
                 <a class="{site_settings_active} subpage" href="{site_settings_url}" style="padding-left: {padding_left};">
-                    {logo} {t_site_settings}
+                    {logo_monochrome} {t_site_settings}
                 </a>
             "#);
 

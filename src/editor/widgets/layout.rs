@@ -127,9 +127,9 @@ fn controls(
     let storage_usage = human_size(site.storage_usage());
     let storage = format!(r#"<a href="/">{storage_icon} {storage_usage}</a>"#);
 
-    let logo_icon = icons::logo(Some("Hyper 8"));
+    let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
     let t_about = translations.about;
-    let about = format!(r#"<button id="toggle-splash">{logo_icon} {t_about}</button>"#);
+    let about = format!(r#"<button id="toggle-splash">{logo_polychrome_icon} {t_about}</button>"#);
 
     formatdoc!(r#"
         <div class="controls">

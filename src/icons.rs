@@ -182,22 +182,54 @@ pub fn link(label: Option<&str>) -> String {
     "#)
 }
 
-/// The Hyper 8 logo.
+/// The Hyper 8 logo in its reduced, monochrome variant.
 /// For `label` provide either a label that should be read for screen readers,
 /// or None to declare the icon invisible to screenreaders (e.g. when it would
 /// only contain duplicate content).
-pub fn logo(label: Option<&str>) -> String {
+pub fn logo_monochrome(label: Option<&str>) -> String {
     let (aria_hidden, title) = match label {
         Some(label) => ("", format!("<title>{label}</title>")),
         None => (r#"aria-hidden="true""#, String::new())
     };
 
-    formatdoc!(r#"
+    formatdoc!(r##"
         <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             {title}
-            <path d="m32.001 2.1322c-16.463 0-29.85 13.395-29.85 29.867 0 16.472 13.387 29.869 29.85 29.869s29.849-13.396 29.849-29.869c0-16.472-13.386-29.867-29.849-29.867zm0 3.8743c14.368 0 25.974 11.613 25.974 25.993 0 14.38-11.607 25.994-25.974 25.994s-25.974-11.615-25.974-25.994c0-14.38 11.607-25.993 25.974-25.993zm0 4.0977c-2.631 0-5.2631 0.99907-7.2588 2.9947-3.9914 3.9913-3.9914 10.523 0 14.515l4.3827 4.3827-4.3827 4.3812c-3.9914 3.9913-3.9914 10.525 0 14.516 3.9913 3.9913 10.525 3.9913 14.516 0 3.9913-3.9913 3.9913-10.525 0-14.516l-4.3812-4.3812 4.3812-4.3827c3.9913-3.9913 3.9913-10.523 0-14.515-1.9956-1.9956-4.6262-2.9947-7.2573-2.9947zm0 4.0422c1.5816 0 3.1627 0.61004 4.3812 1.8286 2.437 2.4371 2.437 6.3253 0 8.7623l-4.3812 4.3827v0l-4.3812-4.3827c-2.4371-2.437-2.4371-6.3253 0-8.7623 1.2185-1.2185 2.801-1.8286 4.3827-1.8286zm-17.032 9.1197c-0.66388 0.40882-1.2917 0.8973-1.8656 1.4712-3.9913 3.9914-3.9914 10.525 0 14.516 0.57443 0.5744 1.2026 1.0636 1.8671 1.4727 0.24332-1.4123 0.66734-2.7965 1.2571-4.1239-0.08297-0.07469-0.16816-0.14498-0.24806-0.22491-2.437-2.437-2.437-6.3268 0-8.7639 0.07942-0.07941 0.16406-0.14914 0.24648-0.22337-0.58973-1.3274-1.0138-2.7115-1.257-4.1239zm34.068 0.0032c-0.24301 1.4121-0.67074 2.7952-1.2601 4.1224 0.08179 0.07375 0.16603 0.14294 0.2449 0.22183 2.437 2.4371 2.437 6.3268 0 8.7639-0.07919 0.07916-0.16437 0.14781-0.24648 0.22183 0.5895 1.3271 1.0186 2.7102 1.2617 4.1224 0.66198-0.40822 1.2886-0.8957 1.8609-1.4681 3.9913-3.9913 3.9913-10.525 0-14.516-0.57254-0.5725-1.1989-1.0598-1.8609-1.4681zm-17.036 11.603 4.3827 4.3812c2.437 2.4371 2.437 6.3268 0 8.7639-2.437 2.437-6.3268 2.437-8.7638 0-2.4371-2.4371-2.4371-6.3268 0-8.7639z"/>
+            <path d="m7.0744 5.4211c-0.91299-1.138e-4 -1.6532 0.7399-1.6533 1.6529v49.852c-1.172e-4 0.91316 0.74018 1.6535 1.6533 1.6533h49.852c0.91299-1.32e-4 1.653-0.74036 1.6529-1.6533v-49.287a1.362 1.362 0 0 0-0.39907-0.96324l-0.85521-0.85497a1.3626 1.3626 0 0 0-0.96335-0.39896zm7.0765 16.079h35.699v20.999h-35.699z"/>
         </svg>
-    "#)
+    "##)
+}
+
+/// The Hyper 8 logo in its catchy, polychrome variant.
+/// For `label` provide either a label that should be read for screen readers,
+/// or None to declare the icon invisible to screenreaders (e.g. when it would
+/// only contain duplicate content).
+pub fn logo_polychrome(label: Option<&str>) -> String {
+    let (aria_hidden, title) = match label {
+        Some(label) => ("", format!("<title>{label}</title>")),
+        None => (r#"aria-hidden="true""#, String::new())
+    };
+
+    formatdoc!(r##"
+        <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            {title}
+            <defs>
+                <filter height="120%" id="logo-blur" primitiveUnits="objectBoundingBox" width="120%" x="-10%" y="-10%">
+                    <feGaussianBlur stdDeviation=".06"></feGaussianBlur>
+                </filter>
+                <clipPath id="logo-mask">
+                    <path d="m7.0744 5.4211c-0.91299-1.138e-4 -1.6532 0.7399-1.6533 1.6529v49.852c-1.172e-4 0.91316 0.74018 1.6535 1.6533 1.6533h49.852c0.91299-1.32e-4 1.653-0.74036 1.6529-1.6533v-49.287a1.362 1.362 0 0 0-0.39907-0.96324l-0.85521-0.85497a1.3626 1.3626 0 0 0-0.96335-0.39896zm7.0765 16.079h35.699v20.999h-35.699z"/>
+                </clipPath>
+            </defs>
+            {title}
+            <g clip-path="url(#logo-mask)"  filter="url(#logo-blur)">
+                <circle cx="4" cy="4" fill="#ffae1c" r="32"/>
+                <circle cx="62" cy="4" fill="#ff280a" r="32"/>
+                <circle cx="62" cy="62" fill="#dd00d7" r="32"/>
+                <circle cx="4" cy="62" fill="#237dff" r="32"/>
+            </g>
+        </svg>
+    "##)
 }
 
 pub fn maximize(label: &str) -> String {

@@ -177,6 +177,7 @@ impl Layout {
             templates.push_str(&player_icon_templates(translations));
         }
 
+        let logo_polychrome_icon = icons::logo_polychrome(None);
         let body = formatdoc!(r##"
             <body>
                 <div class="layout">
@@ -200,7 +201,7 @@ impl Layout {
                                 {e_site_title}
                             </span>
                             <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
-                                Hyper 8 Video System {version_display}
+                                {logo_polychrome_icon} Hyper 8 Video System {version_display}
                             </a>
                         </div>
                     </footer>
