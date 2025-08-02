@@ -63,6 +63,8 @@ impl Layout {
         let root_prefix = traversal.prefix_asc();
         let translations = &site.language.translations;
 
+        let e_site_title = html_escape_outside_attribute(site.title());
+
         let mut extra_meta = String::new();
 
         if !self.indexing {
@@ -100,31 +102,39 @@ impl Layout {
             String::new()
         };
 
+        let browse;
         let search;
-        let search_script;
-        if let Some(search_js_asset_hash) = &asset_hashes.search_js {
+        let navigation_script;
+        if let Some(navigation_js_asset_hash) = &asset_hashes.navigation_js {
             let search_icon = icons::search(translations.search);
             let close_icon = icons::failure(translations.close);
             let t_search = translations.search;
+
+            let t_browse = translations.browse;
+            browse = formatdoc!(r#"
+                <button class="browse">
+                    {t_browse}
+                </button>
+            "#);
+
             search = formatdoc!(r#"
-                <div class="search" data-root-prefix="{root_prefix}">
-                    <div>
-                        <div class="icon">{search_icon}</div>
-                        <input autocomplete="off" placeholder="{t_search}" type="search">
-                        <button>
-                            {close_icon}
-                        </button>
-                    </div>
-                    <div class="pane">
-                        <div role="status"></div>
-                        <div class="results"></div>
-                    </div>
+                <div class="search">
+                    <div class="icon">{search_icon}</div>
+                    <input autocomplete="off" placeholder="{t_search}" type="search">
+                    <button>
+                        {close_icon}
+                    </button>
+                </div>
+                <div class="site_tree" data-root-prefix="{root_prefix}">
+                    <div role="status"></div>
+                    <div class="elements"></div>
                 </div>
             "#);
-            search_script = format!(r#"<script defer src="{root_prefix}search.js?{search_js_asset_hash}"></script>"#);
+            navigation_script = format!(r#"<script defer src="{root_prefix}navigation.js?{navigation_js_asset_hash}"></script>"#);
         } else {
+            browse = String::new();
             search = String::new();
-            search_script = String::new();
+            navigation_script = String::new();
         };
 
         let head = formatdoc!(r#"
@@ -138,7 +148,7 @@ impl Layout {
                 {adaptive_theme_script}
                 {clipboard_script}
                 {video_script}
-                {search_script}
+                {navigation_script}
             </head>
         "#);
 
@@ -165,8 +175,6 @@ impl Layout {
 
         let version_display = env!("HYPER8_VERSION_DISPLAY");
 
-        let e_site_title = html_escape_outside_attribute(site.title());
-
         let mut templates = String::new();
 
         if self.clipboard_script {
@@ -177,15 +185,18 @@ impl Layout {
             templates.push_str(&player_icon_templates(translations));
         }
 
-        let logo_polychrome_icon = icons::logo_polychrome(None);
+        let logo_monochrome_icon = icons::logo_monochrome(None);
+        let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
         let body = formatdoc!(r##"
             <body>
                 <div class="layout">
                     <header>
-                        <div class="breadcrumbs">
-                            {breadcrumbs}
+                        <div class="navigation">
+                            {logo_polychrome_icon}
+                            <span class="title">{e_site_title}</span>
+                            {browse}
+                            {search}
                         </div>
-                        {search}
                         <div>
                             {theme_toggle}
                         </div>
@@ -201,7 +212,7 @@ impl Layout {
                                 {e_site_title}
                             </span>
                             <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
-                                {logo_polychrome_icon} Hyper 8 Video System {version_display}
+                                {logo_monochrome_icon} Hyper 8 Video System {version_display}
                             </a>
                         </div>
                     </footer>

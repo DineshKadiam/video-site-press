@@ -58,7 +58,7 @@ const META_ROBOTS_NOINDEX_NOFOLLOW: &str = r#"<meta name="robots" content="noind
 /// groups together those hashes for all assets we use.
 pub struct AssetHashes {
     pub embed_css: Option<String>,
-    pub search_js: Option<String>,
+    pub navigation_js: Option<String>,
     pub site_css: Option<String>
 }
 
@@ -71,7 +71,7 @@ impl AssetHashes {
     pub fn new() -> AssetHashes {
         AssetHashes {
             embed_css: None,
-            search_js: None,
+            navigation_js: None,
             site_css: None
         }
     }
@@ -103,7 +103,7 @@ pub fn perform_build(context: &Context) {
         scripts::generate_clipboard_js(context);
     }
 
-    scripts::generate_search_js(&mut asset_hashes, context, &site);
+    scripts::generate_navigation_js(&mut asset_hashes, context, &site);
 
     if site.base_url.is_some() {
         if site.embeds_requested() {

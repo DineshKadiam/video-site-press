@@ -30,6 +30,7 @@ pub struct Translations {
     pub beginning_deployment_over_secure_ftp_tls_ssl: &'static str,
     pub beginning_deployment_over_insecure_ftp_unencrypted: &'static str,
     pub best: &'static str,
+    pub browse: &'static str,
     pub browser_support_unclear: &'static str,
     pub cancel: &'static str,
     pub clean_urls_label: &'static str,
@@ -278,6 +279,7 @@ pub struct Translations {
     pub website: &'static str,
     pub worst: &'static str,
     xxx_characters_maximum: &'static str,
+    pub xxx_videos: &'static str,
     pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str
 }
 
@@ -315,6 +317,7 @@ impl Translations {
             beginning_deployment_over_secure_ftp_tls_ssl: "Initiiere Deployment über sicheres FTPS (TLS/SSL)",
             beginning_deployment_over_insecure_ftp_unencrypted: "Initiiere Deployment über unsicheres FTP (unverschlüsselt)",
             best: "Beste",
+            browse: "Stöbern",
             browser_support_unclear: "Browserunterstützung unklar",
             cancel: "Abbrechen",
             clean_urls_label: "Dekorative URLs (example.com/xyz/ statt example.com/xyz/index.html)",
@@ -568,6 +571,7 @@ impl Translations {
             website: "Website",
             worst: "Schlechteste",
             xxx_characters_maximum: "Maximal {maximum} Zeichen",
+            xxx_videos: "{count} Videos",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "Du musst nicht sowohl einen Titel als auch einen Permalink angeben, aber eines von beiden muss ausgefüllt sein."
         }
     }
@@ -605,6 +609,7 @@ impl Translations {
             beginning_deployment_over_secure_ftp_tls_ssl: "Beginning deployment over secure FTP (TLS/SSL)",
             beginning_deployment_over_insecure_ftp_unencrypted: "Beginning deployment over insecure FTP (unencrypted)",
             best: "Best",
+            browse: "Browse",
             browser_support_unclear: "Browser support unclear",
             cancel: "Cancel",
             clean_urls_label: "Clean URLs (example.com/xyz/ instead of example.com/xyz/index.html)",
@@ -859,6 +864,7 @@ impl Translations {
             website: "Website",
             worst: "Worst",
             xxx_characters_maximum: "{maximum} characters maximum",
+            xxx_videos: "{count} videos",
             you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
         }
     }

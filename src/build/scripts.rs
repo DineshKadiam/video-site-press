@@ -39,7 +39,7 @@ pub fn generate_embed_js(context: &Context) {
     ).unwrap();
 }
 
-pub fn generate_search_js(
+pub fn generate_navigation_js(
     asset_hashes: &mut AssetHashes,
     context: &Context,
     site: &Site
@@ -132,20 +132,22 @@ pub fn generate_search_js(
     if let Some(site_content) = site_content {
         let t_nothing_found_for_xxx = js_escape_inside_single_quoted_string(translations.nothing_found_for_xxx);
         let t_showing_xxx_results_for_xxx = js_escape_inside_single_quoted_string(translations.showing_xxx_results_for_xxx);
+        let t_xxx_videos = js_escape_inside_single_quoted_string(translations.xxx_videos);
         let mut js = formatdoc!(r#"
-            const SEARCH_JS_T = {{
+            const NAVIGATION_JS_T = {{
                 nothingFoundForXxx: query => '{t_nothing_found_for_xxx}'.replace('{{query}}', query),
-                showingXxxResultsForXxx: (count, query) => '{t_showing_xxx_results_for_xxx}'.replace('{{count}}', count).replace('{{query}}', query)
+                showingXxxResultsForXxx: (count, query) => '{t_showing_xxx_results_for_xxx}'.replace('{{count}}', count).replace('{{query}}', query),
+                xxxVideos: count => '{t_xxx_videos}'.replace('{{count}}', count)
             }};
             const siteContent = {site_content};
         "#);
 
-        js.push_str(include_str!("assets/search.js"));
+        js.push_str(include_str!("assets/navigation.js"));
 
-        asset_hashes.search_js = Some(url_safe_hash_base64(&js));
+        asset_hashes.navigation_js = Some(url_safe_hash_base64(&js));
 
         fs::write(
-            context.build_dir.join("search.js"),
+            context.build_dir.join("navigation.js"),
             js
         ).unwrap();
     }
