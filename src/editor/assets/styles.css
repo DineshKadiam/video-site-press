@@ -74,6 +74,11 @@ button.action:focus-visible,
 button.action:hover {
     background: var(--action-hover);
 }
+button.action[disabled] {
+    background: var(--bg-2);
+    color: var(--mg);
+    cursor: default;
+}
 button.danger {
     background: var(--danger);
     color: var(--l-1);

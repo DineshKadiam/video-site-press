@@ -154,6 +154,8 @@ pub fn resource_actions(
 
     let build_action = format!("/build/{}", site_path.normalized());
 
+    let preview_disabled = if offline { "disabled" } else { "" };
+
     let t_copy_path = translations.copy_path;
     let t_preview = translations.preview;
     let failure_icon = icons::failure(translations.failed);
@@ -164,7 +166,7 @@ pub fn resource_actions(
         {local_path_displayed}
         <div class="button_group">
             <form action="{build_action}" method="post" target="_blank">
-                <button class="action">{preview_icon} {t_preview}</button>
+                <button class="action" {preview_disabled}>{preview_icon} {t_preview}</button>
             </form>
             {copy_live_url}
             <button class="action" data-copy="{local_path}">
