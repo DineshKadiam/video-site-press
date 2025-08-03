@@ -317,9 +317,17 @@ pub fn player(
 
     let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
 
-    let t_next_video = translations.next_video;
     let next_video_button = match next_video {
-        Some(next_video) => format!(r#"<a href="{video_prefix}../{}{index_suffix}">{t_next_video}</a>"#, next_video.slug_unchecked()),
+        Some(next_video) => {
+            let next_video_slug = next_video.slug_unchecked();
+            let next_video_icon = icons::NEXT_VIDEO;
+            let t_next_video = translations.next_video;
+            formatdoc!(r#"
+                <a class="align flex space" href="{video_prefix}../{next_video_slug}{index_suffix}">
+                    {next_video_icon} {t_next_video}
+                </a>
+            "#)
+        }
         None => String::new()
     };
 
@@ -386,6 +394,7 @@ pub fn player(
     };
 
     let play_icon = icons::play(translations.play);
+    let replay_icon = icons::REPLAY;
     let t_replay = translations.replay;
     formatdoc!(r#"
         <style>
@@ -398,7 +407,7 @@ pub fn player(
             </div>
             <div class="player_outro">
                 <button class="align flex space" id="replay">
-                    {play_icon}
+                    {replay_icon}
                     {t_replay}
                 </button>
                 {next_video_button}
