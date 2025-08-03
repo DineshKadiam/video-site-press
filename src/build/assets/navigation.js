@@ -14,61 +14,39 @@ const indexSuffix = window.location.pathname.endsWith('index.html') ? 'index.htm
 const rootPrefix = siteTree.dataset.rootPrefix;
 
 // We only render the site tree elements (which are displayed during
-// browsing/searching) into the DOM when the search field first gains focus.
-let siteTreeInitialized = false;
+// browsing/searching) into the DOM when, or shortly before, we need them,
+// for instance when the browse button or search input first gains focus.
+// (null = uninitialized, false = initializing, true = initialized)
+let siteTreeInitialized = null;
 
 // If browsing/searching is initiated before the site tree has been
 // initialized, we use this as the interval handle for repeatedly retrying
 // the operation until the site tree has finished initializing.
-let delayedUpdateInterval = null;
+let accessSiteTreeCallback = null;
+let accessSiteTreeInterval = null;
 
-function browse() {
-    function updateVideo(video) {
-        video.element.classList.remove('visible');
-    }
-
-    function updatePlaylist(playlist) {
-        for (const video of playlist.videos) {
-            updateVideo(video);
+function accessSiteTree(callback) {
+    if (siteTreeInitialized === true) {
+        callback();
+    } else if (accessSiteTreeInterval === null) {
+        if (siteTreeInitialized === null) {
+            siteTreeInitialized = false;
+            initializeSiteTree();
         }
 
-        playlist.element.classList.add('visible');
-    }
-
-    function updateCollection(collection) {
-        for (const video of collection.videos) {
-            updateVideo(video);
-        }
-
-        for (const playlist of collection.playlists) {
-            updatePlaylist(playlist);
-        }
-
-        for (const subcollection of collection.subcollections) {
-            updateCollection(subcollection);
-        }
-
-        collection.element.classList.add('visible');
-    }
-
-    siteTreeStatus.textContent = '';
-
-    if (siteTreeElements.dataset.mode === 'browse') {
-        siteTree.classList.remove('open');
-        siteTreeElements.dataset.mode = null;
+        accessSiteTreeCallback = callback;
+        accessSiteTreeInterval = setInterval(
+            () => {
+                if (siteTreeInitialized) {
+                    clearInterval(accessSiteTreeInterval);
+                    accessSiteTreeInterval = null;
+                    accessSiteTreeCallback();
+                }
+            },
+            20
+        );
     } else {
-        if (siteContent.collection) {
-            updateCollection(siteContent.collection);
-        } else {
-            updatePlaylist(siteContent.playlist);
-        }
-
-        siteTreeElements.style.setProperty('display', null);
-        siteTree.classList.add('open');
-        siteTreeElements.dataset.mode = 'browse';
-
-        // TODO: Do we need to announce the browser opening with a custom status/text?
-        // siteTreeStatus.setAttribute('aria-label', NAVIGATION_JS_T.showingXxxResultsForXxx(shown, query));
+        accessSiteTreeCallback = callback;
     }
 }
 
@@ -178,7 +156,57 @@ function initializeSiteTree() {
     siteTreeInitialized = true;
 }
 
-function updateResults() {
+function toggleBrowse() {
+    function updateVideo(video) {
+        video.element.classList.remove('visible');
+    }
+
+    function updatePlaylist(playlist) {
+        for (const video of playlist.videos) {
+            updateVideo(video);
+        }
+
+        playlist.element.classList.add('visible');
+    }
+
+    function updateCollection(collection) {
+        for (const video of collection.videos) {
+            updateVideo(video);
+        }
+
+        for (const playlist of collection.playlists) {
+            updatePlaylist(playlist);
+        }
+
+        for (const subcollection of collection.subcollections) {
+            updateCollection(subcollection);
+        }
+
+        collection.element.classList.add('visible');
+    }
+
+    siteTreeStatus.textContent = '';
+
+    if (siteTreeElements.dataset.mode === 'browse') {
+        siteTree.classList.remove('open');
+        siteTreeElements.dataset.mode = null;
+    } else {
+        if (siteContent.collection) {
+            updateCollection(siteContent.collection);
+        } else {
+            updatePlaylist(siteContent.playlist);
+        }
+
+        siteTreeElements.style.setProperty('display', null);
+        siteTree.classList.add('open');
+        siteTreeElements.dataset.mode = 'browse';
+
+        // TODO: Do we need to announce the browser opening with a custom status/text?
+        // siteTreeStatus.setAttribute('aria-label', NAVIGATION_JS_T.showingXxxResultsForXxx(shown, query));
+    }
+}
+
+function updateSearch() {
     const query = searchInput.value.trim();
 
     if (query.length) {
@@ -251,40 +279,11 @@ clearSearchButton.addEventListener('click', clearSearch);
 browseButton.addEventListener('focus', initializeSiteTree);
 searchInput.addEventListener('focus', initializeSiteTree);
 
-browseButton.addEventListener('click', () => {
-    if (siteTreeInitialized) {
-        browse();
-    } else if (delayedUpdateInterval == null) {
-        delayedUpdateInterval = setInterval(
-            () => {
-                if (siteTreeInitialized) {
-                    clearInterval(delayedUpdateInterval);
-                    delayedUpdateInterval = null;
-                    browse();
-                }
-            },
-            20
-        );
-    }
-});
+browseButton.addEventListener('click', () => accessSiteTree(toggleBrowse));
 
 searchInput.addEventListener('input', () => {
     searchContainer.classList.toggle('query_present', searchInput.value.length);
-
-    if (siteTreeInitialized) {
-        updateResults();
-    } else if (delayedUpdateInterval == null) {
-        delayedUpdateInterval = setInterval(
-            () => {
-                if (siteTreeInitialized) {
-                    clearInterval(delayedUpdateInterval);
-                    delayedUpdateInterval = null;
-                    updateResults();
-                }
-            },
-            20
-        );
-    }
+    accessSiteTree(updateSearch);
 });
 
 navigation.addEventListener('keydown', event => {
@@ -427,7 +426,11 @@ function collapseExpand(siteTreeElement, expand = undefined) {
 window.addEventListener('keydown', event => {
     if (event.target === searchInput) return;
 
-    if (event.key === 's') {
+    if (event.key === 'b') {
+        browseButton.focus();
+        accessSiteTree(toggleBrowse);
+        event.preventDefault();
+    } else if (event.key === 's') {
         searchInput.focus();
         event.preventDefault();
     }
