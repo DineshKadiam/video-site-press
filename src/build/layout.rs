@@ -125,7 +125,7 @@ impl Layout {
                         {close_icon}
                     </button>
                 </div>
-                <div class="site_tree" data-root-prefix="{root_prefix}">
+                <div class="site_tree">
                     <div role="status"></div>
                     <div class="elements"></div>
                 </div>
@@ -192,8 +192,10 @@ impl Layout {
                 <div class="layout">
                     <header>
                         <div class="navigation">
-                            {logo_polychrome_icon}
-                            <span class="title">{e_site_title}</span>
+                            <a class="home" href="{root_prefix}">
+                                {logo_polychrome_icon}
+                                <span class="title">{e_site_title}</span>
+                            </a>
                             {browse}
                             {search}
                         </div>

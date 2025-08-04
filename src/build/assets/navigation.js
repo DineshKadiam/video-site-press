@@ -11,7 +11,7 @@ const siteTreeElements = siteTree.querySelector('.elements');
 const siteTreeStatus = siteTree.querySelector('[role="status"]');
 
 const indexSuffix = window.location.pathname.endsWith('index.html') ? 'index.html' : '';
-const rootPrefix = siteTree.dataset.rootPrefix;
+const rootPrefix = document.querySelector('.home').getAttribute('href');
 
 // We only render the site tree elements (which are displayed during
 // browsing/searching) into the DOM when, or shortly before, we need them,
@@ -123,14 +123,16 @@ function initializeSiteTree() {
             ? traversal.map(ancestor => ancestor.title).join(' > ')
             : collection.title;
 
-        const spanInfo = document.createElement('span');
-        spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(collection.videos.length);
-
         collection.element = document.createElement('a');
         collection.element.classList.add('collection');
         collection.element.href = rootPrefix + collection.sitePath + indexSuffix;
         collection.element.appendChild(spanText);
-        collection.element.appendChild(spanInfo);
+
+        if (collection.videos.length) {
+            const spanInfo = document.createElement('span');
+            spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(collection.videos.length);
+            collection.element.appendChild(spanInfo);
+        }
 
         siteTreeElements.appendChild(collection.element);
 
@@ -155,6 +157,16 @@ function initializeSiteTree() {
 
     siteTreeInitialized = true;
 }
+
+// TODO: Currently unused but kept around in case we want to pick it up again
+//       (the lqip property is available as video.lqip in the siteContent tree structure).
+// function lqipToRadialGradient(lqip) {
+//     const [ne, nw, se, sw] = lqip;
+//     return `radial-gradient(ellipse at top right, rgb(${ne[0]},${ne[1]},${ne[2]}), transparent),` +
+//         `radial-gradient(ellipse at top left, rgb(${nw[0]},${nw[1]},${nw[2]}), transparent),` +
+//         `radial-gradient(ellipse at bottom right, rgb(${se[0]},${se[1]},${se[2]}), transparent),` +
+//         `radial-gradient(ellipse at bottom left, rgb(${sw[0]},${sw[1]},${sw[2]}), transparent)`;
+// }
 
 function toggleBrowse() {
     function updateVideo(video) {

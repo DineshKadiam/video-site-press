@@ -37,6 +37,15 @@ impl Lqip {
         format!("background: {ne}, {nw}, {se}, {sw};")
     }
 
+    pub fn js_array(&self) -> String {
+        let ne = format!("[{},{},{}]", self.ne.0, self.ne.1, self.ne.2);
+        let nw = format!("[{},{},{}]", self.nw.0, self.nw.1, self.nw.2);
+        let se = format!("[{},{},{}]", self.se.0, self.se.1, self.se.2);
+        let sw = format!("[{},{},{}]", self.sw.0, self.sw.1, self.sw.2);
+
+        format!("[{ne},{nw},{se},{sw}]")
+    }
+
     pub fn new() -> Lqip {
         Lqip {
             ne: (0, 0, 0),

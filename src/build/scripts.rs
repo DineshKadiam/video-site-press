@@ -47,22 +47,34 @@ pub fn generate_navigation_js(
     let translations = &site.language.translations;
 
     fn video_js(translations: &Translations, video: &Video) -> String {
-        let image = video.poster
-            .as_ref()
-            .and_then(|poster| poster.assets.as_ref())
-            .map(|assets| assets.max_160.target_filename("poster"));
-        let title = video.title_or_slug_or_generic_label(&translations);
+        let image;
+        let lqip;
+        match &video.poster {
+            Some(poster) => {
+                image = if let Some(assets) = &poster.assets {
+                    let target_filename = assets.max_160.target_filename("poster");
+                    format!("image:'{target_filename}',")
+                } else {
+                    String::new()
+                };
+
+                lqip = if let Some(poster_meta) = &poster.poster_meta {
+                    format!("lqip:{},", poster_meta.lqip.js_array())
+                } else {
+                    String::new()
+                };
+            }
+            None => {
+                image = String::new();
+                lqip = String::new();
+            }
+        }
+
         let site_path = video.site_path.normalized();
-
-        let r_image = if let Some(file_name) = image {
-            format!("image:'{file_name}',")
-        } else {
-            String::new()
-        };
-
+        let title = video.title_or_slug_or_generic_label(&translations);
         let title_escaped = js_escape_inside_single_quoted_string(title);
 
-        format!("{{{r_image}sitePath:'{site_path}',title:'{title_escaped}'}}")
+        format!("{{{lqip}{image}sitePath:'{site_path}',title:'{title_escaped}'}}")
     }
 
     fn playlist_js(playlist: &Playlist, translations: &Translations) -> String {
