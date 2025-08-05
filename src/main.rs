@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
 
 use clap::Parser;
@@ -81,7 +82,7 @@ use util::Field;
 use video::{Video, VideoFile, VideoMeta, VideoOrder};
 use video_format::{Codec, EncodingApproach, VideoFormat};
 
-fn main() {
+fn main() -> ExitCode {
     env_logger::init();
 
     let args: Args = Args::parse();
@@ -92,7 +93,7 @@ fn main() {
             "Site directory {:?} does not exist, please create it manually (just an empty folder).",
             args.site_dir
         );
-        return
+        return ExitCode::FAILURE;
     }
 
     // This compiles to fs::canonicalize(...) on all platforms but windows,
@@ -163,10 +164,10 @@ fn main() {
         if args.preview {
             let site = context.get_site();
 
-            if site.clean_urls {
+            let result = if site.clean_urls {
                 // Here we serve the preview through an actual http server so
                 // that /foo/ gets resolved to /foo/index.html.
-                preview_server::start(&context.build_dir, &args.ip, &args.port);
+                preview_server::start(&context.build_dir, &args.ip, &args.port)
             } else {
                 // TODO: Uncomment below code and remove the currently used
                 // line (preview_server::start(...)) below it as soon as we have
@@ -179,11 +180,13 @@ fn main() {
                 // let local_file_url = context.build_dir.join("index.html");
                 // if webbrowser::open(&local_file_url.to_string_lossy()).is_err() {
                 //     eprintln!("Could not open browser for previewing the site");
-                //     // return ExitCode::FAILURE
+                //     return ExitCode::FAILURE
                 // }
 
-                preview_server::start(&context.build_dir, &args.ip, &args.port);
-            }
+                preview_server::start(&context.build_dir, &args.ip, &args.port)
+            };
+
+            if result.is_ok() { ExitCode::SUCCESS } else { ExitCode::FAILURE }
         } else if args.deploy {
             let site = context.get_site();
             let language = context.get_editor_language();
@@ -191,14 +194,21 @@ fn main() {
             // TODO: Deployment is async now (this call immediately returns).
             //       Need to switch to a blocking version that also reports output to the console (?)
             match deploy::perform_deploy(&context, &site, &language.translations) {
-                Ok(()) => (),
-                Err(err) => eprintln!("{err}")
-            };
+                Ok(()) => ExitCode::SUCCESS,
+                Err(err) => {
+                    eprintln!("{err}");
+                    ExitCode::FAILURE
+                }
+            }
+        } else {
+            ExitCode::SUCCESS
         }
     } else {
         println!("Using site directory: {}", context.site_dir.display());
 
         watcher::watch(Arc::clone(&context));
-        editor::server::start(context, &args.ip, &args.port);
+        let result = editor::server::start(context, &args.ip, &args.port);
+
+        if result.is_ok() { ExitCode::SUCCESS } else { ExitCode::FAILURE }
     }
 }

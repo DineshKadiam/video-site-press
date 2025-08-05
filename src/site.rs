@@ -69,12 +69,6 @@ pub enum SiteContent {
     Video(Arc<Video>)
 }
 
-pub enum SiteItem<'a> {
-    Collection(&'a Collection),
-    Playlist(&'a Playlist),
-    Video(&'a Video)
-}
-
 impl Site {
     pub fn absolute_url_dir_unchecked(&self, dir: &str, site_path: &SitePath) -> String {
         self.base_url

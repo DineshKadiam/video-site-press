@@ -21,7 +21,7 @@ pub async fn start(
     build_dir: &Path,
     ip_requested: &Option<IpAddr>,
     port_requested: &Option<u16>
-) {
+) -> Result<(), ()> {
     let bind_server = |build_dir_moving: PathBuf, ip: IpAddr, port: u16| {
         HttpServer::new(move || {
             App::new()
@@ -42,7 +42,7 @@ pub async fn start(
             Ok(server) => (server, *port),
             Err(err) => {
                 eprintln!("Could not bind preview server to {ip}:{port} ({err})");
-                return
+                return Err(());
             }
         }
     } else {
@@ -54,7 +54,7 @@ pub async fn start(
                 Err(err) => {
                     if port > DEFAULT_PREVIEW_PORT + MAX_PORT_ATTEMPTS {
                         eprintln!("Could not bind preview server to {ip} on any port in the range {DEFAULT_PREVIEW_PORT}-{port} (last error was {err}).\nUse --port to manually set a port and/or check that no other issue is at play");
-                        return
+                        return Err(());
                     }
 
                     port += 1;
@@ -75,4 +75,6 @@ pub async fn start(
     };
 
     tokio::join!(server.run(), open_browser()).0.unwrap();
+
+    Ok(())
 }
