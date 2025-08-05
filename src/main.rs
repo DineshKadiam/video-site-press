@@ -161,7 +161,29 @@ fn main() {
         build::perform_build(&context);
 
         if args.preview {
-            preview_server::start(&context.build_dir, &args.ip, &args.port);
+            let site = context.get_site();
+
+            if site.clean_urls {
+                // Here we serve the preview through an actual http server so
+                // that /foo/ gets resolved to /foo/index.html.
+                preview_server::start(&context.build_dir, &args.ip, &args.port);
+            } else {
+                // TODO: Uncomment below code and remove the currently used
+                // line (preview_server::start(...)) below it as soon as we have
+                // switched back to using exclusively non-ESM scripts on the
+                // client-side.
+
+                // // We don't need an actively running server to preview a build
+                // // without clean urls, we can just open everything directly in
+                // // a browser.
+                // let local_file_url = context.build_dir.join("index.html");
+                // if webbrowser::open(&local_file_url.to_string_lossy()).is_err() {
+                //     eprintln!("Could not open browser for previewing the site");
+                //     // return ExitCode::FAILURE
+                // }
+
+                preview_server::start(&context.build_dir, &args.ip, &args.port);
+            }
         } else if args.deploy {
             let site = context.get_site();
             let language = context.get_editor_language();
