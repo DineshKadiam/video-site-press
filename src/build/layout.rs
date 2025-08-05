@@ -185,6 +185,8 @@ impl Layout {
             templates.push_str(&player_icon_templates(translations));
         }
 
+        let root_url = traversal.index_asc();
+
         let logo_monochrome_icon = icons::logo_monochrome(None);
         let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
         let body = formatdoc!(r##"
@@ -192,7 +194,7 @@ impl Layout {
                 <div class="layout">
                     <header>
                         <div class="navigation">
-                            <a class="home" href="{root_prefix}">
+                            <a class="home" data-root-prefix="{root_prefix}" href="{root_url}">
                                 {logo_polychrome_icon}
                                 <span class="title">{e_site_title}</span>
                             </a>

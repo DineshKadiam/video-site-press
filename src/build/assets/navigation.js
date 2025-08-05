@@ -11,7 +11,7 @@ const siteTreeElements = siteTree.querySelector('.elements');
 const siteTreeStatus = siteTree.querySelector('[role="status"]');
 
 const indexSuffix = window.location.pathname.endsWith('index.html') ? 'index.html' : '';
-const rootPrefix = document.querySelector('.home').getAttribute('href');
+const rootPrefix = document.querySelector('.home').dataset.rootPrefix;
 
 // We only render the site tree elements (which are displayed during
 // browsing/searching) into the DOM when, or shortly before, we need them,
