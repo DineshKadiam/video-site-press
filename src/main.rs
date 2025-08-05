@@ -32,6 +32,7 @@ mod playlist;
 mod poster_assets;
 mod poster_file;
 mod poster_meta;
+mod preview_server;
 mod processing;
 mod site;
 mod site_path;
@@ -159,7 +160,9 @@ fn main() {
 
         build::perform_build(&context);
 
-        if args.deploy {
+        if args.preview {
+            preview_server::start(&context.build_dir, &args.ip, &args.port);
+        } else if args.deploy {
             let site = context.get_site();
             let language = context.get_editor_language();
 

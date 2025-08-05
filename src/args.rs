@@ -47,6 +47,10 @@ pub struct Args {
     #[clap(long = "port")]
     pub port: Option<u16>,
 
+    /// Use in conjunction with --build to immediately open the site in the browser after the build is complete
+    #[clap(long)]
+    pub preview: bool,
+
     /// The path at which the site resides (user videos and metadata)
     pub site_dir: PathBuf,
 
