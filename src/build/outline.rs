@@ -204,6 +204,17 @@ impl OutlineStats {
 }
 
 impl<'a> Traversal<'a> {
+    /// Relative url to go "back up" the hierarchy up to the root index
+    /// (page), following the "taken steps".
+    pub fn index_asc(&self, site: &Site) -> String {
+        let prefix = self.prefix_asc();
+
+        match site.clean_urls {
+            true => prefix,
+            false => prefix + "index.html"
+        }
+    }
+
     /// Url path to the index (page) at the peeked traversal.
     pub fn index_desc(&self, site: &Site) -> String {
         let prefix = self.prefix_desc();

@@ -185,7 +185,7 @@ impl Layout {
             templates.push_str(&player_icon_templates(translations));
         }
 
-        let root_url = traversal.index_asc();
+        let root_url = traversal.index_asc(site);
 
         let logo_monochrome_icon = icons::logo_monochrome(None);
         let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
