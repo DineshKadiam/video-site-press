@@ -134,21 +134,6 @@ pub fn collection_html(
         body.push_str(&rendered);
     }
 
-    // if traversal.steps.len() > 1 {
-    //     let outline_items = traversal.steps
-    //         .iter()
-    //         .filter(|step| !step.is_collection(collection))
-    //         .enumerate()
-    //         .map(|(index, step)| {
-    //             let prefix = "../".repeat(traversal.steps.len() - 1 - index);
-    //             step.context_for_collection(collection, &prefix, site)
-    //         })
-    //         .collect::<Vec<String>>()
-    //         .join("\n");
-
-    //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
-    // }
-
     if collection.platform_integration().enabled() {
         if let Some(collection_url) = site.absolute_url_index(&collection.site_path) {
             let mut meta = PlatformIntegrationMeta::new(title.to_string(), collection_url);

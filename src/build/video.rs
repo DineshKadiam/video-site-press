@@ -85,22 +85,18 @@ pub fn video_html(
         }
     };
 
-    // let outline_items = traversal.steps
-    //     .iter()
-    //     .filter(|step| !step.is_video(video))
-    //     .enumerate()
-    //     .map(|(index, step)| {
-    //         let prefix = "../".repeat(traversal.steps.len() - 1 - index);
-    //         step.context_for_video(&prefix, site, video)
-    //     })
-    //     .collect::<Vec<String>>()
-    //     .join("\n");
+    let parent_context = if traversal.steps.len() > 1 {
+        let parent_step = &traversal.steps[traversal.steps.len() - 2];
+        let context_with_bubbles = parent_step.context_with_bubbles("../", site);
 
-    // let outline_rendered = formatdoc!(r#"
-    //     <div class="outline">
-    //         {outline_items}
-    //     </div>
-    // "#);
+         formatdoc!(r#"
+            <div class="parent_context">
+                {context_with_bubbles}
+            </div>
+        "#)
+    } else {
+        String::new()
+    };
 
     let video_prefix = "";
     let player_rendered = player(false, next_video, site, video, video_prefix);
@@ -152,11 +148,16 @@ pub fn video_html(
 
     let video_content = formatdoc!(r#"
         <div>
+            <div class="video_info">
+                <div class="align apart flex space wrap" style="margin-top: 2rem;">
+                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
+                    {parent_context}
+                </div>
+            </div>
             {player_rendered}
             <div class="video_info">
-                <div class="align apart flex" style="margin-top: 2rem;">
+                <div class="align_start apart flex wrap" style="margin-top: 2rem;">
                     <div>
-                        <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
                         {release_date}
                     </div>
                     <div class="actions align flex space">
@@ -165,8 +166,8 @@ pub fn video_html(
                         {r_downloads}
                     </div>
                 </div>
-                {description}
                 {links_rendered}
+                {description}
             </div>
         </div>
     "#);

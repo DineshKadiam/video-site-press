@@ -14,6 +14,7 @@ a:hover { color: var(--fg-3); }
     cursor: pointer;
     display: flex;
     padding: .3rem .6rem .3rem .5rem;
+    white-space: nowrap;
 }
 .actions a:focus-visible,
 .actions a:hover,
@@ -62,6 +63,17 @@ button {
     text-underline-offset: .3rem;
 }
 .center .description a:hover { text-decoration: none; }
+.context_dot {
+    border-radius: 50%;
+    display: block;
+    height: 1rem;
+    width: 1rem;
+}
+.context_dot:focus-visible,
+.context_dot:hover {
+    box-shadow: 0 0 .15rem var(--mg);
+}
+.context_dot + .context_dot { margin-left: .3rem; }
 #copy-link::after {
     color: var(--fg-2);
     padding-left: .5rem;
@@ -93,12 +105,13 @@ button {
 }
 .flex { display: flex; }
 .flex.align { align-items: center; }
+.flex.align_start { align-items: flex-start; }
 .flex.apart { justify-content: space-between; }
 .flex.space { column-gap: .3rem; }
+.flex.wrap { flex-wrap: wrap; }
 footer {
     align-items: center;
     background: var(--bg-1);
-    box-sizing: border-box;
     display: flex;
     font-size: .9rem;
     flex-wrap: wrap;
@@ -191,34 +204,25 @@ img {
     padding: .5rem;
 }
 .medium_font { font-size: 1.2rem; }
-/*.outline {
+.parent_context {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .9rem;
+    gap: .3rem;
+    margin-bottom: .2rem;
+}
+.parent_context a:not(.context_dot) {
+    align-items: center;
+    column-gap: .3rem;
+    display: flex;
+}
+.parent_context > div {
+    align-items: flex-end;
     display: flex;
     flex-direction: column;
-    row-gap: 1rem;
+    gap: .3rem;
 }
-.outline > a {
-    border: 1px solid var(--bg-2);
-    border-radius: .6rem;
-    position: relative;
-}
-.outline > a > img,
-.outline > a > .placeholder {
-    border-radius: .6rem;
-}
-.outline > a > .placeholder {
-    background: var(--bg-2);
-    height: 12rem;
-}
-.outline .text {
-    background: var(--bg-1-85);
-    border-bottom-left-radius: .6rem;
-    border-bottom-right-radius: .6rem;
-    bottom: 0;
-    left: 0;
-    padding: 1rem;
-    position: absolute;
-    right: 0;
-}*/
+.parent_context > div > div:nth-child(2) { display: flex; }
 .parents {
     font-size: .9rem;
     margin-top: .2rem;
@@ -346,12 +350,7 @@ img {
 @media (max-aspect-ratio: 2/3) {
     .player_wrapper:not(:fullscreen) video { max-height: 76dvh; }
 }
-.playlist_context {
-    border: 1px solid var(--bg-2);
-    border-radius: .5rem;
-    /* TODO: Shadows only in light mode or different strategy between both color schemes */
-    box-shadow: 0 0 12rem #0001;
-}
+.playlist_context { margin-top: 6.1rem; }
 .playlist_context > a {
     display: flex;
     outline: none;
@@ -370,7 +369,7 @@ img {
 .playlist_context > a:focus-visible,
 .playlist_context > a:hover { background: var(--bg-2); }
 .playlist_context > a:not(:last-child) {
-    border-bottom: 1px solid var(--bg-1);
+    margin-bottom: .5rem;
 }
 .playlist_context .current { background: var(--bg-3); }
 .playlist_context .description {
@@ -415,15 +414,6 @@ img {
     flex-shrink: 0;
     height: 4rem;
     object-fit: contain;
-}
-.playlist_header {
-    background: var(--bg-1);
-    padding: .8rem;
-}
-.playlist_header .duration { color: var(--fg-3); }
-.playlist_header .title {
-    color: var(--fg-1);
-    display: block;
 }
 .playlist_page {
     display: flex;
@@ -667,15 +657,17 @@ svg {
 }
 .versions_ring.interacting g:not(:focus-visible):not(:hover) { opacity: .5; }
 video {
-    background: var(--d-1);
+    background: #000;
     border-radius: .5rem;
     display: block;
     height: 100%;
     width: 100%;
 }
+.video_info { margin-bottom: 1.5rem; }
 .video_title {
     color: var(--fg-1);
     margin: 0;
+    margin-bottom: .2em;
 }
 .videos {
     column-gap: 1rem;

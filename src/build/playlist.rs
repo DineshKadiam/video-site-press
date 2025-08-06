@@ -120,21 +120,6 @@ pub fn playlist_html(
         body.push_str(&videos_rendered);
     }
 
-    // if !traversal.steps.is_empty() {
-    //     let outline_items = traversal.steps
-    //         .iter()
-    //         .filter(|step| !step.is_playlist())
-    //         .enumerate()
-    //         .map(|(index, step)| {
-    //             let prefix = "../".repeat(traversal.steps.len() - 1 - index);
-    //             step.context_for_playlist(playlist, &prefix, site)
-    //         })
-    //         .collect::<Vec<String>>()
-    //         .join("\n");
-
-    //     body.push_str(&format!(r#"<div class="outline">{outline_items}</div>"#));
-    // }
-
     if playlist.platform_integration().enabled() {
         if let Some(playlist_url) = site.absolute_url_index(&playlist.site_path) {
             let mut meta = PlatformIntegrationMeta::new(title.to_string(), playlist_url);

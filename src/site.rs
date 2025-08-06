@@ -532,6 +532,13 @@ impl Site {
         }
     }
 
+    pub fn index_suffix_file_only(&self) -> &str {
+        match self.clean_urls {
+            true => "",
+            false => "index.html"
+        }
+    }
+
     pub fn new() -> Site {
         Site {
             base_url: None,

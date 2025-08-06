@@ -24,8 +24,6 @@ pub struct Breadcrumb<'a> {
     pub step: &'a TraversalStep<'a>
 }
 
-// TODO: Consider the similarity to TraversalStep here (!) This indicates
-//       we should really have a generic item of that sort for representing both?
 pub enum CurrentPage<'a> {
     Collection(&'a Collection),
     Playlist(&'a Playlist),
@@ -438,6 +436,72 @@ impl TraversalStep<'_> {
         }
     }
 
+    pub fn context_with_bubbles(
+        &self,
+        prefix: &str,
+        site: &Site
+    ) -> String {
+        let index_suffix_file_only = site.index_suffix_file_only();
+        let translations = &site.language.translations;
+
+        match self {
+            TraversalStep::Collection(collection) => {
+                let label = collection.title_or_slug_or_generic_label(translations);
+                let label_escaped = html_escape_outside_attribute(label);
+
+                let video_bubbles = collection.public_videos()
+                    .map(|video| {
+                        if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
+                            let background = poster_meta.lqip.gradient_radial();
+                            let video_slug = video.slug_unchecked();
+                            formatdoc!(r#"<a class="context_dot" href="{prefix}{video_slug}/" style="{background}"></a>"#)
+                        } else {
+                            String::new()
+                        }
+                    })
+                    .collect::<Vec<String>>()
+                    .join("");
+
+                let count = collection.public_videos().count();
+
+                format!(r#"
+                    <div>
+                        <div><a href="{prefix}{index_suffix_file_only}">{label_escaped}</a></div>
+                        <div style="--count: {count}">{video_bubbles}</div>
+                    </div>
+                "#)
+            }
+            TraversalStep::Playlist(playlist) => {
+                let label = playlist.title_or_slug_or_generic_label(translations);
+                let label_escaped = html_escape_outside_attribute(label);
+
+                let video_bubbles = playlist.public_videos()
+                    .map(|video| {
+                        if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
+                            let background = poster_meta.lqip.gradient_radial();
+                            let video_slug = video.slug_unchecked();
+                            formatdoc!(r#"<a class="context_dot" href="{prefix}{video_slug}/" style="{background}"></a>"#)
+                        } else {
+                            String::new()
+                        }
+                    })
+                    .collect::<Vec<String>>()
+                    .join("");
+
+                let count = playlist.public_videos().count();
+
+                format!(r#"
+                    <div>
+                        <div><a href="{prefix}{index_suffix_file_only}">{label_escaped}</a></div>
+                        <div style="--count: {count}">{video_bubbles}</div>
+                    </div>
+                "#)
+            }
+            TraversalStep::Video(_) => unimplemented!(),
+            TraversalStep::Virtual { .. } => unimplemented!()
+        }
+    }
+
     fn crumb_collection_header(
         collection: &Collection,
         prefix: &str,
@@ -655,27 +719,19 @@ impl TraversalStep<'_> {
         site: &Site,
         video: Option<&Video>
     ) -> String {
-        let banner = if let Some(banner) = &playlist.banner {
-            banner_html(banner, prefix)
-        } else if let Some(video) = &playlist.public_videos()
-            .find(|video| video.poster.is_some()) {
-            let video_prefix = format!("{prefix}{}/", video.slug_unchecked());
-            poster_html(video.poster.as_ref().unwrap(), &video_prefix)
-        } else {
-            String::from(r#"<div class="placeholder"></div>"#)
-        };
-        let label = playlist.title_or_slug_or_generic_label(&site.language.translations);
-        let outline_stats = OutlineStats::for_playlist(playlist).render(site);
+        let translations = &site.language.translations;
 
-        let header_crumb = formatdoc!(r#"
-            <a href="{prefix}">
-                {banner}
-                <div class="text">
-                    <div class="medium_font">{label}</div>
-                    <small>{outline_stats}</small>
-                </div>
-            </a>
-        "#);
+        // let banner = if let Some(banner) = &playlist.banner {
+        //     banner_html(banner, prefix)
+        // } else if let Some(video) = &playlist.public_videos()
+        //     .find(|video| video.poster.is_some()) {
+        //     let video_prefix = format!("{prefix}{}/", video.slug_unchecked());
+        //     poster_html(video.poster.as_ref().unwrap(), &video_prefix)
+        // } else {
+        //     String::from(r#"<div class="placeholder"></div>"#)
+        // };
+
+        let label = playlist.title_or_slug_or_generic_label(translations);
 
         if let Some(video) = video {
             let index_suffix = site.index_suffix();
@@ -686,7 +742,7 @@ impl TraversalStep<'_> {
                 .iter()
                 .enumerate()
                 .map(|(index, video_iterated)| {
-                    let label = video_iterated.title_or_slug_or_generic_label(&site.language.translations);
+                    let label = video_iterated.title_or_slug_or_generic_label(translations);
                     let slug = video_iterated.slug_unchecked();
 
                     let video_prefix = if video_iterated.site_path == video.site_path {
@@ -725,18 +781,13 @@ impl TraversalStep<'_> {
                 .collect::<Vec<String>>()
                 .join("\n");
 
-            let videos_crumb = formatdoc!(r#"
+            formatdoc!(r#"
                 <div class="playlist_context">
                     {items}
                 </div>
-            "#);
-
-            formatdoc!(r#"
-                {header_crumb}
-                {videos_crumb}
             "#)
         } else {
-            header_crumb
+            String::new()
         }
     }
 
