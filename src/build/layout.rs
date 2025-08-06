@@ -102,6 +102,8 @@ impl Layout {
             String::new()
         };
 
+        let mut templates = String::new();
+
         let browse;
         let search;
         let navigation_script;
@@ -131,6 +133,15 @@ impl Layout {
                 </div>
             "#);
             navigation_script = format!(r#"<script defer src="{root_prefix}navigation.js?{navigation_js_asset_hash}"></script>"#);
+
+            let chevron_right_icon = icons::CHEVRON_RIGHT;
+            let navigation_templates = formatdoc!(r#"
+                <template id="chevron_right_icon">
+                    {chevron_right_icon}
+                </template>
+            "#);
+
+            templates.push_str(&navigation_templates);
         } else {
             browse = String::new();
             search = String::new();
@@ -152,15 +163,6 @@ impl Layout {
             </head>
         "#);
 
-        let breadcrumbs = traversal.parents(site)
-            .iter()
-            .map(|breadcrumb| {
-                let breadcrumb_rendered = breadcrumb.step.breadcrumb(&breadcrumb.href, site);
-                format!(r#"{breadcrumb_rendered} <span style="font-size: 1.6rem; pointer-events: none; position: relative; top: -.2rem;">›</span> "#)
-            })
-            .collect::<Vec<String>>()
-            .join("");
-
         let dark_icon = icons::dark(translations.dark_color_scheme);
         let light_icon = icons::light(translations.light_color_scheme);
         let theme_toggle = match &site.theme.kind {
@@ -174,8 +176,6 @@ impl Layout {
         };
 
         let version_display = env!("HYPER8_VERSION_DISPLAY");
-
-        let mut templates = String::new();
 
         if self.clipboard_script {
             templates.push_str(&copy_button_icon_templates(translations));

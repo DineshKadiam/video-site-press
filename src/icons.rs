@@ -20,6 +20,13 @@ pub const ATOM: &str = indoc!(r#"
     </svg>
 "#);
 
+/// A rightwards-facing, perfectly perpendicular chevron (like a closing angled bracket with a 90 degrees angle)
+pub const CHEVRON_RIGHT: &str = indoc!(r#"
+    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <path d="m15.587 56.681 7.3191 7.3191 32-32-32-32-7.3191 7.3191 24.681 24.681z"/>
+    </svg>
+"#);
+
 /// The stylized string "</>"
 pub const CODE: &str = indoc!(r#"
     <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

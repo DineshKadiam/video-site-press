@@ -1,3 +1,5 @@
+const chevronRightIcon = document.querySelector('#chevron_right_icon').content;
+
 const browseButton = document.querySelector('button.browse');
 
 const navigation = document.querySelector('header .navigation');
@@ -70,6 +72,10 @@ function initializeSiteTree() {
         if (video.image) {
             image = document.createElement('img');
             image.src = rootPrefix + video.sitePath + video.image;
+
+            if (video.lqip) {
+                image.style.background = lqipToRadialGradient(video.lqip);
+            }
         } else {
             image = document.createElement('span');
             image.classList.add('placeholder');
@@ -92,10 +98,24 @@ function initializeSiteTree() {
     function initializePlaylist(playlist, ancestors = undefined) {
         const traversal = ancestors ? [...ancestors, playlist] : [];
 
+        playlist.expandToggle = document.createElement('span');
+
         const spanTitle = document.createElement('span');
-        spanTitle.textContent = ancestors
-            ? traversal.map(ancestor => ancestor.title).join(' > ')
-            : playlist.title;
+        if (ancestors) {
+            for (const [index, ancestor] of traversal.entries()) {
+                if (index > 0) {
+                    const separator = document.createElement('span');
+                    separator.appendChild(chevronRightIcon.cloneNode(true));
+                    separator.setAttribute('aria-label', '>');
+
+                    spanTitle.appendChild(separator);
+                }
+
+                spanTitle.append(ancestor.title);
+            }
+        } else {
+            spanTitle.textContent = playlist.title;
+        }
 
         const spanInfo = document.createElement('span');
         spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(playlist.videos.length);
@@ -103,8 +123,19 @@ function initializeSiteTree() {
         playlist.element = document.createElement('a');
         playlist.element.classList.add('playlist');
         playlist.element.href = rootPrefix + playlist.sitePath + indexSuffix;
+        playlist.element.appendChild(playlist.expandToggle);
         playlist.element.appendChild(spanTitle);
         playlist.element.appendChild(spanInfo);
+
+        if (playlist.videos.length) {
+            playlist.expandToggle.appendChild(chevronRightIcon.cloneNode(true));
+            playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+            playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+            playlist.expandToggle.addEventListener('click', event => {
+                collapseExpand(playlist.element);
+                event.preventDefault();
+            });
+        }
 
         siteTreeElements.appendChild(playlist.element);
 
@@ -118,20 +149,44 @@ function initializeSiteTree() {
     function initializeCollection(collection, ancestors = undefined) {
         const traversal = ancestors ? [...ancestors, collection] : [];
 
-        const spanText = document.createElement('span');
-        spanText.textContent = ancestors
-            ? traversal.map(ancestor => ancestor.title).join(' > ')
-            : collection.title;
+        collection.expandToggle = document.createElement('span');
+
+        const spanTitle = document.createElement('span');
+        if (ancestors) {
+            for (const [index, ancestor] of traversal.entries()) {
+                if (index > 0) {
+                    const separator = document.createElement('span');
+                    separator.appendChild(chevronRightIcon.cloneNode(true));
+                    separator.setAttribute('aria-label', '>');
+
+                    spanTitle.appendChild(separator);
+                }
+
+                spanTitle.append(ancestor.title);
+            }
+        } else {
+            spanTitle.textContent = collection.title;
+        }
 
         collection.element = document.createElement('a');
         collection.element.classList.add('collection');
         collection.element.href = rootPrefix + collection.sitePath + indexSuffix;
-        collection.element.appendChild(spanText);
+        collection.element.appendChild(collection.expandToggle);
+
+        collection.element.appendChild(spanTitle);
 
         if (collection.videos.length) {
             const spanInfo = document.createElement('span');
             spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(collection.videos.length);
             collection.element.appendChild(spanInfo);
+
+            collection.expandToggle.appendChild(chevronRightIcon.cloneNode(true));
+            collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+            collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+            collection.expandToggle.addEventListener('click', event => {
+                collapseExpand(collection.element);
+                event.preventDefault();
+            });
         }
 
         siteTreeElements.appendChild(collection.element);
@@ -158,15 +213,13 @@ function initializeSiteTree() {
     siteTreeInitialized = true;
 }
 
-// TODO: Currently unused but kept around in case we want to pick it up again
-//       (the lqip property is available as video.lqip in the siteContent tree structure).
-// function lqipToRadialGradient(lqip) {
-//     const [ne, nw, se, sw] = lqip;
-//     return `radial-gradient(ellipse at top right, rgb(${ne[0]},${ne[1]},${ne[2]}), transparent),` +
-//         `radial-gradient(ellipse at top left, rgb(${nw[0]},${nw[1]},${nw[2]}), transparent),` +
-//         `radial-gradient(ellipse at bottom right, rgb(${se[0]},${se[1]},${se[2]}), transparent),` +
-//         `radial-gradient(ellipse at bottom left, rgb(${sw[0]},${sw[1]},${sw[2]}), transparent)`;
-// }
+function lqipToRadialGradient(lqip) {
+    const [ne, nw, se, sw] = lqip;
+    return `radial-gradient(ellipse at top right, rgb(${ne[0]},${ne[1]},${ne[2]}), transparent),` +
+        `radial-gradient(ellipse at top left, rgb(${nw[0]},${nw[1]},${nw[2]}), transparent),` +
+        `radial-gradient(ellipse at bottom right, rgb(${se[0]},${se[1]},${se[2]}), transparent),` +
+        `radial-gradient(ellipse at bottom left, rgb(${sw[0]},${sw[1]},${sw[2]}), transparent)`;
+}
 
 function toggleBrowse() {
     function updateVideo(video) {
@@ -179,6 +232,9 @@ function toggleBrowse() {
         }
 
         playlist.element.classList.add('visible');
+        playlist.element.classList.remove('expanded');
+        playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+        playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
     }
 
     function updateCollection(collection) {
@@ -195,6 +251,9 @@ function toggleBrowse() {
         }
 
         collection.element.classList.add('visible');
+        collection.element.classList.remove('expanded');
+        collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+        collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
     }
 
     siteTreeStatus.textContent = '';
@@ -240,6 +299,9 @@ function updateSearch() {
                 display = updateVideo(video) || display;
             }
 
+            playlist.element.classList.remove('expanded');
+            playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.collapse);
+            playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.collapse);
             playlist.element.classList.toggle('visible', display);
         }
 
@@ -259,6 +321,9 @@ function updateSearch() {
                 updateCollection(subcollection);
             }
 
+            collection.element.classList.remove('expanded');
+            collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.collapse);
+            collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.collapse);
             collection.element.classList.toggle('visible', display);
         }
 
@@ -351,7 +416,7 @@ navigation.addEventListener('keydown', event => {
     } else if (event.key === ' ') {
         if (event.target.classList.contains('collection') ||
             event.target.classList.contains('playlist')) {
-            collapseExpand(event.target, undefined);
+            collapseExpand(event.target);
             event.preventDefault();
         } else if (event.target.classList.contains('video')) {
             event.preventDefault();
@@ -380,15 +445,27 @@ navigation.addEventListener('keydown', event => {
 function collapseExpand(siteTreeElement, expand = undefined) {
     function visitPlaylist(playlist) {
         if (playlist.element === siteTreeElement) {
+            if (expand === undefined) {
+                expand = !playlist.element.classList.contains('expanded');
+            }
+
             for (const video of playlist.videos) {
                 video.element.classList.toggle('visible', expand);
             }
+
+            playlist.element.classList.toggle('expanded', expand);
+            const expandOrCollapse = NAVIGATION_JS_T[expand ? 'collapse' : 'expand'];
+            playlist.expandToggle.setAttribute('aria-label', expandOrCollapse);
+            playlist.expandToggle.setAttribute('title', expandOrCollapse);
 
             return true;
         } else if (!expand && playlist.videos.some(video => video.element === siteTreeElement)) {
             for (const video of playlist.videos) {
                 video.element.classList.remove('visible');
             }
+            playlist.element.classList.remove('expanded');
+            playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+            playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
             playlist.element.focus();
 
             return true;
@@ -399,15 +476,27 @@ function collapseExpand(siteTreeElement, expand = undefined) {
 
     function visitCollection(collection) {
         if (collection.element === siteTreeElement) {
+            if (expand === undefined) {
+                expand = !collection.element.classList.contains('expanded');
+            }
+
             for (const video of collection.videos) {
                 video.element.classList.toggle('visible', expand);
             }
+
+            collection.element.classList.toggle('expanded', expand);
+            const expandOrCollapse = NAVIGATION_JS_T[expand ? 'collapse' : 'expand'];
+            collection.expandToggle.setAttribute('aria-label', expandOrCollapse);
+            collection.expandToggle.setAttribute('title', expandOrCollapse);
 
             return true;
         } else if (!expand && collection.videos.some(video => video.element === siteTreeElement)) {
             for (const video of collection.videos) {
                 video.element.classList.remove('visible');
             }
+            collection.element.classList.remove('expanded');
+            collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+            collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
             collection.element.focus();
 
             return true;

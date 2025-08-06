@@ -731,8 +731,6 @@ impl TraversalStep<'_> {
         //     String::from(r#"<div class="placeholder"></div>"#)
         // };
 
-        let label = playlist.title_or_slug_or_generic_label(translations);
-
         if let Some(video) = video {
             let index_suffix = site.index_suffix();
 

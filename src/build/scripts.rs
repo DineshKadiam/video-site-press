@@ -142,11 +142,15 @@ pub fn generate_navigation_js(
     };
 
     if let Some(site_content) = site_content {
+        let t_collapse = translations.collapse;
+        let t_expand = translations.expand;
         let t_nothing_found_for_xxx = js_escape_inside_single_quoted_string(translations.nothing_found_for_xxx);
         let t_showing_xxx_results_for_xxx = js_escape_inside_single_quoted_string(translations.showing_xxx_results_for_xxx);
         let t_xxx_videos = js_escape_inside_single_quoted_string(translations.xxx_videos);
         let mut js = formatdoc!(r#"
             const NAVIGATION_JS_T = {{
+                collapse: '{t_collapse}',
+                expand: '{t_expand}',
                 nothingFoundForXxx: query => '{t_nothing_found_for_xxx}'.replace('{{query}}', query),
                 showingXxxResultsForXxx: (count, query) => '{t_showing_xxx_results_for_xxx}'.replace('{{count}}', count).replace('{{query}}', query),
                 xxxVideos: count => '{t_xxx_videos}'.replace('{{count}}', count)
