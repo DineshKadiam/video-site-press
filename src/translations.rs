@@ -274,6 +274,7 @@ pub struct Translations {
     pub video_order: &'static str,
     pub video_player_widget_for_xxx: &'static str,
     pub video_settings: &'static str,
+    video_xxx_of_xxx: &'static str,
     pub videos: &'static str,
     pub vp9_missing_browser_support_not_recommended: &'static str,
     pub warm: &'static str,
@@ -568,6 +569,7 @@ impl Translations {
             video_order: "Video Reihenfolge",
             video_player_widget_for_xxx: r#"Videoplayer-Widget für "{title}""#,
             video_settings: "Video Einstellungen",
+            video_xxx_of_xxx: "Video {current} von {total}",
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Fehlende Browserunterstützung (Nicht empfohlen)",
             warm: "Warm",
@@ -863,6 +865,7 @@ impl Translations {
             video_order: "Video Order",
             video_player_widget_for_xxx: r#"Video player widget for "{title}""#,
             video_settings: "Video settings",
+            video_xxx_of_xxx: "Video {current} of {total}",
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Missing browser support (Not recommended)",
             warm: "Warm",
@@ -965,6 +968,16 @@ impl Translations {
         self.video_player_widget_for_xxx.replace("{title}", title)
     }
 
+    pub fn video_xxx_of_xxx(
+        &self,
+        current: usize,
+        total: usize
+    ) -> String {
+        self.video_xxx_of_xxx
+            .replace("{current}", &current.to_string())
+            .replace("{total}", &total.to_string())
+    }
+
     pub fn xxx_characters_maximum(&self, maximum: usize) -> String {
         self.xxx_characters_maximum.replace("{maximum}", &maximum.to_string())
     }
@@ -1000,6 +1013,8 @@ fn check_translations() {
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{video_title}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
+        assert!(&translations.video_xxx_of_xxx.contains("{current}"));
+        assert!(&translations.video_xxx_of_xxx.contains("{total}"));
         assert!(&translations.xxx_characters_maximum.contains("{maximum}"));
 
         let disallowed_char = |c: char| !c.is_ascii_alphanumeric() && c != '-';

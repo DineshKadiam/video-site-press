@@ -16,6 +16,7 @@ use crate::build::widgets::{banner_html, poster_html};
 use crate::util::{
     casual_duration,
     html_escape_outside_attribute,
+    localized_date_d_mmm_yyyy,
     localized_date_mmm_yyyy
 };
 
@@ -457,7 +458,8 @@ impl TraversalStep<'_> {
                 let label = collection.title_or_slug_or_generic_label(translations);
                 let label_escaped = html_escape_outside_attribute(label);
 
-                let video_bubbles = collection.public_videos()
+                let video_bubbles = collection.public_videos_in_collection_video_order()
+                    .iter()
                     .map(|video| {
                         if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
                             let background = poster_meta.lqip.gradient_radial();
@@ -471,10 +473,11 @@ impl TraversalStep<'_> {
                     .join("");
 
                 let count = collection.public_videos().count();
+                let inline = if count > 3 { "" } else { "inline" };
 
                 format!(r#"
-                    <div>
-                        <div><a href="{prefix}{index_suffix_file_only}">{label_escaped}</a></div>
+                    <div class="parent_context {inline}">
+                        <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
                         <div style="--count: {count}">{video_bubbles}</div>
                     </div>
                 "#)
@@ -483,7 +486,8 @@ impl TraversalStep<'_> {
                 let label = playlist.title_or_slug_or_generic_label(translations);
                 let label_escaped = html_escape_outside_attribute(label);
 
-                let video_bubbles = playlist.public_videos()
+                let video_bubbles = playlist.public_videos_in_playlist_order()
+                    .iter()
                     .map(|video| {
                         if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
                             let background = poster_meta.lqip.gradient_radial();
@@ -497,10 +501,11 @@ impl TraversalStep<'_> {
                     .join("");
 
                 let count = playlist.public_videos().count();
+                let inline = if count > 3 { "" } else { "inline" };
 
                 format!(r#"
-                    <div>
-                        <div><a href="{prefix}{index_suffix_file_only}">{label_escaped}</a></div>
+                    <div class="parent_context {inline}">
+                        <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
                         <div style="--count: {count}">{video_bubbles}</div>
                     </div>
                 "#)
@@ -757,28 +762,47 @@ impl TraversalStep<'_> {
                         format!("../{slug}/")
                     };
 
-                    let thumbnail_rendered = thumbnail(&site.language.translations, video_iterated, &video_prefix, false);
+                    let thumbnail_rendered = thumbnail(translations, video_iterated, &video_prefix, false);
 
-                    let (current, href) = if video_iterated.site_path == video.site_path {
-                        ("current", String::new())
+                    let current;
+                    let href;
+                    let number_context;
+                    if video_iterated.site_path == video.site_path {
+                        current = "current";
+                        href = String::new();
+                        let count = videos.len();
+                        let number = index + 1;
+                        let playlist_label = playlist.title_or_slug_or_generic_label(translations);
+                        let t_video_xxx_of_xxx = translations.video_xxx_of_xxx(number, count);
+                        number_context = format!(r#"<span class="number_context">{playlist_label} – {t_video_xxx_of_xxx}</span>"#);
                     } else {
-                        ("", format!("../{slug}{index_suffix}"))
-                    };
+                        current = "";
+                        href = format!("../{slug}{index_suffix}");
+                        number_context = String::new();
+                    }
 
-                    let duration = match &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
-                        Some(video_meta) => casual_duration(video_meta.duration, &site.language.translations),
-                        None => String::new()
-                    };
+                    let mut details = Vec::new();
 
-                    let number = index + 1;
+                    if let Some(release_date) = video.release_date {
+                        let date = localized_date_d_mmm_yyyy(release_date, site.language.chrono_locale);
+                        details.push(date);
+                    }
+
+                    if let Some(video_meta) = &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+                        let duration = casual_duration(video_meta.duration, translations);
+                        details.push(duration);
+                    }
+
+                    let details = details.join(", ");
+
                     formatdoc!(r#"
                         <a class="{current}" href="{href}">
-                            <div class="number">{number}</div>
                             {thumbnail_rendered}
                             <div class="description">
+                                {number_context}
                                 <span class="label">{label}</span>
                                 <span class="details">
-                                    <span class="duration">{duration}</span>
+                                    {details}
                                 </span>
                             </div>
                         </a>

@@ -87,13 +87,7 @@ pub fn video_html(
 
     let parent_context = if traversal.steps.len() > 1 {
         let parent_step = &traversal.steps[traversal.steps.len() - 2];
-        let context_with_bubbles = parent_step.context_with_bubbles("../", site);
-
-         formatdoc!(r#"
-            <div class="parent_context">
-                {context_with_bubbles}
-            </div>
-        "#)
+        parent_step.context_with_bubbles("../", site)
     } else {
         String::new()
     };
@@ -148,11 +142,9 @@ pub fn video_html(
 
     let video_content = formatdoc!(r#"
         <div>
-            <div class="video_info">
-                <div class="align apart flex space wrap" style="margin-top: 2rem;">
-                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
-                    {parent_context}
-                </div>
+            <div class="video_info top">
+                <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
+                {parent_context}
             </div>
             {player_rendered}
             <div class="video_info">

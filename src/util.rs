@@ -196,6 +196,24 @@ pub fn human_size(bytes: u64) -> String {
     }
 }
 
+/// E.g. 1 Jan 2000
+pub fn localized_date_d_mmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
+    use chrono::format::{Fixed, Item, Numeric, Pad};
+
+    let format = [
+        Item::Numeric(Numeric::Day, Pad::None),
+        Item::Space(" "),
+        Item::Fixed(Fixed::ShortMonthName),
+        Item::Space(" "),
+        Item::Numeric(Numeric::Year, Pad::None)
+    ];
+
+    date
+        .format_localized_with_items(format.iter(), chrono_locale)
+        .to_string()
+}
+
+/// E.g. 1 January 2000
 pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
     use chrono::format::{Fixed, Item, Numeric, Pad};
 
@@ -212,6 +230,7 @@ pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) 
         .to_string()
 }
 
+/// E.g. Jan 2000
 pub fn localized_date_mmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
     use chrono::format::{Fixed, Item, Numeric, Pad};
 

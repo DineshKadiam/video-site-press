@@ -8,13 +8,17 @@ use indoc::formatdoc;
 use crate::{
     Collection,
     Context,
+    Language,
     Playlist,
     Site,
     SiteContent,
-    Translations,
     Video
 };
-use crate::util::url_safe_hash_base64;
+use crate::util::{
+    casual_duration,
+    localized_date_d_mmm_yyyy,
+    url_safe_hash_base64
+};
 
 use super::AssetHashes;
 
@@ -44,9 +48,10 @@ pub fn generate_navigation_js(
     context: &Context,
     site: &Site
 ) {
-    let translations = &site.language.translations;
+    let language = &site.language;
+    let translations = &language.translations;
 
-    fn video_js(translations: &Translations, video: &Video) -> String {
+    fn video_js(language: &Language, video: &Video) -> String {
         let image;
         let lqip;
         match &video.poster {
@@ -70,49 +75,65 @@ pub fn generate_navigation_js(
             }
         }
 
+        let date = match video.release_date {
+            Some(release_date) => {
+                let date = localized_date_d_mmm_yyyy(release_date, language.chrono_locale);
+                format!("date:'{date}',")
+            }
+            None => String::new()
+        };
+
+        let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+            Some(video_meta) => {
+                let duration = casual_duration(video_meta.duration, &language.translations);
+                format!("duration:'{duration}',")
+            }
+            None => String::new()
+        };
+
         let site_path = video.site_path.normalized();
-        let title = video.title_or_slug_or_generic_label(&translations);
+        let title = video.title_or_slug_or_generic_label(&language.translations);
         let title_escaped = js_escape_inside_single_quoted_string(title);
 
-        format!("{{{lqip}{image}sitePath:'{site_path}',title:'{title_escaped}'}}")
+        format!("{{{date}{duration}{lqip}{image}sitePath:'{site_path}',title:'{title_escaped}'}}")
     }
 
-    fn playlist_js(playlist: &Playlist, translations: &Translations) -> String {
-        let title = playlist.title_or_slug_or_generic_label(&translations);
+    fn playlist_js(language: &Language, playlist: &Playlist) -> String {
+        let title = playlist.title_or_slug_or_generic_label(&language.translations);
         let site_path = playlist.site_path.normalized();
 
         let title_escaped = js_escape_inside_single_quoted_string(title);
 
         let videos = playlist.public_videos_in_playlist_order()
             .iter()
-            .map(|video| video_js(translations, &video))
+            .map(|video| video_js(language, &video))
             .collect::<Vec<String>>()
             .join(", ");
 
         format!("{{sitePath:'{site_path}',title:'{title_escaped}',videos:[{videos}]}}")
     }
 
-    fn collection_js(collection: &Collection, translations: &Translations) -> String {
-        let title = collection.title_or_slug_or_generic_label(&translations);
+    fn collection_js(collection: &Collection, language: &Language) -> String {
+        let title = collection.title_or_slug_or_generic_label(&language.translations);
         let site_path = collection.site_path.normalized();
 
         let title_escaped = js_escape_inside_single_quoted_string(title);
 
         let playlists = collection.public_playlists_desc_by_release_date()
             .iter()
-            .map(|playlist| playlist_js(&playlist, translations))
+            .map(|playlist| playlist_js(language, &playlist))
             .collect::<Vec<String>>()
             .join(", ");
 
         let subcollections = collection.public_subcollections_desc_by_release_date()
             .iter()
-            .map(|subcollection| collection_js(&subcollection, translations))
+            .map(|subcollection| collection_js(&subcollection, language))
             .collect::<Vec<String>>()
             .join(", ");
 
         let videos = collection.public_videos_in_collection_video_order()
             .iter()
-            .map(|video| video_js(translations, &video))
+            .map(|video| video_js(language, &video))
             .collect::<Vec<String>>()
             .join(", ");
 
@@ -127,14 +148,14 @@ pub fn generate_navigation_js(
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
-            let r_collection = collection_js(collection, translations);
+            let r_collection = collection_js(collection, language);
             let site_content = format!("{{collection:{r_collection}}}");
             Some(site_content)
         }
         SiteContent::Empty => None,
         SiteContent::Invalid { .. } => None,
         SiteContent::Playlist(playlist) => {
-            let r_playlist = playlist_js(playlist, translations);
+            let r_playlist = playlist_js(language, playlist);
             let site_content = format!("{{playlist:{r_playlist}}}");
             Some(site_content)
         }

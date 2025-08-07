@@ -7,7 +7,7 @@ body:not(.light) #toggle-dark {
     background: none;
     border: none;
     border-radius: .9rem;
-    color: var(--fg-mg);
+    color: var(--fg-3);
     cursor: pointer;
     display: inline-flex;
     height: 1.8rem;

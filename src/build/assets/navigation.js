@@ -82,14 +82,29 @@ function initializeSiteTree() {
             image.classList.add('placeholder');
         }
 
-        const spanText = document.createElement('span');
-        spanText.textContent = video.title;
+        const divTitleDetails = document.createElement('div');
+
+        const spanTitle = document.createElement('span');
+        spanTitle.textContent = video.title;
+        divTitleDetails.appendChild(spanTitle);
+
+        const spanDetails = document.createElement('span');
+        if (video.date) {
+            if (video.duration) {
+                spanDetails.textContent = `${video.date}, ${video.duration}`;
+            } else {
+                spanDetails.textContent = video.date;
+            }
+        } else if (video.duration) {
+            spanDetails.textContent = video.duration;
+        }
+        divTitleDetails.appendChild(spanDetails);
 
         video.element = document.createElement('a');
         video.element.classList.add('video');
         video.element.href = rootPrefix + video.sitePath + indexSuffix;
         video.element.appendChild(image);
-        video.element.appendChild(spanText);
+        video.element.appendChild(divTitleDetails);
 
         if (video.sitePath === sitePath) {
             video.element.classList.add('current');
@@ -296,10 +311,16 @@ function updateSearch() {
 
     if (query.length) {
         const regexp = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+        // If the query is four digits we additionally try to match it against
+        // video dates.
+        const yearQuery = /^\d{4}$/.test(query);
+
         let shown = 0;
 
         function updateVideo(video) {
-            const display = regexp.test(video.title);
+            const display = regexp.test(video.title) ||
+                !!(yearQuery && video.date && video.date.includes(query));
             video.element.classList.toggle('visible', display);
             if (display) { shown += 1; }
             return display;
