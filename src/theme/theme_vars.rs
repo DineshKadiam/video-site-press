@@ -90,6 +90,7 @@ impl ThemeVars {
         let bg_mg = self.bg_mg.hsl();
         let checkerboard_base64 = self.checkerboard_base64();
         let d_1 = self.d_1.hsl();
+        let d_1_15 = self.d_1.hsla(15.0);
         let d_1_85 = self.d_1.hsla(85.0);
         let d_2 = self.d_2.hsl();
         let d_3 = self.d_3.hsl();
@@ -116,6 +117,7 @@ impl ThemeVars {
             --bg-mg: {bg_mg};
             --checkerboard: url("data:image/svg+xml;base64,{checkerboard_base64}");
             --d-1: {d_1};
+            --d-1-15: {d_1_15};
             --d-1-85: {d_1_85};
             --d-2: {d_2};
             --d-3: {d_3};
@@ -144,6 +146,7 @@ impl ThemeVars {
         let bg_mg = self.bg_mg.oklch();
         let checkerboard_base64 = self.checkerboard_base64();
         let d_1 = self.d_1.oklch();
+        let d_1_15 = self.d_1.oklcha(15.0);
         let d_1_85 = self.d_1.oklcha(85.0);
         let d_2 = self.d_2.oklch();
         let d_3 = self.d_3.oklch();
@@ -170,6 +173,7 @@ impl ThemeVars {
             --bg-mg: {bg_mg};
             --checkerboard: url("data:image/svg+xml;base64,{checkerboard_base64}");
             --d-1: {d_1};
+            --d-1-15: {d_1_15};
             --d-1-85: {d_1_85};
             --d-2: {d_2};
             --d-3: {d_3};

@@ -186,6 +186,7 @@ impl Layout {
         }
 
         let root_url = traversal.index_asc(site);
+        let site_path = traversal.site_path().normalized();
 
         let logo_monochrome_icon = icons::logo_monochrome(None);
         let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
@@ -194,7 +195,7 @@ impl Layout {
                 <div class="layout">
                     <header>
                         <div class="navigation">
-                            <a class="home" data-root-prefix="{root_prefix}" href="{root_url}">
+                            <a class="home" data-root-prefix="{root_prefix}" data-site-path="{site_path}" href="{root_url}">
                                 {logo_polychrome_icon}
                                 <span class="title">{e_site_title}</span>
                             </a>

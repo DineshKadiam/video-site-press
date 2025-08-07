@@ -14,6 +14,7 @@ const siteTreeStatus = siteTree.querySelector('[role="status"]');
 
 const indexSuffix = window.location.pathname.endsWith('index.html') ? 'index.html' : '';
 const rootPrefix = document.querySelector('.home').dataset.rootPrefix;
+const sitePath = document.querySelector('.home').dataset.sitePath;
 
 // We only render the site tree elements (which are displayed during
 // browsing/searching) into the DOM when, or shortly before, we need them,
@@ -90,6 +91,10 @@ function initializeSiteTree() {
         video.element.appendChild(image);
         video.element.appendChild(spanText);
 
+        if (video.sitePath === sitePath) {
+            video.element.classList.add('current');
+        }
+
         siteTreeElements.appendChild(video.element);
     }
 
@@ -135,6 +140,10 @@ function initializeSiteTree() {
                 collapseExpand(playlist.element);
                 event.preventDefault();
             });
+        }
+
+        if (playlist.sitePath === sitePath) {
+            playlist.element.classList.add('current');
         }
 
         siteTreeElements.appendChild(playlist.element);
@@ -189,6 +198,10 @@ function initializeSiteTree() {
             });
         }
 
+        if (collection.sitePath === sitePath) {
+            collection.element.classList.add('current');
+        }
+
         siteTreeElements.appendChild(collection.element);
 
         for (const video of collection.videos) {
@@ -223,7 +236,8 @@ function lqipToRadialGradient(lqip) {
 
 function toggleBrowse() {
     function updateVideo(video) {
-        video.element.classList.remove('visible');
+        const isCurrent = video.element.classList.contains('current');
+        video.element.classList.toggle('visible', isCurrent);
     }
 
     function updatePlaylist(playlist) {

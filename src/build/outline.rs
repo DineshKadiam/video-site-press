@@ -275,8 +275,8 @@ impl<'a> Traversal<'a> {
         self.peeked_steps[..peeked_parents_len]
             .iter()
             .map(|peeked_step| {
-                let prefix = peeked_step.site_path().normalized()
-                    .strip_prefix(last_visited_step.site_path().normalized())
+                let prefix = peeked_step.site_path_unchecked().normalized()
+                    .strip_prefix(last_visited_step.site_path_unchecked().normalized())
                     .unwrap()
                     .to_string();
 
@@ -308,13 +308,21 @@ impl<'a> Traversal<'a> {
                 // step at the minimum.
                 let last_visited_step = &self.steps[self.steps.len() - 1];
 
-                last_peeked_step.site_path().normalized()
-                    .strip_prefix(last_visited_step.site_path().normalized())
+                last_peeked_step.site_path_unchecked().normalized()
+                    .strip_prefix(last_visited_step.site_path_unchecked().normalized())
                     .unwrap()
                     .to_string()
             }
             None => String::new()
         }
+    }
+
+    pub fn site_path(&self) -> &SitePath {
+        self.steps
+            .iter()
+            .rev()
+            .find_map(|step| step.site_path())
+            .unwrap()
     }
 
     pub fn with_collection(&self, collection: &'a Collection) -> Traversal<'a> {
@@ -813,7 +821,18 @@ impl TraversalStep<'_> {
         }
     }
 
-    pub fn site_path(&self) -> &SitePath {
+    /// Only call when we know the step is not virtual, otherwise will panic
+    pub fn site_path(&self) -> Option<&SitePath> {
+        match self {
+            TraversalStep::Collection(collection) => Some(&collection.site_path),
+            TraversalStep::Playlist(playlist) => Some(&playlist.site_path),
+            TraversalStep::Video(video) => Some(&video.site_path),
+            TraversalStep::Virtual { .. } => None
+        }
+    }
+
+    /// Only call when we know the step is not virtual, otherwise will panic
+    pub fn site_path_unchecked(&self) -> &SitePath {
         match self {
             TraversalStep::Collection(collection) => &collection.site_path,
             TraversalStep::Playlist(playlist) => &playlist.site_path,

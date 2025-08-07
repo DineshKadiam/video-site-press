@@ -80,7 +80,6 @@ button {
 }
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
-.current { background: var(--bg-3); }
 .feed_card {
     background: var(--bg-2);
     border-radius: 1rem;
@@ -520,6 +519,15 @@ img {
     border-radius: .2rem;
     display: flex;
 }
+.site_tree .elements a.current::before {
+    width: 0.2rem;
+    margin-left: -0.2rem;
+    right: 0;
+    height: 1rem;
+    background: var(--action);
+    content: '';
+    border-radius: 0.1rem;
+}
 .site_tree .elements a:focus-visible,
 .site_tree .elements a:hover {
     background: var(--bg-2);
@@ -569,6 +577,7 @@ img {
     margin-left: .3rem;
 }
 .site_tree .elements .video { padding: .5rem; }
+.site_tree .elements .video.current::before { height: 3rem; }
 .site_tree .elements .video > :nth-child(1) {
     aspect-ratio: var(--poster-aspect);
     border-radius: .2rem;
