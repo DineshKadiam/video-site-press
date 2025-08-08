@@ -117,14 +117,14 @@ impl<'a> Location<'a> {
         }
     }
 
-    pub fn dangerous_actions(site_path: &SitePath) -> Location {
+    pub fn dangerous_actions(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::DangerousActions
         }
     }
 
-    pub fn edit(site_path: &SitePath) -> Location {
+    pub fn edit(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Edit
@@ -140,49 +140,49 @@ impl<'a> Location<'a> {
         }
     }
 
-    pub fn links(site_path: &SitePath) -> Location {
+    pub fn links(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Links
         }
     }
 
-    pub fn manifest(site_path: &SitePath) -> Location {
+    pub fn manifest(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Manifest
         }
     }
 
-    pub fn media(site_path: &SitePath) -> Location {
+    pub fn media(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Media
         }
     }
 
-    pub fn poster(site_path: &SitePath) -> Location {
+    pub fn poster(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Poster
         }
     }
 
-    pub fn site(site_path: &SitePath) -> Location {
+    pub fn site(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::SiteSettings
         }
     }
 
-    pub fn site_manifest(site_path: &SitePath) -> Location {
+    pub fn site_manifest(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::SiteManifest
         }
     }
 
-    pub fn subtitles(site_path: &SitePath) -> Location {
+    pub fn subtitles(site_path: &SitePath) -> Location<'_> {
         Location::SiteTree {
             site_path,
             subpage: Subpage::Subtitles

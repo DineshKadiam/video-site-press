@@ -231,7 +231,7 @@ impl<'a> Traversal<'a> {
         }
     }
 
-    pub fn parents(&self, site: &Site) -> Vec<Breadcrumb> {
+    pub fn parents(&self, site: &Site) -> Vec<Breadcrumb<'_>> {
         let parents_len = self.steps.len() - 1;
         self.steps[..parents_len]
             .iter()
@@ -262,7 +262,7 @@ impl<'a> Traversal<'a> {
         clone
     }
 
-    pub fn peeked_parents(&self, site: &Site) -> Vec<Breadcrumb> {
+    pub fn peeked_parents(&self, site: &Site) -> Vec<Breadcrumb<'_>> {
         if self.peeked_steps.is_empty() {
             return Vec::new();
         }

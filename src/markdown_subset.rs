@@ -181,7 +181,7 @@ impl MarkdownSubset<'_> {
         }
     }
 
-    fn new(input: &str, output_format: OutputFormat) -> MarkdownSubset {
+    fn new(input: &str, output_format: OutputFormat) -> MarkdownSubset<'_> {
         MarkdownSubset {
             chars: input.chars(),
             index: 0,
