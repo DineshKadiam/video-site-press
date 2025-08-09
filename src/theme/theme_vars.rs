@@ -101,6 +101,7 @@ impl ThemeVars {
         let fg_3 = self.fg_3.hsl();
         let fg_mg = self.fg_mg.hsl();
         let l_1 = self.l_1.hsl();
+        let l_1_10 = self.l_1.hsla(10.0);
         let l_2 = self.l_2.hsl();
         let l_3 = self.l_3.hsl();
         let mg = self.mg.hsl();
@@ -128,6 +129,7 @@ impl ThemeVars {
             --fg-3: {fg_3};
             --fg-mg: {fg_mg};
             --l-1: {l_1};
+            --l-1-10: {l_1_10};
             --l-2: {l_2};
             --l-3: {l_3};
             --mg: {mg};
@@ -157,6 +159,7 @@ impl ThemeVars {
         let fg_3 = self.fg_3.oklch();
         let fg_mg = self.fg_mg.oklch();
         let l_1 = self.l_1.oklch();
+        let l_1_10 = self.l_1.oklcha(10.0);
         let l_2 = self.l_2.oklch();
         let l_3 = self.l_3.oklch();
         let mg = self.mg.oklch();
@@ -184,6 +187,7 @@ impl ThemeVars {
             --fg-3: {fg_3};
             --fg-mg: {fg_mg};
             --l-1: {l_1};
+            --l-1-10: {l_1_10};
             --l-2: {l_2};
             --l-3: {l_3};
             --mg: {mg};

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::Path;
-use std::sync::Arc;
 
 use indoc::formatdoc;
 
@@ -11,6 +10,7 @@ use crate::{
     Banner,
     Language,
     Link,
+    Playlist,
     PosterFile,
     Site,
     Translations,
@@ -24,6 +24,7 @@ use crate::util::{
     html_escape_inside_attribute,
     html_escape_outside_attribute,
     human_size,
+    localized_date_d_mmm_yyyy,
     precise_duration
 };
 
@@ -160,19 +161,16 @@ pub fn links(language: &Language, links: &[Link]) -> String {
 }
 
 /// Renders the video player.
-/// In the context of a playlist, [next_video] references the next video
-/// in the playlist, if there is one.
 pub fn player(
     // In the embedded player, the intro screen has additional
     // (redundant) volume/subtitles/fullscreen controls, next to the
     // resolution selector.
     embed_extensions: bool,
-    next_video: Option<Arc<Video>>,
+    playlist: Option<&Playlist>,
     site: &Site,
     video: &Video,
     video_prefix: &str
 ) -> String {
-    let index_suffix = site.index_suffix();
     let translations = &site.language.translations;
 
     if video.versions.is_empty() {
@@ -317,28 +315,110 @@ pub fn player(
 
     let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
 
-    let next_video_button = match next_video {
-        Some(next_video) => {
-            let next_video_slug = next_video.slug_unchecked();
-            let next_video_icon = icons::NEXT_VIDEO;
-            let t_next_video = translations.next_video;
-            formatdoc!(r#"
-                <a class="align flex space" href="{video_prefix}../{next_video_slug}{index_suffix}">
-                    {next_video_icon} {t_next_video}
+    let player_outro = if let Some(playlist) = playlist {
+        let index_suffix = site.index_suffix();
+
+        let playlist_label = playlist.title_or_slug_or_generic_label(translations);
+        let playlist_label_escaped = html_escape_outside_attribute(&playlist_label);
+        let videos = playlist.public_videos_in_playlist_order();
+
+        let items = videos
+            .iter()
+            .enumerate()
+            .map(|(index, video_iterated)| {
+                let label = video_iterated.title_or_slug_or_generic_label(translations);
+                let slug = video_iterated.slug_unchecked();
+
+                let id_replay;
+                let replay_indicator;
+                let video_prefix = if video_iterated.site_path == video.site_path {
+                    id_replay = r#"id="replay""#;
+                    replay_indicator = icons::replay(translations.replay);
+                    String::new()
+                } else {
+                    id_replay = "";
+                    replay_indicator = String::new();
+                    format!("../{slug}/")
+                };
+
+                let thumbnail_rendered = thumbnail(translations, video_iterated, &video_prefix, false);
+
+                let current;
+                let href;
+                let number_context;
+                if video_iterated.site_path == video.site_path {
+                    current = "current";
+                    href = String::new();
+                    let count = videos.len();
+                    let number = index + 1;
+                    let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(number, &playlist_label_escaped, count);
+                    number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
+                } else {
+                    current = "";
+                    href = format!("../{slug}{index_suffix}");
+                    number_context = String::new();
+                }
+
+                let mut details = Vec::new();
+
+                if let Some(release_date) = video.release_date {
+                    let date = localized_date_d_mmm_yyyy(release_date, site.language.chrono_locale);
+                    details.push(date);
+                }
+
+                if let Some(video_meta) = &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+                    let duration = casual_duration(video_meta.duration, translations);
+                    details.push(duration);
+                }
+
+                let details = details.join(", ");
+
+                formatdoc!(r#"
+                    <a class="{current}" href="{href}" {id_replay}>
+                        <div class="replay_indicator">{replay_indicator}</div>
+                        <div class="description">
+                            {number_context}
+                            <span class="label">{label}</span>
+                            <span class="details">
+                                {details}
+                            </span>
+                        </div>
+                        {thumbnail_rendered}
+                    </a>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        formatdoc!(r#"
+            <div class="outro_playlist_context">
+                <h2 class="title">
+                    <a href="..{index_suffix}">{playlist_label_escaped}</a>
+                </h2>
+                {items}
+            </div>
+        "#)
+    } else {
+        let replay_icon = icons::replay(translations.replay);
+        let t_replay = translations.replay;
+        formatdoc!(r#"
+            <div class="outro_video_context">
+                <button id="replay">
+                    {replay_icon} {t_replay}
                 </a>
-            "#)
-        }
-        None => String::new()
+            </div>
+        "#)
     };
 
     let maximize_icon = icons::maximize(translations.maximize);
     let volume_loud_icon = icons::volume_loud(translations.loud_volume);
 
+    let video_title = video.title_or_slug_or_generic_label(translations);
+    let video_title_escaped = html_escape_outside_attribute(video_title);
+
     let embed_intro_extensions = if embed_extensions {
         let link_icon = icons::link(Some(translations.external_link));
         let site_url = site.absolute_url_unchecked();
-        let video_title = video.title_or_slug_or_generic_label(translations);
-        let video_title_escaped = html_escape_outside_attribute(video_title);
         let video_url = match site.clean_urls {
             true => video_prefix.to_string(),
             false => format!("{video_prefix}index.html")
@@ -394,8 +474,6 @@ pub fn player(
     };
 
     let play_icon = icons::play(translations.play);
-    let replay_icon = icons::REPLAY;
-    let t_replay = translations.replay;
     formatdoc!(r#"
         <style>
             :root {{ --video-aspect: {aspect_ratio}; }}
@@ -406,11 +484,7 @@ pub fn player(
                 {embed_intro_extensions}
             </div>
             <div class="player_outro">
-                <button class="align flex space" id="replay">
-                    {replay_icon}
-                    {t_replay}
-                </button>
-                {next_video_button}
+                {player_outro}
             </div>
             <div class="player_controls">
                 <div class="timeline">
@@ -450,6 +524,7 @@ pub fn player_icon_templates(translations: &Translations) -> String {
     let minimize_icon = icons::minimize(translations.minimize);
     let pause_icon = icons::pause(translations.pause);
     let play_icon = icons::play(translations.play);
+    let replay_icon = icons::replay(translations.replay);
     let subtitles_icon = icons::subtitles(Some(translations.subtitles));
     let volume_loud_icon = icons::volume_loud(translations.loud_volume);
     let volume_medium_icon = icons::volume_medium(translations.medium_volume);
@@ -467,6 +542,9 @@ pub fn player_icon_templates(translations: &Translations) -> String {
         </template>
         <template id="play_icon">
             {play_icon}
+        </template>
+        <template id="replay_icon">
+            {replay_icon}
         </template>
         <template id="subtitles_icon">
             {subtitles_icon}
@@ -538,16 +616,24 @@ pub fn thumbnail(
                 String::new()
             };
 
+            let lqip_style = match &poster.poster_meta {
+                Some(poster_meta) => {
+                    let background = poster_meta.lqip.gradient_radial();
+                    formatdoc!(r#"style="{background}""#)
+                }
+                None => String::new()
+            };
+
             let img = match &poster.assets {
                 Some(poster_assets) => {
                     let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
                     let src = image_attributes.src;
                     let srcset = image_attributes.srcset;
 
-                    format!(r#"<img {alt} class="thumbnail" src="{src}" srcset="{srcset}">"#)
+                    format!(r#"<img {alt} class="thumbnail" src="{src}" srcset="{srcset}" {lqip_style}>"#)
                 }
                 None => {
-                    format!(r#"<img {alt} class="thumbnail" src="{video_prefix}poster.jpg">"#)
+                    format!(r#"<img {alt} class="thumbnail" src="{video_prefix}poster.jpg" {lqip_style}>"#)
                 }
             };
 

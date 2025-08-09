@@ -2,6 +2,7 @@ const maximizeIcon = document.querySelector('#maximize_icon').content;
 const minimizeIcon = document.querySelector('#minimize_icon').content;
 const playIcon = document.querySelector('#play_icon').content;
 const pauseIcon = document.querySelector('#pause_icon').content;
+const replayIcon = document.querySelector('#replay_icon').content;
 const subtitlesIcon = document.querySelector('#subtitles_icon').content;
 const volumeLoudIcon = document.querySelector('#volume_loud_icon').content;
 const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
@@ -94,13 +95,13 @@ function playbackUpdate() {
     document.querySelector('#time_current').innerHTML = timeFormatted;
 
     if (playerControls.dataset.hideBy && (new Date()).getTime() > playerControls.dataset.hideBy) {
-        playerControls.style.display = 'none';
+        playerControls.classList.add('hidden');
     }
 }
 
 function revealControls() {
     playerControls.dataset.hideBy = (new Date()).getTime() + 3000;
-    playerControls.style.display = null;
+    playerControls.classList.remove('hidden');
 }
 
 versionSelectorControl.addEventListener('mouseenter', () => {
@@ -285,7 +286,8 @@ playerWrapper.addEventListener('fullscreenchange', () => {
 
 playerWrapper.addEventListener('mousemove', revealControls);
 
-replayButton.addEventListener('click', () => {
+replayButton.addEventListener('click', event => {
+    event.preventDefault();
     playerWrapper.dataset.state = 'playing';
     video.play();
     togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
@@ -422,7 +424,7 @@ togglePlaybackButton.addEventListener('click', togglePlayback);
 video.addEventListener('ended', () => {
     playerWrapper.dataset.state = 'outro';
     clearInterval(playbackUpdateInterval);
-    togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    togglePlaybackButton.replaceChildren(replayIcon.cloneNode(true));
 });
 
 video.addEventListener('click', togglePlayback);
@@ -441,19 +443,38 @@ window.addEventListener('keydown', event => {
         } else {
             video.currentTime -= 5;
         }
+
+        playbackUpdate();
+
+        // If we move the playback position backwards while we're on the outro
+        // screen we need to make sure the replay icon gets replaced by a
+        // play icon again.
+        if (playerWrapper.dataset.state === 'outro') {
+            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+        }
     } else if (event.key === 'ArrowRight') {
         if (video.currentTime + 5 > duration) {
             video.currentTime = duration;
         } else {
             video.currentTime += 5;
         }
+
+        playbackUpdate();
     }
 });
 
 timelineInput.addEventListener('input', _ => {
     playerWrapper.dataset.state = 'playing';
     video.currentTime = timelineInput.value;
+
     playbackUpdate();
+
+    // If we move the playback position backwards while we're on the outro
+    // screen we need to make sure the replay icon gets replaced by a
+    // play icon again.
+    if (playerWrapper.dataset.state === 'outro') {
+        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    }
 });
 
 const resizeObserver = new ResizeObserver(() => {

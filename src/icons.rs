@@ -257,14 +257,6 @@ pub fn minimize(label: &str) -> String {
     "#)
 }
 
-/// The standard "next track" icon with a triangle pointing right, touching a
-/// broad vertical line at its tip.
-pub const NEXT_VIDEO: &str = indoc!(r#"
-    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-        <path d="m49.171 6.7876h7.5973v50.229h-7.5973zm-41.877 50.229 41.877-24.359-41.939-25.87z"/>
-    </svg>
-"#);
-
 pub fn offline(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -324,11 +316,14 @@ pub fn processing(label: &str) -> String {
 /// The standard triangular play icon enveloped by an "around the clock" arrow
 /// that marks a clockwise, circular trajectory from "3 o'clock" to "2
 /// o'clock".
-pub const REPLAY: &str = indoc!(r#"
-    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-        <path d="m31.887 5.0449c-6.8722 0.026561-13.734 2.6523-18.961 7.8789h-0.001953c-10.508 10.51-10.507 27.639 0.001953 38.148 10.509 10.509 27.639 10.512 38.148 0.003906 5.255-5.2547 7.883-12.166 7.8828-19.076h-6.084c-2.83e-4 5.3319-2.0416 10.663-6.127 14.748-8.1699 8.1699-21.324 8.1684-29.494-0.001953-8.1707-8.1691-8.1718-21.323-0.001953-29.494 8.0271-8.0271 20.862-8.163 29.059-0.41797l-5.8828-0.001953v4.627l10.479-0.001953h4.625l-0.001953-4.625v-10.477l-4.623-0.0019532-0.001953 6.4102c-5.2616-5.1716-12.143-7.7453-19.016-7.7188zm-6.957 15.529 0.027343 22.852 19.053-11.082-19.08-11.77z"/>
-    </svg>
-"#);
+pub fn replay(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m32.062 8.0329c-13.198 0-23.967 10.769-23.967 23.967 0 13.198 10.769 23.967 23.967 23.967 13.198 0 23.967-10.769 23.967-23.967h-6.4321c0 9.7227-7.8125 17.535-17.535 17.535-9.7224 0-17.535-7.8125-17.535-17.535 0-9.7224 7.8125-17.535 17.535-17.535 4.8936 0 9.2973 1.9849 12.469 5.1913h-4.9652v5.3665h9.4185v0.04908h5.3665v-0.04908h0.03155v-5.3665h-0.03155v-9.4014h-5.3665v4.8179c-4.3409-4.3423-10.325-7.0403-16.923-7.0403z"/>
+        </svg>
+    "#)
+}
 
 /// The standard RSS icon with two semi-circle arcs radiating from a dot
 /// For `label` provide either a label that should be read for screen readers,

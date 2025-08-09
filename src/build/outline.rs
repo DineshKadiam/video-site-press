@@ -773,8 +773,9 @@ impl TraversalStep<'_> {
                         let count = videos.len();
                         let number = index + 1;
                         let playlist_label = playlist.title_or_slug_or_generic_label(translations);
-                        let t_video_xxx_of_xxx = translations.video_xxx_of_xxx(number, count);
-                        number_context = format!(r#"<span class="number_context">{playlist_label} – {t_video_xxx_of_xxx}</span>"#);
+                        let playlist_label_escaped = html_escape_outside_attribute(playlist_label);
+                        let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(number, &playlist_label_escaped, count);
+                        number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
                     } else {
                         current = "";
                         href = format!("../{slug}{index_suffix}");

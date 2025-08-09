@@ -56,6 +56,7 @@ pub struct Translations {
     pub create_subcollection: &'static str,
     pub create_video: &'static str,
     creating_directory_xxx: &'static str,
+    current_video_xxx_of_xxx_in_xxx: &'static str,
     pub dangerous_actions: &'static str,
     pub dark: &'static str,
     pub dark_color_scheme: &'static str,
@@ -155,7 +156,6 @@ pub struct Translations {
     pub new_playlist: &'static str,
     pub new_subcollection: &'static str,
     pub new_video: &'static str,
-    pub next_video: &'static str,
     pub no_audio: &'static str,
     pub no_language_info: &'static str,
     pub no_subtitles: &'static str,
@@ -274,7 +274,6 @@ pub struct Translations {
     pub video_order: &'static str,
     pub video_player_widget_for_xxx: &'static str,
     pub video_settings: &'static str,
-    video_xxx_of_xxx: &'static str,
     pub videos: &'static str,
     pub vp9_missing_browser_support_not_recommended: &'static str,
     pub warm: &'static str,
@@ -293,6 +292,18 @@ impl Translations {
 
     pub fn creating_directory_xxx(&self, path: &str) -> String {
         self.creating_directory_xxx.replace("{path}", path)
+    }
+
+    pub fn current_video_xxx_of_xxx_in_xxx(
+        &self,
+        current: usize,
+        parent: &str,
+        total: usize
+    ) -> String {
+        self.current_video_xxx_of_xxx_in_xxx
+            .replace("{current}", &current.to_string())
+            .replace("{parent}", parent)
+            .replace("{total}", &total.to_string())
     }
 
     pub fn de() -> Translations {
@@ -346,6 +357,7 @@ impl Translations {
             create_subcollection: "Collection erstellen",
             create_video: "Video erstellen",
             creating_directory_xxx: "Verzeichnis {path} wird erstellt",
+            current_video_xxx_of_xxx_in_xxx: "Aktuelles Video ({current} von {total}) in {parent}",
             dangerous_actions: "Gefährliche Aktionen",
             dark: "Dunkel",
             dark_color_scheme: "Dunkles Farbschema",
@@ -445,7 +457,6 @@ impl Translations {
             new_playlist: "Neue Playlist",
             new_subcollection: "Neue Subcollection",
             new_video: "Neues Video",
-            next_video: "Nächstes Video",
             no_audio: "Kein Audio",
             no_language_info: "Keine Sprachinfo",
             no_subtitles: "Keine Untertitel",
@@ -569,7 +580,6 @@ impl Translations {
             video_order: "Video Reihenfolge",
             video_player_widget_for_xxx: r#"Videoplayer-Widget für "{title}""#,
             video_settings: "Video Einstellungen",
-            video_xxx_of_xxx: "Video {current} von {total}",
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Fehlende Browserunterstützung (Nicht empfohlen)",
             warm: "Warm",
@@ -641,6 +651,7 @@ impl Translations {
             create_subcollection: "Create Subcollection",
             create_video: "Create Video",
             creating_directory_xxx: "Creating directory {path}",
+            current_video_xxx_of_xxx_in_xxx: "Current video ({current} of {total}) in {parent}",
             dangerous_actions: "Dangerous actions",
             dark: "Dark",
             dark_color_scheme: "Dark Color Scheme",
@@ -740,7 +751,6 @@ impl Translations {
             new_playlist: "New Playlist",
             new_subcollection: "New Subcollection",
             new_video: "New Video",
-            next_video: "Next Video",
             no_audio: "No audio",
             no_language_info: "No language info",
             no_subtitles: "No subtitles",
@@ -865,7 +875,6 @@ impl Translations {
             video_order: "Video Order",
             video_player_widget_for_xxx: r#"Video player widget for "{title}""#,
             video_settings: "Video settings",
-            video_xxx_of_xxx: "Video {current} of {total}",
             videos: "Videos",
             vp9_missing_browser_support_not_recommended: "VP9 – Missing browser support (Not recommended)",
             warm: "Warm",
@@ -968,16 +977,6 @@ impl Translations {
         self.video_player_widget_for_xxx.replace("{title}", title)
     }
 
-    pub fn video_xxx_of_xxx(
-        &self,
-        current: usize,
-        total: usize
-    ) -> String {
-        self.video_xxx_of_xxx
-            .replace("{current}", &current.to_string())
-            .replace("{total}", &total.to_string())
-    }
-
     pub fn xxx_characters_maximum(&self, maximum: usize) -> String {
         self.xxx_characters_maximum.replace("{maximum}", &maximum.to_string())
     }
@@ -993,6 +992,9 @@ fn check_translations() {
     for translations in &locales {
         assert!(&translations.adding_file_xxx.contains("{path}"));
         assert!(&translations.creating_directory_xxx.contains("{path}"));
+        assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
+        assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
+        assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
         assert!(&translations.deleting_file_xxx.contains("{path}"));
         assert!(&translations.deleting_directory_xxx.contains("{path}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
@@ -1013,8 +1015,6 @@ fn check_translations() {
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{video_title}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
-        assert!(&translations.video_xxx_of_xxx.contains("{current}"));
-        assert!(&translations.video_xxx_of_xxx.contains("{total}"));
         assert!(&translations.xxx_characters_maximum.contains("{maximum}"));
 
         let disallowed_char = |c: char| !c.is_ascii_alphanumeric() && c != '-';

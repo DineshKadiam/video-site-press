@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use std::sync::Arc;
 
 use indoc::formatdoc;
 
@@ -65,26 +64,6 @@ pub fn video_html(
         String::new()
     };
 
-    let next_video = if video.unlisted() {
-        None
-    } else {
-        match playlist {
-            Some(playlist) => {
-                let videos = playlist.public_videos_in_playlist_order();
-
-                let active_position = videos
-                    .iter()
-                    .position(|video_iterated| video_iterated.site_path == video.site_path)
-                    .unwrap();
-
-                videos
-                    .get(active_position + 1)
-                    .map(Arc::clone)
-            }
-            None => None
-        }
-    };
-
     let parent_context = if traversal.steps.len() > 1 {
         let parent_step = &traversal.steps[traversal.steps.len() - 2];
         parent_step.context_with_bubbles("../", site)
@@ -93,7 +72,13 @@ pub fn video_html(
     };
 
     let video_prefix = "";
-    let player_rendered = player(false, next_video, site, video, video_prefix);
+    let player_rendered = player(
+        false,
+        playlist,
+        site,
+        video,
+        video_prefix
+    );
 
     let copy_link_button = if video.copy_link() {
         let (content_key, content_value) = match &site.base_url {
