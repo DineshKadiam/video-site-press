@@ -289,7 +289,7 @@ function toggleBrowse() {
 
     if (siteTreeElements.dataset.mode === 'browse') {
         siteTree.classList.remove('open');
-        siteTreeElements.dataset.mode = null;
+        delete siteTreeElements.dataset.mode;
     } else {
         if (siteContent.collection) {
             updateCollection(siteContent.collection);
@@ -384,6 +384,8 @@ function updateSearch() {
         siteTreeStatus.removeAttribute('aria-label');
         siteTreeStatus.textContent = '';
     }
+
+    delete siteTreeElements.dataset.mode;
 }
 
 clearSearchButton.addEventListener('click', clearSearch);
@@ -445,7 +447,7 @@ navigation.addEventListener('keydown', event => {
             event.preventDefault();
         } else if (siteTreeElements.dataset.mode === 'browse') {
             siteTree.classList.remove('open');
-            siteTreeElements.dataset.mode = null;
+            delete siteTreeElements.dataset.mode;
             browseButton.focus();
         }
     } else if (event.key === ' ') {
