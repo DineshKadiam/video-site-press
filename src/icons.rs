@@ -209,7 +209,20 @@ pub fn logo_monochrome(label: Option<&str>) -> String {
     formatdoc!(r##"
         <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             {title}
-            <path d="m7.0744 5.4211c-0.91299-1.138e-4 -1.6532 0.7399-1.6533 1.6529v49.852c-1.172e-4 0.91316 0.74018 1.6535 1.6533 1.6533h49.852c0.91299-1.32e-4 1.653-0.74036 1.6529-1.6533v-49.287a1.362 1.362 0 0 0-0.39907-0.96324l-0.85521-0.85497a1.3626 1.3626 0 0 0-0.96335-0.39896zm7.0765 16.079h35.699v20.999h-35.699z"/>
+            <defs>
+                <filter height="120%" id="logo-blur" primitiveUnits="objectBoundingBox" width="120%" x="-10%" y="-10%">
+                    <feGaussianBlur stdDeviation=".06"></feGaussianBlur>
+                </filter>
+                <clipPath id="logo-mask">
+                    <path d="m7.0744 5.4211c-0.91299-1.138e-4 -1.6532 0.7399-1.6533 1.6529v49.852c-1.172e-4 0.91316 0.74018 1.6535 1.6533 1.6533h49.852c0.91299-1.32e-4 1.653-0.74036 1.6529-1.6533v-49.287a1.362 1.362 0 0 0-0.39907-0.96324l-0.85521-0.85497a1.3626 1.3626 0 0 0-0.96335-0.39896zm7.0765 16.079h35.699v20.999h-35.699z"></path>
+                </clipPath>
+            </defs>
+            <g clip-path="url(#logo-mask)" filter="url(#logo-blur)">
+                <circle cx="4" cy="4" r="32" fill="currentColor" opacity=".5"></circle>
+                <circle cx="62" cy="4" r="32" fill="currentColor" opacity=".4"></circle>
+                <circle cx="62" cy="62" r="32" fill="currentColor" opacity=".3"></circle>
+                <circle cx="4" cy="62" r="32" fill="currentColor" opacity=".6"></circle>
+            </g>
         </svg>
     "##)
 }
@@ -235,7 +248,6 @@ pub fn logo_polychrome(label: Option<&str>) -> String {
                     <path d="m7.0744 5.4211c-0.91299-1.138e-4 -1.6532 0.7399-1.6533 1.6529v49.852c-1.172e-4 0.91316 0.74018 1.6535 1.6533 1.6533h49.852c0.91299-1.32e-4 1.653-0.74036 1.6529-1.6533v-49.287a1.362 1.362 0 0 0-0.39907-0.96324l-0.85521-0.85497a1.3626 1.3626 0 0 0-0.96335-0.39896zm7.0765 16.079h35.699v20.999h-35.699z"/>
                 </clipPath>
             </defs>
-            {title}
             <g clip-path="url(#logo-mask)"  filter="url(#logo-blur)">
                 <circle cx="4" cy="4" fill="#ffae1c" r="32"/>
                 <circle cx="62" cy="4" fill="#ff280a" r="32"/>
