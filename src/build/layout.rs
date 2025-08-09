@@ -188,8 +188,21 @@ impl Layout {
         let root_url = traversal.index_asc(site);
         let site_path = traversal.site_path().normalized();
 
+        let key_icon = icons::KEY;
         let logo_monochrome_icon = icons::logo_monochrome(None);
         let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
+        let t_adjust_playback_speed_cursor_above_playback_speed_indicator = translations.adjust_playback_speed_cursor_above_playback_speed_indicator;
+        let t_clear_search_or_close_browse_panel = translations.clear_search_or_close_browse_panel;
+        let t_close = translations.close;
+        let t_focus_search_field = translations.focus_search_field;
+        let t_fullscreen = translations.fullscreen;
+        let t_mousewheel = translations.mousewheel;
+        let t_navigation = translations.navigation;
+        let t_open_browse_panel = translations.open_browse_panel;
+        let t_play_pause_video = translations.play_pause_video;
+        let t_shortcuts = translations.shortcuts;
+        let t_space = translations.space;
+        let t_video_player = translations.video_player;
         let body = formatdoc!(r##"
             <body>
                 <div class="layout">
@@ -216,12 +229,32 @@ impl Layout {
                             <span>
                                 {e_site_title}
                             </span>
-                            <a class="system_info" href="https://simonrepp.com/hyper8" target="_blank">
+                            <a href="https://simonrepp.com/hyper8" target="_blank">
                                 {logo_monochrome_icon} Hyper 8 Video System {version_display}
                             </a>
+                            <button class="shortcuts">
+                                {key_icon} {t_shortcuts}
+                            </button>
                         </div>
                     </footer>
                 </div>
+                <dialog class="shortcuts">
+                    <h3>{t_navigation}</h3>
+                    <ul>
+                        <li>{t_open_browse_panel} <span>b</span></li>
+                        <li>{t_focus_search_field} <span>s</span></li>
+                        <li>{t_clear_search_or_close_browse_panel} <span>Esc</span></li>
+                    </ul>
+                    <h3>{t_video_player}</h3>
+                    <ul>
+                        <li>{t_fullscreen} <span>f</span></li>
+                        <li>{t_play_pause_video} <span>{t_space}</span></li>
+                        <li>{t_adjust_playback_speed_cursor_above_playback_speed_indicator} <span>{t_mousewheel}</span></li>
+                    </ul>
+                    <form method="dialog">
+                        <button>{t_close}</button>
+                    </form>
+                </dialog>
                 {templates}
             </body>
         "##);

@@ -81,6 +81,71 @@ button {
 }
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
+dialog.shortcuts {
+    background: var(--bg-1);
+    border-radius: .5rem;
+    border: 1px solid var(--bg-3);
+    box-shadow: 0 0 1rem var(--d-1-15);
+    color: var(--fg-2);
+    flex-direction: column;
+    left: 0;
+    margin: 0;
+    padding: 3rem 3rem 2rem 3rem;
+    position: fixed;
+    row-gap: 1rem;
+    top: 0;
+    transform: translate(calc(50vw - 50%), calc(50dvh - 50%));
+    z-index: 9;
+}
+dialog.shortcuts[open] { display: flex; }
+dialog.shortcuts button {
+    background: var(--action);
+    border: none;
+    border-radius: .2rem;
+    color: var(--l-1);
+    cursor: pointer;
+    font-size: .9rem;
+    padding: .3rem .4rem;
+}
+dialog.shortcuts button:hover { background: var(--action-hover); }
+dialog.shortcuts form {
+    margin-top: 1rem;
+    text-align: center;
+}
+dialog.shortcuts h3 {
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin: 0;
+}
+dialog.shortcuts li {
+    align-items: center;
+    column-gap: 1.5rem;
+    display: flex;
+    font-size: .9rem;
+    justify-content: space-between;
+    line-height: 1.4;
+    list-style: none;
+}
+dialog.shortcuts li > span {
+    align-items: center;
+    background: var(--bg-2);
+    border-radius: .3rem;
+    box-sizing: border-box;
+    display: flex;
+    font-family: monospace;
+    font-size: .8rem;
+    justify-content: center;
+    min-height: 1.8rem;
+    min-width: 1.8rem;
+    padding: .1rem .5rem;
+    white-space: nowrap;
+}
+dialog.shortcuts ul {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    row-gap: .5rem;
+}
 .feed_card {
     background: var(--bg-2);
     border-radius: 1rem;
@@ -127,6 +192,24 @@ footer > div {
     display: flex;
     flex-wrap: wrap;
     gap: .7rem;
+}
+footer a,
+footer button {
+    align-items: center;
+    background: none;
+    border: none;
+    color: var(--fg-3);
+    column-gap: .4rem;
+    cursor: pointer;
+    display: flex;
+}
+footer a:hover,
+footer button:hover {
+    color: var(--fg-1);
+}
+footer a:not(:hover) svg,
+footer button:not(:hover) svg {
+    color: var(--fg-mg);
 }
 h1 {
     color: var(--fg-1);
@@ -721,17 +804,6 @@ svg {
     fill: currentColor;
     display: block;
 }
-.system_info {
-    align-items: center;
-    color: var(--fg-3);
-    column-gap: .4rem;
-    display: flex;
-}
-.system_info:focus-visible,
-.system_info:hover {
-    text-decoration: underline;
-    text-underline-offset: .3rem;
-}
 .thumbnail {
     aspect-ratio: var(--poster-aspect);
     background: var(--d-1);
@@ -850,6 +922,17 @@ video {
 }
 @media (max-width: 35rem) {
     .outro_playlist_context .replay_indicator { display: none; }
+}
+@media (max-width: 40rem), (max-height: 40rem) {
+    dialog.shortcuts[open] { padding: 2rem 1.5rem; }
+    dialog.shortcuts form { margin-top: 1rem; }
+    dialog.shortcuts h3 { font-size: 1rem; }
+    dialog.shortcuts li { font-size: .8rem; }
+    dialog.shortcuts li > span {
+        min-height: 1.6rem;
+        min-width: 1.6rem;
+    }
+    dialog.shortcuts ul { margin: 0; }
 }
 @media (max-width: 40rem) {
     .outro_playlist_context img { height: 3rem; }
