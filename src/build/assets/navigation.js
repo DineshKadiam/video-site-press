@@ -575,11 +575,11 @@ shortcutsButton.addEventListener('click', () => {
 window.addEventListener('keydown', event => {
     if (event.target === searchInput) return;
 
-    if (event.key === 'b') {
+    if (event.key === 'b' || event.key === 'B') {
         browseButton.focus();
         accessSiteTree(toggleBrowse);
         event.preventDefault();
-    } else if (event.key === 's') {
+    } else if (event.key === 's' || event.key === 'S') {
         searchInput.focus();
         event.preventDefault();
     }

@@ -192,11 +192,14 @@ impl Layout {
         let logo_monochrome_icon = icons::logo_monochrome(None);
         let logo_polychrome_icon = icons::logo_polychrome(Some("Hyper 8"));
         let t_adjust_playback_speed_cursor_above_playback_speed_indicator = translations.adjust_playback_speed_cursor_above_playback_speed_indicator;
+        let t_arrow_left_right = translations.arrow_left_right;
         let t_clear_search_or_close_browse_panel = translations.clear_search_or_close_browse_panel;
         let t_close = translations.close;
         let t_focus_search_field = translations.focus_search_field;
-        let t_fullscreen = translations.fullscreen;
+        let t_enter_exit_fullscreen = translations.enter_exit_fullscreen;
+        let t_jump_back_forward_five_seconds = translations.jump_back_forward_five_seconds;
         let t_mousewheel = translations.mousewheel;
+        let t_mute_unmute_audio = translations.mute_unmute_audio;
         let t_navigation = translations.navigation;
         let t_open_browse_panel = translations.open_browse_panel;
         let t_play_pause_video = translations.play_pause_video;
@@ -247,7 +250,9 @@ impl Layout {
                     </ul>
                     <h3>{t_video_player}</h3>
                     <ul>
-                        <li>{t_fullscreen} <span>f</span></li>
+                        <li>{t_enter_exit_fullscreen} <span>f</span></li>
+                        <li>{t_mute_unmute_audio} <span>m</span></li>
+                        <li>{t_jump_back_forward_five_seconds} <span>{t_arrow_left_right}</span></li>
                         <li>{t_play_pause_video} <span>{t_space}</span></li>
                         <li>{t_adjust_playback_speed_cursor_above_playback_speed_indicator} <span>{t_mousewheel}</span></li>
                     </ul>

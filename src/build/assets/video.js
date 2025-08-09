@@ -172,6 +172,27 @@ cycleVersionButton.addEventListener('click', () => {
     activateVersionOption(versionOptions[(activeVersionOptionIndex + 1) % versionOptions.length]);
 });
 
+function cycleVolume() {
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            volume.value = 0;
+        } else if (volume.value > 0.333) {
+            volume.value = 1;
+        } else {
+            volume.value = 0.5;
+        }
+    } else {
+        if (volume.value > 0.5) {
+            volume.value = 0;
+        } else {
+            volume.value = 1;
+        }
+    }
+
+    updateVolume();
+    localStorage.setItem('hyper8Volume', volume.value);
+}
+
 function toggleFullscreen() {
     if (document.fullscreenElement) {
         document.exitFullscreen();
@@ -196,20 +217,14 @@ function togglePlayback() {
 }
 
 function toggleVolume() {
-    if (volume.interactive) {
-        if (volume.value > 0.666) {
-            volume.value = 0;
-        } else if (volume.value > 0.333) {
-            volume.value = 1;
-        } else {
-            volume.value = 0.5;
-        }
+    if (volume.value > 0) {
+        volume.valueBeforeMute = volume.value;
+        volume.value = 0;
+    } else if (volume.valueBeforeMute !== undefined) {
+        volume.value = volume.valueBeforeMute;
+        delete volume.valueBeforeMute;
     } else {
-        if (volume.value > 0.5) {
-            volume.value = 0;
-        } else {
-            volume.value = 1;
-        }
+        volume.value = 1;
     }
 
     updateVolume();
@@ -277,7 +292,7 @@ for (const slice of versionSlices) {
 window.addEventListener('keydown', revealControls);
 
 playbackToggleFullscreenButton.addEventListener('click', toggleFullscreen);
-playbackToggleVolumeButton.addEventListener('click', toggleVolume);
+playbackToggleVolumeButton.addEventListener('click', cycleVolume);
 
 playerWrapper.addEventListener('fullscreenchange', () => {
     const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
@@ -435,8 +450,10 @@ window.addEventListener('keydown', event => {
     if (event.key === ' ') {
         togglePlayback();
         event.preventDefault();
-    } else if (event.key === 'f') {
+    } else if (event.key === 'f' || event.key === 'F') {
         toggleFullscreen();
+    } else if (event.key === 'm' || event.key === 'M') {
+        toggleVolume();
     } else if (event.key === 'ArrowLeft') {
         if (video.currentTime - 5 < 0) {
             video.currentTime = 0;
