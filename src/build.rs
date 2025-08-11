@@ -460,6 +460,7 @@ fn build_video(
                 embed_html(
                     asset_hashes,
                     context,
+                    playlist,
                     site,
                     video,
                     &traversal_embed

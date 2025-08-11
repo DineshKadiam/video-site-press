@@ -452,12 +452,14 @@ img {
     width: 100%;
     z-index: 3;
 }
-.player_intro { display: flex; }
+.player_intro {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
 .player_intro,
 .player_outro {
-    align-items: center;
     bottom: 2.9rem;
-    justify-content: center;
     left: 0;
     position: absolute;
     right: 0;

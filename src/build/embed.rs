@@ -3,7 +3,7 @@
 
 use std::fs;
 
-use crate::{Context, Site, Video};
+use crate::{Context, Playlist, Site, Video};
 use crate::build::AssetHashes;
 use crate::build::outline::Traversal;
 use crate::build::widgets::{embed_layout, player};
@@ -13,6 +13,7 @@ use crate::build::widgets::{embed_layout, player};
 pub fn embed_html(
     asset_hashes: &AssetHashes,
     context: &Context,
+    playlist: Option<&Playlist>,
     site: &Site,
     video: &Video,
     traversal: &Traversal
@@ -20,7 +21,7 @@ pub fn embed_html(
     let video_prefix = "../";
     let player_rendered = player(
         true,
-        None,
+        playlist,
         site,
         video,
         video_prefix

@@ -87,6 +87,79 @@ img {
     white-space: nowrap;
 }
 .intro_heading svg { flex-shrink: 0; }
+.outro_playlist_context > a,
+.outro_playlist_context > button {
+    align-items: center;
+    border-radius: .3rem;
+    column-gap: 1rem;
+    display: flex;
+    min-height: 2rem;
+    outline: none;
+    padding: .25rem 1rem;
+    position: relative;
+}
+.outro_playlist_context > a:focus-visible,
+.outro_playlist_context > a:hover,
+.outro_playlist_context > button:focus-visible,
+.outro_playlist_context > button:hover {
+    background: var(--l-1-10);
+}
+.outro_playlist_context .description {
+    align-items: flex-start;
+    color: var(--l-1);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+    margin-right: 1rem;
+}
+.outro_playlist_context .details {
+    color: var(--l-3);
+    font-size: .8rem;
+}
+.outro_playlist_context .label { font-size: .9rem;  }
+.outro_playlist_context .number_context {
+    background: var(--l-3);
+    border-radius: .2rem;
+    color: var(--d-1);
+    font-size: .8rem;
+    margin-bottom: .2rem;
+    padding: .15rem .36rem;
+}
+.outro_playlist_context img {
+    aspect-ratio: var(--poster-aspect);
+    background: var(--d-1);
+    border-radius: .3rem;
+    display: block;
+    flex-shrink: 0;
+    height: 4rem;
+    object-fit: contain;
+}
+.outro_playlist_context .replay_indicator {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    margin-left: -.25rem;
+    width: 2rem;
+}
+.outro_playlist_context .replay_indicator svg { font-size: 1.5rem; }
+.outro_playlist_context .title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 min(5%, 3rem) 0;
+    text-align: center;
+}
+.outro_video_context {
+    align-items: center;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+}
+.outro_video_context > button {
+    align-items: center;
+    column-gap: .3rem;
+    display: flex;
+}
 .player_controls {
     bottom: 0;
     display: flex;
@@ -160,25 +233,29 @@ img {
     width: 100%;
     z-index: 3;
 }
-.player_intro { bottom: 0; }
-.player_intro,
-.player_outro {
+.player_intro {
     align-items: center;
+    bottom: 0;
     display: flex;
     justify-content: center;
+}
+.player_intro,
+.player_outro {
     left: 0;
     position: absolute;
     right: 0;
     top: 0;
 }
 .player_outro {
-    background: var(--d-1-85);
     border-top-left-radius: .5rem;
     border-top-right-radius: .5rem;
     bottom: 2.9rem;
-    column-gap: 2rem;
+    overflow-y: auto;
+    padding: min(5%, 3rem) 2.5% 2.5% 2.5%;
 }
 .player_wrapper {
+    background: #000;
+    border-radius: .5rem;
     color: var(--l-2);
     position: relative;
 }
@@ -192,9 +269,11 @@ img {
 .player_wrapper button.dimmed { color: var(--mg); }
 .player_wrapper button.dimmed:hover { color: var(--l-3); }
 .player_wrapper > *:not(video) { z-index: 1; }
+.player_wrapper[data-state="intro"] .player_controls { display: none; }
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
-.player_wrapper:not([data-state="playing"]) .player_controls { display: none; }
 .player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
+.player_wrapper:not([data-state="outro"]) .player_controls.hidden { display: none; }
+.player_wrapper[data-state="outro"] video { opacity: .1; }
 .player_wrapper:not(:fullscreen) video { aspect-ratio: var(--video-aspect); }
 .reading_width { max-width: 32rem; }
 .right_playback_controls { position: relative; }
@@ -281,7 +360,6 @@ svg {
 }
 .versions_ring.interacting g:not(:focus-visible):not(:hover) { opacity: .5; }
 video {
-    background: var(--d-1);
     border-radius: .5rem;
     display: block;
     height: 100%;
@@ -302,7 +380,18 @@ video {
     flex-flow: row wrap;
     row-gap: 1rem;
 }
-
 @media (min-height: 25rem) {
     .intro_heading { max-width: 70%; }
+}
+@media (max-width: 25rem) {
+    .outro_playlist_context .details { display: none; }
+}
+@media (max-width: 30rem) {
+    .outro_playlist_context img { display: none; }
+}
+@media (max-width: 35rem) {
+    .outro_playlist_context .replay_indicator { display: none; }
+}
+@media (max-width: 40rem) {
+    .outro_playlist_context img { height: 3rem; }
 }

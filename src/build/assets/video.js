@@ -9,9 +9,9 @@ const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
 const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
 
 const cycleVersionButton = document.querySelector('#cycle_versions');
+const playbackCycleVolumeButton = document.querySelector('.left_playback_controls .cycle_volume');
 const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
 const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
-const playbackToggleVolumeButton = document.querySelector('.left_playback_controls .toggle_volume');
 const playerControls = document.querySelector('.player_controls');
 const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
@@ -259,8 +259,8 @@ function updateVolume() {
         }
     }
 
-    playbackToggleVolumeButton.classList.toggle('dimmed', video.muted);
-    playbackToggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
+    playbackCycleVolumeButton.classList.toggle('dimmed', video.muted);
+    playbackCycleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
 }
 
 for (const slice of versionSlices) {
@@ -292,8 +292,8 @@ for (const slice of versionSlices) {
 
 window.addEventListener('keydown', revealControls);
 
+playbackCycleVolumeButton.addEventListener('click', cycleVolume);
 playbackToggleFullscreenButton.addEventListener('click', toggleFullscreen);
-playbackToggleVolumeButton.addEventListener('click', cycleVolume);
 
 playerWrapper.addEventListener('fullscreenchange', () => {
     const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;

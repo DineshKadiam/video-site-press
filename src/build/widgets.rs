@@ -165,7 +165,7 @@ pub fn player(
     // In the embedded player, the intro screen has additional
     // (redundant) volume/subtitles/fullscreen controls, next to the
     // resolution selector.
-    embed_extensions: bool,
+    embed: bool,
     playlist: Option<&Playlist>,
     site: &Site,
     video: &Video,
@@ -317,6 +317,7 @@ pub fn player(
 
     let player_outro = if let Some(playlist) = playlist {
         let index_suffix = site.index_suffix();
+        let index_suffix_file_only = site.index_suffix_file_only();
 
         let playlist_label = playlist.title_or_slug_or_generic_label(translations);
         let playlist_label_escaped = html_escape_outside_attribute(&playlist_label);
@@ -329,35 +330,40 @@ pub fn player(
                 let label = video_iterated.title_or_slug_or_generic_label(translations);
                 let slug = video_iterated.slug_unchecked();
 
-                let id_replay;
-                let replay_indicator;
-                let video_prefix = if video_iterated.site_path == video.site_path {
-                    id_replay = r#"id="replay""#;
-                    replay_indicator = icons::replay(translations.replay);
-                    String::new()
+                let href_suffix = if embed {
+                    format!("embed{index_suffix}")
                 } else {
-                    id_replay = "";
-                    replay_indicator = String::new();
-                    format!("../{slug}/")
+                    index_suffix_file_only.to_string()
                 };
-
-                let thumbnail_rendered = thumbnail(translations, video_iterated, &video_prefix, false);
 
                 let current;
                 let href;
+                let id_replay;
                 let number_context;
+                let replay_indicator;
+                let video_iterated_prefix;
                 if video_iterated.site_path == video.site_path {
                     current = "current";
-                    href = String::new();
+                    href = format!("{video_prefix}{href_suffix}");
+                    id_replay = r#"id="replay""#;
+
                     let count = videos.len();
                     let number = index + 1;
                     let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(number, &playlist_label_escaped, count);
+
                     number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
+                    replay_indicator = icons::replay(translations.replay);
+                    video_iterated_prefix = video_prefix.to_string();
                 } else {
                     current = "";
-                    href = format!("../{slug}{index_suffix}");
+                    href = format!("../{video_prefix}{slug}/{href_suffix}");
+                    id_replay = "";
                     number_context = String::new();
+                    replay_indicator = String::new();
+                    video_iterated_prefix = format!("{video_prefix}../{slug}/");
                 }
+
+                let thumbnail_rendered = thumbnail(translations, video_iterated, &video_iterated_prefix, false);
 
                 let mut details = Vec::new();
 
@@ -416,7 +422,7 @@ pub fn player(
     let video_title = video.title_or_slug_or_generic_label(translations);
     let video_title_escaped = html_escape_outside_attribute(video_title);
 
-    let embed_intro_extensions = if embed_extensions {
+    let embed_intro_extensions = if embed {
         let link_icon = icons::link(Some(translations.external_link));
         let site_url = site.absolute_url_unchecked();
         let video_url = match site.clean_urls {
@@ -463,7 +469,7 @@ pub fn player(
             </a>
             <div class="intro_controls_wrapper">
                 <div class="intro_controls">
-                    <button class="icon_button toggle_volume">{volume_loud_icon}</button>
+                    <button class="icon_button cycle_volume">{volume_loud_icon}</button>
                     {intro_subtitle_controls}
                     <button class="icon_button toggle_fullscreen">{maximize_icon}</button>
                 </div>
@@ -496,7 +502,7 @@ pub fn player(
                 <div class="control_pane">
                     <div class="left_playback_controls">
                         <button id="toggle_playback">{play_icon}</button>
-                        <button class="toggle_volume">{volume_loud_icon}</button>
+                        <button class="cycle_volume">{volume_loud_icon}</button>
                         <button id="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
                         <div>
                             <span id="time_current">00:00</span> / <span id="time_total">{duration_formatted}</span>

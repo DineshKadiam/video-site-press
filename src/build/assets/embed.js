@@ -2,6 +2,7 @@ const maximizeIcon = document.querySelector('#maximize_icon').content;
 const minimizeIcon = document.querySelector('#minimize_icon').content;
 const playIcon = document.querySelector('#play_icon').content;
 const pauseIcon = document.querySelector('#pause_icon').content;
+const replayIcon = document.querySelector('#replay_icon').content;
 const subtitlesIcon = document.querySelector('#subtitles_icon').content;
 const volumeLoudIcon = document.querySelector('#volume_loud_icon').content;
 const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
@@ -9,17 +10,17 @@ const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
 
 const cycleVersionButton = document.querySelector('#cycle_versions');
 const introSubtitlesSelectorControl = document.querySelector('.intro_controls .selector_control.subtitles');
+const introCycleVolumeButton = document.querySelector('.intro_controls .cycle_volume');
 const introToggleFullscreenButton = document.querySelector('.intro_controls .toggle_fullscreen');
-const introToggleVolumeButton = document.querySelector('.intro_controls .toggle_volume');
+const playbackCycleVolumeButton = document.querySelector('.left_playback_controls .cycle_volume');
 const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
 const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
-const playbackToggleVolumeButton = document.querySelector('.left_playback_controls .toggle_volume');
 const playerControls = document.querySelector('.player_controls');
 const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
-const timelineInput = document.querySelector('.timeline input');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
+const timelineInput = document.querySelector('.timeline input');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
 const versionSelectorControl = document.querySelector('.selector_control.version');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
@@ -97,13 +98,13 @@ function playbackUpdate() {
     document.querySelector('#time_current').innerHTML = timeFormatted;
 
     if (playerControls.dataset.hideBy && (new Date()).getTime() > playerControls.dataset.hideBy) {
-        playerControls.style.display = 'none';
+        playerControls.classList.add('hidden');
     }
 }
 
 function revealControls() {
     playerControls.dataset.hideBy = (new Date()).getTime() + 3000;
-    playerControls.style.display = null;
+    playerControls.classList.remove('hidden');
 }
 
 versionSelectorControl.addEventListener('mouseenter', () => {
@@ -174,6 +175,27 @@ cycleVersionButton.addEventListener('click', () => {
     activateVersionOption(versionOptions[(activeVersionOptionIndex + 1) % versionOptions.length]);
 });
 
+function cycleVolume() {
+    if (volume.interactive) {
+        if (volume.value > 0.666) {
+            volume.value = 0;
+        } else if (volume.value > 0.333) {
+            volume.value = 1;
+        } else {
+            volume.value = 0.5;
+        }
+    } else {
+        if (volume.value > 0.5) {
+            volume.value = 0;
+        } else {
+            volume.value = 1;
+        }
+    }
+
+    updateVolume();
+    localStorage.setItem('hyper8Volume', volume.value);
+}
+
 function toggleFullscreen() {
     if (document.fullscreenElement) {
         document.exitFullscreen();
@@ -198,20 +220,14 @@ function togglePlayback() {
 }
 
 function toggleVolume() {
-    if (volume.interactive) {
-        if (volume.value > 0.666) {
-            volume.value = 0;
-        } else if (volume.value > 0.333) {
-            volume.value = 1;
-        } else {
-            volume.value = 0.5;
-        }
+    if (volume.value > 0) {
+        volume.valueBeforeMute = volume.value;
+        volume.value = 0;
+    } else if (volume.valueBeforeMute !== undefined) {
+        volume.value = volume.valueBeforeMute;
+        delete volume.valueBeforeMute;
     } else {
-        if (volume.value > 0.5) {
-            volume.value = 0;
-        } else {
-            volume.value = 1;
-        }
+        volume.value = 1;
     }
 
     updateVolume();
@@ -245,11 +261,11 @@ function updateVolume() {
         }
     }
 
-    introToggleVolumeButton.classList.toggle('dimmed', video.muted);
-    introToggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
+    introCycleVolumeButton.classList.toggle('dimmed', video.muted);
+    introCycleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
 
-    playbackToggleVolumeButton.classList.toggle('dimmed', video.muted);
-    playbackToggleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
+    playbackCycleVolumeButton.classList.toggle('dimmed', video.muted);
+    playbackCycleVolumeButton.replaceChildren(volumeIcon.cloneNode(true));
 }
 
 for (const slice of versionSlices) {
@@ -281,11 +297,11 @@ for (const slice of versionSlices) {
 
 window.addEventListener('keydown', revealControls);
 
+introCycleVolumeButton.addEventListener('click', cycleVolume);
 introToggleFullscreenButton.addEventListener('click', toggleFullscreen);
-introToggleVolumeButton.addEventListener('click', toggleVolume);
 
+playbackCycleVolumeButton.addEventListener('click', cycleVolume);
 playbackToggleFullscreenButton.addEventListener('click', toggleFullscreen);
-playbackToggleVolumeButton.addEventListener('click', toggleVolume);
 
 playerWrapper.addEventListener('fullscreenchange', () => {
     const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
@@ -295,7 +311,8 @@ playerWrapper.addEventListener('fullscreenchange', () => {
 
 playerWrapper.addEventListener('mousemove', revealControls);
 
-replayButton.addEventListener('click', () => {
+replayButton.addEventListener('click', event => {
+    event.preventDefault();
     playerWrapper.dataset.state = 'playing';
     video.play();
     togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
@@ -460,7 +477,7 @@ togglePlaybackButton.addEventListener('click', togglePlayback);
 video.addEventListener('ended', () => {
     playerWrapper.dataset.state = 'outro';
     clearInterval(playbackUpdateInterval);
-    togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    togglePlaybackButton.replaceChildren(replayIcon.cloneNode(true));
 });
 
 video.addEventListener('click', togglePlayback);
@@ -469,13 +486,24 @@ window.addEventListener('keydown', event => {
     if (event.key === ' ') {
         togglePlayback();
         event.preventDefault();
-    } else if (event.key === 'f') {
+    } else if (event.key === 'f' || event.key === 'F') {
         toggleFullscreen();
+    } else if (event.key === 'm' || event.key === 'M') {
+        toggleVolume();
     } else if (event.key === 'ArrowLeft') {
         if (video.currentTime - 5 < 0) {
             video.currentTime = 0;
         } else {
             video.currentTime -= 5;
+        }
+
+        playbackUpdate();
+
+        // If we move the playback position backwards while we're on the outro
+        // screen we need to make sure the replay icon gets replaced by a
+        // play icon again.
+        if (playerWrapper.dataset.state === 'outro') {
+            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
         }
     } else if (event.key === 'ArrowRight') {
         if (video.currentTime + 5 > duration) {
@@ -483,12 +511,23 @@ window.addEventListener('keydown', event => {
         } else {
             video.currentTime += 5;
         }
+
+        playbackUpdate();
     }
 });
 
 timelineInput.addEventListener('input', _ => {
+    playerWrapper.dataset.state = 'playing';
     video.currentTime = timelineInput.value;
+
     playbackUpdate();
+
+    // If we move the playback position backwards while we're on the outro
+    // screen we need to make sure the replay icon gets replaced by a
+    // play icon again.
+    if (playerWrapper.dataset.state === 'outro') {
+        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    }
 });
 
 const resizeObserver = new ResizeObserver(() => {
