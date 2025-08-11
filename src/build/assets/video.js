@@ -20,6 +20,7 @@ const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
 const timelineInput = document.querySelector('.timeline input');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
+const togglePlaylistButton = document.querySelector('#toggle_playlist');
 const versionSelectorControl = document.querySelector('.selector_control.version');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
 const versionsRing = document.querySelector('.versions_ring');
@@ -435,6 +436,23 @@ speedControl.addEventListener('wheel', event => {
 });
 
 togglePlaybackButton.addEventListener('click', togglePlayback);
+
+if (togglePlaylistButton) {
+    const sidebar = document.querySelector('.sidebar');
+    const storageKey = `hyper8HidePlaylist:${togglePlaylistButton.dataset.sitePath}`;
+
+    function togglePlaylist() {
+        if (sidebar.classList.contains('hidden')) {
+            sessionStorage.removeItem(storageKey);
+            sidebar.classList.remove('hidden');
+        } else {
+            sessionStorage.setItem(storageKey, '')
+            sidebar.classList.add('hidden');
+        }
+    }
+
+    togglePlaylistButton.addEventListener('click', togglePlaylist);
+}
 
 video.addEventListener('ended', () => {
     playerWrapper.dataset.state = 'outro';

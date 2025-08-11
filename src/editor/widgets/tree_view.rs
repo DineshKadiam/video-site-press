@@ -348,7 +348,7 @@ fn playlist_node(
         breadcrumbs.push(format!(r#"<a href="{exposed_edit_url}">{e_breadcrumb_title}</a>"#));
     }
 
-    let playlist_icon = icons::playlist(translations.playlist);
+    let playlist_icon = icons::playlist(Some(translations.playlist));
     let playlist_visibility = Visibility::from_playlist(playlist);
 
     let node = tree_node(

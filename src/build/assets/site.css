@@ -289,10 +289,6 @@ img {
     padding: .5rem;
 }
 .medium_font { font-size: 1.2rem; }
-.outline {
-    flex-shrink: 0;
-    min-width: 20rem;
-}
 .outro_playlist_context > a,
 .outro_playlist_context > button {
     align-items: center;
@@ -634,9 +630,10 @@ img {
 .search input:focus::placeholder { opacity: 0; }
 .search:not(.query_present) button { display: none; }
 .sidebar {
-    display: flex;
-    flex-direction: column;
+    flex-shrink: 0;
+    min-width: 20rem;
 }
+.sidebar.hidden { display: none; }
 .site_title {
     color: var(--fg-2);
     font-size: 1.17rem;
@@ -974,7 +971,7 @@ video {
     .feed_grid { gap: 2rem; }
 }
 @media (min-width: 80rem) {
-    .outline {
+    .sidebar {
         max-height: calc(100dvh - 4rem);
         overflow-y: auto;
         width: 24rem;

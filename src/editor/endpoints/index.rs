@@ -88,7 +88,7 @@ pub async fn index(context: Data<Arc<Context>>) -> HttpResponse {
 
 fn empty_site_html(translations: &Translations) -> String {
     let collection_icon = icons::collection(translations.collection);
-    let playlist_icon = icons::playlist(translations.playlist);
+    let playlist_icon = icons::playlist(None);
     let video_icon = icons::video(translations.video);
 
     let t_a_site_presenting_a_single_playlist_of_videos = translations.a_site_presenting_a_single_playlist_of_videos;

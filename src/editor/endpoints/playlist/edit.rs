@@ -305,7 +305,7 @@ pub fn edit_page(
         translations
     );
 
-    let playlist_icon = icons::playlist(translations.playlist);
+    let playlist_icon = icons::playlist(Some(translations.playlist));
     let playlist_title = playlist.title_or_slug_or_generic_label(translations);
 
     let t_new_video = translations.new_video;

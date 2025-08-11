@@ -16,8 +16,6 @@ const siteTreeElements = siteTree.querySelector('.elements');
 const siteTreeStatus = siteTree.querySelector('[role="status"]');
 
 const indexSuffix = window.location.pathname.endsWith('index.html') ? 'index.html' : '';
-const rootPrefix = document.querySelector('.home').dataset.rootPrefix;
-const sitePath = document.querySelector('.home').dataset.sitePath;
 
 // We only render the site tree elements (which are displayed during
 // browsing/searching) into the DOM when, or shortly before, we need them,
@@ -75,7 +73,7 @@ function initializeSiteTree() {
         let image;
         if (video.image) {
             image = document.createElement('img');
-            image.src = rootPrefix + video.sitePath + video.image;
+            image.src = window.hyper8.rootPrefix + video.sitePath + video.image;
 
             if (video.lqip) {
                 image.style.background = lqipToRadialGradient(video.lqip);
@@ -105,11 +103,11 @@ function initializeSiteTree() {
 
         video.element = document.createElement('a');
         video.element.classList.add('video');
-        video.element.href = rootPrefix + video.sitePath + indexSuffix;
+        video.element.href = window.hyper8.rootPrefix + video.sitePath + indexSuffix;
         video.element.appendChild(image);
         video.element.appendChild(divTitleDetails);
 
-        if (video.sitePath === sitePath) {
+        if (video.sitePath === window.hyper8.sitePath) {
             video.element.classList.add('current');
         }
 
@@ -145,7 +143,7 @@ function initializeSiteTree() {
 
         playlist.element = document.createElement('a');
         playlist.element.classList.add('playlist');
-        playlist.element.href = rootPrefix + playlist.sitePath + indexSuffix;
+        playlist.element.href = window.hyper8.rootPrefix + playlist.sitePath + indexSuffix;
         playlist.element.appendChild(playlist.expandToggle);
         playlist.element.appendChild(spanTitle);
         playlist.element.appendChild(spanInfo);
@@ -160,7 +158,7 @@ function initializeSiteTree() {
             });
         }
 
-        if (playlist.sitePath === sitePath) {
+        if (playlist.sitePath === window.hyper8.sitePath) {
             playlist.element.classList.add('current');
         }
 
@@ -197,7 +195,7 @@ function initializeSiteTree() {
 
         collection.element = document.createElement('a');
         collection.element.classList.add('collection');
-        collection.element.href = rootPrefix + collection.sitePath + indexSuffix;
+        collection.element.href = window.hyper8.rootPrefix + collection.sitePath + indexSuffix;
         collection.element.appendChild(collection.expandToggle);
 
         collection.element.appendChild(spanTitle);
@@ -216,7 +214,7 @@ function initializeSiteTree() {
             });
         }
 
-        if (collection.sitePath === sitePath) {
+        if (collection.sitePath === window.hyper8.sitePath) {
             collection.element.classList.add('current');
         }
 

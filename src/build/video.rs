@@ -50,20 +50,6 @@ pub fn video_html(
     let title = video.title_or_slug_or_generic_label(translations);
     let e_title = html_escape_outside_attribute(title);
 
-    let r_downloads = if video.download() && !video.versions.is_empty() {
-        let t_download = translations.download;
-        let t_download_permalink = translations.download_permalink;
-        let download_icon = icons::DOWNLOAD;
-
-        formatdoc!(r#"
-            <a href="{t_download_permalink}{index_suffix}">
-                {download_icon} {t_download}
-            </a>
-        "#)
-    } else {
-        String::new()
-    };
-
     let parent_context = if traversal.steps.len() > 1 {
         let parent_step = &traversal.steps[traversal.steps.len() - 2];
         parent_step.context_with_bubbles("../", site)
@@ -80,7 +66,9 @@ pub fn video_html(
         video_prefix
     );
 
-    let copy_link_button = if video.copy_link() {
+    let mut actions = Vec::new();
+
+    if video.copy_link() {
         let (content_key, content_value) = match &site.base_url {
             Some(base_url) => ("content", base_url.join_index(site, &video.site_path)),
             None => ("dynamic-url", String::new())
@@ -88,25 +76,52 @@ pub fn video_html(
 
         layout.add_clipboard_script();
 
-        copy_button(content_key, &content_value, translations.copy_link)
-    } else {
-        String::new()
-    };
+        let copy_link = copy_button(content_key, &content_value, translations.copy_link);
 
-    let r_embed = if video.embedding() && site.base_url.is_some() && !video.versions.is_empty() {
+        actions.push(copy_link);
+    }
+
+    if video.embedding() && site.base_url.is_some() && !video.versions.is_empty() {
         let embed_icon = icons::EMBED;
 
         let t_embed = &translations.embed;
         let t_embed_codes_permalink = &translations.embed_codes_permalink;
 
-        format!(r#"
+        let embed_action = format!(r#"
             <a href="{t_embed_codes_permalink}{index_suffix}">
                 {embed_icon} {t_embed}
             </a>
-        "#)
-    } else {
-        String::new()
-    };
+        "#);
+
+        actions.push(embed_action);
+    }
+
+    if video.download() && !video.versions.is_empty() {
+        let t_download = translations.download;
+        let t_download_permalink = translations.download_permalink;
+        let download_icon = icons::DOWNLOAD;
+
+        let download = formatdoc!(r#"
+            <a href="{t_download_permalink}{index_suffix}">
+                {download_icon} {t_download}
+            </a>
+        "#);
+
+        actions.push(download);
+    }
+
+    if let Some(playlist) = playlist {
+        let t_playlist = translations.playlist;
+        let playlist_icon = icons::playlist(None);
+        let playlist_site_path = playlist.site_path.normalized();
+        let toggle_playlist = formatdoc!(r#"
+            <button data-site-path="{playlist_site_path}" id="toggle_playlist">
+                {playlist_icon} {t_playlist}
+            </button>
+        "#);
+
+        actions.push(toggle_playlist);
+    }
 
     let release_date = match video.release_date {
         Some(release_date) => {
@@ -125,6 +140,17 @@ pub fn video_html(
 
     let links_rendered = links(&site.language, &video.links);
 
+    let actions = if actions.is_empty() {
+        String::new()
+    } else {
+        let actions_joined = actions.join("\n");
+        formatdoc!(r#"
+            <div class="actions align flex space">
+                {actions_joined}
+            </div>
+        "#)
+    };
+
     let video_content = formatdoc!(r#"
         <div>
             <div class="video_info top">
@@ -137,11 +163,7 @@ pub fn video_html(
                     <div>
                         {release_date}
                     </div>
-                    <div class="actions align flex space">
-                        {copy_link_button}
-                        {r_embed}
-                        {r_downloads}
-                    </div>
+                    {actions}
                 </div>
                 {links_rendered}
                 {description}
@@ -159,12 +181,19 @@ pub fn video_html(
                 Some(video)
             );
 
+            let playlist_site_path = playlist.site_path.normalized();
             formatdoc!(r#"
                 <div class="layout_split">
                     {video_content}
-                    <div class="outline">
+                    <div class="sidebar">
                         {playlist_context}
                     </div>
+                    <script>
+                        if (sessionStorage.getItem('hyper8HidePlaylist:{playlist_site_path}') !== null) {{
+                            const sidebar = document.currentScript.previousElementSibling;
+                            sidebar.classList.add('hidden');
+                        }}
+                    </script>
                 </div>
             "#)
         }

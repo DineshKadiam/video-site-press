@@ -208,10 +208,13 @@ impl Layout {
         let t_video_player = translations.video_player;
         let body = formatdoc!(r##"
             <body>
+                <script>
+                    window.hyper8 = {{ rootPrefix: '{root_prefix}', sitePath: '{site_path}' }};
+                </script>
                 <div class="layout">
                     <header>
                         <div class="navigation">
-                            <a class="home" data-root-prefix="{root_prefix}" data-site-path="{site_path}" href="{root_url}">
+                            <a class="home" href="{root_url}">
                                 {logo_polychrome_icon}
                                 <span class="title">{e_site_title}</span>
                             </a>
