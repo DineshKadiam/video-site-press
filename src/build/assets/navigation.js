@@ -127,6 +127,11 @@ function initializeSiteTree() {
                 if (index > 0) {
                     const separator = document.createElement('span');
                     separator.appendChild(chevronRightIcon.cloneNode(true));
+                    // TODO: Clarify what label works best for screen reader
+                    // users to succinctly express "separator indicating
+                    // going down the hierarchy" (respectively use a semantic
+                    // construct around the "breadcrumbs" in which the
+                    // separators are hidden from screenreaders instead).
                     separator.setAttribute('aria-label', '>');
 
                     spanTitle.appendChild(separator);
@@ -182,6 +187,11 @@ function initializeSiteTree() {
                 if (index > 0) {
                     const separator = document.createElement('span');
                     separator.appendChild(chevronRightIcon.cloneNode(true));
+                    // TODO: Clarify what label works best for screen reader
+                    // users to succinctly express "separator indicating
+                    // going down the hierarchy" (respectively use a semantic
+                    // construct around the "breadcrumbs" in which the
+                    // separators are hidden from screenreaders instead).
                     separator.setAttribute('aria-label', '>');
 
                     spanTitle.appendChild(separator);

@@ -252,7 +252,10 @@ pub fn edit_page(
         <div class="form_group">
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
-                {textarea_synopsis}
+                <!-- TODO: Expose/unhide synopsis if and when it makes sense again -->
+                <div style="height: 0; opacity: 0; width: 0;">
+                    {textarea_synopsis}
+                </div>
                 {textarea_description}
                 <div class="form_split divide_3_1">
                     {input_release_date}

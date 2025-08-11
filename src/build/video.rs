@@ -140,6 +140,14 @@ pub fn video_html(
 
     let links_rendered = links(&site.language, &video.links);
 
+    // TODO: Expose/unhide synopsis if and when it makes sense again
+    // let synopsis = if let Some(synopsis) = &video.synopsis {
+    //     let synopsis_escaped = html_escape_outside_attribute(synopsis);
+    //     format!("<p>{synopsis_escaped}</p>")
+    // } else {
+    //     String::new()
+    // };
+
     let actions = if actions.is_empty() {
         String::new()
     } else {
