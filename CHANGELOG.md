@@ -5,6 +5,123 @@
 
 # Changelog
 
+## 0.22
+
+Released on August 13, 2025
+
+### Introducing Browse and Search
+
+Visitors can now quickly browse and search all collections and playlists on a Hyper 8 site, directly from the header!
+
+- Introduce search feature ([`06e7521`](https://codeberg.org/simonrepp/hyper8/commit/06e75214309092d8c5d3e2069213d966462d431e))
+- Move search to header ([`f603714`](https://codeberg.org/simonrepp/hyper8/commit/f60371424096a991bec436e4797b8b06a871418f))
+- Switch to a nested search model, exclude search feature on single video sites ([`71a649e`](https://codeberg.org/simonrepp/hyper8/commit/71a649eca182f177d41bf53398e31b5e4fb447aa))
+- Drop unused walk_recursive/SiteItem abstractions ([`8ace473`](https://codeberg.org/simonrepp/hyper8/commit/8ace47391a3acb64f11e962c6f031203fed23bf2))
+- Introduce browse feature, unify navigation in header ([`b307c4e`](https://codeberg.org/simonrepp/hyper8/commit/b307c4e6647c16bf6b795faf8e1e8bf35222c4a6))
+- Add keyboard shortcut (b) for toggling the browser, unify site tree access ([`5361c79`](https://codeberg.org/simonrepp/hyper8/commit/5361c79ab8a3e6b7393d5075d568e6fc28b7483f))
+- Sketch out mobile navigation, link title to home, write lqips to js site tree ([`4bc4dc8`](https://codeberg.org/simonrepp/hyper8/commit/4bc4dc8513e941f01c900afb8999e0e12c130fc2))
+- Respect clean/explicit url mode for header home/title link ([`2b658b6`](https://codeberg.org/simonrepp/hyper8/commit/2b658b6e32647badfa8931b5f976576469a34fec))
+- Respect clean/explicit url mode for header home/title link (add missing parts) ([`e2777d3`](https://codeberg.org/simonrepp/hyper8/commit/e2777d3ad808bfd438634436aa1278ecf348b2f0))
+- Implement collapse/expand toggles and refine site tree navigation ([`dfeb789`](https://codeberg.org/simonrepp/hyper8/commit/dfeb789cdcb5a2211e2c2f08902cd6ef3d78ba77))
+- Indicate and/or pre-expand current page in site tree navigation ([`2c4bd01`](https://codeberg.org/simonrepp/hyper8/commit/2c4bd010f1a4b043ac37a0251cc953759aa452d1))
+- Iterate on design, displayed details, ordering, search and responsive behavior ([`d194865`](https://codeberg.org/simonrepp/hyper8/commit/d1948651fe2bb5e6ba24323219729abff03f646c))
+- Ensure immediate transition from browse to search and back in all states ([`b77aedf`](https://codeberg.org/simonrepp/hyper8/commit/b77aedfe7e9a1c125a8929a4e349cd2db04624f9))
+
+### New playlist sidebar and improved video page layout
+
+Playlists are now also displayed as a contextual sidebar alongside their videos.
+The playlist can be toggled away, which is then also remembered throughout the session,
+so it stays out of your way if you want full attention only on the playing videos themselves.
+
+- Revisit and activate the playlist context interface widget ([`7ae0853`](https://codeberg.org/simonrepp/hyper8/commit/7ae0853768c03b2e5519e4e5f38e394816b95bd8))
+- Iterate on layout, design, outlines and contextual elements ([`8e7fc3c`](https://codeberg.org/simonrepp/hyper8/commit/8e7fc3c237f1d91803ce51ba80eb42a3ec88aa3a))
+- Iterate on design, displayed details, ordering, search and responsive behavior ([`d194865`](https://codeberg.org/simonrepp/hyper8/commit/d1948651fe2bb5e6ba24323219729abff03f646c))
+- Support toggling the playlist sidebar for a session, refactor script globals ([`bfe13c9`](https://codeberg.org/simonrepp/hyper8/commit/bfe13c9a28706c66f9208f3e683083bcbdfffbee))
+- Tweak playlist sidebar responsive behavior ([`bf1a5ff`](https://codeberg.org/simonrepp/hyper8/commit/bf1a5ff325227fad4fee7e1dc7417cd4f08a2bf8))
+
+### Player outro screen
+
+When a video in a playlist finishes, your viewers can now directly jump to all
+other videos of the playlist, right from the player itself. This also makes
+playlist navigation in embedded videos possible. Also includes a
+newly introduced "replay" icon.
+
+- Extend player outro screen, use LQIPs in thumbnails, fix player state issues ([`c97753b`](https://codeberg.org/simonrepp/hyper8/commit/c97753b9b160bfc39d07f99e4518491483f05719))
+- Add dedicated icons for "Replay" and "Next Video" links in video player ([`a7760a8`](https://codeberg.org/simonrepp/hyper8/commit/a7760a87ec91edd54dbe2a6eda6022752222a577))
+- Synchronize and polish latest changes in site and embed player implementations ([`d55e262`](https://codeberg.org/simonrepp/hyper8/commit/d55e262e13b52b823fdb3a48249a285f247b3f24))
+
+### Poster image cropping aid
+
+In the editor you now have visual cropping aids that assist with choosing the right poster
+images for videos, and correctly framing text inside them (safe margins).
+
+- Visualize poster and thumbnail cropping against video on poster image page ([`6802d7e`](https://codeberg.org/simonrepp/hyper8/commit/6802d7e7e39a6ea6c13eedc5552a6f7da3ac0d61))
+- Include textual poster format info in visual poster image cropping aid ([`53f9745`](https://codeberg.org/simonrepp/hyper8/commit/53f974579b526dbb5d407733835915b7f28ac1a9))
+
+### Fast image previews / LQIPs
+
+This release adds groundwork and first integrations of LQIPs (low quality image previews),
+that is, computation of dominant colors from poster images to prepare extremely
+fast loading preview versions of thumbnails which are shown to visitors right until the actual
+thumbnails (wich themselves are also optimized for fast loading) are loaded. These LQIPs are
+now also prominently featured in an experimental layout element that hints at the videos in a
+parent container (collection or playlist) as small "bubbles".
+
+- Implement asynchronous, cache-backed poster meta and LQIP computation ([`97db0c8`](https://codeberg.org/simonrepp/hyper8/commit/97db0c8ec9b3719770fedc9bba5c46904e13a701))
+- Extend player outro screen, use LQIPs in thumbnails, fix player state issues ([`c97753b`](https://codeberg.org/simonrepp/hyper8/commit/c97753b9b160bfc39d07f99e4518491483f05719))
+
+### Shortcuts
+
+This release adds a number of new shortcuts for accessing the new navigation system,
+as well as a new shortcut for muting/unmuting audio in the player. Additionally
+all shortcuts are now also made discoverable to visitors through a shortcut help
+panel that is accessible from the footer.
+
+- Implement audio mute toggle, handle shortcuts case-insensitively, refine help ([`4379530`](https://codeberg.org/simonrepp/hyper8/commit/4379530deaff592fe7ad31ccdb07f4a71dfa3025))
+- Introduce shortcuts link and help panel ([`904d72f`](https://codeberg.org/simonrepp/hyper8/commit/904d72f03a1ad57060c22741b3e9455ddb387daf))
+- Synchronize and polish latest changes in site and embed player implementations ([`d55e262`](https://codeberg.org/simonrepp/hyper8/commit/d55e262e13b52b823fdb3a48249a285f247b3f24))
+
+### Trial for a new logo icon
+
+The logo icon that has been in use so far was merely a placeholder. The new
+design is now a candidate (on trial) for Hyper 8's first official logo icon
+design! Conceptually the logo is meant to have a fixed shape, but might adapt
+to different color schemes throughout different versions and places of use
+(that is, different gradients, different solid colors, etc.).
+
+- Trial new logo design ([`a34711f`](https://codeberg.org/simonrepp/hyper8/commit/a34711f8c96dfd1c870cae5e1bad1cb829219c00))
+- Refine monochrome logo icon variant to use subtle opacity gradients ([`b17c8b7`](https://codeberg.org/simonrepp/hyper8/commit/b17c8b712d02f23f0deb86d34d41d3e2e6f40f07))
+
+### Command Line Interface
+
+There is now a new --preview option for automatically opening the result of
+a --build command in the browser right after it completes, and Hyper 8
+will now return error codes to your terminal when something goes wrong,
+helping you to build robust scripted workflows around Hyper 8.
+
+- Add --preview option for directly opening the site after building through CLI
+  * Add --preview option for directly opening the site after building through CLI ([`90a680f`](https://codeberg.org/simonrepp/hyper8/commit/90a680f29411cdc06b59c1307b139205cfdbecb2))
+  * Prepare server-less preview implementation for upcoming ESM removal ([`9d968c4`](https://codeberg.org/simonrepp/hyper8/commit/9d968c4e43d4000d79a216574f5aeac282693f5e))
+- Let the application return an error code for all obvious error branches ([`9db2797`](https://codeberg.org/simonrepp/hyper8/commit/9db27973ddc0bff40917cc5dd6d8004210b513f5))
+
+### Cache improvements
+
+Hyper 8 now separately tracks cache artifacts of different types
+(computed metadata, resized images, etc.), greatly reducing the need for
+recomputation during future updates to the architecture.
+
+- Switch to discrete cache item types to allow partial cache invalidation ([`b8ea786`](https://codeberg.org/simonrepp/hyper8/commit/b8ea78622fbda8576be97feb1530a78af0861d9e))
+
+### Fixes
+
+- Force player aspect ratio in embeds as well ([`1e4d093`](https://codeberg.org/simonrepp/hyper8/commit/1e4d0933d71de69d5fb9edf3e8fa6461bcc86034)) (with [Wolfgang Dorninger](https://dorninger.servus.at))
+- Fix wrapping behavior of action buttons on video page (with [Kristoffer Lislegaard](https://kristofferlislegaard.com/))
+- Fix occasionally occuring partial overlay coverage in player outro screen (with [Dave Riedstra](https://daveriedstra.com/))
+  * Extend player outro screen, use LQIPs in thumbnails, fix player state issues ([`c97753b`](https://codeberg.org/simonrepp/hyper8/commit/c97753b9b160bfc39d07f99e4518491483f05719))
+- Fix "Next video" link text color in player outro screen ([`c23a4c9`](https://codeberg.org/simonrepp/hyper8/commit/c23a4c95a0a23d726cb33ab190c6897468179dc9))
+- Disable preview button in the editor for offline content ([`d1b638e`](https://codeberg.org/simonrepp/hyper8/commit/d1b638ed237e9b273ad026c0e06460bc50bc1b88))
+- Fix missing trailing slash in dynamically rendered configure deployment link ([`48ad039`](https://codeberg.org/simonrepp/hyper8/commit/48ad0391a5a9fa026082f59d862c25c702a09ed0))
+
 ## 0.21
 
 Released on July 15, 2025

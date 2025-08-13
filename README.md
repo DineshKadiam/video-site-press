@@ -13,7 +13,7 @@ site, or do it all from your text editor and terminal, or both. Hyper 8
 generates sites that require no database, no programming, no maintenance, and
 are compatible with virtually every webhost on this planet.
 
-Latest Release: **`0.21.0`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
+Latest Release: **`0.22.0`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
 
 <img src="https://simonrepp.com/hyper8/readme.png?2" alt="Screenshot showing the Hyper 8 browser editor and a built page"/>
 
