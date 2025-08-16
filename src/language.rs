@@ -27,15 +27,15 @@ impl Language {
             code: String::from("en"),
             default: true,
             text_direction: TextDirection::Ltr,
-            translations: Translations::en()
+            translations: Translations::EN
         }
     }
 
     pub fn from_code(code: &str) -> Language {
         let (chrono_locale, translations) = match code {
-            "de" => (ChronoLocale::de_AT_euro, Translations::de()),
-            "en" => (ChronoLocale::en_US, Translations::en()),
-            _ => (ChronoLocale::en_US, Translations::en())
+            "de" => (ChronoLocale::de_AT_euro, Translations::DE),
+            "en" => (ChronoLocale::en_US, Translations::EN),
+            _ => (ChronoLocale::en_US, Translations::EN)
         };
 
         Language::manual(chrono_locale, code, translations)
