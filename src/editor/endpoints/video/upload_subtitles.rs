@@ -85,8 +85,7 @@ pub async fn upload_subtitles(
                         }
                     }
                 } else {
-                    // TODO: Translate
-                    let message = format!("The subtitle extension of '{filename}' is not supported, please upload only .srt or .vtt files.");
+                    let message = language.translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files(filename);
                     return Ok(Either::Right(error_page(&context, &language, &message)))
                 }
             }

@@ -137,6 +137,7 @@ pub struct Translations {
     pub jump_back_forward_five_seconds: &'static str,
     pub jump_to_a_random_frame: &'static str,
     pub label: &'static str,
+    pub label_can_not_be_empty: &'static str,
     pub label_optional: &'static str,
     pub language: &'static str,
     pub language_label: &'static str,
@@ -247,8 +248,10 @@ pub struct Translations {
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
     the_resource_xxx_was_not_found_message: &'static str,
+    the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files: &'static str,
     pub the_subtitle_requested_for_deletion_was_not_found: &'static str,
     pub the_subtitles_to_be_updated_were_not_found: &'static str,
+    the_test_file_contains_xxx_but_the_response_contained_xxx: &'static str,
     pub the_version_requested_for_deletion_was_not_found: &'static str,
     pub theme: &'static str,
     pub this_video_can_be_seamlessly_converted_to_a_video_in_a_collection: &'static str,
@@ -369,6 +372,23 @@ impl Translations {
         self.the_resource_xxx_was_not_found_message.replace("{path}", path)
     }
 
+    pub fn the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files(
+        &self,
+        filename: &str
+    ) -> String {
+        self.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.replace("{filename}", filename)
+    }
+
+    pub fn the_test_file_contains_xxx_but_the_response_contained_xxx(
+        &self,
+        expected: &str,
+        encountered: &str
+    ) -> String {
+        self.the_test_file_contains_xxx_but_the_response_contained_xxx
+            .replace("{encountered}", encountered)
+            .replace("{expected}", expected)
+    }
+
     pub fn unsupported_file_extension_in_xxx(&self, file_name: &str) -> String {
         self.unsupported_file_extension_in_xxx.replace("{file_name}", file_name)
     }
@@ -447,6 +467,9 @@ fn check_translations() {
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{public_address}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{remote_path}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
+        assert!(&translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.contains("{filename}"));
+        assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));
+        assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{expected}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{manifest_path}"));

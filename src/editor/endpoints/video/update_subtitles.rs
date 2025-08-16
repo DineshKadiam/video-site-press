@@ -44,8 +44,10 @@ pub async fn update_subtitles(
     let language_trimmed = form.language.trim();
 
     let label_error = match label_trimmed.is_empty() {
-        // TODO: Translate
-        true => Some("Label can not be empty"),
+        true => {
+            let editor_language = context.get_editor_language();
+            Some(editor_language.translations.label_can_not_be_empty)
+        }
         false => None
     };
 

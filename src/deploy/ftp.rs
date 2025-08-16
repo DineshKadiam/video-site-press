@@ -617,8 +617,11 @@ pub fn config_probe(
                             }
                         };
 
-                        // TODO: Translate
-                        let err = format!("The test file contains '{}' but the response contained '{}'", truncate(&probe_content), truncate(body));
+                        let err = translations.the_test_file_contains_xxx_but_the_response_contained_xxx(
+                            &truncate(&probe_content),
+                            &truncate(body)
+                        );
+
                         let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
                             &remote_probe_path.to_string_lossy(),
                             &public_probe_url,
