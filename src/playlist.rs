@@ -381,11 +381,12 @@ impl Playlist {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
                                 match VideoOrder::from_key(value) {
-                                    Ok(order) => {
+                                    Some(order) => {
                                         self.order = order;
                                     }
-                                    Err(err) => {
-                                        let message = format!("The supplied order was not recognized ({err})");
+                                    None => {
+                                        let supported_keys = VideoOrder::supported_keys();
+                                        let message = format!("The supplied order was not recognized (supported are {supported_keys})");
                                         let error = element_error(element, manifest_path, &message);
                                         self.manifest_errors.push(error);
                                     }
