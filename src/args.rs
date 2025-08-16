@@ -20,7 +20,7 @@ fn worker_count(string: &str) -> Result<usize, String> {
 #[clap(display_name = "Hyper 8 Video System", version = concat!(env!("HYPER8_VERSION_DETAILED"), " (", env!("HYPER8_REVISION"), ")"))]
 pub struct Args {
     /// Directly builds the site without starting the editor
-    #[clap(long)]
+    #[clap(long = "build", short = 'b')]
     pub build: bool,
 
     /// The path to which the deployable, built site is written
@@ -48,7 +48,7 @@ pub struct Args {
     pub port: Option<u16>,
 
     /// Use in conjunction with --build to immediately open the site in the browser after the build is complete
-    #[clap(long)]
+    #[clap(long = "preview", short = 'p')]
     pub preview: bool,
 
     /// The path at which the site resides (user videos and metadata)
