@@ -39,7 +39,7 @@ pub async fn delete_version(
             Ok(())
         } else {
             let language = context.get_editor_language();
-            Err(language.translations.the_version_requested_for_deletion_was_not_found.to_string())
+            Err(language.translations.the_file_requested_for_deletion_was_not_found.to_string())
         }
     };
 

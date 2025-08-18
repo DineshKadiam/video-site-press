@@ -4,6 +4,7 @@
 mod add_link;
 mod dangerous_actions;
 mod delete;
+mod delete_audio_file;
 mod delete_link;
 mod delete_poster;
 mod delete_subtitles;
@@ -32,6 +33,7 @@ mod upload_video;
 pub use add_link::add_link;
 pub use dangerous_actions::dangerous_actions;
 pub use delete::delete;
+pub use delete_audio_file::delete_audio_file;
 pub use delete_link::delete_link;
 pub use delete_poster::delete_poster;
 pub use delete_subtitles::delete_subtitles;

@@ -9,7 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{Context, FileMeta, SitePath, VideoMetaCached};
 use crate::util::hash;
 
-/// Stores metadata that is specific to a video
+/// Stores metadata that is specific to a video file
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct VideoMeta {
     pub audio_codec: Option<String>,
@@ -26,7 +26,7 @@ impl VideoMeta {
     /// - The data layout of [VideoMeta] changes
     /// - The way we compute [VideoMeta] changes
     ///
-    /// This automatically lets the cache discard poster assets manifests that
+    /// This automatically lets the cache discard video meta manifests that
     /// hold incorrect, incompatible or outdated data.
     pub const CACHE_SERIALIZATION_KEY: &'static str = "video_meta1";
 

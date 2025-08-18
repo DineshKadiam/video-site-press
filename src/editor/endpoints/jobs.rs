@@ -28,13 +28,13 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     // TODO: Localize
     body.push_str(r#"<p>This lists active/failed/pending/complete background jobs, if any, in this session</p>"#);
 
-    if let Ok(processing) = context.processing.lock() {
-        if !processing.operations.is_empty() {
-            let operations = processing.operations
+    if let Ok(active_jobs) = context.active_jobs.lock() {
+        if !active_jobs.jobs.is_empty() {
+            let jobs = active_jobs.jobs
                 .iter()
-                .map(|operation| {
-                    let label = &operation.label;
-                    let last_progress = match &operation.last_progress {
+                .map(|job| {
+                    let label = &job.label;
+                    let last_progress = match &job.last_progress {
                         Some(progress) => format!("({}%)", progress.percent),
                         None => String::from("(No progress information yet)")
                     };
@@ -47,7 +47,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
                 <div>
                     Active processing:
                     <ul>
-                        {operations}
+                        {jobs}
                     </ul>
                 </div>
             "#);
@@ -56,9 +56,9 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
         }
     }
 
-    if let Ok(processing_errors) = context.processing_errors.lock() {
-        if !processing_errors.is_empty() {
-            let errors = processing_errors
+    if let Ok(job_errors) = context.job_errors.lock() {
+        if !job_errors.is_empty() {
+            let errors = job_errors
                 .iter()
                 .map(|err| format!("- {err}<br>"))
                 .collect::<Vec<String>>()
@@ -104,7 +104,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
         jobs_sorted.push((job.created, rendered));
     }
 
-    for job in &*context.jobs_completed.lock().unwrap() {
+    for job in &*context.completed_jobs.lock().unwrap() {
         let label = job.kind.representation(&language.translations);
         // TODO: Localize
         let status = match job.duration() {

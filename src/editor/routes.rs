@@ -172,6 +172,10 @@ pub fn video_delete(video: &Video) -> String {
     format!("/video/delete/{}", video.site_path.normalized())
 }
 
+pub fn video_delete_audio_file(video: &Video) -> String {
+    format!("/video/delete-audio-file/{}", video.site_path.normalized())
+}
+
 pub fn video_delete_link(video: &Video) -> String {
     format!("/video/delete-link/{}", video.site_path.normalized())
 }

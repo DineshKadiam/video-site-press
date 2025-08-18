@@ -6,7 +6,7 @@ use std::sync::Arc;
 use actix_web::web::{Data, Json};
 use serde_derive::Serialize;
 
-use crate::{Context, DeploymentState, Progress};
+use crate::{Context, DeploymentState, JobProgress};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,16 +22,21 @@ pub struct DeploymentInfo {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Report {
+    pub active_jobs: Vec<Option<JobProgress>>,
     pub deployment_info: DeploymentInfo,
     pub last_update: u128,
-    pub operations: Vec<Option<Progress>>,
     pub pending_count: usize
 }
 
 impl DeploymentInfo {
     pub fn configured(deployment_state: &DeploymentState) -> DeploymentInfo {
         let deploying_since = if deployment_state.active() {
-            let duration = deployment_state.started_at.unwrap().elapsed().map(|duration| duration.as_secs_f32()).unwrap_or(0.0);
+            let duration = deployment_state.started_at
+                .unwrap()
+                .elapsed()
+                .map(|duration| duration.as_secs_f32())
+                .unwrap_or(0.0);
+
             Some(duration)
         } else {
             None
@@ -55,15 +60,15 @@ impl DeploymentInfo {
 
 impl Report {
     pub fn new(
+        active_jobs: Vec<Option<JobProgress>>,
         deployment_info: DeploymentInfo,
         last_update: u128,
-        operations: Vec<Option<Progress>>,
         pending_count: usize
     ) -> Report {
         Report {
+            active_jobs,
             deployment_info,
             last_update,
-            operations,
             pending_count
         }
     }
@@ -82,15 +87,15 @@ pub async fn processing(context: Data<Arc<Context>>) -> Json<Report> {
             }
         };
 
-        let (last_update, operations) = {
-            let processing = context.processing.lock().unwrap();
+        let (active_jobs, last_update) = {
+            let active_jobs = context.active_jobs.lock().unwrap();
 
-            let operations = processing.operations
+            let jobs = active_jobs.jobs
                 .iter()
-                .map(|operation| operation.last_progress.clone())
+                .map(|job| job.last_progress.clone())
                 .collect();
 
-            (processing.last_update, operations)
+            (jobs, active_jobs.last_update)
         };
 
         let pending_count = {
@@ -98,7 +103,12 @@ pub async fn processing(context: Data<Arc<Context>>) -> Json<Report> {
             job_queue.iter().filter(|job| job.assigned_at.is_none()).count()
         };
 
-        Report::new(deployment_info, last_update, operations, pending_count)
+        Report::new(
+            active_jobs,
+            deployment_info,
+            last_update,
+            pending_count
+        )
     };
 
     Json(report)

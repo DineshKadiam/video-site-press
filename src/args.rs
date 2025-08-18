@@ -54,8 +54,7 @@ pub struct Args {
     /// The path at which the site resides (user videos and metadata)
     pub site_dir: PathBuf,
 
-    /// The number of threads doing background processing (video transcoding mostly)
-    /// in the background
+    /// The number of threads to run for background processing (metadata computation, image processing, video/audio transcoding, etc.)
     #[clap(default_value_t = 2, long, value_parser=worker_count)]
     pub workers: usize
 }

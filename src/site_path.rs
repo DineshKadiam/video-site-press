@@ -3,11 +3,11 @@
 
 use std::path::{MAIN_SEPARATOR_STR, Path};
 
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 
 use crate::Context;
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct SitePath {
 	/// Basically "", "foo/", "foo/bar/", etc.
 	/// Renaming for serde is done so we can directly use this struct

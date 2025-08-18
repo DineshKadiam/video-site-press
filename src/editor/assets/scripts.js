@@ -120,11 +120,11 @@ function fetchProcessing() {
             if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
                 let content = [processingIcon.content.cloneNode(true)];
 
-                if (response.operations.length) {
+                if (response.activeJobs.length) {
                     const text = document.createElement('div');
 
                     processingElement.classList.add('active');
-                    for (const lastProgress of response.operations) {
+                    for (const lastProgress of response.activeJobs) {
                         const badge = document.createElement('div');
 
                         badge.classList.add('processing_badge');

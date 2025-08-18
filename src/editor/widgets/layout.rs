@@ -75,15 +75,15 @@ fn controls(
     let t_processing = translations.processing;
     let processing_icon = icons::processing(t_processing);
     let processing = {
-        let processing = &context.processing.lock().unwrap();
-        if processing.operations.is_empty() {
+        let active_jobs = &context.active_jobs.lock().unwrap();
+        if active_jobs.jobs.is_empty() {
             let t_idle = translations.idle;
             format!(r#"<a class="processing" href="/jobs">{processing_icon} {t_idle}</a>"#)
         } else {
-            let operations = processing.operations
+            let jobs = active_jobs.jobs
                 .iter()
-                .map(|operation| {
-                    match &operation.last_progress {
+                .map(|job| {
+                    match &job.last_progress {
                         Some(last_progress) => {
                             let progress_percent = last_progress.percent;
                             let time_remaining = precise_duration(last_progress.duration_remaining);
@@ -109,7 +109,7 @@ fn controls(
 
             formatdoc!(r#"
                 <a class="active processing" href="/jobs">
-                    {processing_icon} {operations}
+                    {processing_icon} {jobs}
                 </a>
             "#)
         }

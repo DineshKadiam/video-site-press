@@ -12,11 +12,14 @@ use std::time::Instant;
 use serde_derive::Deserialize;
 
 use crate::{
+    AudioFile,
+    AudioFormat,
+    AudioMeta,
     Codec,
     Context,
     EncodingApproach,
     FileMeta,
-    Progress,
+    JobProgress,
     Video,
     VideoFile,
     VideoFormat,
@@ -147,11 +150,170 @@ pub fn compute_poster(context: &Context, timecode: f32, video: &Video) -> Result
     }
 }
 
-pub fn encode(
+/// Based on the passed [Video], kick off an ffmpeg-based transcoding process
+/// to encode the video as an audio-only file. During processing this calls
+/// methods on context to update the progress for the job (using the passed
+/// job_id).
+pub fn encode_audio(
+    audio_format: AudioFormat,
     context: &Arc<Context>,
-    format: VideoFormat,
-    process_id: usize,
+    job_id: usize,
     video: &Video
+) -> Result<AudioFile, ()> {
+    let mut command = Command::new(FFMPEG);
+
+    // Prevent ffmpeg from prompting about overwriting files
+    command.arg("-y");
+
+    // Disable interaction on stdin from ffmpeg's side
+    command.arg("-nostdin");
+
+    // Suppress all output but explicitly re-enable periodic printing
+    // of progress (which we parse and process further).
+    command
+        .arg("-v").arg("quiet")
+        .arg("-stats")
+        .arg("-stats_period").arg("1");
+
+    let highest_quality_version = match video.highest_quality_version() {
+        Some(version) => version,
+        None => return Err(())
+    };
+
+    let input_path = context.site_dir
+        .join(video.site_path.filesystem_relative())
+        .join(&highest_quality_version.file_name);
+
+    command.arg("-i").arg(&input_path);
+
+    // Disable any video output
+    command.arg("-vn");
+
+    match audio_format {
+        AudioFormat::Mp3 => {
+            command.arg("-codec:a").arg("libmp3lame");
+            command.arg("-qscale:a").arg("0");
+        }
+        AudioFormat::Opus => {
+            command.arg("-codec:a").arg("libopus");
+            command.arg("-b:a").arg("128k");
+        }
+    }
+
+    let extension = audio_format.extension();
+
+    let temp_file = format!("{}.{extension}", nanoid());
+    let temp_path = context.cache_dir.join(&temp_file);
+
+    command.arg(&temp_path);
+
+    // We're reading from stderr to receive progress updates from the ffmpeg background process.
+    command.stderr(Stdio::piped());
+
+    // Adressing the theoretical possibility that open but unattended stdxxx handles
+    // could lead to to e.g. memory buffer overflows or other forms of the ffmpeg
+    // background process going stale, we're here disabling these unneeded streams.
+    command.stdin(Stdio::null());
+    command.stdout(Stdio::null());
+
+    let rendering_begin = Instant::now();
+
+    match command.spawn() {
+        Ok(mut child) => {
+            if let Some(video_meta) = &highest_quality_version.video_meta {
+                let video_duration = video_meta.duration;
+
+                match child.stderr.take() {
+                    Some(stderr) => {
+                        let context_moving = Arc::clone(context);
+                        thread::spawn(move || {
+                            let stderr_reader = BufReader::with_capacity(1024, stderr);
+
+                            for result in stderr_reader.split(b'\r') {
+                                if let Ok(bytes) = result {
+                                    if let Ok(line) = std::str::from_utf8(&bytes) {
+                                        let duration = rendering_begin.elapsed().as_secs_f32();
+                                        let stats = FFmpegEncodingStats::parse(line);
+                                        let job_progress = JobProgress::new(duration, stats, video_duration);
+                                        context_moving.update_job_progress(job_id, job_progress);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    None => {
+                        eprintln!("Could not capture stderr for ffmpeg child process.");
+                        return Err(())
+                    }
+                }
+            }
+
+            let exit_status = match child.wait() {
+                Ok(exit_status) => exit_status,
+                Err(_) => {
+                    eprintln!("The ffmpeg child process could not be waited for.");
+                    return Err(())
+                }
+            };
+
+            if exit_status.success() {
+                // If the video directory disappeared (was moved/removed) while we were encoding
+                // we discard our encoding output as we don't know where to put it anymore.
+                if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
+                    return Err(())
+                }
+
+                let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
+
+                let mut iteration = 0;
+                let (output_file, output_path) = loop {
+                    let output_file = if iteration == 0 {
+                        format!("{file_stem}.{extension}")
+                    } else {
+                        format!("{file_stem}({iteration}).{extension}")
+                    };
+
+                    let output_path = context.site_dir
+                        .join(video.site_path.filesystem_relative())
+                        .join(&output_file);
+
+                    if output_path.exists() {
+                        iteration += 1;
+                        continue;
+                    }
+
+                    break (output_file, output_path);
+                };
+
+                // Move file from cache dir to video dir
+                fs::rename(&temp_path, &output_path).unwrap();
+
+                let file_meta = FileMeta::new(&output_path);
+                let audio_file = AudioFile::new(None, file_meta, output_file);
+
+                Ok(audio_file)
+            } else {
+                let error_code = match exit_status.code() {
+                    Some(code) => format!("error code {code}"),
+                    None => String::from("probably signal-terminated")
+                };
+                eprintln!("The ffmpeg child process terminated unsuccessfully ({error_code})");
+                Err(())
+            }
+        }
+        Err(err) => {
+            eprintln!("The ffmpeg child process could not be spawned.");
+            eprintln!("{err}");
+            Err(())
+        }
+    }
+}
+
+pub fn encode_video(
+    context: &Arc<Context>,
+    job_id: usize,
+    video: &Video,
+    video_format: VideoFormat
 ) -> Result<VideoFile, ()> {
     let mut command = Command::new(FFMPEG);
 
@@ -179,118 +341,104 @@ pub fn encode(
 
     command.arg("-i").arg(&input_path);
 
-    let extension = match &format {
-        VideoFormat::AudioOnly => {
-            command
-                .arg("-vn") // no video
-                .arg("-codec:a").arg("libopus")
-                .arg("-b:a").arg("96k");
+    let mut video_filters = Vec::new();
 
-            // TODO: We rather want mp3+opus (?)
-            // TODO: mp4? Is there a merit to using a video-less mp4 over a pure audio format?
-            "mp4"
-        }
-        VideoFormat::Video { codec, container, encoding_approach, frame_rate, height, quality } => {
-            // TODO: Right now the best supported video format is H.264, but VP9 is now also supported across
-            //       all browsers (since March 2024), so as soon as old Safari versions leave
-            //       the playing field we can transition to VP9 as recommended default.
-            //       See https://caniuse.com/webm
+    if let Some(frame_rate) = video_format.frame_rate {
+        video_filters.push(format!("fps={frame_rate}"));
+    }
+
+    // TODO: Omit this argument if we don't do any resizing - either by checking against
+    //       original resolution here, or by implementing a "keep original" VideoFormat
+    //       enum-like indication.
+    let height = video_format.height;
+    video_filters.push(format!("scale=-2:{height}"));
+
+    command.arg("-vf").arg(video_filters.join(","));
+
+    // TODO: Right now the best supported video format is H.264, but VP9 is now also supported across
+    //       all browsers (since March 2024), so as soon as old Safari versions leave
+    //       the playing field we can transition to VP9 as recommended default.
+    //       See https://caniuse.com/webm
+    //
+    //       HEVC as default is hardly an outlook given its support is very sparse and has been
+    //       for a long time - https://caniuse.com/hevc - and probably not going to change anytime
+    //       soon (also because it is not royalty free).
+    //
+    //       Support for AV1 is already quite decent - https://caniuse.com/av1 - although
+    //       not omnipresent due to Safari's unreliable support, but this is possibly a long-term
+    //       perspective for a future default.
+
+    match video_format.codec {
+        Codec::H264 => {
+            // See https://trac.ffmpeg.org/wiki/Encode/H.264
+            command.arg("-c:v").arg("libx264");
+
+            match video_format.encoding_approach {
+                EncodingApproach::AverageResults => command.arg("-preset").arg("medium"),
+                EncodingApproach::HighestCompression => command.arg("-preset").arg("veryslow"),
+                EncodingApproach::HighestSpeed => command.arg("-preset").arg("ultrafast")
+            };
+
+            // "The range of the CRF scale is 0–51, where 0 is lossless (for 8 bit only,
+            // for 10 bit use -qp 0), 23 is the default, and 51 is worst quality
+            // possible. A lower value generally leads to higher quality, and a
+            // subjectively sane range is 17–28. Consider 17 or 18 to be visually
+            // lossless or nearly so; it should look the same or nearly the same as the
+            // input but it isn't technically lossless."
             //
-            //       HEVC as default is hardly an outlook given its support is very sparse and has been
-            //       for a long time - https://caniuse.com/hevc - and probably not going to change anytime
-            //       soon (also because it is not royalty free).
-            //
-            //       Support for AV1 is already quite decent - https://caniuse.com/av1 - although
-            //       not omnipresent due to Safari's unreliable support, but this is possibly a long-term
-            //       perspective for a future default.
+            // Our quality goes from 0-1 (worst-best), we map to 18-51 (best-worst)
+            let crf = 18 + ((1.0 - video_format.quality) * 33.0) as u8;
+            command.arg("-crf").arg(crf.to_string());
 
-            let mut video_filters = Vec::new();
-
-            if let Some(frame_rate) = frame_rate {
-                video_filters.push(format!("fps={frame_rate}"));
-            }
-
-            // TODO: Omit this argument if we don't do any resizing - either by checking against
-            //       original resolution here, or by implementing a "keep original" VideoFormat
-            //       enum-like indication.
-            video_filters.push(format!("scale=-2:{height}"));
-
-            command.arg("-vf").arg(video_filters.join(","));
-
-            match codec {
-                Codec::H264 => {
-                    // See https://trac.ffmpeg.org/wiki/Encode/H.264
-                    command.arg("-c:v").arg("libx264");
-
-                    match encoding_approach {
-                        EncodingApproach::AverageResults => command.arg("-preset").arg("medium"),
-                        EncodingApproach::HighestCompression => command.arg("-preset").arg("veryslow"),
-                        EncodingApproach::HighestSpeed => command.arg("-preset").arg("ultrafast")
-                    };
-
-                    // "The range of the CRF scale is 0–51, where 0 is lossless (for 8 bit only,
-                    // for 10 bit use -qp 0), 23 is the default, and 51 is worst quality
-                    // possible. A lower value generally leads to higher quality, and a
-                    // subjectively sane range is 17–28. Consider 17 or 18 to be visually
-                    // lossless or nearly so; it should look the same or nearly the same as the
-                    // input but it isn't technically lossless."
-                    //
-                    // Our quality goes from 0-1 (worst-best), we map to 18-51 (best-worst)
-                    let crf = 18 + ((1.0 - quality) * 33.0) as u8;
-                    command.arg("-crf").arg(crf.to_string());
-
-                    command.arg("-movflags").arg("+faststart");
-                }
-                Codec::Hevc => {
-                    // See https://trac.ffmpeg.org/wiki/Encode/H.265
-                    command.arg("-c:v").arg("libx265");
-
-                    match encoding_approach {
-                        EncodingApproach::AverageResults => command.arg("-preset").arg("medium"),
-                        EncodingApproach::HighestCompression => command.arg("-preset").arg("veryslow"),
-                        EncodingApproach::HighestSpeed => command.arg("-preset").arg("ultrafast")
-                    };
-
-                    // "Choose a CRF. CRF affects the quality. The default is
-                    // 28, and it should visually correspond to libx264 video
-                    // at CRF 23, but result in about half the file size. CRF
-                    // works just like in x264, so choose the highest value
-                    // that provides an acceptable quality."
-                    //
-                    // Our quality goes from 0-1 (worst-best), we map to 18-51 (best-worst)
-                    let crf = 18 + ((1.0 - quality) * 33.0) as u8;
-                    command.arg("-crf").arg(crf.to_string());
-
-                    command.arg("-tag:v").arg("hvc1");
-                }
-                Codec::Vp9 => {
-                    // TODO: Actually two-pass encoding yields best results for VP9,
-                    //       but this will require some architectural changes.
-                    // See https://trac.ffmpeg.org/wiki/Encode/VP9
-                    // See https://developers.google.com/media/vp9/settings/vod/
-                    command.arg("-c:v").arg("libvpx-vp9");
-
-                    match encoding_approach {
-                        EncodingApproach::AverageResults => command.arg("-deadline").arg("good"),
-                        EncodingApproach::HighestCompression => command.arg("-deadline").arg("best"),
-                        EncodingApproach::HighestSpeed => command.arg("-deadline").arg("realtime")
-                    };
-
-                    // "The CRF value can be from 0–63. Lower values mean
-                    // better quality. Recommended values range from 15–35,
-                    // with 31 being recommended for 1080p HD video."
-                    //
-                    // Our quality goes from 0-1 (worst-best), we map to 15-35 (best-worst)
-                    let crf = 15 + ((1.0 - quality) * 20.0) as u8;
-                    command.arg("-crf").arg(crf.to_string());
-                    command.arg("-b:v").arg("0");
-                }
-            }
-
-            container.extension()
+            command.arg("-movflags").arg("+faststart");
         }
-    };
+        Codec::Hevc => {
+            // See https://trac.ffmpeg.org/wiki/Encode/H.265
+            command.arg("-c:v").arg("libx265");
 
+            match video_format.encoding_approach {
+                EncodingApproach::AverageResults => command.arg("-preset").arg("medium"),
+                EncodingApproach::HighestCompression => command.arg("-preset").arg("veryslow"),
+                EncodingApproach::HighestSpeed => command.arg("-preset").arg("ultrafast")
+            };
+
+            // "Choose a CRF. CRF affects the quality. The default is
+            // 28, and it should visually correspond to libx264 video
+            // at CRF 23, but result in about half the file size. CRF
+            // works just like in x264, so choose the highest value
+            // that provides an acceptable quality."
+            //
+            // Our quality goes from 0-1 (worst-best), we map to 18-51 (best-worst)
+            let crf = 18 + ((1.0 - video_format.quality) * 33.0) as u8;
+            command.arg("-crf").arg(crf.to_string());
+
+            command.arg("-tag:v").arg("hvc1");
+        }
+        Codec::Vp9 => {
+            // TODO: Actually two-pass encoding yields best results for VP9,
+            //       but this will require some architectural changes.
+            // See https://trac.ffmpeg.org/wiki/Encode/VP9
+            // See https://developers.google.com/media/vp9/settings/vod/
+            command.arg("-c:v").arg("libvpx-vp9");
+
+            match video_format.encoding_approach {
+                EncodingApproach::AverageResults => command.arg("-deadline").arg("good"),
+                EncodingApproach::HighestCompression => command.arg("-deadline").arg("best"),
+                EncodingApproach::HighestSpeed => command.arg("-deadline").arg("realtime")
+            };
+
+            // "The CRF value can be from 0–63. Lower values mean
+            // better quality. Recommended values range from 15–35,
+            // with 31 being recommended for 1080p HD video."
+            //
+            // Our quality goes from 0-1 (worst-best), we map to 15-35 (best-worst)
+            let crf = 15 + ((1.0 - video_format.quality) * 20.0) as u8;
+            command.arg("-crf").arg(crf.to_string());
+            command.arg("-b:v").arg("0");
+        }
+    }
+
+    let extension = video_format.container.extension();
     let temp_file = format!("{}.{extension}", nanoid());
     let temp_path = context.cache_dir.join(&temp_file);
 
@@ -334,8 +482,8 @@ pub fn encode(
                                     if let Ok(line) = std::str::from_utf8(&bytes) {
                                         let duration = rendering_begin.elapsed().as_secs_f32();
                                         let stats = FFmpegEncodingStats::parse(line);
-                                        let progress = Progress::new(duration, stats, video_duration);
-                                        context_moving.processing.lock().unwrap().update_progress(process_id, progress);
+                                        let job_progress = JobProgress::new(duration, stats, video_duration);
+                                        context_moving.update_job_progress(job_id, job_progress);
                                     }
                                 }
                             }
@@ -364,23 +512,8 @@ pub fn encode(
                 }
 
                 let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
-
-                let base_name = match &format {
-                    VideoFormat::AudioOnly => {
-                        format!("{file_stem}_audio-only")
-                    }
-                    VideoFormat::Video { codec, encoding_approach, frame_rate, height, quality, .. } => {
-                        let approach_suffix = encoding_approach.to_string();
-                        let codec_suffix = codec.to_string();
-                        let frame_rate_suffix = match frame_rate {
-                            Some(frame_rate) => format!("_{frame_rate}fps"),
-                            None => String::new()
-                        };
-                        let quality_suffix = format!("{:.0}", quality * 100.0);
-
-                        format!("{file_stem}_{height}p{frame_rate_suffix}_{codec_suffix}_q{quality_suffix}_{approach_suffix}")
-                    }
-                };
+                let format_suffix = video_format.file_name_suffix();
+                let base_name = format!("{file_stem}_{format_suffix}");
 
                 let mut iteration = 0;
                 let (output_file, output_path) = loop {
@@ -406,14 +539,9 @@ pub fn encode(
                 fs::rename(&temp_path, &output_path).unwrap();
 
                 let file_meta = FileMeta::new(&output_path);
+                let video_file = VideoFile::new(file_meta, output_file, None);
 
-                let video_version = VideoFile {
-                    file_meta,
-                    file_name: output_file,
-                    video_meta: None
-                };
-
-                Ok(video_version)
+                Ok(video_file)
             } else {
                 let error_code = match exit_status.code() {
                     Some(code) => format!("error code {code}"),
@@ -431,7 +559,87 @@ pub fn encode(
     }
 }
 
-pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
+fn parse_frame_rate(representation: &str) -> f32 {
+    let mut components = representation.split('/');
+
+    let dividend = components.next().unwrap().parse::<f32>().unwrap();
+    let divisor = components.next().unwrap().parse::<f32>().unwrap();
+
+    dividend / divisor
+}
+
+pub fn probe_audio(path: &Path) -> Result<AudioMeta, ()> {
+    let mut command = Command::new(FFPROBE);
+
+    command
+        .arg("-v")
+        .arg("quiet")
+        .arg("-print_format")
+        .arg("json")
+        .arg("-show_streams")
+        .arg("-show_format")
+        .arg(path);
+
+    match command.output() {
+        Ok(output) => {
+            if output.status.success() {
+                match serde_json::from_slice::<FFprobeResult>(&output.stdout) {
+                    Ok(result) => {
+                        let mut codec = None;
+                        let mut duration = 0.0;
+
+                        if let Ok(format_duration) = &result.format.duration.parse::<f32>() {
+                            duration = *format_duration;
+                        }
+
+                        for stream in &result.streams {
+                            if let Some(stream_duration) = &stream.duration {
+                                if let Ok(stream_duration) = stream_duration.parse::<f32>() {
+                                    if stream_duration > duration {
+                                        duration = stream_duration;
+                                    }
+                                }
+                            }
+
+                            match stream.codec_type.as_str() {
+                                "audio" => {
+                                    // For audio streams we assume there is always a codec name
+                                    codec = Some(stream.codec_name.as_ref().unwrap().clone());
+                                }
+                                "data" => {
+                                    // Was once observed, (probably) containing timecode data of some sorts.
+                                    // We don't do anything with this.
+                                }
+                                "video" => {
+                                    // We don't do anything with this.
+                                }
+                                // For now crash in this case, just to be aware if there
+                                // are other things that we might want to leverage here.
+                                // (subtitles? embedded thumbnail frames? etc.)
+                                other => unimplemented!("'{other}' stream not implemented")
+                            }
+                        }
+
+                        let audio_meta = AudioMeta::new(codec, duration);
+
+                        return Ok(audio_meta)
+                    }
+                    Err(err) => panic!("{}", err)
+                }
+            }
+
+            eprintln!("{output:?}");
+            Err(())
+        }
+        Err(err) => {
+            eprintln!("The ffprobe child process could not be executed.");
+            eprintln!("{err}");
+            Err(())
+        }
+    }
+}
+
+pub fn probe_video(path: &Path) -> Result<VideoMeta, ()> {
     let mut command = Command::new(FFPROBE);
 
     command
@@ -537,15 +745,6 @@ pub fn ffprobe(path: &Path) -> Result<VideoMeta, ()> {
             Err(())
         }
     }
-}
-
-fn parse_frame_rate(representation: &str) -> f32 {
-    let mut components = representation.split('/');
-
-    let dividend = components.next().unwrap().parse::<f32>().unwrap();
-    let divisor = components.next().unwrap().parse::<f32>().unwrap();
-
-    dividend / divisor
 }
 
 impl FFmpegEncodingStats {

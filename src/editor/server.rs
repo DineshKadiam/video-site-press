@@ -134,6 +134,7 @@ pub async fn start(
                 .route("/video/add-link/{site_path:.*}", post().to(video::add_link))
                 .route("/video/dangerous-actions/{site_path:.*}", get().to(video::dangerous_actions))
                 .route("/video/delete/{site_path:.*}", post().to(video::delete))
+                .route("/video/delete-audio-file/{site_path:.*}", post().to(video::delete_audio_file))
                 .route("/video/delete-link/{site_path:.*}", post().to(video::delete_link))
                 .route("/video/delete-poster/{site_path:.*}", post().to(video::delete_poster))
                 .route("/video/delete-subtitles/{site_path:.*}", post().to(video::delete_subtitles))

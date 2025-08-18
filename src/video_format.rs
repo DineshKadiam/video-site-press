@@ -26,19 +26,16 @@ pub enum EncodingApproach {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum VideoFormat {
-    AudioOnly,
-    Video {
-        codec: Codec,
-        container: Container,
-        encoding_approach: EncodingApproach,
-        /// Represents fps
-        frame_rate: Option<f32>,
-        height: usize,
-        // TODO: Can we somehow type-enforce a range? Brittle right now.
-        /// 0.0 (worst) to 1.0 (best)
-        quality: f32
-    }
+pub struct VideoFormat {
+    pub codec: Codec,
+    pub container: Container,
+    pub encoding_approach: EncodingApproach,
+    /// Represents fps
+    pub frame_rate: Option<f32>,
+    pub height: usize,
+    // TODO: Can we somehow type-enforce a range? Brittle right now.
+    /// 0.0 (worst) to 1.0 (best)
+    pub quality: f32
 }
 
 impl Codec {
@@ -71,30 +68,36 @@ impl EncodingApproach {
 }
 
 impl VideoFormat {
+    // TODO: Factor in other aspects (frame rate, quality, etc.)
     /// Determine the priority-based ordering between this and another format.
-    /// Video is prioritized over audio, higher resolution over lower resolution.
+    /// (Higher resolution is prioritized over lower resolution)
     pub fn cmp_priority(&self, other: &VideoFormat) -> Ordering {
-        match self {
-            VideoFormat::AudioOnly => match other {
-                VideoFormat::Video { .. } => Ordering::Less,
-                VideoFormat::AudioOnly => Ordering::Equal
-            }
-            VideoFormat::Video { height, .. } => match other {
-                VideoFormat::AudioOnly => Ordering::Greater,
-                VideoFormat::Video { height: other_height, .. } => height.cmp(other_height)
-            }
-        }
+        self.height.cmp(&other.height)
+    }
+
+    /// Uses the parameters of this video format to construct a file name
+    /// suffix to be appended to the resulting file of a encoding/transcoding
+    /// operation (e.g. "_720p_30fps_h264_80_compression")
+    pub fn file_name_suffix(&self) -> String {
+        let approach = self.encoding_approach.to_string();
+        let codec = self.codec.to_string();
+        let frame_rate = match self.frame_rate {
+            Some(frame_rate) => format!("_{frame_rate}fps"),
+            None => String::new()
+        };
+        let height = self.height;
+        let quality = format!("{:.0}", self.quality * 100.0);
+
+        format!("_{height}p{frame_rate}_{codec}_q{quality}_{approach}")
     }
 
     // TODO: Should we output encoding approach, quality etc. (probably yes but check contexts of usage)
     pub fn label(&self) -> String {
-        match self {
-            VideoFormat::AudioOnly => "audio-only".to_string(),
-            VideoFormat::Video { height, .. } => format!("{height}p")
-        }
+        let height = self.height;
+        format!("{height}p")
     }
 
-    pub fn new_video(
+    pub fn new(
         codec: &str,
         container: &str,
         encoding_approach: &str,
@@ -140,7 +143,7 @@ impl VideoFormat {
             Err(_) => return None
         };
 
-        Some(VideoFormat::Video {
+        Some(VideoFormat {
             codec,
             container,
             encoding_approach,

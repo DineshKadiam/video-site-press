@@ -7,6 +7,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::{
+    AudioMetaCached,
     Collection,
     CollectionUpdate,
     Context,
@@ -26,6 +27,80 @@ use crate::{
     VideoUpdate
 };
 use crate::transcode;
+
+fn compute_audio_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
+    let mut audio_files_mut = video.audio_files.clone();
+
+    let mut made_changes = false;
+
+    for audio_file in audio_files_mut.iter_mut() {
+        if audio_file.audio_meta.is_some() { continue }
+
+        let audio_file_path = &context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&audio_file.file_name);
+
+        if let Ok(audio_meta) = transcode::probe_audio(&audio_file_path) {
+            audio_meta.write_cache_manifest(
+                context,
+                &audio_file.file_meta,
+                &audio_file.file_name,
+                &video.site_path
+            );
+
+            // Add/update video meta in in-memory cache
+            if let Ok(mut cache) = context.cache.lock() {
+                let version_path = format!("{}{}", &video.site_path.normalized(), audio_file.file_name);
+
+                if let Some(audio_meta_cached) = cache.audio_meta
+                    .iter_mut()
+                    .find(|cached| cached.path == version_path) {
+                    audio_meta_cached.audio_meta = audio_meta.clone();
+                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                    audio_meta_cached.file_meta = audio_file.file_meta.clone();
+                } else {
+                    let audio_meta_cached = AudioMetaCached {
+                        audio_meta: audio_meta.clone(),
+                        file_meta: audio_file.file_meta.clone(),
+                        path: version_path
+                    };
+
+                    cache.audio_meta.push(audio_meta_cached);
+                }
+            }
+
+            audio_file.audio_meta = Some(audio_meta);
+
+            made_changes = true;
+        }
+    }
+
+    if made_changes {
+        let mutation = |video_mut: &mut Video| {
+            // TODO: It would be better to make granular updates, seeking just
+            // the versions that we need to update and only updating those.
+            // Right now we could discard newly added versions that weren't
+            // present the moment we began looking for metadata.
+            video_mut.audio_files = audio_files_mut;
+            Ok(())
+        };
+
+        match context.update_video(mutation, &video.site_path) {
+            VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
+            VideoUpdate::NotFound => {
+                eprintln!("Audio metadata for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+            }
+            VideoUpdate::PendingErrors { .. } => {
+                eprintln!("Audio metadata for video {} could not be assigned in the site tree as the video currently has pending errors.", video.site_path.normalized());
+            }
+            VideoUpdate::Success { video_updated, .. } => {
+                return video_updated;
+            }
+        }
+    }
+
+    video
+}
 
 fn compute_collection_banner_assets(
     context: &Context,
@@ -136,80 +211,6 @@ fn compute_collection_banner_assets(
     }
 
     Ok(())
-}
-
-fn compute_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
-    let mut versions_mut = video.versions.clone();
-
-    let mut made_changes = false;
-
-    for version in versions_mut.iter_mut() {
-        if version.video_meta.is_some() { continue }
-
-        if let Ok(video_meta) = transcode::ffprobe(&context.site_dir.join(video.site_path.filesystem_relative()).join(&version.file_name)) {
-            video_meta.write_cache_manifest(
-                context,
-                &version.file_meta,
-                &version.file_name,
-                &video.site_path
-            );
-
-            // Add/update video meta in in-memory cache
-            // TODO: This looks vaguely in need of encapsulation
-            if let Ok(mut cache) = context.cache.lock() {
-                let version_path = format!("{}{}", &video.site_path.normalized(), version.file_name);
-
-                if let Some(video_meta_cached) = cache.video_meta
-                    .iter_mut()
-                    .find(|cached| cached.path == version_path) {
-                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
-                    video_meta_cached.file_meta = version.file_meta.clone();
-                    video_meta_cached.video_meta = video_meta.clone();
-
-                } else {
-                    let video_meta_cached = VideoMetaCached {
-                        file_meta: version.file_meta.clone(),
-                        path: version_path,
-                        video_meta: video_meta.clone()
-                    };
-
-                    cache.video_meta.push(video_meta_cached);
-                }
-            }
-
-            version.video_meta = Some(video_meta);
-
-            made_changes = true;
-        }
-    }
-
-    if made_changes {
-        let mutation = |video_mut: &mut Video| {
-            // TODO: It would be better to make granular updates, seeking just
-            // the versions that we need to update and only updating those.
-            // Right now we could discard newly added versions that weren't
-            // present the moment we began looking for metadata.
-            video_mut.versions = versions_mut;
-            Ok(())
-        };
-
-        match context.update_video(mutation, &video.site_path) {
-            VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
-            VideoUpdate::NotFound => {
-                eprintln!("Metadata for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
-            }
-            VideoUpdate::PendingErrors { .. } => {
-                eprintln!("Metadata for video {} could not be assigned in the site tree as the video currently has pending errors.", video.site_path.normalized());
-            }
-            VideoUpdate::Success { video_updated, .. } => {
-                // TODO: Reactivate
-                // context.create_version_jobs(&video);
-                return video_updated;
-            }
-        }
-    }
-
-    video
 }
 
 fn compute_playlist_banner_assets(context: &Context, playlist: Arc<Playlist>) -> Result<(), String> {
@@ -559,6 +560,84 @@ fn compute_poster_meta(
     Ok(())
 }
 
+fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
+    let mut versions_mut = video.versions.clone();
+
+    let mut made_changes = false;
+
+    for version in versions_mut.iter_mut() {
+        if version.video_meta.is_some() { continue }
+
+        let video_file_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&version.file_name);
+
+        if let Ok(video_meta) = transcode::probe_video(&video_file_path) {
+            video_meta.write_cache_manifest(
+                context,
+                &version.file_meta,
+                &version.file_name,
+                &video.site_path
+            );
+
+            // Add/update video meta in in-memory cache
+            // TODO: This looks vaguely in need of encapsulation
+            if let Ok(mut cache) = context.cache.lock() {
+                let version_path = format!("{}{}", &video.site_path.normalized(), version.file_name);
+
+                if let Some(video_meta_cached) = cache.video_meta
+                    .iter_mut()
+                    .find(|cached| cached.path == version_path) {
+                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                    video_meta_cached.file_meta = version.file_meta.clone();
+                    video_meta_cached.video_meta = video_meta.clone();
+
+                } else {
+                    let video_meta_cached = VideoMetaCached {
+                        file_meta: version.file_meta.clone(),
+                        path: version_path,
+                        video_meta: video_meta.clone()
+                    };
+
+                    cache.video_meta.push(video_meta_cached);
+                }
+            }
+
+            version.video_meta = Some(video_meta);
+
+            made_changes = true;
+        }
+    }
+
+    if made_changes {
+        let mutation = |video_mut: &mut Video| {
+            // TODO: It would be better to make granular updates, seeking just
+            // the versions that we need to update and only updating those.
+            // Right now we could discard newly added versions that weren't
+            // present the moment we began looking for metadata.
+            video_mut.versions = versions_mut;
+            Ok(())
+        };
+
+        match context.update_video(mutation, &video.site_path) {
+            VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
+            VideoUpdate::NotFound => {
+                eprintln!("Metadata for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+            }
+            VideoUpdate::PendingErrors { .. } => {
+                eprintln!("Metadata for video {} could not be assigned in the site tree as the video currently has pending errors.", video.site_path.normalized());
+            }
+            VideoUpdate::Success { video_updated, .. } => {
+                // TODO: Reactivate
+                // context.create_version_jobs(&video);
+                return video_updated;
+            }
+        }
+    }
+
+    video
+}
+
 pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 	for index in 0..count {
         let context = Arc::clone(context_ref);
@@ -568,7 +647,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
             let high_priority_only = worker_number == 1;
 
             loop {
-                let job = context.take_processing_job(high_priority_only);
+                let job = context.take_next_job(high_priority_only);
 
                 if job.is_none() {
                     thread::sleep(Duration::from_millis(1000));
@@ -578,74 +657,122 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                 let job = job.unwrap();
 
                 match job.kind {
+                    JobKind::AudioFormat { format, video } => {
+                        let extension = format.extension();
+                        let site_path = video.site_path.normalized();
+                        let label = format!("[Worker {worker_number}] Computing audio file ({extension}) for {site_path}");
+                        let job_id = context.add_active_job(label, video.site_path.clone());
+
+                        match transcode::encode_audio(format, &context, job_id, &video) {
+                            Ok(audio_file) => {
+                                let mutation = |video_mut: &mut Video| {
+                                    video_mut.audio_files.push(audio_file);
+                                    Ok(())
+                                };
+
+                                match context.update_video(mutation, &video.site_path) {
+                                    VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+                                    VideoUpdate::NotFound => {
+                                        let err = String::from("Video could not be updated with newly computed audio file because it was not found at its site path anymore.");
+                                        context.job_error(err);
+                                    }
+                                    VideoUpdate::PendingErrors { .. } => {
+                                        let err = String::from("Video could not be updated with newly computed audio file as the video currently has pending errors.");
+                                        context.job_error(err);
+                                    }
+                                    VideoUpdate::Success { video_updated, .. } => {
+                                        // TODO: Assign audio_meta ourselves? (in the mutation above already?), as we should have all
+                                        //       the details at hand anyway? (we know from which source we transcoded, which should have necessary meta)
+                                        let job_kind = JobKind::AudioMeta {
+                                            video: Arc::clone(&video_updated)
+                                        };
+                                        context.push_job_queue(job_kind);
+                                    }
+                                }
+                            }
+                            Err(()) => {
+                                // TODO: Maybe we want to start integrating/passing reasons here (if available)
+                                let error = String::from("Encoding a new version failed for an unknown reason.");
+                                context.job_error(error);
+                            }
+                        }
+
+                        context.remove_active_job(job_id);
+                    }
+                    JobKind::AudioMeta { video } => {
+                        let label = format!("[Worker {worker_number}] Computing audio metadata for {}", &video.site_path.normalized());
+                        let job_id = context.add_active_job(label, video.site_path.clone());
+
+                        compute_audio_metadata(&context, video);
+
+                        context.remove_active_job(job_id);
+                    }
                     JobKind::CollectionFastTasks(collection) => {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &collection.site_path.normalized());
-                        let process_id = context.processing.lock().unwrap().push(collection.site_path.normalized(), label);
+                        let job_id = context.add_active_job(label, collection.site_path.clone());
                         if let Some(banner) = &collection.banner {
                             if banner.assets.is_none() {
                                 if let Err(err) = compute_collection_banner_assets(&context, collection) {
-                                    context.processing_errors.lock().unwrap().push(err);
+                                    context.job_error(err);
                                 }
                             }
                         }
 
-                        context.processing.lock().unwrap().remove(process_id);
+                        context.remove_active_job(job_id);
                     }
                     JobKind::PlaylistFastTasks(playlist) => {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &playlist.site_path.normalized());
-                        let process_id = context.processing.lock().unwrap().push(playlist.site_path.normalized(), label);
+                        let job_id = context.add_active_job(label, playlist.site_path.clone());
 
                         if let Some(banner) = &playlist.banner {
                             if banner.assets.is_none() {
                                 if let Err(err) = compute_playlist_banner_assets(&context, playlist) {
-                                    context.processing_errors.lock().unwrap().push(err);
+                                    context.job_error(err);
                                 }
                             }
                         }
 
-                        context.processing.lock().unwrap().remove(process_id);
+                        context.remove_active_job(job_id);
                     }
                     JobKind::VideoFastTasks { poster_aspect, video } => {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.site_path.normalized());
-                        let process_id = context.processing
-                            .lock()
-                            .unwrap()
-                            .push(video.site_path.normalized(), label);
+                        let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        let video_with_metadata = compute_metadata(&context, video);
+                        let video_with_metadata = compute_video_metadata(&context, video);
 
                         if let Some(poster) = &video_with_metadata.poster {
                             if poster.poster_meta.is_none() {
                                 if let Err(err) = compute_poster_meta(&context, &video_with_metadata) {
-                                    context.processing_errors.lock().unwrap().push(err);
+                                    context.job_error(err);
                                 }
                             }
 
                             if poster.assets.is_none() {
                                 if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_metadata) {
-                                    context.processing_errors.lock().unwrap().push(err);
+                                    context.job_error(err);
                                 }
                             }
                         } else {
                             let video_with_poster = compute_poster(&context, 0.5, video_with_metadata);
 
                             if let Err(err) = compute_poster_meta(&context, &video_with_poster) {
-                                context.processing_errors.lock().unwrap().push(err);
+                                context.job_error(err);
                             }
 
                             if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_poster) {
-                                context.processing_errors.lock().unwrap().push(err);
+                                context.job_error(err);
                             }
                         }
 
-                        context.processing.lock().unwrap().remove(process_id);
+                        context.remove_active_job(job_id);
                     }
                     JobKind::VideoFormat { format, video } => {
                         let format_label = format.label(); // Implement Display so we can just drop it right into interpolation?
-                        let label = format!("[Worker {worker_number}] Computing version {format_label} for {}", video.site_path.normalized());
-                        let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
+                        let site_path = video.site_path.normalized();
+                        let label = format!("[Worker {worker_number}] Computing version {format_label} for {site_path}");
+                        let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        match transcode::encode(&context, format, process_id, &video) {
+                        match transcode::encode_video(&context, job_id, &video, format) {
                             Ok(version) => {
                                 let mutation = |video_mut: &mut Video| {
                                     video_mut.versions.push(version);
@@ -656,11 +783,11 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                     VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
                                     VideoUpdate::NotFound => {
                                         let err = String::from("Video could not be updated with newly computed version because it was not found at its site path anymore.");
-                                        context.processing_errors.lock().unwrap().push(err);
+                                        context.job_error(err);
                                     }
                                     VideoUpdate::PendingErrors { .. } => {
                                         let err = String::from("Video could not be updated with newly computed version as the video currently has pending errors.");
-                                        context.processing_errors.lock().unwrap().push(err);
+                                        context.job_error(err);
                                     }
                                     VideoUpdate::Success { video_updated, .. } => {
                                         let site = context.get_site();
@@ -673,17 +800,18 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                 }
                             }
                             Err(()) => {
-                                context.processing_errors.lock().unwrap().push("Encoding a new version failed for an unknown reason.".to_string())
+                                let error = "Encoding a new version failed for an unknown reason.".to_string();
+                                context.job_error(error);
                             }
                         }
 
-                        context.processing.lock().unwrap().remove(process_id);
+                        context.remove_active_job(job_id);
                     }
                     JobKind::VideoPickPoster { poster_aspect, timecode, video } => {
                         let label = format!("[Worker {worker_number}] Computing random poster for {}", &video.site_path.normalized());
-                        let process_id = context.processing.lock().unwrap().push(video.site_path.normalized(), label);
+                        let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        let video_with_metadata = compute_metadata(&context, video);
+                        let video_with_metadata = compute_video_metadata(&context, video);
 
                         if let Some(highest_quality_version) = &video_with_metadata.highest_quality_version() {
                             let video_meta = highest_quality_version.video_meta.as_ref().unwrap();
@@ -699,14 +827,15 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                             let video_with_computed_poster = compute_poster(&context, bounded_timecode, video_with_metadata);
 
                             if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_computed_poster) {
-                                context.processing_errors.lock().unwrap().push(err);
+                                context.job_error(err);
                             }
                         } else {
-                            let message = format!("There was no source video to compute a poster from. ({})", video_with_metadata.site_path.normalized());
-                            context.processing_errors.lock().unwrap().push(message);
+                            let site_path = video_with_metadata.site_path.normalized();
+                            let error = format!("There was no source video to compute a poster from. ({site_path})");
+                            context.job_error(error);
                         }
 
-                        context.processing.lock().unwrap().remove(process_id);
+                        context.remove_active_job(job_id);
                     }
                 }
 

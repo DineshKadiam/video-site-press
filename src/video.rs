@@ -10,6 +10,7 @@ use chrono::NaiveDate;
 use url::Url;
 
 use crate::{
+    AudioFile,
     Context,
     FileMeta,
     HyperDir,
@@ -51,6 +52,7 @@ const VIDEO_OPTIONS: &[&str] = &[
 
 #[derive(Clone, Debug)]
 pub struct Video {
+    pub audio_files: Vec<AudioFile>,
     copy_link: Option<bool>,
     pub description: Option<String>,
     /// Errors related to files within the video directory, outside of
@@ -830,6 +832,7 @@ impl Video {
 
     pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Video {
         Video {
+            audio_files: Vec::new(),
             copy_link: None,
             description: None,
             dir_errors: Vec::new(),
@@ -989,6 +992,19 @@ impl Video {
                 .map(|cached| cached.video_meta.clone());
 
             video.versions.push(VideoFile::new(file_meta, file_name, video_meta));
+        }
+
+        for audio_file in &hyper_dir.audio_files {
+            let file_meta = FileMeta::new(audio_file);
+            let file_name = audio_file.file_name().unwrap().to_string_lossy().to_string();
+
+            let version_path = format!("{}{}", &video.site_path.normalized(), file_name);
+            let audio_meta = context.cache.lock().unwrap().audio_meta
+                .iter()
+                .find(|cached| cached.file_meta == file_meta && cached.path == version_path)
+                .map(|cached| cached.audio_meta.clone());
+
+            video.audio_files.push(AudioFile::new(audio_meta, file_meta, file_name));
         }
 
         if !hyper_dir.errors.is_empty() {

@@ -11,6 +11,7 @@ use std::time::{Duration, SystemTime};
 use slug::slugify;
 
 use crate::{
+    ActiveJobs,
     Cache,
     Collection,
     DeploymentState,
@@ -18,9 +19,9 @@ use crate::{
     InheritedOptions,
     Job,
     JobKind,
+    JobProgress,
     Language,
     Playlist,
-    Processing,
     Site,
     SiteContent,
     SitePath,
@@ -35,17 +36,17 @@ use crate::util::{
 };
 
 pub struct Context {
+    pub active_jobs: Mutex<ActiveJobs>,
     pub build_dir: PathBuf,
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
+    pub completed_jobs: Mutex<Vec<Job>>,
     pub deploying: Mutex<DeploymentState>,
     pub editor_language: Mutex<Language>,
     pub editor_theme: Mutex<Theme>,
     pub editor_tree_view_order: Mutex<TreeViewOrder>,
+    pub job_errors: Mutex<Vec<String>>,
     pub job_queue: Mutex<Vec<Job>>,
-    pub jobs_completed: Mutex<Vec<Job>>,
-    pub processing: Mutex<Processing>,
-    pub processing_errors: Mutex<Vec<String>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
 }
@@ -146,6 +147,11 @@ pub enum VideoParent {
 }
 
 impl Context {
+    /// Add a job to the active jobs based on its id
+    pub fn add_active_job(&self, label: String, site_path: SitePath) -> usize {
+        self.active_jobs.lock().unwrap().add(label, site_path)
+    }
+
     pub fn await_job_queue(&self) {
         let mut previous_pending_jobs = 0;
         loop {
@@ -174,7 +180,7 @@ impl Context {
 
         if let Some(mut completed_job) = completed_job {
             completed_job.completed_at = Some(SystemTime::now());
-            self.jobs_completed.lock().unwrap().push(completed_job);
+            self.completed_jobs.lock().unwrap().push(completed_job);
         }
     }
 
@@ -1189,6 +1195,11 @@ impl Context {
         self.site.lock().unwrap().get_video(site_path)
     }
 
+    /// Push a job error onto the list of job errors
+    pub fn job_error(&self, error: String) {
+        self.job_errors.lock().unwrap().push(error);
+    }
+
     pub fn new(
         build_dir: PathBuf,
         cache: Mutex<Cache>,
@@ -1200,17 +1211,17 @@ impl Context {
         site_dir: PathBuf
     ) -> Context {
         Context {
+            active_jobs: Mutex::new(ActiveJobs::new()),
             build_dir,
             cache,
             cache_dir,
+            completed_jobs: Mutex::new(Vec::new()),
             deploying: Mutex::new(DeploymentState::new()),
             editor_language: Mutex::new(Language::from_code(editor_language)),
             editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::default())),
             editor_tree_view_order: Mutex::new(editor_tree_view_order),
             job_queue: Mutex::new(Vec::new()),
-            jobs_completed: Mutex::new(Vec::new()),
-            processing: Mutex::new(Processing::new()),
-            processing_errors: Mutex::new(Vec::new()),
+            job_errors: Mutex::new(Vec::new()),
             site: Mutex::new(site),
             site_dir
         }
@@ -1254,8 +1265,21 @@ impl Context {
 
     /// Determine what needs to be computed for this video and append the
     /// required jobs to the passed queue.
-    fn queue_video_jobs(&self, video: &Arc<Video>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
-        if video.versions.iter().any(|version| version.video_meta.is_none()) ||
+    fn queue_video_jobs(
+        &self,
+        video: &Arc<Video>,
+        site: &Arc<Site>,
+        job_kinds: &mut Vec<JobKind>
+    ) {
+        if video.audio_files.iter().any(|audio_file| audio_file.audio_meta.is_none()) {
+            let job_kind = JobKind::AudioMeta {
+                video: Arc::clone(video)
+            };
+
+            job_kinds.push(job_kind);
+        }
+
+        if video.versions.iter().any(|video_file| video_file.video_meta.is_none()) ||
            (video.poster.is_none() && !video.versions.is_empty()) ||
            video.poster.as_ref().is_some_and(|poster|
                 poster.assets.is_none() ||
@@ -1273,6 +1297,11 @@ impl Context {
         }
     }
 
+    /// Remove a job from the active jobs based on its id
+    pub fn remove_active_job(&self, id: usize) {
+        self.active_jobs.lock().unwrap().remove(id);
+    }
+
     /// Replace the immutable `Arc<Site>` at the site tree root,
     /// updating the site tree to a new version.
     pub fn replace_site(&self, site_new: Site) {
@@ -1280,20 +1309,15 @@ impl Context {
     }
 
     /// Take the job with the highest priority that isn't assigned yet.
-    /// (The job is left in the queue too, marked as assigned for others)
-    pub fn take_processing_job(&self, high_priority_only: bool) -> Option<Job> {
+    /// Note that the job is left in the queue, just marked as assigned.
+    pub fn take_next_job(&self, high_priority_only: bool) -> Option<Job> {
         let mut job_queue = self.job_queue.lock().unwrap();
 
         job_queue
             .iter_mut()
             .filter(|job| {
-                if high_priority_only {
-                    if let JobKind::VideoFormat { .. } = job.kind {
-                        return false;
-                    }
-                }
-
-                job.assigned_at.is_none()
+                job.assigned_at.is_none() &&
+                !(high_priority_only && !job.kind.is_high_priority())
             })
             .reduce(|selected, iterated|
                 match iterated.cmp_priority(selected) {
@@ -1399,6 +1423,11 @@ impl Context {
                 self.replace_site(Site::read_dir(self, &self.site_dir));
             }
         }
+    }
+
+    /// Update progress info on the active job with the given id
+    pub fn update_job_progress(&self, id: usize, progress: JobProgress) {
+        self.active_jobs.lock().unwrap().update_progress(id, progress);
     }
 
     pub fn update_playlist<T>(

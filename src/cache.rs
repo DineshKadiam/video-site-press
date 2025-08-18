@@ -9,6 +9,7 @@ use log::info;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
+    AudioMeta,
     FileMeta,
     PosterAssets,
     PosterMeta,
@@ -35,7 +36,23 @@ use crate::util;
 ///     will be needed much less from here on out.
 const CACHE_VERSION_MARKER: &str = "cache1.marker";
 
+/// Caches metadata for an audio file that was (somewhat expensively) computed
+/// using ffprobe. In order to reassociate a cached metadata entry with
+/// its audio file(s), this is the strategy:
+/// - If the path, modified and size match, we assume it's the same file
+/// - For now there is no other strategy
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AudioMetaCached {
+    pub audio_meta: AudioMeta,
+    pub file_meta: FileMeta,
+    /// The path is relative to the site_dir. This ensures
+    /// that we can correctly re-associate files on each build, even
+    /// if the site dir directory moves around on disk.
+    pub path: String,
+}
+
 pub struct Cache {
+    pub audio_meta: Vec<AudioMetaCached>,
     pub poster_assets: Vec<PosterAssetsCached>,
     pub poster_sources: Vec<PosterSourceCached>,
     pub video_meta: Vec<VideoMetaCached>
@@ -52,7 +69,7 @@ pub struct PosterAssetsCached {
     pub file_meta: FileMeta,
     /// The path is relative to the site_dir. This ensures
     /// that we can correctly re-associate files on each build, even
-    /// if the site dir directory moves around on disk. 
+    /// if the site dir directory moves around on disk.
     pub path: String
 }
 
@@ -90,7 +107,7 @@ pub struct VideoMetaCached {
     pub file_meta: FileMeta,
     /// The path is relative to the site_dir. This ensures
     /// that we can correctly re-associate files on each build, even
-    /// if the site dir directory moves around on disk. 
+    /// if the site dir directory moves around on disk.
     pub path: String,
     pub video_meta: VideoMeta
 }
@@ -164,6 +181,7 @@ impl Cache {
 
     fn new() -> Cache {
         Cache {
+            audio_meta: Vec::new(),
             poster_assets: Vec::new(),
             poster_sources: Vec::new(),
             video_meta: Vec::new()
@@ -208,7 +226,9 @@ impl Cache {
         let mut registry = Cache::fill_registry(cache_dir);
 
         for file_name in &registry.manifests {
-            if file_name.ends_with(&format!(".{}.bincode", PosterAssets::CACHE_SERIALIZATION_KEY)) {
+            if file_name.ends_with(&format!(".{}.bincode", AudioMeta::CACHE_SERIALIZATION_KEY)) {
+                cache.retrieve_audio_meta(cache_dir, &file_name);
+            } else if file_name.ends_with(&format!(".{}.bincode", PosterAssets::CACHE_SERIALIZATION_KEY)) {
                 cache.retrieve_poster_assets(&mut registry.assets, cache_dir, &file_name);
             } else if file_name.ends_with(&format!(".{}.bincode", PosterMeta::CACHE_SERIALIZATION_KEY)) {
                 cache.retrieve_poster_source(cache_dir, &file_name);
@@ -225,6 +245,21 @@ impl Cache {
         Cache::remove_orphaned_assets(cache_dir, registry);
 
         cache
+    }
+
+    fn retrieve_audio_meta(
+        &mut self,
+        cache_dir: &Path,
+        file_name: &str
+    ) {
+        let manifest_path = cache_dir.join(file_name);
+
+        if let Some(audio_meta) = AudioMeta::deserialize_cached(&manifest_path) {
+            self.audio_meta.push(audio_meta);
+        } else {
+            info!("Removing incompatible audio meta cache manifest ({file_name}) - it was probably created with a different version of Hyper 8.");
+            let _ = fs::remove_file(&manifest_path);
+        }
     }
 
     fn retrieve_poster_assets(
@@ -289,7 +324,7 @@ impl Cache {
         if let Some(video_meta) = VideoMeta::deserialize_cached(&manifest_path) {
             self.video_meta.push(video_meta);
         } else {
-            info!("Removing incompatible poster source cache manifest ({file_name}) - it was probably created with a different version of Hyper 8.");
+            info!("Removing incompatible video meta cache manifest ({file_name}) - it was probably created with a different version of Hyper 8.");
             let _ = fs::remove_file(&manifest_path);
         }
     }

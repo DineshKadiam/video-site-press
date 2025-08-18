@@ -39,7 +39,7 @@ pub async fn downsize(
                 Some(form.frame_rate.as_str())
             };
 
-            let video_format = VideoFormat::new_video(
+            let video_format = VideoFormat::new(
                 &form.codec,
                 "mp4",
                 &form.approach,

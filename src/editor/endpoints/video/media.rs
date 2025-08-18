@@ -178,15 +178,137 @@ pub fn media_page(
     let site = context.get_site();
     let translations = &language.translations;
 
-    let versions = if video.versions.is_empty() {
+    let audio_files = if video.audio_files.is_empty() {
         String::new()
     } else {
-        let versions = video.versions_desc_by_fidelity();
+        let mut duration_range = None;
+
+        if video.audio_files.len() > 1 {
+            for version in &video.audio_files {
+                if let Some(audio_meta) = &version.audio_meta {
+                    match &mut duration_range {
+                        Some((shortest_version, longest_version)) => {
+                            if audio_meta.duration > *longest_version {
+                                *longest_version = audio_meta.duration;
+                            }
+
+                            if audio_meta.duration > *shortest_version {
+                                *shortest_version = audio_meta.duration;
+                            }
+                        }
+                        None => {
+                            duration_range = Some((audio_meta.duration, audio_meta.duration));
+                        }
+                    }
+                }
+            }
+        }
+
+        let duration_info = if let Some((shortest_version, longest_version)) = duration_range {
+            if longest_version - shortest_version < 1.0 {
+                String::new()
+            } else {
+                let longest = precise_duration(longest_version);
+                let shortest = precise_duration(shortest_version);
+
+                let t_not_ok = translations.not_ok;
+                let t_length_diverges_between_different_formats = translations.length_diverges_between_different_formats;
+                let failure_icon = icons::failure(t_not_ok);
+                format!(r#"<div class="error">{failure_icon} {t_length_diverges_between_different_formats} ({shortest} - {longest})</div>"#)
+            }
+        } else {
+            String::new()
+        };
+
+        let audio_files_rendered = video.audio_files
+            .iter()
+            .map(|audio_file| {
+                let file_name = &audio_file.file_name;
+                let extension = file_name.rsplit_once('.').unwrap().1;
+                let size = human_size(audio_file.file_meta.size);
+
+                // TODO: See if we even need audio_meta to determine browser support here
+                let (browser_support, duration) = match &audio_file.audio_meta {
+                    Some(audio_meta) => {
+                        let duration = precise_duration(audio_meta.duration);
+
+                        let (browser_support, reasons) = match browser_support::audio_analysis(audio_meta, &audio_file.file_name, language) {
+                            Some(Ok(message)) => (
+                                translations.good_browser_support,
+                                message
+                            ),
+                            Some(Err(message)) => (
+                                translations.not_supported_by_browsers,
+                                message
+                            ),
+                            None => (
+                                translations.browser_support_unclear,
+                                translations.hyper_8_could_not_determine_whether_this_file_format_is_generally_compatible_with_browsers_or_not.to_string()
+                            )
+                        };
+
+                        (
+                            format!(r#"<small class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></small>"#),
+                            duration
+                        )
+                    }
+                    None => (
+                        String::new(),
+                        translations.metadata_pending.to_string()
+                    )
+                };
+
+                let t_delete = translations.delete;
+                let t_really_delete = translations.really_delete;
+                let delete_icon = icons::failure(t_delete);
+                let delete_audio_file_action = routes::video_delete_audio_file(video);
+                let delete_form = formatdoc!(r#"
+                    <form
+                        action="{delete_audio_file_action}"
+                        data-confirm
+                        data-confirm-label="{t_delete}"
+                        data-confirm-text="{t_really_delete}"
+                        method="post"
+                        style="display: inline;">
+                        <input name="file_name" type="hidden" value="{file_name}">
+                        <button class="danger delete_button">{delete_icon}</button>
+                    </form>
+                "#);
+
+                formatdoc!(r#"
+                    <li>
+                        <div>
+                            <div class="basics">{extension} {size} {delete_form}</div>
+                            <small>{duration} {file_name}</small>
+                        </div>
+                        {browser_support}
+                    </li>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let t_audio_files = translations.audio_files;
+        formatdoc!(r#"
+            <h2>{t_audio_files}</h2>
+
+            {duration_info}
+
+            <ul class="versions">
+                {audio_files_rendered}
+            </ul>
+        "#)
+    };
+
+    let video_files = if video.versions.is_empty() {
+        String::new()
+    } else {
+        let video_files = video.versions_desc_by_fidelity();
 
         let mut duration_range = None;
 
-        if versions.len() > 1 {
-            for version in &versions {
+        if video_files.len() > 1 {
+            for version in &video_files {
                 if let Some(video_meta) = &version.video_meta {
                     match &mut duration_range {
                         Some((shortest_version, longest_version)) => {
@@ -222,7 +344,7 @@ pub fn media_page(
             String::new()
         };
 
-        let versions_rendered = versions
+        let video_files_rendered = video_files
             .iter()
             .map(|version| {
                 let (browser_support, label, video_meta) = match &version.video_meta {
@@ -233,10 +355,19 @@ pub fn media_page(
                         let size = human_size(version.file_meta.size);
                         let width = video_meta.width;
 
-                        let (browser_support, reasons) = match browser_support::analysis(&version.file_name, language, video_meta) {
-                            Some(Ok(message)) => (translations.good_browser_support, message),
-                            Some(Err(message)) => (translations.not_support_by_browsers, message),
-                            None => (translations.browser_support_unclear, String::from("Hyper 8 could not determine whether this video's format is generally compatible with browsers or not"))
+                        let (browser_support, reasons) = match browser_support::video_analysis(&version.file_name, language, video_meta) {
+                            Some(Ok(message)) => (
+                                translations.good_browser_support,
+                                message
+                            ),
+                            Some(Err(message)) => (
+                                translations.not_supported_by_browsers,
+                                message
+                            ),
+                            None => (
+                                translations.browser_support_unclear,
+                                translations.hyper_8_could_not_determine_whether_this_file_format_is_generally_compatible_with_browsers_or_not.to_string()
+                            )
                         };
 
                         (
@@ -248,7 +379,7 @@ pub fn media_page(
                     None => (
                         String::new(),
                         String::new(),
-                        String::from("Metadata pending")
+                        translations.metadata_pending.to_string()
                     )
                 };
 
@@ -284,14 +415,14 @@ pub fn media_page(
             .collect::<Vec<String>>()
             .join("\n");
 
-        let t_available_formats = translations.available_formats;
+        let t_video_files = translations.video_files;
         formatdoc!(r#"
-            <h2>{t_available_formats}</h2>
+            <h2>{t_video_files}</h2>
 
             {duration_info}
 
             <ul class="versions">
-                {versions_rendered}
+                {video_files_rendered}
             </ul>
         "#)
     };
@@ -304,7 +435,8 @@ pub fn media_page(
 
     let body = formatdoc!(r#"
         <div class="form_group">
-            {versions}
+            {video_files}
+            {audio_files}
             {video_upload_button}
         </div>
 
