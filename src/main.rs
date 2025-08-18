@@ -43,7 +43,9 @@ mod theme;
 mod transcode;
 mod translations;
 mod video;
+mod video_file;
 mod video_format;
+mod video_meta;
 mod video_order;
 mod util;
 mod watcher;
@@ -80,8 +82,10 @@ use theme::{Theme, ThemeKind};
 use transcode::FFmpegEncodingStats;
 use translations::Translations;
 use util::Field;
-use video::{Video, VideoFile, VideoMeta};
+use video::Video;
+use video_file::VideoFile;
 use video_format::{Codec, EncodingApproach, VideoFormat};
+use video_meta::VideoMeta;
 use video_order::VideoOrder;
 
 fn main() -> ExitCode {

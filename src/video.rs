@@ -7,7 +7,6 @@ use std::path::Path;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
-use serde_derive::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
@@ -22,7 +21,7 @@ use crate::{
     SitePath,
     SubtitleFile,
     Translations,
-    VideoMetaCached,
+    VideoFile,
     VideoOrder
 };
 use language_tags::LanguageTag;
@@ -30,7 +29,6 @@ use crate::manifest::MAX_SYNOPSIS_CHARS;
 use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::{
     checked_remove_dir_all,
-    hash,
     supported_subtitles_extension
 };
 
@@ -86,24 +84,6 @@ pub struct Video {
     // TODO: We cannot actually represent an audio only version here?
     //       (or only in an odd way - height/width are e.g. always present on VideoFile)
     pub versions: Vec<VideoFile>
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct VideoFile {
-    pub file_meta: FileMeta,
-    pub file_name: String,
-    pub video_meta: Option<VideoMeta>
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct VideoMeta {
-    pub audio_codec: Option<String>,
-    /// Duration in seconds
-    pub duration: f32,
-    pub height: usize,
-    pub video_codec: Option<String>,
-    pub video_frame_rate: f32,
-    pub width: usize
 }
 
 impl Video {
@@ -1222,133 +1202,5 @@ impl Video {
 
         let path = context.site_dir.join(self.site_path.filesystem_relative()).join("video.eno");
         fs::write(path, eno).unwrap();
-    }
-}
-
-impl VideoFile {
-    /// Determine the ordering between two [VideoFile] based on dimensions
-    /// (height), frame rate and size (in that priority). As fallback rely on
-    /// presence of metadata and raw filesize to determine some ordering.
-    pub fn cmp_by_fidelity_desc(a: &VideoFile, b: &VideoFile) -> Ordering {
-        match (&a.video_meta, &b.video_meta) {
-            (Some(a_video_meta), Some(b_video_meta)) => {
-                if a_video_meta.height != b_video_meta.height {
-                    b_video_meta.height.cmp(&a_video_meta.height)
-                } else if a_video_meta.video_frame_rate != b_video_meta.video_frame_rate {
-                    b_video_meta.video_frame_rate.partial_cmp(&a_video_meta.video_frame_rate)
-                        .unwrap_or_else(|| b.file_meta.size.cmp(&a.file_meta.size))
-                } else {
-                    b.file_meta.size.cmp(&a.file_meta.size)
-                }
-            }
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => b.file_meta.size.cmp(&a.file_meta.size)
-        }
-    }
-
-    pub fn mime_type(&self) -> &'static str {
-        let (_stem, extension) = self.file_name.rsplit_once('.').unwrap();
-
-        // This mapping must be kept up-to-date with what we accept in our
-        // [supported_video_extension] helper function, otherwise it's a full
-        // on-crash (but at least something that is quickly and easily
-        // discovered).
-        match extension {
-            "m4v" |
-            "mp4" => "video/mp4",
-            "mkv" => "video/x-matroska",
-            "mov" => "video/quicktime",
-            "webm" => "video/webm",
-            _ => unimplemented!()
-        }
-    }
-
-    pub fn new(
-        file_meta: FileMeta,
-        file_name: String,
-        video_meta: Option<VideoMeta>
-    ) -> VideoFile {
-        VideoFile {
-            file_meta,
-            file_name,
-            video_meta
-        }
-    }
-
-    pub fn vertical_resolution_label(&self) -> String {
-        match &self.video_meta {
-            Some(video_meta) => format!("{}p", video_meta.height),
-            None => String::new()
-        }
-    }
-
-    pub fn video_meta_unchecked(&self) -> &VideoMeta {
-        self.video_meta.as_ref().unwrap()
-    }
-}
-
-impl VideoMeta {
-    /// Increment this cache serialization key when:
-    /// - The data layout of [VideoMeta] changes
-    /// - The way we compute [VideoMeta] changes
-    ///
-    /// This automatically lets the cache discard poster assets manifests that
-    /// hold incorrect, incompatible or outdated data.
-    pub const CACHE_SERIALIZATION_KEY: &'static str = "video_meta1";
-
-    pub fn aspect_ratio(&self) -> f32 {
-        self.width as f32 / self.height as f32
-    }
-
-    pub fn deserialize_cached(path: &Path) -> Option<VideoMetaCached> {
-        match fs::read(path) {
-            Ok(bytes) => bincode::deserialize::<VideoMetaCached>(&bytes).ok(),
-            Err(_) => None
-        }
-    }
-
-    pub fn new(
-        audio_codec: Option<String>,
-        duration: f32,
-        height: usize,
-        video_codec: Option<String>,
-        video_frame_rate: f32,
-        width: usize
-    ) -> VideoMeta {
-        VideoMeta {
-            audio_codec,
-            duration,
-            height,
-            video_codec,
-            video_frame_rate,
-            width
-        }
-    }
-
-    pub fn write_cache_manifest(
-        &self,
-        context: &Context,
-        file_meta: &FileMeta,
-        file_name: &str,
-        site_path: &SitePath
-    ) {
-        let version_path = format!("{}{}", site_path.normalized(), file_name);
-
-        let cache_item = VideoMetaCached {
-            file_meta: file_meta.clone(),
-            path: version_path.clone(),
-            video_meta: self.clone()
-        };
-
-        let cache_item_serialized = bincode::serialize(&cache_item).unwrap();
-
-        let cache_item_stem = hash(&version_path);
-        let cache_item_key = VideoMeta::CACHE_SERIALIZATION_KEY;
-
-        let cache_item_file_name = format!("{cache_item_stem}.{cache_item_key}.bincode");
-        let cache_item_path = context.cache_dir.join(cache_item_file_name);
-
-        fs::write(cache_item_path, cache_item_serialized).unwrap();
     }
 }
