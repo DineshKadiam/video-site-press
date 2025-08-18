@@ -15,10 +15,6 @@ body:not(.light) #toggle-dark {
     padding: 0;
     width: 1.8rem;
 }
-.theme_toggle svg {
-    height: 1.2rem;
-    width: 1.2rem;
-}
 .theme_toggle:focus-visible { outline: .2rem solid var(--fg-1); }
 .theme_toggle:focus-visible,
 .theme_toggle:hover {

@@ -104,34 +104,36 @@ impl Layout {
 
         let mut templates = String::new();
 
-        let browse;
-        let search;
+        let navigation;
         let navigation_script;
         if let Some(navigation_js_asset_hash) = &asset_hashes.navigation_js {
-            let search_icon = icons::search(translations.search);
+            let browse_icon = icons::BROWSE;
             let close_icon = icons::failure(translations.close);
+            let search_icon = icons::search(translations.search);
+            let t_browse = translations.browse;
             let t_search = translations.search;
 
-            let t_browse = translations.browse;
-            browse = formatdoc!(r#"
-                <button class="browse">
-                    {t_browse}
-                </button>
-            "#);
-
-            search = formatdoc!(r#"
-                <div class="search">
-                    <div class="icon">{search_icon}</div>
-                    <input autocomplete="off" placeholder="{t_search}" type="search">
-                    <button>
-                        {close_icon}
+            navigation = formatdoc!(r#"
+                <div class="navigation">
+                    <button aria-label="{t_browse}" class="browse">
+                        <span class="icon">{browse_icon}</span>
+                        <span aria-hidden="true" class="label">{t_browse}</span>
                     </button>
+                    <div class="search">
+                        <span class="icon">{search_icon}</span>
+                        <span aria-hidden="true" class="label">{t_search}</span>
+                        <input autocomplete="off" type="search">
+                        <button>
+                            {close_icon}
+                        </button>
+                    </div>
                 </div>
                 <div class="site_tree">
                     <div role="status"></div>
                     <div class="elements"></div>
                 </div>
             "#);
+
             navigation_script = format!(r#"<script defer src="{root_prefix}navigation.js?{navigation_js_asset_hash}"></script>"#);
 
             let chevron_right_icon = icons::CHEVRON_RIGHT;
@@ -143,8 +145,7 @@ impl Layout {
 
             templates.push_str(&navigation_templates);
         } else {
-            browse = String::new();
-            search = String::new();
+            navigation = String::new();
             navigation_script = String::new();
         };
 
@@ -213,17 +214,12 @@ impl Layout {
                 </script>
                 <div class="layout">
                     <header>
-                        <div class="navigation">
-                            <a class="home" href="{root_url}">
-                                {logo_polychrome_icon}
-                                <span class="title">{e_site_title}</span>
-                            </a>
-                            {browse}
-                            {search}
-                        </div>
-                        <div>
-                            {theme_toggle}
-                        </div>
+                        <a href="{root_url}">
+                            {logo_polychrome_icon}
+                            <span class="title">{e_site_title}</span>
+                        </a>
+                        {navigation}
+                        {theme_toggle}
                     </header>
                     <div class="growing">
                         <div class="center">

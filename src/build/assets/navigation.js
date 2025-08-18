@@ -411,7 +411,7 @@ searchInput.addEventListener('input', () => {
     accessSiteTree(updateSearch);
 });
 
-navigation.addEventListener('keydown', event => {
+function handleNavigationKeyInput() {
     if (event.key === 'ArrowUp') {
         if (siteTree.classList.contains('open')) {
             const visibleResults = [...siteTreeElements.querySelectorAll('a.visible')];
@@ -483,7 +483,10 @@ navigation.addEventListener('keydown', event => {
             event.preventDefault();
         }
     }
-});
+}
+
+navigation.addEventListener('keydown', handleNavigationKeyInput);
+siteTree.addEventListener('keydown', handleNavigationKeyInput);
 
 // siteTreeElement is usually a collection or playlist that is to be collapsed
 // or expanded, but can also be a video if the intent is to collapse its
