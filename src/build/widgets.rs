@@ -7,6 +7,7 @@ use std::path::Path;
 use indoc::formatdoc;
 
 use crate::{
+    AudioFile,
     Banner,
     Language,
     Link,
@@ -198,7 +199,6 @@ pub fn player(
         "#);
     }
 
-    // TODO: This fails on preview build if we don't have metadata yet (or something like that)
     let recommended_video_file = video.recommended_video_file().unwrap();
 
     let poster = match &video.poster {
@@ -277,7 +277,7 @@ pub fn player(
         subtitle_tracks = String::new();
     };
 
-    let version_selector_options = video.video_files_desc_by_fidelity()
+    let mut version_selector_options = video.video_files_desc_by_fidelity()
         .iter()
         .map(|video_file| {
             let video_meta = video_file.video_meta_unchecked();
@@ -293,8 +293,25 @@ pub fn player(
                 </button>
             "#)
         })
-        .collect::<Vec<String>>()
-        .join("\n");
+        .collect::<Vec<String>>();
+
+    let recommended_audio_file = video.recommended_audio_file();
+
+    if let Some(audio_file) = recommended_audio_file {
+        let file_name_escaped = urlencoding::encode(&audio_file.file_name);
+        let size_humanized = human_size(audio_file.file_meta.size);
+
+        let t_audio = translations.audio;
+        let audio_option = formatdoc!(r#"
+            <button data-label="{t_audio}" data-src="{video_prefix}{file_name_escaped}">
+                <span class="active_marker_container">{active_marker_icon}</span> <strong>{t_audio}</strong>&nbsp;&nbsp;<small>{size_humanized}</small>
+            </button>
+        "#);
+
+        version_selector_options.push(audio_option);
+    }
+
+    let version_selector_options = version_selector_options.join("\n");
 
     let default_version_label = recommended_video_file.vertical_resolution_label();
     let version_controls = formatdoc!(r#"
@@ -308,12 +325,13 @@ pub fn player(
 
     let recommended_video_file_meta = recommended_video_file.video_meta.as_ref().unwrap();
 
-    let aspect_ratio = recommended_video_file_meta.aspect_ratio();
-    let duration = recommended_video_file_meta.duration;
-    let duration_formatted = precise_duration(duration);
-    let src_escaped = urlencoding::encode(&recommended_video_file.file_name);
-
-    let versions_ring_rendered = versions_ring(recommended_video_file, video, video_prefix);
+    let versions_ring_rendered = versions_ring(
+        recommended_audio_file,
+        recommended_video_file,
+        translations,
+        video,
+        video_prefix
+    );
 
     let player_outro = if let Some(playlist) = playlist {
         let index_suffix = site.index_suffix();
@@ -484,6 +502,11 @@ pub fn player(
     } else {
         String::new()
     };
+
+    let aspect_ratio = recommended_video_file_meta.aspect_ratio();
+    let duration = recommended_video_file_meta.duration;
+    let duration_formatted = precise_duration(duration);
+    let src_escaped = urlencoding::encode(&recommended_video_file.file_name);
 
     let play_icon = icons::play(translations.play);
     formatdoc!(r#"
@@ -681,9 +704,12 @@ pub fn unlisted_badge(translations: &Translations) -> String {
 
 /// A ring with slices and a play button in the middle, displayed on
 /// the "intro" screen of the video player. Lets people choose the resolution
-/// to watch the video in (and simultaneously start playback).
+/// (or audio-only version) to watch the video in (and simultaneously start
+/// playback).
 fn versions_ring(
+    recommended_audio_file: Option<&AudioFile>,
     recommended_video_file: &VideoFile,
+    translations: &Translations,
     video: &Video,
     video_prefix: &str
 ) -> String {
@@ -703,13 +729,25 @@ fn versions_ring(
 
     let mut largest_size = 0;
 
+    if let Some(audio_file) = recommended_audio_file {
+        let file_name = &audio_file.file_name;
+        let label = translations.audio.to_string();
+        let size = audio_file.file_meta.size;
+        sizes.push((file_name, label, size));
+        total_size += size;
+
+        if size > largest_size {
+            largest_size = size;
+        }
+    }
+
     let video_files = video.video_files_asc_by_fidelity();
 
     for video_file in &video_files {
         let file_name = &video_file.file_name;
+        let label = video_file.vertical_resolution_label();
         let size = video_file.file_meta.size;
-        let resolution = video_file.vertical_resolution_label();
-        sizes.push((file_name, resolution, size));
+        sizes.push((file_name, label, size));
         total_size += size;
 
         if size > largest_size {
@@ -722,7 +760,7 @@ fn versions_ring(
         arc_angle: f32,
         begin_angle: f32,
         default: bool,
-        resolution: &str,
+        label: &str,
         size: &str,
         src: &str
     | -> String {
@@ -765,7 +803,7 @@ fn versions_ring(
 
         let text_angle_rad = (begin_angle + 0.5 * safe_arc_angle).to_radians();
         let text_x = RADIUS + text_angle_rad.sin() * TEXT_RADIUS;
-        let text_resolution_y = RADIUS + -text_angle_rad.cos() * TEXT_RADIUS;
+        let text_label_y = RADIUS + -text_angle_rad.cos() * TEXT_RADIUS;
         let text_size_y = RADIUS + -text_angle_rad.cos() * TEXT_RADIUS + TEXT_SPACING;
 
         let play_button = if default {
@@ -792,19 +830,19 @@ fn versions_ring(
 
         formatdoc!(r#"
             <g
-                data-label="{resolution}"
+                data-label="{label}"
                 data-src="{src}"
                 tabindex="0">
                 {play_button}
                 {slice}
                 <rect class="backdrop" filter="url(#text_shadow)" rx="5"/>
-                <text text-anchor="middle" x="{text_x}" y="{text_resolution_y}">
-                    {resolution}
+                <text text-anchor="middle" x="{text_x}" y="{text_label_y}">
+                    {label}
                 </text>
                 <text class="size" text-anchor="middle" x="{text_x}" y="{text_size_y}">
                     {size}
                 </text>
-                <title>{resolution} {size}</title>
+                <title>{label} {size}</title>
             </g>
         "#)
     };

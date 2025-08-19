@@ -22,6 +22,7 @@ pub struct Translations {
     pub already_deploying_can_only_deploy_again_when_current_deployment_is_finished: &'static str,
     pub arrow_left_right: &'static str,
     pub atom_description: &'static str,
+    pub audio: &'static str,
     pub audio_files: &'static str,
     pub automatic_link_previews_and_content_embedding_on_platforms: &'static str,
     pub automatic_original_frame_rate_or_encoder_preference: &'static str,

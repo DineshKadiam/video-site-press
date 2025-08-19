@@ -1019,6 +1019,24 @@ impl Video {
         Arc::new(video)
     }
 
+    /// Currently picks the audio file with the highest compatibility, if
+    /// there is any audio file.
+    pub fn recommended_audio_file(&self) -> Option<&AudioFile> {
+        self.audio_files.iter().find(|audio_file| {
+                audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
+                    audio_meta.codec.as_ref().is_some_and(|codec| codec == "mp3")
+                )
+            })
+            .or_else(|| {
+                self.audio_files.iter().find(|audio_file| {
+                    audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
+                        audio_meta.codec.as_ref().is_some_and(|codec| codec == "opus")
+                    )
+                })
+            })
+            .or_else(|| self.audio_files.first())
+    }
+
     /// Applies a simple heuristic to determine the "most recommended"
     /// video file to watch. Roughly speaking, something that is not too
     /// high-res, not too low-res, but a nice balance between resource

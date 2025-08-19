@@ -16,6 +16,14 @@ pub struct AudioFile {
 }
 
 impl AudioFile {
+    pub fn audio_meta_unchecked(&self) -> &AudioMeta {
+        self.audio_meta.as_ref().unwrap()
+    }
+
+    pub fn extension(&self) -> &str {
+        self.file_name.rsplit_once('.').unwrap().1
+    }
+
     pub fn mime_type(&self) -> &'static str {
         let (_stem, extension) = self.file_name.rsplit_once('.').unwrap();
 
@@ -41,9 +49,5 @@ impl AudioFile {
             file_meta,
             file_name
         }
-    }
-
-    pub fn audio_meta_unchecked(&self) -> &AudioMeta {
-        self.audio_meta.as_ref().unwrap()
     }
 }

@@ -21,6 +21,7 @@ impl Translations {
         already_deploying_can_only_deploy_again_when_current_deployment_is_finished: "Already deploying, can only deploy again when the current deployment is finished.",
         arrow_left_right: "Arrow Left/Right",
         atom_description: "A simple, mostly text based feed that only links to video and audio content on the website.",
+        audio: "Audio",
         audio_files: "Audio files",
         automatic_link_previews_and_content_embedding_on_platforms: "Automatic link previews and content embedding on platforms",
         automatic_original_frame_rate_or_encoder_preference: "Automatic – Original frame rate or encoder preference",
