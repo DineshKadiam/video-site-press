@@ -446,19 +446,22 @@ pub fn media_page(
         "#)
     };
 
-    let t_upload_video_file = translations.upload_video_file;
-    let upload_url = routes::upload_video(&video.site_path);
-    let video_upload_button = upload_widget(&upload_url, t_upload_video_file);
+    let upload_audio_video_url = routes::upload_audio_video(&video.site_path);
+
+    let t_upload_video_or_audio_file = translations.upload_video_or_audio_file;
+    let upload_audio_video_button = upload_widget(&upload_audio_video_url, t_upload_video_or_audio_file);
 
     let render_additional_formats = additional_formats_form(translations, video);
 
     let body = formatdoc!(r#"
         <div class="form_group">
             {video_files}
-            {video_upload_button}
         </div>
         <div class="form_group">
             {audio_files}
+        </div>
+        <div class="form_group">
+            {upload_audio_video_button}
         </div>
 
         {render_additional_formats}

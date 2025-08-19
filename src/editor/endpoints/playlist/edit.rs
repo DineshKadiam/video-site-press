@@ -241,9 +241,9 @@ pub fn edit_page(
         String::new()
     };
 
-    let t_upload_new_video = translations.upload_new_video;
-    let upload_url = routes::upload_video(&playlist.site_path);
-    let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
+    let t_upload_video_or_audio_file = translations.upload_video_or_audio_file;
+    let upload_audio_video_url = routes::upload_audio_video(&playlist.site_path);
+    let video_upload_button = upload_widget(&upload_audio_video_url, t_upload_video_or_audio_file);
 
     let input_unlisted_conditionally_hidden = if !playlist.site_path.is_root_path() {
         input_unlisted.to_string()

@@ -72,6 +72,27 @@ pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Erro
     fs::remove_dir_all(path)
 }
 
+/// Takes an existing filestem (that has elsewhere been identified to collide
+/// with another) and returns the filestem, systematically altered as to
+/// resolve the existing collision and ideally avoid further ones.
+///
+/// Note: For proper file*names* (with extension) use deduplicate_filename instead!
+///
+/// Some examples:
+/// - "foo"            -> "foo(1)"
+/// - "foo(1)"         -> "foo(2)"
+pub fn deduplicate_filestem(filestem: &str) -> String {
+    if filestem.ends_with(')') {
+        if let Some(index) = filestem.rfind('(') {
+            if let Ok(number) = &filestem[(index + 1)..(filestem.len() - 1)].parse::<usize>() {
+                return format!("{}({})", &filestem[..index], number + 1);
+            }
+        }
+    }
+
+    format!("{filestem}(1)")
+}
+
 /// Takes an existing filename (that has elsewhere been identified to collide
 /// with another file with the same filename) and returns the filename,
 /// systematically altered as to resolve the existing collision and ideally
@@ -85,18 +106,6 @@ pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Erro
 /// - "foo(1).bar"     -> "foo(2).bar"
 /// - "foo(1).bar.baz" -> "foo(2).bar.baz"
 pub fn deduplicate_filename(filename: &str) -> String {
-    fn deduplicate_filestem(filestem: &str) -> String {
-        if filestem.ends_with(')') {
-            if let Some(index) = filestem.rfind('(') {
-                if let Ok(number) = &filestem[(index + 1)..(filestem.len() - 1)].parse::<usize>() {
-                    return format!("{}({})", &filestem[..index], number + 1);
-                }
-            }
-        }
-
-        format!("{filestem}(1)")
-    }
-
     match filename.split_once('.') {
         Some((filestem, extension)) => deduplicate_filestem(filestem) + "." + extension,
         None => deduplicate_filestem(filename)

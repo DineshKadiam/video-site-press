@@ -250,9 +250,9 @@ pub fn edit_page(
         String::new()
     };
 
-    let t_upload_new_video = translations.upload_new_video;
-    let upload_url = routes::upload_video(&collection.site_path);
-    let video_upload_button = upload_widget(&upload_url, t_upload_new_video);
+    let t_upload_video_or_audio_file = translations.upload_video_or_audio_file;
+    let upload_audio_video_url = routes::upload_audio_video(&collection.site_path);
+    let video_upload_button = upload_widget(&upload_audio_video_url, t_upload_video_or_audio_file);
 
     let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
 

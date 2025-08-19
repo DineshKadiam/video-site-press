@@ -167,7 +167,7 @@ pub async fn start(
                 .route("/video/update-poster/{site_path:.*}", post().to(video::update_poster))
                 .route("/video/upload-poster/{site_path:.*}", post().to(video::upload_poster))
                 .route("/video/upload-subtitles/{site_path:.*}", post().to(video::upload_subtitles))
-                .route("/video/upload-video/{site_path:.*}", post().to(video::upload_video))
+                .route("/video/upload-audio-video/{site_path:.*}", post().to(video::upload_audio_video))
         })
         .bind((ip, port))
     };

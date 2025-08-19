@@ -156,8 +156,8 @@ pub const SITE_MANIFEST: &str = "/site/manifest/";
 // from a collection, playlist and video context, so semantically it would
 // make sense to look at this again and either "monomorphize" it into three
 // endpoints or extract the single universal endpoint from the video context.
-pub fn upload_video(site_path: &SitePath) -> String {
-    format!("/video/upload-video/{}", site_path.normalized())
+pub fn upload_audio_video(site_path: &SitePath) -> String {
+    format!("/video/upload-audio-video/{}", site_path.normalized())
 }
 
 pub fn video_add_link(video: &Video) -> String {

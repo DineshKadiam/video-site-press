@@ -15,6 +15,7 @@ use futures_util::TryStreamExt as _;
 use slug::slugify;
 
 use crate::{
+    AudioFile,
     Collection,
     CollectionUpdate,
     Context,
@@ -32,13 +33,17 @@ use crate::{
 use crate::editor::endpoints::collection::pending_manifest_errors as pending_collection_manifest_errors;
 use crate::editor::endpoints::playlist::pending_manifest_errors as pending_playlist_manifest_errors;
 use crate::editor::routes;
-use crate::editor::widgets::not_found;
-use crate::util::{deduplicate_filename, supported_video_extension};
+use crate::editor::widgets::{error_page, not_found};
+use crate::util::{
+    deduplicate_filename,
+    deduplicate_filestem,
+    supported_audio_extension,
+    supported_video_extension
+};
 
 use super::pending_manifest_errors as pending_video_manifest_errors;
 
-// TODO: Implementation wise this is very messy, refactoring candidate
-pub async fn upload_video(
+pub async fn upload_audio_video(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
     site_path: ActixPath<SitePath>
@@ -55,38 +60,64 @@ pub async fn upload_video(
     while let Some(mut field) = payload.try_next().await? {
         if let Some(content_disposition) = field.content_disposition() {
             if let Some(filename) = content_disposition.get_filename() {
-                // TODO: Support audio formats as well?
-                //       Or should this be a separate endpoint/feature?
-                if supported_video_extension(filename) {
+
+                let is_supported_audio = supported_audio_extension(filename);
+                let is_supported_video = supported_video_extension(filename);
+
+                if is_supported_audio || is_supported_video {
                     let original_filename = filename.to_string();
 
                     let storage_path = match &container {
                         GetAnyResult::Collection(collection) => {
-                            let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                            while context.site_dir.join(collection.site_path.filesystem_relative()).join(&candidate_dir_name).exists() {
-                                // TODO: Use a nice deduplicate_filename() like approach as well
-                                candidate_dir_name.push_str("-duplicate");
+                            let file_stem = Path::new(&original_filename)
+                                .file_stem()
+                                .unwrap()
+                                .to_string_lossy();
+
+                            let mut candidate_dir_name = slugify(file_stem);
+                            let mut candidate_path = context.site_dir
+                                .join(collection.site_path.filesystem_relative())
+                                .join(&candidate_dir_name);
+
+                            while candidate_path.exists() {
+                                candidate_dir_name = deduplicate_filestem(&candidate_dir_name);
+                                candidate_path.set_file_name(&candidate_dir_name);
                             }
-                            let candidate_dir = context.site_dir.join(collection.site_path.filesystem_relative()).join(&candidate_dir_name);
-                            fs::create_dir_all(&candidate_dir).unwrap();
-                            candidate_dir.join(original_filename)
+
+                            fs::create_dir_all(&candidate_path).unwrap();
+                            candidate_path.join(original_filename)
                         }
                         GetAnyResult::Playlist(playlist) => {
-                            let mut candidate_dir_name = slugify(Path::new(&original_filename).with_extension("").to_string_lossy());
-                            while context.site_dir.join(playlist.site_path.filesystem_relative()).join(&candidate_dir_name).exists() {
-                                // TODO: Use a nice deduplicate_filename() like approach as well
-                                candidate_dir_name.push_str("-duplicate");
+                            let file_stem = Path::new(&original_filename)
+                                .file_stem()
+                                .unwrap()
+                                .to_string_lossy();
+
+                            let mut candidate_dir_name = slugify(file_stem);
+                            let mut candidate_path = context.site_dir
+                                .join(playlist.site_path.filesystem_relative())
+                                .join(&candidate_dir_name);
+
+                            while candidate_path.exists() {
+                                candidate_dir_name = deduplicate_filestem(&candidate_dir_name);
+                                candidate_path.set_file_name(&candidate_dir_name);
                             }
-                            let candidate_dir = context.site_dir.join(playlist.site_path.filesystem_relative()).join(&candidate_dir_name);
-                            fs::create_dir_all(&candidate_dir).unwrap();
-                            candidate_dir.join(original_filename)
+
+                            fs::create_dir_all(&candidate_path).unwrap();
+                            candidate_path.join(original_filename)
                         }
                         GetAnyResult::Video(video) => {
                             let mut candidate_filename = original_filename.clone();
-                            while context.site_dir.join(video.site_path.filesystem_relative()).join(&candidate_filename).exists() {
+                            let mut candidate_path = context.site_dir
+                                .join(video.site_path.filesystem_relative())
+                                .join(&candidate_filename);
+
+                            while candidate_path.exists() {
                                 candidate_filename = deduplicate_filename(&candidate_filename);
+                                candidate_path.set_file_name(&candidate_filename);
                             }
-                            context.site_dir.join(video.site_path.filesystem_relative()).join(&candidate_filename)
+
+                            candidate_path
                         }
                         GetAnyResult::None => unreachable!()
                     };
@@ -108,9 +139,9 @@ pub async fn upload_video(
                             let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
                             let video = Video::read_dir(&context, &hyper_dir, collection.mutate_inherited_options(), &site);
 
-                            let video_moving = Arc::clone(&video);
                             let mutation = |collection: &mut Collection| {
-                                collection.videos.push(video_moving);
+                                collection.videos.push(Arc::clone(&video));
+                                video
                             };
 
                             match context.update_collection(mutation, &site_path) {
@@ -121,18 +152,16 @@ pub async fn upload_video(
                                 CollectionUpdate::PendingErrors { collection } => {
                                     return Ok(Either::Right(pending_collection_manifest_errors(&collection, &context, &language)))
                                 }
-                                CollectionUpdate::Updated { .. } => ()
+                                CollectionUpdate::Updated { optional_return_value: video, .. } => video
                             }
-
-                            video
                         }
                         GetAnyResult::Playlist(playlist) => {
                             let hyper_dir = HyperDir::read(storage_path.parent().unwrap());
                             let video = Video::read_dir(&context, &hyper_dir, playlist.mutate_inherited_options(), &site);
 
-                            let video_moving = Arc::clone(&video);
                             let mutation = |playlist: &mut Playlist| {
-                                playlist.videos.push(video_moving);
+                                playlist.videos.push(Arc::clone(&video));
+                                video
                             };
 
                             match context.update_playlist(mutation, &site_path) {
@@ -143,18 +172,21 @@ pub async fn upload_video(
                                 PlaylistUpdate::PendingErrors { playlist } => {
                                     return Ok(Either::Right(pending_playlist_manifest_errors(&context, &language, &playlist)))
                                 }
-                                PlaylistUpdate::Updated { .. } => ()
+                                PlaylistUpdate::Updated { optional_return_value: video, .. } => video
                             }
-
-                            video
                         }
                         GetAnyResult::Video(_) => {
                             let file_meta = FileMeta::new(&storage_path);
                             let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
 
                             let mutation = |video: &mut Video| {
-                                video.video_files.push(VideoFile::new(file_meta, file_name, None));
-                                Ok(())
+                                if is_supported_audio {
+                                    video.audio_files.push(AudioFile::new(None, file_meta, file_name));
+                                    Ok(())
+                                } else /* if is_supported_video */ {
+                                    video.video_files.push(VideoFile::new(file_meta, file_name, None));
+                                    Ok(())
+                                }
                             };
 
                             match context.update_video(mutation, &site_path) {
@@ -172,14 +204,24 @@ pub async fn upload_video(
                         GetAnyResult::None => unreachable!()
                     };
 
-                    let job_kind = JobKind::VideoFastTasks {
-                        poster_aspect: site.poster_aspect.numeric(),
-                        video: Arc::clone(&video)
+                    let job_kind = if is_supported_audio {
+                        JobKind::AudioMeta {
+                            video: Arc::clone(&video)
+                        }
+                    } else /* if is_supported_video */ {
+                        JobKind::VideoFastTasks {
+                            poster_aspect: site.poster_aspect.numeric(),
+                            video: Arc::clone(&video)
+                        }
                     };
+
                     context.queue_job(job_kind);
 
                     let redirect_url = routes::video_edit(&video);
                     return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
+                } else {
+                    let message = language.translations.unsupported_file_extension_in_xxx(filename);
+                    return Ok(Either::Right(error_page(&context, &language, &message)));
                 }
             }
         }
