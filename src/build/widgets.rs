@@ -174,7 +174,7 @@ pub fn player(
 ) -> String {
     let translations = &site.language.translations;
 
-    if video.video_files.is_empty() {
+    if video.audio_files.is_empty() && video.video_files.is_empty() {
         // TODO: Should use poster assets (different sizes)
         let poster = match &video.poster {
             Some(poster) => {
@@ -199,7 +199,7 @@ pub fn player(
         "#);
     }
 
-    let recommended_video_file = video.recommended_video_file().unwrap();
+    let recommended_video_file = video.recommended_video_file();
 
     let poster = match &video.poster {
         Some(poster) => {
@@ -313,7 +313,10 @@ pub fn player(
 
     let version_selector_options = version_selector_options.join("\n");
 
-    let default_version_label = recommended_video_file.vertical_resolution_label();
+    let default_version_label = recommended_video_file
+        .map(|video_file| video_file.vertical_resolution_label())
+        .unwrap_or_else(|| translations.audio.to_string());
+
     let version_controls = formatdoc!(r#"
         <div class="selector_control version" style="position: relative;">
             <button id="cycle_versions" tabindex="-1">{default_version_label}</button>
@@ -322,8 +325,6 @@ pub fn player(
             </div>
         </div>
     "#);
-
-    let recommended_video_file_meta = recommended_video_file.video_meta.as_ref().unwrap();
 
     let versions_ring_rendered = versions_ring(
         recommended_audio_file,
@@ -503,10 +504,25 @@ pub fn player(
         String::new()
     };
 
-    let aspect_ratio = recommended_video_file_meta.aspect_ratio();
-    let duration = recommended_video_file_meta.duration;
+    let aspect_ratio;
+    let duration;
+    let src_escaped;
+    if let Some(video_file) = recommended_video_file {
+        let video_file_meta = video_file.video_meta.as_ref().unwrap();
+
+        aspect_ratio = video_file_meta.aspect_ratio();
+        duration = video_file_meta.duration;
+        src_escaped = urlencoding::encode(&video_file.file_name);
+    } else {
+        let audio_file = recommended_audio_file.unwrap();
+        let audio_file_meta = audio_file.audio_meta.as_ref().unwrap();
+
+        aspect_ratio = site.poster_aspect.numeric();
+        duration = audio_file_meta.duration;
+        src_escaped = urlencoding::encode(&audio_file.file_name);
+    }
+
     let duration_formatted = precise_duration(duration);
-    let src_escaped = urlencoding::encode(&recommended_video_file.file_name);
 
     let play_icon = icons::play(translations.play);
     formatdoc!(r#"
@@ -708,7 +724,7 @@ pub fn unlisted_badge(translations: &Translations) -> String {
 /// playback).
 fn versions_ring(
     recommended_audio_file: Option<&AudioFile>,
-    recommended_video_file: &VideoFile,
+    recommended_video_file: Option<&VideoFile>,
     translations: &Translations,
     video: &Video,
     video_prefix: &str
@@ -733,6 +749,7 @@ fn versions_ring(
         let file_name = &audio_file.file_name;
         let label = translations.audio.to_string();
         let size = audio_file.file_meta.size;
+
         sizes.push((file_name, label, size));
         total_size += size;
 
@@ -743,15 +760,18 @@ fn versions_ring(
 
     let video_files = video.video_files_asc_by_fidelity();
 
-    for video_file in &video_files {
-        let file_name = &video_file.file_name;
-        let label = video_file.vertical_resolution_label();
-        let size = video_file.file_meta.size;
-        sizes.push((file_name, label, size));
-        total_size += size;
+    if !video_files.is_empty() {
+        for video_file in &video_files {
+            let file_name = &video_file.file_name;
+            let label = video_file.vertical_resolution_label();
+            let size = video_file.file_meta.size;
 
-        if size > largest_size {
-            largest_size = size;
+            sizes.push((file_name, label, size));
+            total_size += size;
+
+            if size > largest_size {
+                largest_size = size;
+            }
         }
     }
 
@@ -872,7 +892,9 @@ fn versions_ring(
 
         let size_humanized = human_size(*size);
 
-        let default = &recommended_video_file.file_name == *file_name;
+        let default =
+            recommended_video_file.is_some_and(|video_file| video_file.file_name == **file_name) ||
+            recommended_audio_file.is_some_and(|audio_file| audio_file.file_name == **file_name);
         let file_name_escaped = urlencoding::encode(file_name);
         let src = format!("{video_prefix}{file_name_escaped}");
         let slice_rendered = slice(
