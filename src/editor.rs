@@ -8,19 +8,16 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{SitePath, Translations};
 
 mod actix;
-mod checkbox;
+mod components;
 mod endpoints;
-mod input;
 mod routes;
-mod select;
 pub mod server;
-mod textarea;
 mod widgets;
 
-use checkbox::Checkbox;
-use input::Input;
-use select::Select;
-use textarea::Textarea;
+use components::Checkbox;
+use components::Input;
+use components::Select;
+use components::Textarea;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EditorConfig {
