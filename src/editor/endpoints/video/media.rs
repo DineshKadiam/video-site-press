@@ -23,8 +23,13 @@ use crate::icons;
 use crate::util::{precise_duration, human_size};
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
-    let (aspect_ratio, highest_frame_rate, tallest_height) = if let Some(version) = video.highest_quality_version() {
-        let video_meta = version.video_meta.as_ref().unwrap();
+    let (
+        aspect_ratio,
+        highest_frame_rate,
+        tallest_height
+    ) = if let Some(video_file) = video.highest_quality_video_file() {
+        let video_meta = video_file.video_meta.as_ref().unwrap();
+
         (
             video_meta.width as f32 / video_meta.height as f32,
             video_meta.video_frame_rate,
@@ -198,16 +203,16 @@ pub fn media_page(
         let mut duration_range = None;
 
         if video.audio_files.len() > 1 {
-            for version in &video.audio_files {
-                if let Some(audio_meta) = &version.audio_meta {
+            for audio_file in &video.audio_files {
+                if let Some(audio_meta) = &audio_file.audio_meta {
                     match &mut duration_range {
-                        Some((shortest_version, longest_version)) => {
-                            if audio_meta.duration > *longest_version {
-                                *longest_version = audio_meta.duration;
+                        Some((shortest_audio_file, longest_audio_file)) => {
+                            if audio_meta.duration > *longest_audio_file {
+                                *longest_audio_file = audio_meta.duration;
                             }
 
-                            if audio_meta.duration > *shortest_version {
-                                *shortest_version = audio_meta.duration;
+                            if audio_meta.duration > *shortest_audio_file {
+                                *shortest_audio_file = audio_meta.duration;
                             }
                         }
                         None => {
@@ -218,12 +223,12 @@ pub fn media_page(
             }
         }
 
-        let duration_info = if let Some((shortest_version, longest_version)) = duration_range {
-            if longest_version - shortest_version < 1.0 {
+        let duration_info = if let Some((shortest_audio_file, longest_audio_file)) = duration_range {
+            if longest_audio_file - shortest_audio_file < 1.0 {
                 String::new()
             } else {
-                let longest = precise_duration(longest_version);
-                let shortest = precise_duration(shortest_version);
+                let longest = precise_duration(longest_audio_file);
+                let shortest = precise_duration(shortest_audio_file);
 
                 let t_not_ok = translations.not_ok;
                 let t_length_diverges_between_different_formats = translations.length_diverges_between_different_formats;
@@ -314,24 +319,24 @@ pub fn media_page(
         "#)
     };
 
-    let video_files = if video.versions.is_empty() {
+    let video_files = if video.video_files.is_empty() {
         String::new()
     } else {
-        let video_files = video.versions_desc_by_fidelity();
+        let video_files = video.video_files_desc_by_fidelity();
 
         let mut duration_range = None;
 
         if video_files.len() > 1 {
-            for version in &video_files {
-                if let Some(video_meta) = &version.video_meta {
+            for video_file in &video_files {
+                if let Some(video_meta) = &video_file.video_meta {
                     match &mut duration_range {
-                        Some((shortest_version, longest_version)) => {
-                            if video_meta.duration > *longest_version {
-                                *longest_version = video_meta.duration;
+                        Some((shortest_video_file, longest_video_file)) => {
+                            if video_meta.duration > *longest_video_file {
+                                *longest_video_file = video_meta.duration;
                             }
 
-                            if video_meta.duration > *shortest_version {
-                                *shortest_version = video_meta.duration;
+                            if video_meta.duration > *shortest_video_file {
+                                *shortest_video_file = video_meta.duration;
                             }
                         }
                         None => {
@@ -342,12 +347,12 @@ pub fn media_page(
             }
         }
 
-        let duration_info = if let Some((shortest_version, longest_version)) = duration_range {
-            if longest_version - shortest_version < 1.0 {
+        let duration_info = if let Some((shortest_video_file, longest_video_file)) = duration_range {
+            if longest_video_file - shortest_video_file < 1.0 {
                 String::new()
             } else {
-                let longest = precise_duration(longest_version);
-                let shortest = precise_duration(shortest_version);
+                let longest = precise_duration(longest_video_file);
+                let shortest = precise_duration(shortest_video_file);
 
                 let t_not_ok = translations.not_ok;
                 let t_length_diverges_between_different_formats = translations.length_diverges_between_different_formats;
@@ -360,16 +365,16 @@ pub fn media_page(
 
         let video_files_rendered = video_files
             .iter()
-            .map(|version| {
-                let (browser_support, label, video_meta) = match &version.video_meta {
+            .map(|video_file| {
+                let (browser_support, label, video_meta) = match &video_file.video_meta {
                     Some(video_meta) => {
                         let duration = precise_duration(video_meta.duration);
                         let frame_rate = video_meta.video_frame_rate;
                         let height = video_meta.height;
-                        let size = human_size(version.file_meta.size);
+                        let size = human_size(video_file.file_meta.size);
                         let width = video_meta.width;
 
-                        let (browser_support, reasons) = match browser_support::video_analysis(&version.file_name, language, video_meta) {
+                        let (browser_support, reasons) = match browser_support::video_analysis(&video_file.file_name, language, video_meta) {
                             Some(Ok(message)) => (
                                 translations.good_browser_support,
                                 message
@@ -397,15 +402,15 @@ pub fn media_page(
                     )
                 };
 
-                let file_name = &version.file_name;
+                let file_name = &video_file.file_name;
 
                 let t_delete = translations.delete;
                 let t_really_delete = translations.really_delete;
                 let delete_icon = icons::failure(t_delete);
-                let delete_version_action = routes::video_delete_version(video);
+                let delete_video_file_action = routes::video_delete_video_file(video);
                 let delete_form = formatdoc!(r#"
                     <form
-                    action="{delete_version_action}"
+                    action="{delete_video_file_action}"
                     data-confirm
                     data-confirm-label="{t_delete}"
                     data-confirm-text="{t_really_delete}"

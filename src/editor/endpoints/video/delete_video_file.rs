@@ -15,23 +15,23 @@ use crate::editor::widgets::{error_page, not_found};
 use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
-pub struct DeleteVersionForm {
+pub struct DeleteVideoFileForm {
     file_name: String
 }
 
-pub async fn delete_version(
+pub async fn delete_video_file(
     context: Data<Arc<Context>>,
-    form: Form<DeleteVersionForm>,
+    form: Form<DeleteVideoFileForm>,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |video_mut: &mut Video| {
-        if let Some(version) = video_mut.versions
+        if let Some(video_file) = video_mut.video_files
             .iter()
-            .position(|version| version.file_name == form.file_name)
-            .map(|index| video_mut.versions.remove(index)) {
+            .position(|video_file| video_file.file_name == form.file_name)
+            .map(|index| video_mut.video_files.remove(index)) {
             let version_path = context.site_dir
                 .join(site_path.filesystem_relative())
-                .join(&version.file_name);
+                .join(&video_file.file_name);
 
             video_mut.write_manifest(&context);
             let _ = fs::remove_file(&version_path);

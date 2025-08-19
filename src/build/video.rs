@@ -81,7 +81,7 @@ pub fn video_html(
         actions.push(copy_link);
     }
 
-    if video.embedding() && site.base_url.is_some() && !video.versions.is_empty() {
+    if video.embedding() && site.base_url.is_some() && !video.video_files.is_empty() {
         let embed_icon = icons::EMBED;
 
         let t_embed = &translations.embed;
@@ -96,7 +96,7 @@ pub fn video_html(
         actions.push(embed_action);
     }
 
-    if video.download() && !video.versions.is_empty() {
+    if video.download() && !video.video_files.is_empty() {
         let t_download = translations.download;
         let t_download_permalink = translations.download_permalink;
         let download_icon = icons::DOWNLOAD;
@@ -238,7 +238,7 @@ pub fn video_html(
             }
 
             if platform_integration.content_embeds() {
-                if let Some(video_file) = video.recommended_version() {
+                if let Some(video_file) = video.recommended_video_file() {
                     if let Some(video_meta) = &video_file.video_meta {
                         let player_url = site.absolute_url_dir_unchecked("embed/", &video.site_path);
                         let video_url = site.absolute_url_file_unchecked(&video_file.file_name, &video.site_path);

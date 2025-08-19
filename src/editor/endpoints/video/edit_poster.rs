@@ -88,7 +88,7 @@ pub fn edit_poster_page(
             let thumbnail_aspect_numeric = site.poster_aspect.numeric();
             let thumbnail_aspect_representation = site.poster_aspect.representation();
 
-            let video_aspect_numeric = video.recommended_version()
+            let video_aspect_numeric = video.recommended_video_file()
                 .and_then(|video_file| video_file.video_meta.as_ref())
                 .map(|video_meta| video_meta.aspect_ratio())
                 .unwrap_or(thumbnail_aspect_numeric);
@@ -167,8 +167,8 @@ pub fn edit_poster_page(
 
     let t_poster_image = translations.poster_image;
 
-    let pick_from_video = if let Some(version) = video.highest_quality_version() {
-        let src = routes::video_stream(&version.file_name, video);
+    let pick_from_video = if let Some(video_file) = video.highest_quality_video_file() {
+        let src = routes::video_stream(&video_file.file_name, video);
 
         let t_jump_to_a_random_frame = translations.jump_to_a_random_frame;
         let t_pick_a_poster_from_the_video = translations.pick_a_poster_from_the_video;

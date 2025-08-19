@@ -157,10 +157,10 @@ fn storage_stats_html(
     let mut total_size: u64 = 0;
 
     for video in videos {
-        for version in &video.versions {
+        for video_file in &video.video_files {
             let link = routes::video_edit(video);
-            let size = version.file_meta.size;
-            let title = format!("{}: {}", video.title_or_slug_or_generic_label(translations), version.file_name);
+            let size = video_file.file_meta.size;
+            let title = format!("{}: {}", video.title_or_slug_or_generic_label(translations), video_file.file_name);
             let e_title = html_escape_outside_attribute(&title);
             sizes.push((size, link, e_title));
             total_size += size;

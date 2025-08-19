@@ -290,6 +290,7 @@ pub struct Translations {
     pub url: &'static str,
     pub version: &'static str,
     pub video: &'static str,
+    pub video_audio_files: &'static str,
     pub video_files: &'static str,
     pub video_format: &'static str,
     pub video_manifest: &'static str,

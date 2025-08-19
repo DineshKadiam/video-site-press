@@ -372,10 +372,10 @@ fn build_video(
         fs::create_dir_all(&video_build_dir).unwrap();
     }
 
-    for version in &video.versions {
+    for video_file in &video.video_files {
         hard_link_or_copy(
-            context.site_dir.join(video.site_path.filesystem_relative()).join(&version.file_name),
-            video_build_dir.join(&version.file_name)
+            context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
+            video_build_dir.join(&video_file.file_name)
         );
     }
 
@@ -428,7 +428,7 @@ fn build_video(
     }
 
     // We only render the download and embed pages if there are any video files.
-    if !video.versions.is_empty() {
+    if !video.video_files.is_empty() {
         if video.download() {
             let traversal_download = traversal.with_virtual(translations.download);
 

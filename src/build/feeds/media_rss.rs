@@ -29,20 +29,20 @@ pub fn item_extensions(
 
     // <media:group …>
 
-    if !video.versions.is_empty() {
-        let recommended_version = video.recommended_version().unwrap();
+    if !video.video_files.is_empty() {
+        let recommended_video_file = video.recommended_video_file().unwrap();
 
         let mut media_content_tags = Vec::new();
 
         // <media:content …>
 
-        for video_file in &video.versions {
+        for video_file in &video.video_files {
             let url = site.absolute_url_file_unchecked(&video_file.file_name, &video.site_path);
             // TODO: Implement "audio" when we work on audio-only formats
             let medium = "video";
             let mime_type = video_file.mime_type();
             let filesize_bytes = video_file.file_meta.size;
-            let is_default = match video_file == recommended_version {
+            let is_default = match video_file == recommended_video_file {
                 true => r#"isDefault="true""#,
                 false => ""
             };

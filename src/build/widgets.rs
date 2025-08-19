@@ -173,7 +173,7 @@ pub fn player(
 ) -> String {
     let translations = &site.language.translations;
 
-    if video.versions.is_empty() {
+    if video.video_files.is_empty() {
         // TODO: Should use poster assets (different sizes)
         let poster = match &video.poster {
             Some(poster) => {
@@ -199,7 +199,7 @@ pub fn player(
     }
 
     // TODO: This fails on preview build if we don't have metadata yet (or something like that)
-    let recommended_version = video.recommended_version().unwrap();
+    let recommended_video_file = video.recommended_video_file().unwrap();
 
     let poster = match &video.poster {
         Some(poster) => {
@@ -277,15 +277,15 @@ pub fn player(
         subtitle_tracks = String::new();
     };
 
-    let version_selector_options = video.versions_desc_by_fidelity()
+    let version_selector_options = video.video_files_desc_by_fidelity()
         .iter()
-        .map(|version| {
-            let video_meta = version.video_meta_unchecked();
+        .map(|video_file| {
+            let video_meta = video_file.video_meta_unchecked();
 
-            let file_name_escaped = urlencoding::encode(&version.file_name);
+            let file_name_escaped = urlencoding::encode(&video_file.file_name);
             let height = video_meta.height;
 
-            let size_humanized = human_size(version.file_meta.size);
+            let size_humanized = human_size(video_file.file_meta.size);
 
             formatdoc!(r#"
                 <button data-label="{height}p" data-src="{video_prefix}{file_name_escaped}">
@@ -296,7 +296,7 @@ pub fn player(
         .collect::<Vec<String>>()
         .join("\n");
 
-    let default_version_label = recommended_version.vertical_resolution_label();
+    let default_version_label = recommended_video_file.vertical_resolution_label();
     let version_controls = formatdoc!(r#"
         <div class="selector_control version" style="position: relative;">
             <button id="cycle_versions" tabindex="-1">{default_version_label}</button>
@@ -306,14 +306,14 @@ pub fn player(
         </div>
     "#);
 
-    let recommended_version_meta = recommended_version.video_meta.as_ref().unwrap();
+    let recommended_video_file_meta = recommended_video_file.video_meta.as_ref().unwrap();
 
-    let aspect_ratio = recommended_version_meta.aspect_ratio();
-    let duration = recommended_version_meta.duration;
+    let aspect_ratio = recommended_video_file_meta.aspect_ratio();
+    let duration = recommended_video_file_meta.duration;
     let duration_formatted = precise_duration(duration);
-    let src_escaped = urlencoding::encode(&recommended_version.file_name);
+    let src_escaped = urlencoding::encode(&recommended_video_file.file_name);
 
-    let versions_ring_rendered = versions_ring(recommended_version, video, video_prefix);
+    let versions_ring_rendered = versions_ring(recommended_video_file, video, video_prefix);
 
     let player_outro = if let Some(playlist) = playlist {
         let index_suffix = site.index_suffix();
@@ -349,7 +349,11 @@ pub fn player(
 
                     let count = videos.len();
                     let number = index + 1;
-                    let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(number, &playlist_label_escaped, count);
+                    let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(
+                        number,
+                        &playlist_label_escaped,
+                        count
+                    );
 
                     number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
                     replay_indicator = icons::replay(translations.replay);
@@ -372,7 +376,9 @@ pub fn player(
                     details.push(date);
                 }
 
-                if let Some(video_meta) = &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+                if let Some(video_meta) = &video_iterated
+                    .highest_quality_video_file()
+                    .and_then(|video_file| video_file.video_meta.as_ref()) {
                     let duration = casual_duration(video_meta.duration, translations);
                     details.push(duration);
                 }
@@ -647,7 +653,9 @@ pub fn thumbnail(
                 return img;
             }
 
-            let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+            let duration = match &video
+                .highest_quality_video_file()
+                .and_then(|video_file| video_file.video_meta.as_ref()) {
                 Some(video_meta) => {
                     let duration = casual_duration(video_meta.duration, translations);
                     formatdoc!(r#"<span class="duration">{duration}</span>"#)
@@ -675,7 +683,7 @@ pub fn unlisted_badge(translations: &Translations) -> String {
 /// the "intro" screen of the video player. Lets people choose the resolution
 /// to watch the video in (and simultaneously start playback).
 fn versions_ring(
-    recommended_version: &VideoFile,
+    recommended_video_file: &VideoFile,
     video: &Video,
     video_prefix: &str
 ) -> String {
@@ -695,12 +703,12 @@ fn versions_ring(
 
     let mut largest_size = 0;
 
-    let versions = video.versions_asc_by_fidelity();
+    let video_files = video.video_files_asc_by_fidelity();
 
-    for version in &versions {
-        let file_name = &version.file_name;
-        let size = version.file_meta.size;
-        let resolution = version.vertical_resolution_label();
+    for video_file in &video_files {
+        let file_name = &video_file.file_name;
+        let size = video_file.file_meta.size;
+        let resolution = video_file.vertical_resolution_label();
         sizes.push((file_name, resolution, size));
         total_size += size;
 
@@ -826,7 +834,7 @@ fn versions_ring(
 
         let size_humanized = human_size(*size);
 
-        let default = &recommended_version.file_name == *file_name;
+        let default = &recommended_video_file.file_name == *file_name;
         let file_name_escaped = urlencoding::encode(file_name);
         let src = format!("{video_prefix}{file_name_escaped}");
         let slice_rendered = slice(

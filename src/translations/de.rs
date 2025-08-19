@@ -294,6 +294,7 @@ impl Translations {
         url: "URL",
         version: "Version",
         video: "Video",
+        video_audio_files: "Video/Audiodateien",
         video_files: "Videodateien",
         video_format: "Videoformat",
         video_manifest: "Video Manifest",

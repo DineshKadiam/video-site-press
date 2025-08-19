@@ -64,8 +64,8 @@ pub fn embed_codes_html(
 
     let embed_url = site.absolute_url_dir_unchecked("embed/", &video.site_path);
 
-    let recommended_version = video.recommended_version().unwrap();
-    let aspect_ratio = recommended_version.video_meta.as_ref().unwrap().aspect_ratio();
+    let recommended_video_file = video.recommended_video_file().unwrap();
+    let aspect_ratio = recommended_video_file.video_meta.as_ref().unwrap().aspect_ratio();
 
     let t_video_player_widget_for_xxx = translations.video_player_widget_for_xxx(&title);
     let (embed_copy_code, embed_display_code) = embed_code(aspect_ratio, &embed_url, &t_video_player_widget_for_xxx);

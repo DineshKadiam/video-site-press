@@ -91,12 +91,12 @@ struct FFprobeStreamSideData {
 /// With `timecode` (in seconds) we specify at which point in the video we
 /// take the snapshot for the poster.
 pub fn compute_poster(context: &Context, timecode: f32, video: &Video) -> Result<String, ()> {
-    if let Some(version) = &video.highest_quality_version() {
+    if let Some(video_file) = &video.highest_quality_video_file() {
         let mut command = Command::new(FFMPEG);
 
         let input_path = context.site_dir
             .join(video.site_path.filesystem_relative())
-            .join(&version.file_name);
+            .join(&video_file.file_name);
 
         let mut output_filename = String::from("poster.jpg");
         let mut output_path = context.site_dir
@@ -175,14 +175,14 @@ pub fn encode_audio(
         .arg("-stats")
         .arg("-stats_period").arg("1");
 
-    let highest_quality_version = match video.highest_quality_version() {
-        Some(version) => version,
+    let highest_quality_video_file = match video.highest_quality_video_file() {
+        Some(video_file) => video_file,
         None => return Err(())
     };
 
     let input_path = context.site_dir
         .join(video.site_path.filesystem_relative())
-        .join(&highest_quality_version.file_name);
+        .join(&highest_quality_video_file.file_name);
 
     command.arg("-i").arg(&input_path);
 
@@ -220,7 +220,7 @@ pub fn encode_audio(
 
     match command.spawn() {
         Ok(mut child) => {
-            if let Some(video_meta) = &highest_quality_version.video_meta {
+            if let Some(video_meta) = &highest_quality_video_file.video_meta {
                 let video_duration = video_meta.duration;
 
                 match child.stderr.take() {
@@ -330,14 +330,14 @@ pub fn encode_video(
         .arg("-stats")
         .arg("-stats_period").arg("1");
 
-    let highest_quality_version = match video.highest_quality_version() {
-        Some(version) => version,
+    let highest_quality_video_file = match video.highest_quality_video_file() {
+        Some(video_file) => video_file,
         None => return Err(())
     };
 
     let input_path = context.site_dir
         .join(video.site_path.filesystem_relative())
-        .join(&highest_quality_version.file_name);
+        .join(&highest_quality_video_file.file_name);
 
     command.arg("-i").arg(&input_path);
 
@@ -457,7 +457,7 @@ pub fn encode_video(
 
     match command.spawn() {
         Ok(mut child) => {
-            if let Some(video_meta) = &highest_quality_version.video_meta {
+            if let Some(video_meta) = &highest_quality_video_file.video_meta {
                 let video_duration = video_meta.duration;
 
                 // TODO: This is NOT a reliable figure to measure encoded frames against to compute progress

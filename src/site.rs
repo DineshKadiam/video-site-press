@@ -612,7 +612,7 @@ impl Site {
     /// Returns storage used in bytes (only takes videos into account for now)
     pub fn storage_usage(&self) -> u64 {
         fn video_size(video: &Video) -> u64 {
-            video.versions.iter().map(|version| version.file_meta.size).sum()
+            video.video_files.iter().map(|video_file| video_file.file_meta.size).sum()
         }
 
         fn playlist_size(playlist: &Playlist) -> u64 {

@@ -561,40 +561,40 @@ fn compute_poster_meta(
 }
 
 fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
-    let mut versions_mut = video.versions.clone();
+    let mut video_files_mut = video.video_files.clone();
 
     let mut made_changes = false;
 
-    for version in versions_mut.iter_mut() {
-        if version.video_meta.is_some() { continue }
+    for video_file in video_files_mut.iter_mut() {
+        if video_file.video_meta.is_some() { continue }
 
         let video_file_path = context.site_dir
             .join(video.site_path.filesystem_relative())
-            .join(&version.file_name);
+            .join(&video_file.file_name);
 
         if let Ok(video_meta) = transcode::probe_video(&video_file_path) {
             video_meta.write_cache_manifest(
                 context,
-                &version.file_meta,
-                &version.file_name,
+                &video_file.file_meta,
+                &video_file.file_name,
                 &video.site_path
             );
 
             // Add/update video meta in in-memory cache
             // TODO: This looks vaguely in need of encapsulation
             if let Ok(mut cache) = context.cache.lock() {
-                let version_path = format!("{}{}", &video.site_path.normalized(), version.file_name);
+                let version_path = format!("{}{}", &video.site_path.normalized(), video_file.file_name);
 
                 if let Some(video_meta_cached) = cache.video_meta
                     .iter_mut()
                     .find(|cached| cached.path == version_path) {
                     // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
-                    video_meta_cached.file_meta = version.file_meta.clone();
+                    video_meta_cached.file_meta = video_file.file_meta.clone();
                     video_meta_cached.video_meta = video_meta.clone();
 
                 } else {
                     let video_meta_cached = VideoMetaCached {
-                        file_meta: version.file_meta.clone(),
+                        file_meta: video_file.file_meta.clone(),
                         path: version_path,
                         video_meta: video_meta.clone()
                     };
@@ -603,7 +603,7 @@ fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
                 }
             }
 
-            version.video_meta = Some(video_meta);
+            video_file.video_meta = Some(video_meta);
 
             made_changes = true;
         }
@@ -615,7 +615,7 @@ fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
             // the versions that we need to update and only updating those.
             // Right now we could discard newly added versions that weren't
             // present the moment we began looking for metadata.
-            video_mut.versions = versions_mut;
+            video_mut.video_files = video_files_mut;
             Ok(())
         };
 
@@ -692,7 +692,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                             }
                             Err(()) => {
                                 // TODO: Maybe we want to start integrating/passing reasons here (if available)
-                                let error = String::from("Encoding a new version failed for an unknown reason.");
+                                let error = String::from("Encoding a new audio file failed for an unknown reason.");
                                 context.job_error(error);
                             }
                         }
@@ -769,24 +769,24 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                     JobKind::VideoFormat { format, video } => {
                         let format_label = format.label(); // Implement Display so we can just drop it right into interpolation?
                         let site_path = video.site_path.normalized();
-                        let label = format!("[Worker {worker_number}] Computing version {format_label} for {site_path}");
+                        let label = format!("[Worker {worker_number}] Computing video file {format_label} for {site_path}");
                         let job_id = context.add_active_job(label, video.site_path.clone());
 
                         match transcode::encode_video(&context, job_id, &video, format) {
-                            Ok(version) => {
+                            Ok(video_file) => {
                                 let mutation = |video_mut: &mut Video| {
-                                    video_mut.versions.push(version);
+                                    video_mut.video_files.push(video_file);
                                     Ok(())
                                 };
 
                                 match context.update_video(mutation, &video.site_path) {
                                     VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
                                     VideoUpdate::NotFound => {
-                                        let err = String::from("Video could not be updated with newly computed version because it was not found at its site path anymore.");
+                                        let err = String::from("Video could not be updated with newly computed video file because it was not found at its site path anymore.");
                                         context.job_error(err);
                                     }
                                     VideoUpdate::PendingErrors { .. } => {
-                                        let err = String::from("Video could not be updated with newly computed version as the video currently has pending errors.");
+                                        let err = String::from("Video could not be updated with newly computed video file as the video currently has pending errors.");
                                         context.job_error(err);
                                     }
                                     VideoUpdate::Success { video_updated, .. } => {
@@ -800,7 +800,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                 }
                             }
                             Err(()) => {
-                                let error = "Encoding a new version failed for an unknown reason.".to_string();
+                                let error = "Encoding a new video file failed for an unknown reason.".to_string();
                                 context.job_error(error);
                             }
                         }
@@ -813,8 +813,8 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
 
                         let video_with_metadata = compute_video_metadata(&context, video);
 
-                        if let Some(highest_quality_version) = &video_with_metadata.highest_quality_version() {
-                            let video_meta = highest_quality_version.video_meta.as_ref().unwrap();
+                        if let Some(highest_quality_video_file) = &video_with_metadata.highest_quality_video_file() {
+                            let video_meta = highest_quality_video_file.video_meta.as_ref().unwrap();
 
                             let bounded_timecode = if timecode < 0.0 {
                                 0.0

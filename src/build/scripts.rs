@@ -83,7 +83,9 @@ pub fn generate_navigation_js(
             None => String::new()
         };
 
-        let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+        let duration = match &video
+            .highest_quality_video_file()
+            .and_then(|video_file| video_file.video_meta.as_ref()) {
             Some(video_meta) => {
                 let duration = casual_duration(video_meta.duration, &language.translations);
                 format!("duration:'{duration}',")

@@ -153,7 +153,7 @@ pub async fn upload_video(
                             let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
 
                             let mutation = |video: &mut Video| {
-                                video.versions.push(VideoFile::new(file_meta, file_name, None));
+                                video.video_files.push(VideoFile::new(file_meta, file_name, None));
                                 Ok(())
                             };
 

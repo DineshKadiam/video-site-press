@@ -135,10 +135,10 @@ pub async fn start(
                 .route("/video/dangerous-actions/{site_path:.*}", get().to(video::dangerous_actions))
                 .route("/video/delete/{site_path:.*}", post().to(video::delete))
                 .route("/video/delete-audio-file/{site_path:.*}", post().to(video::delete_audio_file))
+                .route("/video/delete-video-file/{site_path:.*}", post().to(video::delete_video_file))
                 .route("/video/delete-link/{site_path:.*}", post().to(video::delete_link))
                 .route("/video/delete-poster/{site_path:.*}", post().to(video::delete_poster))
                 .route("/video/delete-subtitles/{site_path:.*}", post().to(video::delete_subtitles))
-                .route("/video/delete-version/{site_path:.*}", post().to(video::delete_version))
                 .route("/video/encode-audio/{site_path:.*}", post().to(video::encode_audio))
                 .route("/video/encode-video/{site_path:.*}", post().to(video::encode_video))
                 .service(

@@ -43,10 +43,10 @@ pub fn item_extensions(
     // feed entirely if we can not cleanly represent a "video with the actual
     // video content yet to come". For now we do it like this just to handle
     // these edge cases in a crash-free manner.
-    if !video.versions.is_empty() {
+    if !video.video_files.is_empty() {
         // <enclosure …>
 
-        let video_file = video.recommended_version().unwrap();
+        let video_file = video.recommended_video_file().unwrap();
 
         let url = site.absolute_url_file_unchecked(&video_file.file_name, &video.site_path);
 

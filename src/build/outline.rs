@@ -156,10 +156,10 @@ impl OutlineStats {
     fn register_video(&mut self, video: &Video) {
         self.register_release_date(video.release_date);
 
-        if let Some(duration) = video.versions
+        if let Some(duration) = video.video_files
             .iter()
-            .find_map(|version| {
-                version.video_meta
+            .find_map(|video_file| {
+                video_file.video_meta
                     .as_ref()
                     .map(|video_meta| video_meta.duration)
             }) {
@@ -692,7 +692,9 @@ impl TraversalStep<'_> {
                         ("", format!("../{slug}{index_suffix}"))
                     };
 
-                    let duration = match &video.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+                    let duration = match &video
+                        .highest_quality_video_file()
+                        .and_then(|video_file| video_file.video_meta.as_ref()) {
                         Some(video_meta) => casual_duration(video_meta.duration, &site.language.translations),
                         None => String::new()
                     };
@@ -789,7 +791,9 @@ impl TraversalStep<'_> {
                         details.push(date);
                     }
 
-                    if let Some(video_meta) = &video_iterated.highest_quality_version().and_then(|version| version.video_meta.as_ref()) {
+                    if let Some(video_meta) = &video_iterated
+                        .highest_quality_video_file()
+                        .and_then(|video_file| video_file.video_meta.as_ref()) {
                         let duration = casual_duration(video_meta.duration, translations);
                         details.push(duration);
                     }

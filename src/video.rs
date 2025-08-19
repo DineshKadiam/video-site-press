@@ -83,15 +83,14 @@ pub struct Video {
     /// know the link to access them. This property propagates downwards in
     /// in the site tree once it is set (e.g. on a collection or playlist).
     unlisted: bool,
-    // TODO: We cannot actually represent an audio only version here?
-    //       (or only in an odd way - height/width are e.g. always present on VideoFile)
-    pub versions: Vec<VideoFile>
+    pub video_files: Vec<VideoFile>
 }
 
 impl Video {
     pub fn all_metadata_computed(&self) -> bool {
         (self.poster.is_none() || self.poster.as_ref().is_some_and(|poster| poster.assets.is_some())) &&
-        self.versions.iter().all(|video_file| video_file.video_meta.is_some())
+        self.audio_files.iter().all(|audio_file| audio_file.audio_meta.is_some()) &&
+        self.video_files.iter().all(|video_file| video_file.video_meta.is_some())
     }
 
     fn apply_manifest(&mut self, context: &Context, manifest_path: &Path, site: &Site) {
@@ -588,8 +587,8 @@ impl Video {
 
     // Videos without an earliest modified date date are sorted to the back
     pub fn cmp_by_earliest_modified_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_earliest_modified = a.versions.iter().map(|video_file| video_file.file_meta.modified).min();
-        let b_earliest_modified = b.versions.iter().map(|video_file| video_file.file_meta.modified).min();
+        let a_earliest_modified = a.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
+        let b_earliest_modified = b.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
 
         match (a_earliest_modified, b_earliest_modified) {
             (Some(a_modified), Some(b_modified)) => a_modified.cmp(&b_modified),
@@ -601,8 +600,8 @@ impl Video {
 
     // Videos without an earliest modified date date are sorted to the back
     pub fn cmp_by_earliest_modified_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_earliest_modified = a.versions.iter().map(|video_file| video_file.file_meta.modified).min();
-        let b_earliest_modified = b.versions.iter().map(|video_file| video_file.file_meta.modified).min();
+        let a_earliest_modified = a.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
+        let b_earliest_modified = b.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
 
         match (a_earliest_modified, b_earliest_modified) {
             (Some(a_modified), Some(b_modified)) => b_modified.cmp(&a_modified),
@@ -791,38 +790,38 @@ impl Video {
         self.embedding() || self.platform_integration().content_embeds()
     }
 
-    /// Return the "largest" version, that is the version with the maximum pixel
-    /// count (horizontal × vertical pixels), or in case of a tie, the version
-    /// that additionally has the larger file size.
-    pub fn highest_quality_version(&self) -> Option<&VideoFile> {
+    /// Return the video file with the maximum pixel count (horizontal ×
+    /// vertical pixels), or in case of a tie, the video file that
+    /// additionally has the larger file size.
+    pub fn highest_quality_video_file(&self) -> Option<&VideoFile> {
         struct Candidate<'a> {
             pixel_count: usize,
             video_file: &'a VideoFile
         }
 
-        let mut version_candidate: Option<Candidate> = None;
+        let mut candidate: Option<Candidate> = None;
 
-        for version in &self.versions {
-            if let Some(video_meta) = &version.video_meta {
+        for video_file in &self.video_files {
+            if let Some(video_meta) = &video_file.video_meta {
                 let pixel_count = video_meta.width * video_meta.height;
-                if version_candidate.is_none() || version_candidate.as_ref().is_some_and(|candidate| {
+                if candidate.is_none() || candidate.as_ref().is_some_and(|candidate| {
                         pixel_count > candidate.pixel_count ||
-                        (pixel_count == candidate.pixel_count && version.file_meta.size > candidate.video_file.file_meta.size)
+                        (pixel_count == candidate.pixel_count && video_file.file_meta.size > candidate.video_file.file_meta.size)
                 }) {
-                    version_candidate = Some(Candidate {
+                    candidate = Some(Candidate {
                         pixel_count,
-                        video_file: version
+                        video_file
                     });
                 }
-            } else if version_candidate.is_none() {
-                version_candidate = Some(Candidate {
+            } else if candidate.is_none() {
+                candidate = Some(Candidate {
                     pixel_count: 0,
-                    video_file: version
+                    video_file
                 });
             }
         }
 
-        version_candidate.map(|pixels_version| pixels_version.video_file)
+        candidate.map(|candidate| candidate.video_file)
     }
 
     /// Sets new inherited options on the video.
@@ -851,7 +850,7 @@ impl Video {
             synopsis: None,
             title: None,
             unlisted: false,
-            versions: Vec::new()
+            video_files: Vec::new()
         }
     }
 
@@ -981,9 +980,9 @@ impl Video {
             }
         }
 
-        for video_file in &hyper_dir.video_files {
-            let file_meta = FileMeta::new(video_file);
-            let file_name = video_file.file_name().unwrap().to_string_lossy().to_string();
+        for video_file_path in &hyper_dir.video_files {
+            let file_meta = FileMeta::new(video_file_path);
+            let file_name = video_file_path.file_name().unwrap().to_string_lossy().to_string();
 
             let version_path = format!("{}{}", &video.site_path.normalized(), file_name);
             let video_meta = context.cache.lock().unwrap().video_meta
@@ -991,12 +990,12 @@ impl Video {
                 .find(|cached| cached.file_meta == file_meta && cached.path == version_path)
                 .map(|cached| cached.video_meta.clone());
 
-            video.versions.push(VideoFile::new(file_meta, file_name, video_meta));
+            video.video_files.push(VideoFile::new(file_meta, file_name, video_meta));
         }
 
-        for audio_file in &hyper_dir.audio_files {
-            let file_meta = FileMeta::new(audio_file);
-            let file_name = audio_file.file_name().unwrap().to_string_lossy().to_string();
+        for audio_file_path in &hyper_dir.audio_files {
+            let file_meta = FileMeta::new(audio_file_path);
+            let file_name = audio_file_path.file_name().unwrap().to_string_lossy().to_string();
 
             let version_path = format!("{}{}", &video.site_path.normalized(), file_name);
             let audio_meta = context.cache.lock().unwrap().audio_meta
@@ -1021,10 +1020,10 @@ impl Video {
     }
 
     /// Applies a simple heuristic to determine the "most recommended"
-    /// version to watch. Roughly speaking, something that is not too
+    /// video file to watch. Roughly speaking, something that is not too
     /// high-res, not too low-res, but a nice balance between resource
     /// consumption and visual fidelity.
-    pub fn recommended_version(&self) -> Option<&VideoFile> {
+    pub fn recommended_video_file(&self) -> Option<&VideoFile> {
         const IDEAL_FRAME_RATE: f32 = 27.0;
         const IDEAL_HEIGHT: usize = 720;
 
@@ -1036,8 +1035,8 @@ impl Video {
 
         let mut candidate_option: Option<Candidate> = None;
 
-        for version in &self.versions {
-            if let Some(video_meta) = &version.video_meta {
+        for video_file in &self.video_files {
+            if let Some(video_meta) = &video_file.video_meta {
                 let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
                 let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).unsigned_abs();
 
@@ -1048,7 +1047,7 @@ impl Video {
                     candidate_option = Some(Candidate {
                         frame_rate_distance,
                         height_distance,
-                        video_file: version
+                        video_file
                     });
                 }
             }
@@ -1116,8 +1115,8 @@ impl Video {
                 let _ = fs::remove_file(&poster_path);
             }
 
-            for version in &self.versions {
-                let version_path = context.site_dir.join(&version.file_name);
+            for video_file in &self.video_files {
+                let version_path = context.site_dir.join(&video_file.file_name);
                 let _ = fs::remove_file(&version_path);
             }
         } else {
@@ -1126,16 +1125,16 @@ impl Video {
         }
     }
 
-    pub fn versions_asc_by_fidelity(&self) -> Vec<VideoFile> {
-        let mut versions: Vec<VideoFile> = self.versions.clone();
-        versions.sort_unstable_by(|a, b| VideoFile::cmp_by_fidelity_desc(b, a));
-        versions
+    pub fn video_files_asc_by_fidelity(&self) -> Vec<VideoFile> {
+        let mut video_files: Vec<VideoFile> = self.video_files.clone();
+        video_files.sort_unstable_by(|a, b| VideoFile::cmp_by_fidelity_desc(b, a));
+        video_files
     }
 
-    pub fn versions_desc_by_fidelity(&self) -> Vec<VideoFile> {
-        let mut versions: Vec<VideoFile> = self.versions.clone();
-        versions.sort_unstable_by(|a, b| VideoFile::cmp_by_fidelity_desc(a, b));
-        versions
+    pub fn video_files_desc_by_fidelity(&self) -> Vec<VideoFile> {
+        let mut video_files: Vec<VideoFile> = self.video_files.clone();
+        video_files.sort_unstable_by(|a, b| VideoFile::cmp_by_fidelity_desc(a, b));
+        video_files
     }
 
     pub fn write_manifest(&self, context: &Context) {

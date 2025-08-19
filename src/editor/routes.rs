@@ -176,6 +176,10 @@ pub fn video_delete_audio_file(video: &Video) -> String {
     format!("/video/delete-audio-file/{}", video.site_path.normalized())
 }
 
+pub fn video_delete_video_file(video: &Video) -> String {
+    format!("/video/delete-video-file/{}", video.site_path.normalized())
+}
+
 pub fn video_delete_link(video: &Video) -> String {
     format!("/video/delete-link/{}", video.site_path.normalized())
 }
@@ -186,10 +190,6 @@ pub fn video_delete_poster(video: &Video) -> String {
 
 pub fn video_delete_subtitles(video: &Video) -> String {
     format!("/video/delete-subtitles/{}", video.site_path.normalized())
-}
-
-pub fn video_delete_version(video: &Video) -> String {
-    format!("/video/delete-version/{}", video.site_path.normalized())
 }
 
 pub fn video_edit(video: &Video) -> String {

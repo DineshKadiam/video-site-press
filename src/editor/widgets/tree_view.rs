@@ -753,15 +753,15 @@ fn video_node(
         if video.manifest_errors.is_empty() {
             let media_active = if *subpage == Subpage::Media { "active" } else { "" };
             let media_url = routes::video_media(video);
-            let video_files_icon = icons::storage(None);
-            let video_files_count = video.versions.len();
-            let t_video_files = translations.video_files;
-            let video_files = formatdoc!(r#"
+            let storage_icon = icons::storage(None);
+            let video_audio_files_count = video.video_files.len() + video.audio_files.len();
+            let t_video_audio_files = translations.video_audio_files;
+            let video_audio_files = formatdoc!(r#"
                 <a class="{media_active} subpage" href="{media_url}" style="padding-left: {padding_left};">
-                    {video_files_icon} {t_video_files} ({video_files_count})
+                    {storage_icon} {t_video_audio_files} ({video_audio_files_count})
                 </a>
             "#);
-            subpages.push(video_files);
+            subpages.push(video_audio_files);
 
             let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
             let subtitles_count = video.subtitles.len();

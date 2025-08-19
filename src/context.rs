@@ -267,7 +267,7 @@ impl Context {
                 SiteContent::Video(video) => {
                     let slug = match &video.title {
                         Some(title) => slugify(title),
-                        None => match video.highest_quality_version() {
+                        None => match video.highest_quality_video_file() {
                             Some(version) => {
                                 slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
@@ -368,7 +368,7 @@ impl Context {
 
                     let slug = match &video.title {
                         Some(title) => slugify(title),
-                        None => match video.highest_quality_version() {
+                        None => match video.highest_quality_video_file() {
                             Some(version) => {
                                 slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
@@ -489,7 +489,7 @@ impl Context {
                 SiteContent::Video(video) => {
                     let slug = match &video.title {
                         Some(title) => slugify(title),
-                        None => match video.highest_quality_version() {
+                        None => match video.highest_quality_video_file() {
                             Some(version) => {
                                 slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
@@ -596,7 +596,7 @@ impl Context {
 
                     let slug = match &video.title {
                         Some(title) => slugify(title),
-                        None => match video.highest_quality_version() {
+                        None => match video.highest_quality_video_file() {
                             Some(version) => {
                                 slugify(Path::new(&version.file_name).file_stem().unwrap().to_string_lossy())
                             }
@@ -1279,8 +1279,8 @@ impl Context {
             job_kinds.push(job_kind);
         }
 
-        if video.versions.iter().any(|video_file| video_file.video_meta.is_none()) ||
-           (video.poster.is_none() && !video.versions.is_empty()) ||
+        if video.video_files.iter().any(|video_file| video_file.video_meta.is_none()) ||
+           (video.poster.is_none() && !video.video_files.is_empty()) ||
            video.poster.as_ref().is_some_and(|poster|
                 poster.assets.is_none() ||
                 poster.assets.as_ref().is_some_and(|assets|

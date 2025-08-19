@@ -44,23 +44,23 @@ pub fn download_html(
         String::new()
     };
 
-    let mut versions_with_meta: Vec<&VideoFile> = video.versions
+    let mut video_files_with_meta: Vec<&VideoFile> = video.video_files
         .iter()
-        .filter(|version| version.video_meta.is_some())
+        .filter(|video_file| video_file.video_meta.is_some())
         .collect();
 
-    versions_with_meta.sort_unstable_by(|a, b| {
+    video_files_with_meta.sort_unstable_by(|a, b| {
         a.video_meta.as_ref().unwrap().height.cmp(
             &b.video_meta.as_ref().unwrap().height
         )
     });
 
-    let format_buttons = versions_with_meta
+    let format_buttons = video_files_with_meta
         .iter()
-        .map(|version| {
+        .map(|video_file| {
             // TODO: Clean up/better/more complete concept for how to build file names (e.g. maybe hide original names altogether!)
-            let file_name = version.file_name.as_str();
-            let video_meta = &version.video_meta.as_ref().unwrap();
+            let file_name = video_file.file_name.as_str();
+            let video_meta = &video_file.video_meta.as_ref().unwrap();
 
             let height = video_meta.height;
             let width = video_meta.width;
@@ -71,7 +71,7 @@ pub fn download_html(
             let format_label = format!("{width}×{height}");
             let vertical_resolution_label = format!("{height}p");
 
-            let size = human_size(version.file_meta.size);
+            let size = human_size(video_file.file_meta.size);
 
             let t_no_audio = translations.no_audio;
             let audio_codec = video_meta.audio_codec.as_deref().unwrap_or(t_no_audio);
@@ -79,7 +79,7 @@ pub fn download_html(
             let t_no_video = translations.no_video;
             let video_codec = video_meta.video_codec.as_deref().unwrap_or(t_no_video);
 
-            let extension = Path::new(&version.file_name)
+            let extension = Path::new(&video_file.file_name)
                 .extension()
                 .unwrap_or(std::ffi::OsStr::new(""))
                 .to_string_lossy();
