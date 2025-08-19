@@ -37,7 +37,7 @@ pub async fn pick_poster(
                 timecode,
                 video: Arc::clone(&video)
             };
-            context.push_job_queue(job_kind);
+            context.queue_job(job_kind);
 
             let redirect_url = routes::video_poster(&video);
             Either::Left(Redirect::to(redirect_url).see_other())

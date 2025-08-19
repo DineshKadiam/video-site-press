@@ -139,7 +139,8 @@ pub async fn start(
                 .route("/video/delete-poster/{site_path:.*}", post().to(video::delete_poster))
                 .route("/video/delete-subtitles/{site_path:.*}", post().to(video::delete_subtitles))
                 .route("/video/delete-version/{site_path:.*}", post().to(video::delete_version))
-                .route("/video/downsize/{site_path:.*}", post().to(video::downsize))
+                .route("/video/encode-audio/{site_path:.*}", post().to(video::encode_audio))
+                .route("/video/encode-video/{site_path:.*}", post().to(video::encode_video))
                 .service(
                     resource("/video/edit/{site_path:.*}")
                         .route(get().to(video::edit))

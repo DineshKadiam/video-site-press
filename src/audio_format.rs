@@ -17,6 +17,14 @@ impl AudioFormat {
         }
     }
 
+    pub fn from_key(key: &str) -> Option<AudioFormat> {
+        match key {
+            "mp3" => Some(AudioFormat::Mp3),
+            "opus" => Some(AudioFormat::Opus),
+            _ => None
+        }
+    }
+
     /// Determine the priority-based ordering between this and another format.
     /// Video is prioritized over audio, higher resolution over lower resolution.
     pub fn cmp_priority(&self, other: &AudioFormat) -> Ordering {

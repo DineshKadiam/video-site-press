@@ -34,6 +34,11 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
         return String::new();
     };
 
+    let mut select_audio_format = Select::new("format", translations.codec);
+    select_audio_format.option("mp3", translations.mp3_highest_compatibility);
+    select_audio_format.option("opus", translations.opus_recommended_highest_efficiency);
+    select_audio_format.selected("opus");
+
     let t_original = translations.original;
 
     let mut select_resolution = Select::new("height", translations.resolution);
@@ -101,18 +106,20 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
 
     select_approach.selected("compression");
 
-    let downsize_action = routes::video_downsize(video);
+    let encode_audio_action = routes::video_encode_audio(video);
+    let encode_video_action = routes::video_encode_video(video);
 
     let t_advanced_settings = translations.advanced_settings;
     let t_best = translations.best;
+    let t_encode_audio = translations.encode_audio;
     let t_quality = translations.quality;
-    let t_render_additional_format = translations.render_additional_format;
+    let t_encode_video = translations.encode_video;
     let t_render_format = translations.render_format;
     let t_worst = translations.worst;
     formatdoc!(r#"
         <div class="form_group">
-            <h2>{t_render_additional_format}</h2>
-            <form action="{downsize_action}" method="post">
+            <h2>{t_encode_video}</h2>
+            <form action="{encode_video_action}" method="post">
                 <div class="button_group">
                     {select_resolution}
                     <div class="form_field">
@@ -147,6 +154,13 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                     {select_codec}
                     {select_approach}
                 </details>
+            </form>
+        </div>
+        <div class="form_group">
+            <h2>{t_encode_audio}</h2>
+            <form action="{encode_audio_action}" method="post">
+                {select_audio_format}
+                <button class="action">{t_render_format}</button>
             </form>
         </div>
     "#)
@@ -427,17 +441,19 @@ pub fn media_page(
         "#)
     };
 
-    let t_upload_new_version = translations.upload_new_version;
+    let t_upload_video_file = translations.upload_video_file;
     let upload_url = routes::upload_video(&video.site_path);
-    let video_upload_button = upload_widget(&upload_url, t_upload_new_version);
+    let video_upload_button = upload_widget(&upload_url, t_upload_video_file);
 
     let render_additional_formats = additional_formats_form(translations, video);
 
     let body = formatdoc!(r#"
         <div class="form_group">
             {video_files}
-            {audio_files}
             {video_upload_button}
+        </div>
+        <div class="form_group">
+            {audio_files}
         </div>
 
         {render_additional_formats}

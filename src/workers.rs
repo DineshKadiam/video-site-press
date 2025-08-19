@@ -686,7 +686,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                         let job_kind = JobKind::AudioMeta {
                                             video: Arc::clone(&video_updated)
                                         };
-                                        context.push_job_queue(job_kind);
+                                        context.queue_job(job_kind);
                                     }
                                 }
                             }
@@ -795,7 +795,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                             poster_aspect: site.poster_aspect.numeric(),
                                             video: Arc::clone(&video_updated)
                                         };
-                                        context.push_job_queue(job_kind);
+                                        context.queue_job(job_kind);
                                     }
                                 }
                             }

@@ -1227,16 +1227,6 @@ impl Context {
         }
     }
 
-    pub fn push_job_queue(&self, job_kind: JobKind) {
-        if let Ok(mut job_queue) = self.job_queue.lock() {
-            if !job_queue
-                .iter()
-                .any(|existing_job| existing_job.kind == job_kind) {
-                job_queue.push(Job::new(job_kind));
-            }
-        }
-    }
-
     fn queue_collection_jobs(&self, collection: &Arc<Collection>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
         if collection.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
             job_kinds.push(JobKind::CollectionFastTasks(Arc::clone(collection)));
@@ -1250,6 +1240,16 @@ impl Context {
         }
         for video in &collection.videos {
             self.queue_video_jobs(video, site, job_kinds);
+        }
+    }
+
+    pub fn queue_job(&self, job_kind: JobKind) {
+        if let Ok(mut job_queue) = self.job_queue.lock() {
+            if !job_queue
+                .iter()
+                .any(|existing_job| existing_job.kind == job_kind) {
+                job_queue.push(Job::new(job_kind));
+            }
         }
     }
 

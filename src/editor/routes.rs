@@ -192,16 +192,20 @@ pub fn video_delete_version(video: &Video) -> String {
     format!("/video/delete-version/{}", video.site_path.normalized())
 }
 
-pub fn video_downsize(video: &Video) -> String {
-    format!("/video/downsize/{}", video.site_path.normalized())
-}
-
 pub fn video_edit(video: &Video) -> String {
     format!("/video/edit/{}", video.site_path.normalized())
 }
 
 pub fn video_edit_subtitles(file_name: &str, video: &Video) -> String {
     format!("/video/edit-subtitles/{}/{}", urlencoding::encode(file_name), video.site_path.normalized())
+}
+
+pub fn video_encode_audio(video: &Video) -> String {
+    format!("/video/encode-audio/{}", video.site_path.normalized())
+}
+
+pub fn video_encode_video(video: &Video) -> String {
+    format!("/video/encode-video/{}", video.site_path.normalized())
 }
 
 pub fn video_links(video: &Video) -> String {

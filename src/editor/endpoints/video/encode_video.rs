@@ -17,7 +17,7 @@ use crate::editor::routes;
 use crate::editor::widgets::not_found;
 
 #[derive(Deserialize)]
-pub struct DownsizeForm {
+pub struct EncodeVideoForm {
     approach: String,
     codec: String,
     frame_rate: String,
@@ -25,10 +25,10 @@ pub struct DownsizeForm {
     quality: String
 }
 
-/// Request a new version the video to be encoded
-pub async fn downsize(
+/// Request a new (resized/transcoded) video file for this video to be encoded
+pub async fn encode_video(
     context: Data<Arc<Context>>,
-    form: Form<DownsizeForm>,
+    form: Form<EncodeVideoForm>,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     match context.get_video(&site_path) {
@@ -49,7 +49,7 @@ pub async fn downsize(
             ).unwrap();
 
             let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) };
-            context.push_job_queue(job_kind);
+            context.queue_job(job_kind);
 
             let redirect_url = routes::video_media(&video);
             Either::Left(Redirect::to(redirect_url).see_other())

@@ -113,7 +113,7 @@ pub async fn upload_poster(
                             poster_aspect: site.poster_aspect.numeric(),
                             video: Arc::clone(&video_updated)
                         };
-                        context.push_job_queue(job_kind);
+                        context.queue_job(job_kind);
 
                         let redirect_url = routes::video_poster(&video_updated);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
