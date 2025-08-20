@@ -33,8 +33,8 @@ impl Job {
                     ordering => return ordering
                 },
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } |
                 JobKind::VideoFormat { .. } |
                 JobKind::VideoPickPoster { .. } => return Ordering::Less
@@ -44,26 +44,26 @@ impl Job {
                 JobKind::VideoFormat { .. } |
                 JobKind::VideoPickPoster { .. } => return Ordering::Greater,
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } => ()
             }
-            JobKind::CollectionFastTasks(_) => match other.kind {
+            JobKind::CollectionFastTasks { .. } => match other.kind {
                 JobKind::AudioFormat { .. } |
                 JobKind::VideoFormat { .. } |
                 JobKind::VideoPickPoster { .. } => return Ordering::Greater,
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } => ()
             }
-            JobKind::PlaylistFastTasks(_) => match other.kind {
+            JobKind::PlaylistFastTasks { .. } => match other.kind {
                 JobKind::AudioFormat { .. } |
                 JobKind::VideoFormat { .. } |
                 JobKind::VideoPickPoster { .. } => return Ordering::Greater,
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } => ()
             }
             JobKind::VideoFastTasks { .. } => match other.kind {
@@ -71,15 +71,15 @@ impl Job {
                 JobKind::VideoFormat { .. } |
                 JobKind::VideoPickPoster { .. } => return Ordering::Greater,
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } => ()
             }
             JobKind::VideoFormat { format, .. } => match &other.kind {
                 JobKind::AudioFormat { .. } => return Ordering::Greater,
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } |
                 JobKind::VideoPickPoster { .. } => return Ordering::Less,
                 JobKind::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
@@ -91,8 +91,8 @@ impl Job {
                 JobKind::AudioFormat { .. } |
                 JobKind::VideoFormat { .. } => return Ordering::Greater,
                 JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks(_) |
-                JobKind::PlaylistFastTasks(_) |
+                JobKind::CollectionFastTasks { .. } |
+                JobKind::PlaylistFastTasks { .. } |
                 JobKind::VideoFastTasks { .. } => return Ordering::Less,
                 JobKind::VideoPickPoster { .. } => ()
             }

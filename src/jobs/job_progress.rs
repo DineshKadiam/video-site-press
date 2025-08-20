@@ -3,7 +3,7 @@
 
 use serde_derive::Serialize;
 
-use crate::FFmpegEncodingStats;
+use super::FFmpegEncodingStats;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

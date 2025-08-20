@@ -7,6 +7,7 @@ use crate::{
     AudioFormat,
     Collection,
     Playlist,
+    SitePath,
     Translations,
     Video,
     VideoFormat
@@ -22,8 +23,12 @@ pub enum JobKind {
     AudioMeta {
         video: Arc<Video>
     },
-    CollectionFastTasks(Arc<Collection>),
-    PlaylistFastTasks(Arc<Playlist>),
+    CollectionFastTasks {
+        collection: Arc<Collection>
+    },
+    PlaylistFastTasks {
+        playlist: Arc<Playlist>
+    },
     VideoFastTasks {
         poster_aspect: f32,
         video: Arc<Video>
@@ -43,8 +48,8 @@ impl JobKind {
     pub fn is_high_priority(&self) -> bool {
         match self {
             JobKind::AudioMeta { .. } |
-            JobKind::CollectionFastTasks(_) |
-            JobKind::PlaylistFastTasks(_) |
+            JobKind::CollectionFastTasks { .. } |
+            JobKind::PlaylistFastTasks { .. } |
             JobKind::VideoFastTasks { .. } |
             JobKind::VideoPickPoster { .. } => true,
             JobKind::AudioFormat { .. } |
@@ -52,21 +57,23 @@ impl JobKind {
         }
     }
 
-    pub fn representation(&self, translations: &Translations) -> String {
+    pub fn label(&self, translations: &Translations) -> String {
+        // TODO: Translate strings as soon as we reach some confidence on what they should contain
         match self {
-            JobKind::AudioFormat { video, .. } => {
+            JobKind::AudioFormat { format, video } => {
+                let extension = format.extension();
                 let label = video.title_or_slug_or_generic_label(translations);
-                format!("Encode audio file for video '{label}'")
+                format!("Encode audio file ({extension}) for video '{label}'")
             }
             JobKind::AudioMeta { video } => {
                 let label = video.title_or_slug_or_generic_label(translations);
                 format!("Compute audio file metadata for video '{label}'")
             }
-            JobKind::CollectionFastTasks(collection) => {
+            JobKind::CollectionFastTasks { collection } => {
                 let label = collection.title_or_slug_or_generic_label(translations);
                 format!("Compute banner for collection '{label}'")
             }
-            JobKind::PlaylistFastTasks(playlist) => {
+            JobKind::PlaylistFastTasks { playlist } => {
                 let label = playlist.title_or_slug_or_generic_label(translations);
                 format!("Compute banner for playlist '{label}'")
             }
@@ -74,14 +81,27 @@ impl JobKind {
                 let label = video.title_or_slug_or_generic_label(translations);
                 format!("Compute metadata and/or poster for video '{label}'")
             }
-            JobKind::VideoFormat { video, .. } => {
+            JobKind::VideoFormat { format, video } => {
+                let format_label = format.label();
                 let label = video.title_or_slug_or_generic_label(translations);
-                format!("Encode video file for video '{label}'")
+                format!("Encode video file ({format_label}) for video '{label}'")
             }
             JobKind::VideoPickPoster { video, .. } => {
                 let label = video.title_or_slug_or_generic_label(translations);
                 format!("Compute random poster for video '{label}'")
             }
+        }
+    }
+
+    pub fn site_path(&self) -> &SitePath {
+        match self {
+            JobKind::AudioFormat { video, .. } => &video.site_path,
+            JobKind::AudioMeta { video } => &video.site_path,
+            JobKind::CollectionFastTasks { collection } => &collection.site_path,
+            JobKind::PlaylistFastTasks { playlist } => &playlist.site_path,
+            JobKind::VideoFastTasks { video, .. } => &video.site_path,
+            JobKind::VideoFormat { video, .. } => &video.site_path,
+            JobKind::VideoPickPoster { video, .. } => &video.site_path,
         }
     }
 }
@@ -99,12 +119,14 @@ impl PartialEq for JobKind {
                     video.site_path == other_video.site_path,
                 _ => false
             }
-            JobKind::CollectionFastTasks(collection) => match other {
-                JobKind::CollectionFastTasks(other_collection) => collection.site_path == other_collection.site_path,
+            JobKind::CollectionFastTasks { collection } => match other {
+                JobKind::CollectionFastTasks { collection: other_collection } =>
+                    collection.site_path == other_collection.site_path,
                 _ => false
             }
-            JobKind::PlaylistFastTasks(playlist) => match other {
-                JobKind::PlaylistFastTasks(other_playlist) => playlist.site_path == other_playlist.site_path,
+            JobKind::PlaylistFastTasks { playlist } => match other {
+                JobKind::PlaylistFastTasks { playlist: other_playlist } =>
+                    playlist.site_path == other_playlist.site_path,
                 _ => false
             }
             JobKind::VideoFastTasks { poster_aspect, video } => match other {

@@ -81,7 +81,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
 
     for job in &*context.job_queue.lock().unwrap() {
         // TODO: Html-escape user content (title), generally across this file (jobs.rs)
-        let label = job.kind.representation(&language.translations);
+        let label = job.kind.label(&language.translations);
         // TODO: Localize
         let status = match job.assigned_at {
             Some(assigned_at) => {
@@ -105,7 +105,7 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     }
 
     for job in &*context.completed_jobs.lock().unwrap() {
-        let label = job.kind.representation(&language.translations);
+        let label = job.kind.label(&language.translations);
         // TODO: Localize
         let status = match job.duration() {
             Some(duration) => format!("Completed in {}", precise_duration(duration.as_secs_f32())),

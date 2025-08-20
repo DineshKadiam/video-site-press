@@ -82,7 +82,10 @@ pub async fn upload_banner(
                         return Ok(Either::Right(pending_manifest_errors(&collection, &context, &language)))
                     }
                     CollectionUpdate::Updated { collection_updated, .. } => {
-                        let job_kind = JobKind::CollectionFastTasks(Arc::clone(&collection_updated));
+                        let job_kind = JobKind::CollectionFastTasks {
+                            collection: Arc::clone(&collection_updated)
+                        };
+
                         context.queue_job(job_kind);
 
                         let redirect_url = routes::collection_banner(&collection_updated);

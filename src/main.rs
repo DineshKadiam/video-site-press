@@ -43,7 +43,6 @@ mod site_path;
 mod site_url;
 mod subtitles;
 mod theme;
-mod transcode;
 mod translations;
 mod video;
 mod video_file;
@@ -52,7 +51,6 @@ mod video_meta;
 mod video_order;
 mod util;
 mod watcher;
-mod workers;
 
 use args::Args;
 use aspect_ratio::AspectRatio;
@@ -85,7 +83,6 @@ use site_path::SitePath;
 use site_url::SiteUrl;
 use subtitles::SubtitleFile;
 use theme::{Theme, ThemeKind};
-use transcode::FFmpegEncodingStats;
 use translations::Translations;
 use util::Field;
 use video::Video;
@@ -166,7 +163,7 @@ fn main() -> ExitCode {
     let context = Arc::new(context);
 
     context.compute_job_queue();
-    workers::start_threads(args.workers, &context);
+    jobs::start_workers(args.workers, &context);
 
     if args.build {
         context.await_job_queue();

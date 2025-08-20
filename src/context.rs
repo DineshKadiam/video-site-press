@@ -168,6 +168,8 @@ impl Context {
         }
     }
 
+    /// Moves an already completed job from the job queue to the completed
+    /// jobs list
     pub fn complete_job(&self, id: &str) {
         let completed_job = {
             let mut job_queue = self.job_queue.lock().unwrap();
@@ -1227,9 +1229,18 @@ impl Context {
         }
     }
 
-    fn queue_collection_jobs(&self, collection: &Arc<Collection>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
+    fn queue_collection_jobs(
+        &self,
+        collection: &Arc<Collection>,
+        site: &Arc<Site>,
+        job_kinds: &mut Vec<JobKind>
+    ) {
         if collection.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            job_kinds.push(JobKind::CollectionFastTasks(Arc::clone(collection)));
+            let collection_fast_tasks = JobKind::CollectionFastTasks {
+                collection: Arc::clone(collection)
+            };
+
+            job_kinds.push(collection_fast_tasks);
         }
 
         for subcollection in &collection.subcollections {
@@ -1255,7 +1266,11 @@ impl Context {
 
     fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
         if playlist.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            job_kinds.push(JobKind::PlaylistFastTasks(Arc::clone(playlist)));
+            let playlist_fast_tasks = JobKind::PlaylistFastTasks {
+                playlist: Arc::clone(playlist)
+            };
+
+            job_kinds.push(playlist_fast_tasks);
         }
 
         for video in &playlist.videos {
