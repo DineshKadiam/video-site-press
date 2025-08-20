@@ -15,7 +15,7 @@ use futures_util::TryStreamExt as _;
 use crate::{
     Context,
     FileMeta,
-    JobKind,
+    JobDesc,
     PosterFile,
     SitePath,
     Video,
@@ -109,11 +109,11 @@ pub async fn upload_poster(
                     }
                     VideoUpdate::Success { video_updated, .. } => {
                         let site = context.get_site();
-                        let job_kind = JobKind::VideoFastTasks {
+                        let video_fast_tasks_job_desc = JobDesc::VideoFastTasks {
                             poster_aspect: site.poster_aspect.numeric(),
                             video: Arc::clone(&video_updated)
                         };
-                        context.queue_job(job_kind);
+                        context.queue_job(video_fast_tasks_job_desc);
 
                         let redirect_url = routes::video_poster(&video_updated);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));

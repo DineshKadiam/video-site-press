@@ -4,7 +4,7 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::JobKind;
+use crate::JobDesc;
 use crate::util::nanoid;
 
 /// A job tracks some form of background process throughout its lifecycle.
@@ -14,8 +14,9 @@ pub struct Job {
     pub assigned_at: Option<SystemTime>,
     pub completed_at: Option<SystemTime>,
     pub created: SystemTime,
-    pub id: String,
-    pub kind: JobKind
+    pub desc: JobDesc,
+    pub error: Option<String>,
+    pub id: String
 }
 
 impl Job {
@@ -26,75 +27,75 @@ impl Job {
     /// two jobs have the same priority based on their kind (and format, where
     /// relevant), the one that exists longer is prioritized.
     pub fn cmp_priority(&self, other: &Job) -> Ordering {
-        match &self.kind {
-            JobKind::AudioFormat { format, .. } => match &other.kind {
-                JobKind::AudioFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
+        match &self.desc {
+            JobDesc::AudioFormat { format, .. } => match &other.desc {
+                JobDesc::AudioFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
                     ordering => return ordering
                 },
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } |
-                JobKind::VideoFormat { .. } |
-                JobKind::VideoPickPoster { .. } => return Ordering::Less
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } |
+                JobDesc::VideoFormat { .. } |
+                JobDesc::VideoPickPoster { .. } => return Ordering::Less
             }
-            JobKind::AudioMeta { .. } => match other.kind {
-                JobKind::AudioFormat { .. } |
-                JobKind::VideoFormat { .. } |
-                JobKind::VideoPickPoster { .. } => return Ordering::Greater,
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } => ()
+            JobDesc::AudioMeta { .. } => match other.desc {
+                JobDesc::AudioFormat { .. } |
+                JobDesc::VideoFormat { .. } |
+                JobDesc::VideoPickPoster { .. } => return Ordering::Greater,
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } => ()
             }
-            JobKind::CollectionFastTasks { .. } => match other.kind {
-                JobKind::AudioFormat { .. } |
-                JobKind::VideoFormat { .. } |
-                JobKind::VideoPickPoster { .. } => return Ordering::Greater,
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } => ()
+            JobDesc::CollectionFastTasks { .. } => match other.desc {
+                JobDesc::AudioFormat { .. } |
+                JobDesc::VideoFormat { .. } |
+                JobDesc::VideoPickPoster { .. } => return Ordering::Greater,
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } => ()
             }
-            JobKind::PlaylistFastTasks { .. } => match other.kind {
-                JobKind::AudioFormat { .. } |
-                JobKind::VideoFormat { .. } |
-                JobKind::VideoPickPoster { .. } => return Ordering::Greater,
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } => ()
+            JobDesc::PlaylistFastTasks { .. } => match other.desc {
+                JobDesc::AudioFormat { .. } |
+                JobDesc::VideoFormat { .. } |
+                JobDesc::VideoPickPoster { .. } => return Ordering::Greater,
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } => ()
             }
-            JobKind::VideoFastTasks { .. } => match other.kind {
-                JobKind::AudioFormat { .. } |
-                JobKind::VideoFormat { .. } |
-                JobKind::VideoPickPoster { .. } => return Ordering::Greater,
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } => ()
+            JobDesc::VideoFastTasks { .. } => match other.desc {
+                JobDesc::AudioFormat { .. } |
+                JobDesc::VideoFormat { .. } |
+                JobDesc::VideoPickPoster { .. } => return Ordering::Greater,
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } => ()
             }
-            JobKind::VideoFormat { format, .. } => match &other.kind {
-                JobKind::AudioFormat { .. } => return Ordering::Greater,
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } |
-                JobKind::VideoPickPoster { .. } => return Ordering::Less,
-                JobKind::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
+            JobDesc::VideoFormat { format, .. } => match &other.desc {
+                JobDesc::AudioFormat { .. } => return Ordering::Greater,
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } |
+                JobDesc::VideoPickPoster { .. } => return Ordering::Less,
+                JobDesc::VideoFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
                     Ordering::Equal => (),
                     ordering => return ordering
                 }
             }
-            JobKind::VideoPickPoster { .. } => match other.kind {
-                JobKind::AudioFormat { .. } |
-                JobKind::VideoFormat { .. } => return Ordering::Greater,
-                JobKind::AudioMeta { .. } |
-                JobKind::CollectionFastTasks { .. } |
-                JobKind::PlaylistFastTasks { .. } |
-                JobKind::VideoFastTasks { .. } => return Ordering::Less,
-                JobKind::VideoPickPoster { .. } => ()
+            JobDesc::VideoPickPoster { .. } => match other.desc {
+                JobDesc::AudioFormat { .. } |
+                JobDesc::VideoFormat { .. } => return Ordering::Greater,
+                JobDesc::AudioMeta { .. } |
+                JobDesc::CollectionFastTasks { .. } |
+                JobDesc::PlaylistFastTasks { .. } |
+                JobDesc::VideoFastTasks { .. } => return Ordering::Less,
+                JobDesc::VideoPickPoster { .. } => ()
             }
         }
 
@@ -115,13 +116,14 @@ impl Job {
         }
     }
 
-    pub fn new(kind: JobKind) -> Job {
+    pub fn new(desc: JobDesc) -> Job {
         Job {
             assigned_at: None,
             completed_at: None,
             created: SystemTime::now(),
-            id: nanoid(),
-            kind
+            desc,
+            error: None,
+            id: nanoid()
         }
     }
 }

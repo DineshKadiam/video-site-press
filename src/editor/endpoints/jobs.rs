@@ -56,32 +56,13 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
         }
     }
 
-    if let Ok(job_errors) = context.job_errors.lock() {
-        if !job_errors.is_empty() {
-            let errors = job_errors
-                .iter()
-                .map(|err| format!("- {err}<br>"))
-                .collect::<Vec<String>>()
-                .join("\n");
-
-            let wrapped = formatdoc!(r#"
-                <div>
-                    Processing errors:<br>
-                    {errors}
-                </div>
-            "#);
-
-            body.push_str(&wrapped);
-        }
-    }
-
     body.push_str(r#"<ul style="display: flex; flex-direction: column; list-style: none; padding-left: 0; row-gap: .5rem;">"#);
 
     let mut jobs_sorted = Vec::new();
 
     for job in &*context.job_queue.lock().unwrap() {
         // TODO: Html-escape user content (title), generally across this file (jobs.rs)
-        let label = job.kind.label(&language.translations);
+        let label = job.desc.label(&language.translations);
         // TODO: Localize
         let status = match job.assigned_at {
             Some(assigned_at) => {
@@ -105,10 +86,18 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     }
 
     for job in &*context.completed_jobs.lock().unwrap() {
-        let label = job.kind.label(&language.translations);
+        let label = job.desc.label(&language.translations);
         // TODO: Localize
         let status = match job.duration() {
-            Some(duration) => format!("Completed in {}", precise_duration(duration.as_secs_f32())),
+            Some(duration) => {
+                let duration_formatted = precise_duration(duration.as_secs_f32());
+
+                if let Some(error) = &job.error {
+                    format!(r#"<strong style="color: red;">Failed</strong> after {duration_formatted} ({error})"#)
+                } else {
+                    format!("Completed in {duration_formatted}")
+                }
+            }
             None => String::new()
         };
 

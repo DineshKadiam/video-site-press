@@ -22,7 +22,7 @@ use crate::{
     FileMeta,
     GetAnyResult,
     HyperDir,
-    JobKind,
+    JobDesc,
     Playlist,
     PlaylistUpdate,
     SitePath,
@@ -204,18 +204,18 @@ pub async fn upload_audio_video(
                         GetAnyResult::None => unreachable!()
                     };
 
-                    let job_kind = if is_supported_audio {
-                        JobKind::AudioMeta {
+                    let job_desc = if is_supported_audio {
+                        JobDesc::AudioMeta {
                             video: Arc::clone(&video)
                         }
                     } else /* if is_supported_video */ {
-                        JobKind::VideoFastTasks {
+                        JobDesc::VideoFastTasks {
                             poster_aspect: site.poster_aspect.numeric(),
                             video: Arc::clone(&video)
                         }
                     };
 
-                    context.queue_job(job_kind);
+                    context.queue_job(job_desc);
 
                     let redirect_url = routes::video_edit(&video);
                     return Ok(Either::Left(Redirect::to(redirect_url).see_other()))

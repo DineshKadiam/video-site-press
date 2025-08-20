@@ -18,7 +18,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     Job,
-    JobKind,
+    JobDesc,
     JobProgress,
     Language,
     Playlist,
@@ -45,7 +45,6 @@ pub struct Context {
     pub editor_language: Mutex<Language>,
     pub editor_theme: Mutex<Theme>,
     pub editor_tree_view_order: Mutex<TreeViewOrder>,
-    pub job_errors: Mutex<Vec<String>>,
     pub job_queue: Mutex<Vec<Job>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
@@ -168,38 +167,42 @@ impl Context {
         }
     }
 
-    /// Moves an already completed job from the job queue to the completed
-    /// jobs list
-    pub fn complete_job(&self, id: &str) {
-        let completed_job = {
+    /// Moves a finished job from the job queue to the completed
+    /// jobs list, optionally attaching a passed error to it.
+    pub fn complete_job(&self, error: Option<String>, id: &str) {
+        let mut completed_job = {
             let mut job_queue = self.job_queue.lock().unwrap();
 
             job_queue
                 .iter()
                 .position(|job| job.id == id)
                 .map(|index| job_queue.swap_remove(index))
+                .unwrap()
         };
 
-        if let Some(mut completed_job) = completed_job {
-            completed_job.completed_at = Some(SystemTime::now());
-            self.completed_jobs.lock().unwrap().push(completed_job);
+        completed_job.completed_at = Some(SystemTime::now());
+
+        if let Some(error) = error {
+            completed_job.error = Some(error);
         }
+
+        self.completed_jobs.lock().unwrap().push(completed_job);
     }
 
     pub fn compute_job_queue(&self) {
         let site = self.get_site();
 
-        let mut job_kinds = Vec::new();
+        let mut job_descs = Vec::new();
 
         match &site.content {
-            SiteContent::Collection(collection) => self.queue_collection_jobs(collection, &site, &mut job_kinds),
-            SiteContent::Playlist(playlist) => self.queue_playlist_jobs(playlist, &site, &mut job_kinds),
-            SiteContent::Video(video) => self.queue_video_jobs(video, &site, &mut job_kinds),
+            SiteContent::Collection(collection) => self.queue_collection_jobs(collection, &mut job_descs, &site),
+            SiteContent::Playlist(playlist) => self.queue_playlist_jobs(&mut job_descs, playlist, &site),
+            SiteContent::Video(video) => self.queue_video_jobs(&mut job_descs, &site, video),
             _ => ()
         }
 
-        if !job_kinds.is_empty() {
-            self.extend_job_queue(job_kinds);
+        if !job_descs.is_empty() {
+            self.extend_job_queue(job_descs);
         }
     }
 
@@ -1132,14 +1135,15 @@ impl Context {
         Err(())
     }
 
-
-    pub fn extend_job_queue(&self, job_kinds: Vec<JobKind>) {
+    /// Takes the given job descriptions, and creates jobs for each of them that is not
+    /// already being worked on anyway.
+    pub fn extend_job_queue(&self, job_descs: Vec<JobDesc>) {
         if let Ok(mut job_queue) = self.job_queue.lock() {
-            for job_kind in job_kinds {
+            for job_desc in job_descs {
                 if !job_queue
                     .iter()
-                    .any(|existing_job| existing_job.kind == job_kind) {
-                    job_queue.push(Job::new(job_kind));
+                    .any(|existing_job| existing_job.desc == job_desc) {
+                    job_queue.push(Job::new(job_desc));
                 }
             }
         }
@@ -1197,11 +1201,6 @@ impl Context {
         self.site.lock().unwrap().get_video(site_path)
     }
 
-    /// Push a job error onto the list of job errors
-    pub fn job_error(&self, error: String) {
-        self.job_errors.lock().unwrap().push(error);
-    }
-
     pub fn new(
         build_dir: PathBuf,
         cache: Mutex<Cache>,
@@ -1223,7 +1222,6 @@ impl Context {
             editor_theme: Mutex::new(Theme::from_key(editor_theme).unwrap_or_else(|_| Theme::default())),
             editor_tree_view_order: Mutex::new(editor_tree_view_order),
             job_queue: Mutex::new(Vec::new()),
-            job_errors: Mutex::new(Vec::new()),
             site: Mutex::new(site),
             site_dir
         }
@@ -1232,49 +1230,54 @@ impl Context {
     fn queue_collection_jobs(
         &self,
         collection: &Arc<Collection>,
-        site: &Arc<Site>,
-        job_kinds: &mut Vec<JobKind>
+        job_descs: &mut Vec<JobDesc>,
+        site: &Arc<Site>
     ) {
         if collection.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            let collection_fast_tasks = JobKind::CollectionFastTasks {
+            let collection_fast_tasks = JobDesc::CollectionFastTasks {
                 collection: Arc::clone(collection)
             };
 
-            job_kinds.push(collection_fast_tasks);
+            job_descs.push(collection_fast_tasks);
         }
 
         for subcollection in &collection.subcollections {
-            self.queue_collection_jobs(subcollection, site, job_kinds);
+            self.queue_collection_jobs(subcollection, job_descs, site);
         }
         for playlist in &collection.playlists {
-            self.queue_playlist_jobs(playlist, site, job_kinds);
+            self.queue_playlist_jobs(job_descs, playlist, site);
         }
         for video in &collection.videos {
-            self.queue_video_jobs(video, site, job_kinds);
+            self.queue_video_jobs(job_descs, site, video);
         }
     }
 
-    pub fn queue_job(&self, job_kind: JobKind) {
+    pub fn queue_job(&self, job_desc: JobDesc) {
         if let Ok(mut job_queue) = self.job_queue.lock() {
             if !job_queue
                 .iter()
-                .any(|existing_job| existing_job.kind == job_kind) {
-                job_queue.push(Job::new(job_kind));
+                .any(|existing_job| existing_job.desc == job_desc) {
+                job_queue.push(Job::new(job_desc));
             }
         }
     }
 
-    fn queue_playlist_jobs(&self, playlist: &Arc<Playlist>, site: &Arc<Site>, job_kinds: &mut Vec<JobKind>) {
+    fn queue_playlist_jobs(
+        &self,
+        job_descs: &mut Vec<JobDesc>,
+        playlist: &Arc<Playlist>,
+        site: &Arc<Site>
+    ) {
         if playlist.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            let playlist_fast_tasks = JobKind::PlaylistFastTasks {
+            let playlist_fast_tasks = JobDesc::PlaylistFastTasks {
                 playlist: Arc::clone(playlist)
             };
 
-            job_kinds.push(playlist_fast_tasks);
+            job_descs.push(playlist_fast_tasks);
         }
 
         for video in &playlist.videos {
-            self.queue_video_jobs(video, site, job_kinds);
+            self.queue_video_jobs(job_descs, site, video);
         }
     }
 
@@ -1282,16 +1285,16 @@ impl Context {
     /// required jobs to the passed queue.
     fn queue_video_jobs(
         &self,
-        video: &Arc<Video>,
+        job_descs: &mut Vec<JobDesc>,
         site: &Arc<Site>,
-        job_kinds: &mut Vec<JobKind>
+        video: &Arc<Video>
     ) {
         if video.audio_files.iter().any(|audio_file| audio_file.audio_meta.is_none()) {
-            let job_kind = JobKind::AudioMeta {
+            let audio_meta_job_desc = JobDesc::AudioMeta {
                 video: Arc::clone(video)
             };
 
-            job_kinds.push(job_kind);
+            job_descs.push(audio_meta_job_desc);
         }
 
         if video.video_files.iter().any(|video_file| video_file.video_meta.is_none()) ||
@@ -1303,12 +1306,12 @@ impl Context {
                 ) ||
                 poster.poster_meta.is_none()
             ) {
-            let job_kind = JobKind::VideoFastTasks {
+            let video_fast_tasks_job_desc = JobDesc::VideoFastTasks {
                 poster_aspect: site.poster_aspect.numeric(),
                 video: Arc::clone(video)
             };
 
-            job_kinds.push(job_kind);
+            job_descs.push(video_fast_tasks_job_desc);
         }
     }
 
@@ -1332,7 +1335,7 @@ impl Context {
             .iter_mut()
             .filter(|job| {
                 job.assigned_at.is_none() &&
-                !(high_priority_only && !job.kind.is_high_priority())
+                !(high_priority_only && !job.desc.is_high_priority())
             })
             .reduce(|selected, iterated|
                 match iterated.cmp_priority(selected) {

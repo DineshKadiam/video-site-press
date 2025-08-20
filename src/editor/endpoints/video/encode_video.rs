@@ -9,7 +9,7 @@ use serde_derive::Deserialize;
 
 use crate::{
     Context,
-    JobKind,
+    JobDesc,
     SitePath,
     VideoFormat
 };
@@ -48,8 +48,12 @@ pub async fn encode_video(
                 &form.quality,
             ).unwrap();
 
-            let job_kind = JobKind::VideoFormat { format: video_format, video: Arc::clone(&video) };
-            context.queue_job(job_kind);
+            let video_format_job_desc = JobDesc::VideoFormat {
+                format: video_format,
+                video: Arc::clone(&video)
+            };
+
+            context.queue_job(video_format_job_desc);
 
             let redirect_url = routes::video_media(&video);
             Either::Left(Redirect::to(redirect_url).see_other())

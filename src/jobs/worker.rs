@@ -12,7 +12,7 @@ use crate::{
     Context,
     FileMeta,
     ImageProcessor,
-    JobKind,
+    JobDesc,
     Playlist,
     PlaylistUpdate,
     PosterAsset,
@@ -793,11 +793,11 @@ pub fn render_audio_format(
                 VideoUpdate::Success { video_updated, .. } => {
                     // TODO: Assign audio_meta ourselves? (in the mutation above already?), as we should have all
                     //       the details at hand anyway? (we know from which source we transcoded, which should have necessary meta)
-                    let job_kind = JobKind::AudioMeta {
+                    let audio_meta_job_desc = JobDesc::AudioMeta {
                         video: Arc::clone(&video_updated)
                     };
 
-                    context.queue_job(job_kind);
+                    context.queue_job(audio_meta_job_desc);
 
                     Ok(())
                 }
@@ -837,12 +837,12 @@ pub fn render_video_format(
                 }
                 VideoUpdate::Success { video_updated, .. } => {
                     let site = context.get_site();
-                    let job_kind = JobKind::VideoFastTasks {
+                    let video_fast_tasks_job_desc = JobDesc::VideoFastTasks {
                         poster_aspect: site.poster_aspect.numeric(),
                         video: Arc::clone(&video_updated)
                     };
 
-                    context.queue_job(job_kind);
+                    context.queue_job(video_fast_tasks_job_desc);
 
                     Ok(())
                 }

@@ -16,7 +16,7 @@ use crate::{
     Banner,
     Context,
     FileMeta,
-    JobKind,
+    JobDesc,
     Playlist,
     PlaylistUpdate,
     SitePath
@@ -82,11 +82,11 @@ pub async fn upload_banner(
                         return Ok(Either::Right(pending_manifest_errors(&context, &language, &playlist)));
                     }
                     PlaylistUpdate::Updated { playlist_updated, .. } => {
-                        let playlist_fast_tasks = JobKind::PlaylistFastTasks {
+                        let playlist_fast_tasks_job_desc = JobDesc::PlaylistFastTasks {
                             playlist: Arc::clone(&playlist_updated)
                         };
 
-                        context.queue_job(playlist_fast_tasks);
+                        context.queue_job(playlist_fast_tasks_job_desc);
 
                         let redirect_url = routes::playlist_banner(&playlist_updated);
                         return Ok(Either::Left(Redirect::to(redirect_url).see_other()));

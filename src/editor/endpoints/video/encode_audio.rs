@@ -10,7 +10,7 @@ use serde_derive::Deserialize;
 use crate::{
     AudioFormat,
     Context,
-    JobKind,
+    JobDesc,
     SitePath
 };
 use crate::editor::routes;
@@ -31,11 +31,11 @@ pub async fn encode_audio(
         Some(video) => {
             let format = AudioFormat::from_key(&form.format).unwrap();
 
-            let job_kind = JobKind::AudioFormat {
+            let audio_format_job_desc = JobDesc::AudioFormat {
                 format,
                 video: Arc::clone(&video)
             };
-            context.queue_job(job_kind);
+            context.queue_job(audio_format_job_desc);
 
             let redirect_url = routes::video_media(&video);
             Either::Left(Redirect::to(redirect_url).see_other())

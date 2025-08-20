@@ -68,7 +68,7 @@ use font::Font;
 use hyper_dir::HyperDir;
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
-use jobs::{ActiveJobs, Job, JobKind, JobProgress};
+use jobs::{ActiveJobs, Job, JobDesc, JobProgress};
 use language::Language;
 use link::Link;
 use lqip::Lqip;
