@@ -20,6 +20,7 @@ use crate::{
     EncodingApproach,
     FileMeta,
     JobProgress,
+    Translations,
     Video,
     VideoFile,
     VideoFormat,
@@ -158,8 +159,9 @@ pub fn encode_audio(
     audio_format: AudioFormat,
     context: &Arc<Context>,
     job_id: usize,
+    translations: &Translations,
     video: &Video
-) -> Result<AudioFile, ()> {
+) -> Result<AudioFile, String> {
     let mut command = Command::new(FFMPEG);
 
     // Prevent ffmpeg from prompting about overwriting files
@@ -177,7 +179,7 @@ pub fn encode_audio(
 
     let highest_quality_video_file = match video.highest_quality_video_file() {
         Some(video_file) => video_file,
-        None => return Err(())
+        None => return Err(String::from("No video file found to encode audio from"))
     };
 
     let input_path = context.site_dir
@@ -242,8 +244,8 @@ pub fn encode_audio(
                         });
                     }
                     None => {
-                        eprintln!("Could not capture stderr for ffmpeg child process.");
-                        return Err(())
+                        let message = String::from("Could not capture stderr for ffmpeg child process");
+                        return Err(message)
                     }
                 }
             }
@@ -251,8 +253,8 @@ pub fn encode_audio(
             let exit_status = match child.wait() {
                 Ok(exit_status) => exit_status,
                 Err(_) => {
-                    eprintln!("The ffmpeg child process could not be waited for.");
-                    return Err(())
+                    let message = String::from("The ffmpeg child process could not be waited for");
+                    return Err(message)
                 }
             };
 
@@ -260,7 +262,8 @@ pub fn encode_audio(
                 // If the video directory disappeared (was moved/removed) while we were encoding
                 // we discard our encoding output as we don't know where to put it anymore.
                 if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
-                    return Err(())
+                    let message = String::from("The video directory has disappeared while we encoded audio, the encoded audio was discarded");
+                    return Err(message)
                 }
 
                 let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
@@ -297,14 +300,16 @@ pub fn encode_audio(
                     Some(code) => format!("error code {code}"),
                     None => String::from("probably signal-terminated")
                 };
-                eprintln!("The ffmpeg child process terminated unsuccessfully ({error_code})");
-                Err(())
+
+                let the_ffmpeg_child_process_terminated_unsuccessfully = translations.the_xxx_child_process_terminated_unsuccessfully("ffmpeg");
+                let message = format!("{the_ffmpeg_child_process_terminated_unsuccessfully} ({error_code})");
+                Err(message)
             }
         }
         Err(err) => {
-            eprintln!("The ffmpeg child process could not be spawned.");
-            eprintln!("{err}");
-            Err(())
+            let the_ffmpeg_child_process_could_not_be_spawned = translations.the_xxx_child_process_could_not_be_spawned("ffmpeg");
+            let message = format!("{the_ffmpeg_child_process_could_not_be_spawned} ({err})");
+            Err(message)
         }
     }
 }
@@ -312,9 +317,10 @@ pub fn encode_audio(
 pub fn encode_video(
     context: &Arc<Context>,
     job_id: usize,
+    translations: &Translations,
     video: &Video,
     video_format: VideoFormat
-) -> Result<VideoFile, ()> {
+) -> Result<VideoFile, String> {
     let mut command = Command::new(FFMPEG);
 
     // Prevent ffmpeg from prompting about overwriting files
@@ -332,7 +338,7 @@ pub fn encode_video(
 
     let highest_quality_video_file = match video.highest_quality_video_file() {
         Some(video_file) => video_file,
-        None => return Err(())
+        None => return Err(String::from("No video file found to encode audio from"))
     };
 
     let input_path = context.site_dir
@@ -490,8 +496,8 @@ pub fn encode_video(
                         });
                     }
                     None => {
-                        eprintln!("Could not capture stderr for ffmpeg child process.");
-                        return Err(())
+                        let message = String::from("Could not capture stderr for ffmpeg child process");
+                        return Err(message)
                     }
                 }
             }
@@ -499,8 +505,8 @@ pub fn encode_video(
             let exit_status = match child.wait() {
                 Ok(exit_status) => exit_status,
                 Err(_) => {
-                    eprintln!("The ffmpeg child process could not be waited for.");
-                    return Err(())
+                    let message = String::from("The ffmpeg child process could not be waited for");
+                    return Err(message)
                 }
             };
 
@@ -508,7 +514,8 @@ pub fn encode_video(
                 // If the video directory disappeared (was moved/removed) while we were encoding
                 // we discard our encoding output as we don't know where to put it anymore.
                 if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
-                    return Err(())
+                    let message = String::from("The video directory has disappeared while we encoded video, the encoded audio was discarded");
+                    return Err(message)
                 }
 
                 let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
@@ -547,14 +554,16 @@ pub fn encode_video(
                     Some(code) => format!("error code {code}"),
                     None => String::from("probably signal-terminated")
                 };
-                eprintln!("The ffmpeg child process terminated unsuccessfully ({error_code})");
-                Err(())
+
+                let the_ffmpeg_child_process_terminated_unsuccessfully = translations.the_xxx_child_process_terminated_unsuccessfully("ffmpeg");
+                let message = format!("{the_ffmpeg_child_process_terminated_unsuccessfully} ({error_code})");
+                Err(message)
             }
         }
         Err(err) => {
-            eprintln!("The ffmpeg child process could not be spawned.");
-            eprintln!("{err}");
-            Err(())
+            let the_ffmpeg_child_process_could_not_be_spawned = translations.the_xxx_child_process_could_not_be_spawned("ffmpeg");
+            let message = format!("{the_ffmpeg_child_process_could_not_be_spawned} ({err})");
+            Err(message)
         }
     }
 }
@@ -568,7 +577,10 @@ fn parse_frame_rate(representation: &str) -> f32 {
     dividend / divisor
 }
 
-pub fn probe_audio(path: &Path) -> Result<AudioMeta, ()> {
+pub fn probe_audio(
+    path: &Path,
+    translations: &Translations
+) -> Result<AudioMeta, String> {
     let mut command = Command::new(FFPROBE);
 
     command
@@ -622,24 +634,27 @@ pub fn probe_audio(path: &Path) -> Result<AudioMeta, ()> {
 
                         let audio_meta = AudioMeta::new(codec, duration);
 
-                        return Ok(audio_meta)
+                        Ok(audio_meta)
                     }
-                    Err(err) => panic!("{}", err)
+                    Err(err) => panic!("{err}")
                 }
+            } else {
+                let message = format!("{output:?}");
+                Err(message)
             }
-
-            eprintln!("{output:?}");
-            Err(())
         }
         Err(err) => {
-            eprintln!("The ffprobe child process could not be executed.");
-            eprintln!("{err}");
-            Err(())
+            let the_ffprobe_child_process_could_not_be_executed = translations.the_xxx_child_process_could_not_be_executed("ffprobe");
+            let message = format!("{the_ffprobe_child_process_could_not_be_executed} ({err})");
+            Err(message)
         }
     }
 }
 
-pub fn probe_video(path: &Path) -> Result<VideoMeta, ()> {
+pub fn probe_video(
+    path: &Path,
+    translations: &Translations
+) -> Result<VideoMeta, String> {
     let mut command = Command::new(FFPROBE);
 
     command
@@ -721,7 +736,7 @@ pub fn probe_video(path: &Path) -> Result<VideoMeta, ()> {
                             }
                         }
 
-                        let metadata = VideoMeta::new(
+                        let video_meta = VideoMeta::new(
                             audio_codec,
                             duration,
                             height.unwrap(),
@@ -730,19 +745,19 @@ pub fn probe_video(path: &Path) -> Result<VideoMeta, ()> {
                             width.unwrap()
                         );
 
-                        return Ok(metadata)
+                        Ok(video_meta)
                     }
-                    Err(err) => panic!("{}", err)
+                    Err(err) => panic!("{err}")
                 }
+            } else {
+                let message = format!("{output:?}");
+                Err(message)
             }
-
-            eprintln!("{output:?}");
-            Err(())
         }
         Err(err) => {
-            eprintln!("The ffprobe child process could not be executed.");
-            eprintln!("{err}");
-            Err(())
+            let the_ffprobe_child_process_could_not_be_executed = translations.the_xxx_child_process_could_not_be_executed("ffprobe");
+            let message = format!("{the_ffprobe_child_process_could_not_be_executed} ({err})");
+            Err(message)
         }
     }
 }

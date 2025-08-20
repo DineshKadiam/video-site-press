@@ -22,13 +22,18 @@ use crate::{
     PosterFile,
     PosterSourceCached,
     ResizeMode,
+    Translations,
     Video,
     VideoMetaCached,
     VideoUpdate
 };
 use crate::transcode;
 
-fn compute_audio_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
+fn compute_audio_metadata(
+    context: &Context,
+    translations: &Translations,
+    video: Arc<Video>
+) -> Result<Arc<Video>, String> {
     let mut audio_files_mut = video.audio_files.clone();
 
     let mut made_changes = false;
@@ -40,38 +45,45 @@ fn compute_audio_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
             .join(video.site_path.filesystem_relative())
             .join(&audio_file.file_name);
 
-        if let Ok(audio_meta) = transcode::probe_audio(&audio_file_path) {
-            audio_meta.write_cache_manifest(
-                context,
-                &audio_file.file_meta,
-                &audio_file.file_name,
-                &video.site_path
-            );
+        match transcode::probe_audio(&audio_file_path, translations) {
+            Ok(audio_meta) => {
+                audio_meta.write_cache_manifest(
+                    context,
+                    &audio_file.file_meta,
+                    &audio_file.file_name,
+                    &video.site_path
+                );
 
-            // Add/update video meta in in-memory cache
-            if let Ok(mut cache) = context.cache.lock() {
-                let version_path = format!("{}{}", &video.site_path.normalized(), audio_file.file_name);
+                // Add/update video meta in in-memory cache
+                if let Ok(mut cache) = context.cache.lock() {
+                    let version_path = format!("{}{}", &video.site_path.normalized(), audio_file.file_name);
 
-                if let Some(audio_meta_cached) = cache.audio_meta
-                    .iter_mut()
-                    .find(|cached| cached.path == version_path) {
-                    audio_meta_cached.audio_meta = audio_meta.clone();
-                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
-                    audio_meta_cached.file_meta = audio_file.file_meta.clone();
-                } else {
-                    let audio_meta_cached = AudioMetaCached {
-                        audio_meta: audio_meta.clone(),
-                        file_meta: audio_file.file_meta.clone(),
-                        path: version_path
-                    };
+                    if let Some(audio_meta_cached) = cache.audio_meta
+                        .iter_mut()
+                        .find(|cached| cached.path == version_path) {
+                        audio_meta_cached.audio_meta = audio_meta.clone();
+                        // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                        audio_meta_cached.file_meta = audio_file.file_meta.clone();
+                    } else {
+                        let audio_meta_cached = AudioMetaCached {
+                            audio_meta: audio_meta.clone(),
+                            file_meta: audio_file.file_meta.clone(),
+                            path: version_path
+                        };
 
-                    cache.audio_meta.push(audio_meta_cached);
+                        cache.audio_meta.push(audio_meta_cached);
+                    }
                 }
+
+                audio_file.audio_meta = Some(audio_meta);
+
+                made_changes = true;
             }
-
-            audio_file.audio_meta = Some(audio_meta);
-
-            made_changes = true;
+            Err(err) => {
+                let t_could_not_compute_metadata_for_xxx = translations.could_not_compute_metadata_for_xxx(audio_file_path);
+                let message = format!("{t_could_not_compute_metadata_for_xxx} ({err})");
+                return Err(message);
+            }
         }
     }
 
@@ -88,18 +100,20 @@ fn compute_audio_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
         match context.update_video(mutation, &video.site_path) {
             VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
             VideoUpdate::NotFound => {
-                eprintln!("Audio metadata for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+                let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path(&video.site_path);
+                Err(message)
             }
             VideoUpdate::PendingErrors { .. } => {
-                eprintln!("Audio metadata for video {} could not be assigned in the site tree as the video currently has pending errors.", video.site_path.normalized());
+                let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors(&video.site_path);
+                Err(message)
             }
             VideoUpdate::Success { video_updated, .. } => {
-                return video_updated;
+                Ok(video_updated)
             }
         }
+    } else {
+        Ok(video)
     }
-
-    video
 }
 
 fn compute_collection_banner_assets(
@@ -560,7 +574,11 @@ fn compute_poster_meta(
     Ok(())
 }
 
-fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
+fn compute_video_metadata(
+    context: &Context,
+    translations: &Translations,
+    video: Arc<Video>
+) -> Result<Arc<Video>, String> {
     let mut video_files_mut = video.video_files.clone();
 
     let mut made_changes = false;
@@ -572,40 +590,47 @@ fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
             .join(video.site_path.filesystem_relative())
             .join(&video_file.file_name);
 
-        if let Ok(video_meta) = transcode::probe_video(&video_file_path) {
-            video_meta.write_cache_manifest(
-                context,
-                &video_file.file_meta,
-                &video_file.file_name,
-                &video.site_path
-            );
+        match transcode::probe_video(&video_file_path, translations) {
+            Ok(video_meta) => {
+                video_meta.write_cache_manifest(
+                    context,
+                    &video_file.file_meta,
+                    &video_file.file_name,
+                    &video.site_path
+                );
 
-            // Add/update video meta in in-memory cache
-            // TODO: This looks vaguely in need of encapsulation
-            if let Ok(mut cache) = context.cache.lock() {
-                let version_path = format!("{}{}", &video.site_path.normalized(), video_file.file_name);
+                // Add/update video meta in in-memory cache
+                // TODO: This looks vaguely in need of encapsulation
+                if let Ok(mut cache) = context.cache.lock() {
+                    let version_path = format!("{}{}", &video.site_path.normalized(), video_file.file_name);
 
-                if let Some(video_meta_cached) = cache.video_meta
-                    .iter_mut()
-                    .find(|cached| cached.path == version_path) {
-                    // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
-                    video_meta_cached.file_meta = video_file.file_meta.clone();
-                    video_meta_cached.video_meta = video_meta.clone();
+                    if let Some(video_meta_cached) = cache.video_meta
+                        .iter_mut()
+                        .find(|cached| cached.path == version_path) {
+                        // TODO: Not sure if updating the file_meta is necessary (should be identical?) - think through carefully.
+                        video_meta_cached.file_meta = video_file.file_meta.clone();
+                        video_meta_cached.video_meta = video_meta.clone();
 
-                } else {
-                    let video_meta_cached = VideoMetaCached {
-                        file_meta: video_file.file_meta.clone(),
-                        path: version_path,
-                        video_meta: video_meta.clone()
-                    };
+                    } else {
+                        let video_meta_cached = VideoMetaCached {
+                            file_meta: video_file.file_meta.clone(),
+                            path: version_path,
+                            video_meta: video_meta.clone()
+                        };
 
-                    cache.video_meta.push(video_meta_cached);
+                        cache.video_meta.push(video_meta_cached);
+                    }
                 }
+
+                video_file.video_meta = Some(video_meta);
+
+                made_changes = true;
             }
-
-            video_file.video_meta = Some(video_meta);
-
-            made_changes = true;
+            Err(err) => {
+                let t_could_not_compute_metadata_for_xxx = translations.could_not_compute_metadata_for_xxx(&video_file_path);
+                let message = format!("{t_could_not_compute_metadata_for_xxx} ({err})");
+                return Err(message);
+            }
         }
     }
 
@@ -622,20 +647,20 @@ fn compute_video_metadata(context: &Context, video: Arc<Video>) -> Arc<Video> {
         match context.update_video(mutation, &video.site_path) {
             VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
             VideoUpdate::NotFound => {
-                eprintln!("Metadata for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+                let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path(&video.site_path);
+                Err(message)
             }
             VideoUpdate::PendingErrors { .. } => {
-                eprintln!("Metadata for video {} could not be assigned in the site tree as the video currently has pending errors.", video.site_path.normalized());
+                let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors(&video.site_path);
+                Err(message)
             }
             VideoUpdate::Success { video_updated, .. } => {
-                // TODO: Reactivate
-                // context.create_version_jobs(&video);
-                return video_updated;
+                Ok(video_updated)
             }
         }
+    } else {
+        Ok(video)
     }
-
-    video
 }
 
 pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
@@ -645,6 +670,9 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
         thread::spawn(move || {
             let worker_number = index + 1;
             let high_priority_only = worker_number == 1;
+
+            let language = context.get_editor_language();
+            let translations = &language.translations;
 
             loop {
                 let job = context.take_next_job(high_priority_only);
@@ -663,7 +691,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Computing audio file ({extension}) for {site_path}");
                         let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        match transcode::encode_audio(format, &context, job_id, &video) {
+                        match transcode::encode_audio(format, &context, job_id, translations, &video) {
                             Ok(audio_file) => {
                                 let mutation = |video_mut: &mut Video| {
                                     video_mut.audio_files.push(audio_file);
@@ -690,10 +718,10 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                     }
                                 }
                             }
-                            Err(()) => {
-                                // TODO: Maybe we want to start integrating/passing reasons here (if available)
-                                let error = String::from("Encoding a new audio file failed for an unknown reason.");
-                                context.job_error(error);
+                            Err(err) => {
+                                // TODO: Translate strings (all around in this file)
+                                let message = format!("Encoding a new audio file failed ({err})");
+                                context.job_error(message);
                             }
                         }
 
@@ -703,7 +731,9 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Computing audio metadata for {}", &video.site_path.normalized());
                         let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        compute_audio_metadata(&context, video);
+                        if let Err(err) = compute_audio_metadata(&context, translations, video) {
+                            context.job_error(err);
+                        }
 
                         context.remove_active_job(job_id);
                     }
@@ -738,28 +768,33 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Doing fast track processing for {}", &video.site_path.normalized());
                         let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        let video_with_metadata = compute_video_metadata(&context, video);
+                        match compute_video_metadata(&context, &translations, video) {
+                            Ok(video_with_metadata) => {
+                                if let Some(poster) = &video_with_metadata.poster {
+                                    if poster.poster_meta.is_none() {
+                                        if let Err(err) = compute_poster_meta(&context, &video_with_metadata) {
+                                            context.job_error(err);
+                                        }
+                                    }
 
-                        if let Some(poster) = &video_with_metadata.poster {
-                            if poster.poster_meta.is_none() {
-                                if let Err(err) = compute_poster_meta(&context, &video_with_metadata) {
-                                    context.job_error(err);
+                                    if poster.assets.is_none() {
+                                        if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_metadata) {
+                                            context.job_error(err);
+                                        }
+                                    }
+                                } else {
+                                    let video_with_poster = compute_poster(&context, 0.5, video_with_metadata);
+
+                                    if let Err(err) = compute_poster_meta(&context, &video_with_poster) {
+                                        context.job_error(err);
+                                    }
+
+                                    if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_poster) {
+                                        context.job_error(err);
+                                    }
                                 }
                             }
-
-                            if poster.assets.is_none() {
-                                if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_metadata) {
-                                    context.job_error(err);
-                                }
-                            }
-                        } else {
-                            let video_with_poster = compute_poster(&context, 0.5, video_with_metadata);
-
-                            if let Err(err) = compute_poster_meta(&context, &video_with_poster) {
-                                context.job_error(err);
-                            }
-
-                            if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_poster) {
+                            Err(err) => {
                                 context.job_error(err);
                             }
                         }
@@ -772,7 +807,7 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Computing video file {format_label} for {site_path}");
                         let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        match transcode::encode_video(&context, job_id, &video, format) {
+                        match transcode::encode_video(&context, job_id, translations, &video, format) {
                             Ok(video_file) => {
                                 let mutation = |video_mut: &mut Video| {
                                     video_mut.video_files.push(video_file);
@@ -799,9 +834,9 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                                     }
                                 }
                             }
-                            Err(()) => {
-                                let error = "Encoding a new video file failed for an unknown reason.".to_string();
-                                context.job_error(error);
+                            Err(err) => {
+                                let message = format!("Encoding a new video file failed ({err})");
+                                context.job_error(message);
                             }
                         }
 
@@ -811,28 +846,33 @@ pub fn start_threads(count: usize, context_ref: &Arc<Context>) {
                         let label = format!("[Worker {worker_number}] Computing random poster for {}", &video.site_path.normalized());
                         let job_id = context.add_active_job(label, video.site_path.clone());
 
-                        let video_with_metadata = compute_video_metadata(&context, video);
+                        match compute_video_metadata(&context, &translations, video) {
+                            Ok(video_with_metadata) => {
+                                if let Some(highest_quality_video_file) = &video_with_metadata.highest_quality_video_file() {
+                                    let video_meta = highest_quality_video_file.video_meta.as_ref().unwrap();
 
-                        if let Some(highest_quality_video_file) = &video_with_metadata.highest_quality_video_file() {
-                            let video_meta = highest_quality_video_file.video_meta.as_ref().unwrap();
+                                    let bounded_timecode = if timecode < 0.0 {
+                                        0.0
+                                    } else if timecode > video_meta.duration {
+                                        video_meta.duration
+                                    } else {
+                                        timecode
+                                    };
 
-                            let bounded_timecode = if timecode < 0.0 {
-                                0.0
-                            } else if timecode > video_meta.duration {
-                                video_meta.duration
-                            } else {
-                                timecode
-                            };
+                                    let video_with_computed_poster = compute_poster(&context, bounded_timecode, video_with_metadata);
 
-                            let video_with_computed_poster = compute_poster(&context, bounded_timecode, video_with_metadata);
-
-                            if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_computed_poster) {
+                                    if let Err(err) = compute_poster_assets(&context, poster_aspect, video_with_computed_poster) {
+                                        context.job_error(err);
+                                    }
+                                } else {
+                                    let site_path = video_with_metadata.site_path.normalized();
+                                    let error = format!("There was no source video to compute a poster from. ({site_path})");
+                                    context.job_error(error);
+                                }
+                            }
+                            Err(err) => {
                                 context.job_error(err);
                             }
-                        } else {
-                            let site_path = video_with_metadata.site_path.normalized();
-                            let error = format!("There was no source video to compute a poster from. ({site_path})");
-                            context.job_error(error);
                         }
 
                         context.remove_active_job(job_id);

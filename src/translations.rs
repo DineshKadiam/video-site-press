@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::path::Path;
+
+use crate::SitePath;
+
 mod de;
 mod en;
 
@@ -58,6 +62,7 @@ pub struct Translations {
     pub copy_link: &'static str,
     pub copy_path: &'static str,
     pub copy_url: &'static str,
+    could_not_compute_metadata_for_xxx: &'static str,
     pub create_playlist: &'static str,
     pub create_subcollection: &'static str,
     pub create_video: &'static str,
@@ -160,6 +165,8 @@ pub struct Translations {
     pub maximize: &'static str,
     pub media_rss_description: &'static str,
     pub medium_volume: &'static str,
+    metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors: &'static str,
+    metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path: &'static str,
     pub metadata_pending: &'static str,
     pub min: &'static str,
     pub minimize: &'static str,
@@ -260,6 +267,9 @@ pub struct Translations {
     pub the_subtitle_requested_for_deletion_was_not_found: &'static str,
     pub the_subtitles_to_be_updated_were_not_found: &'static str,
     the_test_file_contains_xxx_but_the_response_contained_xxx: &'static str,
+    the_xxx_child_process_could_not_be_executed: &'static str,
+    the_xxx_child_process_could_not_be_spawned: &'static str,
+    the_xxx_child_process_terminated_unsuccessfully: &'static str,
     pub theme: &'static str,
     pub this_video_can_be_seamlessly_converted_to_a_video_in_a_collection: &'static str,
     pub this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist: &'static str,
@@ -315,6 +325,10 @@ impl Translations {
         self.adding_file_xxx.replace("{path}", path)
     }
 
+    pub fn could_not_compute_metadata_for_xxx(&self, path: &Path) -> String {
+        self.could_not_compute_metadata_for_xxx.replace("{path}", &path.to_string_lossy())
+    }
+
     pub fn creating_directory_xxx(&self, path: &str) -> String {
         self.creating_directory_xxx.replace("{path}", path)
     }
@@ -341,6 +355,22 @@ impl Translations {
 
     pub fn invalid_site_text(&self) -> String {
         self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
+    }
+
+    pub fn metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors(
+        &self,
+        site_path: &SitePath
+    ) -> String {
+        self.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors
+            .replace("{site_path}", site_path.normalized())
+    }
+
+    pub fn metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path(
+        &self,
+        site_path: &SitePath
+    ) -> String {
+        self.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path
+            .replace("{site_path}", site_path.normalized())
     }
 
     pub fn public_address_must_be_configured_for_deployment_text(
@@ -394,6 +424,18 @@ impl Translations {
         self.the_test_file_contains_xxx_but_the_response_contained_xxx
             .replace("{encountered}", encountered)
             .replace("{expected}", expected)
+    }
+
+    pub fn the_xxx_child_process_could_not_be_executed(&self, command: &str) -> String {
+        self.the_xxx_child_process_could_not_be_executed.replace("{command}", command)
+    }
+
+    pub fn the_xxx_child_process_could_not_be_spawned(&self, command: &str) -> String {
+        self.the_xxx_child_process_could_not_be_spawned.replace("{command}", command)
+    }
+
+    pub fn the_xxx_child_process_terminated_unsuccessfully(&self, command: &str) -> String {
+        self.the_xxx_child_process_terminated_unsuccessfully.replace("{command}", command)
     }
 
     pub fn unsupported_file_extension_in_xxx(&self, file_name: &str) -> String {
@@ -461,12 +503,15 @@ fn check_translations() {
     for translations in &locales {
         assert!(&translations.adding_file_xxx.contains("{path}"));
         assert!(&translations.creating_directory_xxx.contains("{path}"));
+        assert!(&translations.could_not_compute_metadata_for_xxx.contains("{path}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
         assert!(&translations.deleting_file_xxx.contains("{path}"));
         assert!(&translations.deleting_directory_xxx.contains("{path}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
+        assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors.contains("{site_path}"));
+        assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path.contains("{site_path}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
         assert!(&translations.site_setup_text.contains("{docs_link}"));
@@ -477,6 +522,9 @@ fn check_translations() {
         assert!(&translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.contains("{filename}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{expected}"));
+        assert!(&translations.the_xxx_child_process_could_not_be_executed.contains("{command}"));
+        assert!(&translations.the_xxx_child_process_could_not_be_spawned.contains("{command}"));
+        assert!(&translations.the_xxx_child_process_terminated_unsuccessfully.contains("{command}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{manifest_path}"));
