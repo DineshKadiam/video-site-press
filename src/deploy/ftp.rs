@@ -964,7 +964,7 @@ fn order_sync_actions_quality_approach(actions: &mut Vec<SyncAction>) {
 //     unimplemented!()
 // }
 
-pub fn perform_deploy(
+pub fn start_deploy(
     context_ref: &Arc<Context>,
     mut ftp_stream_wrapper: FtpStreamWrapper,
     site: &Site,

@@ -205,7 +205,7 @@ pub fn config_probe(
     }
 }
 
-pub fn perform_deploy(
+pub fn start_deploy(
     context_ref: &Arc<Context>,
     site: &Site,
     translations: &Translations

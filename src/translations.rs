@@ -218,6 +218,7 @@ pub struct Translations {
     pub processing: &'static str,
     pub public_address_label: &'static str,
     pub public_address_must_be_configured_for_deployment_text: &'static str,
+    pub public_address_must_be_configured_for_deployment_text_cli: &'static str,
     pub public_address_not_configured_text: &'static str,
     pub quality: &'static str,
     pub really_delete: &'static str,
@@ -278,6 +279,7 @@ pub struct Translations {
     pub title_ascending: &'static str,
     pub title_descending: &'static str,
     pub title_or_permalink_needs_to_be_provided: &'static str,
+    pub type_y_and_press_enter_to_confirm_anything_else_will_abort: &'static str,
     pub unlisted: &'static str,
     unsupported_file_extension_in_xxx: &'static str,
     pub update_collection: &'static str,
@@ -379,6 +381,14 @@ impl Translations {
     ) -> String {
         self.public_address_must_be_configured_for_deployment_text
             .replace("{site_settings_url}", site_settings_url)
+    }
+
+    pub fn public_address_must_be_configured_for_deployment_text_cli(
+        &self,
+        path: &Path
+    ) -> String {
+        self.public_address_must_be_configured_for_deployment_text_cli
+            .replace("{path}", &path.to_string_lossy())
     }
 
     pub fn resolve_the_issue_on_disk_or_on_manifest_page(
@@ -513,6 +523,7 @@ fn check_translations() {
         assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors.contains("{site_path}"));
         assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path.contains("{site_path}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
+        assert!(&translations.public_address_must_be_configured_for_deployment_text_cli.contains("{path}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
         assert!(&translations.site_setup_text.contains("{docs_link}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{error}"));

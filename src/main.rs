@@ -200,9 +200,7 @@ fn main() -> ExitCode {
             let site = context.get_site();
             let language = context.get_editor_language();
 
-            // TODO: Deployment is async now (this call immediately returns).
-            //       Need to switch to a blocking version that also reports output to the console (?)
-            match deploy::perform_deploy(&context, &site, &language.translations) {
+            match deploy::perform_deploy_blocking_cli(&context, &site, &language.translations) {
                 Ok(()) => ExitCode::SUCCESS,
                 Err(err) => {
                     eprintln!("{err}");

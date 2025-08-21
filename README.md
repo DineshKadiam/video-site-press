@@ -35,20 +35,11 @@ The [docs](https://simonrepp.com/hyper8/docs) cover specific aspects:
 
 ## Hyper 8 is in Beta
 
-Hyper 8 provides a solid, working foundation for video publishing already, just
-keep in mind that it's not production grade software (yet) and things are
-still moving around a bit occasionally. Making backups of your Hyper 8 site
-directory is generally recommended while Hyper 8 is still in beta.
-
-### Known issues
-
-A few minor things are incomplete, two worth mentioning are:
-
-- In the editor, after requesting a new video format to be rendered, you'll
-  see the background job progress in the header, but not (yet) on the video
-  page itself
-- The `--deploy` option in the CLI is not fully implemented yet, for now use
-  this from the interactive browser interface only
+Hyper 8 provides a complete package for video publishing on the web. A dozen
+sites are already live out there using it! Officially, Hyper 8 is still in
+Beta though, so  occasionally things might still be moving around a bit in
+the interface. Making backups of your Hyper 8 site directory is also
+generally recommended while Hyper 8 is still in beta.
 
 ## Development in 2025
 

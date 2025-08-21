@@ -8,7 +8,7 @@ use actix_web::web::{Data, Either, Redirect};
 
 use crate::Context;
 use crate::build::perform_build;
-use crate::deploy::{config_probe, perform_deploy};
+use crate::deploy::{config_probe, start_deploy};
 use crate::editor::routes;
 use crate::editor::widgets::error_page;
 
@@ -36,7 +36,7 @@ pub async fn deploy(context: Data<Arc<Context>>) -> Either<Redirect, HttpRespons
 
     perform_build(&context);
 
-    match perform_deploy(&context, &site, translations) {
+    match start_deploy(&context, &site, translations) {
         Ok(()) => Either::Left(Redirect::to("/deployment").see_other()),
         Err(err) => Either::Right(error_page(&context, &language, &err))
     }
