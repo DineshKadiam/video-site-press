@@ -612,12 +612,13 @@ img {
     display: flex;
     margin-inline: .3rem;
     position: relative;
+    transition: margin-right 200ms ease, width 200ms ease;
 }
 .search:hover { color: var(--fg-1); }
 .search:focus-within input,
 .search.query_present input {
     cursor: text;
-    width: 200%;
+    width: calc(100% + 2rem);
 }
 .search button {
     background: transparent;
@@ -625,7 +626,7 @@ img {
     cursor: pointer;
     padding: .3em;
     position: absolute;
-    right: -100%;
+    right: -2.3rem;
 }
 .search .icon,
 .search .label {
@@ -930,15 +931,16 @@ video {
 @media (width < 20rem) {
     header .label { display: none; }
     .playlist_context img { height: 3rem; }
+    .search { width: .9rem; }
     .search button { right: 0; }
     .search input { width: 1rem; }
     .search:focus-within,
     .search.query_present {
-        width: 6rem;
+        width: 5rem;
     }
     .search:focus-within input,
     .search.query_present input {
-        width: 6rem;
+        width: 5rem;
     }
 }
 @media (width >= 20rem) and (width < 30rem) {
@@ -946,9 +948,15 @@ video {
 }
 @media (width >= 20rem) and (width < 35rem) {
     header .icon { display: none; }
+    .search:focus-within,
+    .search.query_present {
+        margin-right: 2.3rem;
+    }
     .search.query_present input,
     .search input:focus {
         padding: .3em 1.4em calc(.3em - 1px) 0;
+        width: calc(100% + 2rem);
+}
     }
     .search:focus-within .label { opacity: .5; }
     .search.query_present .label { opacity: 0; }
