@@ -15,7 +15,8 @@ use crate::{
 };
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::{Traversal, TraversalStep};
-use crate::build::widgets::{copy_button, links, player, unlisted_badge};
+use crate::build::player::player;
+use crate::build::widgets::{copy_button, links, unlisted_badge};
 use crate::icons;
 use crate::util::{
     html_escape_outside_attribute,

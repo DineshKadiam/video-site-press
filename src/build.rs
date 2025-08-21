@@ -27,6 +27,7 @@ mod embed_codes;
 mod feeds;
 mod layout;
 mod outline;
+mod player;
 mod playlist;
 mod scripts;
 mod styles;

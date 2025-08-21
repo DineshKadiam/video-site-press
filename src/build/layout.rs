@@ -6,7 +6,8 @@ use indoc::formatdoc;
 use crate::{PlatformIntegrationMeta, Site, ThemeKind};
 use crate::build::{AssetHashes, Traversal};
 use crate::build::feeds::meta_link_tags;
-use crate::build::widgets::{copy_button_icon_templates, player_icon_templates};
+use crate::build::player::player_icon_templates;
+use crate::build::widgets::copy_button_icon_templates;
 use crate::icons;
 use crate::util::html_escape_outside_attribute;
 
