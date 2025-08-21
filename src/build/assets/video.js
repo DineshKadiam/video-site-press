@@ -302,13 +302,18 @@ playerWrapper.addEventListener('fullscreenchange', () => {
 
 playerWrapper.addEventListener('mousemove', revealControls);
 
-replayButton.addEventListener('click', event => {
-    event.preventDefault();
-    playerWrapper.dataset.state = 'playing';
-    video.play();
-    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
-    playbackUpdateInterval = setInterval(playbackUpdate, 80);
-});
+// Unlisted videos are not included in the playlist listing in the player
+// outro screen, therefore there is no separate replay button for these
+// videos either.
+if (replayButton) {
+    replayButton.addEventListener('click', event => {
+        event.preventDefault();
+        playerWrapper.dataset.state = 'playing';
+        video.play();
+        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+        playbackUpdateInterval = setInterval(playbackUpdate, 80);
+    });
+}
 
 if (playbackSubtitlesSelectorControl) {
     const playbackCycleSubtitlesButton = document.querySelector('.right_playback_controls .cycle_subtitles');
