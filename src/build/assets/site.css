@@ -919,13 +919,6 @@ video {
     margin-bottom: 2rem;
     margin-top: 2rem;
 }
-.videos_grid .number {
-    background: var(--fg-3);
-    border-radius: .2rem;
-    color: var(--bg-1);
-    font-size: .8rem;
-    padding: .1rem .3rem .1rem .3rem;
-}
 .videos_grid .release_date { font-size: .9rem; }
 .videos_grid .thumbnail { height: auto; }
 @media (width < 20rem) {

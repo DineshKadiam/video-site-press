@@ -302,8 +302,7 @@ fn render_playlist(
 
     let videos = playlist.public_videos_in_playlist_order()
         .iter()
-        .enumerate()
-        .map(|(index, video)| {
+        .map(|video| {
             let traversal_with_video = traversal_with_playlist.peek_video(video);
             let traversal_with_video_prefix = traversal_with_video.prefix_desc();
 
@@ -314,7 +313,6 @@ fn render_playlist(
                 }
                 None => String::new()
             };
-            let number = index + 1;
             let e_title = match &video.title {
                 Some(title) => html_escape_outside_attribute(title),
                 None => video.slug_unchecked().to_string()
@@ -327,7 +325,7 @@ fn render_playlist(
                 <a href="{video_href}">
                     {video_thumbnail}
                     <div class="caption">{e_title}</div>
-                    {release_date} <span class="number"># {number}</span>
+                    {release_date}
                 </a>
             "#)
         })

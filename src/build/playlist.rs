@@ -81,8 +81,7 @@ pub fn playlist_html(
     if !videos.is_empty() {
         let videos = videos
             .iter()
-            .enumerate()
-            .map(|(index, video)| {
+            .map(|video| {
                 let traversal_with_video = traversal.peek_video(video);
                 let traversal_with_video_prefix = traversal_with_video.prefix_desc();
 
@@ -93,7 +92,6 @@ pub fn playlist_html(
                     }
                     None => String::new()
                 };
-                let number = index + 1;
                 let label = video.title_or_slug_or_generic_label(translations);
                 let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
 
@@ -103,7 +101,7 @@ pub fn playlist_html(
                         <div>{video_thumbnail}</div>
                         <div>
                             <div class="caption">{label}</div>
-                            {release_date} <span class="number"># {number}</span>
+                            {release_date}
                         </div>
                     </a>
                 "#)

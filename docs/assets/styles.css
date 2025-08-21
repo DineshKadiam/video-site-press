@@ -109,12 +109,6 @@ nav a.active {
 .nav_inner a { white-space: nowrap; }
 .nav_inner span { margin: 2rem 0 .2rem 0; }
 .next_page { margin: 3rem 0 2rem 0; }
-.number {
-    display: inline-block;
-    font-weight: 500;
-    text-align: right;
-    width: 1.5rem;
-}
 p, ul {
     box-sizing: border-box;
     max-width: 33rem;
