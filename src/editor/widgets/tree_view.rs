@@ -300,9 +300,9 @@ fn collection_node(
     formatdoc!(r#"
         {node_with_subpages}
         <ul>
+            {videos}
             {subcollections}
             {playlists}
-            {videos}
         </ul>
     "#)
 }
