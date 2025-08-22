@@ -228,17 +228,15 @@ impl Layout {
                         </div>
                     </div>
                     <footer>
-                        <div>
-                            <span>
-                                {e_site_title}
-                            </span>
-                            <a href="https://simonrepp.com/hyper8" target="_blank">
-                                {logo_monochrome_icon} Hyper 8 Video System {version_display}
-                            </a>
-                            <button class="shortcuts">
-                                {key_icon} {t_shortcuts}
-                            </button>
-                        </div>
+                        <a href="{root_url}">
+                            {e_site_title}
+                        </a>
+                        <a href="https://simonrepp.com/hyper8" target="_blank">
+                            {logo_monochrome_icon} Hyper 8 Video System {version_display}
+                        </a>
+                        <button class="shortcuts">
+                            {key_icon} {t_shortcuts}
+                        </button>
                     </footer>
                 </div>
                 <dialog class="shortcuts">
