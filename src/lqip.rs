@@ -55,7 +55,23 @@ impl Lqip {
         }
     }
 
+    pub fn ne_rgb(&self) -> String {
+        format!("rgb({}, {}, {})", self.ne.0, self.ne.1, self.ne.2)
+    }
+
+    pub fn nw_rgb(&self) -> String {
+        format!("rgb({}, {}, {})", self.nw.0, self.nw.1, self.nw.2)
+    }
+
     fn rgb(corner: (u8, u8, u8)) -> String {
         format!("rgb({}, {}, {})", corner.0, corner.1, corner.2)
+    }
+
+    pub fn se_rgb(&self) -> String {
+        format!("rgb({}, {}, {})", self.se.0, self.se.1, self.se.2)
+    }
+
+    pub fn sw_rgb(&self) -> String {
+        format!("rgb({}, {}, {})", self.sw.0, self.sw.1, self.sw.2)
     }
 }

@@ -157,21 +157,38 @@ fn storage_stats_html(
     let mut total_size: u64 = 0;
 
     for video in videos {
-        for video_file in &video.video_files {
+        for (index, video_file) in video.video_files.iter().enumerate() {
+            let color = match &video.poster {
+                Some(poster_file) => {
+                    match &poster_file.poster_meta {
+                        Some(poster_meta) => {
+                            let offset = index % 4;
+                            match offset {
+                                0 => poster_meta.lqip.nw_rgb(),
+                                1 => poster_meta.lqip.ne_rgb(),
+                                2 => poster_meta.lqip.se_rgb(),
+                                3 => poster_meta.lqip.sw_rgb(),
+                                _ => unreachable!()
+                            }
+                        }
+                        None => String::from("var(--mg)")
+                    }
+                }
+                None => String::from("var(--mg)")
+            };
             let link = routes::video_edit(video);
             let size = video_file.file_meta.size;
             let title = format!("{}: {}", video.title_or_slug_or_generic_label(translations), video_file.file_name);
             let e_title = html_escape_outside_attribute(&title);
-            sizes.push((size, link, e_title));
+            sizes.push((color, size, link, e_title));
             total_size += size;
         }
     }
 
-    sizes.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+    sizes.sort_unstable_by(|a, b| b.1.cmp(&a.1));
 
     // Draws a ring segment. In clock terms we start at 12 o'clock and we go clockwise.
-    let slice = |arc_angle: f32, begin_angle: f32, link: &str, lightness: f32, title: &str| -> String {
-        let fill = format!("hsl(0, 0%, {lightness}%)");
+    let slice = |arc_angle: f32, background: &str, begin_angle: f32, link: &str, title: &str| -> String {
         let large_arc_flag = if arc_angle < 180.0 { 0 } else { 1 };
 
         let begin_angle_rad = begin_angle.to_radians();
@@ -210,7 +227,7 @@ fn storage_stats_html(
                        L {segment_inner_end_x},{segment_inner_end_y}
                        A {inner_radius} {inner_radius} 0 {large_arc_flag} 0 {segment_inner_begin_x},{segment_inner_begin_y}
                        Z"
-                    fill="{fill}"
+                    fill="{background}"
                     onclick="window.location = '{link}';">
                     <title>{title}</title>
                 </path>
@@ -225,26 +242,65 @@ fn storage_stats_html(
 
     let mut begin_angle = 0.0;
 
-    for (index, (size, link, title)) in sizes.iter().enumerate() {
+    // TODO: Implementation for a static gradient with any number of stops,
+    //       interpolates by walking the (hue) spectrum. We didn't use it
+    //       after all but we could do so in the future, here or elsewhere.
+    // let stops = [
+    //     // h, s, l
+    //     // We add 360 to the hue so the gradient takes the "shorter" path through the spectrum
+    //     (360.0 + 38.59, 100.0, 55.49), // yellow
+    //     (360.0 + 7.35, 100.0, 51.96), // red
+    //     (301.63, 100.0, 43.33), // violet
+    //     (215.45, 100.0, 56.86) // blue
+    // ];
+    // let gradient_stretch = 1.0 / (stops.len() - 1) as f32;
+
+    // let get_color = |factor: f32| {
+    //     let index_float = factor / gradient_stretch;
+    //     let index_integer = index_float as usize;
+
+    //     let inter_factor = index_float.fract();
+
+    //     if inter_factor <= f32::EPSILON {
+    //         let stop = stops[index_integer];
+    //         let h = stop.0;
+    //         let s = stop.1;
+    //         let l = stop.2;
+
+    //         format!("hsl({h}deg {s}% {l}%)")
+    //     } else {
+    //         let stop = stops[index_integer];
+    //         let next_stop = stops[index_integer + 1];
+
+    //         let h = stop.0 + (next_stop.0 - stop.0) * inter_factor;
+    //         let s = stop.1 + (next_stop.1 - stop.1) * inter_factor;
+    //         let l = stop.2 + (next_stop.2 - stop.2) * inter_factor;
+
+    //         format!("hsl({h}deg {s}% {l}%)")
+    //     }
+    // };
+
+    for (index, (color, size, link, title)) in sizes.iter().enumerate() {
         let arc_angle = if sizes.len() == 1 {
             359.0 // TODO: Our graph drawing code can not handle 360 degree segments yet so work around it for now with this hack
         } else {
             (*size as f32 / total_size as f32) * 360.0
         };
 
-        let lightness_offset = if sizes.len() == 1 { 0.0 } else { index as f32 / (sizes.len() - 1) as f32 };
-        let lightness = 75.0 - lightness_offset * 50.0;
+        let gradient_factor = if sizes.len() == 1 { 0.0 } else { index as f32 / (sizes.len() - 1) as f32 };
 
         let size_humanized = human_size(*size);
         let list_text = formatdoc!(r#"
             <li>
-                <div style="background: hsl(0, 0%, {lightness}%);"></div> {size_humanized} <a href="{link}">{title}</a>
+                <span style="background: {color};"></span>
+                <span>{size_humanized}</span>
+                <a href="{link}">{title}</a>
             </li>
         "#);
 
         list.push_str(&list_text);
 
-        slices.push_str(&slice(arc_angle, begin_angle, link, lightness, title));
+        slices.push_str(&slice(arc_angle, &color, begin_angle, link, title));
 
         begin_angle += arc_angle;
     }
