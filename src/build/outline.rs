@@ -12,7 +12,7 @@ use crate::{
     Video
 };
 use crate::build::thumbnail;
-use crate::build::widgets::{banner_html, poster_html};
+use crate::build::widgets::{banner_html, bubbles, poster_html};
 use crate::util::{
     casual_duration,
     html_escape_outside_attribute,
@@ -458,27 +458,15 @@ impl TraversalStep<'_> {
                 let label = collection.title_or_slug_or_generic_label(translations);
                 let label_escaped = html_escape_outside_attribute(label);
 
-                let video_bubbles = collection.public_videos_in_collection_video_order()
-                    .iter()
-                    .map(|video| {
-                        if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
-                            let background = poster_meta.lqip.gradient_radial();
-                            let video_slug = video.slug_unchecked();
-                            formatdoc!(r#"<a class="context_dot" href="{prefix}{video_slug}/" style="{background}"></a>"#)
-                        } else {
-                            String::new()
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join("");
+                let videos = collection.public_videos_in_collection_video_order();
+                let video_bubbles = bubbles(prefix, &videos);
 
-                let count = collection.public_videos().count();
-                let inline = if count > 3 { "" } else { "inline" };
+                let inline = if videos.len() > 3 { "" } else { "inline" };
 
                 format!(r#"
                     <div class="parent_context {inline}">
                         <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
-                        <div style="--count: {count}">{video_bubbles}</div>
+                        {video_bubbles}
                     </div>
                 "#)
             }
@@ -486,27 +474,15 @@ impl TraversalStep<'_> {
                 let label = playlist.title_or_slug_or_generic_label(translations);
                 let label_escaped = html_escape_outside_attribute(label);
 
-                let video_bubbles = playlist.public_videos_in_playlist_order()
-                    .iter()
-                    .map(|video| {
-                        if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
-                            let background = poster_meta.lqip.gradient_radial();
-                            let video_slug = video.slug_unchecked();
-                            formatdoc!(r#"<a class="context_dot" href="{prefix}{video_slug}/" style="{background}"></a>"#)
-                        } else {
-                            String::new()
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join("");
+                let videos = playlist.public_videos_in_playlist_order();
+                let video_bubbles = bubbles(prefix, &videos);
 
-                let count = playlist.public_videos().count();
-                let inline = if count > 3 { "" } else { "inline" };
+                let inline = if videos.len() > 3 { "" } else { "inline" };
 
                 format!(r#"
                     <div class="parent_context {inline}">
                         <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
-                        <div style="--count: {count}">{video_bubbles}</div>
+                        {video_bubbles}
                     </div>
                 "#)
             }

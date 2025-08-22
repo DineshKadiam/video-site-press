@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::sync::Arc;
+
 use indoc::formatdoc;
 
 use crate::{
@@ -36,6 +38,26 @@ pub fn banner_html(banner: &Banner, prefix: &str) -> String {
     } else {
         formatdoc!(r#"<img {alt} class="banner" src="{prefix}banner.jpg">"#)
     }
+}
+
+/// Renders a list of "bubbles" (circles with a mesh gradient type background) that are
+/// utilized in the layout to indicate the videos in a container (collection or playlist)
+pub fn bubbles(prefix: &str, videos: &[Arc<Video>]) -> String {
+    let bubbles = videos
+        .iter()
+        .map(|video| {
+            if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
+                let background = poster_meta.lqip.gradient_radial();
+                let video_slug = video.slug_unchecked();
+                formatdoc!(r#"<li><a href="{prefix}{video_slug}/" style="{background}"></a></li>"#)
+            } else {
+                String::new()
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("");
+
+    format!(r#"<ul class="bubbles">{bubbles}</ul>"#)
 }
 
 /// A button enriched with data attributes that client scripting can use to

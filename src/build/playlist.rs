@@ -16,6 +16,7 @@ use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{
     banner_html,
+    bubbles,
     links,
     subscribe_button,
     thumbnail,
@@ -59,7 +60,16 @@ pub fn playlist_html(
         String::new()
     };
 
-    body.push_str(&format!("<h1>{e_title} {r_unlisted_badge}</h1>\n\n"));
+    let videos = playlist.public_videos_in_playlist_order();
+
+    let video_bubbles = bubbles("", &videos);
+    let heading = formatdoc!(r#"
+        <div class="container_title">
+            <h1>{e_title} {r_unlisted_badge}</h1>
+            {video_bubbles}
+        </div>
+    "#);
+    body.push_str(&heading);
 
     if let Some(description) = &playlist.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -75,8 +85,6 @@ pub fn playlist_html(
         let links_rendered = links(&site.language, &playlist.links);
         body.push_str(&links_rendered);
     }
-
-    let videos = playlist.public_videos_in_playlist_order();
 
     if !videos.is_empty() {
         let videos = videos

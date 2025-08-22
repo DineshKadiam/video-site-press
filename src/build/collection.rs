@@ -17,6 +17,7 @@ use crate::build::outline::Traversal;
 use crate::build::{AssetHashes, Layout};
 use crate::build::widgets::{
     banner_html,
+    bubbles,
     links,
     subscribe_button,
     thumbnail,
@@ -61,7 +62,16 @@ pub fn collection_html(
         String::new()
     };
 
-    body.push_str(&format!("<h1>{e_title} {r_unlisted_badge}</h1>\n\n"));
+    let videos = collection.public_videos_in_collection_video_order();
+
+    let video_bubbles = bubbles("", &videos);
+    let heading = formatdoc!(r#"
+        <div class="container_title">
+            <h1>{e_title} {r_unlisted_badge}</h1>
+            {video_bubbles}
+        </div>
+    "#);
+    body.push_str(&heading);
 
     if let Some(description) = &collection.description {
         let description_html = MarkdownSubset::to_html(description);
@@ -77,8 +87,6 @@ pub fn collection_html(
         let links_rendered = links(&site.language, &collection.links);
         body.push_str(&links_rendered);
     }
-
-    let videos = collection.public_videos_in_collection_video_order();
 
     if !videos.is_empty() {
         let videos = videos
@@ -207,7 +215,7 @@ fn render_collection(
     let videos = collection.public_videos_in_collection_video_order();
 
      if !videos.is_empty() {
-        let videos = videos
+        let videos_rendered = videos
             .iter()
             .map(|video| {
                 let traversal_with_video = traversal_with_collection.peek_video(video);
@@ -255,16 +263,21 @@ fn render_collection(
             Some(title) => html_escape_outside_attribute(title),
             None => collection.slug_unchecked().to_string()
         };
+
+        let video_bubbles = bubbles("", &videos);
         let collection_title_and_videos = formatdoc!(r#"
-            <h2>
-                <a href="{collection_href}">
-                    {e_title}
-                </a>
-                {breadcrumbs_rendered}
-            </h2>
+            <div class="container_title">
+                <h2>
+                    <a href="{collection_href}">
+                        {e_title}
+                    </a>
+                    {breadcrumbs_rendered}
+                </h2>
+                {video_bubbles}
+            </div>
 
             <div class="videos_grid">
-                {videos}
+                {videos_rendered}
             </div>
         "#);
 
@@ -300,7 +313,9 @@ fn render_playlist(
         String::new()
     };
 
-    let videos = playlist.public_videos_in_playlist_order()
+    let videos = playlist.public_videos_in_playlist_order();
+
+    let videos_rendered = videos
         .iter()
         .map(|video| {
             let traversal_with_video = traversal_with_playlist.peek_video(video);
@@ -334,7 +349,7 @@ fn render_playlist(
 
     let videos_rendered = formatdoc!(r#"
         <div class="videos_grid">
-            {videos}
+            {videos_rendered}
         </div>
     "#);
 
@@ -355,14 +370,20 @@ fn render_playlist(
         Some(title) => html_escape_outside_attribute(title),
         None => playlist.slug_unchecked().to_string()
     };
+
     let playlist_href = traversal_with_playlist.index_desc(site);
+
+    let video_bubbles = bubbles("", &videos);
     formatdoc!(r#"
-        <h2>
-            <a href="{playlist_href}">
-                {e_title}
-            </a>
-            {breadcrumbs_rendered}
-        </h2>
+        <div class="container_title">
+            <h2>
+                <a href="{playlist_href}">
+                    {e_title}
+                </a>
+                {breadcrumbs_rendered}
+            </h2>
+            {video_bubbles}
+        </div>
         <a href="{playlist_href}">{banner}</a>
         {videos_rendered}
     "#)
