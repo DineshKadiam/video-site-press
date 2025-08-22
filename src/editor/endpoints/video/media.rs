@@ -23,18 +23,8 @@ use crate::icons;
 use crate::util::{precise_duration, human_size};
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
-    let (
-        aspect_ratio,
-        highest_frame_rate,
-        tallest_height
-    ) = if let Some(video_file) = video.highest_quality_video_file() {
-        let video_meta = video_file.video_meta.as_ref().unwrap();
-
-        (
-            video_meta.width as f32 / video_meta.height as f32,
-            video_meta.video_frame_rate,
-            video_meta.height
-        )
+    let video_meta = if let Some(video_file) = video.highest_quality_video_file() {
+        video_file.video_meta.as_ref().unwrap()
     } else {
         return String::new();
     };
@@ -49,30 +39,27 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
     let mut select_resolution = Select::new("height", translations.resolution);
     select_resolution.id("resolution");
 
-    let mut no_height_options = true;
-    let candidate_heights = [1080, 720, 480, 360, 240, 144];
-    let padding_len = tallest_height.to_string().len();
-    for height in candidate_heights {
-        if height <= tallest_height {
+    let height_padding_len = video_meta.height.to_string().len();
+
+    let mut add_resolution_option = |height: usize, original: bool, width: usize| {
+        let original = if original { format!(" ({t_original})") } else { String::new() };
+        let padding = "&nbsp;".repeat(2 * (height_padding_len - height.to_string().len()));
+        let label = format!(r#"<wbr>{padding}{height}p – {width}×{height}{original}"#);
+
+        select_resolution.option(height.to_string(), label);
+    };
+
+    // Allow re-encoding at the original video dimensions (e.g. just to
+    // increase compression or change framerate)
+    add_resolution_option(video_meta.height, true, video_meta.width);
+
+    // Allow resizing to smaller resolutions
+    let aspect_ratio = video_meta.aspect_ratio();
+    for height in [1080, 720, 480, 360, 240, 144] {
+        if height < video_meta.height {
             let width = (height as f32 * aspect_ratio) as usize;
-
-            let original = if height == tallest_height {
-                format!("({t_original})")
-            } else {
-                String::new()
-            };
-
-            let padding = "&nbsp;".repeat(2 * (padding_len - height.to_string().len()));
-            let label = format!(r#"<wbr>{padding}{height}p – {width}×{height} {original}"#);
-
-            select_resolution.option(height.to_string(), label);
-
-            no_height_options = false;
+            add_resolution_option(height, false, width);
         }
-    }
-
-    if no_height_options {
-        return String::new();
     }
 
     let mut select_frame_rate = Select::new("frame_rate", translations.frame_rate);
@@ -80,20 +67,18 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
     select_frame_rate.option("", translations.automatic_original_frame_rate_or_encoder_preference);
     select_frame_rate.selected("");
 
-    let candidate_frame_rates = [60.0, 48.0, 30.0, 25.0, 24.0, 12.0];
-    // If the original frame rate is one we don't normally offer, offer it separately here
-    if !candidate_frame_rates.iter().any(|frame_rate| *frame_rate == highest_frame_rate) {
-        let label = format!(r#"{highest_frame_rate} fps ({t_original})"#);
-        select_frame_rate.option(highest_frame_rate.to_string(), label);
-    }
-    for frame_rate in candidate_frame_rates {
-        if frame_rate <= highest_frame_rate {
-            let label = if frame_rate == highest_frame_rate {
-                format!("{frame_rate} fps ({t_original})")
-            } else {
-                format!("{frame_rate} fps")
-            };
-            select_frame_rate.option(frame_rate.to_string(), label);
+    let mut add_frame_rate_option = |frame_rate: f32, original: bool| {
+        let original = if original { format!(" ({t_original})") } else { String::new() };
+        let label = format!("{frame_rate} fps{original}");
+
+        select_frame_rate.option(frame_rate.to_string(), label);
+    };
+
+    add_frame_rate_option(video_meta.video_frame_rate, true);
+
+    for frame_rate in [60.0, 48.0, 30.0, 25.0, 24.0, 12.0] {
+        if frame_rate <= video_meta.video_frame_rate {
+            add_frame_rate_option(frame_rate, false);
         }
     }
 
