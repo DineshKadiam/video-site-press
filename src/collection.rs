@@ -12,6 +12,8 @@ use url::Url;
 use crate::{
     Banner,
     CollectionUpdate,
+    Container,
+    ContainerOrder,
     Context,
     FileMeta,
     GetAnyResult,
@@ -35,6 +37,7 @@ use crate::util::checked_remove_dir_all;
 
 const COLLECTION_OPTIONS: &[&str] = &[
     "banner",
+    "container_order",
     "copy_link",
     "description",
     "download",
@@ -43,6 +46,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
     "link",
     "offline",
     "platform_integration",
+    "sort_number",
     "title",
     "unlisted",
     "video_order"
@@ -51,6 +55,7 @@ const COLLECTION_OPTIONS: &[&str] = &[
 #[derive(Clone, Debug)]
 pub struct Collection {
     pub banner: Option<Banner>,
+    pub container_order: ContainerOrder,
     copy_link: Option<bool>,
     pub description: Option<String>,
     /// Errors related to files within the collection directory, outside of
@@ -73,6 +78,7 @@ pub struct Collection {
     platform_integration: Option<PlatformIntegration>,
     pub playlists: Vec<Arc<Playlist>>,
     pub site_path: SitePath,
+    pub sort_number: Option<i32>,
     pub subcollections: Vec<Arc<Collection>>,
     pub title: Option<String>,
     unlisted: bool,
@@ -154,6 +160,31 @@ impl Collection {
                     }
 
                     let message = "banner needs to be provided as a field with attributes, e.g.:\n\nbanner:\ndescription = Strange geometric patterns\nfile = patterns.jpg";
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
+                "container_order" => 'container_order: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match ContainerOrder::from_key(value) {
+                                    Some(order) => {
+                                        self.container_order = order;
+                                    }
+                                    None => {
+                                        let supported_keys = ContainerOrder::supported_keys();
+                                        let message = format!("The supplied order was not recognized (supported are {supported_keys})");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'container_order;
+                        }
+                    }
+
+                    let message = "container_order needs to be provided as a field with a value, e.g.: 'container_order: release_date_asc'";
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
@@ -398,6 +429,30 @@ impl Collection {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
+                "sort_number" => 'title: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value.parse::<i32>() {
+                                    Ok(number) => {
+                                        self.sort_number = Some(number);
+                                    }
+                                    Err(err) => {
+                                        let message = format!("Invalid number value '{value}': {err}");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'title;
+                        }
+                    }
+
+                    let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -460,24 +515,25 @@ impl Collection {
         b.latest_release_date().cmp(&a.latest_release_date())
     }
 
-    // Collections without title are sorted to the front
-    pub fn cmp_by_slug_then_title_asc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
-        }
-    }
+    pub fn containers_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Container> {
+        let mut containers = Vec::new();
 
-    // Collections without title are sorted to the front
-    pub fn cmp_by_slug_then_title_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(&a.slug())
+        for playlist in &self.playlists {
+            containers.push(Container::Playlist(playlist.clone()));
         }
+
+        for subcollection in &self.subcollections {
+            containers.push(Container::Collection(subcollection.clone()));
+        }
+
+        match tree_view_order {
+            TreeViewOrder::Default |
+            TreeViewOrder::SiteOrder => containers.sort_unstable_by(Container::cmp_by_container_order(&self.container_order)),
+            TreeViewOrder::TitleAsc => containers.sort_unstable_by(Container::cmp_by_slug_then_title_asc),
+            TreeViewOrder::TitleDesc => containers.sort_unstable_by(Container::cmp_by_slug_then_title_desc)
+        }
+
+        containers
     }
 
     /// When we convert between types (collection, playlist, video) we pass
@@ -882,6 +938,7 @@ impl Collection {
     pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Collection {
         Collection {
             banner: None,
+            container_order: ContainerOrder::Default,
             copy_link: None,
             description: None,
             dir_errors: Vec::new(),
@@ -895,6 +952,7 @@ impl Collection {
             platform_integration: None,
             playlists: Vec::new(),
             site_path,
+            sort_number: None,
             subcollections: Vec::new(),
             title: None,
             unlisted: false,
@@ -977,19 +1035,6 @@ impl Collection {
         self.published_subcollections().any(|subcollection| subcollection.platform_integration_requested())
     }
 
-    pub fn playlists_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Playlist>> {
-        let mut playlists: Vec<Arc<Playlist>> = self.playlists.clone();
-
-        match tree_view_order {
-            TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => playlists.sort_unstable_by(Playlist::cmp_by_latest_release_date_desc),
-            TreeViewOrder::TitleAsc => playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_asc),
-            TreeViewOrder::TitleDesc => playlists.sort_unstable_by(Playlist::cmp_by_slug_then_title_desc)
-        }
-
-        playlists
-    }
-
     /// Recursively clones all descendants of this collection "in place"
     /// (making them briefly mutable) to update their inherited setting
     /// states (download, embedding, offline, unlisted, etc.).
@@ -1024,6 +1069,22 @@ impl Collection {
                 Arc::new(video_mut)
             })
             .collect();
+    }
+
+    pub fn public_containers_in_container_order(&self) -> Vec<Container> {
+        let mut containers = Vec::new();
+
+        for playlist in self.public_playlists() {
+            containers.push(Container::Playlist(playlist.clone()));
+        }
+
+        for subcollection in self.public_subcollections() {
+            containers.push(Container::Collection(subcollection.clone()));
+        }
+
+        containers.sort_unstable_by(Container::cmp_by_container_order(&self.container_order));
+
+        containers
     }
 
     /// A collection is public in its local context if it is neither offline
@@ -1220,19 +1281,6 @@ impl Collection {
 
     pub fn slug_unchecked(&self) -> &str {
         self.site_path.last_component_unchecked()
-    }
-
-    pub fn subcollections_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Collection>> {
-        let mut subcollections: Vec<Arc<Collection>> = self.subcollections.clone();
-
-        match tree_view_order {
-            TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => subcollections.sort_unstable_by(Collection::cmp_by_latest_release_date_desc),
-            TreeViewOrder::TitleAsc => subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_asc),
-            TreeViewOrder::TitleDesc => subcollections.sort_unstable_by(Collection::cmp_by_slug_then_title_desc)
-        }
-
-        subcollections
     }
 
     /// If the subscribe page permalink we have in our translations collides
@@ -1549,6 +1597,10 @@ impl Collection {
             eno.push_str(&format!("file = {}\n", banner.file_name));
         }
 
+        if self.container_order != ContainerOrder::Default {
+            eno.push_str(&format!("container_order: {}\n", self.container_order.key()));
+        }
+
         if let Some(copy_link) = self.copy_link {
             eno.push_str(&format!("copy_link: {}\n", if copy_link { "enabled" } else { "disabled" }));
         }
@@ -1571,6 +1623,10 @@ impl Collection {
 
         if let Some(platform_integration) = self.platform_integration {
             eno.push_str(&format!("platform_integration: {}\n", platform_integration.key()));
+        }
+
+        if let Some(sort_number) = &self.sort_number {
+            eno.push_str(&format!("sort_number: {}\n", sort_number));
         }
 
         if let Some(title) = &self.title {

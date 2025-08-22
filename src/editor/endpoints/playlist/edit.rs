@@ -40,6 +40,7 @@ pub enum PlaylistFormFeedback<'a> {
         offline: bool,
         order: &'a str,
         platform_integration: Option<PlatformIntegration>,
+        sort_number: Field,
         title: Field,
         unlisted: bool
     }
@@ -79,13 +80,14 @@ pub fn edit_page(
     }
 
     let mut input_offline = Checkbox::new("offline", translations.offline);
+    let mut input_sort_number = Input::number("sort_number", translations.sort_number);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_feeds = Select::new("feeds", translations.feeds);
-    let mut select_order = Select::new("order", translations.order);
+    let mut select_order = Select::new("order", translations.video_order);
     let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
     let mut textarea_description = Textarea::markdown_subset(translations, "description", translations.description);
 
@@ -153,6 +155,7 @@ pub fn edit_page(
         offline,
         order,
         platform_integration,
+        sort_number,
         title,
         unlisted
     }) = &form_feedback {
@@ -186,6 +189,7 @@ pub fn edit_page(
         };
 
         input_offline.checked(*offline);
+        input_sort_number.validated_value(sort_number);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
         select_copy_link.selected(copy_link_value);
@@ -227,7 +231,10 @@ pub fn edit_page(
             None => ""
         };
 
+        let sort_number = playlist.sort_number.as_ref().map(|number| number.to_string());
+
         input_offline.checked(playlist.offline_local());
+        input_sort_number.value_option(&sort_number);
         input_title.value_option(&playlist.title);
         input_unlisted.checked(playlist.unlisted_local());
         select_copy_link.selected(copy_link);
@@ -328,6 +335,7 @@ pub fn edit_page(
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
+                {input_sort_number}
                 {select_order}
                 {select_copy_link}
                 {select_download}

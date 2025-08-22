@@ -40,6 +40,7 @@ const PLAYLIST_OPTIONS: &[&str] = &[
     "offline",
     "order",
     "platform_integration",
+    "sort_number",
     "title",
     "unlisted"
 ];
@@ -69,6 +70,7 @@ pub struct Playlist {
     pub order: VideoOrder,
     platform_integration: Option<PlatformIntegration>,
     pub site_path: SitePath,
+    pub sort_number: Option<i32>,
 	pub title: Option<String>,
     /// Unlisted playlists are not linked from the site anywhere,
     /// one needs to know the link to access them.
@@ -425,6 +427,30 @@ impl Playlist {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
+                "sort_number" => 'title: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(result) = field.value() {
+                            if let Some(value) = result {
+                                match value.parse::<i32>() {
+                                    Ok(number) => {
+                                        self.sort_number = Some(number);
+                                    }
+                                    Err(err) => {
+                                        let message = format!("Invalid number value '{value}': {err}");
+                                        let error = element_error(element, manifest_path, &message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            break 'title;
+                        }
+                    }
+
+                    let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
                 "title" => 'title: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -460,26 +486,6 @@ impl Playlist {
 
     pub fn cmp_by_latest_release_date_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
         b.latest_release_date().cmp(&a.latest_release_date())
-    }
-
-    // Playlists without title are sorted to the front
-    pub fn cmp_by_slug_then_title_asc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
-        }
-    }
-
-    // Playlists without title are sorted to the front
-    pub fn cmp_by_slug_then_title_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(&a.slug())
-        }
     }
 
     /// When we convert between types (collection, playlist, video) we pass
@@ -709,6 +715,7 @@ impl Playlist {
             order: VideoOrder::Default,
             platform_integration: None,
             site_path,
+            sort_number: None,
             title: None,
             videos: Vec::new(),
             unlisted: false
@@ -1110,6 +1117,10 @@ impl Playlist {
 
         if let Some(platform_integration) = self.platform_integration {
             eno.push_str(&format!("platform_integration: {}\n", platform_integration.key()));
+        }
+
+        if let Some(sort_number) = &self.sort_number {
+            eno.push_str(&format!("sort_number: {}\n", sort_number));
         }
 
         if let Some(title) = &self.title {

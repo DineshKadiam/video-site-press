@@ -33,6 +33,7 @@ pub struct PlaylistUpdateForm {
     offline: Option<String>,
     order: String,
     platform_integration: String,
+    sort_number: String,
     title: String,
     unlisted: Option<String>
 }
@@ -78,14 +79,45 @@ pub async fn update(
         other => Some(PlatformIntegration::from_key(other).unwrap())
     };
 
+    let sort_number_trimmed = form.sort_number.trim();
+    let sort_number = match sort_number_trimmed.is_empty() {
+        true => None,
+        false => Some(
+            sort_number_trimmed.parse::<i32>().map_err(|err| err.to_string())
+        )
+    };
+
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
 
-    // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
-    if true {
+    if sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
+        let playlist = match context.get_playlist(&site_path) {
+            Some(playlist) => playlist,
+            None => return Either::Right(not_found(&context, &language, &site_path))
+        };
+
+        let form_feedback = PlaylistFormFeedback::Update {
+            copy_link,
+            description: description_trimmed,
+            download,
+            embedding,
+            feeds,
+            offline,
+            order: &form.order,
+            platform_integration,
+            sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
+            title: Field::valid(title_trimmed),
+            unlisted
+        };
+
+        Either::Right(
+            edit_page(&context, Some(form_feedback), &language, &playlist)
+        )
+    } else {
         let mutation = |playlist_mut: &mut Playlist| {
             playlist_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             playlist_mut.order = order;
+            playlist_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
             playlist_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
 
             let mut must_propagate = false;
@@ -116,27 +148,5 @@ pub async fn update(
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
         }
-    } else {
-        let playlist = match context.get_playlist(&site_path) {
-            Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &language, &site_path))
-        };
-
-        let form_feedback = PlaylistFormFeedback::Update {
-            copy_link,
-            description: description_trimmed,
-            download,
-            embedding,
-            feeds,
-            offline,
-            order: &form.order,
-            platform_integration,
-            title: Field::valid(title_trimmed),
-            unlisted
-        };
-
-        Either::Right(
-            edit_page(&context, Some(form_feedback), &language, &playlist)
-        )
     }
 }

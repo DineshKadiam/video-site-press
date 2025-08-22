@@ -10,6 +10,7 @@ use serde_derive::Deserialize;
 use crate::{
     Collection,
     CollectionUpdate,
+    ContainerOrder,
     Context,
     Field,
     PlatformIntegration,
@@ -26,6 +27,7 @@ use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
 pub struct UpdateForm {
+    container_order: String,
     copy_link: String,
     description: String,
     download: String,
@@ -33,6 +35,7 @@ pub struct UpdateForm {
     feeds: String,
     offline: Option<String>,
     platform_integration: String,
+    sort_number: String,
     title: String,
     unlisted: Option<String>,
     video_order: String
@@ -76,15 +79,47 @@ pub async fn update(
         other => Some(PlatformIntegration::from_key(other).unwrap())
     };
 
+    let sort_number_trimmed = form.sort_number.trim();
+    let sort_number = match sort_number_trimmed.is_empty() {
+        true => None,
+        false => Some(
+            sort_number_trimmed.parse::<i32>().map_err(|err| err.to_string())
+        )
+    };
+
+    let container_order = ContainerOrder::from_key(&form.container_order).unwrap();
     let offline = form.offline.is_some();
     let title_trimmed = form.title.trim();
     let unlisted = form.unlisted.is_some();
     let video_order = VideoOrder::from_key(&form.video_order).unwrap();
 
-    // TODO: We're keeping this around for now because we might need to re-introduce some actual validation? (description/title length e.g.?)
-    if true {
+    if sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
+        let collection = match context.get_collection(&site_path) {
+            Some(collection) => collection,
+            None => return Either::Right(not_found(&context, &language, &site_path))
+        };
+
+        let form_feedback = CollectionFormFeedback::Update {
+            container_order: &form.container_order,
+            copy_link,
+            description: description_trimmed,
+            download,
+            embedding,
+            feeds,
+            offline,
+            platform_integration,
+            sort_number: Field::validated(sort_number_trimmed, sort_number.and_then(|sort_number| sort_number.err())),
+            title: Field::valid(title_trimmed),
+            unlisted,
+            video_order: &form.video_order
+        };
+
+        Either::Right(edit_page(&collection, &context, form_feedback, &language))
+    } else {
         let mutation = |collection_mut: &mut Collection| {
+            collection_mut.container_order = container_order;
             collection_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
+            collection_mut.sort_number = sort_number.and_then(|sort_number| sort_number.ok());
             collection_mut.title = if title_trimmed.is_empty() { None } else { Some(title_trimmed.to_owned()) };
             collection_mut.video_order = video_order;
 
@@ -116,25 +151,5 @@ pub async fn update(
                 Either::Left(Redirect::to(redirect_url).see_other())
             }
         }
-    } else {
-        let collection = match context.get_collection(&site_path) {
-            Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &language, &site_path))
-        };
-
-        let form_feedback = CollectionFormFeedback::Update {
-            copy_link,
-            description: description_trimmed,
-            download,
-            embedding,
-            feeds,
-            offline,
-            platform_integration,
-            title: Field::valid(title_trimmed),
-            unlisted,
-            video_order: &form.video_order
-        };
-
-        Either::Right(edit_page(&collection, &context, form_feedback, &language))
     }
 }

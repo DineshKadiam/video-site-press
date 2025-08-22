@@ -280,14 +280,14 @@ fn storage_stats_html(
     //     }
     // };
 
-    for (index, (color, size, link, title)) in sizes.iter().enumerate() {
+    for (color, size, link, title) in &sizes {
         let arc_angle = if sizes.len() == 1 {
             359.0 // TODO: Our graph drawing code can not handle 360 degree segments yet so work around it for now with this hack
         } else {
             (*size as f32 / total_size as f32) * 360.0
         };
 
-        let gradient_factor = if sizes.len() == 1 { 0.0 } else { index as f32 / (sizes.len() - 1) as f32 };
+        // let gradient_factor = if sizes.len() == 1 { 0.0 } else { index as f32 / (sizes.len() - 1) as f32 };
 
         let size_humanized = human_size(*size);
         let list_text = formatdoc!(r#"

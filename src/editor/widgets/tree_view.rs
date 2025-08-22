@@ -7,6 +7,7 @@ use indoc::formatdoc;
 
 use crate::{
     Collection,
+    Container,
     Context,
     Playlist,
     Site,
@@ -128,38 +129,37 @@ fn collection_node(
         &collection_visibility
     );
 
-    let subcollections = collection.subcollections_in_tree_view_order(tree_view_order)
+    let containers = collection.containers_in_tree_view_order(tree_view_order)
         .iter()
-        .map(|collection| {
-            let node = collection_node(
-                breadcrumbs,
-                collection,
-                location,
-                site,
-                None,
-                translations,
-                tree_view_order
-            );
+        .map(|container| {
+            match container {
+                Container::Collection(collection) => {
+                    let node = collection_node(
+                        breadcrumbs,
+                        collection,
+                        location,
+                        site,
+                        None,
+                        translations,
+                        tree_view_order
+                    );
 
-            format!("<li>{node}</li>")
-        })
-        .collect::<Vec<String>>()
-        .join("");
+                    format!("<li>{node}</li>")
+                }
+                Container::Playlist(playlist) => {
+                    let node = playlist_node(
+                        breadcrumbs,
+                        location,
+                        playlist,
+                        site,
+                        None,
+                        translations,
+                        tree_view_order
+                    );
 
-    let playlists = collection.playlists_in_tree_view_order(tree_view_order)
-        .iter()
-        .map(|playlist| {
-            let node = playlist_node(
-                breadcrumbs,
-                location,
-                playlist,
-                site,
-                None,
-                translations,
-                tree_view_order
-            );
-
-            format!("<li>{node}</li>")
+                    format!("<li>{node}</li>")
+                }
+            }
         })
         .collect::<Vec<String>>()
         .join("");
@@ -301,8 +301,7 @@ fn collection_node(
         {node_with_subpages}
         <ul>
             {videos}
-            {subcollections}
-            {playlists}
+            {containers}
         </ul>
     "#)
 }

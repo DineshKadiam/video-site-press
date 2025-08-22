@@ -7,6 +7,7 @@ use indoc::formatdoc;
 
 use crate::{
     Collection,
+    Container,
     Context,
     MarkdownSubset,
     PlatformIntegrationMeta,
@@ -130,16 +131,19 @@ pub fn collection_html(
         body.push_str(&videos_rendered);
     }
 
-    let playlists = collection.public_playlists_desc_by_release_date();
-    for playlist in &playlists {
-        let rendered = render_playlist(playlist, site, traversal);
-        body.push_str(&rendered);
-    }
+    let containers = collection.public_containers_in_container_order();
 
-    let subcollections = collection.public_subcollections_desc_by_release_date();
-    for subcollection in &subcollections {
-        let rendered = render_collection(subcollection, site, traversal);
-        body.push_str(&rendered);
+    for container in &containers {
+        let container_rendered = match container {
+            Container::Collection(collection) => {
+                render_collection(collection, site, traversal)
+            }
+            Container::Playlist(playlist) => {
+                render_playlist(playlist, site, traversal)
+            }
+        };
+
+        body.push_str(&container_rendered);
     }
 
     if collection.platform_integration().enabled() {

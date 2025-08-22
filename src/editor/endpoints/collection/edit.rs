@@ -41,6 +41,7 @@ pub enum CollectionFormFeedback<'a> {
     },
     None,
     Update {
+        container_order: &'a str,
         copy_link: Option<bool>,
         description: &'a str,
         download: Option<bool>,
@@ -48,6 +49,7 @@ pub enum CollectionFormFeedback<'a> {
         feeds: Option<bool>,
         offline: bool,
         platform_integration: Option<PlatformIntegration>,
+        sort_number: Field,
         title: Field,
         unlisted: bool,
         video_order: &'a str
@@ -86,15 +88,25 @@ pub fn edit_page(
         errors.push_str(&format!(r#"<pre class="error">{manifest_error}</pre>"#));
     }
 
+    let t_container_order = translations.container_order;
+    let t_order_in_which_playlists_and_subcollections_appear = translations.order_in_which_playlists_and_subcollections_appear;
+    let select_container_order_label = format!("{t_container_order} – {t_order_in_which_playlists_and_subcollections_appear}");
+
+    let t_video_order = translations.video_order;
+    let t_videos_in_a_collection_always_appear_at_the_top = translations.videos_in_a_collection_always_appear_at_the_top;
+    let select_video_order_label = format!("{t_video_order} – {t_videos_in_a_collection_always_appear_at_the_top}");
+
     let mut input_offline = Checkbox::new("offline", translations.offline);
+    let mut input_sort_number = Input::number("sort_number", translations.sort_number);
     let mut input_title = Input::text("title", translations.title);
     let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_container_order = Select::new("container_order", &select_container_order_label);
     let mut select_copy_link = Select::new("copy_link", translations.copy_link);
     let mut select_download = Select::new("download", translations.downloads);
     let mut select_embedding = Select::new("embedding", translations.embedding);
     let mut select_feeds = Select::new("feeds", translations.feeds);
     let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
-    let mut select_video_order = Select::new("video_order", translations.video_order);
+    let mut select_video_order = Select::new("video_order", &select_video_order_label);
     let mut textarea_description = Textarea::markdown_subset(translations, "description", translations.description);
 
     let t_disabled = translations.disabled;
@@ -104,6 +116,12 @@ pub fn edit_page(
         true => translations.default,
         false => translations.inherited
     };
+
+    select_container_order.option("default", translations.default_sort_number_ascending_or_latest_release_date_descending);
+    select_container_order.option("sort_number_asc", translations.sort_number_ascending);
+    select_container_order.option("sort_number_desc", translations.sort_number_descending);
+    select_container_order.option("title_asc", translations.title_ascending);
+    select_container_order.option("title_desc", translations.title_descending);
 
     let t_copy_link_inherited_enabled_disabled = if collection.copy_link_inherited() { t_enabled } else { t_disabled };
     select_copy_link.option("", format!("{t_copy_link_inherited_enabled_disabled} ({t_default_or_inherited})"));
@@ -154,6 +172,7 @@ pub fn edit_page(
     }
 
     let feedback_update = if let CollectionFormFeedback::Update {
+        container_order,
         copy_link,
         description,
         download,
@@ -161,6 +180,7 @@ pub fn edit_page(
         feeds,
         offline,
         platform_integration,
+        sort_number,
         title,
         unlisted,
         video_order
@@ -195,8 +215,10 @@ pub fn edit_page(
         };
 
         input_offline.checked(*offline);
+        input_sort_number.validated_value(sort_number);
         input_title.validated_value(title);
         input_unlisted.checked(*unlisted);
+        select_container_order.selected(container_order);
         select_copy_link.selected(copy_link_value);
         select_download.selected(download_value);
         select_embedding.selected(embedding_value);
@@ -236,9 +258,13 @@ pub fn edit_page(
             None => ""
         };
 
+        let sort_number = collection.sort_number.as_ref().map(|number| number.to_string());
+
         input_offline.checked(collection.offline_local());
+        input_sort_number.value_option(&sort_number);
         input_title.value_option(&collection.title);
         input_unlisted.checked(collection.unlisted_local());
+        select_container_order.selected(collection.container_order.key());
         select_copy_link.selected(copy_link);
         select_download.selected(download);
         select_embedding.selected(embedding);
@@ -424,7 +450,9 @@ pub fn edit_page(
             <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
                 {input_title}
                 {textarea_description}
+                {input_sort_number}
                 {select_video_order}
+                {select_container_order}
                 {select_copy_link}
                 {select_download}
                 {select_embedding}
