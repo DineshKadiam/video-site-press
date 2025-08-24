@@ -6,28 +6,30 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
+use indoc::formatdoc;
 use slug::slugify;
 
 use crate::{
-    ActiveJobs,
     Cache,
     Collection,
+    CompletedJob,
     DeploymentState,
     HyperDir,
     InheritedOptions,
-    Job,
     JobDesc,
     JobProgress,
     Language,
     Playlist,
+    QueuedJob,
     Site,
     SiteContent,
     SitePath,
     Theme,
     TreeViewOrder,
-    Video
+    Video,
+    Worker
 };
 use crate::util::{
     checked_remove_dir_all,
@@ -36,16 +38,15 @@ use crate::util::{
 };
 
 pub struct Context {
-    pub active_jobs: Mutex<ActiveJobs>,
     pub build_dir: PathBuf,
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
-    pub completed_jobs: Mutex<Vec<Job>>,
+    pub completed_jobs: Mutex<Vec<CompletedJob>>,
     pub deploying: Mutex<DeploymentState>,
     pub editor_language: Mutex<Language>,
     pub editor_theme: Mutex<Theme>,
     pub editor_tree_view_order: Mutex<TreeViewOrder>,
-    pub job_queue: Mutex<Vec<Job>>,
+    pub job_queue: Mutex<Vec<QueuedJob>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
 }
@@ -146,45 +147,87 @@ pub enum VideoParent {
 }
 
 impl Context {
-    /// Add a job to the active jobs based on its id
-    pub fn add_active_job(&self, label: String, site_path: SitePath) -> usize {
-        self.active_jobs.lock().unwrap().add(label, site_path)
-    }
-
-    pub fn await_job_queue(&self) {
+    /// Blocks until all jobs in the job queue have been processed.
+    /// This returns Err(…) if one or more jobs fail, but will still
+    /// await all remaining jobs before doing so.
+    pub fn await_job_queue(&self) -> Result<(), String> {
+        let mut previous_failed_jobs = 0;
         let mut previous_pending_jobs = 0;
+
         loop {
-            let pending_jobs = self.job_queue.lock().unwrap().len();
+            let (failed_jobs, pending_jobs) = {
+                let job_queue = self.job_queue.lock().unwrap();
 
-            if pending_jobs == 0 { break; }
+                let mut failed_jobs = 0;
+                let mut pending_jobs = 0;
 
-            if pending_jobs != previous_pending_jobs {
-                println!("Waiting for {pending_jobs} pending jobs");
+                for job in job_queue.iter() {
+                    if job.failure.is_some() {
+                        failed_jobs += 1;
+                    } else {
+                        pending_jobs += 1;
+                    }
+                }
+
+                if pending_jobs == 0 {
+                    break;
+                }
+
+                (failed_jobs, pending_jobs)
+            };
+
+            if failed_jobs != previous_failed_jobs || pending_jobs != previous_pending_jobs {
+                if failed_jobs > 0 {
+                    println!("{failed_jobs} jobs have failed, waiting for {pending_jobs} pending jobs");
+                } else {
+                    println!("Waiting for {pending_jobs} pending jobs");
+                }
+
+                previous_failed_jobs = failed_jobs;
                 previous_pending_jobs = pending_jobs;
             }
 
             thread::sleep(Duration::from_secs(1));
         }
+
+
+        if previous_failed_jobs == 0 {
+            Ok(())
+        } else {
+            let job_queue = self.job_queue.lock().unwrap();
+
+            let errors = job_queue
+                .iter()
+                .map(|job| {
+                    let error = &job.failure.as_ref().unwrap().error;
+                    format!("- {error}")
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+
+            let message = formatdoc!("
+                One or more background jobs failed:
+                {errors}
+            ");
+
+            Err(message)
+        }
     }
 
-    /// Moves a finished job from the job queue to the completed
-    /// jobs list, optionally attaching a passed error to it.
-    pub fn complete_job(&self, error: Option<String>, id: &str) {
-        let mut completed_job = {
+    /// Moves a finished job from the job queue to the completed jobs list.
+    pub fn complete_job(&self, id: &str) {
+        let completed_job = {
             let mut job_queue = self.job_queue.lock().unwrap();
 
             job_queue
                 .iter()
                 .position(|job| job.id == id)
-                .map(|index| job_queue.swap_remove(index))
+                .map(|index| {
+                    let queued_job = job_queue.swap_remove(index);
+                    queued_job.complete()
+                })
                 .unwrap()
         };
-
-        completed_job.completed_at = Some(SystemTime::now());
-
-        if let Some(error) = error {
-            completed_job.error = Some(error);
-        }
 
         self.completed_jobs.lock().unwrap().push(completed_job);
     }
@@ -1143,9 +1186,19 @@ impl Context {
                 if !job_queue
                     .iter()
                     .any(|existing_job| existing_job.desc == job_desc) {
-                    job_queue.push(Job::new(job_desc));
+                    job_queue.push(QueuedJob::new(job_desc));
                 }
             }
+        }
+    }
+
+    pub fn fail_job(&self, error: String, id: &str) {
+        let mut job_queue = self.job_queue.lock().unwrap();
+
+        if let Some(job) = job_queue
+            .iter_mut()
+            .find(|job| job.id == id) {
+            job.fail(error);
         }
     }
 
@@ -1212,7 +1265,6 @@ impl Context {
         site_dir: PathBuf
     ) -> Context {
         Context {
-            active_jobs: Mutex::new(ActiveJobs::new()),
             build_dir,
             cache,
             cache_dir,
@@ -1257,7 +1309,7 @@ impl Context {
             if !job_queue
                 .iter()
                 .any(|existing_job| existing_job.desc == job_desc) {
-                job_queue.push(Job::new(job_desc));
+                job_queue.push(QueuedJob::new(job_desc));
             }
         }
     }
@@ -1315,11 +1367,6 @@ impl Context {
         }
     }
 
-    /// Remove a job from the active jobs based on its id
-    pub fn remove_active_job(&self, id: usize) {
-        self.active_jobs.lock().unwrap().remove(id);
-    }
-
     /// Replace the immutable `Arc<Site>` at the site tree root,
     /// updating the site tree to a new version.
     pub fn replace_site(&self, site_new: Site) {
@@ -1327,15 +1374,16 @@ impl Context {
     }
 
     /// Take the job with the highest priority that isn't assigned yet.
-    /// Note that the job is left in the queue, just marked as assigned.
-    pub fn take_next_job(&self, high_priority_only: bool) -> Option<Job> {
+    /// Note that the job stays in the queue, just marked as assigned.
+    pub fn take_next_job(&self, worker: &Worker) -> Option<QueuedJob> {
         let mut job_queue = self.job_queue.lock().unwrap();
 
         job_queue
             .iter_mut()
-            .filter(|job| {
-                job.assigned_at.is_none() &&
-                !(high_priority_only && !job.desc.is_high_priority())
+            .filter(|queued_job| {
+                queued_job.active_assignment.is_none() &&
+                queued_job.failure.is_none() &&
+                !(worker.high_priority_only && !queued_job.desc.is_high_priority())
             })
             .reduce(|selected, iterated|
                 match iterated.cmp_priority(selected) {
@@ -1343,9 +1391,9 @@ impl Context {
                     _ => selected
                 }
             )
-            .map(|job| {
-                job.assigned_at = Some(SystemTime::now());
-                job.clone()
+            .map(|queued_job| {
+                queued_job.assign(worker.number);
+                queued_job.clone()
             })
     }
 
@@ -1444,8 +1492,15 @@ impl Context {
     }
 
     /// Update progress info on the active job with the given id
-    pub fn update_job_progress(&self, id: usize, progress: JobProgress) {
-        self.active_jobs.lock().unwrap().update_progress(id, progress);
+    pub fn update_job_progress(&self, id: &str, progress: JobProgress) {
+        let mut job_queue = self.job_queue.lock().unwrap();
+
+        if let Some(job) = job_queue
+            .iter_mut()
+            .find(|job| job.id == id) {
+            let assignment = job.active_assignment.as_mut().unwrap();
+            assignment.last_progress = Some(progress);
+        }
     }
 
     pub fn update_playlist<T>(

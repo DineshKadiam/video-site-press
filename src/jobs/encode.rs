@@ -110,7 +110,7 @@ pub fn compute_poster(
 pub fn encode_audio(
     audio_format: AudioFormat,
     context: &Arc<Context>,
-    job_id: usize,
+    job_id: String,
     translations: &Translations,
     video: &Video
 ) -> Result<AudioFile, String> {
@@ -189,7 +189,7 @@ pub fn encode_audio(
                                         let duration = rendering_begin.elapsed().as_secs_f32();
                                         let stats = FFmpegEncodingStats::parse(line);
                                         let job_progress = JobProgress::new(duration, stats, video_duration);
-                                        context_moving.update_job_progress(job_id, job_progress);
+                                        context_moving.update_job_progress(&job_id, job_progress);
                                     }
                                 }
                             }
@@ -268,7 +268,7 @@ pub fn encode_audio(
 
 pub fn encode_video(
     context: &Arc<Context>,
-    job_id: usize,
+    job_id: String,
     translations: &Translations,
     video: &Video,
     video_format: VideoFormat
@@ -441,7 +441,7 @@ pub fn encode_video(
                                         let duration = rendering_begin.elapsed().as_secs_f32();
                                         let stats = FFmpegEncodingStats::parse(line);
                                         let job_progress = JobProgress::new(duration, stats, video_duration);
-                                        context_moving.update_job_progress(job_id, job_progress);
+                                        context_moving.update_job_progress(&job_id, job_progress);
                                     }
                                 }
                             }

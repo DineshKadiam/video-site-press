@@ -75,41 +75,69 @@ fn controls(
     let t_processing = translations.processing;
     let processing_icon = icons::processing(t_processing);
     let processing = {
-        let active_jobs = &context.active_jobs.lock().unwrap();
-        if active_jobs.jobs.is_empty() {
+        let job_queue = &context.job_queue.lock().unwrap();
+
+        if job_queue.is_empty() {
             let t_idle = translations.idle;
             format!(r#"<a class="processing" href="/jobs">{processing_icon} {t_idle}</a>"#)
         } else {
-            let jobs = active_jobs.jobs
-                .iter()
-                .map(|job| {
-                    match &job.last_progress {
-                        Some(last_progress) => {
-                            let progress_percent = last_progress.percent;
-                            let time_remaining = precise_duration(last_progress.duration_remaining);
+            let mut failed_jobs = 0;
+            let mut pending_jobs = 0;
 
-                            formatdoc!(r#"
-                                <div class="processing_badge">
-                                    <span>{progress_percent}%</span>
-                                    <span class="inverted">-{time_remaining}</span>
-                                </div>
-                            "#)
+            let jobs = job_queue
+                .iter()
+                .filter_map(|job| {
+                    if let Some(assignment) = &job.active_assignment {
+                        let badge = match &assignment.last_progress {
+                            Some(last_progress) => {
+                                let progress_percent = last_progress.percent;
+                                let time_remaining = precise_duration(last_progress.duration_remaining);
+
+                                formatdoc!(r#"
+                                    <div class="processing_badge">
+                                        <span>{progress_percent}%</span>
+                                        <span class="inverted">-{time_remaining}</span>
+                                    </div>
+                                "#)
+                            }
+                            None => {
+                                formatdoc!(r#"
+                                    <div class="processing_badge">
+                                        MISC
+                                    </div>
+                                "#)
+                            }
+                        };
+
+                        Some(badge)
+                    } else {
+                        if job.failure.is_some() {
+                            failed_jobs += 1;
+                        } else {
+                            pending_jobs += 1;
                         }
-                        None => {
-                            formatdoc!(r#"
-                                <div class="processing_badge">
-                                    MISC
-                                </div>
-                            "#)
-                        }
+
+                        None
                     }
                 })
                 .collect::<Vec<String>>()
                 .join("");
 
+            let failed_badge = if failed_jobs > 0 {
+                format!(" <span>⚠{failed_jobs}</span>")
+            } else {
+                String::new()
+            };
+
+            let pending_badge = if pending_jobs > 0 {
+                format!(" <span>+{pending_jobs}</span>")
+            } else {
+                String::new()
+            };
+
             formatdoc!(r#"
                 <a class="active processing" href="/jobs">
-                    {processing_icon} {jobs}
+                    {processing_icon} {jobs}{failed_badge}{pending_badge}
                 </a>
             "#)
         }

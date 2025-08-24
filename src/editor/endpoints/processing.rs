@@ -24,7 +24,7 @@ pub struct DeploymentInfo {
 pub struct Report {
     pub active_jobs: Vec<Option<JobProgress>>,
     pub deployment_info: DeploymentInfo,
-    pub last_update: u128,
+    pub failed_count: usize,
     pub pending_count: usize
 }
 
@@ -62,13 +62,13 @@ impl Report {
     pub fn new(
         active_jobs: Vec<Option<JobProgress>>,
         deployment_info: DeploymentInfo,
-        last_update: u128,
+        failed_count: usize,
         pending_count: usize
     ) -> Report {
         Report {
             active_jobs,
             deployment_info,
-            last_update,
+            failed_count,
             pending_count
         }
     }
@@ -87,26 +87,34 @@ pub async fn processing(context: Data<Arc<Context>>) -> Json<Report> {
             }
         };
 
-        let (active_jobs, last_update) = {
-            let active_jobs = context.active_jobs.lock().unwrap();
+        let mut failed_count = 0;
+        let mut pending_count = 0;
 
-            let jobs = active_jobs.jobs
-                .iter()
-                .map(|job| job.last_progress.clone())
-                .collect();
-
-            (jobs, active_jobs.last_update)
-        };
-
-        let pending_count = {
+        let active_jobs = {
             let job_queue = context.job_queue.lock().unwrap();
-            job_queue.iter().filter(|job| job.assigned_at.is_none()).count()
+
+            job_queue
+                .iter()
+                .filter_map(|job| {
+                    if let Some(assignment) = &job.active_assignment {
+                        Some(assignment.last_progress.clone())
+                    } else {
+                        if job.failure.is_some() {
+                            failed_count += 1;
+                        } else {
+                            pending_count += 1;
+                        }
+
+                        None
+                    }
+                })
+                .collect()
         };
 
         Report::new(
             active_jobs,
             deployment_info,
-            last_update,
+            failed_count,
             pending_count
         )
     };

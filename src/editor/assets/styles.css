@@ -283,6 +283,13 @@ input[type="file"] { display: none; }
     border-top-left-radius: 0;
     flex-grow: 1;
 }
+.jobs {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    padding-left: 0;
+    row-gap: .5rem;
+}
 main {
     margin: 0 3rem 3rem 3rem;
     max-width: 32rem;

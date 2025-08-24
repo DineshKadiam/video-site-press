@@ -6,7 +6,6 @@ use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -356,10 +355,6 @@ pub fn supported_video_extension(filename: &str) -> bool {
         }
         None => false
     }
-}
-
-pub fn timestamp() -> u128 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
 }
 
 pub fn url_safe_hash_base64(hashable: &impl Hash) -> String {

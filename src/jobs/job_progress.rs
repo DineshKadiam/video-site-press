@@ -5,7 +5,7 @@ use serde_derive::Serialize;
 
 use super::FFmpegEncodingStats;
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JobProgress {
     /// Progress as a factor in the range 0-1

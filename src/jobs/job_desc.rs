@@ -7,7 +7,6 @@ use crate::{
     AudioFormat,
     Collection,
     Playlist,
-    SitePath,
     Translations,
     Video,
     VideoFormat
@@ -91,18 +90,6 @@ impl JobDesc {
                 let label = video.title_or_slug_or_generic_label(translations);
                 format!("Compute random poster for video '{label}'")
             }
-        }
-    }
-
-    pub fn site_path(&self) -> &SitePath {
-        match self {
-            JobDesc::AudioFormat { video, .. } => &video.site_path,
-            JobDesc::AudioMeta { video } => &video.site_path,
-            JobDesc::CollectionFastTasks { collection } => &collection.site_path,
-            JobDesc::PlaylistFastTasks { playlist } => &playlist.site_path,
-            JobDesc::VideoFastTasks { video, .. } => &video.site_path,
-            JobDesc::VideoFormat { video, .. } => &video.site_path,
-            JobDesc::VideoPickPoster { video, .. } => &video.site_path,
         }
     }
 }

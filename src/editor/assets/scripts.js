@@ -122,55 +122,56 @@ function fetchProcessing() {
                 deploymentFeedback.textContent = feedback;
             }
 
-            // TODO: This lastUpdate check is maybe not really needed anymore (what purpose does it serve now?)
-            if (processing.lastUpdate === undefined || response.lastUpdate !== processing.lastUpdate) {
-                let content = [processingIcon.content.cloneNode(true)];
+            let content = [processingIcon.content.cloneNode(true)];
 
-                if (response.activeJobs.length) {
-                    const text = document.createElement('div');
+            if (response.activeJobs.length) {
+                const text = document.createElement('div');
 
-                    processingElement.classList.add('active');
-                    for (const lastProgress of response.activeJobs) {
-                        const badge = document.createElement('div');
+                processingElement.classList.add('active');
+                for (const lastProgress of response.activeJobs) {
+                    const badge = document.createElement('div');
 
-                        badge.classList.add('processing_badge');
+                    badge.classList.add('processing_badge');
 
-                        if (lastProgress) {
-                            const left = document.createElement('span');
-                            left.textContent = lastProgress.percent.toString() + '%';
+                    if (lastProgress) {
+                        const left = document.createElement('span');
+                        left.textContent = lastProgress.percent.toString() + '%';
 
-                            const right = document.createElement('span');
-                            right.classList.add('inverted');
-                            right.textContent = '-' + formatTime(lastProgress.durationRemaining);
+                        const right = document.createElement('span');
+                        right.classList.add('inverted');
+                        right.textContent = '-' + formatTime(lastProgress.durationRemaining);
 
-                            badge.append(left, right);
-                        } else {
-                            const text = document.createElement('span');
-                            text.textContent = 'MISC';
-                            badge.append(text);
-                        }
-
-                        content.push(badge);
+                        badge.append(left, right);
+                    } else {
+                        const text = document.createElement('span');
+                        text.textContent = 'MISC';
+                        badge.append(text);
                     }
-                } else {
-                    processingElement.classList.remove('active');
 
-                    const text = document.createElement('span');
-                    text.textContent = t.idle;
-
-                    content.push(text);
+                    content.push(badge);
                 }
+            } else {
+                processingElement.classList.remove('active');
 
-                if (response.pendingCount > 0) {
-                    const text = document.createElement('span');
-                    text.textContent = `+${response.pendingCount}`;
-                    content.push(text);
-                }
+                const text = document.createElement('span');
+                text.textContent = t.idle;
 
-                processingElement.replaceChildren(...content);
-
-                processing.lastUpdate = response.lastUpdate;
+                content.push(text);
             }
+
+            if (response.failedCount > 0) {
+                const text = document.createElement('span');
+                text.textContent = `⚠${response.failedCount}`;
+                content.push(text);
+            }
+
+            if (response.pendingCount > 0) {
+                const text = document.createElement('span');
+                text.textContent = `+${response.pendingCount}`;
+                content.push(text);
+            }
+
+            processingElement.replaceChildren(...content);
         });
 }
 

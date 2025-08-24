@@ -72,7 +72,7 @@ use font::Font;
 use hyper_dir::HyperDir;
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
-use jobs::{ActiveJobs, Job, JobDesc, JobProgress};
+use jobs::{CompletedJob, JobDesc, JobProgress, QueuedJob, Worker};
 use language::Language;
 use link::Link;
 use lqip::Lqip;
@@ -170,7 +170,10 @@ fn main() -> ExitCode {
     jobs::start_workers(args.workers, &context);
 
     if args.build {
-        context.await_job_queue();
+        if let Err(err) = context.await_job_queue() {
+            eprintln!("{err}");
+            return ExitCode::FAILURE;
+        }
 
         build::perform_build(&context);
 

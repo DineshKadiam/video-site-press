@@ -4,29 +4,86 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::JobDesc;
+use crate::{JobDesc, JobProgress};
 use crate::util::nanoid;
 
-/// A job tracks some form of background process throughout its lifecycle.
-/// (when it was created/started/completed, what task it contains, a unique id)
+/// A background process that has already completed (successfully), including
+/// all relevant data for display: When it was created, started, completed,
+/// and what it was about (job description).
 #[derive(Clone, Debug)]
-pub struct Job {
-    pub assigned_at: Option<SystemTime>,
-    pub completed_at: Option<SystemTime>,
-    pub created: SystemTime,
+pub struct CompletedJob {
+    pub completed_at: SystemTime,
+    pub created_at: SystemTime,
     pub desc: JobDesc,
-    pub error: Option<String>,
+    pub started_at: SystemTime
+}
+
+/// Relevant data for a job that is actively being processed
+#[derive(Clone, Debug)]
+pub struct JobAssignment {
+    pub last_progress: Option<JobProgress>,
+    pub started_at: SystemTime,
+    pub worker_number: usize
+}
+
+/// Data attached to a job that has failed
+#[derive(Clone, Debug)]
+pub struct JobFailure {
+    pub failed_at: SystemTime,
+    pub started_at: SystemTime,
+    pub error: String
+}
+
+/// A QueuedJob tracks some form of background process throughout its
+/// lifecycle before completion, including when it was created/started, what
+/// task it contains, whether it failed and why, a unique id, etc.
+#[derive(Clone, Debug)]
+pub struct QueuedJob {
+    pub active_assignment: Option<JobAssignment>,
+    pub created_at: SystemTime,
+    pub desc: JobDesc,
+    pub failure: Option<JobFailure>,
     pub id: String
 }
 
-impl Job {
-    /// Determine the priority-based ordering between this and another job.
+impl CompletedJob {
+    /// How long the job took to complete
+    pub fn duration(&self) -> Duration {
+        self.completed_at.duration_since(self.started_at).unwrap()
+    }
+}
+
+impl JobAssignment {
+    pub fn new(worker_number: usize) -> JobAssignment {
+        JobAssignment {
+            last_progress: None,
+            started_at: SystemTime::now(),
+            worker_number
+        }
+    }
+}
+
+impl JobFailure {
+    /// How long the job took before it failed
+    pub fn duration(&self) -> Duration {
+        self.failed_at.duration_since(self.started_at).unwrap()
+    }
+}
+
+impl QueuedJob {
+    pub fn assign(&mut self, worker_number: usize) {
+        let job_assignment = JobAssignment::new(worker_number);
+
+        self.active_assignment = Some(job_assignment);
+    }
+
+    /// Determine the priority-based ordering between this and another queued job.
     /// Metadata and poster computation (FastTasks) is most prioritized,
     /// followed by video transcoding, followed by audio encoding. For prioritization between
     /// different formats see cmp_priority() implementation on VideoFormat. If
-    /// two jobs have the same priority based on their kind (and format, where
+    /// two jobs have the same priority based on their description (and format, where
     /// relevant), the one that exists longer is prioritized.
-    pub fn cmp_priority(&self, other: &Job) -> Ordering {
+    pub fn cmp_priority(&self, other: &QueuedJob) -> Ordering {
         match &self.desc {
             JobDesc::AudioFormat { format, .. } => match &other.desc {
                 JobDesc::AudioFormat { format: other_format, .. } => match format.cmp_priority(other_format) {
@@ -99,30 +156,49 @@ impl Job {
             }
         }
 
-        self.created.cmp(&other.created).reverse()
+        self.created_at.cmp(&other.created_at).reverse()
     }
 
-    // How long the job took
-    pub fn duration(&self) -> Option<Duration> {
-        match self.assigned_at {
-            Some(assigned_at) => match self.completed_at {
-                Some(completed_at) => match completed_at.duration_since(assigned_at) {
-                    Ok(duration) => Some(duration),
-                    Err(_) => None
-                }
-                None => None
-            }
-            None => None
+    pub fn complete(self) -> CompletedJob {
+        CompletedJob {
+            completed_at: SystemTime::now(),
+            created_at: self.created_at,
+            desc: self.desc,
+            started_at: self.active_assignment.unwrap().started_at
         }
     }
 
-    pub fn new(desc: JobDesc) -> Job {
-        Job {
-            assigned_at: None,
-            completed_at: None,
-            created: SystemTime::now(),
+    pub fn fail(&mut self, error: String) {
+        let active_assignment = self.active_assignment.take().unwrap();
+
+        let failure = JobFailure {
+            started_at: active_assignment.started_at,
+            failed_at: SystemTime::now(),
+            error
+        };
+
+        self.failure = Some(failure);
+    }
+
+    /// How long the job took to complete (or fail)
+    pub fn duration_unchecked(&self) -> Duration {
+        if let Some(failure) = &self.failure {
+            failure.duration()
+        } else if let Some(assignment) = &self.active_assignment {
+            SystemTime::now()
+                .duration_since(assignment.started_at)
+                .unwrap()
+        } else {
+            unimplemented!();
+        }
+    }
+
+    pub fn new(desc: JobDesc) -> QueuedJob {
+        QueuedJob {
+            active_assignment: None,
+            created_at: SystemTime::now(),
             desc,
-            error: None,
+            failure: None,
             id: nanoid()
         }
     }

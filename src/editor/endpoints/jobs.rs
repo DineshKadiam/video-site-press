@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -13,115 +13,105 @@ use indoc::formatdoc;
 use crate::Context;
 use crate::editor::Location;
 use crate::editor::widgets::layout;
-use crate::util::precise_duration;
+use crate::util::{
+    html_escape_outside_attribute,
+    precise_duration
+};
 
 pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     let language = context.get_editor_language();
+    let translations = &language.translations;
 
     let site = context.get_site();
 
     let mut body = String::new();
 
-    let t_background_jobs = language.translations.background_jobs;
+    let t_background_jobs = translations.background_jobs;
     body.push_str(&format!("<h2>{t_background_jobs}</h2>"));
 
-    // TODO: Localize
-    body.push_str(r#"<p>This lists active/failed/pending/complete background jobs, if any, in this session</p>"#);
-
-    if let Ok(active_jobs) = context.active_jobs.lock() {
-        if !active_jobs.jobs.is_empty() {
-            let jobs = active_jobs.jobs
-                .iter()
-                .map(|job| {
-                    let label = &job.label;
-                    let last_progress = match &job.last_progress {
-                        Some(progress) => format!("({}%)", progress.percent),
-                        None => String::from("(No progress information yet)")
-                    };
-                    format!("<li>{label} {last_progress}</li>")
-                })
-                .collect::<Vec<String>>()
-                .join("\n");
-
-            let wrapped = formatdoc!(r#"
-                <div>
-                    Active processing:
-                    <ul>
-                        {jobs}
-                    </ul>
-                </div>
-            "#);
-
-            body.push_str(&wrapped);
-        }
-    }
-
-    body.push_str(r#"<ul style="display: flex; flex-direction: column; list-style: none; padding-left: 0; row-gap: .5rem;">"#);
+    let mut no_jobs = true;
 
     let mut jobs_sorted = Vec::new();
 
     for job in &*context.job_queue.lock().unwrap() {
-        // TODO: Html-escape user content (title), generally across this file (jobs.rs)
-        let label = job.desc.label(&language.translations);
+        let label = job.desc.label(&translations);
+        let e_label = html_escape_outside_attribute(&label);
+
         // TODO: Localize
-        let status = match job.assigned_at {
-            Some(assigned_at) => {
-                let datetime: DateTime<Local> = assigned_at.into();
-                format!("Started {}", datetime.format("%T"))
-            }
-            None => {
-                let datetime: DateTime<Local> = job.created.into();
-                format!("Created {}", datetime.format("%T"))
-            }
+
+        let created_at_datetime: DateTime<Local> = job.created_at.into();
+        let created_at_formatted = created_at_datetime.format("%T");
+        let created_at = format!("Created {created_at_formatted}");
+
+        let status = if let Some(assignment) = &job.active_assignment {
+            let started_at_datetime: DateTime<Local> = assignment.started_at.into();
+            let started_at_formatted = started_at_datetime.format("%T");
+            let worker_number = assignment.worker_number;
+            format!(r#" &gt; <strong style="color: yellow;">Started</strong> {started_at_formatted} by worker {worker_number}"#)
+        } else if let Some(failure) = &job.failure {
+            let error = &failure.error;
+            let duration = failure.duration();
+            let duration_formatted = precise_duration(duration.as_secs_f32());
+            format!(r#" &gt; <strong style="color: red;">Failed</strong> after {duration_formatted} ({error})"#)
+        } else {
+            String::new()
         };
 
         let rendered = formatdoc!(r#"
             <li>
-                {label}<br>
-                <small>{status}</small>
+                {e_label}<br>
+                <small>{created_at}{status}</small>
             </li>
         "#);
 
-        jobs_sorted.push((job.created, rendered));
+        jobs_sorted.push((job.created_at, rendered));
     }
 
     for job in &*context.completed_jobs.lock().unwrap() {
-        let label = job.desc.label(&language.translations);
-        // TODO: Localize
-        let status = match job.duration() {
-            Some(duration) => {
-                let duration_formatted = precise_duration(duration.as_secs_f32());
+        let label = job.desc.label(&translations);
+        let e_label = html_escape_outside_attribute(&label);
 
-                if let Some(error) = &job.error {
-                    format!(r#"<strong style="color: red;">Failed</strong> after {duration_formatted} ({error})"#)
-                } else {
-                    format!("Completed in {duration_formatted}")
-                }
-            }
-            None => String::new()
-        };
+        // TODO: Localize
+
+        let duration = job.duration();
+        let duration_formatted = precise_duration(duration.as_secs_f32());
+        let status = format!("Completed in {duration_formatted}");
 
         let rendered = formatdoc!(r#"
             <li>
-                {label}<br>
+                {e_label}<br>
                 <small>{status}</small>
             </li>
         "#);
 
-        jobs_sorted.push((job.created, rendered));
+        jobs_sorted.push((job.created_at, rendered));
     }
 
-    jobs_sorted.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+    if !jobs_sorted.is_empty() {
+        jobs_sorted.sort_unstable_by(|a, b| b.0.cmp(&a.0));
 
-    let jobs_rendered = jobs_sorted
-        .into_iter()
-        .map(|created_rendered| created_rendered.1)
-        .collect::<Vec<String>>()
-        .join("\n");
+        let jobs_rendered = jobs_sorted
+            .into_iter()
+            .map(|created_rendered| created_rendered.1)
+            .collect::<Vec<String>>()
+            .join("\n");
 
-    body.push_str(&jobs_rendered);
+        let jobs_container = formatdoc!(r#"
+            <ul class="jobs">
+                {jobs_rendered}
+            </ul>
+        "#);
 
-    body.push_str("</ul>");
+        body.push_str(&jobs_container);
+
+        no_jobs = false;
+    }
+
+    if no_jobs {
+        let t_no_jobs_yet = translations.no_jobs_yet;
+        let no_jobs_message = format!("<div>{t_no_jobs_yet}</div>");
+        body.push_str(&no_jobs_message);
+    }
 
     let html = layout(
         &body,
