@@ -10,7 +10,7 @@ use indoc::formatdoc;
 use crate::Context;
 
 pub async fn scripts(context: Data<Arc<Context>>) -> HttpResponse {
-    let static_js = include_str!("../assets/scripts.js");
+    let static_js = include_str!("../assets/editor.js");
 
     let translations = context.get_editor_language().translations;
 
@@ -21,7 +21,8 @@ pub async fn scripts(context: Data<Arc<Context>>) -> HttpResponse {
     let t_deploying = translations.deploying;
     let t_idle = translations.idle;
     let t_really_deploy = translations.really_deploy;
-    let translations_js = formatdoc!(r#"
+
+    let js = formatdoc!(r#"
         const t = {{
             configureDeployment: '{t_configure_deployment}',
             deploy: '{t_deploy}',
@@ -29,10 +30,6 @@ pub async fn scripts(context: Data<Arc<Context>>) -> HttpResponse {
             idle: '{t_idle}',
             reallyDeploy: '{t_really_deploy}'
         }};
-    "#);
-
-    let js = formatdoc!(r#"
-        {translations_js}
         {static_js}
     "#);
 

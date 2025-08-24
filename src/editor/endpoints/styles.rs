@@ -68,7 +68,7 @@ pub async fn styles(context: Data<Arc<Context>>) -> HttpResponse {
         }
     };
 
-    let static_css = include_str!("../assets/styles.css");
+    let static_css = include_str!("../assets/editor.css");
     let css = formatdoc!(r#"
         {splash_vars}
         {theme_vars}

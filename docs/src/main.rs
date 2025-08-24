@@ -137,8 +137,8 @@ pub fn main() {
     ).unwrap();
 
     fs::copy(
-        "assets/styles.css",
-        docs_out_dir.join("styles.css")
+        "assets/docs.css",
+        docs_out_dir.join("docs.css")
     ).unwrap();
 }
 
@@ -162,7 +162,7 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
     let topics = section_links(&docs.topics);
     let index_active = if active_page == &docs.index { r#" class="active""# } else { "" };
 
-    let styles_css_hash = url_safe_hash_base64(include_bytes!("../assets/styles.css"));
+    let docs_css_hash = url_safe_hash_base64(include_bytes!("../assets/docs.css"));
 
     let title = &active_page.title;
     let version = docs.version;
@@ -175,7 +175,7 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
                 <meta charset="utf-8">
                 <meta name="description" content="{title}">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
-                <link href="styles.css?{styles_css_hash}" rel="stylesheet">
+                <link href="docs.css?{docs_css_hash}" rel="stylesheet">
             </head>
             <body>
                 <header>
