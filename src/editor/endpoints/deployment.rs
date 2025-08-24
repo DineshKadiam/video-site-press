@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -12,35 +12,37 @@ use crate::Context;
 use crate::editor::Location;
 use crate::editor::widgets::layout;
 
+/// Page on which deployment progress is reported (updated in real time via
+/// client scripting)
 pub async fn deployment(context: Data<Arc<Context>>) -> HttpResponse {
     let language = context.get_editor_language();
     let site = context.get_site();
 
+    let translations = &language.translations;
+
     let mut body = String::new();
 
-    let t_deployment = language.translations.deployment;
+    let t_deployment = translations.deployment;
     body.push_str(&format!("<h2>{t_deployment}</h2>"));
 
-    // TODO: Localize here and below
-    let target = match &site.base_url {
-        Some(hyper_url) => {
-            let url = &hyper_url.representation;
-            format!("<p>Files are being deployed to <a href={url}>{url}</a></p>")
-        }
-        None => String::new()
-    };
+    if let Some(hyper_url) = &site.base_url {
+        let url = &hyper_url.representation;
+        let link = format!(r#"<a href="{url}">{url}</a>"#);
+        let t_files_are_being_deployed_to_xxx = translations
+            .files_are_being_deployed_to_xxx(&link);
 
-    let text = formatdoc!(r#"
-        <p>This lists the output from the deployment background process, if there's any.</p>
-        {target}
-    "#);
-    body.push_str(&text);
+        let text = format!("<p>{t_files_are_being_deployed_to_xxx}</p>");
+        body.push_str(&text);
+    }
 
     if let Ok(deployment) = context.deploying.lock() {
         let feedback = &deployment.feedback;
+
+        let ellipsis = if deployment.active() { "\n…" } else { "" };
+
         let wrapped = formatdoc!(r#"
             <pre id="deployment_feedback">
-                {feedback}
+                {feedback}{ellipsis}
             </pre>
         "#);
 

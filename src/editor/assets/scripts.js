@@ -113,7 +113,13 @@ function fetchProcessing() {
             }
 
             if (deploymentFeedback) {
-                deploymentFeedback.replaceChildren(deploymentInfo.feedback);
+                let feedback = deploymentInfo.feedback;
+
+                if (deploymentInfo.deployingSince !== null) {
+                    feedback += '\n…';
+                }
+
+                deploymentFeedback.textContent = feedback;
             }
 
             // TODO: This lastUpdate check is maybe not really needed anymore (what purpose does it serve now?)

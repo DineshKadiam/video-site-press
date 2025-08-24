@@ -94,13 +94,6 @@ pub struct Translations {
     pub deployment_configuration_could_not_be_verified: &'static str,
     pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
     pub deployment_steps_successfully_determined_file_synchronization_will_now_commence: &'static str,
-    pub ftp_config_password_label: &'static str,
-    pub ftp_config_path_label: &'static str,
-    pub ftp_config_port_label: &'static str,
-    pub ftp_config_secure_label: &'static str,
-    pub ftp_config_server_label: &'static str,
-    pub ftp_config_user_label: &'static str,
-    pub ftp_deployment: &'static str,
     pub description: &'static str,
     pub disabled: &'static str,
     pub documentation: &'static str,
@@ -123,9 +116,17 @@ pub struct Translations {
     pub failed: &'static str,
     pub feed: &'static str,
     pub feeds: &'static str,
+    files_are_being_deployed_to_xxx: &'static str,
     pub filter: &'static str,
     pub focus_search_field: &'static str,
     pub frame_rate: &'static str,
+    pub ftp_config_password_label: &'static str,
+    pub ftp_config_path_label: &'static str,
+    pub ftp_config_port_label: &'static str,
+    pub ftp_config_secure_label: &'static str,
+    pub ftp_config_server_label: &'static str,
+    pub ftp_config_user_label: &'static str,
+    pub ftp_deployment: &'static str,
     pub general: &'static str,
     pub generally_contains_codecs_supported_in_browsers: &'static str,
     pub generally_supported_in_browsers: &'static str,
@@ -359,6 +360,10 @@ impl Translations {
         self.deleting_file_xxx.replace("{path}", path)
     }
 
+    pub fn files_are_being_deployed_to_xxx(&self, link: &str) -> String {
+        self.files_are_being_deployed_to_xxx.replace("{link}", link)
+    }
+
     pub fn invalid_site_text(&self) -> String {
         self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
     }
@@ -521,8 +526,9 @@ fn check_translations() {
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
-        assert!(&translations.deleting_file_xxx.contains("{path}"));
         assert!(&translations.deleting_directory_xxx.contains("{path}"));
+        assert!(&translations.deleting_file_xxx.contains("{path}"));
+        assert!(&translations.files_are_being_deployed_to_xxx.contains("{link}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
         assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors.contains("{site_path}"));
         assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path.contains("{site_path}"));

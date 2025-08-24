@@ -111,6 +111,7 @@ impl Translations {
         failed: "Failed",
         feed: "Feed",
         feeds: "Feeds",
+        files_are_being_deployed_to_xxx: "Files are being deployed to {link}",
         filter: "Filter",
         focus_search_field: "Focus search field",
         frame_rate: "Frame Rate",
