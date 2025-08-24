@@ -533,21 +533,30 @@ impl FFmpegEncodingStats {
                     }
                 }
                 "time" => {
-                    // We observed ffmpeg returning negative timecodes on rare occasions,
+                    // ffmpeg sometimes returns an "N/A" time value during encoding (e.g. with the HEVC encoder),
                     // e.g. in this log sequence (showing full `line` values here):
                     //
-                    // frame=    1 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x"
-                    // frame=   95 fps= 87 q=29.0 size=       0kB time=-00:00:00.04 bitrate=N/A speed=N/A"
-                    // frame=  145 fps= 67 q=29.0 size=     256kB time=00:00:02.04 bitrate=1027.3kbits/s speed=0.941x"
+                    // frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    "
+                    // frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A    "
+                    // frame=    1 fps=0.2 q=21.8 size=       0KiB time=-00:00:00.04 bitrate=N/A speed=N/A    "
+                    // (...)
+                    if value == "N/A" { return; }
+
+                    // ffmpeg sometimes returns negative time values during encoding,
+                    // e.g. in this log sequence (showing full `line` values here):
+                    //
+                    // frame=    1 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x
+                    // frame=   95 fps= 87 q=29.0 size=       0kB time=-00:00:00.04 bitrate=N/A speed=N/A
+                    // frame=  145 fps= 67 q=29.0 size=     256kB time=00:00:02.04 bitrate=1027.3kbits/s speed=0.941x
                     // (...)
                     //
-                    if !value.starts_with('-') {
-                        // hh:mm:ss.ff (e.g. 00:01:06.54)
-                        let hours = value[0..2].parse::<usize>().unwrap();
-                        let minutes = value[3..5].parse::<usize>().unwrap();
-                        let seconds = value[6..11].parse::<f32>().unwrap();
-                        time = (hours * 3600) as f32 + (minutes * 60) as f32 + seconds;
-                    }
+                    if value.starts_with('-') { return; }
+
+                    // hh:mm:ss.ff (e.g. 00:01:06.54)
+                    let hours = value[0..2].parse::<usize>().unwrap();
+                    let minutes = value[3..5].parse::<usize>().unwrap();
+                    let seconds = value[6..11].parse::<f32>().unwrap();
+                    time = (hours * 3600) as f32 + (minutes * 60) as f32 + seconds;
                 }
                 _ => ()
             }
