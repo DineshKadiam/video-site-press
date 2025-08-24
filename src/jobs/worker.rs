@@ -386,6 +386,8 @@ impl Worker {
                 let file_meta = FileMeta::new(&file_path);
                 let poster_file = PosterFile::new(None, None, file_meta, file_name, None);
 
+                // TODO: Are we missing the following (?): Creation of missing poster assets for the new poster?
+
                 let mutation = |video_mut: &mut Video| {
                     video_mut.poster = Some(poster_file);
                     Ok(())

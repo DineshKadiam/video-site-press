@@ -27,6 +27,8 @@ pub struct Translations {
     pub arrow_left_right: &'static str,
     pub atom_description: &'static str,
     pub audio: &'static str,
+    pub audio_metadata: &'static str,
+    audio_file_xxx: &'static str,
     pub audio_files: &'static str,
     pub automatic_link_previews_and_content_embedding_on_platforms: &'static str,
     pub automatic_original_frame_rate_or_encoder_preference: &'static str,
@@ -35,6 +37,7 @@ pub struct Translations {
     pub background_jobs: &'static str,
     pub banner_description: &'static str,
     pub banner_image: &'static str,
+    pub banner_image_variants: &'static str,
     pub beginning_deployment_over_secure_ftp_tls_ssl: &'static str,
     pub beginning_deployment_over_insecure_ftp_unencrypted: &'static str,
     pub best: &'static str,
@@ -49,6 +52,7 @@ pub struct Translations {
     pub collection: &'static str,
     pub collection_manifest: &'static str,
     pub collection_settings: &'static str,
+    pub completed: &'static str,
     pub configure: &'static str,
     pub configure_deployment: &'static str,
     pub container_order: &'static str,
@@ -225,6 +229,7 @@ pub struct Translations {
     pub public_address_must_be_configured_for_deployment_text_cli: &'static str,
     pub public_address_not_configured_text: &'static str,
     pub quality: &'static str,
+    pub queued: &'static str,
     pub really_delete: &'static str,
     pub really_deploy: &'static str,
     pub regular_link: &'static str,
@@ -307,9 +312,11 @@ pub struct Translations {
     pub version: &'static str,
     pub video: &'static str,
     pub video_audio_files: &'static str,
+    video_file_xxx: &'static str,
     pub video_files: &'static str,
     pub video_format: &'static str,
     pub video_manifest: &'static str,
+    pub video_metadata_poster_image_and_variants: &'static str,
     pub video_not_yet_available: &'static str,
     pub video_order: &'static str,
     pub video_player: &'static str,
@@ -330,6 +337,10 @@ pub struct Translations {
 impl Translations {
     pub fn adding_file_xxx(&self, path: &str) -> String {
         self.adding_file_xxx.replace("{path}", path)
+    }
+
+    pub fn audio_file_xxx(&self, extension: &str) -> String {
+        self.audio_file_xxx.replace("{extension}", extension)
     }
 
     pub fn could_not_compute_metadata_for_xxx(&self, path: &Path) -> String {
@@ -507,6 +518,10 @@ impl Translations {
         self.video_player_widget_for_xxx.replace("{title}", title)
     }
 
+    pub fn video_file_xxx(&self, format: &str) -> String {
+        self.video_file_xxx.replace("{format}", format)
+    }
+
     pub fn xxx_characters_maximum(&self, maximum: usize) -> String {
         self.xxx_characters_maximum.replace("{maximum}", &maximum.to_string())
     }
@@ -521,6 +536,7 @@ fn check_translations() {
 
     for translations in &locales {
         assert!(&translations.adding_file_xxx.contains("{path}"));
+        assert!(&translations.audio_file_xxx.contains("{extension}"));
         assert!(&translations.creating_directory_xxx.contains("{path}"));
         assert!(&translations.could_not_compute_metadata_for_xxx.contains("{path}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
@@ -555,6 +571,7 @@ fn check_translations() {
         assert!(&translations.updating_site_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{video_title}"));
         assert!(&translations.updating_video_from_editor_currently_not_allowed.contains("{manifest_path}"));
+        assert!(&translations.video_file_xxx.contains("{format}"));
         assert!(&translations.video_player_widget_for_xxx.contains("{title}"));
         assert!(&translations.xxx_characters_maximum.contains("{maximum}"));
 

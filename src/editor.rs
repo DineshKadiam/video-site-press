@@ -10,7 +10,7 @@ use crate::{SitePath, Translations};
 mod actix;
 mod components;
 mod endpoints;
-mod routes;
+pub mod routes;
 pub mod server;
 mod widgets;
 

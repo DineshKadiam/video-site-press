@@ -14,8 +14,8 @@ use crate::Context;
 use crate::editor::Location;
 use crate::editor::widgets::layout;
 use crate::util::{
-    html_escape_outside_attribute,
-    precise_duration
+    casual_duration,
+    html_escape_outside_attribute
 };
 
 pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
@@ -34,33 +34,41 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     let mut jobs_sorted = Vec::new();
 
     for job in &*context.job_queue.lock().unwrap() {
-        let label = job.desc.label(&translations);
-        let e_label = html_escape_outside_attribute(&label);
+        let output_label = job.desc.output_label(&translations);
+        let target_label = job.desc.target_label(&translations);
+        let target_label_escaped = html_escape_outside_attribute(&target_label);
+        let target_edit_url = job.desc.target_edit_url();
+        let target_link = format!(r#"<a href="{target_edit_url}">{target_label_escaped}</a>"#);
 
-        // TODO: Localize
 
-        let created_at_datetime: DateTime<Local> = job.created_at.into();
-        let created_at_formatted = created_at_datetime.format("%T");
-        let created_at = format!("Created {created_at_formatted}");
-
+        let mut error = String::new();
         let status = if let Some(assignment) = &job.active_assignment {
             let started_at_datetime: DateTime<Local> = assignment.started_at.into();
             let started_at_formatted = started_at_datetime.format("%T");
+            let t_processing = translations.processing;
             let worker_number = assignment.worker_number;
-            format!(r#" &gt; <strong style="color: yellow;">Started</strong> {started_at_formatted} by worker {worker_number}"#)
+            format!(r#"<strong style="color: yellow;">{t_processing}</strong> {started_at_formatted} (#{worker_number})"#)
         } else if let Some(failure) = &job.failure {
-            let error = &failure.error;
-            let duration = failure.duration();
-            let duration_formatted = precise_duration(duration.as_secs_f32());
-            format!(r#" &gt; <strong style="color: red;">Failed</strong> after {duration_formatted} ({error})"#)
+            error = format!("<div>{}</div>", failure.error);
+            let duration = casual_duration(failure.duration().as_secs_f32(), translations);
+            let t_failed = translations.failed;
+            format!(r#"<strong style="color: red;">{t_failed}</strong> ({duration})"#)
+
         } else {
-            String::new()
+            let created_at_datetime: DateTime<Local> = job.created_at.into();
+            let created_at_formatted = created_at_datetime.format("%T");
+            let t_queued = translations.queued;
+            format!("{t_queued} ({created_at_formatted})")
         };
 
         let rendered = formatdoc!(r#"
             <li>
-                {e_label}<br>
-                <small>{created_at}{status}</small>
+                <div>
+                    {target_link}
+                    <div>{output_label}</div>
+                    {error}
+                </div>
+                <small>{status}</small>
             </li>
         "#);
 
@@ -68,18 +76,22 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     }
 
     for job in &*context.completed_jobs.lock().unwrap() {
-        let label = job.desc.label(&translations);
-        let e_label = html_escape_outside_attribute(&label);
+        let output_label = job.desc.output_label(&translations);
+        let target_label = job.desc.target_label(&translations);
+        let target_label_escaped = html_escape_outside_attribute(&target_label);
+        let target_edit_url = job.desc.target_edit_url();
+        let target_link = format!(r#"<a href="{target_edit_url}">{target_label_escaped}</a>"#);
 
-        // TODO: Localize
-
-        let duration = job.duration();
-        let duration_formatted = precise_duration(duration.as_secs_f32());
-        let status = format!("Completed in {duration_formatted}");
+        let duration = casual_duration(job.duration().as_secs_f32(), translations);
+        let t_completed = translations.completed;
+        let status = format!(r#"<strong style="color: green;">{t_completed}</strong> ({duration})"#);
 
         let rendered = formatdoc!(r#"
             <li>
-                {e_label}<br>
+                <div>
+                    {target_link}
+                    <div>{output_label}</div>
+                </div>
                 <small>{status}</small>
             </li>
         "#);

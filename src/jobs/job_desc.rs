@@ -11,6 +11,7 @@ use crate::{
     Video,
     VideoFormat
 };
+use crate::editor::routes;
 
 /// The job description specifies what needs to be done in a processing job,
 /// and to which resource (collection, playlist or video) it applies.
@@ -57,38 +58,70 @@ impl JobDesc {
         }
     }
 
-    pub fn label(&self, translations: &Translations) -> String {
-        // TODO: Translate strings as soon as we reach some confidence on what they should contain
+    /// A label for what this job produces.
+    /// (e.g. "Video file (H264)" or "Audio metadata")
+    pub fn output_label(&self, translations: &Translations) -> String {
         match self {
-            JobDesc::AudioFormat { format, video } => {
-                let extension = format.extension();
-                let label = video.title_or_slug_or_generic_label(translations);
-                format!("Encode audio file ({extension}) for video '{label}'")
+            JobDesc::AudioFormat { format, .. } => {
+                translations.audio_file_xxx(format.extension())
             }
-            JobDesc::AudioMeta { video } => {
-                let label = video.title_or_slug_or_generic_label(translations);
-                format!("Compute audio file metadata for video '{label}'")
+            JobDesc::AudioMeta { .. } => {
+                translations.audio_metadata.to_string()
             }
+            JobDesc::CollectionFastTasks { .. } => {
+                translations.banner_image_variants.to_string()
+            }
+            JobDesc::PlaylistFastTasks { .. } => {
+                translations.banner_image_variants.to_string()
+            }
+            JobDesc::VideoFastTasks { .. } => {
+                translations.video_metadata_poster_image_and_variants.to_string()
+            }
+            JobDesc::VideoFormat { format, .. } => {
+                translations.video_file_xxx(&format.label())
+            }
+            JobDesc::VideoPickPoster { .. } => {
+                translations.poster_image.to_string()
+            }
+        }
+    }
+
+    /// The label of the collection, playlist or video for which is part of
+    /// this job description.
+    pub fn target_label(&self, translations: &Translations) -> &str {
+        match self {
             JobDesc::CollectionFastTasks { collection } => {
-                let label = collection.title_or_slug_or_generic_label(translations);
-                format!("Compute banner for collection '{label}'")
+                collection.title_or_slug_or_generic_label(translations)
             }
             JobDesc::PlaylistFastTasks { playlist } => {
-                let label = playlist.title_or_slug_or_generic_label(translations);
-                format!("Compute banner for playlist '{label}'")
+                playlist.title_or_slug_or_generic_label(translations)
             }
-            JobDesc::VideoFastTasks { video, .. } => {
-                let label = video.title_or_slug_or_generic_label(translations);
-                format!("Compute metadata and/or poster for video '{label}'")
-            }
-            JobDesc::VideoFormat { format, video } => {
-                let format_label = format.label();
-                let label = video.title_or_slug_or_generic_label(translations);
-                format!("Encode video file ({format_label}) for video '{label}'")
-            }
+            JobDesc::AudioFormat { video, .. } |
+            JobDesc::AudioMeta { video } |
+            JobDesc::VideoFastTasks { video, .. } |
+            JobDesc::VideoFormat { video, .. } |
             JobDesc::VideoPickPoster { video, .. } => {
-                let label = video.title_or_slug_or_generic_label(translations);
-                format!("Compute random poster for video '{label}'")
+                video.title_or_slug_or_generic_label(translations)
+            }
+        }
+    }
+
+    /// The url for editing the collection, playlist or video which is part of
+    /// this job description in the editor.
+    pub fn target_edit_url(&self) -> String {
+        match self {
+            JobDesc::CollectionFastTasks { collection } => {
+                routes::collection_edit(collection)
+            }
+            JobDesc::PlaylistFastTasks { playlist } => {
+                routes::playlist_edit(playlist)
+            }
+            JobDesc::AudioFormat { video, .. } |
+            JobDesc::AudioMeta { video } |
+            JobDesc::VideoFastTasks { video, .. } |
+            JobDesc::VideoFormat { video, .. } |
+            JobDesc::VideoPickPoster { video, .. } => {
+                routes::video_edit(video)
             }
         }
     }
