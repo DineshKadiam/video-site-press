@@ -93,6 +93,11 @@ pub fn perform_build(context: &Context) {
 
     let traversal = Traversal::new();
 
+    fs::write(
+        context.build_dir.join("favicon.png"),
+        include_bytes!("build/assets/favicon.png")
+    ).unwrap();
+
     styles::generate_site_css(&mut asset_hashes, context, &site);
     scripts::generate_video_js(context);
 

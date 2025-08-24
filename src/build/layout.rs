@@ -157,6 +157,7 @@ impl Layout {
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 {META_GENERATOR}
                 {extra_meta}
+                <link href="/favicon.png" rel="icon" type="image/png">
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
                 {adaptive_theme_script}
                 {clipboard_script}
