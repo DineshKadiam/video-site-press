@@ -195,6 +195,8 @@ function hyperConfirm(callback, label, text) {
     });
 
     appendedDialog.showModal();
+
+    appendedDialog.querySelector('.confirm').focus();
 }
 
 for (const form of document.querySelectorAll('form[data-confirm]')) {
