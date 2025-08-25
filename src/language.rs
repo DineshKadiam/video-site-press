@@ -2,14 +2,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use chrono::Locale as ChronoLocale;
+use icu_collator::{Collator, CollatorBorrowed};
+use icu_collator::options::{CollatorOptions, Strength};
+use icu_locale::Locale as IcuLocale;
+use icu_locale::locale as icu_locale;
+use log::warn;
 
 use crate::Translations;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Language {
     pub chrono_locale: ChronoLocale,
     pub code: String,
     pub default: bool,
+    pub icu_collator: CollatorBorrowed<'static>,
+    pub icu_locale: IcuLocale,
     pub text_direction: TextDirection,
     pub translations: Translations
 }
@@ -21,24 +28,91 @@ pub enum TextDirection {
 }
 
 impl Language {
-    pub fn default() -> Language {
-        Language {
-            chrono_locale: ChronoLocale::en_US,
-            code: String::from("en"),
-            default: true,
-            text_direction: TextDirection::Ltr,
-            translations: Translations::EN
+    /// Utility function to obtain an ICU collator from an ICU locale,
+    /// which we need to do both on initializing and cloning [Language]
+    /// because ICU Collator does not implement Clone.
+    fn icu_collator(icu_locale: IcuLocale) -> CollatorBorrowed<'static> {
+        let mut collator_options = CollatorOptions::default();
+        collator_options.strength = Some(Strength::Primary);
+
+        match Collator::try_new(icu_locale.clone().into(), collator_options) {
+            Ok(collator) => collator,
+            Err(err) => {
+                warn!("No ICU collator could be initialized from ICU locale {icu_locale} ({err}).");
+
+                // Try to fall back to the default collator
+                Collator::try_new(Default::default(), collator_options).unwrap()
+            }
         }
     }
 
-    pub fn from_code(code: &str) -> Language {
-        let (chrono_locale, translations) = match code {
-            "de" => (ChronoLocale::de_AT_euro, Translations::DE),
-            "en" => (ChronoLocale::en_US, Translations::EN),
-            _ => (ChronoLocale::en_US, Translations::EN)
-        };
+    pub fn default() -> Language {
+        Language::new(
+            ChronoLocale::en_US,
+            String::from("en"),
+            true,
+            icu_locale!("en"),
+            TextDirection::Ltr,
+            Translations::EN
+        )
+    }
 
-        Language::manual(chrono_locale, code, translations)
+    /// As in "specified explicitly in the manifest by the user",
+    /// so we know we need to persist this to the manifest.
+    fn explicit(
+        chrono_locale: ChronoLocale,
+        code: String,
+        icu_locale: IcuLocale,
+        text_direction: TextDirection,
+        translations: Translations
+    ) -> Language {
+        Language::new(
+            chrono_locale,
+            code,
+            false,
+            icu_locale,
+            text_direction,
+            translations
+        )
+    }
+
+    pub fn from_code(code: &str) -> Language {
+        match code {
+            "de" =>  {
+                Language::explicit(
+                    ChronoLocale::de_AT_euro,
+                    String::from("de"),
+                    icu_locale!("de"),
+                    TextDirection::Ltr,
+                    Translations::DE
+                )
+            }
+            "en" => {
+                 Language::explicit(
+                    ChronoLocale::en_US,
+                    String::from("en"),
+                    icu_locale!("de"),
+                    TextDirection::Ltr,
+                    Translations::EN
+                )
+            }
+            _ => {
+                let icu_locale = code.parse::<IcuLocale>()
+                    .map_err(|err| {
+                        warn!("Language code {code} could not be parsed as an ICU locale ({err}).");
+                        icu_locale!("en")
+                    })
+                    .unwrap();
+
+                Language::explicit(
+                    ChronoLocale::en_US,
+                    code.to_string(),
+                    icu_locale,
+                    TextDirection::from_code(code),
+                    Translations::EN
+                )
+            }
+        }
     }
 
     pub fn is_rtl(&self) -> bool {
@@ -48,17 +122,49 @@ impl Language {
         }
     }
 
-    pub fn manual(
+    fn new(
         chrono_locale: ChronoLocale,
-        code: &str,
+        code: String,
+        default: bool,
+        icu_locale: IcuLocale,
+        text_direction: TextDirection,
         translations: Translations
     ) -> Language {
+        let icu_collator = Language::icu_collator(icu_locale.clone());
+
         Language {
             chrono_locale,
             code: code.to_string(),
-            default: false,
-            text_direction: TextDirection::from_code(code),
+            default,
+            icu_collator,
+            icu_locale,
+            text_direction,
             translations
+        }
+    }
+}
+
+impl Clone for Language {
+    /// ICU's Collator/CollatorBorrowed does not implement clone, therefore
+    /// for cloning [Language] we must recreate the collactor manually from
+    /// the (cloneable) ICU Locale, just as we do on intializing [Language].
+    fn clone(&self) -> Language {
+        let chrono_locale = self.chrono_locale.clone();
+        let code = self.code.clone();
+        let default = self.default.clone();
+        let icu_collator = Language::icu_collator(self.icu_locale.clone());
+        let icu_locale = self.icu_locale.clone();
+        let text_direction = self.text_direction.clone();
+        let translations = self.translations.clone();
+
+        Language {
+            chrono_locale,
+            code,
+            default,
+            icu_collator,
+            icu_locale,
+            text_direction,
+            translations,
         }
     }
 }

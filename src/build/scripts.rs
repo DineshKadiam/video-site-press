@@ -106,7 +106,7 @@ pub fn generate_navigation_js(
 
         let title_escaped = js_escape_inside_single_quoted_string(title);
 
-        let videos = playlist.public_videos_in_playlist_order()
+        let videos = playlist.public_videos_in_playlist_order(language)
             .iter()
             .map(|video| video_js(language, &video))
             .collect::<Vec<String>>()
@@ -133,7 +133,7 @@ pub fn generate_navigation_js(
             .collect::<Vec<String>>()
             .join(", ");
 
-        let videos = collection.public_videos_in_collection_video_order()
+        let videos = collection.public_videos_in_collection_video_order(language)
             .iter()
             .map(|video| video_js(language, &video))
             .collect::<Vec<String>>()

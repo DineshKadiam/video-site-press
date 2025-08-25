@@ -7,6 +7,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use chrono::NaiveDate;
+use icu_collator::CollatorBorrowed;
 use url::Url;
 
 use crate::{
@@ -586,9 +587,20 @@ impl Video {
     }
 
     // Videos without an earliest modified date date are sorted to the back
-    pub fn cmp_by_earliest_modified_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_earliest_modified = a.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
-        let b_earliest_modified = b.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
+    pub fn cmp_by_earliest_modified_asc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        _: &CollatorBorrowed
+    ) -> Ordering {
+        let a_earliest_modified = a.video_files
+            .iter()
+            .map(|video_file| video_file.file_meta.modified)
+            .min();
+
+        let b_earliest_modified = b.video_files
+            .iter()
+            .map(|video_file| video_file.file_meta.modified)
+            .min();
 
         match (a_earliest_modified, b_earliest_modified) {
             (Some(a_modified), Some(b_modified)) => a_modified.cmp(&b_modified),
@@ -599,9 +611,20 @@ impl Video {
     }
 
     // Videos without an earliest modified date date are sorted to the back
-    pub fn cmp_by_earliest_modified_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_earliest_modified = a.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
-        let b_earliest_modified = b.video_files.iter().map(|video_file| video_file.file_meta.modified).min();
+    pub fn cmp_by_earliest_modified_desc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        _: &CollatorBorrowed
+    ) -> Ordering {
+        let a_earliest_modified = a.video_files
+            .iter()
+            .map(|video_file| video_file.file_meta.modified)
+            .min();
+
+        let b_earliest_modified = b.video_files
+            .iter()
+            .map(|video_file| video_file.file_meta.modified)
+            .min();
 
         match (a_earliest_modified, b_earliest_modified) {
             (Some(a_modified), Some(b_modified)) => b_modified.cmp(&a_modified),
@@ -612,11 +635,15 @@ impl Video {
     }
 
     // Videos without release date are sorted to the back
-    pub fn cmp_by_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+    pub fn cmp_by_release_date_asc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
         match (&a.release_date, &b.release_date) {
             (Some(a_release_date), Some(b_release_date)) => {
                 match a_release_date.cmp(b_release_date) {
-                    Ordering::Equal => Video::cmp_by_earliest_modified_asc(a, b),
+                    Ordering::Equal => Video::cmp_by_earliest_modified_asc(a, b, collator),
                     ordering => ordering
                 }
             }
@@ -627,11 +654,15 @@ impl Video {
     }
 
     // Videos without release date are sorted to the back
-    pub fn cmp_by_release_date_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+    pub fn cmp_by_release_date_desc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
         match (&a.release_date, &b.release_date) {
             (Some(a_release_date), Some(b_release_date)) => {
                 match b_release_date.cmp(a_release_date) {
-                    Ordering::Equal => Video::cmp_by_earliest_modified_desc(a, b),
+                    Ordering::Equal => Video::cmp_by_earliest_modified_desc(a, b, collator),
                     ordering => ordering
                 }
             }
@@ -641,8 +672,40 @@ impl Video {
         }
     }
 
+    // Videos without title are sorted to the front
+    pub fn cmp_by_slug_then_title_asc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => collator.compare(a_title, b_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => collator.compare(a.slug_unchecked(), b.slug_unchecked())
+        }
+    }
+
+    // Videos without title are sorted to the front
+    pub fn cmp_by_slug_then_title_desc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
+        match (&a.title, &b.title) {
+            (Some(a_title), Some(b_title)) => collator.compare(b_title, a_title),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => collator.compare(b.slug_unchecked(), a.slug_unchecked())
+        }
+    }
+
     // Videos without sort number are sorted to the back
-    pub fn cmp_by_sort_number_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+    pub fn cmp_by_sort_number_asc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        _: &CollatorBorrowed
+    ) -> Ordering {
         match (&a.sort_number, &b.sort_number) {
             (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(b_sort_number),
             (Some(_), None) => Ordering::Less,
@@ -652,7 +715,11 @@ impl Video {
     }
 
     // Videos without sort number are sorted to the back
-    pub fn cmp_by_sort_number_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+    pub fn cmp_by_sort_number_desc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        _: &CollatorBorrowed
+    ) -> Ordering {
         match (&a.sort_number, &b.sort_number) {
             (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(a_sort_number),
             (Some(_), None) => Ordering::Less,
@@ -662,53 +729,47 @@ impl Video {
     }
 
     // Videos without sort number and without release date are sorted to the back
-    pub fn cmp_by_sort_number_then_release_date_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
+    pub fn cmp_by_sort_number_then_release_date_asc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
         match (&a.sort_number, &b.sort_number) {
             (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(b_sort_number),
             (Some(_), None) => Ordering::Less,
             (None, Some(_)) => Ordering::Greater,
-            (None, None) => Video::cmp_by_release_date_asc(a, b)
+            (None, None) => Video::cmp_by_release_date_asc(a, b, collator)
         }
     }
 
     // Videos with title and videos with only a slug are sorted together
-    pub fn cmp_by_title_or_slug_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_title = a.title.as_deref().or_else(|| a.slug());
-        let b_title = b.title.as_deref().or_else(|| b.slug());
+    pub fn cmp_by_title_or_slug_asc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
+        let a_title = a.title.as_deref().unwrap_or_else(|| a.slug_unchecked());
+        let b_title = b.title.as_deref().unwrap_or_else(|| b.slug_unchecked());
 
-        a_title.cmp(&b_title)
+        collator.compare(a_title, b_title)
     }
 
     // Videos with title and videos with only a slug are sorted together
-    pub fn cmp_by_title_or_slug_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        let a_title = a.title.as_deref().or_else(|| a.slug());
-        let b_title = b.title.as_deref().or_else(|| b.slug());
+    pub fn cmp_by_title_or_slug_desc(
+        a: &Arc<Video>,
+        b: &Arc<Video>,
+        collator: &CollatorBorrowed
+    ) -> Ordering {
+        let a_title = a.title.as_deref().unwrap_or_else(|| a.slug_unchecked());
+        let b_title = b.title.as_deref().unwrap_or_else(|| b.slug_unchecked());
 
-        b_title.cmp(&a_title)
-    }
-
-    // Videos without title are sorted to the front
-    pub fn cmp_by_slug_then_title_asc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => a_title.cmp(b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => a.slug().cmp(&b.slug())
-        }
-    }
-
-    // Videos without title are sorted to the front
-    pub fn cmp_by_slug_then_title_desc(a: &Arc<Video>, b: &Arc<Video>) -> Ordering {
-        match (&a.title, &b.title) {
-            (Some(a_title), Some(b_title)) => b_title.cmp(a_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => b.slug().cmp(&a.slug())
-        }
+        collator.compare(b_title, a_title)
     }
 
     // Returns a comparator function according to the passed [VideoOrder]
-    pub fn cmp_by_video_order(video_order: &VideoOrder) -> fn(&Arc<Video>, &Arc<Video>) -> Ordering {
+    pub fn cmp_by_video_order(
+        video_order: &VideoOrder
+    ) -> fn(&Arc<Video>, &Arc<Video>, &CollatorBorrowed) -> Ordering {
         match video_order {
             VideoOrder::Default => Video::cmp_by_sort_number_then_release_date_asc,
             VideoOrder::ReleaseDateAsc => Video::cmp_by_release_date_asc,

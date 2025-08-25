@@ -16,6 +16,7 @@ use crate::{
     GetAnyResult,
     HyperDir,
     InheritedOptions,
+    Language,
     Link,
     PlatformIntegration,
     Site,
@@ -775,7 +776,10 @@ impl Playlist {
     /// Set the platform_integration setting locally on the playlist. Returns whether
     /// this change must be propagated to descendants due to a resulting
     /// change in inherited settings.
-    pub fn platform_integration_local_set(&mut self, platform_integration_option: Option<PlatformIntegration>) -> bool {
+    pub fn platform_integration_local_set(
+        &mut self,
+        platform_integration_option: Option<PlatformIntegration>
+    ) -> bool {
         let must_propagate =
             platform_integration_option.unwrap_or(self.inherited_options.platform_integration) !=
             self.platform_integration.unwrap_or(self.inherited_options.platform_integration);
@@ -822,9 +826,13 @@ impl Playlist {
         self.videos.iter().filter(|video| video.public_local())
     }
 
-    pub fn public_videos_in_playlist_order(&self) -> Vec<Arc<Video>> {
+    pub fn public_videos_in_playlist_order(
+        &self,
+        language: &Language
+    ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(Video::cmp_by_video_order(&self.order));
+        let comparison = Video::cmp_by_video_order(&self.order);
+        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
         videos
     }
 
@@ -1063,14 +1071,22 @@ impl Playlist {
         }
     }
 
-    pub fn videos_in_tree_view_order(&self, tree_view_order: &TreeViewOrder) -> Vec<Arc<Video>> {
+    pub fn videos_in_tree_view_order(
+        &self,
+        language: &Language,
+        tree_view_order: &TreeViewOrder
+    ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
-        match tree_view_order {
+
+        let comparison = match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => videos.sort_unstable_by(Video::cmp_by_video_order(&self.order)),
-            TreeViewOrder::TitleAsc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_asc),
-            TreeViewOrder::TitleDesc => videos.sort_unstable_by(Video::cmp_by_slug_then_title_desc)
-        }
+            TreeViewOrder::SiteOrder => Video::cmp_by_video_order(&self.order),
+            TreeViewOrder::TitleAsc => Video::cmp_by_slug_then_title_asc,
+            TreeViewOrder::TitleDesc => Video::cmp_by_slug_then_title_desc
+        };
+
+        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+
         videos
     }
 

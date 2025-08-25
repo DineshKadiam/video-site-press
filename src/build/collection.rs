@@ -40,7 +40,8 @@ pub fn collection_html(
 ) {
     let mut layout = Layout::new();
 
-    let translations = &site.language.translations;
+    let language = &site.language;
+    let translations = &language.translations;
 
     let mut body = String::new();
 
@@ -63,7 +64,7 @@ pub fn collection_html(
         String::new()
     };
 
-    let videos = collection.public_videos_in_collection_video_order();
+    let videos = collection.public_videos_in_collection_video_order(language);
 
     let video_bubbles = bubbles("", &videos);
     let heading = formatdoc!(r#"
@@ -131,7 +132,7 @@ pub fn collection_html(
         body.push_str(&videos_rendered);
     }
 
-    let containers = collection.public_containers_in_container_order();
+    let containers = collection.public_containers_in_container_order(language);
 
     for container in &containers {
         let container_rendered = match container {
@@ -202,6 +203,9 @@ fn render_collection(
 ) -> String {
     let mut output = String::new();
 
+    let language = &site.language;
+    let translations = &language.translations;
+
     let traversal_with_collection = traversal.peek_collection(collection);
     let traversal_with_collection_prefix = traversal_with_collection.prefix_desc();
 
@@ -216,7 +220,7 @@ fn render_collection(
         output.push_str(&wrapped);
     }
 
-    let videos = collection.public_videos_in_collection_video_order();
+    let videos = collection.public_videos_in_collection_video_order(language);
 
      if !videos.is_empty() {
         let videos_rendered = videos
@@ -227,7 +231,7 @@ fn render_collection(
 
                 let release_date = match video.release_date {
                     Some(release_date) => {
-                        let formatted_date = localized_date_d_mmmm_yyyy(release_date, site.language.chrono_locale);
+                        let formatted_date = localized_date_d_mmmm_yyyy(release_date, language.chrono_locale);
                         format!(r#"<span class="release_date">{formatted_date}</span>"#)
                     }
                     None => String::new()
@@ -236,7 +240,7 @@ fn render_collection(
                     Some(title) => html_escape_outside_attribute(title),
                     None => video.slug_unchecked().to_string()
                 };
-                let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
+                let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
 
                 let video_href = traversal_with_video.index_desc(site);
                 formatdoc!(r#"
@@ -308,6 +312,9 @@ fn render_playlist(
     site: &Site,
     traversal: &Traversal
 ) -> String {
+    let language = &site.language;
+    let translations = &language.translations;
+
     let traversal_with_playlist = traversal.peek_playlist(playlist);
     let traversal_with_playlist_prefix = traversal_with_playlist.prefix_desc();
 
@@ -317,7 +324,7 @@ fn render_playlist(
         String::new()
     };
 
-    let videos = playlist.public_videos_in_playlist_order();
+    let videos = playlist.public_videos_in_playlist_order(language);
 
     let videos_rendered = videos
         .iter()
@@ -327,7 +334,7 @@ fn render_playlist(
 
             let release_date = match video.release_date {
                 Some(release_date) => {
-                    let formatted_date = localized_date_d_mmmm_yyyy(release_date, site.language.chrono_locale);
+                    let formatted_date = localized_date_d_mmmm_yyyy(release_date, language.chrono_locale);
                     format!(r#"<span class="release_date">{formatted_date}</span>"#)
                 }
                 None => String::new()
@@ -337,7 +344,7 @@ fn render_playlist(
                 None => video.slug_unchecked().to_string()
             };
 
-            let video_thumbnail = thumbnail(&site.language.translations, video, &traversal_with_video_prefix, true);
+            let video_thumbnail = thumbnail(translations, video, &traversal_with_video_prefix, true);
 
             let video_href = traversal_with_video.index_desc(site);
             formatdoc!(r#"

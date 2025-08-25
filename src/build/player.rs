@@ -36,7 +36,8 @@ pub fn player(
     video: &Video,
     video_prefix: &str
 ) -> String {
-    let translations = &site.language.translations;
+    let language = &site.language;
+    let translations = &language.translations;
 
     if video.audio_files.is_empty() && video.video_files.is_empty() {
         // TODO: Should use poster assets (different sizes)
@@ -204,7 +205,7 @@ pub fn player(
 
         let playlist_label = playlist.title_or_slug_or_generic_label(translations);
         let playlist_label_escaped = html_escape_outside_attribute(&playlist_label);
-        let videos = playlist.public_videos_in_playlist_order();
+        let videos = playlist.public_videos_in_playlist_order(language);
 
         let items = videos
             .iter()

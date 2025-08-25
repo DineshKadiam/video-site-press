@@ -129,7 +129,7 @@ fn collection_node(
         &collection_visibility
     );
 
-    let containers = collection.containers_in_tree_view_order(tree_view_order)
+    let containers = collection.containers_in_tree_view_order(&site.language, tree_view_order)
         .iter()
         .map(|container| {
             match container {
@@ -164,7 +164,7 @@ fn collection_node(
         .collect::<Vec<String>>()
         .join("");
 
-    let videos = collection.videos_in_tree_view_order(tree_view_order)
+    let videos = collection.videos_in_tree_view_order(&site.language, tree_view_order)
         .iter()
         .map(|video| {
             let node = video_node(
@@ -479,7 +479,7 @@ fn playlist_node(
     if playlist.videos.is_empty() {
         node_with_subpages
     } else {
-        let li_items = playlist.videos_in_tree_view_order(tree_view_order)
+        let li_items = playlist.videos_in_tree_view_order(&site.language, tree_view_order)
             .iter()
             .map(|video| {
                 let node = video_node(

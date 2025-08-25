@@ -37,7 +37,8 @@ pub fn playlist_html(
 ) {
     let mut layout = Layout::new();
 
-    let translations = &site.language.translations;
+    let language = &site.language;
+    let translations = &language.translations;
 
     let mut body = String::new();
 
@@ -60,7 +61,7 @@ pub fn playlist_html(
         String::new()
     };
 
-    let videos = playlist.public_videos_in_playlist_order();
+    let videos = playlist.public_videos_in_playlist_order(language);
 
     let video_bubbles = bubbles("", &videos);
     let heading = formatdoc!(r#"

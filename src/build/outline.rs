@@ -451,14 +451,15 @@ impl TraversalStep<'_> {
         site: &Site
     ) -> String {
         let index_suffix_file_only = site.index_suffix_file_only();
-        let translations = &site.language.translations;
+        let language = &site.language;
+        let translations = &language.translations;
 
         match self {
             TraversalStep::Collection(collection) => {
                 let label = collection.title_or_slug_or_generic_label(translations);
                 let label_escaped = html_escape_outside_attribute(label);
 
-                let videos = collection.public_videos_in_collection_video_order();
+                let videos = collection.public_videos_in_collection_video_order(language);
                 let video_bubbles = bubbles(prefix, &videos);
 
                 let inline = if videos.len() > 3 { "" } else { "inline" };
@@ -474,7 +475,7 @@ impl TraversalStep<'_> {
                 let label = playlist.title_or_slug_or_generic_label(translations);
                 let label_escaped = html_escape_outside_attribute(label);
 
-                let videos = playlist.public_videos_in_playlist_order();
+                let videos = playlist.public_videos_in_playlist_order(language);
                 let video_bubbles = bubbles(prefix, &videos);
 
                 let inline = if videos.len() > 3 { "" } else { "inline" };
@@ -528,6 +529,9 @@ impl TraversalStep<'_> {
     ) -> String {
         let index_suffix = site.index_suffix();
 
+        let language = &site.language;
+        let translations = &language.translations;
+
         let subcollections = collection.public_subcollections_desc_by_release_date();
 
         let subcollections_context = if subcollections.is_empty() {
@@ -536,7 +540,7 @@ impl TraversalStep<'_> {
             let rendered_subcollections = subcollections
                 .iter()
                 .map(|subcollection| {
-                    let label = subcollection.title_or_slug_or_generic_label(&site.language.translations);
+                    let label = subcollection.title_or_slug_or_generic_label(translations);
                     let slug = subcollection.slug_unchecked();
 
                     let subcollection_prefix = if current_page.is_collection(collection) {
@@ -549,7 +553,7 @@ impl TraversalStep<'_> {
                         banner_html(banner, &subcollection_prefix)
                     } else if let Some(video) = subcollection.public_videos().find(|video| video.poster.is_some()) { // TODO: Take a banner from a present playlist or sub-subcollection too as alternative
                         let video_prefix = format!("{subcollection_prefix}{}/", video.slug_unchecked());
-                        thumbnail(&site.language.translations, video, &video_prefix, false)
+                        thumbnail(translations, video, &video_prefix, false)
                     } else {
                         String::new()
                     };
@@ -592,7 +596,7 @@ impl TraversalStep<'_> {
             let rendered_playlists = playlists
                 .iter()
                 .map(|playlist| {
-                    let label = playlist.title_or_slug_or_generic_label(&site.language.translations);
+                    let label = playlist.title_or_slug_or_generic_label(translations);
                     let slug = playlist.slug_unchecked();
 
                     let playlist_prefix = if current_page.is_playlist(playlist) {
@@ -607,7 +611,7 @@ impl TraversalStep<'_> {
                         .public_videos()
                         .find(|video| video.poster.is_some()) {
                         let video_prefix = format!("{playlist_prefix}{}/", video.slug_unchecked());
-                        thumbnail(&site.language.translations, video, &video_prefix, false)
+                        thumbnail(translations, video, &video_prefix, false)
                     } else {
                         // TODO: Decide what condition this even is and handle
                         String::new()
@@ -643,7 +647,7 @@ impl TraversalStep<'_> {
             "#)
         };
 
-        let videos = collection.public_videos_desc_by_release_date();
+        let videos = collection.public_videos_desc_by_release_date(language);
 
         let videos_context = if videos.is_empty() {
             String::new()
@@ -651,7 +655,7 @@ impl TraversalStep<'_> {
             let rendered_videos = videos
                 .iter()
                 .map(|video| {
-                    let label = video.title_or_slug_or_generic_label(&site.language.translations);
+                    let label = video.title_or_slug_or_generic_label(translations);
                     let slug = video.slug_unchecked();
 
                     let video_prefix = if current_page.is_video(video) {
@@ -660,7 +664,7 @@ impl TraversalStep<'_> {
                         format!("../{slug}/")
                     };
 
-                    let thumbnail_rendered = thumbnail(&site.language.translations, video, &video_prefix, false);
+                    let thumbnail_rendered = thumbnail(translations, video, &video_prefix, false);
 
                     let (current, href) = if current_page.is_video(video) {
                         ("current", String::new())
@@ -671,7 +675,7 @@ impl TraversalStep<'_> {
                     let duration = match &video
                         .highest_quality_video_file()
                         .and_then(|video_file| video_file.video_meta.as_ref()) {
-                        Some(video_meta) => casual_duration(video_meta.duration, &site.language.translations),
+                        Some(video_meta) => casual_duration(video_meta.duration, translations),
                         None => String::new()
                     };
 
@@ -710,7 +714,8 @@ impl TraversalStep<'_> {
         site: &Site,
         video: Option<&Video>
     ) -> String {
-        let translations = &site.language.translations;
+        let language = &site.language;
+        let translations = &language.translations;
 
         // let banner = if let Some(banner) = &playlist.banner {
         //     banner_html(banner, prefix)
@@ -725,7 +730,7 @@ impl TraversalStep<'_> {
         if let Some(video) = video {
             let index_suffix = site.index_suffix();
 
-            let videos = playlist.public_videos_in_playlist_order();
+            let videos = playlist.public_videos_in_playlist_order(language);
 
             let items = videos
                 .iter()
@@ -763,7 +768,7 @@ impl TraversalStep<'_> {
                     let mut details = Vec::new();
 
                     if let Some(release_date) = video.release_date {
-                        let date = localized_date_d_mmm_yyyy(release_date, site.language.chrono_locale);
+                        let date = localized_date_d_mmm_yyyy(release_date, language.chrono_locale);
                         details.push(date);
                     }
 
