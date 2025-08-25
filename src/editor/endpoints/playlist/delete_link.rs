@@ -46,13 +46,13 @@ pub async fn delete_link(
     };
 
     match context.update_playlist(mutation, &site_path) {
+        PlaylistUpdate::InvalidManifest { playlist } => {
+            let language = context.get_editor_language();
+            Either::Right(pending_manifest_errors(&context, &language, &playlist))
+        }
         PlaylistUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
-        }
-        PlaylistUpdate::PendingErrors { playlist } => {
-            let language = context.get_editor_language();
-            Either::Right(pending_manifest_errors(&context, &language, &playlist))
         }
         PlaylistUpdate::Updated { playlist_updated, .. } => {
             let redirect_url = routes::playlist_links(&playlist_updated);

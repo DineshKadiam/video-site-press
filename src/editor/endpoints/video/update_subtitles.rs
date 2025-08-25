@@ -113,13 +113,13 @@ pub async fn update_subtitles(
                 let editor_language = context.get_editor_language();
                 Either::Right(error_page(&context, &editor_language, &err))
             }
+            VideoUpdate::InvalidManifest { video } => {
+                let editor_language = context.get_editor_language();
+                Either::Right(pending_manifest_errors(&context, &editor_language, &video))
+            }
             VideoUpdate::NotFound => {
                 let editor_language = context.get_editor_language();
                 Either::Right(not_found(&context, &editor_language, &site_path))
-            }
-            VideoUpdate::PendingErrors { video } => {
-                let editor_language = context.get_editor_language();
-                Either::Right(pending_manifest_errors(&context, &editor_language, &video))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_subtitles(&video_updated);

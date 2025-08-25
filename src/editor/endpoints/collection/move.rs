@@ -61,11 +61,11 @@ pub async fn r#move(
         };
 
         match context.update_collection(mutation, &site_path) {
+            CollectionUpdate::InvalidManifest { collection } => {
+                Either::Right(pending_manifest_errors(&collection, &context, &language))
+            }
             CollectionUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
-            }
-            CollectionUpdate::PendingErrors { collection } => {
-                Either::Right(pending_manifest_errors(&collection, &context, &language))
             }
             CollectionUpdate::Updated { collection_updated, .. } => {
                 let redirect_url = routes::collection_dangerous_actions(&collection_updated);

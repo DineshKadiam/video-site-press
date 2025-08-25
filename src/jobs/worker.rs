@@ -27,6 +27,7 @@ use crate::{
     VideoMetaCached,
     VideoUpdate
 };
+use crate::infallible_mutation;
 
 use super::{encode, probe};
 
@@ -105,13 +106,13 @@ impl Worker {
             };
 
             match context.update_video(mutation, &video.site_path) {
-                VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
-                VideoUpdate::NotFound => {
-                    let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path(&video.site_path);
+                VideoUpdate::Error(_) => infallible_mutation!(),
+                VideoUpdate::InvalidManifest { .. } => {
+                    let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                     Err(message)
                 }
-                VideoUpdate::PendingErrors { .. } => {
-                    let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors(&video.site_path);
+                VideoUpdate::NotFound => {
+                    let message = translations.background_job_output_not_loaded_target_moved.to_string();
                     Err(message)
                 }
                 VideoUpdate::Success { video_updated, .. } => {
@@ -219,12 +220,12 @@ impl Worker {
             };
 
             match context.update_collection(mutation, &collection.site_path) {
-                CollectionUpdate::NotFound => {
-                    let message = String::from("Banner assets could not be assigned in the site tree as the collection has meanwhile changed path.");
+                CollectionUpdate::InvalidManifest { .. } => {
+                    let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                     Err(message)
                 }
-                CollectionUpdate::PendingErrors { .. } => {
-                    let message = String::from("Banner assets could not be assigned in the site tree as the collection manifest currently has pending errors.");
+                CollectionUpdate::NotFound => {
+                    let message = translations.background_job_output_not_loaded_target_moved.to_string();
                     Err(message)
                 }
                 CollectionUpdate::Updated { .. } => Ok(())
@@ -241,7 +242,7 @@ impl Worker {
         translations: &Translations
     ) -> Result<(), String> {
         if collection.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            Worker::compute_collection_banner_assets(collection, &context, translations)
+            Worker::compute_collection_banner_assets(collection, context, translations)
         } else {
             Ok(())
         }
@@ -343,12 +344,12 @@ impl Worker {
             };
 
             match context.update_playlist(mutation, &playlist.site_path) {
-                PlaylistUpdate::NotFound => {
-                    let message = String::from("Banner assets could not be assigned in the site tree as the playlist has meanwhile changed path.");
+                PlaylistUpdate::InvalidManifest { .. } => {
+                    let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                     Err(message)
                 }
-                PlaylistUpdate::PendingErrors { .. } => {
-                    let message = String::from("Banner assets could not be assigned in the site tree as the playlist manifest currently has pending errors.");
+                PlaylistUpdate::NotFound => {
+                    let message = translations.background_job_output_not_loaded_target_moved.to_string();
                     Err(message)
                 }
                 PlaylistUpdate::Updated { .. } => Ok(())
@@ -365,7 +366,7 @@ impl Worker {
         translations: &Translations
     ) -> Result<(), String> {
         if playlist.banner.as_ref().is_some_and(|banner| banner.assets.is_none()) {
-            Worker::compute_playlist_banner_assets(&context, playlist, translations)
+            Worker::compute_playlist_banner_assets(context, playlist, translations)
         } else {
             Ok(())
         }
@@ -394,13 +395,13 @@ impl Worker {
                 };
 
                 match context.update_video(mutation, &video.site_path) {
-                    VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
-                    VideoUpdate::NotFound => {
-                        let message = format!("Poster for video {} could not be assigned in the site tree as the video has meanwhile changed path.", video.site_path.normalized());
+                    VideoUpdate::Error(_) => infallible_mutation!(),
+                    VideoUpdate::InvalidManifest { .. } => {
+                        let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                         Err(message)
                     }
-                    VideoUpdate::PendingErrors { .. } => {
-                        let message = format!("Poster for video {} could not be assigned in the site tree as there are currently errors in the video manifest.", video.site_path.normalized());
+                    VideoUpdate::NotFound => {
+                        let message = translations.background_job_output_not_loaded_target_moved.to_string();
                         Err(message)
                     }
                     VideoUpdate::Success { video_updated, .. } => {
@@ -435,7 +436,12 @@ impl Worker {
         )
     }
 
-    pub fn compute_poster_assets(context: &Context, poster_aspect: f32, video: Arc<Video>) -> Result<(), String> {
+    pub fn compute_poster_assets(
+        context: &Context,
+        poster_aspect: f32,
+        translations: &Translations,
+        video: Arc<Video>
+    ) -> Result<(), String> {
         if let Some(poster) = &video.poster {
             let source_path = context.site_dir
                 .join(video.site_path.filesystem_relative())
@@ -522,32 +528,34 @@ impl Worker {
                             poster.assets = Some(poster_assets);
                             Ok(())
                         } else {
-                            Err(String::from("Poster assets could not be assigned as the poster was meanwhile removed"))
+                            let message = translations.background_job_output_not_loaded_target_removed.to_string();
+                            Err(message)
                         }
                     };
 
                     match context.update_video(mutation, &video.site_path) {
-                        VideoUpdate::Error(err) => {
-                            return Err(err)
+                        VideoUpdate::Error(err) => Err(err),
+                        VideoUpdate::InvalidManifest { .. } => {
+                            let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
+                            Err(message)
                         }
                         VideoUpdate::NotFound => {
-                            return Err(String::from("Poster assets could not be assigned in the site tree as the video has meanwhile changed path."));
+                            let message = translations.background_job_output_not_loaded_target_moved.to_string();
+                            Err(message)
                         }
-                        VideoUpdate::PendingErrors { .. } => {
-                            return Err(String::from("Poster assets could not be assigned in the site tree as the video manifest currently has pending errors."));
-                        }
-                        VideoUpdate::Success { .. } => ()
+                        VideoUpdate::Success { .. } => Ok(())
                     }
                 }
                 Err(err) => return Err(err)
             }
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     pub fn compute_poster_meta(
         context: &Context,
+        translations: &Translations,
         video: &Arc<Video>
     ) -> Result<(), String> {
         if let Some(poster) = &video.poster {
@@ -596,28 +604,29 @@ impl Worker {
                             poster.poster_meta = Some(poster_meta);
                             Ok(())
                         } else {
-                            Err(String::from("Poster meta could not be assigned as the poster was meanwhile removed"))
+                            let message = translations.background_job_output_not_loaded_target_removed.to_string();
+                            Err(message)
                         }
                     };
 
                     match context.update_video(mutation, &video.site_path) {
-                        VideoUpdate::Error(err) => {
-                            return Err(err)
+                        VideoUpdate::Error(err) => Err(err),
+                        VideoUpdate::InvalidManifest { .. } => {
+                            let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
+                            Err(message)
                         }
                         VideoUpdate::NotFound => {
-                            return Err(String::from("Poster meta could not be assigned in the site tree as the video has meanwhile changed path."));
+                            let message = translations.background_job_output_not_loaded_target_moved.to_string();
+                            Err(message)
                         }
-                        VideoUpdate::PendingErrors { .. } => {
-                            return Err(String::from("Poster meta could not be assigned in the site tree as the video currently has pending errors."));
-                        }
-                        VideoUpdate::Success { .. } => ()
+                        VideoUpdate::Success { .. } => Ok(())
                     }
                 }
                 Err(err) => return Err(err)
             }
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     /// Includes computing video metadata for all video files, as well as poster,
@@ -628,23 +637,47 @@ impl Worker {
         translations: &Translations,
         video: Arc<Video>
     ) -> Result<(), String> {
-        let video_with_metadata = Worker::compute_video_metadata(&context, &translations, video)?;
+        let video_with_metadata = Worker::compute_video_metadata(context, &translations, video)?;
 
         if let Some(poster) = &video_with_metadata.poster {
             if poster.poster_meta.is_none() {
-                Worker::compute_poster_meta(&context, &video_with_metadata)?;
+                Worker::compute_poster_meta(
+                    context,
+                    translations,
+                    &video_with_metadata
+                )?;
             }
 
             if poster.assets.is_none() {
-                Worker::compute_poster_assets(&context, poster_aspect, video_with_metadata)?;
+                Worker::compute_poster_assets(
+                    context,
+                    poster_aspect,
+                    translations,
+                    video_with_metadata
+                )?;
             }
 
             Ok(())
         } else {
-            let video_with_poster = Worker::compute_poster(&context, 0.5, translations, video_with_metadata)?;
+            let video_with_poster = Worker::compute_poster(
+                context,
+                0.5,
+                translations,
+                video_with_metadata
+            )?;
 
-            Worker::compute_poster_meta(&context, &video_with_poster)?;
-            Worker::compute_poster_assets(&context, poster_aspect, video_with_poster)?;
+            Worker::compute_poster_meta(
+                context,
+                translations,
+                &video_with_poster
+            )?;
+
+            Worker::compute_poster_assets(
+                context,
+                poster_aspect,
+                translations,
+                video_with_poster
+            )?;
 
             Ok(())
         }
@@ -721,13 +754,13 @@ impl Worker {
             };
 
             match context.update_video(mutation, &video.site_path) {
-                VideoUpdate::Error(_) => unreachable!("Infallible mutation"),
-                VideoUpdate::NotFound => {
-                    let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path(&video.site_path);
+                VideoUpdate::Error(_) => infallible_mutation!(),
+                VideoUpdate::InvalidManifest { .. } => {
+                    let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                     Err(message)
                 }
-                VideoUpdate::PendingErrors { .. } => {
-                    let message = translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors(&video.site_path);
+                VideoUpdate::NotFound => {
+                    let message = translations.background_job_output_not_loaded_target_moved.to_string();
                     Err(message)
                 }
                 VideoUpdate::Success { video_updated, .. } => {
@@ -753,7 +786,7 @@ impl Worker {
         translations: &Translations,
         video: Arc<Video>
     ) -> Result<(), String> {
-        let video_with_metadata = Worker::compute_video_metadata(&context, &translations, video)?;
+        let video_with_metadata = Worker::compute_video_metadata(context, &translations, video)?;
 
         if let Some(highest_quality_video_file) = &video_with_metadata.highest_quality_video_file() {
             let video_meta = highest_quality_video_file.video_meta.as_ref().unwrap();
@@ -767,17 +800,23 @@ impl Worker {
             };
 
             let video_with_computed_poster = Worker::compute_poster(
-                &context,
+                context,
                 bounded_timecode,
                 translations,
                 video_with_metadata
             )?;
 
-            Worker::compute_poster_assets(&context, poster_aspect, video_with_computed_poster)
+            Worker::compute_poster_assets(
+                context,
+                poster_aspect,
+                translations,
+                video_with_computed_poster
+            )
         } else {
             let site_path = video_with_metadata.site_path.normalized();
-            let error = format!("There was no source video to compute a poster from. ({site_path})");
-            Err(error)
+            let t_there_was_no_source_video_to_compute_a_poster_from = translations.there_was_no_source_video_to_compute_a_poster_from;
+            let message = format!("{t_there_was_no_source_video_to_compute_a_poster_from} ({site_path})");
+            Err(message)
         }
     }
 
@@ -796,13 +835,13 @@ impl Worker {
                 };
 
                 match context.update_video(mutation, &video.site_path) {
-                    VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
-                    VideoUpdate::NotFound => {
-                        let message = String::from("Video could not be updated with newly computed audio file because it was not found at its site path anymore.");
+                    VideoUpdate::Error(_) => infallible_mutation!(),
+                    VideoUpdate::InvalidManifest { .. } => {
+                        let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                         Err(message)
                     }
-                    VideoUpdate::PendingErrors { .. } => {
-                        let message = String::from("Video could not be updated with newly computed audio file as the video currently has pending errors.");
+                    VideoUpdate::NotFound => {
+                        let message = translations.background_job_output_not_loaded_target_moved.to_string();
                         Err(message)
                     }
                     VideoUpdate::Success { video_updated, .. } => {
@@ -819,8 +858,8 @@ impl Worker {
                 }
             }
             Err(err) => {
-                // TODO: Translate strings (all around in this file)
-                let message = format!("Encoding a new audio file failed ({err})");
+                let t_encoding_a_new_audio_file_failed = translations.encoding_a_new_audio_file_failed;
+                let message = format!("{t_encoding_a_new_audio_file_failed} ({err})");
                 Err(message)
             }
         }
@@ -841,13 +880,13 @@ impl Worker {
                 };
 
                 match context.update_video(mutation, &video.site_path) {
-                    VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
-                    VideoUpdate::NotFound => {
-                        let message = String::from("Video could not be updated with newly computed video file because it was not found at its site path anymore.");
+                    VideoUpdate::Error(_) => infallible_mutation!(),
+                    VideoUpdate::InvalidManifest { .. } => {
+                        let message = translations.background_job_output_not_loaded_target_has_invalid_manifest.to_string();
                         Err(message)
                     }
-                    VideoUpdate::PendingErrors { .. } => {
-                        let message = String::from("Video could not be updated with newly computed video file as the video currently has pending errors.");
+                    VideoUpdate::NotFound => {
+                        let message = translations.background_job_output_not_loaded_target_moved.to_string();
                         Err(message)
                     }
                     VideoUpdate::Success { video_updated, .. } => {
@@ -864,7 +903,8 @@ impl Worker {
                 }
             }
             Err(err) => {
-                let message = format!("Encoding a new video file failed ({err})");
+                let t_encoding_a_new_video_file_failed = translations.encoding_a_new_video_file_failed;
+                let message = format!("{t_encoding_a_new_video_file_failed} ({err})");
                 Err(message)
             }
         }

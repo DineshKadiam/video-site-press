@@ -1054,7 +1054,7 @@ impl Playlist {
                         Err(err) => VideoUpdate::Error(err)
                     }
                 } else {
-                    VideoUpdate::PendingErrors {
+                    VideoUpdate::InvalidManifest {
                         video: Arc::clone(video)
                     }
                 }

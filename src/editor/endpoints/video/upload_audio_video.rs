@@ -34,6 +34,7 @@ use crate::editor::endpoints::collection::pending_manifest_errors as pending_col
 use crate::editor::endpoints::playlist::pending_manifest_errors as pending_playlist_manifest_errors;
 use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
+use crate::infallible_mutation;
 use crate::util::{
     deduplicate_filename,
     deduplicate_filestem,
@@ -145,12 +146,12 @@ pub async fn upload_audio_video(
                             };
 
                             match context.update_collection(mutation, &site_path) {
+                                CollectionUpdate::InvalidManifest { collection } => {
+                                    return Ok(Either::Right(pending_collection_manifest_errors(&collection, &context, &language)))
+                                }
                                 CollectionUpdate::NotFound => {
                                     // TODO: Can only happen in weird time of check vs. time of use edge cases
                                     return Ok(Either::Right(not_found(&context, &language, &site_path)));
-                                }
-                                CollectionUpdate::PendingErrors { collection } => {
-                                    return Ok(Either::Right(pending_collection_manifest_errors(&collection, &context, &language)))
                                 }
                                 CollectionUpdate::Updated { optional_return_value: video, .. } => video
                             }
@@ -165,12 +166,12 @@ pub async fn upload_audio_video(
                             };
 
                             match context.update_playlist(mutation, &site_path) {
+                                PlaylistUpdate::InvalidManifest { playlist } => {
+                                    return Ok(Either::Right(pending_playlist_manifest_errors(&context, &language, &playlist)))
+                                }
                                 PlaylistUpdate::NotFound => {
                                     // TODO: Can only happen in weird time of check vs. time of use edge cases
                                     return Ok(Either::Right(not_found(&context, &language, &site_path)));
-                                }
-                                PlaylistUpdate::PendingErrors { playlist } => {
-                                    return Ok(Either::Right(pending_playlist_manifest_errors(&context, &language, &playlist)))
                                 }
                                 PlaylistUpdate::Updated { optional_return_value: video, .. } => video
                             }
@@ -190,8 +191,8 @@ pub async fn upload_audio_video(
                             };
 
                             match context.update_video(mutation, &site_path) {
-                                VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
-                                VideoUpdate::PendingErrors { video } => {
+                                VideoUpdate::Error(_) => infallible_mutation!(),
+                                VideoUpdate::InvalidManifest { video } => {
                                     return Ok(Either::Right(pending_video_manifest_errors(&context, &language, &video)))
                                 }
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases

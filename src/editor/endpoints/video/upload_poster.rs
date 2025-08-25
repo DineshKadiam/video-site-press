@@ -23,6 +23,7 @@ use crate::{
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
+use crate::infallible_mutation;
 use crate::util::{nanoid, supported_image_extension};
 
 use super::edit_poster::edit_poster_page;
@@ -98,14 +99,14 @@ pub async fn upload_poster(
                 };
 
                 match context.update_video(mutation, &site_path) {
-                    VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+                    VideoUpdate::Error(_) => infallible_mutation!(),
+                    VideoUpdate::InvalidManifest { video } => {
+                        return Ok(Either::Right(pending_manifest_errors(&context, &language, &video)))
+                    }
                     VideoUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
                         return Ok(Either::Right(http_response));
-                    }
-                    VideoUpdate::PendingErrors { video } => {
-                        return Ok(Either::Right(pending_manifest_errors(&context, &language, &video)))
                     }
                     VideoUpdate::Success { video_updated, .. } => {
                         let site = context.get_site();

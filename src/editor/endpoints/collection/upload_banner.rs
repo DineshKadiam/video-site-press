@@ -72,14 +72,14 @@ pub async fn upload_banner(
                 };
 
                 match context.update_collection(mutation, &site_path) {
+                    CollectionUpdate::InvalidManifest { collection } => {
+                        return Ok(Either::Right(pending_manifest_errors(&collection, &context, &language)))
+                    }
                     CollectionUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
 
                         return Ok(Either::Right(http_response));
-                    }
-                    CollectionUpdate::PendingErrors { collection } => {
-                        return Ok(Either::Right(pending_manifest_errors(&collection, &context, &language)))
                     }
                     CollectionUpdate::Updated { collection_updated, .. } => {
                         let collection_fast_tasks_job_desc = JobDesc::CollectionFastTasks {

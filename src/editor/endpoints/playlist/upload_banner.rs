@@ -72,14 +72,14 @@ pub async fn upload_banner(
                 };
 
                 match context.update_playlist(mutation, &site_path) {
+                    PlaylistUpdate::InvalidManifest { playlist } => {
+                        return Ok(Either::Right(pending_manifest_errors(&context, &language, &playlist)));
+                    }
                     PlaylistUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
                         let http_response = not_found(&context, &language, &site_path);
 
                         return Ok(Either::Right(http_response));
-                    }
-                    PlaylistUpdate::PendingErrors { playlist } => {
-                        return Ok(Either::Right(pending_manifest_errors(&context, &language, &playlist)));
                     }
                     PlaylistUpdate::Updated { playlist_updated, .. } => {
                         let playlist_fast_tasks_job_desc = JobDesc::PlaylistFastTasks {

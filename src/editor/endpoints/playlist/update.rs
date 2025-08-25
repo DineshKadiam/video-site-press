@@ -136,11 +136,11 @@ pub async fn update(
         };
 
         match context.update_playlist(mutation, &site_path) {
+            PlaylistUpdate::InvalidManifest { playlist } => {
+                Either::Right(pending_manifest_errors(&context, &language, &playlist))
+            }
             PlaylistUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
-            }
-            PlaylistUpdate::PendingErrors { playlist } => {
-                Either::Right(pending_manifest_errors(&context, &language, &playlist))
             }
             PlaylistUpdate::Updated { playlist_updated, .. } => {
                 playlist_updated.write_manifest(&context);

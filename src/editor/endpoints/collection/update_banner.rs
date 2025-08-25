@@ -36,13 +36,13 @@ pub async fn update_banner(
     };
 
     match context.update_collection(mutation, &site_path) {
+        CollectionUpdate::InvalidManifest { collection } => {
+            let language = context.get_editor_language();
+            Either::Right(pending_manifest_errors(&collection, &context, &language))
+        }
         CollectionUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
-        }
-        CollectionUpdate::PendingErrors { collection } => {
-            let language = context.get_editor_language();
-            Either::Right(pending_manifest_errors(&collection, &context, &language))
         }
         CollectionUpdate::Updated { collection_updated, .. } => {
             let redirect_url = routes::collection_banner(&collection_updated);

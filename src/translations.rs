@@ -3,8 +3,6 @@
 
 use std::path::Path;
 
-use crate::SitePath;
-
 mod de;
 mod en;
 
@@ -34,6 +32,9 @@ pub struct Translations {
     pub automatic_original_frame_rate_or_encoder_preference: &'static str,
     pub average_compression_and_speed_reasonable_for_temporarily_used_media: &'static str,
     pub back: &'static str,
+    pub background_job_output_not_loaded_target_has_invalid_manifest: &'static str,
+    pub background_job_output_not_loaded_target_moved: &'static str,
+    pub background_job_output_not_loaded_target_removed: &'static str,
     pub background_jobs: &'static str,
     pub banner_description: &'static str,
     pub banner_image: &'static str,
@@ -111,6 +112,8 @@ pub struct Translations {
     pub enabled: &'static str,
     pub encode_audio: &'static str,
     pub encode_video: &'static str,
+    pub encoding_a_new_audio_file_failed: &'static str,
+    pub encoding_a_new_video_file_failed: &'static str,
     pub encoding_approach_label: &'static str,
     pub enter_exit_fullscreen: &'static str,
     pub error: &'static str,
@@ -171,8 +174,6 @@ pub struct Translations {
     pub maximize: &'static str,
     pub media_rss_description: &'static str,
     pub medium_volume: &'static str,
-    metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors: &'static str,
-    metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path: &'static str,
     pub metadata_pending: &'static str,
     pub min: &'static str,
     pub minimize: &'static str,
@@ -281,6 +282,7 @@ pub struct Translations {
     the_xxx_child_process_could_not_be_spawned: &'static str,
     the_xxx_child_process_terminated_unsuccessfully: &'static str,
     pub theme: &'static str,
+    pub there_was_no_source_video_to_compute_a_poster_from: &'static str,
     pub this_video_can_be_seamlessly_converted_to_a_video_in_a_collection: &'static str,
     pub this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist: &'static str,
     pub thumbnail_format: &'static str,
@@ -377,22 +379,6 @@ impl Translations {
 
     pub fn invalid_site_text(&self) -> String {
         self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
-    }
-
-    pub fn metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors(
-        &self,
-        site_path: &SitePath
-    ) -> String {
-        self.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors
-            .replace("{site_path}", site_path.normalized())
-    }
-
-    pub fn metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path(
-        &self,
-        site_path: &SitePath
-    ) -> String {
-        self.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path
-            .replace("{site_path}", site_path.normalized())
     }
 
     pub fn public_address_must_be_configured_for_deployment_text(
@@ -546,8 +532,6 @@ fn check_translations() {
         assert!(&translations.deleting_file_xxx.contains("{path}"));
         assert!(&translations.files_are_being_deployed_to_xxx.contains("{link}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
-        assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_currently_has_pending_errors.contains("{site_path}"));
-        assert!(&translations.metadata_for_video_xxx_could_not_be_assigned_in_the_site_tree_as_the_video_has_meanwhile_changed_path.contains("{site_path}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text_cli.contains("{path}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));

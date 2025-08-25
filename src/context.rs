@@ -67,13 +67,13 @@ pub enum GetAnyResult {
 /// Any persistence on disk (manifest, assets) must be performed by the
 /// caller after a successful update.
 pub enum CollectionUpdate<T> {
-    /// When either nothing, or something else (a playlist or video), exists
-    /// at the provided site_path.
-    NotFound,
     /// Updating is prohibited while there are pending (manifest) errors as
     /// this could potentially discard the entire manifest content due to
     /// just a simple simple syntax error.
-    PendingErrors { collection: Arc<Collection> },
+    InvalidManifest { collection: Arc<Collection> },
+    /// When either nothing, or something else (a playlist or video), exists
+    /// at the provided site_path.
+    NotFound,
     Updated {
         collection_updated: Arc<Collection>,
         optional_return_value: T,
@@ -89,13 +89,13 @@ pub enum CollectionUpdate<T> {
 /// persistence on disk (manifest, assets) must be performed by the caller
 /// after a successful update.
 pub enum PlaylistUpdate<T> {
-    /// When either nothing, or something else (a collection or video), exists
-    /// at the provided site_path.
-    NotFound,
     /// Updating is prohibited while there are pending (manifest) errors as
     /// this could potentially discard the entire manifest content due to
     /// just a simple simple syntax error.
-    PendingErrors { playlist: Arc<Playlist> },
+    InvalidManifest { playlist: Arc<Playlist> },
+    /// When either nothing, or something else (a collection or video), exists
+    /// at the provided site_path.
+    NotFound,
     Updated {
         optional_return_value: T,
         playlist_updated: Arc<Playlist>
@@ -111,7 +111,7 @@ pub enum SiteUpdate {
     /// Updating is prohibited while there are pending (manifest) errors as
     /// this could potentially discard the entire manifest content due to
     /// just a simple simple syntax error.
-    PendingErrors { site: Arc<Site> },
+    InvalidManifest { site: Arc<Site> },
     Success { site_updated: Arc<Site> }
 }
 
@@ -128,13 +128,13 @@ pub enum SiteUpdate {
 /// update.
 pub enum VideoUpdate<T> {
     Error(String),
-    /// When either nothing, or something else (a collection or playlist),
-    /// exists at the provided site_path.
-    NotFound,
     /// Updating is prohibited while there are pending (manifest) errors as
     /// this could potentially discard the entire manifest content due to
     /// just a simple simple syntax error.
-    PendingErrors { video: Arc<Video> },
+    InvalidManifest { video: Arc<Video> },
+    /// When either nothing, or something else (a collection or playlist),
+    /// exists at the provided site_path.
+    NotFound,
     Success {
         optional_return_value: T,
         video_updated: Arc<Video>
@@ -1416,7 +1416,7 @@ impl Context {
                         optional_return_value
                     }
                 } else {
-                    CollectionUpdate::PendingErrors {
+                    CollectionUpdate::InvalidManifest {
                         collection: Arc::clone(collection)
                     }
                 }
@@ -1522,7 +1522,7 @@ impl Context {
                         playlist_updated: Arc::clone(playlist)
                     }
                 } else {
-                    PlaylistUpdate::PendingErrors {
+                    PlaylistUpdate::InvalidManifest {
                         playlist: Arc::clone(playlist)
                     }
                 }
@@ -1567,7 +1567,7 @@ impl Context {
 
             SiteUpdate::Success { site_updated }
         } else {
-            SiteUpdate::PendingErrors { site }
+            SiteUpdate::InvalidManifest { site }
         }
     }
 
@@ -1595,7 +1595,7 @@ impl Context {
                         Err(err) => VideoUpdate::Error(err)
                     }
                 } else {
-                    VideoUpdate::PendingErrors {
+                    VideoUpdate::InvalidManifest {
                         video: Arc::clone(video)
                     }
                 }

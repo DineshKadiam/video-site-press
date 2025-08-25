@@ -15,6 +15,15 @@ use slug::slugify;
 
 use crate::{Context, Translations};
 
+/// When we perform updates on collections, playlists and videos in the site
+/// tree, the underlying mutation is often infallible, therefore the error
+/// branch related to the update itself is unreachable in these cases. This
+/// macro serves as a reusable marker to indicate these circumstances.
+#[macro_export]
+macro_rules! infallible_mutation {
+    () => { unreachable!("Infallible mutation") };
+}
+
 pub struct Field {
     pub error: Option<String>,
     pub value: String

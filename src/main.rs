@@ -46,12 +46,12 @@ mod site_url;
 mod subtitles;
 mod theme;
 mod translations;
+mod util;
 mod video;
 mod video_file;
 mod video_format;
 mod video_meta;
 mod video_order;
-mod util;
 mod watcher;
 
 use args::Args;

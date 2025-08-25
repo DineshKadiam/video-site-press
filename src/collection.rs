@@ -1455,7 +1455,7 @@ impl Collection {
                     playlist_updated: Arc::clone(playlist)
                 }
             } else {
-                PlaylistUpdate::PendingErrors {
+                PlaylistUpdate::InvalidManifest{
                     playlist: Arc::clone(playlist)
                 }
             }
@@ -1494,7 +1494,7 @@ impl Collection {
                     optional_return_value
                 }
             } else {
-                CollectionUpdate::PendingErrors {
+                CollectionUpdate::InvalidManifest {
                     collection: Arc::clone(subcollection)
                 }
             }
@@ -1538,7 +1538,7 @@ impl Collection {
                     Err(err) => VideoUpdate::Error(err)
                 }
             } else {
-                VideoUpdate::PendingErrors {
+                VideoUpdate::InvalidManifest {
                     video: Arc::clone(video)
                 }
             }

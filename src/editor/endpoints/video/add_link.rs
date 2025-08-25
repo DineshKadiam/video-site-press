@@ -17,6 +17,7 @@ use crate::{
 };
 use crate::editor::routes;
 use crate::editor::widgets::{error_page, not_found};
+use crate::infallible_mutation;
 
 use super::pending_manifest_errors;
 
@@ -61,14 +62,14 @@ pub async fn add_link(
     };
 
     match context.update_video(mutation, &site_path) {
-        VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+        VideoUpdate::Error(_) => infallible_mutation!(),
+        VideoUpdate::InvalidManifest { video } => {
+            let language = context.get_editor_language();
+            Either::Right(pending_manifest_errors(&context, &language, &video))
+        }
         VideoUpdate::NotFound => {
             let language = context.get_editor_language();
             Either::Right(not_found(&context, &language, &site_path))
-        }
-        VideoUpdate::PendingErrors { video } => {
-            let language = context.get_editor_language();
-            Either::Right(pending_manifest_errors(&context, &language, &video))
         }
         VideoUpdate::Success { video_updated, .. } => {
             let redirect_url = routes::video_links(&video_updated);

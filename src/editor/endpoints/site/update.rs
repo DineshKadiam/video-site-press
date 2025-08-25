@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Simon Repp
+// SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -140,7 +140,7 @@ pub async fn update(
         };
 
         match context.update_site(mutation) {
-            SiteUpdate::PendingErrors { site } => {
+            SiteUpdate::InvalidManifest { site } => {
                 let editor_language = context.get_editor_language();
                 Either::Right(pending_manifest_errors(&context, &editor_language, &site))
             }

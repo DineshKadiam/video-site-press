@@ -69,11 +69,11 @@ pub async fn r#move(
                 let language = context.get_editor_language();
                 Either::Right(error_page(&context, &language, &err))
             }
+            VideoUpdate::InvalidManifest { video } => {
+                Either::Right(pending_manifest_errors(&context, &language, &video))
+            }
             VideoUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
-            }
-            VideoUpdate::PendingErrors { video } => {
-                Either::Right(pending_manifest_errors(&context, &language, &video))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_dangerous_actions(&video_updated);

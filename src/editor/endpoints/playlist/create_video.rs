@@ -79,11 +79,11 @@ pub async fn create_video(
         };
 
         match context.update_playlist(mutation, &site_path) {
+            PlaylistUpdate::InvalidManifest { playlist } => {
+                Either::Right(pending_manifest_errors(&context, &language, &playlist))
+            }
             PlaylistUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
-            }
-            PlaylistUpdate::PendingErrors { playlist } => {
-                Either::Right(pending_manifest_errors(&context, &language, &playlist))
             }
             PlaylistUpdate::Updated { optional_return_value: video, .. } => {
                 video.write_manifest(&context);

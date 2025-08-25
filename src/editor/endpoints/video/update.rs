@@ -18,6 +18,7 @@ use crate::{
 };
 use crate::editor::routes;
 use crate::editor::widgets::not_found;
+use crate::infallible_mutation;
 use crate::manifest::MAX_SYNOPSIS_CHARS;
 
 use super::edit::edit_page;
@@ -149,12 +150,12 @@ pub async fn update(
         };
 
         match context.update_video(mutation, &site_path) {
-            VideoUpdate::Error(_) => unreachable!("The mutation is infallible"),
+            VideoUpdate::Error(_) => infallible_mutation!(),
+            VideoUpdate::InvalidManifest { video } => {
+                Either::Right(pending_manifest_errors(&context, &language, &video))
+            }
             VideoUpdate::NotFound => {
                 Either::Right(not_found(&context, &language, &site_path))
-            }
-            VideoUpdate::PendingErrors { video } => {
-                Either::Right(pending_manifest_errors(&context, &language, &video))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_edit(&video_updated);
