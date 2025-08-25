@@ -114,72 +114,13 @@ function initializeSiteTree() {
         siteTreeElements.appendChild(video.element);
     }
 
-    // Create the search result element for the playlist inside the DOM, store
-    // a reference to it in the siteContent tree
-    function initializePlaylist(playlist, ancestors = undefined) {
-        const traversal = ancestors ? [...ancestors, playlist] : [];
+    // Create the search result element for this container (collection or
+    // playlist) inside the DOM and store a reference to it in the siteContent
+    // tree
+    function initializeContainer(container, ancestors = undefined) {
+        const traversal = ancestors ? [...ancestors, container] : [];
 
-        playlist.expandToggle = document.createElement('span');
-
-        const spanTitle = document.createElement('span');
-        if (ancestors) {
-            for (const [index, ancestor] of traversal.entries()) {
-                if (index > 0) {
-                    const separator = document.createElement('span');
-                    separator.appendChild(chevronRightIcon.cloneNode(true));
-                    // TODO: Clarify what label works best for screen reader
-                    // users to succinctly express "separator indicating
-                    // going down the hierarchy" (respectively use a semantic
-                    // construct around the "breadcrumbs" in which the
-                    // separators are hidden from screenreaders instead).
-                    separator.setAttribute('aria-label', '>');
-
-                    spanTitle.appendChild(separator);
-                }
-
-                spanTitle.append(ancestor.title);
-            }
-        } else {
-            spanTitle.textContent = playlist.title;
-        }
-
-        const spanInfo = document.createElement('span');
-        spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(playlist.videos.length);
-
-        playlist.element = document.createElement('a');
-        playlist.element.classList.add('playlist');
-        playlist.element.href = window.hyper8.rootPrefix + playlist.sitePath + indexSuffix;
-        playlist.element.appendChild(playlist.expandToggle);
-        playlist.element.appendChild(spanTitle);
-        playlist.element.appendChild(spanInfo);
-
-        if (playlist.videos.length) {
-            playlist.expandToggle.appendChild(chevronRightIcon.cloneNode(true));
-            playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-            playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
-            playlist.expandToggle.addEventListener('click', event => {
-                collapseExpand(playlist.element);
-                event.preventDefault();
-            });
-        }
-
-        if (playlist.sitePath === window.hyper8.sitePath) {
-            playlist.element.classList.add('current');
-        }
-
-        siteTreeElements.appendChild(playlist.element);
-
-        for (const video of playlist.videos) {
-            initializeVideo(video);
-        }
-    }
-
-    // Create the search result element for the collection inside the DOM,
-    // store a reference to it in the siteContent tree
-    function initializeCollection(collection, ancestors = undefined) {
-        const traversal = ancestors ? [...ancestors, collection] : [];
-
-        collection.expandToggle = document.createElement('span');
+        container.expandToggle = document.createElement('span');
 
         const spanTitle = document.createElement('span');
         if (ancestors) {
@@ -200,54 +141,51 @@ function initializeSiteTree() {
                 spanTitle.append(ancestor.title);
             }
         } else {
-            spanTitle.textContent = collection.title;
+            spanTitle.textContent = container.title;
         }
 
-        collection.element = document.createElement('a');
-        collection.element.classList.add('collection');
-        collection.element.href = window.hyper8.rootPrefix + collection.sitePath + indexSuffix;
-        collection.element.appendChild(collection.expandToggle);
+        container.element = document.createElement('a');
+        container.element.classList.add('container');
+        container.element.href = window.hyper8.rootPrefix + container.sitePath + indexSuffix;
+        container.element.appendChild(container.expandToggle);
+        container.element.appendChild(spanTitle);
 
-        collection.element.appendChild(spanTitle);
-
-        if (collection.videos.length) {
+        // If there are one or more videos, or if there is absolutely nothing at all
+        // in the collection or playlist, we display the number of videos
+        if (container.videos.length || !container.containers?.length) {
             const spanInfo = document.createElement('span');
-            spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(collection.videos.length);
-            collection.element.appendChild(spanInfo);
+            spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(container.videos.length);
+            container.element.appendChild(spanInfo);
+        }
 
-            collection.expandToggle.appendChild(chevronRightIcon.cloneNode(true));
-            collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-            collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
-            collection.expandToggle.addEventListener('click', event => {
-                collapseExpand(collection.element);
+        if (container.videos.length) {
+            container.expandToggle.appendChild(chevronRightIcon.cloneNode(true));
+            container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+            container.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+            container.expandToggle.addEventListener('click', event => {
+                collapseExpand(container.element);
                 event.preventDefault();
             });
         }
 
-        if (collection.sitePath === window.hyper8.sitePath) {
-            collection.element.classList.add('current');
+        if (container.sitePath === window.hyper8.sitePath) {
+            container.element.classList.add('current');
         }
 
-        siteTreeElements.appendChild(collection.element);
+        siteTreeElements.appendChild(container.element);
 
-        for (const video of collection.videos) {
+        for (const video of container.videos) {
             initializeVideo(video);
         }
 
-        for (const playlist of collection.playlists) {
-            initializePlaylist(playlist, traversal);
-        }
-
-        for (const subcollection of collection.subcollections) {
-            initializeCollection(subcollection, traversal);
+        if (container.containers) {
+            for (const subcontainer of container.containers) {
+                initializeContainer(subcontainer, traversal);
+            }
         }
     }
 
-    if (siteContent.collection) {
-        initializeCollection(siteContent.collection);
-    } else /* if (siteContent.playlist) */ {
-        initializePlaylist(siteContent.playlist);
-    }
+    initializeContainer(siteContent);
 
     siteTreeInitialized = true;
 }
@@ -261,39 +199,26 @@ function lqipToRadialGradient(lqip) {
 }
 
 function toggleBrowse() {
+    function updateContainer(container) {
+        for (const video of container.videos) {
+            updateVideo(video);
+        }
+
+        if (container.containers) {
+            for (const subcontainer of container.containers) {
+                updateContainer(subcontainer);
+            }
+        }
+
+        container.element.classList.add('visible');
+        container.element.classList.remove('expanded');
+        container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+        container.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+    }
+
     function updateVideo(video) {
         const isCurrent = video.element.classList.contains('current');
         video.element.classList.toggle('visible', isCurrent);
-    }
-
-    function updatePlaylist(playlist) {
-        for (const video of playlist.videos) {
-            updateVideo(video);
-        }
-
-        playlist.element.classList.add('visible');
-        playlist.element.classList.remove('expanded');
-        playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-        playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
-    }
-
-    function updateCollection(collection) {
-        for (const video of collection.videos) {
-            updateVideo(video);
-        }
-
-        for (const playlist of collection.playlists) {
-            updatePlaylist(playlist);
-        }
-
-        for (const subcollection of collection.subcollections) {
-            updateCollection(subcollection);
-        }
-
-        collection.element.classList.add('visible');
-        collection.element.classList.remove('expanded');
-        collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-        collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
     }
 
     siteTreeStatus.textContent = '';
@@ -302,11 +227,7 @@ function toggleBrowse() {
         siteTree.classList.remove('open');
         delete siteTreeElements.dataset.mode;
     } else {
-        if (siteContent.collection) {
-            updateCollection(siteContent.collection);
-        } else {
-            updatePlaylist(siteContent.playlist);
-        }
+        updateContainer(siteContent);
 
         siteTreeElements.style.setProperty('display', null);
         siteTree.classList.add('open');
@@ -329,6 +250,26 @@ function updateSearch() {
 
         let shown = 0;
 
+        function updateContainer(container) {
+            let display = regexp.test(container.title);
+            if (display) { shown += 1; }
+
+            for (const video of container.videos) {
+                display = updateVideo(video) || display;
+            }
+
+            if (container.containers) {
+                for (const subcontainer of container.containers) {
+                    updateContainer(subcontainer);
+                }
+            }
+
+            container.element.classList.remove('expanded');
+            container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.collapse);
+            container.expandToggle.setAttribute('title', NAVIGATION_JS_T.collapse);
+            container.element.classList.toggle('visible', display);
+        }
+
         function updateVideo(video) {
             const display = regexp.test(video.title) ||
                 !!(yearQuery && video.date && video.date.includes(query));
@@ -337,47 +278,7 @@ function updateSearch() {
             return display;
         }
 
-        function updatePlaylist(playlist) {
-            let display = regexp.test(playlist.title);
-            if (display) { shown += 1; }
-
-            for (const video of playlist.videos) {
-                display = updateVideo(video) || display;
-            }
-
-            playlist.element.classList.remove('expanded');
-            playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.collapse);
-            playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.collapse);
-            playlist.element.classList.toggle('visible', display);
-        }
-
-        function updateCollection(collection) {
-            let display = regexp.test(collection.title);
-            if (display) { shown += 1; }
-
-            for (const video of collection.videos) {
-                display = updateVideo(video) || display;
-            }
-
-            for (const playlist of collection.playlists) {
-                updatePlaylist(playlist);
-            }
-
-            for (const subcollection of collection.subcollections) {
-                updateCollection(subcollection);
-            }
-
-            collection.element.classList.remove('expanded');
-            collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.collapse);
-            collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.collapse);
-            collection.element.classList.toggle('visible', display);
-        }
-
-        if (siteContent.collection) {
-            updateCollection(siteContent.collection);
-        } else {
-            updatePlaylist(siteContent.playlist);
-        }
+        updateContainer(siteContent);
 
         if (shown === 0) {
             siteTreeElements.style.setProperty('display', 'none');
@@ -462,23 +363,20 @@ function handleNavigationKeyInput() {
             browseButton.focus();
         }
     } else if (event.key === ' ') {
-        if (event.target.classList.contains('collection') ||
-            event.target.classList.contains('playlist')) {
+        if (event.target.classList.contains('container')) {
             collapseExpand(event.target);
             event.preventDefault();
         } else if (event.target.classList.contains('video')) {
             event.preventDefault();
         }
     } else if (event.key === 'ArrowLeft') {
-        if (event.target.classList.contains('collection') ||
-            event.target.classList.contains('playlist') ||
+        if (event.target.classList.contains('container') ||
             event.target.classList.contains('video')) {
             collapseExpand(event.target, false);
             event.preventDefault();
         }
     } else if (event.key === 'ArrowRight') {
-        if (event.target.classList.contains('collection') ||
-            event.target.classList.contains('playlist')) {
+        if (event.target.classList.contains('container')) {
             collapseExpand(event.target, true);
             event.preventDefault();
         }
@@ -494,72 +392,35 @@ siteTree.addEventListener('keydown', handleNavigationKeyInput);
 // expand (true), collapse (false) or toggle (undefined) the element (or its
 // parent).
 function collapseExpand(siteTreeElement, expand = undefined) {
-    function visitPlaylist(playlist) {
-        if (playlist.element === siteTreeElement) {
+    function visitContainer(container) {
+        if (container.element === siteTreeElement) {
             if (expand === undefined) {
-                expand = !playlist.element.classList.contains('expanded');
+                expand = !container.element.classList.contains('expanded');
             }
 
-            for (const video of playlist.videos) {
+            for (const video of container.videos) {
                 video.element.classList.toggle('visible', expand);
             }
 
-            playlist.element.classList.toggle('expanded', expand);
+            container.element.classList.toggle('expanded', expand);
             const expandOrCollapse = NAVIGATION_JS_T[expand ? 'collapse' : 'expand'];
-            playlist.expandToggle.setAttribute('aria-label', expandOrCollapse);
-            playlist.expandToggle.setAttribute('title', expandOrCollapse);
+            container.expandToggle.setAttribute('aria-label', expandOrCollapse);
+            container.expandToggle.setAttribute('title', expandOrCollapse);
 
             return true;
-        } else if (!expand && playlist.videos.some(video => video.element === siteTreeElement)) {
-            for (const video of playlist.videos) {
+        } else if (!expand && container.videos.some(video => video.element === siteTreeElement)) {
+            for (const video of container.videos) {
                 video.element.classList.remove('visible');
             }
-            playlist.element.classList.remove('expanded');
-            playlist.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-            playlist.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
-            playlist.element.focus();
+            container.element.classList.remove('expanded');
+            container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
+            container.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+            container.element.focus();
 
             return true;
-        }
-
-        return false;
-    }
-
-    function visitCollection(collection) {
-        if (collection.element === siteTreeElement) {
-            if (expand === undefined) {
-                expand = !collection.element.classList.contains('expanded');
-            }
-
-            for (const video of collection.videos) {
-                video.element.classList.toggle('visible', expand);
-            }
-
-            collection.element.classList.toggle('expanded', expand);
-            const expandOrCollapse = NAVIGATION_JS_T[expand ? 'collapse' : 'expand'];
-            collection.expandToggle.setAttribute('aria-label', expandOrCollapse);
-            collection.expandToggle.setAttribute('title', expandOrCollapse);
-
-            return true;
-        } else if (!expand && collection.videos.some(video => video.element === siteTreeElement)) {
-            for (const video of collection.videos) {
-                video.element.classList.remove('visible');
-            }
-            collection.element.classList.remove('expanded');
-            collection.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-            collection.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
-            collection.element.focus();
-
-            return true;
-        } else {
-            for (const playlist of collection.playlists) {
-                if (visitPlaylist(playlist)) {
-                    return true;
-                }
-            }
-
-            for (const subcollection of collection.subcollections) {
-                if (visitCollection(subcollection)) {
+        } else if (container.containers) {
+            for (const subcontainer of container.containers) {
+                if (visitContainer(subcontainer)) {
                     return true;
                 }
             }
@@ -568,11 +429,7 @@ function collapseExpand(siteTreeElement, expand = undefined) {
         return false;
     }
 
-    if (siteContent.collection) {
-        visitCollection(siteContent.collection);
-    } else {
-        visitPlaylist(siteContent.playlist);
-    }
+    visitContainer(siteContent);
 }
 
 shortcutsButton.addEventListener('click', () => {

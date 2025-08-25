@@ -292,16 +292,19 @@ fn render_collection(
         output.push_str(&collection_title_and_videos);
     }
 
-    let playlists = collection.public_playlists_desc_by_release_date();
-    for playlist in &playlists {
-        let rendered = render_playlist(playlist, site, &traversal_with_collection);
-        output.push_str(&rendered);
-    }
+    let containers = collection.public_containers_in_container_order(language);
 
-    let subcollections = collection.public_subcollections_desc_by_release_date();
-    for subcollection in &subcollections {
-        let rendered = render_collection(subcollection, site, &traversal_with_collection);
-        output.push_str(&rendered);
+    for container in &containers {
+        let container_rendered = match container {
+            Container::Collection(collection) => {
+                render_collection(collection, site, &traversal_with_collection)
+            }
+            Container::Playlist(playlist) => {
+                render_playlist(playlist, site, &traversal_with_collection)
+            }
+        };
+
+        output.push_str(&container_rendered);
     }
 
     output

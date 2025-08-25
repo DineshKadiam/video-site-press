@@ -7,6 +7,7 @@ use indoc::formatdoc;
 
 use crate::{
     Collection,
+    Container,
     Context,
     Language,
     Playlist,
@@ -121,15 +122,14 @@ pub fn generate_navigation_js(
 
         let title_escaped = js_escape_inside_single_quoted_string(title);
 
-        let playlists = collection.public_playlists_desc_by_release_date()
+        let containers = collection.public_containers_in_container_order(language)
             .iter()
-            .map(|playlist| playlist_js(language, &playlist))
-            .collect::<Vec<String>>()
-            .join(", ");
-
-        let subcollections = collection.public_subcollections_desc_by_release_date()
-            .iter()
-            .map(|subcollection| collection_js(&subcollection, language))
+            .map(|container| {
+                match container {
+                    Container::Collection(collection) => collection_js(&collection, language),
+                    Container::Playlist(playlist) => playlist_js(language, &playlist)
+                }
+            })
             .collect::<Vec<String>>()
             .join(", ");
 
@@ -140,9 +140,8 @@ pub fn generate_navigation_js(
             .join(", ");
 
         format!("{{\
-            playlists:[{playlists}],\
+            containers:[{containers}],\
             sitePath:'{site_path}',\
-            subcollections:[{subcollections}],\
             title:'{title_escaped}',\
             videos:[{videos}]\
         }}")
@@ -150,16 +149,12 @@ pub fn generate_navigation_js(
 
     let site_content = match &site.content {
         SiteContent::Collection(collection) => {
-            let r_collection = collection_js(collection, language);
-            let site_content = format!("{{collection:{r_collection}}}");
-            Some(site_content)
+            Some(collection_js(collection, language))
         }
         SiteContent::Empty => None,
         SiteContent::Invalid { .. } => None,
         SiteContent::Playlist(playlist) => {
-            let r_playlist = playlist_js(language, playlist);
-            let site_content = format!("{{playlist:{r_playlist}}}");
-            Some(site_content)
+            Some(playlist_js(language, playlist))
         }
         SiteContent::Video(_) => None
     };

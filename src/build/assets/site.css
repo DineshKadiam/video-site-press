@@ -718,8 +718,7 @@ img {
     outline: none;
 }
 .site_tree .elements a:not(.visible) { display: none; }
-.site_tree .elements .collection > :nth-child(1),
-.site_tree .elements .playlist > :nth-child(1) {
+.site_tree .elements .container > :nth-child(1) {
     align-items: center;
     display: flex;
     height: 1rem;
@@ -727,41 +726,30 @@ img {
     padding: .5rem;
     width: 1rem;
 }
-.site_tree .elements .collection > :nth-child(1) svg,
-.site_tree .elements .playlist > :nth-child(1) svg {
+.site_tree .elements .container > :nth-child(1) svg {
     border-radius: 50%;
     color: var(--fg-1);
     font-size: .6rem;
     padding: .2rem;
 }
-.site_tree .elements .collection:hover > :nth-child(1) svg,
-.site_tree .elements .playlist:hover > :nth-child(1) svg {
-    background: var(--bg-1);
-}
-.site_tree .elements .collection > :nth-child(1):hover svg,
-.site_tree .elements .playlist > :nth-child(1):hover svg {
+.site_tree .elements .container:hover > :nth-child(1) svg { background: var(--bg-1); }
+.site_tree .elements .container > :nth-child(1):hover svg {
     background: var(--fg-3);
     color: var(--bg-1);
 }
-.site_tree .elements .collection.expanded > :nth-child(1) svg,
-.site_tree .elements .playlist.expanded > :nth-child(1) svg {
-    transform: rotate(90deg);
-}
-.site_tree .elements .collection > :nth-child(2),
-.site_tree .elements .playlist > :nth-child(2) {
+.site_tree .elements .container.expanded > :nth-child(1) svg { transform: rotate(90deg); }
+.site_tree .elements .container > :nth-child(2) {
     align-items: center;
     column-gap: .3rem;
     display: flex;
     flex-wrap: wrap;
     padding-block: .3rem;
 }
-.site_tree .elements .collection > :nth-child(2) svg,
-.site_tree .elements .playlist > :nth-child(2) svg {
+.site_tree .elements .container > :nth-child(2) svg {
     color: var(--mg);
     font-size: .5rem;
 }
-.site_tree .elements .collection > :nth-child(3),
-.site_tree .elements .playlist > :nth-child(3) {
+.site_tree .elements .container > :nth-child(3) {
     color: var(--fg-3);
     margin-left: .3rem;
     white-space: nowrap;
