@@ -7,7 +7,9 @@ use std::path::Path;
 use indoc::formatdoc;
 
 use crate::{
+    Asc,
     AudioFile,
+    Desc,
     Playlist,
     Site,
     Translations,
@@ -142,7 +144,7 @@ pub fn player(
         subtitle_tracks = String::new();
     };
 
-    let mut version_selector_options = video.video_files_desc_by_fidelity()
+    let mut version_selector_options = video.video_files_sorted_by_fidelity(Desc)
         .iter()
         .map(|video_file| {
             let video_meta = video_file.video_meta_unchecked();
@@ -517,7 +519,7 @@ fn versions_ring(
         }
     }
 
-    let video_files = video.video_files_asc_by_fidelity();
+    let video_files = video.video_files_sorted_by_fidelity(Asc);
 
     if !video_files.is_empty() {
         for video_file in &video_files {

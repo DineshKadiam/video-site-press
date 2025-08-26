@@ -10,8 +10,11 @@ use chrono::NaiveDate;
 use url::Url;
 
 use crate::{
+    Asc,
     Banner,
+    Comparison,
     Context,
+    Desc,
     FileMeta,
     GetAnyResult,
     HyperDir,
@@ -831,8 +834,8 @@ impl Playlist {
         language: &Language
     ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        let comparison = Video::cmp_by_video_order(&self.order);
-        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+        let (comparison, direction) = Video::video_order_comparison_and_direction(&self.order);
+        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator, direction));
         videos
     }
 
@@ -1078,14 +1081,14 @@ impl Playlist {
     ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
 
-        let comparison = match tree_view_order {
+        let (comparison, direction) = match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => Video::cmp_by_video_order(&self.order),
-            TreeViewOrder::TitleAsc => Video::cmp_by_slug_then_title_asc,
-            TreeViewOrder::TitleDesc => Video::cmp_by_slug_then_title_desc
+            TreeViewOrder::SiteOrder => Video::video_order_comparison_and_direction(&self.order),
+            TreeViewOrder::TitleAsc => (Video::cmp_slug_then_title as Comparison<Video>, Asc),
+            TreeViewOrder::TitleDesc => (Video::cmp_slug_then_title as Comparison<Video>, Desc)
         };
 
-        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator, direction));
 
         videos
     }

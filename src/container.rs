@@ -8,9 +8,13 @@ use chrono::NaiveDate;
 use icu_collator::CollatorBorrowed;
 
 use crate::{
+    Asc,
     Collection,
+    Comparison,
     ContainerOrder,
-    Playlist
+    Desc,
+    Playlist,
+    SortDirection
 };
 
 /// This abstraction allows us to mix collections and playlists together in a
@@ -22,133 +26,112 @@ pub enum Container {
 }
 
 impl Container {
-    // Returns a comparator function according to the passed [ContainerOrder]
-    pub fn cmp_by_container_order(
+    /// Containers without title are always sorted to the front here -
+    /// regardless of sort direction - so the group of containers with title
+    /// is sorted in itself but always kept separate from the group of
+    /// containers with only a slug, which is also sorted in itself.
+    pub fn cmp_slug_then_title(
+        a: &Container,
+        b: &Container,
+        collator: &CollatorBorrowed,
+        direction: SortDirection
+    ) -> Ordering {
+        match (&a.title(), &b.title()) {
+            (Some(a_title), Some(b_title)) => {
+                let ordering = collator.compare(a_title, b_title);
+                direction.orient(ordering)
+            }
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            (None, None) => {
+                let ordering = collator.compare(a.slug_unchecked(), b.slug_unchecked());
+                direction.orient(ordering)
+            }
+        }
+    }
+
+    /// Containers without sort number are sorted to the back, regardless of
+    /// sort direction
+    pub fn cmp_sort_number(
+        a: &Container,
+        b: &Container,
+        _: &CollatorBorrowed,
+        direction: SortDirection
+    ) -> Ordering {
+        match (&a.sort_number(), &b.sort_number()) {
+            (Some(a_sort_number), Some(b_sort_number)) => {
+                let ordering = a_sort_number.cmp(b_sort_number);
+                direction.orient(ordering)
+            }
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal
+        }
+    }
+
+    /// For instance for ascending sorting, this sorts by sort number
+    /// ascending, but all containers without sort number are then sorted
+    /// inversely (in this case descending) by the latest release date of any
+    /// video they contain at any hierarchical depth. Containers without sort
+    /// number are sorted to the back, regardless of sort direction.
+    pub fn cmp_sort_number_then_latest_release_date_inverse(
+        a: &Container,
+        b: &Container,
+        collator: &CollatorBorrowed,
+        direction: SortDirection
+    ) -> Ordering {
+        match (&a.sort_number(), &b.sort_number()) {
+            (Some(a_sort_number), Some(b_sort_number)) => {
+                let ordering = a_sort_number.cmp(b_sort_number);
+                direction.orient(ordering)
+            }
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => {
+                Container::cmp_latest_release_date(a, b, collator, direction.inverse())
+            }
+        }
+    }
+
+    /// Containers with title and containers with only a slug are intermixed
+    /// and sorted together here.
+    pub fn cmp_title_or_slug(
+        a: &Container,
+        b: &Container,
+        collator: &CollatorBorrowed,
+        direction: SortDirection
+    ) -> Ordering {
+        let a_title_or_slug = a.title().unwrap_or_else(|| a.slug_unchecked());
+        let b_title_or_slug = b.title().unwrap_or_else(|| b.slug_unchecked());
+
+        let ordering = collator.compare(a_title_or_slug, b_title_or_slug);
+
+        direction.orient(ordering)
+    }
+
+    /// Returns a comparison function and sort direction according to the
+    /// passed [ContainerOrder]
+    pub fn container_order_comparison_and_direction(
         video_order: &ContainerOrder
-    ) -> fn(&Container, &Container, &CollatorBorrowed) -> Ordering {
+    ) -> (Comparison<Container>, SortDirection) {
         match video_order {
-            ContainerOrder::Default => Container::cmp_by_sort_number_asc_then_latest_release_date_desc,
-            ContainerOrder::SortNumberAsc => Container::cmp_by_sort_number_asc,
-            ContainerOrder::SortNumberDesc => Container::cmp_by_sort_number_desc,
-            ContainerOrder::TitleAsc => Container::cmp_by_title_or_slug_asc,
-            ContainerOrder::TitleDesc => Container::cmp_by_title_or_slug_desc
+            ContainerOrder::Default =>
+                (Container::cmp_sort_number_then_latest_release_date_inverse, Asc),
+            ContainerOrder::SortNumberAsc => (Container::cmp_sort_number, Asc),
+            ContainerOrder::SortNumberDesc => (Container::cmp_sort_number, Desc),
+            ContainerOrder::TitleAsc => (Container::cmp_title_or_slug, Asc),
+            ContainerOrder::TitleDesc => (Container::cmp_title_or_slug, Desc)
         }
     }
 
-    pub fn cmp_by_latest_release_date_desc(
+    pub fn cmp_latest_release_date(
         a: &Container,
         b: &Container,
-        _: &CollatorBorrowed
+        _: &CollatorBorrowed,
+        direction: SortDirection
     ) -> Ordering {
-        b.latest_release_date().cmp(&a.latest_release_date())
-    }
-
-    // Containers without title are sorted to the front here, so the group of
-    // containers with title is sorted in itself but always kept separate
-    // from the group of containers with only a slug, which is also sorted in
-    // itself.
-    pub fn cmp_by_slug_then_title_asc(
-        a: &Container,
-        b: &Container,
-        collator: &CollatorBorrowed
-    ) -> Ordering {
-        match (&a.title(), &b.title()) {
-            (Some(a_title), Some(b_title)) => collator.compare(a_title, b_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => collator.compare(a.slug_unchecked(), b.slug_unchecked())
-        }
-    }
-
-    // Containers without title are sorted to the front here, so the group of
-    // containers with title is sorted in itself but always kept separate
-    // from the group of containers with only a slug, which is also sorted in
-    // itself.
-    pub fn cmp_by_slug_then_title_desc(
-        a: &Container,
-        b: &Container,
-        collator: &CollatorBorrowed
-    ) -> Ordering {
-        match (&a.title(), &b.title()) {
-            (Some(a_title), Some(b_title)) => collator.compare(b_title, a_title),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => collator.compare(b.slug_unchecked(), a.slug_unchecked())
-        }
-    }
-
-    // Containers without sort number are sorted to the back
-    pub fn cmp_by_sort_number_asc(
-        a: &Container,
-        b: &Container,
-        _: &CollatorBorrowed
-    ) -> Ordering {
-        match (&a.sort_number(), &b.sort_number()) {
-            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(b_sort_number),
-            (Some(_), None) => Ordering::Less,
-            (None, Some(_)) => Ordering::Greater,
-            (None, None) => Ordering::Equal
-        }
-    }
-
-    // Containers without sort number are sorted to the back
-    pub fn cmp_by_sort_number_asc_then_latest_release_date_desc(
-        a: &Container,
-        b: &Container,
-        collator: &CollatorBorrowed
-    ) -> Ordering {
-        match (&a.sort_number(), &b.sort_number()) {
-            (Some(a_sort_number), Some(b_sort_number)) => a_sort_number.cmp(b_sort_number),
-            (Some(_), None) => Ordering::Less,
-            (None, Some(_)) => Ordering::Greater,
-            (None, None) => Container::cmp_by_latest_release_date_desc(a, b, collator)
-        }
-    }
-
-    // Containers without sort number are sorted to the back
-    pub fn cmp_by_sort_number_desc(
-        a: &Container,
-        b: &Container,
-        _: &CollatorBorrowed
-    ) -> Ordering {
-        match (&a.sort_number(), &b.sort_number()) {
-            (Some(a_sort_number), Some(b_sort_number)) => b_sort_number.cmp(a_sort_number),
-            (Some(_), None) => Ordering::Less,
-            (None, Some(_)) => Ordering::Greater,
-            (None, None) => Ordering::Equal
-        }
-    }
-
-    // Containers with title and containers with only a slug are intermixed
-    // and sorted together here.
-    pub fn cmp_by_title_or_slug_asc(
-        a: &Container,
-        b: &Container,
-        collator: &CollatorBorrowed
-    ) -> Ordering {
-        let a_title = a.title();
-        let b_title = b.title();
-
-        let a_title_or_slug = a_title.unwrap_or_else(|| a.slug_unchecked());
-        let b_title_or_slug = b_title.unwrap_or_else(|| b.slug_unchecked());
-
-        collator.compare(a_title_or_slug, b_title_or_slug)
-    }
-
-    // Containers with title and containers with only a slug are intermixed
-    // and sorted together here.
-    pub fn cmp_by_title_or_slug_desc(
-        a: &Container,
-        b: &Container,
-        collator: &CollatorBorrowed
-    ) -> Ordering {
-        let a_title = a.title();
-        let b_title = b.title();
-
-        let a_title_or_slug = a_title.unwrap_or_else(|| a.slug_unchecked());
-        let b_title_or_slug = b_title.unwrap_or_else(|| b.slug_unchecked());
-
-        collator.compare(b_title_or_slug, a_title_or_slug)
+        let ordering = a.latest_release_date().cmp(&b.latest_release_date());
+        direction.orient(ordering)
     }
 
     /// Only used internally so we can have a cleaner implementation of the

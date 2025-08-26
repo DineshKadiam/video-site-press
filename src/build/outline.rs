@@ -6,6 +6,7 @@ use indoc::formatdoc;
 
 use crate::{
     Collection,
+    Desc,
     Playlist,
     Site,
     SitePath,
@@ -647,7 +648,7 @@ impl TraversalStep<'_> {
             "#)
         };
 
-        let videos = collection.public_videos_desc_by_release_date(language);
+        let videos = collection.public_videos_sorted_by_release_date(Desc, language);
 
         let videos_context = if videos.is_empty() {
             String::new()

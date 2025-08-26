@@ -10,11 +10,14 @@ use chrono::NaiveDate;
 use url::Url;
 
 use crate::{
+    Asc,
     Banner,
     CollectionUpdate,
+    Comparison,
     Container,
     ContainerOrder,
     Context,
+    Desc,
     FileMeta,
     GetAnyResult,
     HyperDir,
@@ -26,6 +29,7 @@ use crate::{
     PlaylistUpdate,
     Site,
     SitePath,
+    SortDirection,
     Translations,
     TreeViewOrder,
     Video,
@@ -531,14 +535,17 @@ impl Collection {
             containers.push(Container::Collection(subcollection.clone()));
         }
 
-        let comparison = match tree_view_order {
+        let (comparison, direction) = match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => Container::cmp_by_container_order(&self.container_order),
-            TreeViewOrder::TitleAsc => Container::cmp_by_slug_then_title_asc,
-            TreeViewOrder::TitleDesc => Container::cmp_by_slug_then_title_desc
+            TreeViewOrder::SiteOrder =>
+                Container::container_order_comparison_and_direction(&self.container_order),
+            TreeViewOrder::TitleAsc =>
+                (Container::cmp_slug_then_title as Comparison<Container>, Asc),
+            TreeViewOrder::TitleDesc =>
+                (Container::cmp_slug_then_title as Comparison<Container>, Desc)
         };
 
-        containers.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+        containers.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator, direction));
 
         containers
     }
@@ -1092,8 +1099,9 @@ impl Collection {
             containers.push(Container::Collection(subcollection.clone()));
         }
 
-        let comparison = Container::cmp_by_container_order(&self.container_order);
-        containers.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+        let (comparison, direction) = Container::container_order_comparison_and_direction(&self.container_order);
+
+        containers.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator, direction));
 
         containers
     }
@@ -1132,12 +1140,13 @@ impl Collection {
         self.videos.iter().filter(|video| video.public_local())
     }
 
-    pub fn public_videos_desc_by_release_date(
+    pub fn public_videos_sorted_by_release_date(
         &self,
+        direction: SortDirection,
         language: &Language
     ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b| Video::cmp_by_release_date_desc(a, b, &language.icu_collator));
+        videos.sort_unstable_by(|a, b| Video::cmp_release_date(a, b, &language.icu_collator, direction));
         videos
     }
 
@@ -1146,8 +1155,8 @@ impl Collection {
         language: &Language
     ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        let comparison = Video::cmp_by_video_order(&self.video_order);
-        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+        let (comparison, direction) = Video::video_order_comparison_and_direction(&self.video_order);
+        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator, direction));
         videos
     }
 
@@ -1596,14 +1605,17 @@ impl Collection {
     ) -> Vec<Arc<Video>> {
         let mut videos: Vec<Arc<Video>> = self.videos.clone();
 
-        let comparison = match tree_view_order {
+        let (comparison, direction) = match tree_view_order {
             TreeViewOrder::Default |
-            TreeViewOrder::SiteOrder => Video::cmp_by_video_order(&self.video_order),
-            TreeViewOrder::TitleAsc => Video::cmp_by_slug_then_title_asc,
-            TreeViewOrder::TitleDesc => Video::cmp_by_slug_then_title_desc
+            TreeViewOrder::SiteOrder =>
+                Video::video_order_comparison_and_direction(&self.video_order),
+            TreeViewOrder::TitleAsc =>
+                (Video::cmp_slug_then_title as Comparison<Video>, Asc),
+            TreeViewOrder::TitleDesc =>
+                (Video::cmp_slug_then_title as Comparison<Video>, Desc)
         };
 
-        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator));
+        videos.sort_unstable_by(|a, b| comparison(a, b, &language.icu_collator, direction));
 
         videos
     }

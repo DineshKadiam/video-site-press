@@ -10,6 +10,7 @@ use indoc::formatdoc;
 
 use crate::{
     Context,
+    Desc,
     Language,
     SitePath,
     Translations,
@@ -307,7 +308,7 @@ pub fn media_page(
     let video_files = if video.video_files.is_empty() {
         String::new()
     } else {
-        let video_files = video.video_files_desc_by_fidelity();
+        let video_files = video.video_files_sorted_by_fidelity(Desc);
 
         let mut duration_range = None;
 

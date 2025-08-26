@@ -5,7 +5,11 @@ use std::cmp::Ordering;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{FileMeta, VideoMeta};
+use crate::{
+    FileMeta,
+    SortDirection,
+    VideoMeta
+};
 
 /// Represents a specific "version" and physical file for a video.
 /// For instance the 480p and 720p versions of a video are both one
@@ -21,8 +25,12 @@ impl VideoFile {
     /// Determine the ordering between two [VideoFile] based on dimensions
     /// (height), frame rate and size (in that priority). As fallback rely on
     /// presence of metadata and raw filesize to determine some ordering.
-    pub fn cmp_by_fidelity_desc(a: &VideoFile, b: &VideoFile) -> Ordering {
-        match (&a.video_meta, &b.video_meta) {
+    pub fn cmp_fidelity(
+        a: &VideoFile,
+        b: &VideoFile,
+        direction: SortDirection
+    ) -> Ordering {
+        let ordering = match (&a.video_meta, &b.video_meta) {
             (Some(a_video_meta), Some(b_video_meta)) => {
                 if a_video_meta.height != b_video_meta.height {
                     b_video_meta.height.cmp(&a_video_meta.height)
@@ -36,7 +44,9 @@ impl VideoFile {
             (Some(_), None) => Ordering::Greater,
             (None, Some(_)) => Ordering::Less,
             (None, None) => b.file_meta.size.cmp(&a.file_meta.size)
-        }
+        };
+
+        direction.orient(ordering)
     }
 
     pub fn mime_type(&self) -> &'static str {
