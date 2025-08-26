@@ -152,6 +152,7 @@ impl Cache {
     /// Scans the cache dir and initializes:
     /// 1. A HashMap that tracks all assets, mapping them to a usage count (initialized to 0)
     /// 2. A Vec that stores all manifests
+    ///
     /// The asset cache version marker is explicitly excluded from this, not being
     /// included in either of the two.
     fn fill_registry(cache_dir: &Path) -> Registry {
@@ -227,18 +228,18 @@ impl Cache {
 
         for file_name in &registry.manifests {
             if file_name.ends_with(&format!(".{}.bincode", AudioMeta::CACHE_SERIALIZATION_KEY)) {
-                cache.retrieve_audio_meta(cache_dir, &file_name);
+                cache.retrieve_audio_meta(cache_dir, file_name);
             } else if file_name.ends_with(&format!(".{}.bincode", PosterAssets::CACHE_SERIALIZATION_KEY)) {
-                cache.retrieve_poster_assets(&mut registry.assets, cache_dir, &file_name);
+                cache.retrieve_poster_assets(&mut registry.assets, cache_dir, file_name);
             } else if file_name.ends_with(&format!(".{}.bincode", PosterMeta::CACHE_SERIALIZATION_KEY)) {
-                cache.retrieve_poster_source(cache_dir, &file_name);
+                cache.retrieve_poster_source(cache_dir, file_name);
             } else if file_name.ends_with(&format!(".{}.bincode", VideoMeta::CACHE_SERIALIZATION_KEY)) {
-                cache.retrieve_video_meta(cache_dir, &file_name);
+                cache.retrieve_video_meta(cache_dir, file_name);
             } else {
                 info!(
                     "Removing incompatible cache manifest {file_name} - it was probably created with a different version of Hyper 8."
                 );
-                let _ = fs::remove_file(cache_dir.join(&file_name));
+                let _ = fs::remove_file(cache_dir.join(file_name));
             }
         }
 

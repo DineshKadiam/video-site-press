@@ -115,13 +115,13 @@ pub fn perform_deploy_blocking_cli(
         Err(err) => return Err(err.to_string())
     }
 
-    if let Err(err) = config_probe(context_ref, &site, translations) {
+    if let Err(err) = config_probe(context_ref, site, translations) {
         let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
         let message = format!("{t_deployment_configuration_could_not_be_verified} ({err})");
         return Err(message);
     }
 
-    start_deploy(context_ref, &site, translations)?;
+    start_deploy(context_ref, site, translations)?;
 
     let mut seen_feedback = 0;
 

@@ -56,7 +56,7 @@ impl AspectRatio {
             return Ok(aspect_ratio);
         }
 
-        let mut parts = representation.split(|c| c == '/' || c == ':');
+        let mut parts = representation.split(['/', ':']);
         if let (Some(dividend), Some(divisor), None) = (parts.next(), parts.next(), parts.next()) {
             if let (Ok(dividend), Ok(divisor)) = (dividend.parse::<f32>(), divisor.parse::<f32>()) {
                 let aspect_ratio = AspectRatio::Custom {

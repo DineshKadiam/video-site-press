@@ -149,9 +149,9 @@ impl Clone for Language {
     /// for cloning [Language] we must recreate the collactor manually from
     /// the (cloneable) ICU Locale, just as we do on intializing [Language].
     fn clone(&self) -> Language {
-        let chrono_locale = self.chrono_locale.clone();
+        let chrono_locale = self.chrono_locale;
         let code = self.code.clone();
-        let default = self.default.clone();
+        let default = self.default;
         let icu_collator = Language::icu_collator(self.icu_locale.clone());
         let icu_locale = self.icu_locale.clone();
         let text_direction = self.text_direction.clone();

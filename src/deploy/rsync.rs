@@ -140,7 +140,7 @@ pub fn config_probe(
                 if output.status.success() || previous_result.is_err() {
                     previous_result
                 } else {
-                    return Err(format!("The rsync child process for syncing the config probe to the remote errored. ({output:?})"))
+                    Err(format!("The rsync child process for syncing the config probe to the remote errored. ({output:?})"))
                 }
             }
             Err(file_removal_err) => {

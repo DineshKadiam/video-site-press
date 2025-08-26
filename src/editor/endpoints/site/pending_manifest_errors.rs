@@ -37,7 +37,7 @@ pub fn pending_manifest_errors(
         .join("");
 
     let t_resolve_the_issue_on_disk_or_on_manifest_page =
-        translations.resolve_the_issue_on_disk_or_on_manifest_page(&manifest_url);
+        translations.resolve_the_issue_on_disk_or_on_manifest_page(manifest_url);
 
     let body = formatdoc!(r#"
         <h2>{t_pending_manifest_errors}</h2>

@@ -53,7 +53,7 @@ impl Worker {
                 .join(video.site_path.filesystem_relative())
                 .join(&audio_file.file_name);
 
-            match probe::probe_audio(&audio_file_path, translations) {
+            match probe::probe_audio(audio_file_path, translations) {
                 Ok(audio_meta) => {
                     audio_meta.write_cache_manifest(
                         context,
@@ -546,7 +546,7 @@ impl Worker {
                         VideoUpdate::Success { .. } => Ok(())
                     }
                 }
-                Err(err) => return Err(err)
+                Err(err) => Err(err)
             }
         } else {
             Ok(())
@@ -622,7 +622,7 @@ impl Worker {
                         VideoUpdate::Success { .. } => Ok(())
                     }
                 }
-                Err(err) => return Err(err)
+                Err(err) => Err(err)
             }
         } else {
             Ok(())
@@ -637,7 +637,7 @@ impl Worker {
         translations: &Translations,
         video: Arc<Video>
     ) -> Result<(), String> {
-        let video_with_metadata = Worker::compute_video_metadata(context, &translations, video)?;
+        let video_with_metadata = Worker::compute_video_metadata(context, translations, video)?;
 
         if let Some(poster) = &video_with_metadata.poster {
             if poster.poster_meta.is_none() {
@@ -786,7 +786,7 @@ impl Worker {
         translations: &Translations,
         video: Arc<Video>
     ) -> Result<(), String> {
-        let video_with_metadata = Worker::compute_video_metadata(context, &translations, video)?;
+        let video_with_metadata = Worker::compute_video_metadata(context, translations, video)?;
 
         if let Some(highest_quality_video_file) = &video_with_metadata.highest_quality_video_file() {
             let video_meta = highest_quality_video_file.video_meta.as_ref().unwrap();

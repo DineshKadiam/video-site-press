@@ -185,7 +185,7 @@ pub fn video_html(
             let prefix = "../";
             let playlist_context = TraversalStep::crumb_playlist(
                 playlist,
-                &prefix,
+                prefix,
                 site,
                 Some(video)
             );

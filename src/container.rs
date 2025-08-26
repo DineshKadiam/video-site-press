@@ -23,8 +23,8 @@ pub enum Container {
 
 impl Container {
     // Returns a comparator function according to the passed [ContainerOrder]
-    pub fn cmp_by_container_order<'a>(
-        video_order: &'a ContainerOrder
+    pub fn cmp_by_container_order(
+        video_order: &ContainerOrder
     ) -> fn(&Container, &Container, &CollatorBorrowed) -> Ordering {
         match video_order {
             ContainerOrder::Default => Container::cmp_by_sort_number_asc_then_latest_release_date_desc,
@@ -47,7 +47,7 @@ impl Container {
     // containers with title is sorted in itself but always kept separate
     // from the group of containers with only a slug, which is also sorted in
     // itself.
-    pub fn cmp_by_slug_then_title_asc<'a>(
+    pub fn cmp_by_slug_then_title_asc(
         a: &Container,
         b: &Container,
         collator: &CollatorBorrowed
@@ -64,7 +64,7 @@ impl Container {
     // containers with title is sorted in itself but always kept separate
     // from the group of containers with only a slug, which is also sorted in
     // itself.
-    pub fn cmp_by_slug_then_title_desc<'a>(
+    pub fn cmp_by_slug_then_title_desc(
         a: &Container,
         b: &Container,
         collator: &CollatorBorrowed
@@ -121,7 +121,7 @@ impl Container {
 
     // Containers with title and containers with only a slug are intermixed
     // and sorted together here.
-    pub fn cmp_by_title_or_slug_asc<'a>(
+    pub fn cmp_by_title_or_slug_asc(
         a: &Container,
         b: &Container,
         collator: &CollatorBorrowed
@@ -129,15 +129,15 @@ impl Container {
         let a_title = a.title();
         let b_title = b.title();
 
-        let a_title_or_slug = a_title.as_deref().unwrap_or_else(|| a.slug_unchecked());
-        let b_title_or_slug = b_title.as_deref().unwrap_or_else(|| b.slug_unchecked());
+        let a_title_or_slug = a_title.unwrap_or_else(|| a.slug_unchecked());
+        let b_title_or_slug = b_title.unwrap_or_else(|| b.slug_unchecked());
 
         collator.compare(a_title_or_slug, b_title_or_slug)
     }
 
     // Containers with title and containers with only a slug are intermixed
     // and sorted together here.
-    pub fn cmp_by_title_or_slug_desc<'a>(
+    pub fn cmp_by_title_or_slug_desc(
         a: &Container,
         b: &Container,
         collator: &CollatorBorrowed
@@ -145,8 +145,8 @@ impl Container {
         let a_title = a.title();
         let b_title = b.title();
 
-        let a_title_or_slug = a_title.as_deref().unwrap_or_else(|| a.slug_unchecked());
-        let b_title_or_slug = b_title.as_deref().unwrap_or_else(|| b.slug_unchecked());
+        let a_title_or_slug = a_title.unwrap_or_else(|| a.slug_unchecked());
+        let b_title_or_slug = b_title.unwrap_or_else(|| b.slug_unchecked());
 
         collator.compare(b_title_or_slug, a_title_or_slug)
     }

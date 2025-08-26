@@ -681,14 +681,14 @@ fn execute_sync_actions(
                 let message = translations.creating_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.mkdir(&remote_path)?;
+                ftp_stream_wrapper.mkdir(remote_path)?;
             }
             SyncAction::DeleteDir { remote_path } |
             SyncAction::PrereqDeleteDir { remote_path } => {
                 let message = translations.deleting_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.rmdir(&remote_path)?;
+                ftp_stream_wrapper.rmdir(remote_path)?;
             }
             SyncAction::DeleteFile { remote_entry } |
             SyncAction::PrereqDeleteFile { remote_entry } => {
@@ -830,7 +830,7 @@ fn get_remote_entries(
 // 5. Replace updated files, going from biggest to smallest
 // 6. Delete all files, from biggest to smallest
 // 7. Delete all directories, going from deepest to shallowest
-fn order_sync_actions_quality_approach(actions: &mut Vec<SyncAction>) {
+fn order_sync_actions_quality_approach(actions: &mut [SyncAction]) {
     actions.sort_unstable_by(|a, b| {
         match a {
             SyncAction::AddFile { local_entry: a_local_entry, .. } => {

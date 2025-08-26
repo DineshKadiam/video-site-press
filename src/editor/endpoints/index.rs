@@ -300,7 +300,7 @@ fn storage_stats_html(
 
         list.push_str(&list_text);
 
-        slices.push_str(&slice(arc_angle, &color, begin_angle, link, title));
+        slices.push_str(&slice(arc_angle, color, begin_angle, link, title));
 
         begin_angle += arc_angle;
     }

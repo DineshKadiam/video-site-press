@@ -204,7 +204,7 @@ pub fn player(
         let index_suffix_file_only = site.index_suffix_file_only();
 
         let playlist_label = playlist.title_or_slug_or_generic_label(translations);
-        let playlist_label_escaped = html_escape_outside_attribute(&playlist_label);
+        let playlist_label_escaped = html_escape_outside_attribute(playlist_label);
         let videos = playlist.public_videos_in_playlist_order(language);
 
         let items = videos

@@ -109,7 +109,7 @@ pub fn generate_navigation_js(
 
         let videos = playlist.public_videos_in_playlist_order(language)
             .iter()
-            .map(|video| video_js(language, &video))
+            .map(|video| video_js(language, video))
             .collect::<Vec<String>>()
             .join(", ");
 
@@ -126,8 +126,8 @@ pub fn generate_navigation_js(
             .iter()
             .map(|container| {
                 match container {
-                    Container::Collection(collection) => collection_js(&collection, language),
-                    Container::Playlist(playlist) => playlist_js(language, &playlist)
+                    Container::Collection(collection) => collection_js(collection, language),
+                    Container::Playlist(playlist) => playlist_js(language, playlist)
                 }
             })
             .collect::<Vec<String>>()
@@ -135,7 +135,7 @@ pub fn generate_navigation_js(
 
         let videos = collection.public_videos_in_collection_video_order(language)
             .iter()
-            .map(|video| video_js(language, &video))
+            .map(|video| video_js(language, video))
             .collect::<Vec<String>>()
             .join(", ");
 

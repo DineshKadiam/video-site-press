@@ -34,9 +34,9 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     let mut jobs_sorted = Vec::new();
 
     for job in &*context.job_queue.lock().unwrap() {
-        let output_label = job.desc.output_label(&translations);
-        let target_label = job.desc.target_label(&translations);
-        let target_label_escaped = html_escape_outside_attribute(&target_label);
+        let output_label = job.desc.output_label(translations);
+        let target_label = job.desc.target_label(translations);
+        let target_label_escaped = html_escape_outside_attribute(target_label);
         let target_edit_url = job.desc.target_edit_url();
         let target_link = format!(r#"<a href="{target_edit_url}">{target_label_escaped}</a>"#);
 
@@ -76,9 +76,9 @@ pub async fn jobs(context: Data<Arc<Context>>) -> HttpResponse {
     }
 
     for job in &*context.completed_jobs.lock().unwrap() {
-        let output_label = job.desc.output_label(&translations);
-        let target_label = job.desc.target_label(&translations);
-        let target_label_escaped = html_escape_outside_attribute(&target_label);
+        let output_label = job.desc.output_label(translations);
+        let target_label = job.desc.target_label(translations);
+        let target_label_escaped = html_escape_outside_attribute(target_label);
         let target_edit_url = job.desc.target_edit_url();
         let target_link = format!(r#"<a href="{target_edit_url}">{target_label_escaped}</a>"#);
 

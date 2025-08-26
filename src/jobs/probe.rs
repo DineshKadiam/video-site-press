@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::mem;
 use std::path::Path;
 use std::process::{Command};
 
@@ -216,9 +217,7 @@ pub fn probe_video(
                                                     )
                                                 })
                                         }) {
-                                        let height_memo = height;
-                                        height = width;
-                                        width = height_memo;
+                                        mem::swap(&mut height, &mut width);
                                     }
                                 }
                                 // For now crash in this case, just to be aware if there
