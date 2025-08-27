@@ -12,6 +12,7 @@ listed here, just say the word.
 
 Thanks everyone for your support!
 
+[arnauld](https://codeberg.org/arnauld)<br>
 [BMKÖS](https://www.bmkoes.gv.at/)<br>
 [Bri Hefele](https://brhfl.com)<br>
 [Christian Pacaud](https://www.christianpacaud.com/)<br>

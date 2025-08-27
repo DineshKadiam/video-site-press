@@ -72,7 +72,10 @@ pub fn edit_poster_page(
             let file_name = &poster.file_name;
             let src = routes::poster(file_name, &video.site_path);
 
-            let mut description = Textarea::image_description("description", translations.poster_description);
+            let mut description = Textarea::image_description(
+                "description",
+                translations.image_description_for_blind_or_visually_impaired_people
+            );
 
             description
                 .id("poster_description")

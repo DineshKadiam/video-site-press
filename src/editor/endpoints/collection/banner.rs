@@ -56,7 +56,10 @@ pub fn edit_banner_page(
             let file_name = &banner.file_name;
             let src = routes::poster(file_name, &collection.site_path);
 
-            let mut description = Textarea::image_description("description", translations.banner_description);
+            let mut description = Textarea::image_description(
+                "description",
+                translations.image_description_for_blind_or_visually_impaired_people
+            );
 
             description
                 .id("banner_description")
