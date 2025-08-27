@@ -151,7 +151,7 @@ pub struct Translations {
     pub initialize_site_as_a_playlist: &'static str,
     pub initialize_site_as_a_video: &'static str,
     pub invalid_site: &'static str,
-    pub invalid_site_text: &'static str,
+    invalid_site_text: &'static str,
     pub invalid_url: &'static str,
     pub jump_back_forward_five_seconds: &'static str,
     pub jump_to_a_random_frame: &'static str,
@@ -183,6 +183,7 @@ pub struct Translations {
     pub mp3_highest_compatibility: &'static str,
     pub mute_unmute_audio: &'static str,
     pub navigation: &'static str,
+    neither_remote_dir_xxx_nor_any_ancestor_dir_found: &'static str,
     pub neutral: &'static str,
     pub new_link: &'static str,
     pub new_playlist: &'static str,
@@ -236,6 +237,7 @@ pub struct Translations {
     pub release_date: &'static str,
     pub release_date_ascending: &'static str,
     pub release_date_descending: &'static str,
+    remote_dir_does_not_exist_ancestor_dir_found: &'static str,
     pub render_format: &'static str,
     pub replay: &'static str,
     pub report_a_bug: &'static str,
@@ -269,6 +271,7 @@ pub struct Translations {
     pub subtitles: &'static str,
     pub synopsis: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
+    pub the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: &'static str,
     pub the_file_requested_for_deletion_was_not_found: &'static str,
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
@@ -380,6 +383,16 @@ impl Translations {
         self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
     }
 
+    pub fn neither_remote_dir_xxx_nor_any_ancestor_dir_found(
+        &self,
+        remote_dir: &str,
+        remote_dir_error: &str
+    ) -> String {
+        self.neither_remote_dir_xxx_nor_any_ancestor_dir_found
+            .replace("{remote_dir}", remote_dir)
+            .replace("{remote_dir_error}", remote_dir_error)
+    }
+
     pub fn public_address_must_be_configured_for_deployment_text(
         &self,
         site_settings_url: &str
@@ -394,6 +407,18 @@ impl Translations {
     ) -> String {
         self.public_address_must_be_configured_for_deployment_text_cli
             .replace("{path}", &path.to_string_lossy())
+    }
+
+    pub fn remote_dir_does_not_exist_ancestor_dir_found(
+        &self,
+        ancestor_dir: &str,
+        remote_dir: &str,
+        remote_dir_error: &str
+    ) -> String {
+        self.remote_dir_does_not_exist_ancestor_dir_found
+            .replace("{ancestor_dir}", ancestor_dir)
+            .replace("{remote_dir}", remote_dir)
+            .replace("{remote_dir_error}", remote_dir_error)
     }
 
     pub fn resolve_the_issue_on_disk_or_on_manifest_page(
@@ -531,8 +556,13 @@ fn check_translations() {
         assert!(&translations.deleting_file_xxx.contains("{path}"));
         assert!(&translations.files_are_being_deployed_to_xxx.contains("{link}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
+        assert!(&translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found.contains("{remote_dir}"));
+        assert!(&translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found.contains("{remote_dir_error}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
         assert!(&translations.public_address_must_be_configured_for_deployment_text_cli.contains("{path}"));
+        assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{ancestor_dir}"));
+        assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{remote_dir}"));
+        assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{remote_dir_error}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
         assert!(&translations.site_setup_text.contains("{docs_link}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{error}"));

@@ -180,6 +180,7 @@ impl Translations {
         mp3_highest_compatibility: "MP3 – Highest compatibility",
         mute_unmute_audio: "Mute/unmute audio",
         navigation: "Navigation",
+        neither_remote_dir_xxx_nor_any_ancestor_dir_found: r#"Neither the configured remote server directory "{remote_dir}" ("{remote_dir_error}") nor any of its ancestor directories could be found or accessed while tyring to verify the deployment configuration"#,
         neutral: "Neutral",
         new_link: "New Link",
         new_playlist: "New Playlist",
@@ -233,6 +234,7 @@ impl Translations {
         release_date: "Release Date",
         release_date_ascending: "Release Date Ascending (Jan, Feb, Mar)",
         release_date_descending: "Release Date Descending (Dec, Nov, Oct)",
+        remote_dir_does_not_exist_ancestor_dir_found: r#"The remote server directory you configured ("{remote_dir}") does not exist or is not accessible ("{remote_dir_error}") - it must be manually created in order to let Hyper 8 verify your configuration before deployment. The closest existing ancestor directory that was found on the server is "{ancestor_dir}"."#,
         render_format: "Render Format",
         replay: "Replay",
         report_a_bug: "Report a bug",
@@ -272,6 +274,7 @@ impl Translations {
 
             Error details: {error}
         "),
+        the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: "The test file upload for verifying your deployment configuration did not succeed",
         the_file_requested_for_deletion_was_not_found: "The file requested for deletion was not found",
         the_link_requested_for_deletion_was_not_found: "The link requested for deletion was not found",
         the_poster_to_be_updated_was_not_found: "The poster to be updated was not found",

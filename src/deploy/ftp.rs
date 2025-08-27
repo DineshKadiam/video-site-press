@@ -288,12 +288,43 @@ pub fn config_probe(
 ) -> Result<(), String> {
     let probe_signature = nanoid();
     let probe_content = format!("{FTP_CONFIG_PROBE_TEXT}\n\n{probe_signature}");
-    let remote_probe_path = Path::new(site.ftp_config.path_unchecked()).join(FTP_CONFIG_PROBE_FILE_NAME);
+
+    let remote_dir = site.ftp_config.path_unchecked();
+    let remote_probe_path = Path::new(remote_dir).join(FTP_CONFIG_PROBE_FILE_NAME);
+
+    // Check if the configured remote directory exists (by changing into it)
+    if let Err(remote_dir_err) = ftp_stream_wrapper.cwd(&remote_dir) {
+        // If the configured remote directory does not exist, try changing
+        // into each of its ancestor directories (going from deepest to
+        // shallowest) in order to determine and report the first existing
+        // directory that is part of the user's configured remote directory
+        // path.
+        while let Some(ancestor_dir) = Path::new(remote_dir).parent() {
+            if ftp_stream_wrapper.cwd(&ancestor_dir).is_ok() {
+                let message = translations.remote_dir_does_not_exist_ancestor_dir_found(
+                    &ancestor_dir.to_string_lossy(),
+                    remote_dir,
+                    &remote_dir_err.to_string()
+                );
+
+                return Err(message);
+            }
+        }
+
+        let message = translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found(
+            remote_dir,
+            &remote_dir_err.to_string()
+        );
+
+        return Err(message);
+    }
 
     // Write probe file
     let mut reader = Cursor::new(probe_content.as_bytes());
     if let Err(err) = ftp_stream_wrapper.put_file(&remote_probe_path, &mut reader) {
-        return Err(err.to_string());
+        let t_message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
+        let message = format!("{t_message} ({err})");
+        return Err(message);
     }
 
     let public_probe_url = site.absolute_url_file_unchecked(FTP_CONFIG_PROBE_FILE_NAME, &SitePath::root_path());

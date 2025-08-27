@@ -180,6 +180,7 @@ impl Translations {
         mp3_highest_compatibility: "MP3 – Höchste Kompatibilität",
         mute_unmute_audio: "Audio stumm/laut schalten",
         navigation: "Navigation",
+        neither_remote_dir_xxx_nor_any_ancestor_dir_found: r#"Weder das konfigurierte Zielverzeichnis am Server "{remote_dir}" ("{remote_dir_error}") noch irgendein darüberliegendes Verzeichnis konnten beim Überprüfen der Deploymentkonfiguration gefunden oder geöffnet werden"#,
         neutral: "Neutral",
         new_link: "Neuer Link",
         new_playlist: "Neue Playlist",
@@ -233,6 +234,7 @@ impl Translations {
         release_date: "Veröffentlichungsdatum",
         release_date_ascending: "Veröffentlichungsdatum Aufsteigend (Jän, Feb, Mär)",
         release_date_descending: "Veröffentlichungsdatum Absteigend (Dez, Nov, Okt)",
+        remote_dir_does_not_exist_ancestor_dir_found: r#"Das konfigurierte Zielverzeichnis am Server ("{remote_dir}") existiert nicht oder erlaubt keinen Zugriff ("{remote_dir_error}") - es muss manuell erstellt werden um Hyper 8 zu ermöglichen die Konfiguration vor dem Deployen zu verifizieren. Das darüber nächstgelegene Verzeichnis das gefunden wurde ist "{ancestor_dir}"."#,
         render_format: "Format rendern",
         replay: "Erneut abspielen",
         report_a_bug: "Problem melden",
@@ -271,6 +273,7 @@ impl Translations {
 
             Fehlerdetails: {error}
         "),
+        the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: "Das Hochladen einer Testdatei um die Deploymentkonfiguration zu verifizieren war nicht erfolgreich",
         the_file_requested_for_deletion_was_not_found: "Die zu löschende Datei wurde nicht gefunden",
         the_link_requested_for_deletion_was_not_found: "Der zu löschende Link wurde nicht gefunden",
         the_poster_to_be_updated_was_not_found: "Das Poster das aktualisiert werden sollte wurde nicht gefunden",

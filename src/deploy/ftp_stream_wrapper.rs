@@ -87,6 +87,17 @@ impl FtpStreamWrapper {
         }
     }
 
+    pub fn cwd(&mut self, path: impl AsRef<Path>) -> FtpResult<()> {
+        let path_str = path.as_ref().to_string_lossy();
+
+        trace!("cwd {path_str}");
+
+        match self {
+            FtpStreamWrapper::Insecure(stream) => stream.cwd(path_str),
+            FtpStreamWrapper::Secure(stream) => stream.cwd(path_str)
+        }
+    }
+
     pub fn is_secure(&self) -> bool{
         match self {
             FtpStreamWrapper::Insecure(_) => false,

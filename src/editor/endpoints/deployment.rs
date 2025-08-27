@@ -27,7 +27,7 @@ pub async fn deployment(context: Data<Arc<Context>>) -> HttpResponse {
 
     if let Some(hyper_url) = &site.base_url {
         let url = &hyper_url.representation;
-        let link = format!(r#"<a href="{url}">{url}</a>"#);
+        let link = format!(r#"<a href="{url}" target="_blank">{url}</a>"#);
         let t_files_are_being_deployed_to_xxx = translations
             .files_are_being_deployed_to_xxx(&link);
 
