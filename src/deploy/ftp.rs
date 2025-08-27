@@ -290,7 +290,6 @@ pub fn config_probe(
     let probe_content = format!("{FTP_CONFIG_PROBE_TEXT}\n\n{probe_signature}");
 
     let remote_dir = site.ftp_config.path_unchecked();
-    let remote_probe_path = Path::new(remote_dir).join(FTP_CONFIG_PROBE_FILE_NAME);
 
     // Check if the configured remote directory exists (by changing into it)
     if let Err(remote_dir_err) = ftp_stream_wrapper.cwd(&remote_dir) {
@@ -318,6 +317,8 @@ pub fn config_probe(
 
         return Err(message);
     }
+
+    let remote_probe_path = Path::new(remote_dir).join(FTP_CONFIG_PROBE_FILE_NAME);
 
     // Write probe file
     let mut reader = Cursor::new(probe_content.as_bytes());

@@ -111,13 +111,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
         <div class="form_group">
             <h2>{t_encode_video}</h2>
             <form action="{encode_video_action}" method="post">
-                <div class="button_group">
-                    {select_resolution}
-                    <div class="form_field">
-                        <label>&nbsp;</label>
-                        <button class="action">{t_render_format}</button>
-                    </div>
-                </div>
+                {select_resolution}
                 <details>
                     <summary>{t_advanced_settings}</summary>
                     <div class="form_field">
@@ -145,6 +139,7 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
                     {select_codec}
                     {select_approach}
                 </details>
+                <button class="action">{t_render_format}</button>
             </form>
         </div>
         <div class="form_group">
