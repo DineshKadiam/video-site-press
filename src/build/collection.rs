@@ -272,7 +272,7 @@ fn render_collection(
             None => collection.slug_unchecked().to_string()
         };
 
-        let video_bubbles = bubbles("", &videos);
+        let video_bubbles = bubbles(&traversal_with_collection_prefix, &videos);
         let collection_title_and_videos = formatdoc!(r#"
             <div class="container_title">
                 <h2>
@@ -387,7 +387,7 @@ fn render_playlist(
 
     let playlist_href = traversal_with_playlist.index_desc(site);
 
-    let video_bubbles = bubbles("", &videos);
+    let video_bubbles = bubbles(&traversal_with_playlist_prefix, &videos);
     formatdoc!(r#"
         <div class="container_title">
             <h2>
