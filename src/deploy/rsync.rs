@@ -24,47 +24,6 @@ const RSYNC_CONFIG_PROBE_TEXT: &str = indoc!("
 /// Windows = Dummy implementation - we need a packaged rsync for this, which is not so trivial
 pub const RSYNC: &str = if cfg!(windows) { "rsync.exe" } else { "rsync" };
 
-#[derive(Clone, Debug)]
-pub struct SshConfig {
-    pub path: Option<String>,
-    pub server: Option<String>,
-    pub user: Option<String>
-}
-
-impl SshConfig {
-    pub fn complete(&self) -> bool {
-        self.path.is_some() &&
-        self.server.is_some() &&
-        self.user.is_some()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.path.is_none() &&
-        self.server.is_none() &&
-        self.user.is_none()
-    }
-
-    pub fn new() -> SshConfig {
-        SshConfig {
-            path: None,
-            server: None,
-            user: None
-        }
-    }
-
-    pub fn path_unchecked(&self) -> &str {
-        self.path.as_ref().unwrap()
-    }
-
-    pub fn server_unchecked(&self) -> &str {
-        self.server.as_ref().unwrap()
-    }
-
-    pub fn user_unchecked(&self) -> &str {
-        self.user.as_ref().unwrap()
-    }
-}
-
 /// Uploads a file named ".hyper8_rsync_config_probe.txt", which also contains a random token,
 /// to the remote, thereby first verifying that the deployment configuration is actually
 /// correct and working. Then, right next, tries to fetch that same file through the public

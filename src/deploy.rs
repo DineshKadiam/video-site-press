@@ -9,12 +9,17 @@ use std::time::{Duration, SystemTime};
 use crate::{Context, Site, Translations};
 
 mod ftp;
+mod ftp_config;
+mod ftp_stream_wrapper;
+mod ftp_sync_error;
 mod rsync;
+mod ssh_config;
 
-use ftp::FtpStreamWrapper;
+use ftp_stream_wrapper::FtpStreamWrapper;
+use ftp_sync_error::SyncError;
 
-pub use ftp::FtpConfig;
-pub use rsync::SshConfig;
+pub use ftp_config::FtpConfig;
+pub use ssh_config::SshConfig;
 
 pub struct DeploymentState {
     pub completed_at: Option<SystemTime>,
