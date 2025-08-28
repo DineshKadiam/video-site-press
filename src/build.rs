@@ -67,6 +67,7 @@ impl AssetHashes {
     pub const ADAPTIVE_THEME_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_ADAPTIVE_THEME_JS");
     pub const CLIPBOARD_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS");
     pub const EMBED_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_EMBED_JS");
+    pub const FAVICON_PNG: &str = env!("HYPER8_STATIC_ASSET_HASH_FAVICON_PNG");
     pub const VIDEO_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_VIDEO_JS");
 
     pub fn new() -> AssetHashes {

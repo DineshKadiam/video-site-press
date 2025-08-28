@@ -94,8 +94,6 @@ impl Layout {
             extra_meta.push_str(&meta.tags(site));
         }
 
-        let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
-
         let video_script = if self.video_script {
             let video_js_asset_hash = AssetHashes::VIDEO_JS;
             format!(r#"<script defer src="{root_prefix}video.js?{video_js_asset_hash}" type="module"></script>"#)
@@ -150,6 +148,9 @@ impl Layout {
             navigation_script = String::new();
         };
 
+        let favicon_png_asset_hash = AssetHashes::FAVICON_PNG;
+        let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
+
         let head = formatdoc!(r#"
             <head>
                 <title>{title}</title>
@@ -157,7 +158,7 @@ impl Layout {
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 {META_GENERATOR}
                 {extra_meta}
-                <link href="/favicon.png" rel="icon" type="image/png">
+                <link href="{root_prefix}favicon.png?{favicon_png_asset_hash}" rel="icon" type="image/png">
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
                 {adaptive_theme_script}
                 {clipboard_script}

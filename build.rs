@@ -52,11 +52,13 @@ fn main() {
     let static_asset_hash_adaptive_theme_js = url_safe_hash_base64(include_bytes!("src/build/assets/adaptive_theme.js"));
     let static_asset_hash_clipboard_js = url_safe_hash_base64(include_bytes!("src/build/assets/clipboard.js"));
     let static_asset_hash_embed_js = url_safe_hash_base64(include_bytes!("src/build/assets/embed.js"));
+    let static_asset_hash_favicon_png = url_safe_hash_base64(include_bytes!("src/build/assets/favicon.png"));
     let static_asset_hash_video_js = url_safe_hash_base64(include_bytes!("src/build/assets/video.js"));
 
     println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_ADAPTIVE_THEME_JS={static_asset_hash_adaptive_theme_js}");
     println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS={static_asset_hash_clipboard_js}");
     println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_EMBED_JS={static_asset_hash_embed_js}");
+    println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_FAVICON_PNG={static_asset_hash_favicon_png}");
     println!("cargo:rustc-env=HYPER8_STATIC_ASSET_HASH_VIDEO_JS={static_asset_hash_video_js}");
 }
 
