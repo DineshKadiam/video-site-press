@@ -9,7 +9,7 @@
 
 What you need to have installed to build and run hyper8:
 
-- **Rust (version 1.80.1 or later)**
+- **Rust (version 1.82 or later)**
 
   Install [rust](https://rust-lang.org) on your system following the official [installation instructions](https://www.rust-lang.org/tools/install).
 

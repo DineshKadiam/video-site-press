@@ -4,7 +4,7 @@
 [package]
 edition = "2021"
 name = "hyper8"
-rust-version = "1.80.1"
+rust-version = "1.82"
 version = "0.22.0"
 
 [build-dependencies]
