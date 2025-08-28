@@ -5,7 +5,7 @@
 edition = "2021"
 name = "hyper8"
 rust-version = "1.82"
-version = "0.22.0"
+version = "0.23.0"
 
 [build-dependencies]
 base64 = "0.22.1"

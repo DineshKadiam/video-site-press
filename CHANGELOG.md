@@ -5,6 +5,112 @@
 
 # Changelog
 
+## 0.23
+
+Released on August 28, 2025
+
+### Audio-only formats
+
+You can now provide audio-only versions of your videos to your audience,
+allowing them to merely listen to the audio in your videos without having to
+transfer the full video stream.
+
+- Introduce audio file abstractions, caching and processing, refactor jobs ([`bf9a702`](https://codeberg.org/simonrepp/hyper8/commit/bf9a702bee4e56aa13406f6f66689b62720e41f4))
+- Extract VideoFile and VideoMeta abstractions into own modules ([`3c44d33`](https://codeberg.org/simonrepp/hyper8/commit/3c44d33fe680351e01204103112c9c625863b977))
+- Implement encode audio endpoint, restructure media endpoint around added audio ([`34e8d0c`](https://codeberg.org/simonrepp/hyper8/commit/34e8d0cc9205628b679bdce3766bdf3434fbe47d))
+- Switch internal terminology from "version" to "video file" everywhere ([`d3c83e3`](https://codeberg.org/simonrepp/hyper8/commit/d3c83e3f8fca2fab00607cc24bc410d89745b940))
+- Integrate audio-only option in version selectors, write audio file to build ([`cc79049`](https://codeberg.org/simonrepp/hyper8/commit/cc79049787589b91b8aabf89a0c75ccc8ad98bf3))
+- Implement unified audio/video file upload, gracefully handle unsupported types ([`6928a01`](https://codeberg.org/simonrepp/hyper8/commit/6928a016df957c9873ed154ecd42739f53d3e4f8))
+- Render video player even when we only have an audio file available ([`43347f3`](https://codeberg.org/simonrepp/hyper8/commit/43347f3711916467fad4f46f4fd72f8c16ce48a8))
+
+### Customizable ordering for playlists and subcollections
+
+Customizable ordering for videos in collections and playlists is available for a long time already.
+Now you can also customize the ordering of playlists and subcollections on your site!
+
+- Introduce customizable ordering and sort numbers for collections and playlists ([`5c43bca`](https://codeberg.org/simonrepp/hyper8/commit/5c43bca3fa2f3d686f5d4ee82325047c43463a43))
+- Extend new container based ordering to navigation and subcollection rendering ([`7d49e7c`](https://codeberg.org/simonrepp/hyper8/commit/7d49e7c443fe3f14a21b054fced6058e5a461f11))
+- Generalize sort direction as a modifier passed to comparison functions ([`a041a88`](https://codeberg.org/simonrepp/hyper8/commit/a041a8871209c642a0ec198281e77a2fc8b68cc0))
+- Fix flipped comparisons in video file fidelity comparison ([`381da90`](https://codeberg.org/simonrepp/hyper8/commit/381da900d0b1aaf82c77b610e89f4a15e66a98ca))
+
+### Site design and layout refined
+
+0.23 significantly improves the header section of your site, adding a new
+browse icon and carefully crafted responsive behavior to retain usability
+even on the narrowest of screens. Misc additions throughout the site,
+such as integrating the new logo icon as a favicon, polishing responsive
+behavior in the footer, adding further experimental "video bubbles" in
+the layout, and so on, round off the package in this area.
+
+- Refine header and navigation responsive behavior, add browse icon ([`a912fef`](https://codeberg.org/simonrepp/hyper8/commit/a912fef78a7af18216dc336f94dac9333f4eff2c))
+- Fine-tune the search field responsive behavior ([`60800d0`](https://codeberg.org/simonrepp/hyper8/commit/60800d0d425a59a2403064346e85019db655abd0))
+- Render video bubbles on collection/playlist pages, refactor markup and classes ([`e098b5d`](https://codeberg.org/simonrepp/hyper8/commit/e098b5de0e18843a1c79183ca937b19ab69e42f2))
+- Tweak footer responsive behavior and markup, rewrite media queries ([`7080ea8`](https://codeberg.org/simonrepp/hyper8/commit/7080ea8e0692339f5bc091160bfeaebfe02a4c0e))
+- Remove playlist video numbers on collection/playlist pages ([`37febcc`](https://codeberg.org/simonrepp/hyper8/commit/37febcc037dd76e8af58a95f80805af35f736ccc))
+- Integrate new favicon in editor and built sites ([`6745ad5`](https://codeberg.org/simonrepp/hyper8/commit/6745ad559de2c0c015c3c9103a3781cddebffba6))
+
+### Deployment from CLI
+
+0.23 finally (re-)introduces deployment from the commandline. Running "hyper8
+[path] --build --deploy" now does exactly that, also asking for
+your confirmation before deployment starts.
+
+- Implement synchronous deployment from terminal, including user confirmation ([`54075a0`](https://codeberg.org/simonrepp/hyper8/commit/54075a03cf609517b2b439c80a26f69dc99ef0da))
+
+### Storage overview page
+
+- Improve storage legend formatting, use LQIP colors for the diagram and legend ([`8f238aa`](https://codeberg.org/simonrepp/hyper8/commit/8f238aa7dad6b1e023eefbb5853b84356d80dbd1))
+
+### Background jobs
+
+Background processing has received a lot of attention at the foundational
+level: Errors are better propagated to the interface, error messages are
+localized throughout the worker implementation and background jobs page, the
+entire job system has been refactored to be more extensible and maintainable
+in the future, and lastly the background jobs page itself (one of the weaker
+links in the interface) has seen some updates to its structure and layout,
+improving clarity and overview (with more refinement to come in the future).
+
+- Extend error propagation from background jobs, extend translation coverage ([`631eaf5`](https://codeberg.org/simonrepp/hyper8/commit/631eaf545b874a6053a0a1fd1a5ffba93f5688a5))
+- Improve job system, incorporate failed jobs in --build and progress indicator ([`dada086`](https://codeberg.org/simonrepp/hyper8/commit/dada086bd5cc9c6b7ef15cbe8199e5a6c93a1015))
+- Restructure and fully translate jobs page in the editor ([`e070ce8`](https://codeberg.org/simonrepp/hyper8/commit/e070ce880ef45d134de8c4f364c8e42fe1c157f0))
+- Refactor job dispatch and move worker code into more specific submodules ([`0e18216`](https://codeberg.org/simonrepp/hyper8/commit/0e182164a6da921f2ed6c1aaf81950a069aa8b25))
+- Translate all messages in background workers, revisit update abstractions ([`152ce23`](https://codeberg.org/simonrepp/hyper8/commit/152ce23baa649aa2989073d191bdf09ccc67c8d4))
+
+### Translations
+
+Throughout the interface pending localization tasks have been completed,
+making the largest part of all messages in Hyper 8 translateable.
+
+- Extend translation coverage
+  * Extract translation strings into separate language modules ([`87fc925`](https://codeberg.org/simonrepp/hyper8/commit/87fc92572badd62dfb063d3b31370fdb3c412e7a))
+  * Translate misc strings marked for translation ([`7754ce0`](https://codeberg.org/simonrepp/hyper8/commit/7754ce0d2710a8da261fda8ae158c161bce69a33))
+  * Extend error propagation from background jobs, extend translation coverage ([`631eaf5`](https://codeberg.org/simonrepp/hyper8/commit/631eaf545b874a6053a0a1fd1a5ffba93f5688a5))
+- Fully localize deployment page, improve clarity of dynamic progress reporting ([`f188ca4`](https://codeberg.org/simonrepp/hyper8/commit/f188ca4c605f8e3ee7b83566eeed679ae3821728))
+
+### Misc
+
+- Always allow re-encoding video files at their original resolution ([`64724e4`](https://codeberg.org/simonrepp/hyper8/commit/64724e4eb5d5293bd1e7d743195e069bfb302b77))
+- Introduce language-aware alphabetical ordering everywhere (e.g. for letters with diacritics) (with [Sam Muirhead](https://animate-activate.studio))
+  * Integrate ICU collation based alphabetical sorting ([`f8d4646`](https://codeberg.org/simonrepp/hyper8/commit/f8d464695791e12d60063225b80201e4776e4675))
+- Add short -b/-p aliases for --build/--preview arguments ([`04f544c`](https://codeberg.org/simonrepp/hyper8/commit/04f544c25bb5089138cb6d4f3ef8de11eebf4eca))
+- Use clearer labeling for image description input fields ([`108693c`](https://codeberg.org/simonrepp/hyper8/commit/108693c4aa230b129ceee856b97fec16116382b9)) (with [Arnauld](https://codeberg.org/arnauld))
+- Improve errors for the critical first steps of verifying the deployment config ([`0f30aff`](https://codeberg.org/simonrepp/hyper8/commit/0f30affd8108d253493f95f2d4820221d39f554d)) (with [ecogex](https://ecogex.com))
+- Improve clarity of dynamic progress reporting
+  * Fully localize deployment page, improve clarity of dynamic progress reporting ([`f188ca4`](https://codeberg.org/simonrepp/hyper8/commit/f188ca4c605f8e3ee7b83566eeed679ae3821728))
+- Move "Render format" button below advanced settings in video encoding form ([`202990d`](https://codeberg.org/simonrepp/hyper8/commit/202990d3a85af101e8d8b82fa43876fc3f3cae28)) (with [Arnauld](https://codeberg.org/arnauld))
+- List videos before playlists and subcollections in the editor tree view ([`b7f4b1d`](https://codeberg.org/simonrepp/hyper8/commit/b7f4b1d52619d42422642babe3b8b470e29a996a))
+- Automatically focus confirm action inside modal editor confirmation dialogs ([`bcee7c1`](https://codeberg.org/simonrepp/hyper8/commit/bcee7c1166a8e866dd54af115881587083dc6685))
+
+### Fixes
+
+- Fix client script exception occuring only for unlisted videos in playlists (with [Kristoffer Lislegaard](https://kristofferlislegaard.com/))
+  * Conditionally bind stand-only replay button handler in video js ([`a8801db`](https://codeberg.org/simonrepp/hyper8/commit/a8801dbbf7effa0b58dca1fa762105a602ee9427))
+- Discard "N/A" time values reported by ffmpeg HEVC encoder ([`6753f0a`](https://codeberg.org/simonrepp/hyper8/commit/6753f0acdd602e4029081825435de0be94187bce))
+- Ensure banner preview images in the editor are constrained to 100% width ([`340c517`](https://codeberg.org/simonrepp/hyper8/commit/340c5171465ddab998be00dc64992aae63229c72))
+- Pass the correct prefix when rendering bubbles for containers in a collection ([`1deb440`](https://codeberg.org/simonrepp/hyper8/commit/1deb440c2778298f74f8433f1ebc9afcd7e18893)) (with [DURAD](https://durad.xyz/))
+- Reference favicon asset relatively and with asset hash ([`af31541`](https://codeberg.org/simonrepp/hyper8/commit/af315412e76b410674ff0ed6d8436368da65f044)) (with [DURAD](https://durad.xyz/))
+
 ## 0.22
 
 Released on August 13, 2025
