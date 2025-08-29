@@ -182,10 +182,8 @@ pub fn video_html(
 
     let body = match playlist {
         Some(playlist) => {
-            let prefix = "../";
             let playlist_context = TraversalStep::crumb_playlist(
                 playlist,
-                prefix,
                 site,
                 Some(video)
             );

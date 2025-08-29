@@ -10,7 +10,6 @@ use crate::{
     Banner,
     Language,
     Link,
-    PosterFile,
     Site,
     Translations,
     Video
@@ -125,27 +124,6 @@ pub fn links(language: &Language, links: &[Link]) -> String {
         .join("\n");
 
     format!(r#"<div class="links">{items}</div>"#)
-}
-
-pub fn poster_html(poster: &PosterFile, video_prefix: &str) -> String {
-    let alt = if let Some(description) = &poster.description {
-        format!(r#"alt="{description}""#)
-    } else {
-        String::new()
-    };
-
-    match &poster.assets {
-        Some(poster_assets) => {
-            let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
-            let src = image_attributes.src;
-            let srcset = image_attributes.srcset;
-
-            format!(r#"<img {alt} src="{src}" srcset="{srcset}">"#)
-        }
-        None => {
-            format!(r#"<img {alt} src="{video_prefix}poster.jpg">"#)
-        }
-    }
 }
 
 /// Assumes that subscribe_permalink is a subfolder of the current location,

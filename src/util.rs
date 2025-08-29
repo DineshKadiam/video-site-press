@@ -247,21 +247,6 @@ pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) 
         .to_string()
 }
 
-/// E.g. Jan 2000
-pub fn localized_date_mmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) -> String {
-    use chrono::format::{Fixed, Item, Numeric, Pad};
-
-    let format = [
-        Item::Fixed(Fixed::ShortMonthName),
-        Item::Space(" "),
-        Item::Numeric(Numeric::Year, Pad::None)
-    ];
-
-    date
-        .format_localized_with_items(format.iter(), chrono_locale)
-        .to_string()
-}
-
 pub fn nanoid() -> String {
     nanoid!(8)
 }

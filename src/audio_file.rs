@@ -16,29 +16,6 @@ pub struct AudioFile {
 }
 
 impl AudioFile {
-    pub fn audio_meta_unchecked(&self) -> &AudioMeta {
-        self.audio_meta.as_ref().unwrap()
-    }
-
-    pub fn extension(&self) -> &str {
-        self.file_name.rsplit_once('.').unwrap().1
-    }
-
-    pub fn mime_type(&self) -> &'static str {
-        let (_stem, extension) = self.file_name.rsplit_once('.').unwrap();
-
-        // TODO: Mime types for less likely formats are to be added
-        // This mapping must be kept up-to-date with what we accept in our
-        // [supported_audio_extension] helper function, otherwise it's a full
-        // on-crash (but at least something that is quickly and easily
-        // discovered).
-        match extension {
-            "mp3" => "audio/mpeg",
-            "opus" => "audio/ogg; codecs=opus",
-            _ => unimplemented!()
-        }
-    }
-
     pub fn new(
         audio_meta: Option<AudioMeta>,
         file_meta: FileMeta,

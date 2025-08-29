@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::cmp::{self, Ordering};
+use std::cmp;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -29,7 +29,6 @@ use crate::{
     PlaylistUpdate,
     Site,
     SitePath,
-    SortDirection,
     Translations,
     TreeViewOrder,
     Video,
@@ -514,10 +513,6 @@ impl Collection {
                 }
             }
         }
-    }
-
-    pub fn cmp_by_latest_release_date_desc(a: &Arc<Collection>, b: &Arc<Collection>) -> Ordering {
-        b.latest_release_date().cmp(&a.latest_release_date())
     }
 
     pub fn containers_in_tree_view_order(
@@ -1118,36 +1113,14 @@ impl Collection {
         self.playlists.iter().filter(|playlist| playlist.public_local())
     }
 
-    pub fn public_playlists_desc_by_release_date(&self) -> Vec<Arc<Playlist>> {
-        let mut playlists: Vec<Arc<Playlist>> = self.public_playlists().cloned().collect();
-        playlists.sort_unstable_by(Playlist::cmp_by_latest_release_date_desc);
-        playlists
-    }
-
     pub fn public_subcollections(&self) -> impl Iterator<Item = &Arc<Collection>> {
         self.subcollections.iter().filter(|subcollection| subcollection.public_local())
-    }
-
-    pub fn public_subcollections_desc_by_release_date(&self) -> Vec<Arc<Collection>> {
-        let mut subcollections: Vec<Arc<Collection>> = self.public_subcollections().cloned().collect();
-        subcollections.sort_unstable_by(Collection::cmp_by_latest_release_date_desc);
-        subcollections
     }
 
     /// Returns all public videos (= not marked as offline or unlisted)
     /// contained directly in the collection.
     pub fn public_videos(&self) -> impl Iterator<Item = &Arc<Video>> {
         self.videos.iter().filter(|video| video.public_local())
-    }
-
-    pub fn public_videos_sorted_by_release_date(
-        &self,
-        direction: SortDirection,
-        language: &Language
-    ) -> Vec<Arc<Video>> {
-        let mut videos: Vec<Arc<Video>> = self.public_videos().cloned().collect();
-        videos.sort_unstable_by(|a, b| Video::cmp_release_date(a, b, &language.icu_collator, direction));
-        videos
     }
 
     pub fn public_videos_in_collection_video_order(

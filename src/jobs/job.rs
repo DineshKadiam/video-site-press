@@ -180,19 +180,6 @@ impl QueuedJob {
         self.failure = Some(failure);
     }
 
-    /// How long the job took to complete (or fail)
-    pub fn duration_unchecked(&self) -> Duration {
-        if let Some(failure) = &self.failure {
-            failure.duration()
-        } else if let Some(assignment) = &self.active_assignment {
-            SystemTime::now()
-                .duration_since(assignment.started_at)
-                .unwrap()
-        } else {
-            unimplemented!();
-        }
-    }
-
     pub fn new(desc: JobDesc) -> QueuedJob {
         QueuedJob {
             active_assignment: None,

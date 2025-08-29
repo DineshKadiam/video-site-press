@@ -656,21 +656,6 @@ impl Site {
         }
     }
 
-    /// Creates a relative link to go zero (= refresh current page) or
-    /// more levels upwards towards the site root, taking into account
-    /// whether we use clean urls or not. Some example output would be
-    /// "", "../", "../../../", "../index.html", etc.
-    pub fn upwards_href(&self, levels: usize) -> String {
-        if levels > 0 {
-            match self.clean_urls {
-                true => "../".repeat(levels),
-                false => "../".repeat(levels) + "index.html"
-            }
-        } else {
-            String::from("")
-        }
-    }
-
     /// Writes `site.eno` in the site directory
     pub fn write_manifest(&self, context: &Context) -> Result<(), String> {
         if !self.manifest_errors.is_empty() {

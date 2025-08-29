@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::cmp::{self, Ordering};
+use std::cmp;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -486,10 +486,6 @@ impl Playlist {
                 }
             }
         }
-    }
-
-    pub fn cmp_by_latest_release_date_desc(a: &Arc<Playlist>, b: &Arc<Playlist>) -> Ordering {
-        b.latest_release_date().cmp(&a.latest_release_date())
     }
 
     /// When we convert between types (collection, playlist, video) we pass
