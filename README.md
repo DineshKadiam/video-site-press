@@ -5,7 +5,7 @@
 
 # Hyper 8 Video System
 
-**A static site generator for video**
+**A static site generator for video publishing**
 
 Hyper 8 lets you create video sites, from single videos to playlists to entire
 video archives. Use the graphical user interface to build and publish your
@@ -13,7 +13,7 @@ site, or do it all from your text editor and terminal, or both. Hyper 8
 generates sites that require no database, no programming, no maintenance, and
 are compatible with virtually every webhost on this planet.
 
-Latest Release: **`0.23.0`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
+Latest Release: **`0.23`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
 
 <img src="https://simonrepp.com/hyper8/readme.png?2" alt="Screenshot showing the Hyper 8 browser editor and a built page"/>
 
@@ -32,6 +32,12 @@ The [docs](https://simonrepp.com/hyper8/docs) cover specific aspects:
 - Reference
 - Examples
 - Information on various topics
+
+The [release notes](https://simonrepp.com/hyper8/changes) give insight into development:
+
+- What's new in the latest version
+- What changed in previous versions
+- Sometimes also: What's coming in an upcoming version
 
 ## Hyper 8 is in Beta
 
