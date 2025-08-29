@@ -668,7 +668,9 @@ img {
     display: none;
 }
 .sidebar { flex-shrink: 0; }
-.sidebar.hidden { display: none; }
+.sidebar:not([data-panel]) { display: none; }
+.sidebar:not([data-panel="playlist"]) .playlist_context { display: none; }
+.sidebar:not([data-panel="transcript"]) #transcript { display: none; }
 .site_title {
     color: var(--fg-2);
     font-size: 1.17rem;
@@ -1021,7 +1023,7 @@ video {
 @media (width >= 55rem) {
     .layout_split { flex-direction: row; }
     .layout_split > :nth-child(1) { flex-grow: 1; }
-    .playlist_context { margin-top: 6.3rem; }
+    .sidebar > * { margin-top: 6.3rem; }
     .sidebar {
         max-width: min(30rem, 33%);
         min-width: min(20rem, 33%);

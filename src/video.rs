@@ -452,9 +452,9 @@ impl Video {
                 "subtitles" => 'subtitles: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(attributes) = field.attributes() {
-                            let mut file = None;
                             let mut label = None;
                             let mut language = None;
+                            let mut path = None;
 
                             for attribute in attributes {
                                 match attribute.key() {
@@ -464,7 +464,7 @@ impl Video {
 
                                             if absolute_path.exists() {
                                                 if supported_subtitles_extension(value) {
-                                                    file = Some(value.to_string());
+                                                    path = Some(absolute_path);
                                                 } else {
                                                     let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
                                                     let error = attribute_error(attribute, manifest_path, &message);
@@ -513,8 +513,8 @@ impl Video {
                                 }
                             }
 
-                            if let Some(file) = file {
-                                let subtitles = SubtitleFile::from_manifest(file, label, language);
+                            if let Some(path) = path {
+                                let subtitles = SubtitleFile::from_manifest(label, language, path);
                                 self.subtitles.push(subtitles);
                             } else {
                                 let message = "The subtitles option must supply a file attribute at least, e.g.:\n\nsubtitles:\nfile = en.srt";

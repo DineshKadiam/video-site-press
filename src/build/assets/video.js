@@ -21,6 +21,7 @@ const speedMultiplier = document.querySelector('#speed .multiplier');
 const timelineInput = document.querySelector('.timeline input');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
 const togglePlaylistButton = document.querySelector('#toggle_playlist');
+const toggleTranscriptButton = document.querySelector('#toggle_transcript');
 const versionSelectorControl = document.querySelector('.selector_control.version');
 const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
 const versionsRing = document.querySelector('.versions_ring');
@@ -444,19 +445,33 @@ togglePlaybackButton.addEventListener('click', togglePlayback);
 
 if (togglePlaylistButton) {
     const sidebar = document.querySelector('.sidebar');
-    const storageKey = `hyper8HidePlaylist:${togglePlaylistButton.dataset.sitePath}`;
+    const hidePlaylistStorageKey = `hyper8HidePlaylist:${togglePlaylistButton.dataset.sitePath}`;
 
     function togglePlaylist() {
-        if (sidebar.classList.contains('hidden')) {
-            sessionStorage.removeItem(storageKey);
-            sidebar.classList.remove('hidden');
+        if (sidebar.dataset.panel === 'playlist') {
+            sessionStorage.setItem(hidePlaylistStorageKey, '')
+            delete sidebar.dataset.panel;
         } else {
-            sessionStorage.setItem(storageKey, '')
-            sidebar.classList.add('hidden');
+            sessionStorage.removeItem(hidePlaylistStorageKey);
+            sidebar.dataset.panel = 'playlist';
         }
     }
 
     togglePlaylistButton.addEventListener('click', togglePlaylist);
+}
+
+if (toggleTranscriptButton) {
+    const sidebar = document.querySelector('.sidebar');
+
+    function toggleTranscript() {
+        if (sidebar.dataset.panel === 'transcript') {
+            delete sidebar.dataset.panel;
+        } else {
+            sidebar.dataset.panel = 'transcript';
+        }
+    }
+
+    toggleTranscriptButton.addEventListener('click', toggleTranscript);
 }
 
 video.addEventListener('ended', () => {

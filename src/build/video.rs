@@ -124,6 +124,18 @@ pub fn video_html(
         actions.push(toggle_playlist);
     }
 
+    if !video.subtitles.is_empty() {
+        let t_transcript = translations.transcript;
+        let subtitles_icon = icons::subtitles(None);
+        let toggle_transcript = formatdoc!(r#"
+            <button id="toggle_transcript">
+                {subtitles_icon} {t_transcript}
+            </button>
+        "#);
+
+        actions.push(toggle_transcript);
+    }
+
     let release_date = match video.release_date {
         Some(release_date) => {
             let formatted_date = localized_date_d_mmmm_yyyy(release_date, site.language.chrono_locale);
@@ -180,31 +192,72 @@ pub fn video_html(
         </div>
     "#);
 
-    let body = match playlist {
-        Some(playlist) => {
-            let playlist_context = TraversalStep::crumb_playlist(
-                playlist,
-                site,
-                Some(video)
-            );
+    let mut sidebar_active_panel = String::new();
+    let mut sidebar_panels = Vec::new();
+    let mut sidebar_postscript = String::new();
 
-            let playlist_site_path = playlist.site_path.normalized();
-            formatdoc!(r#"
-                <div class="layout_split">
-                    {video_content}
-                    <div class="sidebar">
-                        {playlist_context}
-                    </div>
-                    <script>
-                        if (sessionStorage.getItem('hyper8HidePlaylist:{playlist_site_path}') !== null) {{
-                            const sidebar = document.currentScript.previousElementSibling;
-                            sidebar.classList.add('hidden');
-                        }}
-                    </script>
-                </div>
-            "#)
+    if let Some(playlist) = playlist {
+        let playlist_context = TraversalStep::crumb_playlist(
+            playlist,
+            site,
+            Some(video)
+        );
+
+        sidebar_panels.push(playlist_context);
+
+        let playlist_site_path = playlist.site_path.normalized();
+
+        sidebar_active_panel = String::from(r#"data-panel="playlist""#);
+        sidebar_postscript = formatdoc!(r#"
+            <script>
+                if (sessionStorage.getItem('hyper8HidePlaylist:{playlist_site_path}') !== null) {{
+                    const sidebar = document.currentScript.previousElementSibling;
+                    delete sidebar.dataset.panel;
+                }}
+            </script>
+        "#);
+    }
+
+    if !video.subtitles.is_empty() {
+        let mut content = String::new();
+
+        for subtitle_file in &video.subtitles {
+            if let Ok(subtitles) = &subtitle_file.subtitles {
+                for subtitle in subtitles.iter() {
+                    let start = &subtitle.start;
+                    let text_escaped = html_escape_outside_attribute(&subtitle.text);
+                    let subtitle_html = formatdoc!("
+                        <strong>{start}</strong>: {text_escaped}<br>
+                    ");
+
+                    content.push_str(&subtitle_html);
+                }
+            }
         }
-        None => video_content
+
+        let transcript = formatdoc!(r#"
+            <div id="transcript">
+                {content}
+            </div>
+        "#);
+
+        sidebar_panels.push(transcript);
+    }
+
+    let body = if sidebar_panels.is_empty() {
+        video_content
+    } else {
+        let sidebar_panels = sidebar_panels.join("\n");
+
+        formatdoc!(r#"
+            <div class="layout_split">
+                {video_content}
+                <div class="sidebar" {sidebar_active_panel}>
+                    {sidebar_panels}
+                </div>
+                {sidebar_postscript}
+            </div>
+        "#)
     };
 
     let platform_integration = video.platform_integration();

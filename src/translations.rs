@@ -290,6 +290,7 @@ pub struct Translations {
     pub title_ascending: &'static str,
     pub title_descending: &'static str,
     pub title_or_permalink_needs_to_be_provided: &'static str,
+    pub transcript: &'static str,
     pub type_y_and_press_enter_to_confirm_anything_else_will_abort: &'static str,
     pub unlisted: &'static str,
     unsupported_file_extension_in_xxx: &'static str,

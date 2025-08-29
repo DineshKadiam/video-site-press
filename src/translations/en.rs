@@ -293,6 +293,7 @@ impl Translations {
         title_ascending: "Title Ascending (A, B, C)",
         title_descending: "Title Descending (Z, Y, X)",
         title_or_permalink_needs_to_be_provided: "Title or permalink needs to be provided",
+        transcript: "Transcript",
         type_y_and_press_enter_to_confirm_anything_else_will_abort: "Type 'y' and press Enter to confirm, anything else will abort.",
         unlisted: "Unlisted",
         unsupported_file_extension_in_xxx: "Unsupported file extension in {file_name}",
