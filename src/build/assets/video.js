@@ -494,42 +494,22 @@ window.addEventListener('keydown', event => {
         toggleVolume();
     } else if (event.key === 'ArrowLeft') {
         if (video.currentTime - 5 < 0) {
-            video.currentTime = 0;
+            seekTo(0);
         } else {
-            video.currentTime -= 5;
-        }
-
-        playbackUpdate();
-
-        // If we move the playback position backwards while we're on the outro
-        // screen we need to make sure the replay icon gets replaced by a
-        // play icon again.
-        if (playerWrapper.dataset.state === 'outro') {
-            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+            seekTo(video.currentTime - 5);
         }
     } else if (event.key === 'ArrowRight') {
         if (video.currentTime + 5 > duration) {
-            video.currentTime = duration;
+           seekTo(duration);
         } else {
-            video.currentTime += 5;
+            seekTo(video.currentTime + 5);
         }
-
-        playbackUpdate();
     }
 });
 
 timelineInput.addEventListener('input', _ => {
     playerWrapper.dataset.state = 'playing';
-    video.currentTime = timelineInput.value;
-
-    playbackUpdate();
-
-    // If we move the playback position backwards while we're on the outro
-    // screen we need to make sure the replay icon gets replaced by a
-    // play icon again.
-    if (playerWrapper.dataset.state === 'outro') {
-        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
-    }
+    seekTo(timelineInput.value);
 });
 
 const resizeObserver = new ResizeObserver(() => {
@@ -561,3 +541,82 @@ const resizeObserver = new ResizeObserver(() => {
 // Trigger version slice backdrop recomputation on resize (this also triggers
 // the first draw after the initial page load).
 resizeObserver.observe(playerWrapper);
+
+
+// Parses (and validates) a time parameter from the current url
+// (e.g. https://example.com/#time=4m12s) and returns it within an object
+// (e.g. { time: 252 }). Time can be specified as t=60 or time=60, but also
+// supports complex specifiers like t=1h, t=1m t=1s, t=1h1m, t=1h1m1s, etc.
+// In case of no known params being present or errors being encountered
+// (wrong syntax for params, out-of-bound timecodes, etc.) null is returned.
+function parseHashParams() {
+    if (location.hash.length === 0) return null;
+
+    const params = new URLSearchParams(location.hash.substring(1));
+
+    const timeParam = params.get('t') ?? params.get('time');
+
+    if (timeParam === null) return null;
+
+    const result = {};
+
+    // Match all of "1", "1s", "1m" "1h" "1m1s", "1h1m1s", "1h1s", "1h1m", etc.
+    const match = timeParam.match(/^(?:([0-9]+)h)?(?:([0-9]+)m)?(?:([0-9]+)s?)?$/);
+
+    if (match) {
+        result.time = 0;
+
+        const [_, h, m, s] = match;
+
+        if (h) { result.time += parseInt(h) * 3600; }
+        if (m) { result.time += parseInt(m) * 60; }
+        if (s) { result.time += parseInt(s); }
+
+        if (result.time > duration) {
+            return null;
+        }
+    } else {
+        return null;
+    }
+
+    return result;
+}
+
+// Seek the video to a new timecode, reflect the change in the
+// timeline bar, update the playback button icon if needed
+function seekTo(newTime) {
+    video.currentTime = newTime;
+    playbackUpdate();
+
+    // If we move the playback position backwards while we're on the outro
+    // screen we need to make sure the replay icon gets replaced by a
+    // play icon again.
+    if (playerWrapper.dataset.state === 'outro' &&
+        video.currentTime < duration - Number.EPSILON) {
+        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    }
+}
+
+// Seek to a given timecode if it was specified in a hash parameter
+const params = parseHashParams();
+if (params) {
+    if (params.time !== undefined) {
+        seekTo(params.time);
+    }
+}
+
+window.addEventListener('hashchange', event => {
+    const params = parseHashParams();
+    if (params) {
+        if (params.time !== undefined) {
+            seekTo(params.time);
+            playerWrapper.focus();
+        }
+
+        // TODO: This can be observed as a brief flicker in the address bar
+        // (when you look for it). Possibly look for a more elegant way in
+        // the future.
+        history.replaceState(null, '', ' ');
+        event.preventDefault();
+    }
+});
