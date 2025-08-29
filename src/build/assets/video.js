@@ -542,7 +542,6 @@ const resizeObserver = new ResizeObserver(() => {
 // the first draw after the initial page load).
 resizeObserver.observe(playerWrapper);
 
-
 // Parses (and validates) a time parameter from the current url
 // (e.g. https://example.com/#time=4m12s) and returns it within an object
 // (e.g. { time: 252 }). Time can be specified as t=60 or time=60, but also
@@ -560,17 +559,42 @@ function parseHashParams() {
 
     const result = {};
 
-    // Match all of "1", "1s", "1m" "1h" "1m1s", "1h1m1s", "1h1s", "1h1m", etc.
-    const match = timeParam.match(/^(?:([0-9]+)h)?(?:([0-9]+)m)?(?:([0-9]+)s?)?$/);
+    // Match all of "", "1", "1ms", "1s", "1m" "1h" "1m1s", "1h1m1s", "1h1s", "1h1m", etc.
+    const match = timeParam.match(/^(?:([0-9]+)h)?(?:([0-9]+)m)?(?:([0-9]+)s)?(?:([0-9]+)ms?)?(?:([0-9]+))?$/);
 
     if (match) {
         result.time = 0;
 
-        const [_, h, m, s] = match;
+        // (h)our
+        // (m)inute
+        // (s)econd
+        // (m…)illi(…s)econds
+        // (u)nit-less
+        const [_, h, m, s, ms, u] = match;
 
         if (h) { result.time += parseInt(h) * 3600; }
         if (m) { result.time += parseInt(m) * 60; }
         if (s) { result.time += parseInt(s); }
+        if (ms) { result.time += parseInt(ms) / 1000; }
+
+        if (u) {
+            if (ms) {
+                // A unit-less number given after milliseconds is nonsensical
+                return null;
+            } else if (s) {
+                // A unit-less number given after seconds is interpreted as milliseconds
+                result.time += parseInt(u) / 1000;
+            } else if (m) {
+                // A unit-less number given after minutes is interpreted as seconds
+                result.time += parseInt(u);
+            } else if (h) {
+                // A unit-less number given after the hour is interpreted as minutes
+                result.time += parseInt(u) * 60;
+            } else {
+                // A unit-less number given on its own is interpreted as seconds
+                result.time += parseInt(u);
+            }
+        }
 
         if (result.time > duration) {
             return null;
@@ -584,16 +608,20 @@ function parseHashParams() {
 
 // Seek the video to a new timecode, reflect the change in the
 // timeline bar, update the playback button icon if needed
-function seekTo(newTime) {
+function seekTo(newTime, andPlay = false) {
     video.currentTime = newTime;
     playbackUpdate();
 
-    // If we move the playback position backwards while we're on the outro
-    // screen we need to make sure the replay icon gets replaced by a
-    // play icon again.
-    if (playerWrapper.dataset.state === 'outro' &&
-        video.currentTime < duration - Number.EPSILON) {
-        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    if (andPlay && video.paused) {
+        togglePlayback();
+    } else {
+        // If we move the playback position backwards while we're on the outro
+        // screen we need to make sure the replay icon gets replaced by a
+        // play icon again.
+        if (playerWrapper.dataset.state === 'outro' &&
+            video.currentTime < duration - Number.EPSILON) {
+            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+        }
     }
 }
 
@@ -609,7 +637,7 @@ window.addEventListener('hashchange', event => {
     const params = parseHashParams();
     if (params) {
         if (params.time !== undefined) {
-            seekTo(params.time);
+            seekTo(params.time, true);
             playerWrapper.focus();
         }
 

@@ -7,9 +7,10 @@ use std::path::{Path, PathBuf};
 use language_tags::LanguageTag;
 use rsubs_lib::{SRT, VTT};
 
+/// Represents a single "line" in a subtitles file
 #[derive(Clone, Debug)]
 pub struct Subtitle {
-    pub start: String,
+    pub start: Timecode,
     pub text: String,
 }
 
@@ -26,8 +27,16 @@ pub struct SubtitleFile {
     pub subtitles: Result<Vec<Subtitle>, String>
 }
 
+#[derive(Clone, Debug)]
+pub struct Timecode {
+    pub hour: u8,
+    pub millisecond: u16,
+    pub minute: u8,
+    pub second: u8
+}
+
 impl Subtitle {
-    pub fn new(start: String, text: String) -> Subtitle {
+    pub fn new(start: Timecode, text: String) -> Subtitle {
         Subtitle {
             start,
             text
@@ -90,15 +99,12 @@ impl SubtitleFile {
                         .lines
                         .iter()
                         .map(|vtt_line| {
-                            let hour = vtt_line.start.hour();
-                            let minute = vtt_line.start.minute();
-                            let second = vtt_line.start.second();
-
-                            let start = if hour > 0 {
-                                format!("{hour:02}:{minute:02}:{second:02}")
-                            } else {
-                                format!("{minute:02}:{second:02}")
-                            };
+                            let start = Timecode::new(
+                                vtt_line.start.hour(),
+                                vtt_line.start.millisecond(),
+                                vtt_line.start.minute(),
+                                vtt_line.start.second()
+                            );
 
                             let text = vtt_line.text.clone();
 
@@ -117,15 +123,12 @@ impl SubtitleFile {
                         .lines
                         .iter()
                         .map(|srt_line| {
-                            let hour = srt_line.start.hour();
-                            let minute = srt_line.start.minute();
-                            let second = srt_line.start.second();
-
-                            let start = if hour > 0 {
-                                format!("{hour:02}:{minute:02}:{second:02}")
-                            } else {
-                                format!("{minute:02}:{second:02}")
-                            };
+                            let start = Timecode::new(
+                                srt_line.start.hour(),
+                                srt_line.start.millisecond(),
+                                srt_line.start.minute(),
+                                srt_line.start.second()
+                            );
 
                             let text = srt_line.text.clone();
 
@@ -139,6 +142,72 @@ impl SubtitleFile {
             }
         } else {
             unreachable!()
+        }
+    }
+}
+
+impl Timecode {
+    // Output a display version of the timecode, such as for
+    // instance "13:02", "00:23" or "1:33:29". The milliseconds
+    // are always omitted for this.
+    pub fn format_display(&self) -> String {
+        let hour = self.hour;
+        let minute = self.minute;
+        let second = self.second;
+
+        if hour > 0 {
+            format!("{hour}:{minute:02}:{second:02}")
+        } else {
+            format!("{minute:02}:{second:02}")
+        }
+    }
+
+    // Outputs a hash-parameter based link to the timecode like for instance
+    // "#time=1h13s", "#time=14m313ms", or "#time=0s". This includes milliseconds,
+    // because they can make a noticeable difference when jumping around in
+    // subtitled narration.
+    pub fn format_link(&self) -> String {
+        let mut timecode = String::new();
+
+        let hour = self.hour;
+        let minute = self.minute;
+        let millisecond = self.millisecond;
+        let second = self.second;
+
+        if hour > 0 {
+            timecode.push_str(&format!("{hour}h"));
+        }
+
+        if minute > 0 {
+            timecode.push_str(&format!("{minute}m"));
+        }
+
+        if second > 0 {
+            timecode.push_str(&format!("{second}s"));
+        }
+
+        if millisecond > 0 {
+            timecode.push_str(&format!("{millisecond}ms"));
+        }
+
+        if timecode.is_empty() {
+            timecode.push_str("0s");
+        }
+
+        format!("#time={timecode}")
+    }
+
+    pub fn new(
+        hour: u8,
+        millisecond: u16,
+        minute: u8,
+        second: u8
+    ) -> Timecode {
+        Timecode {
+            hour,
+            millisecond,
+            minute,
+            second
         }
     }
 }

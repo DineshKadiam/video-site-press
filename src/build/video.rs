@@ -224,11 +224,12 @@ pub fn video_html(
         for subtitle_file in &video.subtitles {
             if let Ok(subtitles) = &subtitle_file.subtitles {
                 for subtitle in subtitles.iter() {
-                    let start = &subtitle.start;
+                    let start_display = subtitle.start.format_display();
+                    let start_link = subtitle.start.format_link();
                     let text_escaped = html_escape_outside_attribute(&subtitle.text);
-                    let subtitle_html = formatdoc!("
-                        <strong>{start}</strong>: {text_escaped}<br>
-                    ");
+                    let subtitle_html = formatdoc!(r#"
+                        <a href="{start_link}">{start_display}</a> {text_escaped}<br>
+                    "#);
 
                     content.push_str(&subtitle_html);
                 }
