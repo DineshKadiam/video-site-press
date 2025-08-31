@@ -228,7 +228,10 @@ pub fn video_html(
                     let start_link = subtitle.start.format_link();
                     let text_escaped = html_escape_outside_attribute(&subtitle.text);
                     let subtitle_html = formatdoc!(r#"
-                        <a href="{start_link}">{start_display}</a> {text_escaped}<br>
+                        <div>
+                            <a href="{start_link}">{start_display}</a>
+                            <span>{text_escaped}</span>
+                        </div>
                     "#);
 
                     content.push_str(&subtitle_html);
@@ -236,9 +239,13 @@ pub fn video_html(
             }
         }
 
+        let t_filter = translations.filter;
         let transcript = formatdoc!(r#"
-            <div id="transcript">
-                {content}
+            <div class="transcript">
+                <input autocomplete="off" placeholder="{t_filter}" type="search">
+                <div class="entries">
+                    {content}
+                </div>
             </div>
         "#);
 

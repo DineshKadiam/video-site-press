@@ -1,6 +1,7 @@
 const chevronRightIcon = document.querySelector('#chevron_right_icon').content;
 
 const browseButton = document.querySelector('button.browse');
+const filterTranscriptInput = document.querySelector('.transcript input');
 
 const shortcutsButton = document.querySelector('button.shortcuts');
 const shortcutsPanel = document.querySelector('dialog.shortcuts');
@@ -441,7 +442,8 @@ shortcutsButton.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', event => {
-    if (event.target === searchInput) return;
+    if (event.target === searchInput ||
+        event.target === filterTranscriptInput) return;
 
     if (event.key === 'b' || event.key === 'B') {
         browseButton.focus();

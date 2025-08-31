@@ -9,6 +9,7 @@ const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
 const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
 
 const cycleVersionButton = document.querySelector('#cycle_versions');
+const filterTranscriptInput = document.querySelector('.transcript input');
 const playbackCycleVolumeButton = document.querySelector('.left_playback_controls .cycle_volume');
 const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
 const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
@@ -376,6 +377,27 @@ if (playbackSubtitlesSelectorControl) {
     playbackCycleSubtitlesButton.addEventListener('click', cycleSubtitles);
 }
 
+// Filter transcript handler
+
+filterTranscriptInput.addEventListener('input', () => {
+    const query = filterTranscriptInput.value.trim();
+
+    const entries = document.querySelector('.transcript .entries')
+
+    if (query.length) {
+        const regexp = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+        for (const entry of entries.children) {
+            const display = regexp.test(entry.children[1].textContent);
+            entry.style.setProperty('display', display ? null : 'none');
+        }
+    } else {
+        for (const entry of entries.children) {
+            entry.style.setProperty('display', null);
+        }
+    }
+});
+
 // Speed button handlers
 
 function updateSpeed() {
@@ -483,7 +505,8 @@ video.addEventListener('ended', () => {
 video.addEventListener('click', togglePlayback);
 
 window.addEventListener('keydown', event => {
-    if (searchContainer?.contains(event.target)) return;
+    if (searchContainer?.contains(event.target) ||
+        event.target === filterTranscriptInput) return;
 
     if (event.key === ' ') {
         togglePlayback();
