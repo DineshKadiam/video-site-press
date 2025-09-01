@@ -29,7 +29,17 @@ const video = document.querySelector('video');
 
 // Before we even begin playback video.duration is NaN, so we use our own data throughout
 const duration = parseFloat(video.dataset.duration);
+
 let playbackUpdateInterval;
+
+// We internally manage speed as (integer) percent values to avoid having to
+// deal with float rounding issues.
+let speed = 100;
+
+const volume = {
+    interactive: false,
+    value: 1
+};
 
 function formatTime(time) {
     const timeFloored = Math.floor(time);
@@ -49,43 +59,37 @@ function formatTime(time) {
     }
 }
 
+function initializeVolume() {
+    const persistedVolume = localStorage.getItem('hyper8Volume');
+    if (persistedVolume !== null) {
+        volume.value = parseFloat(persistedVolume);
+        updateVolume();
+    }
 
-// We internally manage speed as (integer) percent values to avoid having to
-// deal with float rounding issues.
-let speed = 100;
+    // When a page loads we start with the assumption that volume is read-only,
+    // but immediately run an asynchronous routine to determine if volume is
+    // adjustable - if it is we register this in our global volume object and
+    // restore any fine-grained volume adjustments that we previously persisted.
+    // Also, by the time the visitor interacts with the volume control we know
+    // whether to offer fine-grained volume control or just mute/unmute
+    // functionality. The reason for this quirky stuff is that Apple's iOS
+    // devices intentionally don't allow application-level volume control and
+    // therefore the web audio API on these devices features a read-only volume
+    // property on audio elements (the muted property however still works there
+    // and we use it).
+    let volumeProbe = new Audio();
+    const volumeProbeHandler = () => {
+        volume.interactive = true;
+        updateVolume();
 
-const volume = {
-    interactive: false,
-    value: 1
-};
-
-const persistedVolume = localStorage.getItem('hyper8Volume');
-if (persistedVolume !== null) {
-    volume.value = parseFloat(persistedVolume);
-    updateVolume();
+        volumeProbe.removeEventListener('volumechange', volumeProbeHandler);
+        volumeProbe = null;
+    };
+    volumeProbe.addEventListener('volumechange', volumeProbeHandler);
+    volumeProbe.volume = 0.123;
 }
 
-// When a page loads we start with the assumption that volume is read-only,
-// but immediately run an asynchronous routine to determine if volume is
-// adjustable - if it is we register this in our global volume object and
-// restore any fine-grained volume adjustments that we previously persisted.
-// Also, by the time the visitor interacts with the volume control we know
-// whether to offer fine-grained volume control or just mute/unmute
-// functionality. The reason for this quirky stuff is that Apple's iOS
-// devices intentionally don't allow application-level volume control and
-// therefore the web audio API on these devices features a read-only volume
-// property on audio elements (the muted property however still works there
-// and we use it).
-let volumeProbe = new Audio();
-const volumeProbeHandler = () => {
-    volume.interactive = true;
-    updateVolume();
-
-    volumeProbe.removeEventListener('volumechange', volumeProbeHandler);
-    volumeProbe = null;
-};
-volumeProbe.addEventListener('volumechange', volumeProbeHandler);
-volumeProbe.volume = 0.123;
+initializeVolume();
 
 function playbackUpdate() {
     const time = video.currentTime;
