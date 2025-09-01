@@ -96,7 +96,7 @@ impl Layout {
 
         let video_script = if self.video_script {
             let video_js_asset_hash = AssetHashes::VIDEO_JS;
-            format!(r#"<script defer src="{root_prefix}video.js?{video_js_asset_hash}" type="module"></script>"#)
+            format!(r#"<script defer src="{root_prefix}video.js?{video_js_asset_hash}"></script>"#)
         } else {
             String::new()
         };

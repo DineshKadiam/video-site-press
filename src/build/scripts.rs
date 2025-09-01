@@ -24,24 +24,24 @@ use crate::util::{
 use super::AssetHashes;
 
 pub fn generate_adaptive_theme_js(context: &Context) {
-    fs::write(
-        context.build_dir.join("adaptive_theme.js"),
-        include_str!("assets/adaptive_theme.js")
-    ).unwrap();
+    let js = scope_js(include_str!("assets/adaptive_theme.js"));
+    let path = context.build_dir.join("adaptive_theme.js");
+
+    fs::write(path, js).unwrap();
 }
 
 pub fn generate_clipboard_js(context: &Context) {
-    fs::write(
-        context.build_dir.join("clipboard.js"),
-        include_str!("assets/clipboard.js")
-    ).unwrap();
+    let js = scope_js(include_str!("assets/clipboard.js"));
+    let path = context.build_dir.join("clipboard.js");
+
+    fs::write(path, js).unwrap();
 }
 
 pub fn generate_embed_js(context: &Context) {
-    fs::write(
-        context.build_dir.join("embed.js"),
-        include_str!("assets/embed.js")
-    ).unwrap();
+    let js = scope_js(include_str!("assets/embed.js"));
+    let path = context.build_dir.join("embed.js");
+
+    fs::write(path, js).unwrap();
 }
 
 pub fn generate_navigation_js(
@@ -166,32 +166,31 @@ pub fn generate_navigation_js(
         let t_showing_xxx_results_for_xxx = js_escape_inside_single_quoted_string(translations.showing_xxx_results_for_xxx);
         let t_xxx_videos = js_escape_inside_single_quoted_string(translations.xxx_videos);
         let mut js = formatdoc!(r#"
-            const NAVIGATION_JS_T = {{
+            const siteContent = {site_content};
+            const t = {{
                 collapse: '{t_collapse}',
                 expand: '{t_expand}',
                 nothingFoundForXxx: query => '{t_nothing_found_for_xxx}'.replace('{{query}}', query),
                 showingXxxResultsForXxx: (count, query) => '{t_showing_xxx_results_for_xxx}'.replace('{{count}}', count).replace('{{query}}', query),
                 xxxVideos: count => '{t_xxx_videos}'.replace('{{count}}', count)
             }};
-            const siteContent = {site_content};
         "#);
 
-        js.push_str(include_str!("assets/navigation.js"));
+        js.push_str(&scope_js(include_str!("assets/navigation.js")));
 
         asset_hashes.navigation_js = Some(url_safe_hash_base64(&js));
 
-        fs::write(
-            context.build_dir.join("navigation.js"),
-            js
-        ).unwrap();
+        let path = context.build_dir.join("navigation.js");
+
+        fs::write(path, js).unwrap();
     }
 }
 
 pub fn generate_video_js(context: &Context) {
-    fs::write(
-        context.build_dir.join("video.js"),
-        include_str!("assets/video.js")
-    ).unwrap();
+    let js = scope_js(include_str!("assets/video.js"));
+    let path = context.build_dir.join("video.js");
+
+    fs::write(path, js).unwrap();
 }
 
 /// Escapes `'` as `\'` and `\` as `\\`
@@ -199,4 +198,15 @@ fn js_escape_inside_single_quoted_string(string: &str) -> String {
     string
         .replace('\\', "\\\\")
         .replace('\'', "\\'")
+}
+
+/// We do not use ESM (modules) on generated Hyper 8 sites for any of
+/// the scripts, because doing so would take away the possibility to
+/// open and use Hyper 8 sites directly from disk (file:// protocol).
+/// As a consequence, all our scripts operate in the global (window)
+/// scope, and we need to wrap them in IIFEs to avoid potential name
+/// collisions (e.g. two scripts might define "const exampleButton = (...)"
+/// because they both need to reference the same button).
+pub fn scope_js(js: &str) -> String {
+    format!("(()=>{{{js}}})();")
 }

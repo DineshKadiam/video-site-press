@@ -63,7 +63,7 @@ pub fn embed_layout(
             {meta_generator}
             {meta_robots_noindex_nofollow}
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <script defer src="{root_prefix}embed.js?{embed_js_asset_hash}" type="module"></script>
+            <script defer src="{root_prefix}embed.js?{embed_js_asset_hash}"></script>
             <link rel="stylesheet" href="{root_prefix}embed.css?{embed_css_asset_hash}">
         </head>
     "#);

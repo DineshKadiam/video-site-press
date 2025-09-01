@@ -155,14 +155,14 @@ function initializeSiteTree() {
         // in the collection or playlist, we display the number of videos
         if (container.videos.length || !container.containers?.length) {
             const spanInfo = document.createElement('span');
-            spanInfo.textContent = NAVIGATION_JS_T.xxxVideos(container.videos.length);
+            spanInfo.textContent = t.xxxVideos(container.videos.length);
             container.element.appendChild(spanInfo);
         }
 
         if (container.videos.length) {
             container.expandToggle.appendChild(chevronRightIcon.cloneNode(true));
-            container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-            container.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+            container.expandToggle.setAttribute('aria-label', t.expand);
+            container.expandToggle.setAttribute('title', t.expand);
             container.expandToggle.addEventListener('click', event => {
                 collapseExpand(container.element);
                 event.preventDefault();
@@ -213,8 +213,8 @@ function toggleBrowse() {
 
         container.element.classList.add('visible');
         container.element.classList.remove('expanded');
-        container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-        container.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+        container.expandToggle.setAttribute('aria-label', t.expand);
+        container.expandToggle.setAttribute('title', t.expand);
     }
 
     function updateVideo(video) {
@@ -235,7 +235,7 @@ function toggleBrowse() {
         siteTreeElements.dataset.mode = 'browse';
 
         // TODO: Do we need to announce the browser opening with a custom status/text?
-        // siteTreeStatus.setAttribute('aria-label', NAVIGATION_JS_T.showingXxxResultsForXxx(shown, query));
+        // siteTreeStatus.setAttribute('aria-label', t.showingXxxResultsForXxx(shown, query));
     }
 }
 
@@ -266,8 +266,8 @@ function updateSearch() {
             }
 
             container.element.classList.remove('expanded');
-            container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.collapse);
-            container.expandToggle.setAttribute('title', NAVIGATION_JS_T.collapse);
+            container.expandToggle.setAttribute('aria-label', t.collapse);
+            container.expandToggle.setAttribute('title', t.collapse);
             container.element.classList.toggle('visible', display);
         }
 
@@ -284,10 +284,10 @@ function updateSearch() {
         if (shown === 0) {
             siteTreeElements.style.setProperty('display', 'none');
             siteTreeStatus.removeAttribute('aria-label');
-            siteTreeStatus.textContent = NAVIGATION_JS_T.nothingFoundForXxx(query);
+            siteTreeStatus.textContent = t.nothingFoundForXxx(query);
         } else {
             siteTreeElements.style.setProperty('display', null);
-            siteTreeStatus.setAttribute('aria-label', NAVIGATION_JS_T.showingXxxResultsForXxx(shown, query));
+            siteTreeStatus.setAttribute('aria-label', t.showingXxxResultsForXxx(shown, query));
             siteTreeStatus.textContent = '';
         }
 
@@ -404,7 +404,7 @@ function collapseExpand(siteTreeElement, expand = undefined) {
             }
 
             container.element.classList.toggle('expanded', expand);
-            const expandOrCollapse = NAVIGATION_JS_T[expand ? 'collapse' : 'expand'];
+            const expandOrCollapse = t[expand ? 'collapse' : 'expand'];
             container.expandToggle.setAttribute('aria-label', expandOrCollapse);
             container.expandToggle.setAttribute('title', expandOrCollapse);
 
@@ -414,8 +414,8 @@ function collapseExpand(siteTreeElement, expand = undefined) {
                 video.element.classList.remove('visible');
             }
             container.element.classList.remove('expanded');
-            container.expandToggle.setAttribute('aria-label', NAVIGATION_JS_T.expand);
-            container.expandToggle.setAttribute('title', NAVIGATION_JS_T.expand);
+            container.expandToggle.setAttribute('aria-label', t.expand);
+            container.expandToggle.setAttribute('title', t.expand);
             container.element.focus();
 
             return true;
