@@ -500,6 +500,7 @@ select {
     color: var(--fg-2);
     font-size: 1rem;
     padding: .3rem .6rem;
+    -webkit-appearance: none;
 }
 .splash {
     background: var(--bg-1);
@@ -509,7 +510,6 @@ select {
     max-width: 32rem;
     min-height: 16rem;
     pointer-events: initial;
-    position: fixed;
     z-index: 13;
 }
 .splash .close {
