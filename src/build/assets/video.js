@@ -19,6 +19,7 @@ const replayButton = document.querySelector('#replay');
 const searchContainer = document.querySelector('.search');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
+const timeline = document.querySelector('.timeline');
 const timelineInput = document.querySelector('.timeline input');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
 const togglePlaylistButton = document.querySelector('#toggle_playlist');
@@ -541,9 +542,22 @@ window.addEventListener('keydown', event => {
     }
 });
 
-timelineInput.addEventListener('input', _ => {
+timeline.addEventListener('click', () => {
     playerWrapper.dataset.state = 'playing';
-    seekTo(timelineInput.value);
+    const bounds = timeline.getBoundingClientRect();
+    const factor = (event.clientX - bounds.x) / bounds.width;
+    const newTime = factor * timelineInput.max;
+    seekTo(newTime);
+    timeline.classList.add('focus_from_click');
+    timelineInput.focus();
+});
+
+timelineInput.addEventListener('blur', () => {
+    timeline.classList.remove('focus', 'focus_from_click');
+});
+
+timelineInput.addEventListener('focus', () => {
+    timeline.classList.add('focus');
 });
 
 const resizeObserver = new ResizeObserver(() => {
