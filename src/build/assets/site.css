@@ -275,6 +275,7 @@ img {
     display: block;
     max-width: 100%;
 }
+input[type="search"]::-webkit-search-cancel-button { display: none; }
 .large_font { font-size: 1.6rem; }
 .layout {
     display: flex;
