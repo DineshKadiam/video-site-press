@@ -520,20 +520,24 @@ window.addEventListener('keydown', event => {
         event.preventDefault();
     } else if (event.key === 'f' || event.key === 'F') {
         toggleFullscreen();
+        event.preventDefault();
     } else if (event.key === 'm' || event.key === 'M') {
         toggleVolume();
+        event.preventDefault();
     } else if (event.key === 'ArrowLeft') {
         if (video.currentTime - 5 < 0) {
             seekTo(0);
         } else {
             seekTo(video.currentTime - 5);
         }
+        event.preventDefault();
     } else if (event.key === 'ArrowRight') {
         if (video.currentTime + 5 > duration) {
            seekTo(duration);
         } else {
             seekTo(video.currentTime + 5);
         }
+        event.preventDefault();
     }
 });
 
