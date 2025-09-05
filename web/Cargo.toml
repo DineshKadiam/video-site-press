@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2024-2025 Simon Repp
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[package]
+edition.workspace = true
+name = "hyper8-web"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+actix-files.workspace = true
+actix-multipart.workspace = true
+actix-session.workspace = true
+actix-web.workspace = true
+base64.workspace = true
+bincode.workspace = true
+chrono.workspace = true
+futures-util.workspace = true
+hyper8-core.path = "../core"
+hyper8-icons.path = "../icons"
+hyper8-translations.path = "../translations"
+hyper8-version.path = "../version"
+indoc.workspace = true
+language-tags.workspace = true
+serde.workspace = true
+serde_derive.workspace = true
+serde_json.workspace = true
+slug.workspace = true
+tokio.workspace = true
+url.workspace = true
+urlencoding.workspace = true
+webbrowser.workspace = true

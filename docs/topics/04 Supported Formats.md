@@ -20,13 +20,7 @@ The video container formats Hyper 8 currently recognizes are:
 - mkv
 - mov
 
-<!--
 ## Audio
-
-TODO: Implement
-**Heads up**: Although Hyper 8 already recognizes the listed audio formats and
-registers your audio files, implementation and transcoding of audio-file only playback is
-not yet implemented, i.e. this particular section still only describes the intent.
 
 Each video can also be accompanied by audio files, so that people
 can play back only the audio if they would rather do that to save
@@ -36,6 +30,7 @@ to transcode to ubiquitously supported formats for you.
 
 The audio formats Hyper 8 currently recognizes are:
 
+- aac
 - aiff
 - alac
 - flac
@@ -43,7 +38,6 @@ The audio formats Hyper 8 currently recognizes are:
 - ogg
 - opus
 - wav
--->
 
 ## Images
 

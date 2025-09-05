@@ -36,7 +36,7 @@ cd hyper8
 Now run this command:
 
 ```bash
-cargo install --locked --path .
+cargo install --locked --path cli
 ```
 
 ## Uninstalling

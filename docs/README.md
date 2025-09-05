@@ -11,7 +11,11 @@ specifying the folder to which the docs should be written.
 **Take extra care specifying the target directory path, this directory gets
 wiped and rewritten in the process.**
 
-`cargo run -- /path/to/docs`
+From the root of the hyper8 workspace run this command:
+
+```bash
+cargo run --package hyper8-docs -- /path/to/docs
+```
 
 ## Check internal links/references
 

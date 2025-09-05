@@ -1,0 +1,8 @@
+[package]
+edition.workspace = true
+name = "hyper8-translations"
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+indoc.workspace = true

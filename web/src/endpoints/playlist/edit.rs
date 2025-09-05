@@ -1,0 +1,384 @@
+// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::sync::Arc;
+
+use actix_session::Session as ActixSession;
+use actix_web::HttpResponse;
+use actix_web::web::{Data, Path as ActixPath};
+use indoc::formatdoc;
+
+use hyper8_core::{
+    PlatformIntegration,
+    Playlist,
+    SitePath
+};
+
+use crate::{
+    Checkbox,
+    Context,
+    Field,
+    Input,
+    Location,
+    Select,
+    Session,
+    Textarea
+};
+use crate::actix::html_response;
+use crate::routes;
+use crate::widgets::{
+    layout,
+    not_found,
+    resource_actions,
+    upload_widget
+};
+
+pub enum PlaylistFormFeedback<'a> {
+    CreateVideo {
+        slug: Field,
+        title: Field
+    },
+    Update {
+        copy_link: Option<bool>,
+        description: &'a str,
+        download: Option<bool>,
+        embedding: Option<bool>,
+        feeds: Option<bool>,
+        offline: bool,
+        order: &'a str,
+        platform_integration: Option<PlatformIntegration>,
+        sort_number: Field,
+        title: Field,
+        unlisted: bool
+    }
+}
+
+pub async fn edit(
+    context: Data<Arc<Context>>,
+    session: ActixSession,
+    site_path: ActixPath<SitePath>
+) -> HttpResponse {
+    let session = Session::new(&session);
+
+    match context.get_playlist(&site_path) {
+        Some(playlist) => edit_page(&context, None, &playlist, &session),
+        None => not_found(&context, &session, &site_path)
+    }
+}
+
+pub fn edit_page(
+    context: &Context,
+    form_feedback: Option<PlaylistFormFeedback>,
+    playlist: &Playlist,
+    session: &Session
+) -> HttpResponse {
+    let site = context.get_site();
+    let translations = &session.language.translations;
+
+    let t_not_saved = translations.not_saved;
+
+    let mut errors = String::new();
+
+    for dir_error in &playlist.dir_errors {
+        errors.push_str(&format!(r#"<pre class="error">{dir_error}</pre>"#));
+    }
+
+    for manifest_error in &playlist.manifest_errors {
+        errors.push_str(&format!(r#"<pre class="error">{manifest_error}</pre>"#));
+    }
+
+    let mut input_offline = Checkbox::new("offline", translations.offline);
+    let mut input_sort_number = Input::number("sort_number", translations.sort_number);
+    let mut input_title = Input::text("title", translations.title);
+    let mut input_unlisted = Checkbox::new("unlisted", translations.unlisted);
+    let mut select_copy_link = Select::new("copy_link", translations.copy_link);
+    let mut select_download = Select::new("download", translations.downloads);
+    let mut select_embedding = Select::new("embedding", translations.embedding);
+    let mut select_feeds = Select::new("feeds", translations.feeds);
+    let mut select_order = Select::new("order", translations.video_order);
+    let mut select_platform_integration = Select::new("platform_integration", translations.automatic_link_previews_and_content_embedding_on_platforms);
+    let mut textarea_description = Textarea::markdown_subset(translations, "description", translations.description);
+
+    let t_disabled = translations.disabled;
+    let t_enabled = translations.enabled;
+
+    let t_default_or_inherited = match playlist.site_path.is_root_path() {
+        true => translations.default,
+        false => translations.inherited
+    };
+
+    let t_copy_link_disabled_enabled = if playlist.copy_link_inherited() { t_enabled } else { t_disabled };
+    select_copy_link.option("", format!("{t_copy_link_disabled_enabled} ({t_default_or_inherited})"));
+    select_copy_link.option("enabled", t_enabled);
+    select_copy_link.option("disabled", t_disabled);
+
+    let t_download_disabled_enabled = if playlist.download_inherited() { t_enabled } else { t_disabled };
+    select_download.option("", format!("{t_download_disabled_enabled} ({t_default_or_inherited})"));
+    select_download.option("enabled", t_enabled);
+    select_download.option("disabled", t_disabled);
+
+    let t_embedding_disabled_enabled = if playlist.embedding_inherited() { t_enabled } else { t_disabled };
+    select_embedding.option("", format!("{t_embedding_disabled_enabled} ({t_default_or_inherited})"));
+    select_embedding.option("enabled", t_enabled);
+    select_embedding.option("disabled", t_disabled);
+
+    let t_feeds_disabled_enabled = if playlist.feeds_inherited() { t_enabled } else { t_disabled };
+    select_feeds.option("", format!("{t_feeds_disabled_enabled} ({t_default_or_inherited})"));
+    select_feeds.option("enabled", t_enabled);
+    select_feeds.option("disabled", t_disabled);
+
+    select_order.option("default", translations.default_sort_number_or_release_date_ascending);
+    select_order.option("release_date_asc", translations.release_date_ascending);
+    select_order.option("release_date_desc", translations.release_date_descending);
+    select_order.option("sort_number_asc", translations.sort_number_ascending);
+    select_order.option("sort_number_desc", translations.sort_number_descending);
+    select_order.option("title_asc", translations.title_ascending);
+    select_order.option("title_desc", translations.title_descending);
+
+    let platform_integration_inherited = playlist.platform_integration_inherited();
+    let t_platform_integration_inherited_label = platform_integration_inherited.label(translations);
+    select_platform_integration.option("", format!("{t_platform_integration_inherited_label} ({t_default_or_inherited})"));
+    select_platform_integration.option("disabled", t_disabled);
+    select_platform_integration.option("link_previews", translations.link_previews_only);
+    select_platform_integration.option("content_embeds", translations.link_previews_and_content_embeds);
+
+    textarea_description.id("playlist_description");
+
+    if site.base_url.is_none() {
+        let failure_icon = hyper8_icons::failure(translations.warning);
+        let t_public_address_not_configured_text = translations.public_address_not_configured_text;
+        let hint = format!("{failure_icon} {t_public_address_not_configured_text}");
+
+        select_embedding.hint(&hint);
+        select_feeds.hint(&hint);
+        select_platform_integration.hint(hint);
+    }
+
+    let feedback_update = if let Some(PlaylistFormFeedback::Update {
+        copy_link,
+        description,
+        download,
+        embedding,
+        feeds,
+        offline,
+        order,
+        platform_integration,
+        sort_number,
+        title,
+        unlisted
+    }) = &form_feedback {
+        let copy_link_value = match copy_link {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let download_value = match download {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let embedding_value = match embedding {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let feeds_value = match feeds {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let platform_integration_value = match platform_integration {
+            Some(platform_integration) => platform_integration.key(),
+            None => ""
+        };
+
+        input_offline.checked(*offline);
+        input_sort_number.validated_value(sort_number);
+        input_title.validated_value(title);
+        input_unlisted.checked(*unlisted);
+        select_copy_link.selected(copy_link_value);
+        select_download.selected(download_value);
+        select_embedding.selected(embedding_value);
+        select_feeds.selected(feeds_value);
+        select_order.selected(order);
+        select_platform_integration.selected(platform_integration_value);
+        textarea_description.value(description);
+
+        format!(r#"<span class="feedback">{t_not_saved}</span>"#)
+    } else {
+        let copy_link = match playlist.copy_link_local() {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let download = match playlist.download_local() {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let embedding = match playlist.embedding_local() {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let feeds = match playlist.feeds_local() {
+            Some(true) => "enabled",
+            Some(false) => "disabled",
+            None => ""
+        };
+
+        let platform_integration = match playlist.platform_integration_local() {
+            Some(platform_integration) => platform_integration.key(),
+            None => ""
+        };
+
+        let sort_number = playlist.sort_number.as_ref().map(|number| number.to_string());
+
+        input_offline.checked(playlist.offline_local());
+        input_sort_number.value_option(&sort_number);
+        input_title.value_option(&playlist.title);
+        input_unlisted.checked(playlist.unlisted_local());
+        select_copy_link.selected(copy_link);
+        select_download.selected(download);
+        select_embedding.selected(embedding);
+        select_feeds.selected(feeds);
+        select_order.selected(playlist.order.key());
+        select_platform_integration.selected(platform_integration);
+        textarea_description.value_option(&playlist.description);
+
+        String::new()
+    };
+
+    let t_upload_video_or_audio_file = translations.upload_video_or_audio_file;
+    let upload_audio_video_url = routes::upload_audio_video(&playlist.site_path);
+    let video_upload_button = upload_widget(&upload_audio_video_url, t_upload_video_or_audio_file);
+
+    let input_unlisted_conditionally_hidden = if !playlist.site_path.is_root_path() {
+        input_unlisted.to_string()
+    } else if playlist.unlisted_local() {
+        String::from(r#"<input name="unlisted" type="hidden" value="checked">"#)
+    } else {
+        String::new()
+    };
+
+    let new_video_form = {
+        let mut input_slug_create_video = Input::permalink(
+            "slug",
+            &playlist.site_path,
+            &site,
+            translations
+        );
+        let mut input_title_create_video = Input::text("title", translations.title);
+
+        // TODO: Needs custom client-side validation - either title or slug must be given.
+        input_slug_create_video.id("slug_video");
+        input_title_create_video.id("title_video");
+
+        let feedback = if let Some(PlaylistFormFeedback::CreateVideo { slug, title }) = &form_feedback {
+            input_slug_create_video.validated_value(slug);
+            input_title_create_video.validated_value(title);
+            format!(r#"<span class="feedback">{t_not_saved}</span>"#)
+        } else {
+            String::new()
+        };
+
+        let t_create_video = translations.create_video;
+        let t_new_video = translations.new_video;
+        let t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided = &translations.you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided;
+
+        let create_video_action = routes::playlist_create_video(playlist);
+        formatdoc!(r#"
+            <div class="form_group">
+                <h2>{t_new_video}</h2>
+
+                <form action="{create_video_action}" autocomplete="off" data-warn-discard method="post">
+                    <p>
+                        {t_you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided}
+                    </p>
+                    {input_title_create_video}
+                    {input_slug_create_video}
+                    <div style="align-items: center; column-gap: .5rem; display: flex;">
+                        <button class="action">{t_create_video}</button> {feedback}
+                    </div>
+                </form>
+            </div>
+        "#)
+    };
+
+    let r_resource_actions = resource_actions(
+        context,
+        playlist.offline(),
+        &site,
+        &playlist.site_path,
+        translations
+    );
+
+    let playlist_icon = hyper8_icons::playlist(Some(translations.playlist));
+    let playlist_title = playlist.title_or_slug_or_generic_label(translations);
+
+    let t_new_video = translations.new_video;
+    let t_update_playlist = translations.update_playlist;
+
+    let update_action = routes::playlist_edit(playlist);
+
+    let body = formatdoc!(r#"
+        {errors}
+
+        <div class="form_group">
+            <h2 class="with_button">
+                {playlist_icon}
+                <span>{playlist_title}</span>
+            </h2>
+            {r_resource_actions}
+        </div>
+
+        <div class="form_group">
+            <form action="{update_action}" autocomplete="off" data-warn-discard method="post">
+                {input_title}
+                {textarea_description}
+                {input_sort_number}
+                {select_order}
+                {select_copy_link}
+                {select_download}
+                {select_embedding}
+                {select_feeds}
+                {select_platform_integration}
+                {input_offline}
+                {input_unlisted_conditionally_hidden}
+
+                <div style="align-items: center; column-gap: .5rem; display: flex;">
+                    <button class="action">{t_update_playlist}</button> {feedback_update}
+                </div>
+            </form>
+        </div>
+
+        {new_video_form}
+
+        <div class="form_group">
+            <h2>{t_new_video}</h2>
+
+            {video_upload_button}
+        </div>
+    "#);
+
+    let t_playlist_settings = translations.playlist_settings;
+    let playlist_title = playlist.title_or_slug_or_generic_label(translations);
+    let head_title = format!("{t_playlist_settings} – {playlist_title}");
+    let html = layout(
+        &body,
+        context,
+        Location::edit(&playlist.site_path),
+        session,
+        &site,
+        &head_title
+    );
+
+    html_response(html)
+}

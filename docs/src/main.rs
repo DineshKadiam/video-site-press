@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use enolib::HtmlPrinter;
+use hyper8_version::VERSION_WITHOUT_PATCH;
 use indoc::formatdoc;
 use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 use pulldown_cmark::html;
@@ -20,8 +21,7 @@ struct Docs {
     examples: Vec<Page>,
     index: Page,
     reference: Vec<Page>,
-    topics: Vec<Page>,
-    version: &'static str
+    topics: Vec<Page>
 }
 
 #[derive(PartialEq)]
@@ -122,22 +122,22 @@ pub fn main() {
     }
 
     fs::copy(
-        "assets/fira-mono-v14-latin_latin-ext-regular.woff2",
+        "docs/assets/fira-mono-v14-latin_latin-ext-regular.woff2",
         docs_out_dir.join("fira-mono-v14-latin_latin-ext-regular.woff2")
     ).unwrap();
 
     fs::copy(
-        "assets/titillium-web-v15-latin_latin-ext-regular.woff2",
+        "docs/assets/titillium-web-v15-latin_latin-ext-regular.woff2",
         docs_out_dir.join("titillium-web-v15-latin_latin-ext-regular.woff2")
     ).unwrap();
 
     fs::copy(
-        "assets/titillium-web-v15-latin_latin-ext-italic.woff2",
+        "docs/assets/titillium-web-v15-latin_latin-ext-italic.woff2",
         docs_out_dir.join("titillium-web-v15-latin_latin-ext-italic.woff2")
     ).unwrap();
 
     fs::copy(
-        "assets/docs.css",
+        "docs/assets/docs.css",
         docs_out_dir.join("docs.css")
     ).unwrap();
 }
@@ -165,7 +165,6 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
     let docs_css_hash = url_safe_hash_base64(include_bytes!("../assets/docs.css"));
 
     let title = &active_page.title;
-    let version = docs.version;
 
     formatdoc!(r##"
         <!doctype html>
@@ -180,7 +179,7 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
             <body>
                 <header>
                     <a class="title" href="index.html">
-                        <span{index_active}>Hyper 8 Video System {version}</span>
+                        <span{index_active}>Hyper 8 Video System {VERSION_WITHOUT_PATCH}</span>
                     </a>
                     <a class="open_nav" href="#nav">☰</a>
                 </header>
@@ -216,24 +215,21 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
 fn read_docs() -> Docs {
     let index_content = markdown_to_html(include_str!("../index.md"));
 
-    let version_display = env!("HYPER8_VERSION_DISPLAY");
-
     let index = Page {
         content: index_content,
         slug: String::from("index"),
-        title: format!("Hyper 8 Video System {version_display}")
+        title: format!("Hyper 8 Video System {VERSION_WITHOUT_PATCH}")
     };
 
-    let examples = read_pages(&Path::new("examples"));
-    let reference = read_pages(&Path::new("reference"));
-    let topics = read_pages(&Path::new("topics"));
+    let examples = read_pages(&Path::new("docs/examples"));
+    let reference = read_pages(&Path::new("docs/reference"));
+    let topics = read_pages(&Path::new("docs/topics"));
 
     Docs {
         examples,
         index,
         reference,
-        topics,
-        version: version_display
+        topics
     }
 }
 

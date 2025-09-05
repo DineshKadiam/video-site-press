@@ -1,0 +1,104 @@
+// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::sync::Arc;
+
+use actix_session::Session as ActixSession;
+use actix_multipart::Multipart;
+use actix_web::{Either, Error, HttpResponse};
+use actix_web::web;
+use actix_web::web::{Data, Path as ActixPath, Redirect};
+use futures_util::TryStreamExt as _;
+
+use hyper8_core::{
+    Banner,
+    FileMeta,
+    JobDesc,
+    Playlist,
+    PlaylistUpdate,
+    SitePath
+};
+use hyper8_core::util::{nanoid, supported_image_extension};
+
+use crate::{Context, Session};
+use crate::routes;
+use crate::widgets::{error_page, not_found};
+
+use super::pending_manifest_errors;
+
+pub async fn upload_banner(
+    context: Data<Arc<Context>>,
+    mut payload: Multipart,
+    session: ActixSession,
+    site_path: ActixPath<SitePath>
+) -> Result<Either<Redirect, HttpResponse>, Error> {
+    let session = Session::new(&session);
+
+    while let Some(mut field) = payload.try_next().await? {
+        if let Some(content_disposition) = field.content_disposition() {
+            if let Some(file_name) = content_disposition.get_filename() {
+                if !supported_image_extension(file_name) {
+                    let message = session.language.translations
+                        .unsupported_file_extension_in_xxx(file_name);
+                    return Ok(Either::Right(error_page(&context, &message, &session)))
+                }
+
+                let original_filename = file_name.to_string();
+                // TODO: Generate a prettier filename - this goes into the site_dir!
+                //       1) original_filename (if not taken) 2) only otherwise add nanoid component to filename
+                let storage_filename = format!("{}_{original_filename}", nanoid());
+                let storage_path = context.site_dir
+                    .join(site_path.filesystem_relative())
+                    .join(&storage_filename);
+
+                let storage_path_moving = storage_path.clone();
+
+                // File::create is blocking operation, use threadpool
+                let mut f = web::block(|| File::create(storage_path_moving)).await??;
+
+                while let Some(chunk) = field.try_next().await? {
+                    f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
+                }
+
+                let file_meta = FileMeta::new(&storage_path);
+
+                // TODO: Although unlikely to result in anything, most of the time,
+                //       we could fetch assets from the cache, just in case?
+
+                let banner = Banner::new(None, None, file_meta, storage_filename);
+
+                let mutation = |playlist_mut: &mut Playlist| {
+                    playlist_mut.banner = Some(banner);
+                    playlist_mut.write_manifest(&context);
+                };
+
+                match context.update_playlist(mutation, &site_path) {
+                    PlaylistUpdate::InvalidManifest { playlist } => {
+                        return Ok(Either::Right(pending_manifest_errors(&context, &playlist, &session)));
+                    }
+                    PlaylistUpdate::NotFound => {
+                        let _ = fs::remove_file(&storage_path);
+                        let http_response = not_found(&context, &session, &site_path);
+
+                        return Ok(Either::Right(http_response));
+                    }
+                    PlaylistUpdate::Updated { playlist_updated, .. } => {
+                        let playlist_fast_tasks_job_desc = JobDesc::PlaylistFastTasks {
+                            playlist: Arc::clone(&playlist_updated)
+                        };
+
+                        context.queue_job(playlist_fast_tasks_job_desc);
+
+                        let redirect_url = routes::playlist_banner(&playlist_updated);
+                        return Ok(Either::Left(Redirect::to(redirect_url).see_other()));
+                    }
+                }
+            }
+        }
+    }
+
+    unreachable!()
+}
