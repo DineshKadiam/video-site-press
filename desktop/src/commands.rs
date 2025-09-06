@@ -12,7 +12,8 @@ use tauri::{
     Url,
     WebviewUrl,
     WebviewWindow,
-    WebviewWindowBuilder
+    WebviewWindowBuilder,
+    WindowEvent
 };
 use tauri_plugin_dialog::{DialogExt, FilePath};
 
@@ -90,9 +91,9 @@ pub fn render(
 #[tauri::command]
 pub fn start_editor(
     app_handle: AppHandle,
+    launcher_window: WebviewWindow,
     site_dir: &Path,
-    state: State<'_, Mutex<LauncherState>>,
-    webview_window: WebviewWindow
+    state: State<'_, Mutex<LauncherState>>
 ) {
     let language = {
         let state = state.lock().unwrap();
@@ -140,7 +141,7 @@ pub fn start_editor(
 
     watch_site_dir(Arc::clone(&context));
 
-    webview_window.hide().unwrap();
+    launcher_window.hide().unwrap();
 
     // TODO: This url must be returned to us from hyper8_web::start_server somehow,
     //       and additionally only after the server's .run() method was invoked
@@ -153,6 +154,12 @@ pub fn start_editor(
         .title(&format!("Hyper 8 – {}", site_dir.display()))
         .build()
         .unwrap();
+
+    window.on_window_event(move |event: &WindowEvent| {
+        if let WindowEvent::Destroyed = event {
+            app_handle.exit(0);
+        }
+    });
 
     let _ = window.maximize();
 
