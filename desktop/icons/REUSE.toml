@@ -1,0 +1,13 @@
+version = 1
+
+[[annotations]]
+path = [
+    "128x128.png",
+    "128x128@2x.png",
+    "32x32.png",
+    "icon.icns",
+    "icon.ico",
+    "icon.png"
+]
+SPDX-FileCopyrightText = "2025 Simon Repp"
+SPDX-License-Identifier = "AGPL-3.0-or-later"

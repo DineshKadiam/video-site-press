@@ -1,0 +1,233 @@
+// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+use tauri::{
+    AppHandle,
+    Manager,
+    State,
+    Url,
+    WebviewUrl,
+    WebviewWindow,
+    WebviewWindowBuilder
+};
+use tauri_plugin_dialog::{DialogExt, FilePath};
+
+use hyper8_core::{
+    Cache,
+    Context,
+    Language,
+    Site
+};
+use hyper8_core::start_workers;
+use hyper8_core::watcher::watch_site_dir;
+
+use crate::{LauncherState, Translations};
+
+pub const LANGUAGES: [(&str, &str); 2] = [
+    ("de", "Deutsch"),
+    ("en", "English")
+];
+
+#[tauri::command]
+pub async fn add_site(app_handle: AppHandle) {
+    app_handle
+        .dialog()
+        .file()
+        .set_title("Pick an (empty or pre-existing) site directory")
+        .pick_folder(move |result| {
+            if let Some(FilePath::Path(path)) = result {
+                let state = app_handle.state::<Mutex<LauncherState>>();
+                let mut state = state.lock().unwrap();
+                state.config.sites.push(path);
+                state.config.persist();
+            }
+        });
+}
+
+#[tauri::command]
+pub fn change_language(
+    code: &str,
+    state: State<'_, Mutex<LauncherState>>
+) {
+    let mut state = state.lock().unwrap();
+    state.config.language_code = code.to_string();
+    state.config.persist();
+    state.translations = Translations::from_code(code);
+}
+
+#[tauri::command]
+pub fn delete_site(
+    path: &str,
+    state: State<'_, Mutex<LauncherState>>
+) {
+    let mut state = state.lock().unwrap();
+    if let Some(index) = state.config.sites
+        .iter()
+        .position(|site| site.to_string_lossy() == path) {
+        state.config.sites.swap_remove(index);
+    }
+
+    state.config.persist();
+}
+
+#[tauri::command]
+pub fn get_language(
+    state: State<'_, Mutex<LauncherState>>
+) -> String {
+    let state = state.lock().unwrap();
+    state.config.language_code.to_string()
+}
+
+#[tauri::command]
+pub fn render(
+    state: State<'_, Mutex<LauncherState>>
+) -> String {
+    let state = state.lock().unwrap();
+    let translations = &state.translations;
+
+    let sites = if state.config.sites.is_empty() {
+        translations.no_sites.to_string()
+    } else {
+        state.config.sites
+            .iter()
+            .map(|site| {
+                let path = site.to_string_lossy();
+                format!(r#"
+                    <div>
+                        <span>{path}</span>
+                        <button class="start" data-path="{path}">Start</button>
+                        <button class="delete" data-path="{path}">Delete</button>
+                    </div>
+                "#)
+            })
+            .collect::<Vec<String>>()
+            .join("")
+    };
+
+    let t_add_site = translations.add_site;
+
+    let languages = LANGUAGES
+        .iter()
+        .map(|language| {
+            let code = language.0;
+            let label = language.1;
+
+            let selected = if code == state.config.language_code {
+                "selected"
+            } else {
+                ""
+            };
+
+            format!(r#"<option {selected} value="{code}">{label}</option>"#)
+        })
+        .collect::<Vec<String>>()
+        .join("");
+
+
+    format!(r#"
+        <main>
+            <h1>Hyper 8</h1>
+            <div>
+                {sites}
+            </div>
+            <div>
+                <button class="add_site">{t_add_site}</button>
+
+                <form class="language">
+                    <select>
+                        {languages}
+                    </select>
+                </form>
+            </div>
+            <div>
+                <a href="https://simonrepp.com/hyper8" target="_blank">
+                    Hyper 8
+                </a>
+            </div>
+        </main>
+    "#)
+}
+
+#[tauri::command]
+pub fn start_editor(
+    app_handle: AppHandle,
+    site_dir: &Path,
+    state: State<'_, Mutex<LauncherState>>,
+    webview_window: WebviewWindow
+) {
+    let language = {
+        let state = state.lock().unwrap();
+        Language::from_code(&state.config.language_code)
+    };
+
+    let translations = &language.translations;
+
+    if !site_dir.exists() {
+        eprintln!(
+            "Site directory {site_dir:?} does not exist, please create it manually (just an empty folder).",
+        );
+        return;
+    }
+
+    // This compiles to fs::canonicalize(...) on all platforms but windows,
+    // on windows it instead tries to supply a canonicalized path that uses
+    // the regular form (e.g. "C:\\Foo") instead of the UNC form ("\\?C:\\Foo")
+    // when possible (for background see https://crates.io/crates/dunce).
+    let site_dir = dunce::canonicalize(site_dir).unwrap();
+
+    let build_dir = site_dir.join(".hyper8_build");
+    let cache_dir = site_dir.join(".hyper8_cache");
+
+    let cache = Mutex::new(Cache::retrieve(&cache_dir));
+
+    let context = Context::new(
+        build_dir,
+        cache,
+        cache_dir,
+        Arc::new(Site::new()),
+        site_dir.clone()
+    );
+
+    // TODO: Would be great if we could somehow resolve the conundrum that
+    //       context depends on site and site depends on context, which
+    //       forces us to initialize context with a dummy site and replace it here.
+    context.replace_site(Site::read_dir(&context, &site_dir));
+
+    let context = Arc::new(context);
+
+    context.compute_job_queue();
+    // TODO: Pass None instead of 2 here (eliminate default value for workers alongside this?)
+    start_workers(&context, 2, &translations);
+
+    watch_site_dir(Arc::clone(&context));
+
+    webview_window.hide().unwrap();
+
+    // TODO: This url must be returned to us from hyper8_web::start_server somehow,
+    //       and additionally only after the server's .run() method was invoked
+    //       (tokio::wait!(...) construct), and then we also need to run this in
+    //       yet another thread, because this one will be busy waiting for the start_server(...)
+    //       call to return (which it only does once we kill the process)
+    let webview_url = WebviewUrl::External(Url::parse("http://127.0.0.1:8080").unwrap());
+
+    let window = WebviewWindowBuilder::new(&app_handle, "hyper8-web", webview_url)
+        .title(&format!("Hyper 8 – {}", site_dir.display()))
+        .build()
+        .unwrap();
+
+    let _ = window.maximize();
+
+    thread::spawn(|| {
+        // TODO: Currently also opens the editor in the default browser, but shouldn't.
+        //       (baked in functionality for hyper8-cli right now)
+        let result = hyper8_web::start_server(context, None, None);
+
+        if !result.is_ok() {
+            // TODO: Possibly do something with this state
+        }
+    });
+}
