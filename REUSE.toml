@@ -1,0 +1,11 @@
+version = 1
+
+[[annotations]]
+path = "Cargo.lock"
+SPDX-FileCopyrightText = "2024-2025 Simon Repp"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = "issue_template.md"
+SPDX-FileCopyrightText = "2024-2025 Simon Repp"
+SPDX-License-Identifier = "CC0-1.0"

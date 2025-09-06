@@ -1,0 +1,16 @@
+version = 1
+
+[[annotations]]
+path = [
+	"adaptive_theme.css",
+	"adaptive_theme.js",
+	"clipboard.js",
+	"embed.css",
+	"embed.js",
+	"favicon.png",
+	"navigation.js",
+	"site.css",
+	"video.js"
+]
+SPDX-FileCopyrightText = "2024-2025 Simon Repp"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
