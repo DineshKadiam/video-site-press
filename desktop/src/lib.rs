@@ -6,30 +6,12 @@ use std::sync::Mutex;
 use tauri::Manager;
 
 mod commands;
+mod launcher;
 mod launcher_config;
-mod translations;
+mod launcher_state;
 
 use launcher_config::LauncherConfig;
-use translations::Translations;
-
-pub struct LauncherState {
-    config: LauncherConfig,
-    translations: Translations
-}
-
-impl LauncherState {
-    pub fn init() -> LauncherState {
-        let config = LauncherConfig::retrieve()
-            .unwrap_or_else(|| LauncherConfig::new("en", Vec::new()));
-
-        let translations = Translations::from_code(&config.language_code);
-
-        LauncherState {
-            config,
-            translations
-        }
-    }
-}
+use launcher_state::LauncherState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

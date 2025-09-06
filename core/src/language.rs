@@ -10,6 +10,16 @@ use log::warn;
 
 use hyper8_translations::Translations;
 
+pub const AVAILABLE_LANGUAGES: [AvailableLanguage; 2] = [
+    AvailableLanguage { code: "de", name: "Deutsch" },
+    AvailableLanguage { code: "en", name: "English" }
+];
+
+pub struct AvailableLanguage {
+    pub code: &'static str,
+    pub name: &'static str
+}
+
 #[derive(Debug)]
 pub struct Language {
     pub chrono_locale: ChronoLocale,

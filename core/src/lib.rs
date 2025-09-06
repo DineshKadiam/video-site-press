@@ -87,6 +87,7 @@ pub use font::Font;
 pub use hyper_dir::HyperDir;
 pub use jobs::{JobDesc, JobProgress};
 pub use jobs::start_workers;
+pub use language::AVAILABLE_LANGUAGES;
 pub use language::Language;
 pub use link::Link;
 pub use manifest::MAX_SYNOPSIS_CHARS;
