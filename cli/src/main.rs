@@ -75,10 +75,10 @@ fn main() -> ExitCode {
 
     let context = Arc::new(context);
 
-    let workers = args.get_one::<usize>("workers").unwrap();
+    let workers = args.get_one::<usize>("workers").map(|count| *count);
 
     context.compute_job_queue();
-    start_workers(&context, *workers, &translations);
+    start_workers(&context, workers, &translations);
 
     let ip = args.get_one::<IpAddr>("ip");
     let port = args.get_one::<u16>("port");

@@ -7,6 +7,7 @@ use std::thread;
 
 use tauri::{
     AppHandle,
+    Emitter,
     Manager,
     State,
     Url,
@@ -15,7 +16,11 @@ use tauri::{
     WebviewWindowBuilder,
     WindowEvent
 };
-use tauri_plugin_dialog::{DialogExt, FilePath};
+use tauri_plugin_dialog::{
+    DialogExt,
+    FilePath,
+    MessageDialogButtons
+};
 
 use hyper8_core::{
     Cache,
@@ -31,17 +36,18 @@ use crate::launcher;
 use crate::LauncherState;
 
 #[tauri::command]
-pub async fn add_site(app_handle: AppHandle) {
-    app_handle
+pub async fn add_site(app: AppHandle) {
+    app
         .dialog()
         .file()
         .set_title("Pick an (empty or pre-existing) site directory")
         .pick_folder(move |result| {
             if let Some(FilePath::Path(path)) = result {
-                let state = app_handle.state::<Mutex<LauncherState>>();
+                let state = app.state::<Mutex<LauncherState>>();
                 let mut state = state.lock().unwrap();
                 state.config.sites.push(path);
                 state.config.persist();
+                let _ = app.emit("update-body", ());
             }
         });
 }
@@ -59,17 +65,40 @@ pub fn change_language(
 
 #[tauri::command]
 pub fn delete_site(
-    path: &str,
+    app: AppHandle,
+    path: String,
     state: State<'_, Mutex<LauncherState>>
 ) {
-    let mut state = state.lock().unwrap();
-    if let Some(index) = state.config.sites
-        .iter()
-        .position(|site| site.to_string_lossy() == path) {
-        state.config.sites.swap_remove(index);
-    }
+    let state = state.lock().unwrap();
+    let t_cancel = state.language.translations.cancel;
+    let t_delete = state.language.translations.delete;
+    let t_really_delete = state.language.translations.really_delete;
 
-    state.config.persist();
+    app
+        .dialog()
+        .message(t_really_delete)
+        .title(t_really_delete)
+        .buttons(
+            MessageDialogButtons::OkCancelCustom(
+                t_delete.to_string(),
+                t_cancel.to_string()
+            )
+        )
+        .show(move |confirmed| {
+            if confirmed {
+                let state = app.state::<Mutex<LauncherState>>();
+                let mut state = state.lock().unwrap();
+                if let Some(index) = state.config.sites
+                    .iter()
+                    .position(|site| site.to_string_lossy() == path) {
+                    state.config.sites.swap_remove(index);
+                }
+
+                state.config.persist();
+
+                let _ = app.emit("update-body", ());
+            }
+        });
 }
 
 #[tauri::command]
@@ -90,7 +119,7 @@ pub fn render(
 
 #[tauri::command]
 pub fn start_editor(
-    app_handle: AppHandle,
+    app: AppHandle,
     launcher_window: WebviewWindow,
     site_dir: &Path,
     state: State<'_, Mutex<LauncherState>>
@@ -136,8 +165,7 @@ pub fn start_editor(
     let context = Arc::new(context);
 
     context.compute_job_queue();
-    // TODO: Pass None instead of 2 here (eliminate default value for workers alongside this?)
-    start_workers(&context, 2, &translations);
+    start_workers(&context, None, &translations);
 
     watch_site_dir(Arc::clone(&context));
 
@@ -150,14 +178,14 @@ pub fn start_editor(
     //       call to return (which it only does once we kill the process)
     let webview_url = WebviewUrl::External(Url::parse("http://127.0.0.1:8080").unwrap());
 
-    let window = WebviewWindowBuilder::new(&app_handle, "hyper8-web", webview_url)
+    let window = WebviewWindowBuilder::new(&app, "hyper8-web", webview_url)
         .title(&format!("Hyper 8 – {}", site_dir.display()))
         .build()
         .unwrap();
 
     window.on_window_event(move |event: &WindowEvent| {
         if let WindowEvent::Destroyed = event {
-            app_handle.exit(0);
+            app.exit(0);
         }
     });
 

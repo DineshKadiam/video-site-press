@@ -2366,6 +2366,8 @@ dependencies = [
  "dirs",
  "dunce",
  "hyper8-core",
+ "hyper8-icons",
+ "hyper8-version",
  "hyper8-web",
  "serde",
  "serde_derive",

@@ -23,6 +23,8 @@ pub use worker::Worker;
 
 use encode::FFmpegEncodingStats;
 
+pub const MIN_WORKERS: usize = 2;
+
 // TODO: This currently "bakes" the language into the worker, i.e. whatever the
 //       passed language when the worker is started, remains the language in which
 //       it produces messages throughout the session (no matter if the language has
@@ -36,9 +38,13 @@ use encode::FFmpegEncodingStats;
 //       reward in 99% of real life cases).
 pub fn start_workers(
     context_ref: &Arc<Context>,
-    count: usize,
+    custom_count: Option<usize>,
     translations: &Translations
 ) {
+    let count = custom_count
+        .map(|count| count.max(MIN_WORKERS))
+        .unwrap_or(MIN_WORKERS);
+
     for worker_number in 1..=count {
         let context = Arc::clone(context_ref);
         let translations = translations.clone();

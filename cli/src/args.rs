@@ -54,7 +54,6 @@ pub fn parse() -> ArgMatches {
         .value_parser(value_parser!(PathBuf));
 
     let workers = Arg::new("workers")
-        .default_value("2")
         .help("The number of threads to run for background processing (metadata computation, image processing, video/audio transcoding, etc.)")
         .long("workers")
         .value_parser(worker_count);

@@ -1,4 +1,7 @@
 const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
+
+listen('update-body', updateBody);
 
 // TODO: In addSite() & deleteSite() (and coming endpoints) we need to await
 // the actual updates to state before running the update, (with addSite consider
@@ -18,7 +21,6 @@ async function changeLanguage(code) {
 
 async function deleteSite(path) {
     await invoke('delete_site', { path });
-    updateBody();
 }
 
 function startEditor(path) {
@@ -32,6 +34,7 @@ async function updateBody() {
 
     const addSiteButton = document.querySelector('button.add_site');
     const languageSelect = document.querySelector('.language select');
+    const sites = document.querySelectorAll('.site');
 
     addSiteButton.addEventListener('click', event => {
         event.preventDefault();
@@ -43,18 +46,26 @@ async function updateBody() {
         changeLanguage(languageSelect.value);
     });
 
-    for (const deleteButton of document.querySelectorAll('button.delete')) {
+    for (const site of sites) {
+        const configureButton = site.querySelector('.configure');
+        const deleteButton = site.querySelector('.delete');
+        const pane = site.querySelector('.pane');
+        const sitePath = site.dataset.sitePath;
+
+        pane.addEventListener('click', event => {
+            event.preventDefault();
+
+            if (configureButton.contains(event.target)) {
+                site.classList.toggle('expanded');
+            } else {
+                startEditor(sitePath);
+            }
+        });
+
         deleteButton.addEventListener('click', event => {
             event.preventDefault();
-            deleteSite(deleteButton.dataset.path);
-        })
-    }
-
-    for (const startButton of document.querySelectorAll('button.start')) {
-        startButton.addEventListener('click', event => {
-            event.preventDefault();
-            startEditor(startButton.dataset.path);
-        })
+            deleteSite(sitePath);
+        });
     }
 }
 
