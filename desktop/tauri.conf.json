@@ -9,7 +9,7 @@
                 "height": 600,
                 "minHeight": 480,
                 "minWidth": 640,
-                "title": "Hyper 8 Video System",
+                "title": "Hyper 8",
                 "width": 800
             }
         ],
@@ -20,6 +20,9 @@
     },
     "bundle": {
         "active": true,
+        "category": "Video",
+        "copyright": "2025 Simon Repp and contributors",
+        "homepage": "https://simonrepp.com/hyper8",
         "icon": [
             "icons/128x128.png",
             "icons/128x128@2x.png",
@@ -27,9 +30,12 @@
             "icons/icon.icns",
             "icons/icon.ico"
         ],
+        "license": "AGPL-3.0-or-later",
+        "publisher": "Simon Repp",
         "shortDescription": "A static site generator for video publishing",
         "targets": "all"
     },
     "identifier": "com.simonrepp.hyper8",
+    "mainBinaryName": "hyper8",
     "productName": "Hyper 8"
 }
