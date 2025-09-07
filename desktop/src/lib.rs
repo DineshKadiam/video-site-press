@@ -47,6 +47,7 @@ pub fn run() {
                 commands::change_language,
                 commands::delete_site,
                 commands::get_language,
+                commands::get_theme,
                 commands::render,
                 commands::start_editor
             ]

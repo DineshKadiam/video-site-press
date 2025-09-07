@@ -27,6 +27,9 @@ use light_neutral::LIGHT_NEUTRAL_VARS;
 use light_warm::LIGHT_WARM_VARS;
 use theme_vars::ThemeVars;
 
+pub use dark_neutral::DARK_NEUTRAL_VARS as GENERIC_DARK_THEME_VARS;
+pub use light_neutral::LIGHT_NEUTRAL_VARS as GENERIC_LIGHT_THEME_VARS;
+
 #[derive(Clone, Debug)]
 pub struct Theme {
     pub key: &'static str,

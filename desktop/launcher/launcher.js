@@ -74,7 +74,14 @@ async function updateLanguage() {
     document.documentElement.lang = code;
 }
 
+async function updateTheme() {
+    const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const css = await invoke('get_theme', { preferDark });
+    document.querySelector('style[data-theme]').textContent = css;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     updateBody();
     updateLanguage();
+    updateTheme();
 });

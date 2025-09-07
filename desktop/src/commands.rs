@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use indoc::formatdoc;
 use tauri::{
     AppHandle,
     Emitter,
@@ -29,6 +30,7 @@ use hyper8_core::{
     Site
 };
 use hyper8_core::start_workers;
+use hyper8_core::{GENERIC_DARK_THEME_VARS, GENERIC_LIGHT_THEME_VARS};
 use hyper8_core::watcher::watch_site_dir;
 
 use crate::launcher;
@@ -123,6 +125,25 @@ pub fn get_language(
 ) -> String {
     let state = state.lock().unwrap();
     state.language.code.to_string()
+}
+
+#[tauri::command]
+pub fn get_theme(prefer_dark: bool) -> String {
+    let vars = if prefer_dark { GENERIC_DARK_THEME_VARS } else { GENERIC_LIGHT_THEME_VARS };
+
+    let vars_hsl = vars.print_hsl();
+    let vars_oklch = vars.print_oklch();
+
+    formatdoc!(r#"
+        :root {{
+            {vars_hsl}
+        }}
+        @supports (color: oklch(0% 0 0)) {{
+            :root {{
+                {vars_oklch}
+            }}
+        }}
+    "#)
 }
 
 #[tauri::command]
