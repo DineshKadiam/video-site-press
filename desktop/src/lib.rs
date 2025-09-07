@@ -3,7 +3,13 @@
 
 use std::sync::Mutex;
 
-use tauri::Manager;
+use tauri::{
+    Manager,
+    WebviewUrl,
+    WebviewWindowBuilder
+};
+
+use hyper8_version::VERSION_WITHOUT_PATCH;
 
 mod commands;
 mod launcher;
@@ -19,6 +25,16 @@ use site_bookmark::SiteBookmark;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            let title = format!("Hyper 8 v{VERSION_WITHOUT_PATCH}");
+
+            let _ = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+                    .center()
+                    .inner_size(800.0, 600.0)
+                    .min_inner_size(640.0, 480.0)
+                    .title(&title)
+                    .build()
+                    .unwrap();
+
             let state = LauncherState::init();
             app.manage(Mutex::new(state));
             Ok(())

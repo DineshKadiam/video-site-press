@@ -4,15 +4,6 @@
         "security": {
             "csp": null
         },
-        "windows": [
-            {
-                "height": 600,
-                "minHeight": 480,
-                "minWidth": 640,
-                "title": "Hyper 8",
-                "width": 800
-            }
-        ],
         "withGlobalTauri": true
     },
     "build": {
