@@ -5,7 +5,7 @@ use actix_session::Session as ActixSession;
 use actix_web::HttpResponse;
 use indoc::formatdoc;
 
-use hyper8_core::{Font, ThemeKind};
+use hyper8_core::{Font, Theme, ThemeKind};
 
 use crate::Session;
 
@@ -21,7 +21,7 @@ pub async fn styles(session: ActixSession) -> HttpResponse {
         }}
     "#);
 
-    let splash_vars = theme.print_splash_vars();
+    let splash_vars = Theme::print_splash_vars();
 
     let theme_vars = match &theme.kind {
         ThemeKind::Adaptive { dark, light } => {

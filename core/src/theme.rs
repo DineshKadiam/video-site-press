@@ -157,7 +157,7 @@ impl Theme {
         }
     }
 
-    pub fn print_splash_vars(&self) -> String {
+    pub fn print_splash_vars() -> String {
         // TODO: Port splash to oklch as well eventually
         let splash_blend = Theme::SPLASH_BLEND;
         let splash_bg = Theme::SPLASH_BG;
