@@ -402,7 +402,7 @@ impl Video {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
-                "release_date" => 'title: {
+                "release_date" => 'release_date: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
@@ -418,7 +418,7 @@ impl Video {
                                 }
                             }
 
-                            break 'title;
+                            break 'release_date;
                         }
                     }
 
@@ -426,7 +426,7 @@ impl Video {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
-                "sort_number" => 'title: {
+                "sort_number" => 'sort_number: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
@@ -442,7 +442,7 @@ impl Video {
                                 }
                             }
 
-                            break 'title;
+                            break 'sort_number;
                         }
                     }
 

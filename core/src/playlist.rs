@@ -420,7 +420,7 @@ impl Playlist {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
-                "sort_number" => 'title: {
+                "sort_number" => 'sort_number: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
                             if let Some(value) = result {
@@ -436,7 +436,7 @@ impl Playlist {
                                 }
                             }
 
-                            break 'title;
+                            break 'sort_number;
                         }
                     }
 
