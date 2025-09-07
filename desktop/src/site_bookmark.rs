@@ -5,6 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub struct SiteBookmark {
+    pub found: bool,
     pub live_url: Option<String>,
     pub site_dir: PathBuf,
     pub title: String
@@ -12,12 +13,15 @@ pub struct SiteBookmark {
 
 impl SiteBookmark {
     pub fn new(site_dir: PathBuf) -> SiteBookmark {
+        let found = site_dir.exists();
+
         let live_url = SiteBookmark::probe_base_url(&site_dir);
 
         let title = SiteBookmark::probe_title(&site_dir)
             .unwrap_or_else(|| site_dir.file_name().unwrap().to_string_lossy().into());
 
         SiteBookmark {
+            found,
             live_url,
             site_dir,
             title

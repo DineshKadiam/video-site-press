@@ -20,15 +20,23 @@ pub fn render(state: &LauncherState) -> String {
             .map(|bookmark| {
                 let configure_icon = hyper8_icons::configure(Some(translations.configure));
                 let site_dir = bookmark.site_dir.to_string_lossy();
-                let title = html_escape_outside_attribute(&bookmark.title);
+
+                let title_escaped = html_escape_outside_attribute(&bookmark.title);
+                let title = if bookmark.found {
+                    title_escaped
+                } else {
+                    format!("{title_escaped} (Not found)")
+                };
 
                 let live_url = match &bookmark.live_url {
                     Some(live_url) => format!("<span>{live_url}</span>"),
                     None => String::new()
                 };
 
+                let not_found = if bookmark.found { "" } else { "not_found" };
+
                 formatdoc!(r#"
-                    <div class="site" data-site-dir="{site_dir}">
+                    <div class="{not_found} site" data-site-dir="{site_dir}">
                         <div class="pane" tabindex="0">
                             <div class="labels">
                                 <div>

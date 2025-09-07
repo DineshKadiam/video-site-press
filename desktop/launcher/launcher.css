@@ -73,12 +73,13 @@ main {
     align-items: center;
     background: var(--bg-2);
     border-radius: .5rem;
-    cursor: pointer;
     display: flex;
     justify-content: space-between;
     column-gap: .5rem;
     padding: .8rem;
 }
+.site.not_found .labels { opacity: .7; }
+.site:not(.not_found) { cursor: pointer; }
 .site > :nth-child(1):focus-visible,
 .site > :nth-child(1):hover {
     background: var(--bg-3);

@@ -72,7 +72,7 @@ async function updateBody() {
 
             if (configureButton.contains(event.target)) {
                 site.classList.toggle('expanded');
-            } else {
+            } else if (!site.classList.contains('not_found')) {
                 startEditor(siteDir);
             }
         });
