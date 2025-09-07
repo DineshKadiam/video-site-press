@@ -17,13 +17,15 @@ use tauri::{
 use tauri_plugin_dialog::{
     DialogExt,
     FilePath,
-    MessageDialogButtons
+    MessageDialogButtons,
+    MessageDialogKind
 };
 
-use hyper8_core::Language;
+use hyper8_core::{Language, Theme};
 use hyper8_core::{GENERIC_DARK_THEME_VARS, GENERIC_LIGHT_THEME_VARS};
 
 use crate::{LauncherState, SiteBookmark};
+use crate::EXIT_CODE_SUCCESS;
 use crate::editor;
 use crate::launcher;
 
@@ -63,6 +65,11 @@ pub fn change_language(
 }
 
 #[tauri::command]
+pub fn close(app: AppHandle) {
+    app.exit(EXIT_CODE_SUCCESS);
+}
+
+#[tauri::command]
 pub fn delete_site(
     app: AppHandle,
     site_dir: PathBuf,
@@ -77,6 +84,7 @@ pub fn delete_site(
     app
         .dialog()
         .message(t_really_delete)
+        .kind(MessageDialogKind::Warning)
         .title(t_really_delete)
         .buttons(
             MessageDialogButtons::OkCancelCustom(
@@ -124,7 +132,10 @@ pub fn get_theme(prefer_dark: bool) -> String {
     let vars_hsl = vars.print_hsl();
     let vars_oklch = vars.print_oklch();
 
+    let splash_vars = Theme::print_splash_vars();
+
     formatdoc!(r#"
+        {splash_vars}
         :root {{
             {vars_hsl}
         }}
@@ -175,6 +186,7 @@ pub fn quick_start(
         app
             .dialog()
             .message(message)
+            .kind(MessageDialogKind::Info)
             .title("Quick start")
             .buttons(
                 MessageDialogButtons::OkCancelCustom(

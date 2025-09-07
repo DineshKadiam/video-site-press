@@ -11,6 +11,8 @@ use tauri::{
 
 use hyper8_version::VERSION_WITHOUT_PATCH;
 
+const EXIT_CODE_SUCCESS: i32 = 0;
+
 mod commands;
 mod editor;
 mod launcher;
@@ -30,8 +32,10 @@ pub fn run() {
 
             let _ = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                     .center()
-                    .inner_size(800.0, 600.0)
-                    .min_inner_size(640.0, 480.0)
+                    .decorations(false)
+                    .inner_size(640.0, 640.0)
+                    .max_inner_size(640.0, 640.0)
+                    .min_inner_size(640.0, 640.0)
                     .title(&title)
                     .build()
                     .unwrap();
@@ -46,6 +50,7 @@ pub fn run() {
             tauri::generate_handler![
                 commands::add_site,
                 commands::change_language,
+                commands::close,
                 commands::delete_site,
                 commands::get_language,
                 commands::get_theme,

@@ -8,7 +8,7 @@ pub struct SiteBookmark {
     pub found: bool,
     pub live_url: Option<String>,
     pub site_dir: PathBuf,
-    pub title: String
+    pub title: Option<String>
 }
 
 impl SiteBookmark {
@@ -17,8 +17,7 @@ impl SiteBookmark {
 
         let live_url = SiteBookmark::probe_base_url(&site_dir);
 
-        let title = SiteBookmark::probe_title(&site_dir)
-            .unwrap_or_else(|| site_dir.file_name().unwrap().to_string_lossy().into());
+        let title = SiteBookmark::probe_title(&site_dir);
 
         SiteBookmark {
             found,

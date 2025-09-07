@@ -12,46 +12,53 @@ use crate::LauncherState;
 pub fn render(state: &LauncherState) -> String {
     let translations = &state.language.translations;
 
+    let logo_monochrome = hyper8_icons::logo_monochrome(None);
+
     let sites = if state.site_bookmarks.is_empty() {
         translations.no_sites.to_string()
     } else {
+        let configure_icon = hyper8_icons::configure(Some(translations.configure));
+
         state.site_bookmarks
             .iter()
             .map(|bookmark| {
-                let configure_icon = hyper8_icons::configure(Some(translations.configure));
+                let not_found;
+                let label;
+
+                if bookmark.found {
+                    if let Some(title) = &bookmark.title {
+                        label = html_escape_outside_attribute(title);
+                    } else if let Some(live_url) = &bookmark.live_url {
+                        label = live_url.to_string();
+                    } else {
+                        label = bookmark.site_dir.file_name().unwrap().to_string_lossy().to_string();
+                    }
+
+                    not_found = "";
+                } else {
+                    label = String::from("Not found");
+                    not_found = "not_found";
+                };
+
                 let site_dir = bookmark.site_dir.to_string_lossy();
 
-                let title_escaped = html_escape_outside_attribute(&bookmark.title);
-                let title = if bookmark.found {
-                    title_escaped
-                } else {
-                    format!("{title_escaped} (Not found)")
-                };
-
-                let live_url = match &bookmark.live_url {
-                    Some(live_url) => format!("<span>{live_url}</span>"),
-                    None => String::new()
-                };
-
-                let not_found = if bookmark.found { "" } else { "not_found" };
-
                 formatdoc!(r#"
-                    <div class="{not_found} site" data-site-dir="{site_dir}">
+                    <li class="{not_found} site" data-site-dir="{site_dir}">
                         <div class="pane" tabindex="0">
-                            <div class="labels">
-                                <div>
-                                    <span>{title}</span>
-                                    {live_url}
-                                </div>
-                                <div>{site_dir}</div>
-                            </div>
-                            <button class="configure">{configure_icon}</button>
+                            <span class="labels">
+                                {logo_monochrome}
+                                <span>{site_dir}</span>
+                            </span>
+                            <span>
+                                <span>{label}</span>
+                                <button class="configure">{configure_icon}</button>
+                            </span>
                         </div>
                         <div>
                             <button class="delete">Remove from list</button>
                             <button class="open_in_file_explorer">Open in file explorer</button>
                         </div>
-                    </div>
+                    </li>
                 "#)
             })
             .collect::<Vec<String>>()
@@ -77,45 +84,42 @@ pub fn render(state: &LauncherState) -> String {
         .collect::<Vec<String>>()
         .join("");
 
+    let close_icon = hyper8_icons::failure(translations.close);
+    let link_icon = hyper8_icons::link(Some(translations.external_link));
+
     format!(r#"
-        <header>
-            <form class="language">
-                <select>
-                    {languages}
-                </select>
-            </form>
+        <header data-tauri-drag-region>
+            <img alt="Hyper 8" src="assets/logo.svg">
+            <button class="close">{close_icon}</button>
+            <a class="version" href="https://simonrepp.com/hyper8/changes/{VERSION_WITH_PATCH}" target="_blank">
+                {link_icon} {VERSION_ADAPTIVE_PATCH}
+            </a>
         </header>
         <main>
-            <div class="sites">
+            <ul class="sites">
+                <li>
+                    <button class="add_site">{logo_monochrome} {t_add_site}</button>
+                    /
+                    <button class="quick_start">{logo_monochrome} Quick start new site</button>
+                </li>
                 {sites}
-            </div>
-            <div>
-                <button class="quick_start">Quick start new site</button>
-                <button class="add_site">{t_add_site}</button>
-            </div>
+            </ul>
         </main>
         <footer>
             <div>
                 <a href="https://simonrepp.com/hyper8" target="_blank">
-                    Website
+                    {link_icon} Website
                 </a>
-                <a href="https://simonrepp.com/hyper8/docs" target="_blank">
-                    Docs
-                </a>
-                <a href="https://codeberg.org/simonrepp/hyper8/issues" target="_blank">
-                    Report a bug
-                </a>
-                <a href="https://liberapay.com/simonrepp" target="_blank">
-                    Liberapay
-                </a>
-                <a href="https://ko-fi.com/simonrepp" target="_blank">
-                    Ko-fi
+                <a href="https://simonrepp.com/hyper8/#donate" target="_blank">
+                    {link_icon} Donate
                 </a>
             </div>
             <div>
-                <a href="https://simonrepp.com/hyper8/changes/{VERSION_WITH_PATCH}" target="_blank">
-                    {VERSION_ADAPTIVE_PATCH}
-                </a>
+                <form class="language">
+                    <select>
+                        {languages}
+                    </select>
+                </form>
             </div>
         </footer>
     "#)

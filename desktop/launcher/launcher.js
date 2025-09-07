@@ -19,6 +19,10 @@ async function changeLanguage(code) {
     updateBody();
 }
 
+function close() {
+    invoke('close');
+}
+
 async function deleteSite(siteDir) {
     await invoke('delete_site', { siteDir });
 }
@@ -41,6 +45,7 @@ async function updateBody() {
     document.body.innerHTML = body;
 
     const addSiteButton = document.querySelector('button.add_site');
+    const closeButton = document.querySelector('button.close');
     const languageSelect = document.querySelector('.language select');
     const quickStartButton = document.querySelector('button.quick_start');
     const sites = document.querySelectorAll('.site');
@@ -48,6 +53,11 @@ async function updateBody() {
     addSiteButton.addEventListener('click', event => {
         event.preventDefault();
         addSite();
+    });
+
+    closeButton.addEventListener('click', event => {
+        event.preventDefault();
+        close();
     });
 
     languageSelect.addEventListener('change', event => {

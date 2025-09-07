@@ -23,6 +23,8 @@ use hyper8_core::start_workers;
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_translations::Translations;
 
+use crate::EXIT_CODE_SUCCESS;
+
 pub fn start_editor(
     app: AppHandle,
     launcher_window: WebviewWindow,
@@ -83,7 +85,7 @@ pub fn start_editor(
 
     window.on_window_event(move |event: &WindowEvent| {
         if let WindowEvent::Destroyed = event {
-            app.exit(0);
+            app.exit(EXIT_CODE_SUCCESS);
         }
     });
 
