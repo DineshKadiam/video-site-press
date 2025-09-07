@@ -9,9 +9,11 @@ mod commands;
 mod launcher;
 mod launcher_config;
 mod launcher_state;
+mod site_bookmark;
 
 use launcher_config::LauncherConfig;
 use launcher_state::LauncherState;
+use site_bookmark::SiteBookmark;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

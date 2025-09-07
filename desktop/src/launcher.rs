@@ -9,14 +9,14 @@ use crate::LauncherState;
 pub fn render(state: &LauncherState) -> String {
     let translations = &state.language.translations;
 
-    let sites = if state.config.sites.is_empty() {
+    let sites = if state.site_bookmarks.is_empty() {
         translations.no_sites.to_string()
     } else {
-        state.config.sites
+        state.site_bookmarks
             .iter()
-            .map(|site| {
+            .map(|bookmark| {
                 let configure_icon = hyper8_icons::configure(Some(translations.configure));
-                let path = site.to_string_lossy();
+                let path = bookmark.path.to_string_lossy();
                 format!(r#"
                     <div class="site" data-site-path="{path}">
                         <div class="pane" tabindex="0">
@@ -41,7 +41,7 @@ pub fn render(state: &LauncherState) -> String {
             let code = language.code;
             let label = language.name;
 
-            let selected = if code == state.config.language_code {
+            let selected = if code == state.language.code {
                 "selected"
             } else {
                 ""

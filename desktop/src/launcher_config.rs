@@ -6,20 +6,26 @@ use std::path::PathBuf;
 
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
+use crate::LauncherState;
+
+#[derive(Deserialize, Serialize)]
 pub struct LauncherConfig {
     pub language_code: String,
-    pub sites: Vec<PathBuf>,
+    pub site_bookmark_paths: Vec<PathBuf>,
 }
 
 impl LauncherConfig {
-    pub fn new(
-        language_code: impl Into<String>,
-        sites: Vec<PathBuf>
-    ) -> LauncherConfig {
+    pub fn from_state(state: &LauncherState) -> LauncherConfig {
+        let language_code = state.language.code.clone();
+
+        let site_bookmark_paths = state.site_bookmarks
+            .iter()
+            .map(|bookmark| bookmark.path.clone())
+            .collect();
+
         LauncherConfig {
-            language_code: language_code.into(),
-            sites
+            language_code,
+            site_bookmark_paths
         }
     }
 

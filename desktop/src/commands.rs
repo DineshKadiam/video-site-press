@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -33,7 +33,7 @@ use hyper8_core::watcher::watch_site_dir;
 
 use crate::launcher;
 
-use crate::LauncherState;
+use crate::{LauncherState, SiteBookmark};
 
 #[tauri::command]
 pub async fn add_site(app: AppHandle) {
@@ -43,10 +43,16 @@ pub async fn add_site(app: AppHandle) {
         .set_title("Pick an (empty or pre-existing) site directory")
         .pick_folder(move |result| {
             if let Some(FilePath::Path(path)) = result {
+                let site_bookmark = SiteBookmark::new(path);
+
                 let state = app.state::<Mutex<LauncherState>>();
-                let mut state = state.lock().unwrap();
-                state.config.sites.push(path);
-                state.config.persist();
+
+                {
+                    let mut state_mut = state.lock().unwrap();
+                    state_mut.site_bookmarks.push(site_bookmark);
+                    state_mut.persist();
+                }
+
                 let _ = app.emit("update-body", ());
             }
         });
@@ -57,19 +63,21 @@ pub fn change_language(
     code: &str,
     state: State<'_, Mutex<LauncherState>>
 ) {
-    let mut state = state.lock().unwrap();
-    state.config.language_code = code.to_string();
-    state.config.persist();
-    state.language = Language::from_code(code);
+    let language = Language::from_code(code);
+
+    let mut state_mut = state.lock().unwrap();
+    state_mut.language = language;
+    state_mut.persist();
 }
 
 #[tauri::command]
 pub fn delete_site(
     app: AppHandle,
-    path: String,
+    path: PathBuf,
     state: State<'_, Mutex<LauncherState>>
 ) {
     let state = state.lock().unwrap();
+
     let t_cancel = state.language.translations.cancel;
     let t_delete = state.language.translations.delete;
     let t_really_delete = state.language.translations.really_delete;
@@ -86,15 +94,23 @@ pub fn delete_site(
         )
         .show(move |confirmed| {
             if confirmed {
+                // Note that the outer state handle we unlock in the root
+                // scope of delete_site(…) immediately falls out of scope.
+                // Here we are in a new, later occuring execution context,
+                // hence we obtain a new handle on state.
                 let state = app.state::<Mutex<LauncherState>>();
-                let mut state = state.lock().unwrap();
-                if let Some(index) = state.config.sites
-                    .iter()
-                    .position(|site| site.to_string_lossy() == path) {
-                    state.config.sites.swap_remove(index);
-                }
 
-                state.config.persist();
+                {
+                    let mut state = state.lock().unwrap();
+
+                    if let Some(index) = state.site_bookmarks
+                        .iter()
+                        .position(|bookmark| bookmark.path == path) {
+                        state.site_bookmarks.swap_remove(index);
+                    }
+
+                    state.persist();
+                }
 
                 let _ = app.emit("update-body", ());
             }
@@ -106,7 +122,7 @@ pub fn get_language(
     state: State<'_, Mutex<LauncherState>>
 ) -> String {
     let state = state.lock().unwrap();
-    state.config.language_code.to_string()
+    state.language.code.to_string()
 }
 
 #[tauri::command]
@@ -124,12 +140,10 @@ pub fn start_editor(
     site_dir: &Path,
     state: State<'_, Mutex<LauncherState>>
 ) {
-    let language = {
+    let translations = {
         let state = state.lock().unwrap();
-        Language::from_code(&state.config.language_code)
+        state.language.translations.clone()
     };
-
-    let translations = &language.translations;
 
     if !site_dir.exists() {
         eprintln!(
