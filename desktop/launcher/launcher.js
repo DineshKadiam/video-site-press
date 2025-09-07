@@ -19,12 +19,12 @@ async function changeLanguage(code) {
     updateBody();
 }
 
-async function deleteSite(path) {
-    await invoke('delete_site', { path });
+async function deleteSite(siteDir) {
+    await invoke('delete_site', { siteDir });
 }
 
-function startEditor(path) {
-    invoke('start_editor', { siteDir: path });
+function startEditor(siteDir) {
+    invoke('start_editor', { siteDir });
 }
 
 async function updateBody() {
@@ -50,7 +50,7 @@ async function updateBody() {
         const configureButton = site.querySelector('.configure');
         const deleteButton = site.querySelector('.delete');
         const pane = site.querySelector('.pane');
-        const sitePath = site.dataset.sitePath;
+        const siteDir = site.dataset.siteDir;
 
         pane.addEventListener('click', event => {
             event.preventDefault();
@@ -58,13 +58,13 @@ async function updateBody() {
             if (configureButton.contains(event.target)) {
                 site.classList.toggle('expanded');
             } else {
-                startEditor(sitePath);
+                startEditor(siteDir);
             }
         });
 
         deleteButton.addEventListener('click', event => {
             event.preventDefault();
-            deleteSite(sitePath);
+            deleteSite(siteDir);
         });
     }
 }

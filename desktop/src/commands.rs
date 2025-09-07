@@ -42,8 +42,8 @@ pub async fn add_site(app: AppHandle) {
         .file()
         .set_title("Pick an (empty or pre-existing) site directory")
         .pick_folder(move |result| {
-            if let Some(FilePath::Path(path)) = result {
-                let site_bookmark = SiteBookmark::new(path);
+            if let Some(FilePath::Path(site_dir)) = result {
+                let site_bookmark = SiteBookmark::new(site_dir);
 
                 let state = app.state::<Mutex<LauncherState>>();
 
@@ -73,7 +73,7 @@ pub fn change_language(
 #[tauri::command]
 pub fn delete_site(
     app: AppHandle,
-    path: PathBuf,
+    site_dir: PathBuf,
     state: State<'_, Mutex<LauncherState>>
 ) {
     let state = state.lock().unwrap();
@@ -105,7 +105,7 @@ pub fn delete_site(
 
                     if let Some(index) = state.site_bookmarks
                         .iter()
-                        .position(|bookmark| bookmark.path == path) {
+                        .position(|bookmark| bookmark.site_dir == site_dir) {
                         state.site_bookmarks.swap_remove(index);
                     }
 

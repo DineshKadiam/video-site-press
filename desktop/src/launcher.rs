@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use indoc::formatdoc;
+
 use hyper8_core::AVAILABLE_LANGUAGES;
+use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
 
 use crate::LauncherState;
@@ -16,11 +19,24 @@ pub fn render(state: &LauncherState) -> String {
             .iter()
             .map(|bookmark| {
                 let configure_icon = hyper8_icons::configure(Some(translations.configure));
-                let path = bookmark.path.to_string_lossy();
-                format!(r#"
-                    <div class="site" data-site-path="{path}">
+                let site_dir = bookmark.site_dir.to_string_lossy();
+                let title = html_escape_outside_attribute(&bookmark.title);
+
+                let live_url = match &bookmark.live_url {
+                    Some(live_url) => format!("<span>{live_url}</span>"),
+                    None => String::new()
+                };
+
+                formatdoc!(r#"
+                    <div class="site" data-site-dir="{site_dir}">
                         <div class="pane" tabindex="0">
-                            <span>{path}</span>
+                            <div class="labels">
+                                <div>
+                                    <span>{title}</span>
+                                    {live_url}
+                                </div>
+                                <div>{site_dir}</div>
+                            </div>
                             <button class="configure">{configure_icon}</button>
                         </div>
                         <div>

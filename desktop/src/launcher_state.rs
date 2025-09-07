@@ -14,9 +14,9 @@ impl LauncherState {
     fn from_config(config: LauncherConfig) -> LauncherState {
         let language = Language::from_code(&config.language_code);
 
-        let site_bookmarks = config.site_bookmark_paths
-            .iter()
-            .map(|path| SiteBookmark::new(path))
+        let site_bookmarks = config.site_dirs
+            .into_iter()
+            .map(|site_dir| SiteBookmark::new(site_dir))
             .collect();
 
         LauncherState {

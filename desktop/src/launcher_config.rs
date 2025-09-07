@@ -11,21 +11,21 @@ use crate::LauncherState;
 #[derive(Deserialize, Serialize)]
 pub struct LauncherConfig {
     pub language_code: String,
-    pub site_bookmark_paths: Vec<PathBuf>,
+    pub site_dirs: Vec<PathBuf>,
 }
 
 impl LauncherConfig {
     pub fn from_state(state: &LauncherState) -> LauncherConfig {
         let language_code = state.language.code.clone();
 
-        let site_bookmark_paths = state.site_bookmarks
+        let site_dirs = state.site_bookmarks
             .iter()
-            .map(|bookmark| bookmark.path.clone())
+            .map(|bookmark| bookmark.site_dir.clone())
             .collect();
 
         LauncherConfig {
             language_code,
-            site_bookmark_paths
+            site_dirs
         }
     }
 
