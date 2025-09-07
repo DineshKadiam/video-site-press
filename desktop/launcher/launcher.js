@@ -23,6 +23,10 @@ async function deleteSite(siteDir) {
     await invoke('delete_site', { siteDir });
 }
 
+function openInFileExplorer(siteDir) {
+    invoke('open_in_file_explorer', { siteDir });
+}
+
 function startEditor(siteDir) {
     invoke('start_editor', { siteDir });
 }
@@ -49,6 +53,7 @@ async function updateBody() {
     for (const site of sites) {
         const configureButton = site.querySelector('.configure');
         const deleteButton = site.querySelector('.delete');
+        const openInFileExplorerButton = site.querySelector('.open_in_file_explorer');
         const pane = site.querySelector('.pane');
         const siteDir = site.dataset.siteDir;
 
@@ -65,6 +70,11 @@ async function updateBody() {
         deleteButton.addEventListener('click', event => {
             event.preventDefault();
             deleteSite(siteDir);
+        });
+
+        openInFileExplorerButton.addEventListener('click', event => {
+            event.preventDefault();
+            openInFileExplorer(siteDir);
         });
     }
 }

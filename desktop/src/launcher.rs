@@ -41,6 +41,7 @@ pub fn render(state: &LauncherState) -> String {
                         </div>
                         <div>
                             <button class="delete">Remove from list</button>
+                            <button class="open_in_file_explorer">Open in file explorer</button>
                         </div>
                     </div>
                 "#)

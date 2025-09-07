@@ -147,6 +147,11 @@ pub fn get_theme(prefer_dark: bool) -> String {
 }
 
 #[tauri::command]
+pub fn open_in_file_explorer(site_dir: &Path) {
+    let _ = tauri_plugin_opener::open_path(site_dir, None::<&str>);
+}
+
+#[tauri::command]
 pub fn render(
     state: State<'_, Mutex<LauncherState>>
 ) -> String {
