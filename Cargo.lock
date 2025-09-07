@@ -2368,6 +2368,7 @@ dependencies = [
  "enolib",
  "hyper8-core",
  "hyper8-icons",
+ "hyper8-translations",
  "hyper8-version",
  "hyper8-web",
  "indoc",

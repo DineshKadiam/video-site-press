@@ -69,7 +69,6 @@ pub fn render(state: &LauncherState) -> String {
         .collect::<Vec<String>>()
         .join("");
 
-
     format!(r#"
         <header>
             <form class="language">
@@ -83,6 +82,7 @@ pub fn render(state: &LauncherState) -> String {
                 {sites}
             </div>
             <div>
+                <button class="quick_start">Quick start new site</button>
                 <button class="add_site">{t_add_site}</button>
             </div>
         </main>

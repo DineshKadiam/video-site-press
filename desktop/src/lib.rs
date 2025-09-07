@@ -12,6 +12,7 @@ use tauri::{
 use hyper8_version::VERSION_WITHOUT_PATCH;
 
 mod commands;
+mod editor;
 mod launcher;
 mod launcher_config;
 mod launcher_state;
@@ -49,6 +50,7 @@ pub fn run() {
                 commands::get_language,
                 commands::get_theme,
                 commands::open_in_file_explorer,
+                commands::quick_start,
                 commands::render,
                 commands::start_editor
             ]

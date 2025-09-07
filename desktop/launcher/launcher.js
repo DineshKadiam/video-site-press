@@ -27,6 +27,10 @@ function openInFileExplorer(siteDir) {
     invoke('open_in_file_explorer', { siteDir });
 }
 
+function quickStart() {
+    invoke('quick_start');
+}
+
 function startEditor(siteDir) {
     invoke('start_editor', { siteDir });
 }
@@ -38,6 +42,7 @@ async function updateBody() {
 
     const addSiteButton = document.querySelector('button.add_site');
     const languageSelect = document.querySelector('.language select');
+    const quickStartButton = document.querySelector('button.quick_start');
     const sites = document.querySelectorAll('.site');
 
     addSiteButton.addEventListener('click', event => {
@@ -48,6 +53,11 @@ async function updateBody() {
     languageSelect.addEventListener('change', event => {
         event.preventDefault();
         changeLanguage(languageSelect.value);
+    });
+
+    quickStartButton.addEventListener('click', event => {
+        event.preventDefault();
+        quickStart();
     });
 
     for (const site of sites) {
