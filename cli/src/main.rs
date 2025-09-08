@@ -133,6 +133,7 @@ fn main() -> ExitCode {
         let result = hyper8_web::start_server(
             context,
             ip,
+            true,
             port
         );
 

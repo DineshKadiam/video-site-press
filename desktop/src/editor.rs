@@ -92,9 +92,7 @@ pub fn start_editor(
     let _ = window.maximize();
 
     thread::spawn(|| {
-        // TODO: Currently also opens the editor in the default browser, but shouldn't.
-        //       (baked in functionality for hyper8-cli right now)
-        let result = hyper8_web::start_server(context, None, None);
+        let result = hyper8_web::start_server(context, None, false, None);
 
         if !result.is_ok() {
             // TODO: Possibly do something with this state

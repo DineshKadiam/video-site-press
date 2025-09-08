@@ -48,7 +48,8 @@ const MAX_PORT_ATTEMPTS: u16 = 10;
 pub async fn start(
     core_context: Arc<CoreContext>,
     ip_requested: Option<&IpAddr>,
-    port_requested: Option<&u16>,
+    open_browser: bool,
+    port_requested: Option<&u16>
 ) -> Result<(), ()> {
     // We ensure (and if present beforehand, wipe) the build directory on
     // build anyway, but as actix-files does not successfully register
@@ -223,13 +224,17 @@ pub async fn start(
     println!("Serving the editor at {url} (open this address in your browser if it doesn't by itself)");
     println!("Press Ctrl+C to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)");
 
-    let open_browser = || async {
-        if webbrowser::open(&url).is_err() {
-            eprintln!("Could not automatically open browser with the editor, please do so manually")
-        }
-    };
+    if open_browser {
+        let open_browser_callback = || async {
+            if webbrowser::open(&url).is_err() {
+                eprintln!("Could not automatically open browser with the editor, please do so manually")
+            }
+        };
 
-    tokio::join!(server.run(), open_browser()).0.unwrap();
+        tokio::join!(server.run(), open_browser_callback()).0.unwrap();
+    } else {
+        server.run().await.unwrap();
+    }
 
     Ok(())
 }
