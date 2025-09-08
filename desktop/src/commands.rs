@@ -173,6 +173,7 @@ pub fn open_bookmarked_site(
         if index > 0 {
             let bookmark = state_mut.site_bookmarks.remove(index);
             state_mut.site_bookmarks.insert(0, bookmark);
+            state_mut.persist();
         }
 
         state_mut.language.translations.clone()
