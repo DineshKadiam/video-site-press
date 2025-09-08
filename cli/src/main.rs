@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::io;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -132,15 +133,38 @@ fn main() -> ExitCode {
 
         let result = hyper8_web::start_server(
             context,
-            ip,
-            true,
-            port
+            ip.copied(),
+            port.copied()
         );
 
-        if result.is_ok() {
-            ExitCode::SUCCESS
-        } else {
-            ExitCode::FAILURE
+        match result {
+            Ok(url) => {
+                println!("Serving the editor at: {url}");
+
+                match webbrowser::open(&url) {
+                    Ok(()) => println!("The editor has been opened in your default browser."),
+                    Err(err) => eprintln!("Please open the url manually in your browser (an automatic attempt to do so failed with the error '{err}').")
+                }
+
+                println!(r#"Enter "exit" and confirm with Enter or press Ctrl+C to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)"#);
+
+                // TODO: We could offer a simple utility console here (to get debug
+                // information, list jobs, etc.).
+                let mut input = String::new();
+                loop {
+                    if io::stdin().read_line(&mut input).is_ok() {
+                        if input.trim() == "exit" {
+                            break;
+                        }
+                    }
+                }
+
+                ExitCode::SUCCESS
+            }
+            Err(err) => {
+                eprintln!("The server could not be started ({err})");
+                ExitCode::FAILURE
+            }
         }
     }
 }

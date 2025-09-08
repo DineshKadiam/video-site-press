@@ -3,7 +3,6 @@
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 use tauri::{
     AppHandle,
@@ -69,33 +68,31 @@ pub fn start_editor(
 
     watch_site_dir(Arc::clone(&context));
 
-    launcher_window.hide().unwrap();
+    let result = hyper8_web::start_server(context, None, None);
 
-    // TODO: This url must be returned to us from hyper8_web::start_server somehow,
-    //       and additionally only after the server's .run() method was invoked
-    //       (tokio::wait!(...) construct), and then we also need to run this in
-    //       yet another thread, because this one will be busy waiting for the start_server(...)
-    //       call to return (which it only does once we kill the process)
-    let webview_url = WebviewUrl::External(Url::parse("http://127.0.0.1:8080").unwrap());
+    match result {
+        Ok(url) => {
+            launcher_window.hide().unwrap();
 
-    let window = WebviewWindowBuilder::new(&app, "hyper8-web", webview_url)
-        .title(&format!("Hyper 8 – {}", site_dir.display()))
-        .build()
-        .unwrap();
+            let webview_url = WebviewUrl::External(Url::parse(&url).unwrap());
 
-    window.on_window_event(move |event: &WindowEvent| {
-        if let WindowEvent::Destroyed = event {
-            app.exit(EXIT_CODE_SUCCESS);
+            let window = WebviewWindowBuilder::new(&app, "hyper8-web", webview_url)
+                .title(&format!("Hyper 8 – {}", site_dir.display()))
+                .build()
+                .unwrap();
+
+            window.on_window_event(move |event: &WindowEvent| {
+                if let WindowEvent::Destroyed = event {
+                    app.exit(EXIT_CODE_SUCCESS);
+                }
+            });
+
+            let _ = window.maximize();
         }
-    });
-
-    let _ = window.maximize();
-
-    thread::spawn(|| {
-        let result = hyper8_web::start_server(context, None, false, None);
-
-        if !result.is_ok() {
-            // TODO: Possibly do something with this state
+        Err(err) => {
+            // TODO: Provide the error message in the application, then everything can crash.
+            panic!("{err}");
         }
-    });
+    }
+
 }
