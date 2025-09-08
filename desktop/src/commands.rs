@@ -30,29 +30,6 @@ use crate::editor;
 use crate::launcher;
 
 #[tauri::command]
-pub async fn add_site(app: AppHandle) {
-    app
-        .dialog()
-        .file()
-        .set_title("Pick an (empty or pre-existing) site directory")
-        .pick_folder(move |result| {
-            if let Some(FilePath::Path(site_dir)) = result {
-                let site_bookmark = SiteBookmark::new(site_dir);
-
-                let state = app.state::<Mutex<LauncherState>>();
-
-                {
-                    let mut state_mut = state.lock().unwrap();
-                    state_mut.site_bookmarks.push(site_bookmark);
-                    state_mut.persist();
-                }
-
-                let _ = app.emit("update-body", ());
-            }
-        });
-}
-
-#[tauri::command]
 pub fn change_language(
     code: &str,
     state: State<'_, Mutex<LauncherState>>
@@ -70,51 +47,80 @@ pub fn close(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn delete_site(
+pub fn create_new_site(
     app: AppHandle,
-    site_dir: PathBuf,
+    launcher_window: WebviewWindow,
     state: State<'_, Mutex<LauncherState>>
 ) {
     let state = state.lock().unwrap();
 
     let t_cancel = state.language.translations.cancel;
-    let t_delete = state.language.translations.delete;
-    let t_really_delete = state.language.translations.really_delete;
 
-    app
-        .dialog()
-        .message(t_really_delete)
-        .kind(MessageDialogKind::Warning)
-        .title(t_really_delete)
-        .buttons(
-            MessageDialogButtons::OkCancelCustom(
-                t_delete.to_string(),
-                t_cancel.to_string()
+    // TODO: Handle the None case as well (e.g. by not offering Quick start in
+    // the launcher to begin with)
+    if let Some(home_dir) = dirs::home_dir() {
+        let mut site_dir = home_dir.join("new-hyper8-site");
+
+        let mut duplicate = 2;
+        while site_dir.exists() {
+            site_dir = home_dir.join(format!("new-hyper8-site-{duplicate}"));
+            duplicate += 1;
+        }
+
+        let message = formatdoc!("
+            This will create an empty site folder in your home directory:
+            {}
+
+            1. All future content of your site will be stored in this folder
+            2. You can rename and relocate this folder at any future point (just close the editor while you do so)
+            3. Deleting this folder fully removes the site from your disk
+
+            If you confirm, your site folder will now be created and opened.",
+            site_dir.display()
+        );
+
+        app
+            .dialog()
+            .message(message)
+            .kind(MessageDialogKind::Info)
+            .title("Create new site")
+            .buttons(
+                MessageDialogButtons::OkCancelCustom(
+                    String::from("Create"),
+                    t_cancel.to_string()
+                )
             )
-        )
-        .show(move |confirmed| {
-            if confirmed {
-                // Note that the outer state handle we unlock in the root
-                // scope of delete_site(…) immediately falls out of scope.
-                // Here we are in a new, later occuring execution context,
-                // hence we obtain a new handle on state.
-                let state = app.state::<Mutex<LauncherState>>();
+            .show(move |confirmed| {
+                if confirmed {
+                    fs::create_dir(&site_dir).unwrap();
 
-                {
-                    let mut state = state.lock().unwrap();
+                    let bookmark = SiteBookmark::new(&site_dir);
 
-                    if let Some(index) = state.site_bookmarks
-                        .iter()
-                        .position(|bookmark| bookmark.site_dir == site_dir) {
-                        state.site_bookmarks.swap_remove(index);
-                    }
+                    // Note that the outer state handle we unlock in the root
+                    // scope of delete_site(…) immediately falls out of scope.
+                    // Here we are in a new, later occuring execution context,
+                    // hence we obtain a new handle on state.
+                    let state = app.state::<Mutex<LauncherState>>();
 
-                    state.persist();
+                    let translations = {
+                        let mut state_mut = state.lock().unwrap();
+
+                        state_mut.site_bookmarks.insert(0, bookmark);
+                        state_mut.persist();
+
+                        state_mut.language.translations.clone()
+                    };
+
+                    editor::start_editor(
+                        app,
+                        launcher_window,
+                        &site_dir,
+                        translations
+                    );
+
                 }
-
-                let _ = app.emit("update-body", ());
-            }
-        });
+            });
+    }
 }
 
 #[tauri::command]
@@ -148,104 +154,28 @@ pub fn get_theme(prefer_dark: bool) -> String {
 }
 
 #[tauri::command]
-pub fn open_in_file_explorer(site_dir: &Path) {
-    let _ = tauri_plugin_opener::open_path(site_dir, None::<&str>);
-}
-
-#[tauri::command]
-pub fn quick_start(
-    app: AppHandle,
-    launcher_window: WebviewWindow,
-    state: State<'_, Mutex<LauncherState>>
-) {
-    let state = state.lock().unwrap();
-
-    let t_cancel = state.language.translations.cancel;
-
-    // TODO: Handle the None case as well (e.g. by not offering Quick start in
-    // the launcher to begin with)
-    if let Some(home_dir) = dirs::home_dir() {
-        let mut site_dir = home_dir.join("hyper8-quick-start-site");
-
-        let mut duplicate = 2;
-        while site_dir.exists() {
-            site_dir = home_dir.join(format!("hyper8-quick-start-site-{duplicate}"));
-            duplicate += 1;
-        }
-
-        let message = formatdoc!("
-            This will create the empty site directory '{}' and open it in the editor right away.
-
-            You will be able to rename and relocate this directory at any future point.
-            You can also delete the directory at any point, no other traces will be left.
-
-            Proceed?",
-            site_dir.display()
-        );
-
-        app
-            .dialog()
-            .message(message)
-            .kind(MessageDialogKind::Info)
-            .title("Quick start")
-            .buttons(
-                MessageDialogButtons::OkCancelCustom(
-                    String::from("Create and open"),
-                    t_cancel.to_string()
-                )
-            )
-            .show(move |confirmed| {
-                if confirmed {
-                    fs::create_dir(&site_dir).unwrap();
-
-                    let site_bookmark = SiteBookmark::new(site_dir.clone());
-
-                    // Note that the outer state handle we unlock in the root
-                    // scope of delete_site(…) immediately falls out of scope.
-                    // Here we are in a new, later occuring execution context,
-                    // hence we obtain a new handle on state.
-                    let state = app.state::<Mutex<LauncherState>>();
-
-                    let translations = {
-                        let mut state_mut = state.lock().unwrap();
-
-                        state_mut.site_bookmarks.push(site_bookmark);
-                        state_mut.persist();
-
-                        state_mut.language.translations.clone()
-                    };
-
-                    editor::start_editor(
-                        app,
-                        launcher_window,
-                        &site_dir,
-                        translations
-                    );
-
-                }
-            });
-    }
-
-}
-
-#[tauri::command]
-pub fn render(
-    state: State<'_, Mutex<LauncherState>>
-) -> String {
-    let state = state.lock().unwrap();
-    launcher::render(&state)
-}
-
-#[tauri::command]
-pub fn start_editor(
+pub fn open_bookmarked_site(
     app: AppHandle,
     launcher_window: WebviewWindow,
     site_dir: &Path,
     state: State<'_, Mutex<LauncherState>>
 ) {
     let translations = {
-        let state = state.lock().unwrap();
-        state.language.translations.clone()
+        let mut state_mut = state.lock().unwrap();
+
+        let index = state_mut.site_bookmarks
+            .iter()
+            .position(|bookmark| bookmark.site_dir == site_dir)
+            .unwrap();
+
+        // If the site is not at the top of our list of bookmarks,
+        // put it there.
+        if index > 0 {
+            let bookmark = state_mut.site_bookmarks.remove(index);
+            state_mut.site_bookmarks.insert(0, bookmark);
+        }
+
+        state_mut.language.translations.clone()
     };
 
     editor::start_editor(
@@ -254,4 +184,110 @@ pub fn start_editor(
         site_dir,
         translations
     );
+}
+
+#[tauri::command]
+pub async fn open_existing_site(
+    app: AppHandle,
+    launcher_window: WebviewWindow
+) {
+    app
+        .dialog()
+        .file()
+        .set_title("Pick an (empty or pre-existing) site directory")
+        .pick_folder(move |result| {
+            if let Some(FilePath::Path(site_dir)) = result {
+                let bookmark = SiteBookmark::new(&site_dir);
+
+                let state = app.state::<Mutex<LauncherState>>();
+
+                let translations = {
+                    let mut state_mut = state.lock().unwrap();
+
+                    // If an already bookmarked site is opened, remove it form
+                    // the bookmarks before we add it anew
+                    if let Some(index) = state_mut.site_bookmarks
+                        .iter()
+                        .position(|bookmark| bookmark.site_dir == site_dir) {
+                        state_mut.site_bookmarks.remove(index);
+                    }
+
+                    state_mut.site_bookmarks.insert(0, bookmark);
+
+                    state_mut.persist();
+
+                    state_mut.language.translations.clone()
+                };
+
+                let _ = app.emit("update-body", ());
+
+                editor::start_editor(
+                    app,
+                    launcher_window,
+                    &site_dir,
+                    translations
+                );
+            }
+        });
+}
+
+#[tauri::command]
+pub fn open_in_file_explorer(site_dir: &Path) {
+    let _ = tauri_plugin_opener::open_path(site_dir, None::<&str>);
+}
+
+#[tauri::command]
+pub fn remove_site_bookmark(
+    app: AppHandle,
+    site_dir: PathBuf,
+    state: State<'_, Mutex<LauncherState>>
+) {
+    let state = state.lock().unwrap();
+
+    let t_cancel = state.language.translations.cancel;
+    let t_delete = state.language.translations.delete;
+    let t_really_delete = state.language.translations.really_delete;
+
+    app
+        .dialog()
+        .message(t_really_delete)
+        .kind(MessageDialogKind::Warning)
+        .title(t_really_delete)
+        .buttons(
+            MessageDialogButtons::OkCancelCustom(
+                t_delete.to_string(),
+                t_cancel.to_string()
+            )
+        )
+        .show(move |confirmed| {
+            if confirmed {
+                // Note that the outer state handle we unlock in the root
+                // scope of remove_site_bookmark(…) immediately falls out of scope.
+                // Here we are in a new, later occuring execution context,
+                // hence we obtain a new handle on state.
+                let state = app.state::<Mutex<LauncherState>>();
+
+                {
+                    let mut state = state.lock().unwrap();
+
+                    if let Some(index) = state.site_bookmarks
+                        .iter()
+                        .position(|bookmark| bookmark.site_dir == site_dir) {
+                        state.site_bookmarks.swap_remove(index);
+                    }
+
+                    state.persist();
+                }
+
+                let _ = app.emit("update-body", ());
+            }
+        });
+}
+
+#[tauri::command]
+pub fn render(
+    state: State<'_, Mutex<LauncherState>>
+) -> String {
+    let state = state.lock().unwrap();
+    launcher::render(&state)
 }

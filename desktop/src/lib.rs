@@ -48,16 +48,16 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(
             tauri::generate_handler![
-                commands::add_site,
                 commands::change_language,
                 commands::close,
-                commands::delete_site,
+                commands::create_new_site,
                 commands::get_language,
                 commands::get_theme,
+                commands::open_bookmarked_site,
+                commands::open_existing_site,
                 commands::open_in_file_explorer,
-                commands::quick_start,
-                commands::render,
-                commands::start_editor
+                commands::remove_site_bookmark,
+                commands::render
             ]
         )
         .run(tauri::generate_context!())

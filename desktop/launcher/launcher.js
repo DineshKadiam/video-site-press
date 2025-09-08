@@ -3,16 +3,6 @@ const { listen } = window.__TAURI__.event;
 
 listen('update-body', updateBody);
 
-// TODO: In addSite() & deleteSite() (and coming endpoints) we need to await
-// the actual updates to state before running the update, (with addSite consider
-// that there is actually asyncness coming from us waiting for the user to choose
-// their folder!
-
-async function addSite() {
-    await invoke('add_site');
-    updateBody();
-}
-
 async function changeLanguage(code) {
     await invoke('change_language', { code });
     document.documentElement.lang = code;
@@ -23,20 +13,25 @@ function close() {
     invoke('close');
 }
 
-async function deleteSite(siteDir) {
-    await invoke('delete_site', { siteDir });
+function createNewSite() {
+    invoke('create_new_site');
 }
 
 function openInFileExplorer(siteDir) {
     invoke('open_in_file_explorer', { siteDir });
 }
 
-function quickStart() {
-    invoke('quick_start');
+function openBookmarkedSite(siteDir) {
+    invoke('open_bookmarked_site', { siteDir });
 }
 
-function startEditor(siteDir) {
-    invoke('start_editor', { siteDir });
+async function openExistingSite() {
+    await invoke('open_existing_site');
+    updateBody();
+}
+
+async function removeSiteBookmark(siteDir) {
+    await invoke('remove_site_bookmark', { siteDir });
 }
 
 async function updateBody() {
@@ -44,20 +39,19 @@ async function updateBody() {
 
     document.body.innerHTML = body;
 
-    const addSiteButton = document.querySelector('button.add_site');
     const closeButton = document.querySelector('button.close');
+    const createNewSiteButton = document.querySelector('button.create_new_site');
     const languageSelect = document.querySelector('.language select');
-    const quickStartButton = document.querySelector('button.quick_start');
-    const sites = document.querySelectorAll('.site');
-
-    addSiteButton.addEventListener('click', event => {
-        event.preventDefault();
-        addSite();
-    });
+    const openExistingSiteButton = document.querySelector('button.open_existing_site');
 
     closeButton.addEventListener('click', event => {
         event.preventDefault();
         close();
+    });
+
+    createNewSiteButton.addEventListener('click', event => {
+        event.preventDefault();
+        createNewSite();
     });
 
     languageSelect.addEventListener('change', event => {
@@ -65,16 +59,16 @@ async function updateBody() {
         changeLanguage(languageSelect.value);
     });
 
-    quickStartButton.addEventListener('click', event => {
+    openExistingSiteButton.addEventListener('click', event => {
         event.preventDefault();
-        quickStart();
+        openExistingSite();
     });
 
-    for (const site of sites) {
+    for (const site of document.querySelectorAll('.site')) {
         const configureButton = site.querySelector('.configure');
-        const deleteButton = site.querySelector('.delete');
         const openInFileExplorerButton = site.querySelector('.open_in_file_explorer');
         const pane = site.querySelector('.pane');
+        const removeSiteBookmarkButton = site.querySelector('.remove_site_bookmark');
         const siteDir = site.dataset.siteDir;
 
         pane.addEventListener('click', event => {
@@ -83,18 +77,18 @@ async function updateBody() {
             if (configureButton.contains(event.target)) {
                 site.classList.toggle('expanded');
             } else if (!site.classList.contains('not_found')) {
-                startEditor(siteDir);
+                openBookmarkedSite(siteDir);
             }
-        });
-
-        deleteButton.addEventListener('click', event => {
-            event.preventDefault();
-            deleteSite(siteDir);
         });
 
         openInFileExplorerButton.addEventListener('click', event => {
             event.preventDefault();
             openInFileExplorer(siteDir);
+        });
+
+        removeSiteBookmarkButton.addEventListener('click', event => {
+            event.preventDefault();
+            removeSiteBookmark(siteDir);
         });
     }
 }

@@ -12,7 +12,9 @@ pub struct SiteBookmark {
 }
 
 impl SiteBookmark {
-    pub fn new(site_dir: PathBuf) -> SiteBookmark {
+    pub fn new(site_dir: impl Into<PathBuf>) -> SiteBookmark {
+        let site_dir: PathBuf = site_dir.into();
+
         let found = site_dir.exists();
 
         let live_url = SiteBookmark::probe_base_url(&site_dir);

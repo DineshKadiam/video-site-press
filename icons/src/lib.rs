@@ -101,6 +101,13 @@ pub const COPY: &str = indoc!(r#"
     </svg>
 "#);
 
+/// A rounded outline of a square, where the top-right corner is replaced with a plus sign
+pub const CREATE: &str = indoc!(r#"
+    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <path d="m44.918 2.752v9.9551h-9.957v6.3711h9.957v9.957l6.3711-2e-3v-9.9551h9.9551v-6.371h-9.9551v-9.9551zm-33.498 9.9805c-4.7456 0-8.6641 3.9223-8.6641 8.668v31.184c0 4.7456 3.9184 8.6641 8.6641 8.6641h31.187c4.7456 0 8.6641-3.9184 8.6641-8.6641v-18.176l-6.3711 0.0039v18.172c0 1.3256-0.96732 2.293-2.293 2.293h-31.188c-1.3256 0-2.293-0.96732-2.293-2.293v-31.184c0-1.3256 0.96732-2.2949 2.293-2.2949h18.162v-6.373z"/>
+    </svg>
+"#);
+
 /// A triangle resting on its base with an exclamation mark inside
 pub const DANGER: &str = indoc!(r#"
     <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -127,6 +134,7 @@ pub fn deployment(label: &str) -> String {
     "#)
 }
 
+/// Retro disk icon, as in actual circular disks stacked on top of each other
 pub fn disk(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

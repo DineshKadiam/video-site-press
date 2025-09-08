@@ -12,14 +12,32 @@ use crate::LauncherState;
 pub fn render(state: &LauncherState) -> String {
     let translations = &state.language.translations;
 
-    let logo_monochrome = hyper8_icons::logo_monochrome(None);
+    let create_icon = hyper8_icons::CREATE;
+    let create_new_site = formatdoc!(r#"
+        <button class="create_new_site">
+            {create_icon}
+            <span>Create new site</span>
+        </button>
+    "#);
 
-    let sites = if state.site_bookmarks.is_empty() {
-        translations.no_sites.to_string()
+    let browse_icon = hyper8_icons::BROWSE;
+
+    let open_existing_site = formatdoc!(r#"
+        <button class="open_existing_site">
+            {browse_icon}
+            <span>Open existing site</span>
+        </button>
+    "#);
+
+    let sites_and_actions = if state.site_bookmarks.is_empty() {
+        formatdoc!(r#"
+            {create_new_site}
+            {open_existing_site}
+        "#)
     } else {
         let configure_icon = hyper8_icons::configure(Some(translations.configure));
 
-        state.site_bookmarks
+        let sites = state.site_bookmarks
             .iter()
             .map(|bookmark| {
                 let not_found;
@@ -46,7 +64,7 @@ pub fn render(state: &LauncherState) -> String {
                     <li class="{not_found} site" data-site-dir="{site_dir}">
                         <div class="pane" tabindex="0">
                             <span class="labels">
-                                {logo_monochrome}
+                                {browse_icon}
                                 <span>{site_dir}</span>
                             </span>
                             <span>
@@ -55,17 +73,23 @@ pub fn render(state: &LauncherState) -> String {
                             </span>
                         </div>
                         <div>
-                            <button class="delete">Remove from list</button>
+                            <button class="remove_site_bookmark">Remove from list</button>
                             <button class="open_in_file_explorer">Open in file explorer</button>
                         </div>
                     </li>
                 "#)
             })
             .collect::<Vec<String>>()
-            .join("")
-    };
+            .join("");
 
-    let t_add_site = translations.add_site;
+        formatdoc!(r#"
+            <ul class="sites">
+                {sites}
+            </ul>
+            {open_existing_site}
+            {create_new_site}
+        "#)
+    };
 
     let languages = AVAILABLE_LANGUAGES
         .iter()
@@ -96,14 +120,7 @@ pub fn render(state: &LauncherState) -> String {
             </a>
         </header>
         <main>
-            <ul class="sites">
-                <li>
-                    <button class="add_site">{logo_monochrome} {t_add_site}</button>
-                    /
-                    <button class="quick_start">{logo_monochrome} Quick start new site</button>
-                </li>
-                {sites}
-            </ul>
+            {sites_and_actions}
         </main>
         <footer>
             <div>
