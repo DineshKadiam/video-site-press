@@ -250,48 +250,19 @@ pub fn remove_site_bookmark(
     site_dir: PathBuf,
     state: State<'_, Mutex<LauncherState>>
 ) {
-    let state = state.lock().unwrap();
+    {
+        let mut state = state.lock().unwrap();
 
-    let translations = &state.language.translations;
+        if let Some(index) = state.site_bookmarks
+            .iter()
+            .position(|bookmark| bookmark.site_dir == site_dir) {
+            state.site_bookmarks.remove(index);
+        }
 
-    let t_cancel = translations.cancel;
-    let t_delete = translations.delete;
-    let t_really_delete = translations.really_delete;
+        state.persist();
+    }
 
-    app
-        .dialog()
-        .message(t_really_delete)
-        .kind(MessageDialogKind::Warning)
-        .title(t_really_delete)
-        .buttons(
-            MessageDialogButtons::OkCancelCustom(
-                t_delete.to_string(),
-                t_cancel.to_string()
-            )
-        )
-        .show(move |confirmed| {
-            if confirmed {
-                // Note that the outer state handle we unlock in the root
-                // scope of remove_site_bookmark(…) immediately falls out of scope.
-                // Here we are in a new, later occuring execution context,
-                // hence we obtain a new handle on state.
-                let state = app.state::<Mutex<LauncherState>>();
-
-                {
-                    let mut state = state.lock().unwrap();
-
-                    if let Some(index) = state.site_bookmarks
-                        .iter()
-                        .position(|bookmark| bookmark.site_dir == site_dir) {
-                        state.site_bookmarks.swap_remove(index);
-                    }
-
-                    state.persist();
-                }
-
-                let _ = app.emit("update-body", ());
-            }
-        });
+    let _ = app.emit("update-body", ());
 }
 
 #[tauri::command]
