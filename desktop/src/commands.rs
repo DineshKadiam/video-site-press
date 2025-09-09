@@ -121,7 +121,6 @@ pub fn create_new_site(
                         &site_dir,
                         translations
                     );
-
                 }
             });
     }

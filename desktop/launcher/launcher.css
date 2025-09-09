@@ -12,7 +12,7 @@ body {
     margin: 0;
 }
 body, button, select {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
     font-size: 1em;
 }
 button {
@@ -139,6 +139,7 @@ main > button:not(:first-child) { margin-top: .1rem; }
     border-radius: .2rem;
     display: flex;
     column-gap: .4rem;
+    outline: none;
     padding: .2rem .4rem;
 }
 .pane:focus-visible,
@@ -167,6 +168,20 @@ main > button:not(:first-child) { margin-top: .1rem; }
 .site.not_found > :nth-child(2) { color: var(--fg-mg); }
 .site:not(.not_found) { cursor: pointer; }
 .site:not(.expanded) > :nth-child(2) { display: none; }
+.site > :nth-child(2) {
+    padding-inline-start: .5rem;
+}
+.site > :nth-child(2) button {
+    background: var(--bg-2);
+    border-radius: .2rem;
+    color: var(--fg-1);
+    margin: .5rem 0 .5rem .5rem;
+    padding: .3rem .8rem;
+}
+.site > :nth-child(2) button:focus-visible,
+.site > :nth-child(2) button:hover {
+    background: var(--bg-3);
+}
 .sites {
     display: flex;
     flex-direction: column;
