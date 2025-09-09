@@ -67,14 +67,10 @@ pub fn render(state: &LauncherState) -> String {
                 formatdoc!(r#"
                     <li class="{not_found} site" data-site-dir="{site_dir}">
                         <div class="pane" tabindex="0">
-                            <span class="labels">
-                                {browse_icon}
-                                <span>{site_dir}</span>
-                            </span>
-                            <span>
-                                <span>{label}</span>
-                                <button class="configure">{configure_icon}</button>
-                            </span>
+                            {browse_icon}
+                            <span>{site_dir}</span>
+                            <span>{label}</span>
+                            <button class="configure">{configure_icon}</button>
                         </div>
                         <div>
                             <button class="remove_site_bookmark">{t_remove_from_list}</button>
