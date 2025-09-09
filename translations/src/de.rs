@@ -65,7 +65,16 @@ impl Translations {
         copy_path: "Pfad kopieren",
         copy_url: "URL kopieren",
         could_not_compute_metadata_for_xxx: "Metadaten für {path} konnten nicht ermittelt werden",
+        create_new_site: "Neue Seite erstellen",
+        create_new_site_confirmation_notes: indoc!("
+            1. Alle zukünftigen Inhalte deiner Seite werden in diesem Ordner gespeichert werden
+            2. Du kannst diesen Ordner jederzeit umbennen oder verschieben (Hyper 8 sollte währenddessen jedoch geschlossen werden)
+            3. Durch Löschen des Ordners kann die Seite wieder vollständig von der Festplatte entfernt werden
+
+            Wenn du bestätigst wird jetzt dein Seitenordner erstellt und geöffnet.
+        "),
         create_playlist: "Playlist erstellen",
+        create_site: "Seite erstellen",
         create_subcollection: "Collection erstellen",
         create_video: "Video erstellen",
         creating_directory_xxx: "Verzeichnis {path} wird erstellt",
@@ -98,6 +107,7 @@ impl Translations {
         description: "Beschreibung",
         disabled: "Deaktiviert",
         documentation: "Dokumentation",
+        donate: "Spenden",
         download: "Download",
         download_permalink: "download",
         downloads: "Downloads",
@@ -182,6 +192,7 @@ impl Translations {
         navigation: "Navigation",
         neither_remote_dir_xxx_nor_any_ancestor_dir_found: r#"Weder das konfigurierte Zielverzeichnis am Server "{remote_dir}" ("{remote_dir_error}") noch irgendein darüberliegendes Verzeichnis konnten beim Überprüfen der Deploymentkonfiguration gefunden oder geöffnet werden"#,
         neutral: "Neutral",
+        new_hyper8_site_folder_name: "neue-hyper8-seite",
         new_link: "Neuer Link",
         new_playlist: "Neue Playlist",
         new_subcollection: "Neue Subcollection",
@@ -193,6 +204,7 @@ impl Translations {
         no_subtitles: "Keine Untertitel",
         no_title: "Kein Titel",
         no_video: "Kein Video",
+        not_found: "Nicht gefunden",
         not_ok: "Nicht okay",
         not_public: "Nicht öffentlich",
         not_saved: "Nicht gespeichert",
@@ -200,6 +212,8 @@ impl Translations {
         nothing_found_for_xxx: "Nichts für '{query}' gefunden",
         offline: "Offline",
         open_browse_panel: "Inhaltsübersicht öffnen/schliessen",
+        open_existing_site: "Bestehende Seite öffnen",
+        open_in_file_manager: "Im Dateimanager öffnen",
         opus_recommended_highest_efficiency: "Opus (Empfohlen) – Höchste Effizienz",
         order_in_which_playlists_and_subcollections_appear: "Reihenfolge in der Playlists and Subcollections platziert werden",
         original: "Original",
@@ -208,6 +222,7 @@ impl Translations {
         permalink: "Permalink",
         permalink_already_used_by_another_collection_playlist_or_video: "Dieser Permalink wird bereits von einer anderen Collection, Playlist oder Video verwendet.",
         pick_a_poster_from_the_video: "Poster aus dem Videomaterial wählen",
+        pick_an_empty_or_preexisting_site_directory: "Wähle ein (leeres oder bereits befülltes) Seitenverzeichnis",
         plain_rss: "Pures RSS (ohne Erweiterungen)",
         plain_rss_description: "Ein simpler bild- und textbasierter RSS-Feed der nur zu den Video und Audio-Inhalten auf der Website linkt.",
         play: "Abspielen",
@@ -235,6 +250,7 @@ impl Translations {
         release_date_ascending: "Veröffentlichungsdatum Aufsteigend (Jän, Feb, Mär)",
         release_date_descending: "Veröffentlichungsdatum Absteigend (Dez, Nov, Okt)",
         remote_dir_does_not_exist_ancestor_dir_found: r#"Das konfigurierte Zielverzeichnis am Server ("{remote_dir}") existiert nicht oder erlaubt keinen Zugriff ("{remote_dir_error}") - es muss manuell erstellt werden um Hyper 8 zu ermöglichen die Konfiguration vor dem Deployen zu verifizieren. Das darüber nächstgelegene Verzeichnis das gefunden wurde ist "{ancestor_dir}"."#,
+        remove_from_list: "Aus Liste entfernen",
         render_format: "Format rendern",
         replay: "Erneut abspielen",
         report_a_bug: "Problem melden",
@@ -289,6 +305,7 @@ impl Translations {
         there_was_no_source_video_to_compute_a_poster_from: "Keine Videoquelldatei gefunden von der ein Poster berechnet werden könnte",
         this_video_can_be_seamlessly_converted_to_a_video_in_a_collection: "Dieses Video kann problemlos zu einem Video in einer Collection konvertiert werden.",
         this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist: "Dieses Video kann problemlos zu einem Video in einer Playlist konvertiert werden.",
+        this_will_create_an_empty_site_folder_in_your_home_directory: "Dies wird einen leeren Seitenordner in deinem Benutzerverzeichnis erstellen:",
         thumbnail_format: "Vorschauformat",
         title: "Titel",
         title_ascending: "Titel Aufsteigend (A, B, C)",

@@ -13,19 +13,21 @@ pub fn render(state: &LauncherState) -> String {
     let translations = &state.language.translations;
 
     let create_icon = hyper8_icons::CREATE;
+    let t_create_new_site = translations.create_new_site;
     let create_new_site = formatdoc!(r#"
         <button class="create_new_site">
             {create_icon}
-            <span>Create new site</span>
+            <span>{t_create_new_site}</span>
         </button>
     "#);
 
     let browse_icon = hyper8_icons::BROWSE;
 
+    let t_open_existing_site = translations.open_existing_site;
     let open_existing_site = formatdoc!(r#"
         <button class="open_existing_site">
             {browse_icon}
-            <span>Open existing site</span>
+            <span>{t_open_existing_site}</span>
         </button>
     "#);
 
@@ -54,12 +56,14 @@ pub fn render(state: &LauncherState) -> String {
 
                     not_found = "";
                 } else {
-                    label = String::from("Not found");
+                    label = translations.not_found.to_string();
                     not_found = "not_found";
                 };
 
                 let site_dir = bookmark.site_dir.to_string_lossy();
 
+                let t_remove_from_list = translations.remove_from_list;
+                let t_open_in_file_manager = translations.open_in_file_manager;
                 formatdoc!(r#"
                     <li class="{not_found} site" data-site-dir="{site_dir}">
                         <div class="pane" tabindex="0">
@@ -73,8 +77,8 @@ pub fn render(state: &LauncherState) -> String {
                             </span>
                         </div>
                         <div>
-                            <button class="remove_site_bookmark">Remove from list</button>
-                            <button class="open_in_file_explorer">Open in file explorer</button>
+                            <button class="remove_site_bookmark">{t_remove_from_list}</button>
+                            <button class="open_in_file_manager">{t_open_in_file_manager}</button>
                         </div>
                     </li>
                 "#)
@@ -111,6 +115,8 @@ pub fn render(state: &LauncherState) -> String {
     let close_icon = hyper8_icons::failure(translations.close);
     let link_icon = hyper8_icons::link(Some(translations.external_link));
 
+    let t_donate = translations.donate;
+    let t_website = translations.website;
     format!(r#"
         <header data-tauri-drag-region>
             <img alt="Hyper 8" src="assets/logo.svg">
@@ -125,10 +131,10 @@ pub fn render(state: &LauncherState) -> String {
         <footer>
             <div>
                 <a href="https://simonrepp.com/hyper8" target="_blank">
-                    {link_icon} Website
+                    {link_icon} {t_website}
                 </a>
                 <a href="https://simonrepp.com/hyper8/#donate" target="_blank">
-                    {link_icon} Donate
+                    {link_icon} {t_donate}
                 </a>
             </div>
             <div>

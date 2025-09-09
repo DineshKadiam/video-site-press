@@ -17,8 +17,8 @@ function createNewSite() {
     invoke('create_new_site');
 }
 
-function openInFileExplorer(siteDir) {
-    invoke('open_in_file_explorer', { siteDir });
+function openInFileManager(siteDir) {
+    invoke('open_in_file_manager', { siteDir });
 }
 
 function openBookmarkedSite(siteDir) {
@@ -66,7 +66,7 @@ async function updateBody() {
 
     for (const site of document.querySelectorAll('.site')) {
         const configureButton = site.querySelector('.configure');
-        const openInFileExplorerButton = site.querySelector('.open_in_file_explorer');
+        const openInFileManagerButton = site.querySelector('.open_in_file_manager');
         const pane = site.querySelector('.pane');
         const removeSiteBookmarkButton = site.querySelector('.remove_site_bookmark');
         const siteDir = site.dataset.siteDir;
@@ -81,9 +81,9 @@ async function updateBody() {
             }
         });
 
-        openInFileExplorerButton.addEventListener('click', event => {
+        openInFileManagerButton.addEventListener('click', event => {
             event.preventDefault();
-            openInFileExplorer(siteDir);
+            openInFileManager(siteDir);
         });
 
         removeSiteBookmarkButton.addEventListener('click', event => {

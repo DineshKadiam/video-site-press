@@ -54,39 +54,43 @@ pub fn create_new_site(
 ) {
     let state = state.lock().unwrap();
 
-    let t_cancel = state.language.translations.cancel;
+    let translations = &state.language.translations;
 
     // TODO: Handle the None case as well (e.g. by not offering Quick start in
     // the launcher to begin with)
     if let Some(home_dir) = dirs::home_dir() {
-        let mut site_dir = home_dir.join("new-hyper8-site");
+        let t_new_hyper8_site_folder_name = translations.new_hyper8_site_folder_name;
+        let mut site_dir = home_dir.join(t_new_hyper8_site_folder_name);
 
         let mut duplicate = 2;
         while site_dir.exists() {
-            site_dir = home_dir.join(format!("new-hyper8-site-{duplicate}"));
+            site_dir = home_dir.join(format!("{t_new_hyper8_site_folder_name}({duplicate})"));
             duplicate += 1;
         }
 
+        let site_dir_display = site_dir.display();
+        let t_create_new_site_confirmation_notes = translations.create_new_site_confirmation_notes;
+        let t_this_will_create_an_empty_site_folder_in_your_home_directory = translations.this_will_create_an_empty_site_folder_in_your_home_directory;
         let message = formatdoc!("
-            This will create an empty site folder in your home directory:
-            {}
+            {t_this_will_create_an_empty_site_folder_in_your_home_directory}
 
-            1. All future content of your site will be stored in this folder
-            2. You can rename and relocate this folder at any future point (just close the editor while you do so)
-            3. Deleting this folder fully removes the site from your disk
+            {site_dir_display}
 
-            If you confirm, your site folder will now be created and opened.",
-            site_dir.display()
-        );
+            {t_create_new_site_confirmation_notes}
+        ");
+
+        let t_cancel = translations.cancel;
+        let t_create_new_site = translations.create_new_site;
+        let t_create_site = translations.create_site;
 
         app
             .dialog()
             .message(message)
             .kind(MessageDialogKind::Info)
-            .title("Create new site")
+            .title(t_create_new_site)
             .buttons(
                 MessageDialogButtons::OkCancelCustom(
-                    String::from("Create"),
+                    t_create_site.to_string(),
                     t_cancel.to_string()
                 )
             )
@@ -188,14 +192,17 @@ pub fn open_bookmarked_site(
 }
 
 #[tauri::command]
-pub async fn open_existing_site(
+pub fn open_existing_site(
     app: AppHandle,
-    launcher_window: WebviewWindow
+    launcher_window: WebviewWindow,
+    state: State<'_, Mutex<LauncherState>>
 ) {
+    let state = state.lock().unwrap();
+
     app
         .dialog()
         .file()
-        .set_title("Pick an (empty or pre-existing) site directory")
+        .set_title(state.language.translations.pick_an_empty_or_preexisting_site_directory)
         .pick_folder(move |result| {
             if let Some(FilePath::Path(site_dir)) = result {
                 let bookmark = SiteBookmark::new(&site_dir);
@@ -233,7 +240,7 @@ pub async fn open_existing_site(
 }
 
 #[tauri::command]
-pub fn open_in_file_explorer(site_dir: &Path) {
+pub fn open_in_file_manager(site_dir: &Path) {
     let _ = tauri_plugin_opener::open_path(site_dir, None::<&str>);
 }
 
@@ -245,9 +252,11 @@ pub fn remove_site_bookmark(
 ) {
     let state = state.lock().unwrap();
 
-    let t_cancel = state.language.translations.cancel;
-    let t_delete = state.language.translations.delete;
-    let t_really_delete = state.language.translations.really_delete;
+    let translations = &state.language.translations;
+
+    let t_cancel = translations.cancel;
+    let t_delete = translations.delete;
+    let t_really_delete = translations.really_delete;
 
     app
         .dialog()

@@ -65,7 +65,16 @@ impl Translations {
         copy_path: "Copy Path",
         copy_url: "Copy URL",
         could_not_compute_metadata_for_xxx: "Could not compute metadata for {path}",
+        create_new_site: "Create new site",
+        create_new_site_confirmation_notes: indoc!("
+            1. All future content of your site will be stored in this folder
+            2. You can rename and move this folder at any future point (just close the editor while you do so)
+            3. By deleting this folder you can fully remove the site from your disk again
+
+            If you confirm, your site folder will now be created and opened.
+        "),
         create_playlist: "Create Playlist",
+        create_site: "Create site",
         create_subcollection: "Create Subcollection",
         create_video: "Create Video",
         creating_directory_xxx: "Creating directory {path}",
@@ -98,6 +107,7 @@ impl Translations {
         description: "Description",
         disabled: "Disabled",
         documentation: "Documentation",
+        donate: "Donate",
         download: "Download",
         download_permalink: "download",
         downloads: "Downloads",
@@ -182,6 +192,7 @@ impl Translations {
         navigation: "Navigation",
         neither_remote_dir_xxx_nor_any_ancestor_dir_found: r#"Neither the configured remote server directory "{remote_dir}" ("{remote_dir_error}") nor any of its ancestor directories could be found or accessed while tyring to verify the deployment configuration"#,
         neutral: "Neutral",
+        new_hyper8_site_folder_name: "new-hyper8-site",
         new_link: "New Link",
         new_playlist: "New Playlist",
         new_subcollection: "New Subcollection",
@@ -193,6 +204,7 @@ impl Translations {
         no_subtitles: "No subtitles",
         no_title: "No title",
         no_video: "No video",
+        not_found: "Not found",
         not_ok: "Not ok",
         not_public: "Not public",
         not_saved: "Not saved",
@@ -200,6 +212,8 @@ impl Translations {
         nothing_found_for_xxx: "Nothing found for '{query}'",
         offline: "Offline",
         open_browse_panel: "Open browse panel",
+        open_existing_site: "Open existing site",
+        open_in_file_manager: "Open in file manager",
         opus_recommended_highest_efficiency: "Opus (Recommended) – Highest efficiency",
         order_in_which_playlists_and_subcollections_appear: "Order in which playlists and subcollections appear",
         original: "Original",
@@ -208,6 +222,7 @@ impl Translations {
         permalink: "Permalink",
         permalink_already_used_by_another_collection_playlist_or_video: "This permalink is already used by another collection, playlist or video.",
         pick_a_poster_from_the_video: "Pick a poster from the video",
+        pick_an_empty_or_preexisting_site_directory: "Pick an (empty or pre-existing) site directory",
         plain_rss: "Plain RSS",
         plain_rss_description: "A simple, image and text based RSS feed that only links to video and audio content on the website.",
         play: "Play",
@@ -235,6 +250,7 @@ impl Translations {
         release_date_ascending: "Release Date Ascending (Jan, Feb, Mar)",
         release_date_descending: "Release Date Descending (Dec, Nov, Oct)",
         remote_dir_does_not_exist_ancestor_dir_found: r#"The remote server directory you configured ("{remote_dir}") does not exist or is not accessible ("{remote_dir_error}") - it must be manually created in order to let Hyper 8 verify your configuration before deployment. The closest existing ancestor directory that was found on the server is "{ancestor_dir}"."#,
+        remove_from_list: "Remove from list",
         render_format: "Render Format",
         replay: "Replay",
         report_a_bug: "Report a bug",
@@ -290,6 +306,7 @@ impl Translations {
         there_was_no_source_video_to_compute_a_poster_from: "There was no source video to compute a poster from",
         this_video_can_be_seamlessly_converted_to_a_video_in_a_collection: "This video can be seamlessly converted to a video in a collection.",
         this_video_can_be_seamlessly_converted_to_a_video_in_a_playlist: "This video can be seamlessly converted to a video in a playlist.",
+        this_will_create_an_empty_site_folder_in_your_home_directory: "This will create an empty site folder in your home directory:",
         thumbnail_format: "Thumbnail format",
         title: "Title",
         title_ascending: "Title Ascending (A, B, C)",

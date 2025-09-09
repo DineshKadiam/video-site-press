@@ -55,7 +55,7 @@ pub fn run() {
                 commands::get_theme,
                 commands::open_bookmarked_site,
                 commands::open_existing_site,
-                commands::open_in_file_explorer,
+                commands::open_in_file_manager,
                 commands::remove_site_bookmark,
                 commands::render
             ]
