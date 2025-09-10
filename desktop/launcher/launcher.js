@@ -1,12 +1,16 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 
+listen('show-overlay', ({ payload }) => showOverlay(payload));
 listen('update-body', updateBody);
+listen('update-language', ({ payload }) => updateLanguage(payload));
 
-async function changeLanguage(code) {
-    await invoke('change_language', { code });
-    document.documentElement.lang = code;
-    updateBody();
+function changeLanguage(code) {
+    invoke('change_language', { code });
+}
+
+function changeMode(key) {
+    invoke('change_mode', { key });
 }
 
 function close() {
@@ -30,8 +34,18 @@ async function openExistingSite() {
     updateBody();
 }
 
-async function removeSiteBookmark(siteDir) {
-    await invoke('remove_site_bookmark', { siteDir });
+function removeSiteBookmark(siteDir) {
+    invoke('remove_site_bookmark', { siteDir });
+}
+
+function showOverlay(content) {
+    const overlay = document.querySelector('.overlay')
+    overlay.innerHTML = content;
+    overlay.showModal();
+
+    const quitButton = overlay.querySelector('button');
+    quitButton.addEventListener('click', close);
+
 }
 
 async function updateBody() {
@@ -41,26 +55,29 @@ async function updateBody() {
 
     const closeButton = document.querySelector('button.close');
     const createNewSiteButton = document.querySelector('button.create_new_site');
-    const languageSelect = document.querySelector('.language select');
+    const languageSelector = document.querySelector('.language + .selector');
+    const modeSelector = document.querySelector('.mode + .selector');
     const openExistingSiteButton = document.querySelector('button.open_existing_site');
 
-    closeButton.addEventListener('click', event => {
-        event.preventDefault();
-        close();
-    });
+    closeButton.addEventListener('click', close);
 
-    createNewSiteButton.addEventListener('click', event => {
-        event.preventDefault();
-        createNewSite();
-    });
+    createNewSiteButton.addEventListener('click', createNewSite);
 
-    languageSelect.addEventListener('change', event => {
-        event.preventDefault();
-        changeLanguage(languageSelect.value);
-    });
+    for (const button of languageSelector.querySelectorAll('button')) {
+        button.addEventListener('click', () => {
+            changeLanguage(button.dataset.code);
+            button.blur();
+        });
+    }
 
-    openExistingSiteButton.addEventListener('click', event => {
-        event.preventDefault();
+    for (const button of modeSelector.querySelectorAll('button')) {
+        button.addEventListener('click', () => {
+            changeMode(button.dataset.key);
+            button.blur();
+        });
+    }
+
+    openExistingSiteButton.addEventListener('click', () => {
         openExistingSite();
     });
 
@@ -71,9 +88,7 @@ async function updateBody() {
         const removeSiteBookmarkButton = site.querySelector('.remove_site_bookmark');
         const siteDir = site.dataset.siteDir;
 
-        pane.addEventListener('click', event => {
-            event.preventDefault();
-
+        pane.addEventListener('click', () => {
             if (configureButton.contains(event.target)) {
                 site.classList.toggle('expanded');
             } else if (!site.classList.contains('not_found')) {
@@ -81,21 +96,22 @@ async function updateBody() {
             }
         });
 
-        openInFileManagerButton.addEventListener('click', event => {
-            event.preventDefault();
+        openInFileManagerButton.addEventListener('click', () => {
             openInFileManager(siteDir);
         });
 
-        removeSiteBookmarkButton.addEventListener('click', event => {
-            event.preventDefault();
+        removeSiteBookmarkButton.addEventListener('click', () => {
             removeSiteBookmark(siteDir);
         });
     }
 }
 
-async function updateLanguage() {
-    const code = await invoke('get_language');
-    document.documentElement.lang = code;
+async function updateLanguage(code = null) {
+    if (code === null) {
+        document.documentElement.lang = await invoke('get_language');
+    } else {
+        document.documentElement.lang = code;
+    }
 }
 
 async function updateTheme() {

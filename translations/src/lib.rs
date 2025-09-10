@@ -43,12 +43,14 @@ pub struct Translations {
     pub beginning_deployment_over_insecure_ftp_unencrypted: &'static str,
     pub best: &'static str,
     pub browse: &'static str,
+    pub browser_mode: &'static str,
     pub browser_support_unclear: &'static str,
     pub cancel: &'static str,
     pub clean_urls_label: &'static str,
     pub clear_search_or_close_browse_panel: &'static str,
     pub close: &'static str,
     pub codec: &'static str,
+    pub collaborative_mode: &'static str,
     pub collapse: &'static str,
     pub collection: &'static str,
     pub collection_manifest: &'static str,
@@ -259,8 +261,10 @@ pub struct Translations {
     pub search: &'static str,
     pub sec: &'static str,
     pub set_current_frame_as_poster: &'static str,
+    pub share_the_editor_over_the_network: &'static str,
     pub shortcuts: &'static str,
     pub showing_xxx_results_for_xxx: &'static str,
+    pub shut_down_editor_and_quit: &'static str,
     pub site_manifest: &'static str,
     pub site_order: &'static str,
     pub site_settings: &'static str,
@@ -275,6 +279,7 @@ pub struct Translations {
     pub ssh_config_path_label: &'static str,
     pub ssh_config_server_label: &'static str,
     pub ssh_config_user_label: &'static str,
+    pub standalone_mode: &'static str,
     pub storage_usage: &'static str,
     pub subscribe: &'static str,
     pub subscribe_permalink: &'static str,
@@ -283,6 +288,7 @@ pub struct Translations {
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
     pub the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: &'static str,
     pub the_file_requested_for_deletion_was_not_found: &'static str,
+    the_hyper8_editor_is_available_at_xxx: &'static str,
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
     the_resource_xxx_was_not_found_message: &'static str,
@@ -325,6 +331,8 @@ pub struct Translations {
     pub upload_poster: &'static str,
     pub upload_video_or_audio_file: &'static str,
     pub url: &'static str,
+    pub use_a_dedicated_editor_window: &'static str,
+    pub use_the_editor_in_your_browser: &'static str,
     pub version: &'static str,
     pub video: &'static str,
     pub video_audio_files: &'static str,
@@ -456,6 +464,10 @@ impl Translations {
             .replace("{remote_path}", remote_path)
     }
 
+    pub fn the_hyper8_editor_is_available_at_xxx(&self, url: &str) -> String {
+        self.the_hyper8_editor_is_available_at_xxx.replace("{url}", url)
+    }
+
     pub fn the_resource_xxx_was_not_found_message(&self, path: &str) -> String {
         self.the_resource_xxx_was_not_found_message.replace("{path}", path)
     }
@@ -579,6 +591,7 @@ fn check_translations() {
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{error}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{public_address}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{remote_path}"));
+        assert!(&translations.the_hyper8_editor_is_available_at_xxx.contains("{url}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.contains("{filename}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));

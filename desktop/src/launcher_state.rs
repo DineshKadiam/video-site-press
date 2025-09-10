@@ -3,16 +3,19 @@
 
 use hyper8_core::Language;
 
-use crate::{LauncherConfig, SiteBookmark};
+use crate::{LauncherConfig, Mode, SiteBookmark};
 
 pub struct LauncherState {
     pub language: Language,
+    pub mode: Mode,
     pub site_bookmarks: Vec<SiteBookmark>
 }
 
 impl LauncherState {
     fn from_config(config: LauncherConfig) -> LauncherState {
         let language = Language::from_code(&config.language_code);
+
+        let mode = Mode::from_key(&config.mode_key);
 
         let site_bookmarks = config.site_dirs
             .into_iter()
@@ -21,6 +24,7 @@ impl LauncherState {
 
         LauncherState {
             language,
+            mode,
             site_bookmarks
         }
     }
@@ -30,10 +34,12 @@ impl LauncherState {
             Some(config) => LauncherState::from_config(config),
             None => {
                 let language = Language::default();
+                let mode = Mode::Standalone;
                 let site_bookmarks = Vec::new();
 
                 LauncherState {
                     language,
+                    mode,
                     site_bookmarks
                 }
             }

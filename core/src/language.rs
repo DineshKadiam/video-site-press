@@ -101,7 +101,7 @@ impl Language {
                  Language::explicit(
                     ChronoLocale::en_US,
                     String::from("en"),
-                    icu_locale!("de"),
+                    icu_locale!("en"),
                     TextDirection::Ltr,
                     Translations::EN
                 )

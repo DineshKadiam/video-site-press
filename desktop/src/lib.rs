@@ -18,10 +18,13 @@ mod editor;
 mod launcher;
 mod launcher_config;
 mod launcher_state;
+mod mode;
 mod site_bookmark;
 
 use launcher_config::LauncherConfig;
 use launcher_state::LauncherState;
+use mode::Mode;
+use mode::MODES;
 use site_bookmark::SiteBookmark;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -30,7 +33,7 @@ pub fn run() {
         .setup(|app| {
             let title = format!("Hyper 8 v{VERSION_WITHOUT_PATCH}");
 
-            let _ = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+            let _ = WebviewWindowBuilder::new(app, "launcher", WebviewUrl::default())
                     .center()
                     .decorations(false)
                     .inner_size(640.0, 640.0)
@@ -49,6 +52,7 @@ pub fn run() {
         .invoke_handler(
             tauri::generate_handler![
                 commands::change_language,
+                commands::change_mode,
                 commands::close,
                 commands::create_new_site,
                 commands::get_language,

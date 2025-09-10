@@ -8,6 +8,7 @@ use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
 
 use crate::LauncherState;
+use crate::MODES;
 
 pub fn render(state: &LauncherState) -> String {
     let translations = &state.language.translations;
@@ -91,24 +92,66 @@ pub fn render(state: &LauncherState) -> String {
         "#)
     };
 
+    let language = AVAILABLE_LANGUAGES
+        .iter()
+        .find_map(|language| {
+            if language.code == state.language.code {
+                Some(language.name)
+            } else {
+                None
+            }
+        })
+        .unwrap();
+
     let languages = AVAILABLE_LANGUAGES
         .iter()
         .map(|language| {
             let code = language.code;
             let label = language.name;
 
-            let selected = if code == state.language.code {
-                "selected"
+            let class_active = if code == state.language.code {
+                r#"class="active""#
             } else {
                 ""
             };
 
-            format!(r#"<option {selected} value="{code}">{label}</option>"#)
+            formatdoc!(r#"
+                <button {class_active} data-code="{code}">
+                    <span>{label}</span>
+                </button>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("");
+
+    let mode = state.mode.label(translations);
+    let mode_icon = state.mode.icon();
+    let modes = MODES
+        .iter()
+        .map(|mode| {
+            let description = mode.description(translations);
+            let icon = mode.icon();
+            let key = mode.key();
+            let label = mode.label(translations);
+
+            let class_active = if *mode == state.mode {
+                r#"class="active""#
+            } else {
+                ""
+            };
+
+            formatdoc!(r#"
+                <button {class_active} data-key="{key}">
+                    <span>{icon} {label}</span>
+                    <span>{description}</span>
+                </button>
+            "#)
         })
         .collect::<Vec<String>>()
         .join("");
 
     let close_icon = hyper8_icons::failure(translations.close);
+    let language_icon = hyper8_icons::LANGUAGE;
     let link_icon = hyper8_icons::link(Some(translations.external_link));
 
     let t_donate = translations.donate;
@@ -133,13 +176,25 @@ pub fn render(state: &LauncherState) -> String {
                     {link_icon} {t_donate}
                 </a>
             </div>
-            <div>
-                <form class="language">
-                    <select>
+            <div class="options">
+                <button class="mode">
+                    {mode_icon} {mode}
+                </button>
+                <div class="selector">
+                    <div class="panel">
+                        {modes}
+                    </div>
+                </div>
+                <button class="language">
+                    {language_icon} {language}
+                </button>
+                <div class="selector language">
+                    <div class="panel">
                         {languages}
-                    </select>
-                </form>
+                    </div>
+                </div>
             </div>
         </footer>
+        <dialog class="overlay" data-tauri-drag-region></dialog>
     "#)
 }

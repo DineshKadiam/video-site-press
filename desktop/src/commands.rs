@@ -5,7 +5,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-
 use indoc::formatdoc;
 use tauri::{
     AppHandle,
@@ -24,13 +23,14 @@ use tauri_plugin_dialog::{
 use hyper8_core::{Language, Theme};
 use hyper8_core::{GENERIC_DARK_THEME_VARS, GENERIC_LIGHT_THEME_VARS};
 
-use crate::{LauncherState, SiteBookmark};
+use crate::{LauncherState, Mode, SiteBookmark};
 use crate::EXIT_CODE_SUCCESS;
 use crate::editor;
 use crate::launcher;
 
 #[tauri::command]
 pub fn change_language(
+    app: AppHandle,
     code: &str,
     state: State<'_, Mutex<LauncherState>>
 ) {
@@ -39,6 +39,24 @@ pub fn change_language(
     let mut state_mut = state.lock().unwrap();
     state_mut.language = language;
     state_mut.persist();
+
+    let _ = app.emit("update-body", ());
+    let _ = app.emit("update-language", code);
+}
+
+#[tauri::command]
+pub fn change_mode(
+    app: AppHandle,
+    key: &str,
+    state: State<'_, Mutex<LauncherState>>
+) {
+    let mode = Mode::from_key(key);
+
+    let mut state_mut = state.lock().unwrap();
+    state_mut.mode = mode;
+    state_mut.persist();
+
+    let _ = app.emit("update-body", ());
 }
 
 #[tauri::command]
@@ -106,18 +124,23 @@ pub fn create_new_site(
                     // hence we obtain a new handle on state.
                     let state = app.state::<Mutex<LauncherState>>();
 
-                    let translations = {
+                    let mode;
+                    let translations;
+
+                    {
                         let mut state_mut = state.lock().unwrap();
 
                         state_mut.site_bookmarks.insert(0, bookmark);
                         state_mut.persist();
 
-                        state_mut.language.translations.clone()
+                        mode = state_mut.mode;
+                        translations = state_mut.language.translations.clone();
                     };
 
                     editor::start_editor(
                         app,
                         launcher_window,
+                        mode,
                         &site_dir,
                         translations
                     );
@@ -163,7 +186,10 @@ pub fn open_bookmarked_site(
     site_dir: &Path,
     state: State<'_, Mutex<LauncherState>>
 ) {
-    let translations = {
+    let mode;
+    let translations;
+
+    {
         let mut state_mut = state.lock().unwrap();
 
         let index = state_mut.site_bookmarks
@@ -179,12 +205,14 @@ pub fn open_bookmarked_site(
             state_mut.persist();
         }
 
-        state_mut.language.translations.clone()
-    };
+        mode = state_mut.mode;
+        translations = state_mut.language.translations.clone();
+    }
 
     editor::start_editor(
         app,
         launcher_window,
+        mode,
         site_dir,
         translations
     );
@@ -208,7 +236,10 @@ pub fn open_existing_site(
 
                 let state = app.state::<Mutex<LauncherState>>();
 
-                let translations = {
+                let mode;
+                let translations;
+
+                {
                     let mut state_mut = state.lock().unwrap();
 
                     // If an already bookmarked site is opened, remove it form
@@ -223,14 +254,16 @@ pub fn open_existing_site(
 
                     state_mut.persist();
 
-                    state_mut.language.translations.clone()
-                };
+                    mode = state_mut.mode;
+                    translations = state_mut.language.translations.clone();
+                }
 
                 let _ = app.emit("update-body", ());
 
                 editor::start_editor(
                     app,
                     launcher_window,
+                    mode,
                     &site_dir,
                     translations
                 );
