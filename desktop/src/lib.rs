@@ -16,7 +16,6 @@ const EXIT_CODE_SUCCESS: i32 = 0;
 
 mod commands;
 mod editor;
-mod launcher;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -42,18 +41,18 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(
             tauri::generate_handler![
-                commands::change_language,
-                commands::change_mode,
-                commands::change_theme,
-                commands::close,
-                commands::create_new_site,
-                commands::get_language,
-                commands::get_theme,
-                commands::open_bookmarked_site,
-                commands::open_existing_site,
-                commands::open_in_file_manager,
-                commands::remove_site_bookmark,
-                commands::render
+                commands::change_language::change_language,
+                commands::change_mode::change_mode,
+                commands::change_theme::change_theme,
+                commands::close::close,
+                commands::create_new_site::create_new_site,
+                commands::get_language::get_language,
+                commands::get_theme::get_theme,
+                commands::open_bookmarked_site::open_bookmarked_site,
+                commands::open_existing_site::open_existing_site,
+                commands::open_in_file_manager::open_in_file_manager,
+                commands::remove_site_bookmark::remove_site_bookmark,
+                commands::render::render
             ]
         )
         .run(tauri::generate_context!())

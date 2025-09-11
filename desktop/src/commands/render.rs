@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
+use std::sync::{Arc, Mutex};
+
+use tauri::State;
 
 use hyper8_core::Theme;
 use hyper8_core::AVAILABLE_LANGUAGES;
@@ -9,7 +12,12 @@ use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
 use hyper8_web::{EditorState, Mode};
 
-pub fn render(state: &EditorState) -> String {
+#[tauri::command]
+pub fn render(
+    state: State<'_, Arc<Mutex<EditorState>>>
+) -> String {
+    let state = state.lock().unwrap();
+
     let translations = &state.language.translations;
 
     let create_icon = hyper8_icons::CREATE;

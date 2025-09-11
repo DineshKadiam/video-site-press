@@ -128,5 +128,4 @@ pub fn start_editor(
             panic!("{err}");
         }
     }
-
 }
