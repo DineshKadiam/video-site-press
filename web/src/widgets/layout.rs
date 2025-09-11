@@ -4,7 +4,7 @@
 
 use indoc::formatdoc;
 
-use hyper8_core::Site;
+use hyper8_core::{Site, SitePath};
 use hyper8_core::util::{
     html_escape_outside_attribute,
     human_size,
@@ -142,10 +142,22 @@ fn controls(
 
     let t_preview = translations.preview;
     let preview_icon = hyper8_icons::preview(t_preview);
+    let preview_url = routes::preview(&SitePath::root_path());
     let preview = formatdoc!(r#"
-        <form action="/build/" method="post" target="_blank">
-            <button>{preview_icon} {t_preview}</button>
-        </form>
+        <a href="{preview_url}" target="_blank">
+            {preview_icon} {t_preview}
+        </a>
+        <script>
+            (()=>{{
+                const previewLink = document.currentScript.previousElementSibling;
+                // When running the editor inside the desktop application, this link can only be opened
+                // if it points to an absolute url, hence we transform the relative to an absolute url here.
+                // Note that although the href attribute is relative here (e.g. "/build/"), accessing .href
+                // returns the fully resolved url, therefore we replace the relative url with a fully resolved
+                // one here.
+                previewLink.setAttribute('href', previewLink.href);
+            }})();
+        </script>
     "#);
 
     let storage_icon = hyper8_icons::storage(Some(translations.storage_usage));

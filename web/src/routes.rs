@@ -148,6 +148,10 @@ pub fn poster(file_name: &str, site_path: &SitePath) -> String {
     format!("/poster/{}{}", site_path.normalized(),  urlencoding::encode(file_name))
 }
 
+pub fn preview(site_path: &SitePath) -> String {
+    format!("/build/{}", site_path.normalized())
+}
+
 pub const SITE_EDIT: &str = "/site/edit/";
 
 pub const SITE_MANIFEST: &str = "/site/manifest/";

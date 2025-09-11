@@ -78,7 +78,7 @@ pub fn start(
                     )
                     .app_data(data_moving.clone())
                     .route("/", get().to(index::index))
-                    .route("/build/{site_path:.*}", post().to(build))
+                    .route("/build/{site_path:.*}", get().to(build))
                     .route("/convert-to-collection/{site_path:.*}", post().to(convert::to_collection))
                     .route("/convert-to-playlist/{site_path:.*}", post().to(convert::to_playlist))
                     .route("/convert-to-video/{site_path:.*}", post().to(convert::to_video))

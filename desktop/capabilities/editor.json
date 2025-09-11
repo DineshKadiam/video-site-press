@@ -1,0 +1,13 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "description": "Capability for the editor window",
+    "identifier": "editor",
+    "permissions": [
+        "core:default",
+        "opener:default"
+    ],
+    "remote": {
+        "urls": ["http://*:*/*"]
+    },
+    "windows": ["editor"]
+}
