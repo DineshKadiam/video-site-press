@@ -17,18 +17,14 @@ use tauri::{
     WindowEvent
 };
 
-use hyper8_core::{
-    Cache,
-    Context,
-    Site
-};
-use hyper8_core::start_workers;
+use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_translations::Translations;
 use hyper8_web::{EditorState, Mode};
 
 use crate::EXIT_CODE_SUCCESS;
 
+/// Make sure site_dir definitely exists when you call this
 pub fn start_editor(
     app: AppHandle,
     launcher_window: WebviewWindow,
@@ -36,41 +32,13 @@ pub fn start_editor(
     site_dir: &Path,
     translations: Translations,
 ) {
-    if !site_dir.exists() {
-        eprintln!(
-            "Site directory {site_dir:?} does not exist, please create it manually (just an empty folder).",
-        );
-        return;
-    }
-
-    // This compiles to fs::canonicalize(...) on all platforms but windows,
-    // on windows it instead tries to supply a canonicalized path that uses
-    // the regular form (e.g. "C:\\Foo") instead of the UNC form ("\\?C:\\Foo")
-    // when possible (for background see https://crates.io/crates/dunce).
-    let site_dir = dunce::canonicalize(site_dir).unwrap();
-
-    let build_dir = site_dir.join(".hyper8_build");
-    let cache_dir = site_dir.join(".hyper8_cache");
-
-    let cache = Mutex::new(Cache::retrieve(&cache_dir));
-
     let context = Context::new(
-        build_dir,
-        cache,
-        cache_dir,
-        Arc::new(Site::new()),
-        site_dir.clone()
+        None,
+        None,
+        None,
+        site_dir,
+        &translations
     );
-
-    // TODO: Would be great if we could somehow resolve the conundrum that
-    //       context depends on site and site depends on context, which
-    //       forces us to initialize context with a dummy site and replace it here.
-    context.replace_site(Site::read_dir(&context, &site_dir));
-
-    let context = Arc::new(context);
-
-    context.compute_job_queue();
-    start_workers(&context, None, &translations);
 
     watch_site_dir(Arc::clone(&context));
 

@@ -11,6 +11,8 @@ use std::time::Duration;
 use indoc::formatdoc;
 use slug::slugify;
 
+use hyper8_translations::Translations;
+
 use crate::{
     Cache,
     Collection,
@@ -29,6 +31,7 @@ use crate::{
     Video,
     Worker
 };
+use crate::start_workers;
 use crate::util::{
     checked_remove_dir_all,
     nanoid,
@@ -1240,23 +1243,58 @@ impl Context {
         self.site.lock().unwrap().get_video(site_path)
     }
 
+    /// When calling this the following things must hold true:
+    /// - The site dir has been confirmed to exist just beforehand
+    /// - If a custom build dir is passed, its parent directory must exist (if it has one)
+    /// - If a custom cache dir is passed, its parent directory must exist (if it has one)
     pub fn new(
-        build_dir: PathBuf,
-        cache: Mutex<Cache>,
-        cache_dir: PathBuf,
-        site: Arc<Site>,
-        site_dir: PathBuf
-    ) -> Context {
-        Context {
+        custom_build_dir: Option<&PathBuf>,
+        custom_cache_dir: Option<&PathBuf>,
+        custom_worker_count: Option<usize>,
+        site_dir: &Path,
+        translations: &Translations
+    ) -> Arc<Context> {
+        // This compiles to fs::canonicalize(...) on all platforms but windows,
+        // on windows it instead tries to supply a canonicalized path that uses
+        // the regular form (e.g. "C:\\Foo") instead of the UNC form ("\\?C:\\Foo")
+        // when possible (for background see https://crates.io/crates/dunce).
+        let site_dir = dunce::canonicalize(site_dir).unwrap();
+
+        let build_dir = custom_build_dir
+            .as_ref()
+            .map(|path| path.to_path_buf())
+            .unwrap_or_else(|| site_dir.join(".hyper8_build"));
+
+        let cache_dir = custom_cache_dir
+            .as_ref()
+            .map(|path| path.to_path_buf())
+            .unwrap_or_else(|| site_dir.join(".hyper8_cache"));
+
+        let cache = Mutex::new(Cache::retrieve(&cache_dir));
+
+        let context = Context {
             build_dir,
             cache,
             cache_dir,
             completed_jobs: Mutex::new(Vec::new()),
             deploying: Mutex::new(DeploymentState::new()),
             job_queue: Mutex::new(Vec::new()),
-            site: Mutex::new(site),
-            site_dir
-        }
+            site: Mutex::new(Arc::new(Site::new())),
+            site_dir: site_dir.clone()
+        };
+
+        // TODO: Would be great if we could somehow resolve the conundrum that
+        //       context depends on site and site depends on context, which
+        //       forces us to initialize context with a dummy site and replace it here.
+        context.replace_site(Site::read_dir(&context, &site_dir));
+
+        let context = Arc::new(context);
+
+        context.compute_job_queue();
+
+        start_workers(&context, custom_worker_count, &translations);
+
+        context
     }
 
     fn queue_collection_jobs(

@@ -2357,7 +2357,6 @@ version = "0.23.0"
 dependencies = [
  "bincode",
  "dirs",
- "dunce",
  "hyper8-core",
  "hyper8-icons",
  "hyper8-translations",
@@ -2379,7 +2378,6 @@ version = "0.23.0"
 dependencies = [
  "base64 0.22.1",
  "clap",
- "dunce",
  "enolib",
  "env_logger",
  "hyper8-core",
@@ -2401,6 +2399,7 @@ dependencies = [
  "base64 0.22.1",
  "bincode",
  "chrono",
+ "dunce",
  "enolib",
  "form_urlencoded",
  "hyper8-icons",

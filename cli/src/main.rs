@@ -9,13 +9,8 @@ use std::sync::{Arc, Mutex};
 
 use sys_locale::get_locale;
 
-use hyper8_core::{
-    Cache,
-    Context,
-    Language,
-    Site
-};
-use hyper8_core::{perform_build, start_preview_server, start_workers};
+use hyper8_core::{Context, Language};
+use hyper8_core::{perform_build, start_preview_server};
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_web::EditorState;
 
@@ -36,51 +31,36 @@ fn main() -> ExitCode {
     let args = args::parse();
 
     let site_dir = args.get_one::<PathBuf>("site-dir").unwrap();
-
     if !site_dir.exists() {
-        eprintln!(
-            "Site directory {site_dir:?} does not exist, please create it manually (just an empty folder).",
-        );
+        eprintln!("Site directory {site_dir:?} does not exist, please create it manually (just an empty folder).");
         return ExitCode::FAILURE;
     }
 
-    // This compiles to fs::canonicalize(...) on all platforms but windows,
-    // on windows it instead tries to supply a canonicalized path that uses
-    // the regular form (e.g. "C:\\Foo") instead of the UNC form ("\\?C:\\Foo")
-    // when possible (for background see https://crates.io/crates/dunce).
-    let site_dir = dunce::canonicalize(site_dir).unwrap();
+    let custom_build_dir = args.get_one::<PathBuf>("build-dir");
+    if let Some(build_dir) = custom_build_dir {
+        if build_dir.parent().is_some_and(|dir| !dir.exists()) {
+            eprintln!("The parent directory of the passed custom build directory {build_dir:?} does not exist, but this is not permitted. Please ensure it exists.");
+            return ExitCode::FAILURE;
+        }
+    }
 
-    let build_dir = args.get_one::<PathBuf>("build-dir")
-        .as_ref()
-        .map(|path| path.to_path_buf())
-        .unwrap_or_else(|| site_dir.join(".hyper8_build"));
+    let custom_cache_dir = args.get_one::<PathBuf>("cache-dir");
+    if let Some(cache_dir) = custom_cache_dir {
+        if cache_dir.parent().is_some_and(|dir| !dir.exists()) {
+            eprintln!("The parent directory of the passed custom cache directory {cache_dir:?} does not exist, but this is not permitted. Please ensure it exists.");
+            return ExitCode::FAILURE;
+        }
+    }
 
-    let cache_dir = args.get_one::<PathBuf>("cache-dir")
-        .as_ref()
-        .map(|path| path.to_path_buf())
-        .unwrap_or_else(|| site_dir.join(".hyper8_cache"));
-
-    let cache = Mutex::new(Cache::retrieve(&cache_dir));
+    let custom_worker_count = args.get_one::<usize>("workers").map(|count| *count);
 
     let context = Context::new(
-        build_dir,
-        cache,
-        cache_dir,
-        Arc::new(Site::new()),
-        site_dir.clone()
+        custom_build_dir,
+        custom_cache_dir,
+        custom_worker_count,
+        site_dir,
+        translations
     );
-
-    // TODO: Would be great if we could somehow resolve the conundrum that
-    //       context depends on site and site depends on context, which
-    //       forces us to initialize context with a dummy site and replace it here.
-    context.replace_site(Site::read_dir(&context, &site_dir));
-
-    let context = Arc::new(context);
-
-    let workers = args.get_one::<usize>("workers").map(|count| *count);
-
-    context.compute_job_queue();
-    start_workers(&context, workers, &translations);
 
     let ip = args.get_one::<IpAddr>("ip");
     let port = args.get_one::<u16>("port");

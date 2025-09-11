@@ -10,7 +10,6 @@ version.workspace = true
 [dependencies]
 base64.workspace = true
 clap.workspace = true
-dunce.workspace = true
 enolib.workspace = true
 env_logger.workspace = true
 hyper8-core.path = "../core"
