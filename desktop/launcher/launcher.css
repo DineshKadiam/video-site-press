@@ -154,7 +154,6 @@ main > button:not(:first-child) { margin-top: .1rem; }
 }
 .options .selector button:focus-visible,
 .options .selector button:hover { background: var(--fg-1); }
-.options .selector.language button { justify-content: center; }
 .options .selector button:first-child {
     border-top-left-radius: .4rem;
     border-top-right-radius: .4rem;
@@ -187,6 +186,8 @@ main > button:not(:first-child) { margin-top: .1rem; }
 .options .selector button:hover > :nth-child(2) {
     color: var(--bg-3);
 }
+.options .selector.language { right: 2.5rem; }
+.options .selector.language button { justify-content: center; }
 .options > button {
     cursor: pointer;
     padding: .2rem .4rem;

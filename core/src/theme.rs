@@ -27,9 +27,6 @@ use light_neutral::LIGHT_NEUTRAL_VARS;
 use light_warm::LIGHT_WARM_VARS;
 use theme_vars::ThemeVars;
 
-pub use dark_neutral::DARK_NEUTRAL_VARS as GENERIC_DARK_THEME_VARS;
-pub use light_neutral::LIGHT_NEUTRAL_VARS as GENERIC_LIGHT_THEME_VARS;
-
 #[derive(Clone, Debug)]
 pub struct Theme {
     pub key: &'static str,
@@ -157,6 +154,28 @@ impl Theme {
         }
     }
 
+    /// Renders an html and inline-css based icon that roughly indicates the
+    /// color tone(s) of the theme
+    pub fn icon(&self) -> String {
+        match &self.kind {
+            ThemeKind::Adaptive { dark, light } => {
+                let dark_inline_vars = dark.preview_gradient_vars("d-");
+                let light_inline_vars = light.preview_gradient_vars("l-");
+
+                format!(r#"
+                    <div style="{dark_inline_vars}{light_inline_vars}background: linear-gradient(45deg, var(--l-a), var(--l-b) 49.999%, var(--d-a) 50%, var(--d-b)); border-radius: .2rem; height: 1em; width: 1em;"></div>
+                "#)
+            }
+            ThemeKind::Static(vars) => {
+                let inline_vars = vars.preview_gradient_vars("");
+
+                format!(r#"
+                    <div style="{inline_vars}background: linear-gradient(45deg, var(--a), var(--b)); border-radius: .2rem; height: 1em; width: 1em;"></div>
+                "#)
+            }
+        }
+    }
+
     pub fn print_splash_vars() -> String {
         // TODO: Port splash to oklch as well eventually
         let splash_blend = Theme::SPLASH_BLEND;
@@ -180,7 +199,7 @@ impl Theme {
         "#)
     }
 
-    pub fn variants(translations: &Translations) -> [(&str, String); 12] {
+    pub fn variants(translations: &Translations) -> [(Theme, String); 12] {
         let t_adaptive = translations.adaptive;
         let t_cool = translations.cool;
         let t_dark = translations.dark;
@@ -190,18 +209,18 @@ impl Theme {
         let t_warm = translations.warm;
 
         [
-            ("adaptive_cool", format!("{t_adaptive} {t_cool}")),
-            ("adaptive_deep", format!("{t_adaptive} {t_deep}")),
-            ("adaptive_neutral", format!("{t_adaptive} {t_neutral}")),
-            ("adaptive_warm", format!("{t_adaptive} {t_warm}")),
-            ("dark_cool", format!("{t_dark} {t_cool}")),
-            ("dark_deep", format!("{t_dark} {t_deep}")),
-            ("dark_neutral", format!("{t_dark} {t_neutral}")),
-            ("dark_warm", format!("{t_dark} {t_warm}")),
-            ("light_cool", format!("{t_light} {t_cool}")),
-            ("light_deep", format!("{t_light} {t_deep}")),
-            ("light_neutral", format!("{t_light} {t_neutral}")),
-            ("light_warm", format!("{t_light} {t_warm}"))
+            (Theme::ADAPTIVE_COOL, format!("{t_adaptive} {t_cool}")),
+            (Theme::ADAPTIVE_DEEP, format!("{t_adaptive} {t_deep}")),
+            (Theme::ADAPTIVE_NEUTRAL, format!("{t_adaptive} {t_neutral}")),
+            (Theme::ADAPTIVE_WARM, format!("{t_adaptive} {t_warm}")),
+            (Theme::DARK_COOL, format!("{t_dark} {t_cool}")),
+            (Theme::DARK_DEEP, format!("{t_dark} {t_deep}")),
+            (Theme::DARK_NEUTRAL, format!("{t_dark} {t_neutral}")),
+            (Theme::DARK_WARM, format!("{t_dark} {t_warm}")),
+            (Theme::LIGHT_COOL, format!("{t_light} {t_cool}")),
+            (Theme::LIGHT_DEEP, format!("{t_light} {t_deep}")),
+            (Theme::LIGHT_NEUTRAL, format!("{t_light} {t_neutral}")),
+            (Theme::LIGHT_WARM, format!("{t_light} {t_warm}"))
         ]
     }
 }

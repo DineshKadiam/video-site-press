@@ -80,6 +80,18 @@ impl ThemeVars {
         BASE64_STANDARD.encode(svg)
     }
 
+    pub fn preview_gradient_vars(&self, prefix: &str) -> String {
+        let a_hsl = self.bg_3.hsl();
+        let a_oklch = self.bg_3.oklch();
+        let b_hsl = self.bg_mg.hsl();
+        let b_oklch = self.bg_mg.oklch();
+
+        let a = format!("--{prefix}a: {a_hsl}; --{prefix}a: {a_oklch};");
+        let b = format!("--{prefix}b: {b_hsl}; --{prefix}b: {b_oklch};");
+
+        format!("{a}{b}")
+    }
+
     pub fn print_hsl(&self) -> String {
         let action = self.action.hsl();
         let action_hover = self.action_hover.hsl();

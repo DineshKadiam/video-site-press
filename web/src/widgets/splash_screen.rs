@@ -19,8 +19,8 @@ pub fn splash_screen(session_state: &SessionState) -> String {
 
     let mut select_theme = Select::new("theme_key", translations.theme);
 
-    for (key, label) in Theme::variants(translations) {
-        select_theme.option(key, label);
+    for (theme, label) in Theme::variants(translations) {
+        select_theme.option(theme.key, label);
     }
     select_theme.selected(session_state.theme.key);
 

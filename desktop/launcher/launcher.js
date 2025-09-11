@@ -4,6 +4,7 @@ const { listen } = window.__TAURI__.event;
 listen('show-overlay', ({ payload }) => showOverlay(payload));
 listen('update-body', updateBody);
 listen('update-language', ({ payload }) => updateLanguage(payload));
+listen('update-theme', updateTheme);
 
 function changeLanguage(code) {
     invoke('change_language', { code });
@@ -11,6 +12,10 @@ function changeLanguage(code) {
 
 function changeMode(key) {
     invoke('change_mode', { key });
+}
+
+function changeTheme(key) {
+    invoke('change_theme', { key });
 }
 
 function close() {
@@ -58,6 +63,7 @@ async function updateBody() {
     const languageSelector = document.querySelector('.language + .selector');
     const modeSelector = document.querySelector('.mode + .selector');
     const openExistingSiteButton = document.querySelector('button.open_existing_site');
+    const themeSelector = document.querySelector('.theme + .selector');
 
     closeButton.addEventListener('click', close);
 
@@ -80,6 +86,13 @@ async function updateBody() {
     openExistingSiteButton.addEventListener('click', () => {
         openExistingSite();
     });
+
+    for (const button of themeSelector.querySelectorAll('button')) {
+        button.addEventListener('click', () => {
+            changeTheme(button.dataset.key);
+            button.blur();
+        });
+    }
 
     for (const site of document.querySelectorAll('.site')) {
         const configureButton = site.querySelector('.configure');
@@ -115,8 +128,8 @@ async function updateLanguage(code = null) {
 }
 
 async function updateTheme() {
-    const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const css = await invoke('get_theme', { preferDark });
+    const [css, icon] = await invoke('get_theme');
+    document.querySelector('button.theme').innerHTML = icon;
     document.querySelector('style[data-theme]').textContent = css;
 }
 

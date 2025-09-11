@@ -3,6 +3,7 @@
 
 use indoc::formatdoc;
 
+use hyper8_core::Theme;
 use hyper8_core::AVAILABLE_LANGUAGES;
 use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
@@ -108,14 +109,8 @@ pub fn render(state: &EditorState) -> String {
             let code = language.code;
             let label = language.name;
 
-            let class_active = if code == state.language.code {
-                r#"class="active""#
-            } else {
-                ""
-            };
-
             formatdoc!(r#"
-                <button {class_active} data-code="{code}">
+                <button data-code="{code}">
                     <span>{label}</span>
                 </button>
             "#)
@@ -133,16 +128,26 @@ pub fn render(state: &EditorState) -> String {
             let key = mode.key();
             let label = mode.label(translations);
 
-            let class_active = if *mode == state.mode {
-                r#"class="active""#
-            } else {
-                ""
-            };
-
             formatdoc!(r#"
-                <button {class_active} data-key="{key}">
+                <button data-key="{key}">
                     <span>{icon} {label}</span>
                     <span>{description}</span>
+                </button>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("");
+
+    let theme_icon = state.theme.icon();
+    let themes = Theme::variants(translations)
+        .iter()
+        .map(|(theme, label)| {
+            let key = theme.key;
+            let icon = theme.icon();
+
+            formatdoc!(r#"
+                <button data-key="{key}">
+                    <span>{icon} {label}</span>
                 </button>
             "#)
         })
@@ -190,6 +195,14 @@ pub fn render(state: &EditorState) -> String {
                 <div class="selector language">
                     <div class="panel">
                         {languages}
+                    </div>
+                </div>
+                <button class="theme">
+                    {theme_icon}
+                </button>
+                <div class="selector theme">
+                    <div class="panel">
+                        {themes}
                     </div>
                 </div>
             </div>

@@ -44,6 +44,7 @@ pub fn run() {
             tauri::generate_handler![
                 commands::change_language,
                 commands::change_mode,
+                commands::change_theme,
                 commands::close,
                 commands::create_new_site,
                 commands::get_language,

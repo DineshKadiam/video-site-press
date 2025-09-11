@@ -92,8 +92,8 @@ pub fn edit_page(
     let mut input_ssh_config_user = Input::text("ssh_config_user", translations.ssh_config_user_label);
 
     let mut select_theme = Select::new("theme", translations.theme);
-    for (key, label) in Theme::variants(translations) {
-        select_theme.option(key, label);
+    for (theme, label) in Theme::variants(translations) {
+        select_theme.option(theme.key, label);
     }
 
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)

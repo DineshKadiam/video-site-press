@@ -101,7 +101,6 @@ pub use site_url::SiteUrl;
 pub use sort::{Asc, Comparison, Desc};
 pub use subtitles::SubtitleFile;
 pub use theme::{Theme, ThemeKind};
-pub use theme::{GENERIC_DARK_THEME_VARS, GENERIC_LIGHT_THEME_VARS};
 pub use video::Video;
 pub use video_file::VideoFile;
 pub use video_format::VideoFormat;
