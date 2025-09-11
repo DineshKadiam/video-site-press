@@ -30,6 +30,5 @@ use tree_view_order::TreeViewOrder;
 pub use editor_config::EditorConfig;
 pub use editor_state::EditorState;
 pub use mode::Mode;
-pub use mode::MODES;
 pub use server::start as start_server;
 pub use site_bookmark::SiteBookmark;

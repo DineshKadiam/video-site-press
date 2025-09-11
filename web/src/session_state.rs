@@ -35,7 +35,7 @@ impl SessionState {
         let editor_state = editor_state.lock().unwrap();
 
         match editor_state.mode {
-            Mode::Browser |
+            Mode::BrowserBased |
             Mode::Standalone => {
                 let language = editor_state.language.clone();
                 let theme = editor_state.theme.clone();

@@ -32,7 +32,7 @@ pub async fn change_language_and_theme(
         let mut editor_state_mut = context.editor_state.lock().unwrap();
 
         match editor_state_mut.mode {
-            Mode::Browser |
+            Mode::BrowserBased |
             Mode::Standalone => {
                 editor_state_mut.language = Language::from_code(&form.language_code);
                 editor_state_mut.theme = Theme::from_key(&form.theme_key).unwrap();
@@ -57,7 +57,7 @@ pub async fn change_tree_view_order(
         let mut editor_state_mut = context.editor_state.lock().unwrap();
 
         match editor_state_mut.mode {
-            Mode::Browser |
+            Mode::BrowserBased |
             Mode::Standalone => {
                 editor_state_mut.tree_view_order = editor_state_mut.tree_view_order.cycle();
                 editor_state_mut.persist();
