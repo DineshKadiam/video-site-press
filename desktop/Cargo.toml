@@ -21,7 +21,6 @@ tauri-build.workspace = true
 bincode.workspace = true
 dirs.workspace = true
 dunce.workspace = true
-enolib.workspace = true
 hyper8-core.path = "../core"
 hyper8-icons.path = "../icons"
 hyper8-translations.path = "../translations"

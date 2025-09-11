@@ -6,11 +6,10 @@ use indoc::formatdoc;
 use hyper8_core::AVAILABLE_LANGUAGES;
 use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
+use hyper8_web::EditorState;
+use hyper8_web::MODES;
 
-use crate::LauncherState;
-use crate::MODES;
-
-pub fn render(state: &LauncherState) -> String {
+pub fn render(state: &EditorState) -> String {
     let translations = &state.language.translations;
 
     let create_icon = hyper8_icons::CREATE;

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
@@ -13,7 +13,7 @@ use hyper8_core::{Playlist, SitePath};
 use crate::{
     Context,
     Location,
-    Session,
+    SessionState,
     Textarea
 };
 use crate::actix::html_response;
@@ -26,24 +26,24 @@ use crate::widgets::{
 
 pub async fn banner(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     match context.get_playlist(&site_path) {
-        Some(playlist) => edit_banner_page(&context, &playlist, &session),
-        None => not_found(&context, &session, &site_path)
+        Some(playlist) => edit_banner_page(&context, &playlist, &session_state),
+        None => not_found(&context, &session_state, &site_path)
     }
 }
 
 pub fn edit_banner_page(
     context: &Context,
     playlist: &Playlist,
-    session: &Session
+    session_state: &SessionState
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let t_upload_banner = translations.upload_banner;
     let banner_upload_button = upload_widget(&routes::playlist_upload_banner(playlist), t_upload_banner);
@@ -108,7 +108,7 @@ pub fn edit_banner_page(
         &body,
         context,
         Location::poster(&playlist.site_path),
-        session,
+        session_state,
         &site,
         &head_title
     );

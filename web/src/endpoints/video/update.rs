@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use chrono::NaiveDate;
@@ -18,7 +18,7 @@ use hyper8_core::{
 use hyper8_core::infallible_mutation;
 use hyper8_core::MAX_SYNOPSIS_CHARS;
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -44,10 +44,10 @@ pub struct VideoUpdateForm {
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<VideoUpdateForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let description_trimmed = form.description.trim();
 
@@ -101,7 +101,7 @@ pub async fn update(
     } else if synopsis_trimmed.chars().count() <= MAX_SYNOPSIS_CHARS {
         Some(Ok(synopsis_trimmed.to_string()))
     } else {
-        Some(Err(session.language.translations.xxx_characters_maximum(MAX_SYNOPSIS_CHARS)))
+        Some(Err(session_state.language.translations.xxx_characters_maximum(MAX_SYNOPSIS_CHARS)))
     };
 
     let title_trimmed = form.title.trim();
@@ -113,7 +113,7 @@ pub async fn update(
         synopsis.as_ref().is_some_and(|synopsis| synopsis.is_err()) {
         let video = match context.get_video(&site_path) {
             Some(video) => video,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = UpdateFormFeedback {
@@ -131,7 +131,7 @@ pub async fn update(
         };
 
         Either::Right(
-            edit_page(&context, Some(form_feedback), &session, &video)
+            edit_page(&context, Some(form_feedback), &session_state, &video)
         )
     } else {
         let mutation = |video_mut: &mut Video| {
@@ -154,10 +154,10 @@ pub async fn update(
         match context.update_video(mutation, &site_path) {
             VideoUpdate::Error(_) => infallible_mutation!(),
             VideoUpdate::InvalidManifest { video } => {
-                Either::Right(pending_manifest_errors(&context, &session, &video))
+                Either::Right(pending_manifest_errors(&context, &session_state, &video))
             }
             VideoUpdate::NotFound => {
-                Either::Right(not_found(&context, &session, &site_path))
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_edit(&video_updated);

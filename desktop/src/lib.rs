@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use tauri::{
     Manager,
@@ -10,22 +10,13 @@ use tauri::{
 };
 
 use hyper8_version::VERSION_WITHOUT_PATCH;
+use hyper8_web::EditorState;
 
 const EXIT_CODE_SUCCESS: i32 = 0;
 
 mod commands;
 mod editor;
 mod launcher;
-mod launcher_config;
-mod launcher_state;
-mod mode;
-mod site_bookmark;
-
-use launcher_config::LauncherConfig;
-use launcher_state::LauncherState;
-use mode::Mode;
-use mode::MODES;
-use site_bookmark::SiteBookmark;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -43,8 +34,8 @@ pub fn run() {
                     .build()
                     .unwrap();
 
-            let state = LauncherState::init();
-            app.manage(Mutex::new(state));
+            let state = EditorState::init();
+            app.manage(Arc::new(Mutex::new(state)));
             Ok(())
         })
         .plugin(tauri_plugin_dialog::init())

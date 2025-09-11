@@ -19,7 +19,7 @@ use hyper8_translations::Translations;
 
 use crate::{
     Location,
-    Session,
+    SessionState,
     Subpage,
     TreeViewOrder
 };
@@ -507,12 +507,12 @@ fn playlist_node(
 
 pub fn tree_view(
     location: Location,
-    session: &Session,
+    session_state: &SessionState,
     site: &Site,
     site_dir: &Path
 ) -> (String, String) {
-    let tree_view_order = session.tree_view_order;
-    let translations = &session.language.translations;
+    let tree_view_order = session_state.tree_view_order;
+    let translations = &session_state.language.translations;
 
     let mut breadcrumbs = Vec::new();
 

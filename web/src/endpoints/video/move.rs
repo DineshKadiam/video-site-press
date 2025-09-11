@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -16,7 +16,7 @@ use hyper8_core::{
 };
 use hyper8_core::util::validate_slug;
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::{error_page, not_found};
 
@@ -33,10 +33,10 @@ pub struct VideoMoveForm {
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<VideoMoveForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let slug_trimmed = form.slug.trim();
 
@@ -68,13 +68,13 @@ pub async fn r#move(
 
         match context.update_video(mutation, &site_path) {
             VideoUpdate::Error(err) => {
-                Either::Right(error_page(&context, &err, &session))
+                Either::Right(error_page(&context, &err, &session_state))
             }
             VideoUpdate::InvalidManifest { video } => {
-                Either::Right(pending_manifest_errors(&context, &session, &video))
+                Either::Right(pending_manifest_errors(&context, &session_state, &video))
             }
             VideoUpdate::NotFound => {
-                Either::Right(not_found(&context, &session, &site_path))
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_dangerous_actions(&video_updated);
@@ -84,7 +84,7 @@ pub async fn r#move(
     } else {
         let video = match context.get_video(&site_path) {
             Some(video) => video,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = MoveFormFeedback {
@@ -92,7 +92,7 @@ pub async fn r#move(
         };
 
         Either::Right(
-            dangerous_actions_page(&context, Some(form_feedback), &session, &video)
+            dangerous_actions_page(&context, Some(form_feedback), &session_state, &video)
         )
     }
 }

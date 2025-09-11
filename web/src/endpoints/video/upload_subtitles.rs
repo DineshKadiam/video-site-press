@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::web;
@@ -21,7 +21,7 @@ use hyper8_core::{
 use hyper8_core::infallible_mutation;
 use hyper8_core::util::{deduplicate_filename, supported_subtitles_extension};
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::{error_page, not_found};
 
@@ -30,15 +30,15 @@ use super::pending_manifest_errors;
 pub async fn upload_subtitles(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let video = match context.get_video(&site_path) {
         Some(video) => video,
         None => {
-            let http_response = not_found(&context, &session, &site_path);
+            let http_response = not_found(&context, &session_state, &site_path);
             return Ok(Either::Right(http_response));
         }
     };
@@ -77,11 +77,11 @@ pub async fn upload_subtitles(
                     match context.update_video(mutation, &site_path) {
                         VideoUpdate::Error(_) => infallible_mutation!(),
                         VideoUpdate::InvalidManifest { video } => {
-                            return Ok(Either::Right(pending_manifest_errors(&context, &session, &video)))
+                            return Ok(Either::Right(pending_manifest_errors(&context, &session_state, &video)))
                         }
                         // TODO: Can only happen in weird time of check vs. time of use edge cases
                         VideoUpdate::NotFound => {
-                            return Ok(Either::Right(not_found(&context, &session, &site_path)))
+                            return Ok(Either::Right(not_found(&context, &session_state, &site_path)))
                         }
                         VideoUpdate::Success { video_updated, .. } => {
                             let redirect_url = routes::video_subtitles(&video_updated);
@@ -89,9 +89,9 @@ pub async fn upload_subtitles(
                         }
                     }
                 } else {
-                    let message = session.language.translations
+                    let message = session_state.language.translations
                         .the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files(filename);
-                    return Ok(Either::Right(error_page(&context, &message, &session)))
+                    return Ok(Either::Right(error_page(&context, &message, &session_state)))
                 }
             }
         }

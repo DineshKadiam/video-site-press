@@ -3,7 +3,7 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use indoc::formatdoc;
 use tauri::{
@@ -22,8 +22,8 @@ use tauri_plugin_dialog::{
 
 use hyper8_core::{Language, Theme};
 use hyper8_core::{GENERIC_DARK_THEME_VARS, GENERIC_LIGHT_THEME_VARS};
+use hyper8_web::{EditorState, Mode, SiteBookmark};
 
-use crate::{LauncherState, Mode, SiteBookmark};
 use crate::EXIT_CODE_SUCCESS;
 use crate::editor;
 use crate::launcher;
@@ -32,7 +32,7 @@ use crate::launcher;
 pub fn change_language(
     app: AppHandle,
     code: &str,
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) {
     let language = Language::from_code(code);
 
@@ -48,7 +48,7 @@ pub fn change_language(
 pub fn change_mode(
     app: AppHandle,
     key: &str,
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) {
     let mode = Mode::from_key(key);
 
@@ -68,7 +68,7 @@ pub fn close(app: AppHandle) {
 pub fn create_new_site(
     app: AppHandle,
     launcher_window: WebviewWindow,
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) {
     let state = state.lock().unwrap();
 
@@ -122,7 +122,7 @@ pub fn create_new_site(
                     // scope of delete_site(…) immediately falls out of scope.
                     // Here we are in a new, later occuring execution context,
                     // hence we obtain a new handle on state.
-                    let state = app.state::<Mutex<LauncherState>>();
+                    let state = app.state::<Arc<Mutex<EditorState>>>();
 
                     let mode;
                     let translations;
@@ -151,7 +151,7 @@ pub fn create_new_site(
 
 #[tauri::command]
 pub fn get_language(
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) -> String {
     let state = state.lock().unwrap();
     state.language.code.to_string()
@@ -184,7 +184,7 @@ pub fn open_bookmarked_site(
     app: AppHandle,
     launcher_window: WebviewWindow,
     site_dir: &Path,
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) {
     let mode;
     let translations;
@@ -222,7 +222,7 @@ pub fn open_bookmarked_site(
 pub fn open_existing_site(
     app: AppHandle,
     launcher_window: WebviewWindow,
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) {
     let state = state.lock().unwrap();
 
@@ -234,7 +234,7 @@ pub fn open_existing_site(
             if let Some(FilePath::Path(site_dir)) = result {
                 let bookmark = SiteBookmark::new(&site_dir);
 
-                let state = app.state::<Mutex<LauncherState>>();
+                let state = app.state::<Arc<Mutex<EditorState>>>();
 
                 let mode;
                 let translations;
@@ -280,7 +280,7 @@ pub fn open_in_file_manager(site_dir: &Path) {
 pub fn remove_site_bookmark(
     app: AppHandle,
     site_dir: PathBuf,
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) {
     {
         let mut state = state.lock().unwrap();
@@ -299,7 +299,7 @@ pub fn remove_site_bookmark(
 
 #[tauri::command]
 pub fn render(
-    state: State<'_, Mutex<LauncherState>>
+    state: State<'_, Arc<Mutex<EditorState>>>
 ) -> String {
     let state = state.lock().unwrap();
     launcher::render(&state)

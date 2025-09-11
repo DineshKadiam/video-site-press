@@ -11,7 +11,7 @@ use hyper8_core::{Site,SitePath};
 use hyper8_core::util::string_from_pathbuf;
 use hyper8_translations::Translations;
 
-use crate::{Context, Location, Session};
+use crate::{Context, Location, SessionState};
 use crate::routes;
 
 mod layout;
@@ -27,9 +27,9 @@ use tree_view::tree_view;
 pub fn error_page(
     context: &Context,
     message: &str,
-    session: &Session
+    session_state: &SessionState
 ) -> HttpResponse {
-    let t_back = session.language.translations.back;
+    let t_back = session_state.language.translations.back;
 
     let dashboard_url = routes::DASHBOARD;
     let body = formatdoc!(r#"
@@ -42,12 +42,12 @@ pub fn error_page(
 
     let site = &context.get_site();
 
-    let t_error = session.language.translations.error;
+    let t_error = session_state.language.translations.error;
     let html = layout(
         &body,
         context,
         Location::AuxiliaryPage,
-        session,
+        session_state,
         site,
         t_error
     );
@@ -59,10 +59,10 @@ pub fn error_page(
 
 pub fn not_found(
     context: &Context,
-    session: &Session,
+    session_state: &SessionState,
     site_path: &SitePath
 ) -> HttpResponse {
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let t_back = translations.back;
     let t_message = translations.the_resource_xxx_was_not_found_message(site_path.normalized());
@@ -83,7 +83,7 @@ pub fn not_found(
         &body,
         context,
         Location::AuxiliaryPage,
-        session,
+        session_state,
         site,
         t_resource_not_found
     );

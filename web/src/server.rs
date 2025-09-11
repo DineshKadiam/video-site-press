@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::net::{IpAddr, Ipv4Addr};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -17,15 +17,14 @@ use actix_web::rt;
 use hyper8_core::Context as CoreContext;
 use hyper8_core::util::ensure_dir;
 
-use crate::Context;
+use crate::{Context, EditorState};
 use crate::endpoints::{
     build,
-    change_language_and_theme,
-    change_tree_view_order,
     collection,
     convert,
     deploy,
     deployment,
+    editor,
     favicon,
     index,
     jobs,
@@ -51,6 +50,7 @@ const MAX_PORT_ATTEMPTS: u16 = 10;
 /// server failed
 pub fn start(
     core_context: Arc<CoreContext>,
+    editor_state: Arc<Mutex<EditorState>>,
     ip_requested: Option<IpAddr>,
     port_requested: Option<u16>
 ) -> Result<String, String> {
@@ -60,7 +60,8 @@ pub fn start(
     // exist on startup, we create it here already.
     ensure_dir(&core_context.build_dir);
 
-    let context = Arc::new(Context::new(core_context));
+    let context = Context::new(core_context, editor_state);
+    let context = Arc::new(context);
     let data = Data::new(context);
 
     let ip = ip_requested.unwrap_or(DEFAULT_EDITOR_IP);
@@ -82,8 +83,8 @@ pub fn start(
                     .route("/convert-to-collection/{site_path:.*}", post().to(convert::to_collection))
                     .route("/convert-to-playlist/{site_path:.*}", post().to(convert::to_playlist))
                     .route("/convert-to-video/{site_path:.*}", post().to(convert::to_video))
-                    .route("/change-language-and-theme", post().to(change_language_and_theme))
-                    .route("/change-tree-view-order", post().to(change_tree_view_order))
+                    .route("/change-language-and-theme", post().to(editor::change_language_and_theme))
+                    .route("/change-tree-view-order", post().to(editor::change_tree_view_order))
                     .route("/collection/add-link/{site_path:.*}", post().to(collection::add_link))
                     .route("/collection/banner/{site_path:.*}", get().to(collection::banner))
                     .route("/collection/create-playlist/{site_path:.*}", post().to(collection::create_playlist))

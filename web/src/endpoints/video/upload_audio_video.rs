@@ -7,7 +7,7 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::web;
@@ -38,7 +38,7 @@ use hyper8_core::util::{
     supported_video_extension
 };
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::endpoints::collection::pending_manifest_errors as pending_collection_manifest_errors;
 use crate::endpoints::playlist::pending_manifest_errors as pending_playlist_manifest_errors;
 use crate::routes;
@@ -49,15 +49,15 @@ use super::pending_manifest_errors as pending_video_manifest_errors;
 pub async fn upload_audio_video(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let container = context.get_any(&site_path);
 
     if let GetAnyResult::None = container {
-        let http_response = not_found(&context, &session, &site_path);
+        let http_response = not_found(&context, &session_state, &site_path);
         return Ok(Either::Right(http_response));
     }
 
@@ -150,11 +150,11 @@ pub async fn upload_audio_video(
 
                             match context.update_collection(mutation, &site_path) {
                                 CollectionUpdate::InvalidManifest { collection } => {
-                                    return Ok(Either::Right(pending_collection_manifest_errors(&collection, &context, &session)))
+                                    return Ok(Either::Right(pending_collection_manifest_errors(&collection, &context, &session_state)))
                                 }
                                 CollectionUpdate::NotFound => {
                                     // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                    return Ok(Either::Right(not_found(&context, &session, &site_path)));
+                                    return Ok(Either::Right(not_found(&context, &session_state, &site_path)));
                                 }
                                 CollectionUpdate::Updated { optional_return_value: video, .. } => video
                             }
@@ -170,11 +170,11 @@ pub async fn upload_audio_video(
 
                             match context.update_playlist(mutation, &site_path) {
                                 PlaylistUpdate::InvalidManifest { playlist } => {
-                                    return Ok(Either::Right(pending_playlist_manifest_errors(&context, &playlist, &session)))
+                                    return Ok(Either::Right(pending_playlist_manifest_errors(&context, &playlist, &session_state)))
                                 }
                                 PlaylistUpdate::NotFound => {
                                     // TODO: Can only happen in weird time of check vs. time of use edge cases
-                                    return Ok(Either::Right(not_found(&context, &session, &site_path)));
+                                    return Ok(Either::Right(not_found(&context, &session_state, &site_path)));
                                 }
                                 PlaylistUpdate::Updated { optional_return_value: video, .. } => video
                             }
@@ -196,11 +196,11 @@ pub async fn upload_audio_video(
                             match context.update_video(mutation, &site_path) {
                                 VideoUpdate::Error(_) => infallible_mutation!(),
                                 VideoUpdate::InvalidManifest { video } => {
-                                    return Ok(Either::Right(pending_video_manifest_errors(&context, &session, &video)))
+                                    return Ok(Either::Right(pending_video_manifest_errors(&context, &session_state, &video)))
                                 }
                                 // TODO: Can only happen in weird time of check vs. time of use edge cases
                                 VideoUpdate::NotFound => {
-                                    return Ok(Either::Right(not_found(&context, &session, &site_path)));
+                                    return Ok(Either::Right(not_found(&context, &session_state, &site_path)));
                                 }
                                 VideoUpdate::Success { video_updated, .. } => video_updated
                             }
@@ -224,9 +224,9 @@ pub async fn upload_audio_video(
                     let redirect_url = routes::video_edit(&video);
                     return Ok(Either::Left(Redirect::to(redirect_url).see_other()))
                 } else {
-                    let message = session.language.translations
+                    let message = session_state.language.translations
                         .unsupported_file_extension_in_xxx(filename);
-                    return Ok(Either::Right(error_page(&context, &message, &session)));
+                    return Ok(Either::Right(error_page(&context, &message, &session_state)));
                 }
             }
         }

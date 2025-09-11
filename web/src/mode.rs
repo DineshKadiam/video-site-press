@@ -9,6 +9,7 @@ pub const MODES: [Mode; 3] = [
     Mode::Standalone
 ];
 
+#[derive(Debug)]
 #[derive(Clone, Copy, PartialEq)]
 pub enum Mode {
     Browser,

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
@@ -21,7 +21,7 @@ use crate::{
     Input,
     Location,
     Select,
-    Session,
+    SessionState,
     Textarea
 };
 use crate::actix::html_response;
@@ -55,14 +55,14 @@ pub enum PlaylistFormFeedback<'a> {
 
 pub async fn edit(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     match context.get_playlist(&site_path) {
-        Some(playlist) => edit_page(&context, None, &playlist, &session),
-        None => not_found(&context, &session, &site_path)
+        Some(playlist) => edit_page(&context, None, &playlist, &session_state),
+        None => not_found(&context, &session_state, &site_path)
     }
 }
 
@@ -70,10 +70,10 @@ pub fn edit_page(
     context: &Context,
     form_feedback: Option<PlaylistFormFeedback>,
     playlist: &Playlist,
-    session: &Session
+    session_state: &SessionState
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let t_not_saved = translations.not_saved;
 
@@ -375,7 +375,7 @@ pub fn edit_page(
         &body,
         context,
         Location::edit(&playlist.site_path),
-        session,
+        session_state,
         &site,
         &head_title
     );

@@ -2,25 +2,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use hyper8_core::Context as CoreContext;
 
-// TODO: Keep around for a while because we might want to reintroduce proper
-// editor-related state (e.g. in interplay with the desktop editor
-// integration), but if we end up never introducing that, remove this abstraction
-// and replace with simply just the core context.
+use crate::EditorState;
 
 pub struct Context {
-    pub core_context: Arc<CoreContext>
+    pub core_context: Arc<CoreContext>,
+    pub editor_state: Arc<Mutex<EditorState>>
 }
 
 impl Context {
     pub fn new(
-        core_context: Arc<CoreContext>
+        core_context: Arc<CoreContext>,
+        editor_state: Arc<Mutex<EditorState>>
     ) -> Context {
         Context {
-            core_context
+            core_context,
+            editor_state
         }
     }
 }

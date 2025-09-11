@@ -3,69 +3,69 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
 use hyper8_core::SitePath;
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::error_page;
 
 pub async fn to_collection(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
-    match context.convert_to_collection(&session.language, &site_path) {
+    match context.convert_to_collection(&session_state.language, &site_path) {
         Ok(collection) => {
             let redirect_url = routes::collection_edit(&collection);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(err) => {
             // TODO: Return error in context of originating page (playlist/video/empty)
-            Either::Right(error_page(&context, &err, &session))
+            Either::Right(error_page(&context, &err, &session_state))
         }
     }
 }
 
 pub async fn to_playlist(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
-    match context.convert_to_playlist(&session.language, &site_path) {
+    match context.convert_to_playlist(&session_state.language, &site_path) {
         Ok(playlist) => {
             let redirect_url = routes::playlist_edit(&playlist);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(err) => {
             // TODO: Return error in context of originating page (collection/video/empty)
-            Either::Right(error_page(&context, &err, &session))
+            Either::Right(error_page(&context, &err, &session_state))
         }
     }
 }
 
 pub async fn to_video(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
-    match context.convert_to_video(&session.language, &site_path) {
+    match context.convert_to_video(&session_state.language, &site_path) {
         Ok(video) => {
             let redirect_url = routes::video_edit(&video);
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         Err(err) => {
             // TODO: Return error in context of originating page (collection/playlist/empty)
-            Either::Right(error_page(&context, &err, &session))
+            Either::Right(error_page(&context, &err, &session_state))
         }
     }
 }

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
@@ -22,7 +22,7 @@ use crate::{
     Context,
     Location,
     Select,
-    Session
+    SessionState
 };
 use crate::routes;
 use crate::widgets::{layout, not_found, upload_widget};
@@ -158,30 +158,30 @@ fn additional_formats_form(translations: &Translations, video: &Video) -> String
 
 pub async fn media(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     match context.get_video(&site_path) {
         Some(video) => {
             media_page(
                 &context,
-                &session,
+                &session_state,
                 &video
             )
         }
-        None => not_found(&context, &session, &site_path)
+        None => not_found(&context, &session_state, &site_path)
     }
 }
 
 pub fn media_page(
     context: &Context,
-    session: &Session,
+    session_state: &SessionState,
     video: &Video
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let audio_files = if video.audio_files.is_empty() {
         String::new()
@@ -240,7 +240,7 @@ pub fn media_page(
                         let (browser_support, reasons) = match browser_support::audio_analysis(
                             audio_meta,
                             &audio_file.file_name,
-                            &session.language
+                            &session_state.language
                         ) {
                             Some(Ok(message)) => (
                                 translations.good_browser_support,
@@ -366,7 +366,7 @@ pub fn media_page(
 
                         let (browser_support, reasons) = match browser_support::video_analysis(
                             &video_file.file_name,
-                            &session.language,
+                            &session_state.language,
                             video_meta
                         ) {
                             Some(Ok(message)) => (
@@ -468,7 +468,7 @@ pub fn media_page(
         &body,
         context,
         Location::media(&video.site_path),
-        session,
+        session_state,
         &site,
         &head_title
     );

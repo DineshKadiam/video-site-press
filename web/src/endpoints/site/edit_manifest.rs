@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::Data;
@@ -16,7 +16,7 @@ use hyper8_core::util::string_from_pathbuf;
 use crate::{
     Context,
     Location,
-    Session,
+    SessionState,
     Textarea
 };
 use crate::routes;
@@ -24,18 +24,18 @@ use crate::widgets::layout;
 
 pub async fn edit_manifest(
     context: Data<Arc<Context>>,
-    session: ActixSession
+    session: Session
 ) -> HttpResponse {
-    let session = Session::new(&session);
-    edit_manifest_page(&context, &session)
+    let session_state = SessionState::all(&context.editor_state, &session);
+    edit_manifest_page(&context, &session_state)
 }
 
 pub fn edit_manifest_page(
     context: &Context,
-    session: &Session
+    session_state: &SessionState
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let manifest_errors = if site.manifest_errors.is_empty() {
         String::new()
@@ -84,7 +84,7 @@ pub fn edit_manifest_page(
         &body,
         context,
         Location::site_manifest(&SitePath::root_path()),
-        session,
+        session_state,
         &site,
         site.title()
     );

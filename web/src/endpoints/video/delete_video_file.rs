@@ -4,14 +4,14 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
 
 use hyper8_core::{SitePath, Video, VideoUpdate};
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::{error_page, not_found};
 
@@ -25,7 +25,7 @@ pub struct DeleteVideoFileForm {
 pub async fn delete_video_file(
     context: Data<Arc<Context>>,
     form: Form<DeleteVideoFileForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |video_mut: &mut Video| {
@@ -42,23 +42,23 @@ pub async fn delete_video_file(
 
             Ok(())
         } else {
-            let session_language = Session::language(&session);
+            let session_language = SessionState::language(&context.editor_state, &session);
             Err(session_language.translations.the_file_requested_for_deletion_was_not_found.to_string())
         }
     };
 
     match context.update_video(mutation, &site_path) {
         VideoUpdate::Error(err) => {
-            let session = Session::new(&session);
-            Either::Right(error_page(&context, &err, &session))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(error_page(&context, &err, &session_state))
         }
         VideoUpdate::InvalidManifest { video } => {
-            let session = Session::new(&session);
-            Either::Right(pending_manifest_errors(&context, &session, &video))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(pending_manifest_errors(&context, &session_state, &video))
         }
         VideoUpdate::NotFound => {
-            let session = Session::new(&session);
-            Either::Right(not_found(&context, &session, &site_path))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(not_found(&context, &session_state, &site_path))
         }
         VideoUpdate::Success { video_updated, .. } => {
             let redirect_url = routes::video_media(&video_updated);

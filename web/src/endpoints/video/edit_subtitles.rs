@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
@@ -17,7 +17,7 @@ use crate::{
     Field,
     Input,
     Location,
-    Session,
+    SessionState,
     Textarea
 };
 use crate::routes;
@@ -32,16 +32,16 @@ pub struct UpdateFormFeedback<'a> {
 pub async fn edit_subtitles(
     context: Data<Arc<Context>>,
     path: ActixPath<(String, String)>,
-    session: ActixSession
+    session: Session
 ) -> HttpResponse {
     let (file_name, site_path_str) = path.into_inner();
     let site_path = SitePath::new(site_path_str);
 
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     match context.get_video(&site_path) {
-        Some(video) => edit_subtitles_page(&context, &file_name, None, &session, &video),
-        None => not_found(&context, &session, &site_path)
+        Some(video) => edit_subtitles_page(&context, &file_name, None, &session_state, &video),
+        None => not_found(&context, &session_state, &site_path)
     }
 }
 
@@ -49,11 +49,11 @@ pub fn edit_subtitles_page(
     context: &Context,
     file_name: &str,
     form_feedback: Option<UpdateFormFeedback>,
-    session: &Session,
+    session_state: &SessionState,
     video: &Video
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
     let t_not_saved = translations.not_saved;
 
     let subtitles = match video.subtitles
@@ -62,7 +62,7 @@ pub fn edit_subtitles_page(
         Some(subtitle_file) => subtitle_file,
         None => {
             let err = format!("The subtitle file '{file_name}' was not found.");
-            return error_page(context, &err, session)
+            return error_page(context, &err, session_state)
         }
     };
 
@@ -119,7 +119,7 @@ pub fn edit_subtitles_page(
         &body,
         context,
         Location::subtitles(&video.site_path),
-        session,
+        session_state,
         &site,
         head_title
     );

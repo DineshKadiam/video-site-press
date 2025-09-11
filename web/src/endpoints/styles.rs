@@ -1,18 +1,24 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use actix_session::Session as ActixSession;
+use std::sync::Arc;
+
+use actix_session::Session;
 use actix_web::HttpResponse;
+use actix_web::web::Data;
 use indoc::formatdoc;
 
 use hyper8_core::{Font, Theme, ThemeKind};
 
-use crate::Session;
+use crate::{Context, SessionState};
 
 const FONT_ELEMENTS_SELECTOR: &str = "body, button, input, select, textarea";
 
-pub async fn styles(session: ActixSession) -> HttpResponse {
-    let theme = Session::theme(&session);
+pub async fn styles(
+    context: Data<Arc<Context>>,
+    session: Session
+) -> HttpResponse {
+    let theme = SessionState::theme(&context.editor_state, &session);
 
     let default_family = Font::Default.family();
     let fonts_css = formatdoc!(r#"

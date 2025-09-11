@@ -3,19 +3,19 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
 use hyper8_core::{SitePath, VideoParent};
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
 pub async fn delete(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     match context.delete_video(&site_path) {
@@ -28,8 +28,8 @@ pub async fn delete(
         }
         Ok(None) => Either::Left(Redirect::to(routes::DASHBOARD).see_other()),
         Err(()) => {
-            let session = Session::new(&session);
-            Either::Right(not_found(&context, &session, &site_path))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(not_found(&context, &session_state, &site_path))
         }
     }
 }

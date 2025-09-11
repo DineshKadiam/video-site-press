@@ -6,17 +6,17 @@ use indoc::formatdoc;
 
 use hyper8_core::Site;
 
-use crate::{Context, Location, Session};
+use crate::{Context, Location, SessionState};
 use crate::actix::html_response;
 use crate::routes;
 use crate::widgets::layout;
 
 pub fn pending_manifest_errors(
     context: &Context,
-    session: &Session,
+    session_state: &SessionState,
     site: &Site
 ) -> HttpResponse {
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
     let t_pending_manifest_errors = translations.pending_manifest_errors;
 
     let manifest_path = context.site_dir
@@ -57,7 +57,7 @@ pub fn pending_manifest_errors(
         &body,
         context,
         Location::AuxiliaryPage,
-        session,
+        session_state,
         site,
         t_pending_manifest_errors
     );

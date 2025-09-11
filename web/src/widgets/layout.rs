@@ -13,7 +13,7 @@ use hyper8_core::util::{
 use hyper8_translations::Translations;
 use hyper8_version::VERSION_WITH_PATCH;
 
-use crate::{Context, Location, Session};
+use crate::{Context, Location, SessionState};
 use crate::routes;
 
 use super::{splash_screen, tree_view};
@@ -192,14 +192,14 @@ pub fn layout(
     body: &str,
     context: &Context,
     location: Location,
-    session: &Session,
+    session_state: &SessionState,
     site: &Site,
     title: &str
 ) -> String {
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
     let (breadcrumbs, tree) = tree_view(
         location,
-        session,
+        session_state,
         site,
         &context.site_dir
     );
@@ -218,11 +218,11 @@ pub fn layout(
     "#);
 
 
-    let splash_screen_rendered = splash_screen(session);
+    let splash_screen_rendered = splash_screen(session_state);
 
     let r_controls = controls(context, site, translations);
 
-    let tree_view_order_label = session.tree_view_order.label(translations);
+    let tree_view_order_label = session_state.tree_view_order.label(translations);
 
     // This is used at runtime in client-side js to display the url in a message
     let data_base_url = match &site.base_url {

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Path as ActixPath};
@@ -18,7 +18,7 @@ use hyper8_core::{
 use crate::{
     Context,
     Location,
-    Session,
+    SessionState,
     Textarea
 };
 use crate::routes;
@@ -30,32 +30,32 @@ pub struct UploadPosterFormFeedback {
 
 pub async fn edit_poster(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     match context.get_video(&site_path) {
         Some(video) => {
             edit_poster_page(
                 &context,
                 None,
-                &session,
+                &session_state,
                 &video
             )
         }
-        None => not_found(&context, &session, &site_path)
+        None => not_found(&context, &session_state, &site_path)
     }
 }
 
 pub fn edit_poster_page(
     context: &Context,
     form_feedback: Option<UploadPosterFormFeedback>,
-    session: &Session,
+    session_state: &SessionState,
     video: &Video
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let pick_poster_action = routes::video_pick_poster(video);
 
@@ -240,7 +240,7 @@ pub fn edit_poster_page(
         &body,
         context,
         Location::poster(&video.site_path),
-        session,
+        session_state,
         &site,
         &head_title
     );

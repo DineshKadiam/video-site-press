@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub struct SiteBookmark {
     pub found: bool,
     pub live_url: Option<String>,

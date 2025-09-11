@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::web;
@@ -23,7 +23,7 @@ use hyper8_core::{
 };
 use hyper8_core::util::{nanoid, supported_image_extension};
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::{error_page, not_found};
 
@@ -32,18 +32,18 @@ use super::pending_manifest_errors;
 pub async fn upload_banner(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     while let Some(mut field) = payload.try_next().await? {
         if let Some(content_disposition) = field.content_disposition() {
             if let Some(file_name) = content_disposition.get_filename() {
                 if !supported_image_extension(file_name) {
-                    let message = session.language.translations
+                    let message = session_state.language.translations
                         .unsupported_file_extension_in_xxx(file_name);
-                    return Ok(Either::Right(error_page(&context, &message, &session)))
+                    return Ok(Either::Right(error_page(&context, &message, &session_state)))
                 }
 
                 let original_filename = file_name.to_string();
@@ -77,11 +77,11 @@ pub async fn upload_banner(
 
                 match context.update_collection(mutation, &site_path) {
                     CollectionUpdate::InvalidManifest { collection } => {
-                        return Ok(Either::Right(pending_manifest_errors(&collection, &context, &session)))
+                        return Ok(Either::Right(pending_manifest_errors(&collection, &context, &session_state)))
                     }
                     CollectionUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &session, &site_path);
+                        let http_response = not_found(&context, &session_state, &site_path);
 
                         return Ok(Either::Right(http_response));
                     }

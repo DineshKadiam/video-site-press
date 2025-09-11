@@ -7,16 +7,16 @@ use indoc::formatdoc;
 
 use hyper8_core::Playlist;
 
-use crate::{Context, Location, Session};
+use crate::{Context, Location, SessionState};
 use crate::routes;
 use crate::widgets::layout;
 
 pub fn pending_manifest_errors(
     context: &Context,
     playlist: &Playlist,
-    session: &Session
+    session_state: &SessionState
 ) -> HttpResponse {
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
     let t_pending_manifest_errors = translations.pending_manifest_errors;
 
     let playlist_title = playlist.title_or_slug_or_generic_label(translations);
@@ -61,7 +61,7 @@ pub fn pending_manifest_errors(
         &body,
         context,
         Location::AuxiliaryPage,
-        session,
+        session_state,
         site,
         t_pending_manifest_errors
     );

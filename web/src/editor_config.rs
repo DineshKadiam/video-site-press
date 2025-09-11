@@ -6,38 +6,47 @@ use std::path::PathBuf;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::LauncherState;
+use crate::EditorState;
 
 #[derive(Deserialize, Serialize)]
-pub struct LauncherConfig {
+pub struct EditorConfig {
     pub language_code: String,
     pub mode_key: String,
     pub site_dirs: Vec<PathBuf>,
+    pub theme_key: String,
+    pub tree_view_order_key: String
 }
 
-impl LauncherConfig {
-    pub fn from_state(state: &LauncherState) -> LauncherConfig {
+impl EditorConfig {
+    pub const DIR_NAME: &str = "hyper8";
+    pub const FILE_NAME: &str = "editor.bincode";
+
+    pub fn from_state(state: &EditorState) -> EditorConfig {
         let language_code = state.language.code.clone();
         let mode_key = state.mode.key().to_string();
+        let theme_key = state.theme.key.to_string();
+        let tree_view_order_key = state.tree_view_order.key().to_string();
 
         let site_dirs = state.site_bookmarks
             .iter()
             .map(|bookmark| bookmark.site_dir.clone())
             .collect();
 
-        LauncherConfig {
+        EditorConfig {
             language_code,
             mode_key,
-            site_dirs
+            site_dirs,
+            theme_key,
+            tree_view_order_key
         }
     }
 
     /// Persists launcher configuration to a hyper8/ directory in the user
     /// system's config directory.
     pub fn persist(&self) {
-        if let Some(config_dir) = dirs::config_dir() {
-            let app_dir = config_dir.join("hyper8");
-            let config_file = app_dir.join("launcher.bincode");
+        if let Some(user_config_dir) = dirs::config_dir() {
+            let app_dir = user_config_dir.join(EditorConfig::DIR_NAME);
+            let config_file = app_dir.join(EditorConfig::FILE_NAME);
 
             let config_serialized = bincode::serialize(&self).unwrap();
 
@@ -48,9 +57,11 @@ impl LauncherConfig {
 
     /// Retrieves launcher configuration from a hyper8/ directory in the user
     /// system's config directory.
-    pub fn retrieve() -> Option<LauncherConfig> {
-        if let Some(config_dir) = dirs::config_dir() {
-            let config_file = config_dir.join("hyper8").join("launcher.bincode");
+    pub fn retrieve() -> Option<EditorConfig> {
+        if let Some(user_config_dir) = dirs::config_dir() {
+            let config_file = user_config_dir
+                .join(EditorConfig::DIR_NAME)
+                .join(EditorConfig::FILE_NAME);
 
             if let Ok(serialized) = fs::read(&config_file) {
                 if let Ok(launcher_config) = bincode::deserialize(&serialized) {

@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -18,7 +18,7 @@ use hyper8_core::{
 };
 use hyper8_core::util::validate_slug;
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -36,10 +36,10 @@ pub struct CreatePlaylistForm {
 pub async fn create_playlist(
     context: Data<Arc<Context>>,
     form: Form<CreatePlaylistForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let slug_trimmed = form.slug.trim();
     let title_trimmed = form.title.trim();
@@ -47,7 +47,7 @@ pub async fn create_playlist(
     let error = |slug_error, title_error| -> _ {
         let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = CollectionFormFeedback::CreatePlaylist {
@@ -55,11 +55,11 @@ pub async fn create_playlist(
             title: Field::validated(title_trimmed, title_error)
         };
 
-        Either::Right(edit_page(&collection, &context, form_feedback, &session))
+        Either::Right(edit_page(&collection, &context, form_feedback, &session_state))
     };
 
     if slug_trimmed.is_empty() && title_trimmed.is_empty() {
-        let t_title_or_permalink_needs_to_be_provided = session.language.translations.title_or_permalink_needs_to_be_provided;
+        let t_title_or_permalink_needs_to_be_provided = session_state.language.translations.title_or_permalink_needs_to_be_provided;
 
         return error(
             Some(t_title_or_permalink_needs_to_be_provided),
@@ -83,10 +83,10 @@ pub async fn create_playlist(
 
         match context.update_collection(mutation, &site_path) {
             CollectionUpdate::InvalidManifest { collection } => {
-                Either::Right(pending_manifest_errors(&collection, &context, &session))
+                Either::Right(pending_manifest_errors(&collection, &context, &session_state))
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &session, &site_path))
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             CollectionUpdate::Updated { optional_return_value: playlist, .. } => {
                 playlist.write_manifest(&context);
@@ -116,7 +116,7 @@ pub async fn create_playlist(
         let playlist_site_path = site_path.join(slug_trimmed);
 
         if context.site_dir.join(playlist_site_path.filesystem_relative()).exists() {
-            let message = session.language.translations.permalink_already_used_by_another_collection_playlist_or_video;
+            let message = session_state.language.translations.permalink_already_used_by_another_collection_playlist_or_video;
             error(Some(message), None)
         } else {
             let title = if title_trimmed.is_empty() { None } else { Some(title_trimmed) };

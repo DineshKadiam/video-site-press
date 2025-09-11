@@ -6,23 +6,23 @@ use indoc::formatdoc;
 use hyper8_core::Theme;
 use hyper8_version::VERSION_ADAPTIVE_PATCH;
 
-use crate::{Select, Session};
+use crate::{Select, SessionState};
 
-pub fn splash_screen(session: &Session) -> String {
-    let translations = &session.language.translations;
+pub fn splash_screen(session_state: &SessionState) -> String {
+    let translations = &session_state.language.translations;
 
     let mut select_language = Select::new("language_code", translations.language);
     for (code, label) in [("de", "Deutsch"), ("en", "English")] {
         select_language.option(code, label);
     }
-    select_language.selected(&session.language.code);
+    select_language.selected(&session_state.language.code);
 
     let mut select_theme = Select::new("theme_key", translations.theme);
 
     for (key, label) in Theme::variants(translations) {
         select_theme.option(key, label);
     }
-    select_theme.selected(session.theme.key);
+    select_theme.selected(session_state.theme.key);
 
     let link_icon = hyper8_icons::link(Some(translations.external_link));
     let t_documentation = translations.documentation;

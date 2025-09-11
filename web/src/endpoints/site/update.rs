@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::web::{Data, Either, Form, Redirect};
 use serde_derive::Deserialize;
@@ -17,7 +17,7 @@ use hyper8_core::{
     Theme
 };
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 
 use super::edit::edit_page;
@@ -45,7 +45,7 @@ pub struct UpdateForm {
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<UpdateForm>,
-    session: ActixSession
+    session: Session
 ) -> Either<Redirect, HttpResponse> {
     let base_url_trimmed = form.base_url.trim();
     let clean_urls = form.clean_urls.is_some();
@@ -108,8 +108,8 @@ pub async fn update(
             theme
         };
 
-        let session = Session::new(&session);
-        Either::Right(edit_page(&context, Some(form_feedback), &session, &site))
+        let session_state = SessionState::all(&context.editor_state, &session);
+        Either::Right(edit_page(&context, Some(form_feedback), &session_state, &site))
     } else {
         fn to_option(trimmed: &str) -> Option<String> {
             match trimmed.is_empty() {
@@ -143,8 +143,8 @@ pub async fn update(
 
         match context.update_site(mutation) {
             SiteUpdate::InvalidManifest { site } => {
-                let session = Session::new(&session);
-                Either::Right(pending_manifest_errors(&context, &session, &site))
+                let session_state = SessionState::all(&context.editor_state, &session);
+                Either::Right(pending_manifest_errors(&context, &session_state, &site))
             }
             SiteUpdate::Success { site_updated } => {
                 site_updated.write_manifest(&context).unwrap();

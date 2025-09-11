@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::Data;
@@ -18,18 +18,18 @@ use hyper8_core::{
 use hyper8_core::util::{html_escape_outside_attribute, human_size};
 use hyper8_translations::Translations;
 
-use crate::{Context, Location, Session};
+use crate::{Context, Location, SessionState};
 use crate::routes;
 use crate::widgets::layout;
 
 pub async fn index(
     context: Data<Arc<Context>>,
-    session: ActixSession
+    session: Session
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
     let site = context.get_site();
 
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let body = match &site.content {
         SiteContent::Collection(collection) => {
@@ -79,7 +79,7 @@ pub async fn index(
         &body,
         &context,
         Location::AuxiliaryPage,
-        &session,
+        &session_state,
         &site,
         site.title()
     );

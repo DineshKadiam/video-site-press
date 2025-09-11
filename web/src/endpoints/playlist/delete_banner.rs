@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
@@ -14,7 +14,7 @@ use hyper8_core::{
     SitePath
 };
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -22,7 +22,7 @@ use super::pending_manifest_errors;
 
 pub async fn delete_banner(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |playlist_mut: &mut Playlist| {
@@ -39,12 +39,12 @@ pub async fn delete_banner(
 
     match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::InvalidManifest { playlist } => {
-            let session = Session::new(&session);
-            Either::Right(pending_manifest_errors(&context, &playlist, &session))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(pending_manifest_errors(&context, &playlist, &session_state))
         }
         PlaylistUpdate::NotFound => {
-            let session = Session::new(&session);
-            Either::Right(not_found(&context, &session, &site_path))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(not_found(&context, &session_state, &site_path))
         }
         PlaylistUpdate::Updated { playlist_updated, .. } => {
             let redirect_url = routes::playlist_banner(&playlist_updated);

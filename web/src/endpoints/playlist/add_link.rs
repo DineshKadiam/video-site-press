@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -16,7 +16,7 @@ use hyper8_core::{
     SitePath
 };
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::{error_page, not_found};
 
@@ -32,7 +32,7 @@ pub struct AddLinkForm {
 pub async fn add_link(
     context: Data<Arc<Context>>,
     form: Form<AddLinkForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let (hidden, rel_me) = match form.verification.as_str() {
@@ -48,10 +48,10 @@ pub async fn add_link(
     let url = match Url::parse(&form.url) {
         Ok(_) => form.url.clone(),
         Err(err) => {
-            let session = Session::new(&session);
-            let t_invalid_url = session.language.translations.invalid_url;
+            let session_state = SessionState::all(&context.editor_state, &session);
+            let t_invalid_url = session_state.language.translations.invalid_url;
             let message = format!("{t_invalid_url} ({err})");
-            return Either::Right(error_page(&context, &message, &session))
+            return Either::Right(error_page(&context, &message, &session_state))
         }
     };
 
@@ -63,12 +63,12 @@ pub async fn add_link(
 
     match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::InvalidManifest { playlist } => {
-            let session = Session::new(&session);
-            Either::Right(pending_manifest_errors(&context, &playlist, &session))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(pending_manifest_errors(&context, &playlist, &session_state))
         }
         PlaylistUpdate::NotFound => {
-            let session = Session::new(&session);
-            Either::Right(not_found(&context, &session, &site_path))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(not_found(&context, &session_state, &site_path))
         }
         PlaylistUpdate::Updated { playlist_updated, .. } => {
             let redirect_url = routes::playlist_links(&playlist_updated);

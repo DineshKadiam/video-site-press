@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -16,7 +16,7 @@ use hyper8_core::{
 };
 use hyper8_core::util::validate_slug;
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -33,10 +33,10 @@ pub struct MoveForm {
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<MoveForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let slug_trimmed = form.slug.trim();
 
@@ -64,10 +64,10 @@ pub async fn r#move(
 
         match context.update_collection(mutation, &site_path) {
             CollectionUpdate::InvalidManifest { collection } => {
-                Either::Right(pending_manifest_errors(&collection, &context, &session))
+                Either::Right(pending_manifest_errors(&collection, &context, &session_state))
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &session, &site_path))
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             CollectionUpdate::Updated { collection_updated, .. } => {
                 let redirect_url = routes::collection_dangerous_actions(&collection_updated);
@@ -77,7 +77,7 @@ pub async fn r#move(
     } else {
         let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = MoveFormFeedback {
@@ -85,7 +85,7 @@ pub async fn r#move(
         };
 
         Either::Right(
-            dangerous_actions_page(&collection, &context, Some(form_feedback), &session)
+            dangerous_actions_page(&collection, &context, Some(form_feedback), &session_state)
         )
     }
 }

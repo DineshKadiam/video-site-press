@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -14,7 +14,7 @@ use hyper8_core::{
     SitePath
 };
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -27,7 +27,7 @@ pub struct EncodeAudioForm {
 pub async fn encode_audio(
     context: Data<Arc<Context>>,
     form: Form<EncodeAudioForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     match context.get_video(&site_path) {
@@ -44,8 +44,8 @@ pub async fn encode_audio(
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         None => {
-            let session = Session::new(&session);
-            Either::Right(not_found(&context, &session, &site_path))
+            let session_state = SessionState::all(&context.editor_state, &session);
+            Either::Right(not_found(&context, &session_state, &site_path))
         }
     }
 }

@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
@@ -22,7 +22,7 @@ use crate::{
     Input,
     Location,
     Select,
-    Session,
+    SessionState,
     Textarea
 };
 use crate::routes;
@@ -65,10 +65,10 @@ pub enum CollectionFormFeedback<'a> {
 
 pub async fn edit(
     context: Data<Arc<Context>>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     match context.get_collection(&site_path) {
         Some(collection) => {
@@ -76,10 +76,10 @@ pub async fn edit(
                 &collection,
                 &context,
                 CollectionFormFeedback::None,
-                &session
+                &session_state
             )
         }
-        None => not_found(&context, &session, &site_path)
+        None => not_found(&context, &session_state, &site_path)
     }
 }
 
@@ -87,10 +87,10 @@ pub fn edit_page(
     collection: &Collection,
     context: &Context,
     form_feedback: CollectionFormFeedback,
-    session: &Session
+    session_state: &SessionState
 ) -> HttpResponse {
     let site = context.get_site();
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
     let t_not_saved = translations.not_saved;
 
     let mut errors = String::new();
@@ -501,7 +501,7 @@ pub fn edit_page(
         &body,
         context,
         Location::edit(&collection.site_path),
-        session,
+        session_state,
         &site,
         &head_title
     );

@@ -9,6 +9,7 @@ use indoc::formatdoc;
 use tauri::{
     AppHandle,
     Emitter,
+    Manager,
     Url,
     WebviewUrl,
     WebviewWindow,
@@ -24,8 +25,8 @@ use hyper8_core::{
 use hyper8_core::start_workers;
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_translations::Translations;
+use hyper8_web::{EditorState, Mode};
 
-use crate::Mode;
 use crate::EXIT_CODE_SUCCESS;
 
 pub fn start_editor(
@@ -79,7 +80,14 @@ pub fn start_editor(
         IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))
     };
 
-    let result = hyper8_web::start_server(context, Some(ip), None);
+    let editor_state = (*app.state::<Arc<Mutex<EditorState>>>()).clone();
+
+    let result = hyper8_web::start_server(
+        context,
+        editor_state,
+        Some(ip),
+        None
+    );
 
     match result {
         Ok(url) => {

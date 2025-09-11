@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::Data;
@@ -23,7 +23,7 @@ use crate::{
     Input,
     Location,
     Select,
-    Session
+    SessionState
 };
 use crate::routes;
 use crate::widgets::layout;
@@ -47,21 +47,21 @@ pub struct UpdateFormFeedback {
 
 pub async fn edit(
     context: Data<Arc<Context>>,
-    session: ActixSession
+    session: Session
 ) -> HttpResponse {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let site = context.get_site();
-    edit_page(&context, None, &session, &site)
+    edit_page(&context, None, &session_state, &site)
 }
 
 pub fn edit_page(
     context: &Context,
     form_feedback: Option<UpdateFormFeedback>,
-    session: &Session,
+    session_state: &SessionState,
     site: &Site
 ) -> HttpResponse {
-    let translations = &session.language.translations;
+    let translations = &session_state.language.translations;
 
     let manifest_errors = if site.manifest_errors.is_empty() {
         String::new()
@@ -192,7 +192,7 @@ pub fn edit_page(
         &body,
         context,
         Location::site(&SitePath::root_path()),
-        session,
+        session_state,
         site,
         t_site_settings
     );

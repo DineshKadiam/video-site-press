@@ -1,16 +1,22 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use actix_session::Session as ActixSession;
+use std::sync::Arc;
+
+use actix_session::Session;
 use actix_web::HttpResponse;
+use actix_web::web::Data;
 use indoc::formatdoc;
 
-use crate::Session;
+use crate::{Context, SessionState};
 
-pub async fn scripts(session: ActixSession) -> HttpResponse {
+pub async fn scripts(
+    context: Data<Arc<Context>>,
+    session: Session
+) -> HttpResponse {
     let static_js = include_str!("../assets/editor.js");
 
-    let session_language = Session::language(&session);
+    let session_language = SessionState::language(&context.editor_state, &session);
     let translations = session_language.translations;
 
     // We selectively provide only those translations to the runtime js code

@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use language_tags::LanguageTag;
@@ -16,7 +16,7 @@ use hyper8_core::{
     VideoUpdate
 };
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::{error_page, not_found};
 
@@ -36,7 +36,7 @@ pub async fn update_subtitles(
     context: Data<Arc<Context>>,
     form: Form<SubtitlesUpdateForm>,
     path: ActixPath<(String, String)>,
-    session: ActixSession
+    session: Session
 ) -> Either<Redirect, HttpResponse> {
     let (file_name, site_path_str) = path.into_inner();
     let site_path = SitePath::new(site_path_str);
@@ -47,7 +47,7 @@ pub async fn update_subtitles(
 
     let label_error = match label_trimmed.is_empty() {
         true => {
-            let session_language = Session::language(&session);
+            let session_language = SessionState::language(&context.editor_state, &session);
             Some(session_language.translations.label_can_not_be_empty)
         }
         false => None
@@ -67,11 +67,11 @@ pub async fn update_subtitles(
     };
 
     if label_error.is_some() || language.is_err() {
-        let session = Session::new(&session);
+        let session_state = SessionState::all(&context.editor_state, &session);
 
         let video = match context.get_video(&site_path) {
             Some(video) => video,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = UpdateFormFeedback {
@@ -81,7 +81,7 @@ pub async fn update_subtitles(
         };
 
         Either::Right(
-            edit_subtitles_page(&context, &file_name, Some(form_feedback), &session, &video)
+            edit_subtitles_page(&context, &file_name, Some(form_feedback), &session_state, &video)
         )
     } else {
         let mutation = |video_mut: &mut Video| {
@@ -104,7 +104,7 @@ pub async fn update_subtitles(
                     Ok(())
                 }
                 None => {
-                    let session_language = Session::language(&session);
+                    let session_language = SessionState::language(&context.editor_state, &session);
                     Err(session_language.translations.the_subtitles_to_be_updated_were_not_found.to_string())
                 }
             }
@@ -112,16 +112,16 @@ pub async fn update_subtitles(
 
         match context.update_video(mutation, &site_path) {
             VideoUpdate::Error(err) => {
-                let session = Session::new(&session);
-                Either::Right(error_page(&context, &err, &session))
+                let session_state = SessionState::all(&context.editor_state, &session);
+                Either::Right(error_page(&context, &err, &session_state))
             }
             VideoUpdate::InvalidManifest { video } => {
-                let session = Session::new(&session);
-                Either::Right(pending_manifest_errors(&context, &session, &video))
+                let session_state = SessionState::all(&context.editor_state, &session);
+                Either::Right(pending_manifest_errors(&context, &session_state, &video))
             }
             VideoUpdate::NotFound => {
-                let session = Session::new(&session);
-                Either::Right(not_found(&context, &session, &site_path))
+                let session_state = SessionState::all(&context.editor_state, &session);
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             VideoUpdate::Success { video_updated, .. } => {
                 let redirect_url = routes::video_subtitles(&video_updated);

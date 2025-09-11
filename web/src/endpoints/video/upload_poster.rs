@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_multipart::Multipart;
 use actix_web::{Either, Error, HttpResponse};
 use actix_web::web;
@@ -24,7 +24,7 @@ use hyper8_core::{
 use hyper8_core::infallible_mutation;
 use hyper8_core::util::{nanoid, supported_image_extension};
 
-use crate::{Context, Session};
+use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -36,10 +36,10 @@ use super::pending_manifest_errors;
 pub async fn upload_poster(
     context: Data<Arc<Context>>,
     mut payload: Multipart,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     while let Some(mut field) = payload.try_next().await? {
         if let Some(content_disposition) = field.content_disposition() {
@@ -49,11 +49,11 @@ pub async fn upload_poster(
                         Some(video) => {
                             let error = format!("Unsupported file extension in {filename}");
                             let form_feedback = UploadPosterFormFeedback { error };
-                            let http_response = edit_poster_page(&context, Some(form_feedback), &session, &video);
+                            let http_response = edit_poster_page(&context, Some(form_feedback), &session_state, &video);
                             return Ok(Either::Right(http_response))
                         }
                         None => {
-                            let http_response = not_found(&context, &session, &site_path);
+                            let http_response = not_found(&context, &session_state, &site_path);
                             return Ok(Either::Right(http_response));
                         }
                     }
@@ -104,11 +104,11 @@ pub async fn upload_poster(
                 match context.update_video(mutation, &site_path) {
                     VideoUpdate::Error(_) => infallible_mutation!(),
                     VideoUpdate::InvalidManifest { video } => {
-                        return Ok(Either::Right(pending_manifest_errors(&context, &session, &video)))
+                        return Ok(Either::Right(pending_manifest_errors(&context, &session_state, &video)))
                     }
                     VideoUpdate::NotFound => {
                         let _ = fs::remove_file(&storage_path);
-                        let http_response = not_found(&context, &session, &site_path);
+                        let http_response = not_found(&context, &session_state, &site_path);
                         return Ok(Either::Right(http_response));
                     }
                     VideoUpdate::Success { video_updated, .. } => {

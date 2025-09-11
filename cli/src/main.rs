@@ -17,6 +17,7 @@ use hyper8_core::{
 };
 use hyper8_core::{perform_build, start_preview_server, start_workers};
 use hyper8_core::watcher::watch_site_dir;
+use hyper8_web::EditorState;
 
 mod args;
 mod deploy;
@@ -131,8 +132,11 @@ fn main() -> ExitCode {
 
         watch_site_dir(Arc::clone(&context));
 
+        let editor_state = Arc::new(Mutex::new(EditorState::init()));
+
         let result = hyper8_web::start_server(
             context,
+            editor_state,
             ip.copied(),
             port.copied()
         );

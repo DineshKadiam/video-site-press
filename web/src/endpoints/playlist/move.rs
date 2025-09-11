@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -16,7 +16,7 @@ use hyper8_core::{
 };
 use hyper8_core::util::validate_slug;
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -32,10 +32,10 @@ pub struct PlaylistMoveForm {
 pub async fn r#move(
     context: Data<Arc<Context>>,
     form: Form<PlaylistMoveForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let slug_trimmed = form.slug.trim();
 
@@ -67,10 +67,10 @@ pub async fn r#move(
 
         match context.update_playlist(mutation, &site_path) {
             PlaylistUpdate::InvalidManifest { playlist } => {
-                Either::Right(pending_manifest_errors(&context, &playlist, &session))
+                Either::Right(pending_manifest_errors(&context, &playlist, &session_state))
             }
             PlaylistUpdate::NotFound => {
-                Either::Right(not_found(&context, &session, &site_path))
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             PlaylistUpdate::Updated { playlist_updated, .. } => {
                 let redirect_url = routes::playlist_dangerous_actions(&playlist_updated);
@@ -80,7 +80,7 @@ pub async fn r#move(
     } else {
         let playlist = match context.get_playlist(&site_path) {
             Some(playlist) => playlist,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = MoveFormFeedback {
@@ -88,7 +88,7 @@ pub async fn r#move(
         };
 
         Either::Right(
-            dangerous_actions_page(&context, Some(form_feedback), &playlist, &session)
+            dangerous_actions_page(&context, Some(form_feedback), &playlist, &session_state)
         )
     }
 }

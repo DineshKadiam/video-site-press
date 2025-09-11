@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use actix_session::Session as ActixSession;
+use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
@@ -17,7 +17,7 @@ use hyper8_core::{
     VideoOrder
 };
 
-use crate::{Context, Field, Session};
+use crate::{Context, Field, SessionState};
 use crate::routes;
 use crate::widgets::not_found;
 
@@ -45,10 +45,10 @@ pub struct UpdateForm {
 pub async fn update(
     context: Data<Arc<Context>>,
     form: Form<UpdateForm>,
-    session: ActixSession,
+    session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session = Session::new(&session);
+    let session_state = SessionState::all(&context.editor_state, &session);
 
     let copy_link = match form.copy_link.as_str() {
         "disabled" => Some(false),
@@ -98,7 +98,7 @@ pub async fn update(
     if sort_number.as_ref().is_some_and(|sort_number| sort_number.is_err()) {
         let collection = match context.get_collection(&site_path) {
             Some(collection) => collection,
-            None => return Either::Right(not_found(&context, &session, &site_path))
+            None => return Either::Right(not_found(&context, &session_state, &site_path))
         };
 
         let form_feedback = CollectionFormFeedback::Update {
@@ -116,7 +116,7 @@ pub async fn update(
             video_order: &form.video_order
         };
 
-        Either::Right(edit_page(&collection, &context, form_feedback, &session))
+        Either::Right(edit_page(&collection, &context, form_feedback, &session_state))
     } else {
         let mutation = |collection_mut: &mut Collection| {
             collection_mut.container_order = container_order;
@@ -142,10 +142,10 @@ pub async fn update(
 
         match context.update_collection(mutation, &site_path) {
             CollectionUpdate::InvalidManifest { collection } => {
-                Either::Right(pending_manifest_errors(&collection, &context, &session))
+                Either::Right(pending_manifest_errors(&collection, &context, &session_state))
             }
             CollectionUpdate::NotFound => {
-                Either::Right(not_found(&context, &session, &site_path))
+                Either::Right(not_found(&context, &session_state, &site_path))
             }
             CollectionUpdate::Updated { collection_updated, .. } => {
                 collection_updated.write_manifest(&context);

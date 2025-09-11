@@ -33,12 +33,12 @@ impl TreeViewOrder {
         }
     }
 
-    pub fn from_key(key: &str) -> Option<TreeViewOrder> {
+    pub fn from_key(key: &str) -> TreeViewOrder {
         match key {
-            "site_order" => Some(TreeViewOrder::SiteOrder),
-            "title_asc" => Some(TreeViewOrder::TitleAsc),
-            "title_desc" => Some(TreeViewOrder::TitleDesc),
-            _ => None
+            "site_order" => TreeViewOrder::SiteOrder,
+            "title_asc" => TreeViewOrder::TitleAsc,
+            "title_desc" => TreeViewOrder::TitleDesc,
+            _ => TreeViewOrder::Default
         }
     }
 
