@@ -7,6 +7,9 @@ name = "hyper8-cli"
 rust-version.workspace = true
 version.workspace = true
 
+[lib]
+name = "hyper8_cli_lib"
+
 [dependencies]
 base64.workspace = true
 clap.workspace = true

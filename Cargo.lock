@@ -2357,6 +2357,8 @@ version = "0.23.0"
 dependencies = [
  "bincode",
  "dirs",
+ "env_logger",
+ "hyper8-cli",
  "hyper8-core",
  "hyper8-icons",
  "hyper8-translations",

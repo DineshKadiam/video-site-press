@@ -9,10 +9,8 @@ rust-version.workspace = true
 version.workspace = true
 
 [lib]
-# _lib suffix avoids conflicts with the bin name on Windows
-# (https://github.com/rust-lang/cargo/issues/8519)
-name = "hyper8_desktop_lib"
 crate-type = ["cdylib", "rlib", "staticlib"]
+name = "hyper8_desktop_lib"
 
 [build-dependencies]
 tauri-build.workspace = true
@@ -20,6 +18,8 @@ tauri-build.workspace = true
 [dependencies]
 bincode.workspace = true
 dirs.workspace = true
+env_logger.workspace = true
+hyper8-cli.path = "../cli"
 hyper8-core.path = "../core"
 hyper8-icons.path = "../icons"
 hyper8-translations.path = "../translations"

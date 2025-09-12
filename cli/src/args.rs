@@ -9,7 +9,32 @@ use clap::value_parser;
 
 use hyper8_version::VERSION_WITH_PATCH_AND_REVISION;
 
-pub fn parse() -> ArgMatches {
+pub enum ArgMode {
+    CliOnly,
+    Desktop
+}
+
+pub fn parse(arg_mode: ArgMode) -> ArgMatches {
+    let about;
+    let after_help_text;
+    let site_dir_required;
+    let version;
+
+    match arg_mode {
+        ArgMode::CliOnly => {
+            about = "A static site generator for video publishing (Command line only edition)";
+            after_help_text = None;
+            site_dir_required = true;
+            version = format!("{VERSION_WITH_PATCH_AND_REVISION} (Command line only edition)");
+        }
+        ArgMode::Desktop => {
+            about = "A static site generator for video publishing (Full desktop edition)";
+            after_help_text = Some("To start the graphical launcher pass no arguments at all");
+            site_dir_required = false;
+            version = format!("{VERSION_WITH_PATCH_AND_REVISION} (Full desktop edition)");
+        }
+    }
+
     let build = Arg::new("build")
         .action(ArgAction::SetTrue)
         .help("Directly builds the site without starting the editor")
@@ -50,7 +75,7 @@ pub fn parse() -> ArgMatches {
 
     let site_dir = Arg::new("site-dir")
         .help("The path at which the site resides (user videos and metadata)")
-        .required(true)
+        .required(site_dir_required)
         .value_parser(value_parser!(PathBuf));
 
     let workers = Arg::new("workers")
@@ -58,9 +83,8 @@ pub fn parse() -> ArgMatches {
         .long("workers")
         .value_parser(worker_count);
 
-    let command = Command::new("Hyper 8 Video System")
-        .version(VERSION_WITH_PATCH_AND_REVISION)
-        .about("A static site generator for video publishing")
+    let mut command = Command::new("Hyper 8 Video System")
+        .about(about)
         .arg(build)
         .arg(build_dir)
         .arg(cache_dir)
@@ -69,7 +93,13 @@ pub fn parse() -> ArgMatches {
         .arg(port)
         .arg(preview)
         .arg(site_dir)
-        .arg(workers);
+        .arg(workers)
+        .next_line_help(true)
+        .version(version);
+
+    if let Some(after_help_text) = after_help_text {
+        command = command.after_help(after_help_text);
+    }
 
     command.get_matches()
 }

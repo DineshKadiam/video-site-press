@@ -4,13 +4,20 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::env;
+use std::process::ExitCode;
 
-fn main() {
-    if let Some(_) = env::args().nth(1).as_deref() {
-        // TODO: Integrate shared cli arg processing
-        println!("For the time being please start the desktop application without any arguments, CLI support will be reintegrated shortly.");
-    } else {
-        hyper8_desktop_lib::run();
+fn main() -> ExitCode {
+    env_logger::init();
+
+    // If any commandline arguments are passed, hyper8 runs in
+    // cli mode, returning an exit code after completion.
+    if let Some(exit_code) = hyper8_cli_lib::handle_desktop() {
+        return exit_code;
     }
+
+    // If no commandline arguments were passed, hyper8 starts
+    // in graphical desktop application mode.
+    hyper8_desktop_lib::run();
+
+    ExitCode::SUCCESS
 }
