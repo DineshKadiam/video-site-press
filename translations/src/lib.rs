@@ -69,7 +69,6 @@ pub struct Translations {
     pub copy_link: &'static str,
     pub copy_path: &'static str,
     pub copy_url: &'static str,
-    could_not_compute_metadata_for_xxx: &'static str,
     pub create_new_site: &'static str,
     pub create_new_site_confirmation_notes: &'static str,
     pub create_playlist: &'static str,
@@ -297,7 +296,6 @@ pub struct Translations {
     pub the_subtitles_to_be_updated_were_not_found: &'static str,
     the_test_file_contains_xxx_but_the_response_contained_xxx: &'static str,
     the_xxx_child_process_could_not_be_executed: &'static str,
-    the_xxx_child_process_could_not_be_spawned: &'static str,
     the_xxx_child_process_terminated_unsuccessfully: &'static str,
     pub theme: &'static str,
     pub there_was_no_source_video_to_compute_a_poster_from: &'static str,
@@ -364,10 +362,6 @@ impl Translations {
 
     pub fn audio_file_xxx(&self, extension: &str) -> String {
         self.audio_file_xxx.replace("{extension}", extension)
-    }
-
-    pub fn could_not_compute_metadata_for_xxx(&self, path: &Path) -> String {
-        self.could_not_compute_metadata_for_xxx.replace("{path}", &path.to_string_lossy())
     }
 
     pub fn creating_directory_xxx(&self, path: &str) -> String {
@@ -493,10 +487,6 @@ impl Translations {
         self.the_xxx_child_process_could_not_be_executed.replace("{command}", command)
     }
 
-    pub fn the_xxx_child_process_could_not_be_spawned(&self, command: &str) -> String {
-        self.the_xxx_child_process_could_not_be_spawned.replace("{command}", command)
-    }
-
     pub fn the_xxx_child_process_terminated_unsuccessfully(&self, command: &str) -> String {
         self.the_xxx_child_process_terminated_unsuccessfully.replace("{command}", command)
     }
@@ -571,7 +561,6 @@ fn check_translations() {
         assert!(&translations.adding_file_xxx.contains("{path}"));
         assert!(&translations.audio_file_xxx.contains("{extension}"));
         assert!(&translations.creating_directory_xxx.contains("{path}"));
-        assert!(&translations.could_not_compute_metadata_for_xxx.contains("{path}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
@@ -597,7 +586,6 @@ fn check_translations() {
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{expected}"));
         assert!(&translations.the_xxx_child_process_could_not_be_executed.contains("{command}"));
-        assert!(&translations.the_xxx_child_process_could_not_be_spawned.contains("{command}"));
         assert!(&translations.the_xxx_child_process_terminated_unsuccessfully.contains("{command}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));

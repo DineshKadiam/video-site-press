@@ -51,7 +51,7 @@ use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, Vide
 use deploy::{FtpConfig, SshConfig};
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
-use jobs::{CompletedJob, QueuedJob, Worker};
+use jobs::{CompletedJob, JobError, QueuedJob, Worker};
 use jobs::start_workers;
 use lqip::Lqip;
 use markdown_subset::MarkdownSubset;
@@ -100,6 +100,7 @@ pub use site_url::SiteUrl;
 pub use sort::{Asc, Comparison, Desc};
 pub use subtitles::SubtitleFile;
 pub use theme::{Theme, ThemeKind};
+pub use util::InfallibleResult;
 pub use video::Video;
 pub use video_file::VideoFile;
 pub use video_format::VideoFormat;

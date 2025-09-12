@@ -13,6 +13,7 @@ use actix_web::web::{Data, Path as ActixPath, Redirect};
 use futures_util::TryStreamExt as _;
 
 use hyper8_core::{
+    InfallibleResult,
     SitePath,
     SubtitleFile,
     Video,
@@ -69,7 +70,7 @@ pub async fn upload_subtitles(
                         f = web::block(move || f.write_all(&chunk).map(|_| f)).await??;
                     }
 
-                    let mutation = |video: &mut Video| {
+                    let mutation = |video: &mut Video| -> InfallibleResult {
                         video.subtitles.push(SubtitleFile::from_path(&storage_path));
                         Ok(())
                     };

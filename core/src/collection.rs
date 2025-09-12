@@ -1482,11 +1482,11 @@ impl Collection {
         }
     }
 
-    pub fn update_video<T>(
+    pub fn update_video<R, E>(
         &mut self,
-        mutation: impl FnOnce(&mut Video) -> Result<T, String>,
+        mutation: impl FnOnce(&mut Video) -> Result<R, E>,
         site_path: &SitePath
-    ) -> VideoUpdate<T> {
+    ) -> VideoUpdate<R, E> {
         if let Some(video) = self.videos
             .iter_mut()
             .find(|video| video.site_path == *site_path) {

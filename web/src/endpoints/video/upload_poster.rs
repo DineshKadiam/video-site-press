@@ -15,6 +15,7 @@ use futures_util::TryStreamExt as _;
 
 use hyper8_core::{
     FileMeta,
+    InfallibleResult,
     JobDesc,
     PosterFile,
     SitePath,
@@ -94,7 +95,7 @@ pub async fn upload_poster(
                     None
                 );
 
-                let mutation = |video: &mut Video| {
+                let mutation = |video: &mut Video| -> InfallibleResult {
                     video.poster = Some(poster_file);
                     video.write_manifest(&context);
 

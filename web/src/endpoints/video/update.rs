@@ -10,6 +10,7 @@ use chrono::NaiveDate;
 use serde_derive::Deserialize;
 
 use hyper8_core::{
+    InfallibleResult,
     PlatformIntegration,
     SitePath,
     Video,
@@ -134,7 +135,7 @@ pub async fn update(
             edit_page(&context, Some(form_feedback), &session_state, &video)
         )
     } else {
-        let mutation = |video_mut: &mut Video| {
+        let mutation = |video_mut: &mut Video| -> InfallibleResult {
             video_mut.copy_link_local_set(copy_link);
             video_mut.description = if description_trimmed.is_empty() { None } else { Some(description_trimmed.to_owned()) };
             video_mut.download_local_set(download);

@@ -46,7 +46,6 @@ pub async fn jobs(
         let target_edit_url = target_edit_url(&job.desc);
         let target_link = format!(r#"<a href="{target_edit_url}">{target_label_escaped}</a>"#);
 
-
         let mut error = String::new();
         let status = if let Some(assignment) = &job.active_assignment {
             let started_at_datetime: DateTime<Local> = assignment.started_at.into();
@@ -55,7 +54,9 @@ pub async fn jobs(
             let worker_number = assignment.worker_number;
             format!(r#"<strong style="color: yellow;">{t_processing}</strong> {started_at_formatted} (#{worker_number})"#)
         } else if let Some(failure) = &job.failure {
-            error = format!("<div>{}</div>", failure.error);
+            let error_rendered = failure.error.render(translations);
+            let error_escaped = html_escape_outside_attribute(&error_rendered);
+            error = format!("<div>{error_escaped}</div>");
             let duration = casual_duration(failure.duration().as_secs_f32(), translations);
             let t_failed = translations.failed;
             format!(r#"<strong style="color: red;">{t_failed}</strong> ({duration})"#)

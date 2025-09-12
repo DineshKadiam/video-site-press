@@ -66,7 +66,6 @@ impl Translations {
         copy_link: "Link kopieren",
         copy_path: "Pfad kopieren",
         copy_url: "URL kopieren",
-        could_not_compute_metadata_for_xxx: "Metadaten für {path} konnten nicht ermittelt werden",
         create_new_site: "Neue Seite erstellen",
         create_new_site_confirmation_notes: indoc!("
             1. Alle zukünftigen Inhalte deiner Seite werden in diesem Ordner gespeichert werden
@@ -305,7 +304,6 @@ impl Translations {
         the_subtitles_to_be_updated_were_not_found: "Die zu aktualisierenden Untertitel wurden nicht gefunden",
         the_test_file_contains_xxx_but_the_response_contained_xxx: "Die Testdatei enthält '{expected}' aber die Rückmeldung enthält '{encountered}'",
         the_xxx_child_process_could_not_be_executed: "Der Unterprozess {command} konnte nicht ausgeführt werden",
-        the_xxx_child_process_could_not_be_spawned: "Der Unterprozess {command} konnte nicht gestartet werden",
         the_xxx_child_process_terminated_unsuccessfully: "Der Unterprozess {command} endete unerfolgreich",
         theme: "Theme",
         there_was_no_source_video_to_compute_a_poster_from: "Keine Videoquelldatei gefunden von der ein Poster berechnet werden könnte",

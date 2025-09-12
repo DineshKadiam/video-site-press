@@ -10,6 +10,7 @@ use serde_derive::Deserialize;
 use url::Url;
 
 use hyper8_core::{
+    InfallibleResult,
     Link,
     SitePath,
     Video,
@@ -56,7 +57,7 @@ pub async fn add_link(
         }
     };
 
-    let mutation = |video_mut: &mut Video| {
+    let mutation = |video_mut: &mut Video| -> InfallibleResult {
         let link = Link::new(hidden, label, rel_me, url);
         video_mut.links.push(link);
         video_mut.write_manifest(&context);

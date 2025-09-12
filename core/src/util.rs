@@ -6,6 +6,7 @@ use std::fs;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
+use std::process::Output;
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -25,6 +26,8 @@ use crate::Context;
 macro_rules! infallible_mutation {
     () => { unreachable!("Infallible mutation") };
 }
+
+pub type InfallibleResult = Result<(), ()>;
 
 /// Takes seconds, formats it like "25 min", "33 sec", "158 min", "3.6 hrs", "11 hrs"
 pub fn casual_duration(seconds: f32, translations: &Translations) -> String {
@@ -56,6 +59,13 @@ pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Erro
     }
 
     fs::remove_dir_all(path)
+}
+
+pub fn collect_output_stderr_stdout(output: Output) -> String {
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+
+    format!("stderr: {}\n\nstdout: {}", stderr, stdout)
 }
 
 /// Takes an existing filestem (that has elsewhere been identified to collide

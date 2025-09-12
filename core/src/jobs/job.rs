@@ -4,8 +4,9 @@
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::{JobDesc, JobProgress};
 use crate::util::nanoid;
+
+use super::{JobDesc, JobError, JobProgress};
 
 /// A background process that has already completed (successfully), including
 /// all relevant data for display: When it was created, started, completed,
@@ -31,7 +32,7 @@ pub struct JobAssignment {
 pub struct JobFailure {
     pub failed_at: SystemTime,
     pub started_at: SystemTime,
-    pub error: String
+    pub error: JobError
 }
 
 /// A QueuedJob tracks some form of background process throughout its
@@ -168,7 +169,7 @@ impl QueuedJob {
         }
     }
 
-    pub fn fail(&mut self, error: String) {
+    pub fn fail(&mut self, error: JobError) {
         let active_assignment = self.active_assignment.take().unwrap();
 
         let failure = JobFailure {

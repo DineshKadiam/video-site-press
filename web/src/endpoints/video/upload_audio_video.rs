@@ -22,6 +22,7 @@ use hyper8_core::{
     FileMeta,
     GetAnyResult,
     HyperDir,
+    InfallibleResult,
     JobDesc,
     Playlist,
     PlaylistUpdate,
@@ -183,14 +184,14 @@ pub async fn upload_audio_video(
                             let file_meta = FileMeta::new(&storage_path);
                             let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
 
-                            let mutation = |video: &mut Video| {
+                            let mutation = |video: &mut Video| -> InfallibleResult {
                                 if is_supported_audio {
                                     video.audio_files.push(AudioFile::new(None, file_meta, file_name));
-                                    Ok(())
                                 } else /* if is_supported_video */ {
                                     video.video_files.push(VideoFile::new(file_meta, file_name, None));
-                                    Ok(())
                                 }
+
+                                Ok(())
                             };
 
                             match context.update_video(mutation, &site_path) {

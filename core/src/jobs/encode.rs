@@ -8,8 +8,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
-use hyper8_translations::Translations;
-
 use crate::{
     AudioFile,
     AudioFormat,
@@ -22,7 +20,13 @@ use crate::{
     VideoFile,
     VideoFormat
 };
-use crate::util::{deduplicate_filename, nanoid};
+use crate::util::{
+    collect_output_stderr_stdout,
+    deduplicate_filename,
+    nanoid
+};
+
+use super::JobError;
 
 pub const FFMPEG: &str = if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" };
 
@@ -42,65 +46,68 @@ pub struct FFmpegEncodingStats {
 pub fn compute_poster(
     context: &Context,
     timecode: f32,
-    translations: &Translations,
     video: &Video
-) -> Result<String, String> {
-    if let Some(video_file) = &video.highest_quality_video_file() {
-        let mut command = Command::new(FFMPEG);
+) -> Result<String, JobError> {
+    let video_file = match video.highest_quality_video_file() {
+        Some(video_file) => video_file,
+        None => {
+            let err = format!("There was no source video to compute a poster from. ({})", video.site_path.normalized());
+            return Err(JobError::Generic { err });
+        }
+    };
 
-        let input_path = context.site_dir
+    let mut command = Command::new(FFMPEG);
+
+    let input_path = context.site_dir
+        .join(video.site_path.filesystem_relative())
+        .join(&video_file.file_name);
+
+    let mut output_filename = String::from("poster.jpg");
+    let mut output_path = context.site_dir
             .join(video.site_path.filesystem_relative())
-            .join(&video_file.file_name);
+            .join(&output_filename);
 
-        let mut output_filename = String::from("poster.jpg");
-        let mut output_path = context.site_dir
-                .join(video.site_path.filesystem_relative())
-                .join(&output_filename);
+    if output_path.exists() {
+        output_filename = format!("poster_{}.jpg", timecode);
+        output_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&output_filename);
 
-        if output_path.exists() {
-            output_filename = format!("poster_{}.jpg", timecode);
+        while output_path.exists() {
+            output_filename = deduplicate_filename(&output_filename);
             output_path = context.site_dir
                 .join(video.site_path.filesystem_relative())
                 .join(&output_filename);
+        }
+    }
 
-            while output_path.exists() {
-                output_filename = deduplicate_filename(&output_filename);
-                output_path = context.site_dir
-                    .join(video.site_path.filesystem_relative())
-                    .join(&output_filename);
+    command
+        .arg("-y")
+        .arg("-ss")
+        .arg(timecode.to_string())
+        .arg("-i")
+        .arg(&input_path)
+        .arg("-frames")
+        .arg("1")
+        .arg("-q:v")
+        .arg("7") // 1-31 (best-worst)
+        .arg(&output_path);
+
+    match command.output() {
+        Ok(output) => {
+            if output.status.success() {
+                Ok(output_filename)
+            } else {
+                Err(JobError::Generic { err: collect_output_stderr_stdout(output) })
             }
         }
-
-        command
-            .arg("-y")
-            .arg("-ss")
-            .arg(timecode.to_string())
-            .arg("-i")
-            .arg(&input_path)
-            .arg("-frames")
-            .arg("1")
-            .arg("-q:v")
-            .arg("7") // 1-31 (best-worst)
-            .arg(&output_path);
-
-        match command.output() {
-            Ok(output) => {
-                if output.status.success() {
-                    Ok(output_filename)
-                } else {
-                    let message = format!("{output:?}");
-                    Err(message)
-                }
-            }
-            Err(err) => {
-                let the_ffmpeg_child_process_could_not_be_executed = translations.the_xxx_child_process_could_not_be_executed("ffmpeg");
-                let message = format!("{the_ffmpeg_child_process_could_not_be_executed} ({err})");
-                Err(message)
-            }
+        Err(err) => {
+            let job_error = JobError::ChildProcessCouldNotBeExecuted {
+                err: err.to_string(),
+                program: "ffmpeg"
+            };
+            Err(job_error)
         }
-    } else {
-        let message = format!("There was no source video to compute a poster from. ({})", video.site_path.normalized());
-        Err(message)
     }
 }
 
@@ -112,9 +119,8 @@ pub fn encode_audio(
     audio_format: AudioFormat,
     context: &Arc<Context>,
     job_id: String,
-    translations: &Translations,
     video: &Video
-) -> Result<AudioFile, String> {
+) -> Result<AudioFile, JobError> {
     let mut command = Command::new(FFMPEG);
 
     // Prevent ffmpeg from prompting about overwriting files
@@ -132,7 +138,10 @@ pub fn encode_audio(
 
     let highest_quality_video_file = match video.highest_quality_video_file() {
         Some(video_file) => video_file,
-        None => return Err(String::from("No video file found to encode audio from"))
+        None => {
+            let err = String::from("No video file found to encode audio from");
+            return Err(JobError::Generic { err });
+        }
     };
 
     let input_path = context.site_dir
@@ -173,107 +182,106 @@ pub fn encode_audio(
 
     let rendering_begin = Instant::now();
 
-    match command.spawn() {
-        Ok(mut child) => {
-            if let Some(video_meta) = &highest_quality_video_file.video_meta {
-                let video_duration = video_meta.duration;
-
-                match child.stderr.take() {
-                    Some(stderr) => {
-                        let context_moving = Arc::clone(context);
-                        thread::spawn(move || {
-                            let stderr_reader = BufReader::with_capacity(1024, stderr);
-
-                            for result in stderr_reader.split(b'\r') {
-                                if let Ok(bytes) = result {
-                                    if let Ok(line) = std::str::from_utf8(&bytes) {
-                                        let duration = rendering_begin.elapsed().as_secs_f32();
-                                        let stats = FFmpegEncodingStats::parse(line);
-                                        let job_progress = JobProgress::new(duration, stats, video_duration);
-                                        context_moving.update_job_progress(&job_id, job_progress);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    None => {
-                        let message = String::from("Could not capture stderr for ffmpeg child process");
-                        return Err(message)
-                    }
-                }
-            }
-
-            let exit_status = match child.wait() {
-                Ok(exit_status) => exit_status,
-                Err(_) => {
-                    let message = String::from("The ffmpeg child process could not be waited for");
-                    return Err(message)
-                }
-            };
-
-            if exit_status.success() {
-                // If the video directory disappeared (was moved/removed) while we were encoding
-                // we discard our encoding output as we don't know where to put it anymore.
-                if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
-                    let message = String::from("The video directory has disappeared while we encoded audio, the encoded audio was discarded");
-                    return Err(message)
-                }
-
-                let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
-
-                let mut iteration = 0;
-                let (output_file, output_path) = loop {
-                    let output_file = if iteration == 0 {
-                        format!("{file_stem}.{extension}")
-                    } else {
-                        format!("{file_stem}({iteration}).{extension}")
-                    };
-
-                    let output_path = context.site_dir
-                        .join(video.site_path.filesystem_relative())
-                        .join(&output_file);
-
-                    if output_path.exists() {
-                        iteration += 1;
-                        continue;
-                    }
-
-                    break (output_file, output_path);
-                };
-
-                // Move file from cache dir to video dir
-                fs::rename(&temp_path, &output_path).unwrap();
-
-                let file_meta = FileMeta::new(&output_path);
-                let audio_file = AudioFile::new(None, file_meta, output_file);
-
-                Ok(audio_file)
-            } else {
-                let error_code = match exit_status.code() {
-                    Some(code) => format!("error code {code}"),
-                    None => String::from("probably signal-terminated")
-                };
-
-                let the_ffmpeg_child_process_terminated_unsuccessfully = translations.the_xxx_child_process_terminated_unsuccessfully("ffmpeg");
-                let message = format!("{the_ffmpeg_child_process_terminated_unsuccessfully} ({error_code})");
-                Err(message)
-            }
-        }
+    let mut child = match command.spawn() {
+        Ok(child) => child,
         Err(err) => {
-            let the_ffmpeg_child_process_could_not_be_spawned = translations.the_xxx_child_process_could_not_be_spawned("ffmpeg");
-            let message = format!("{the_ffmpeg_child_process_could_not_be_spawned} ({err})");
-            Err(message)
+            let job_error = JobError::ChildProcessCouldNotBeExecuted {
+                err: err.to_string(),
+                program: "ffmpeg"
+            };
+            return Err(job_error);
+        }
+    };
+
+    if let Some(video_meta) = &highest_quality_video_file.video_meta {
+        let video_duration = video_meta.duration;
+
+        match child.stderr.take() {
+            Some(stderr) => {
+                let context_moving = Arc::clone(context);
+                thread::spawn(move || {
+                    let stderr_reader = BufReader::with_capacity(1024, stderr);
+
+                    for result in stderr_reader.split(b'\r') {
+                        if let Ok(bytes) = result {
+                            if let Ok(line) = std::str::from_utf8(&bytes) {
+                                let duration = rendering_begin.elapsed().as_secs_f32();
+                                let stats = FFmpegEncodingStats::parse(line);
+                                let job_progress = JobProgress::new(duration, stats, video_duration);
+                                context_moving.update_job_progress(&job_id, job_progress);
+                            }
+                        }
+                    }
+                });
+            }
+            None => {
+                let err = String::from("Could not capture stderr for ffmpeg child process");
+                return Err(JobError::Generic { err });
+            }
         }
     }
+
+    let exit_status = match child.wait() {
+        Ok(exit_status) => exit_status,
+        Err(_) => {
+            let err = String::from("The ffmpeg child process could not be waited for");
+            return Err(JobError::Generic { err });
+        }
+    };
+
+    if !exit_status.success() {
+        let job_error = JobError::ChildProcessTerminatedUnsuccessfully {
+            code: exit_status.code(),
+            program: "ffmpeg"
+        };
+
+        return Err(job_error);
+    }
+
+    // If the video directory disappeared (was moved/removed) while we were encoding
+    // we discard our encoding output as we don't know where to put it anymore.
+    if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
+        let err = String::from("The video directory has disappeared while we encoded audio, the encoded audio was discarded");
+        return Err(JobError::Generic { err });
+    }
+
+    let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
+
+    let mut iteration = 0;
+    let (output_file, output_path) = loop {
+        let output_file = if iteration == 0 {
+            format!("{file_stem}.{extension}")
+        } else {
+            format!("{file_stem}({iteration}).{extension}")
+        };
+
+        let output_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&output_file);
+
+        if output_path.exists() {
+            iteration += 1;
+            continue;
+        }
+
+        break (output_file, output_path);
+    };
+
+    // Move file from cache dir to video dir
+    fs::rename(&temp_path, &output_path).unwrap();
+
+    let file_meta = FileMeta::new(&output_path);
+    let audio_file = AudioFile::new(None, file_meta, output_file);
+
+    Ok(audio_file)
 }
 
 pub fn encode_video(
     context: &Arc<Context>,
     job_id: String,
-    translations: &Translations,
     video: &Video,
     video_format: VideoFormat
-) -> Result<VideoFile, String> {
+) -> Result<VideoFile, JobError> {
     let mut command = Command::new(FFMPEG);
 
     // Prevent ffmpeg from prompting about overwriting files
@@ -291,7 +299,10 @@ pub fn encode_video(
 
     let highest_quality_video_file = match video.highest_quality_video_file() {
         Some(video_file) => video_file,
-        None => return Err(String::from("No video file found to encode audio from"))
+        None => {
+            let err = String::from("No video file found to encode audio from");
+            return Err(JobError::Generic { err });
+        }
     };
 
     let input_path = context.site_dir
@@ -414,111 +425,112 @@ pub fn encode_video(
 
     let rendering_begin = Instant::now();
 
-    match command.spawn() {
-        Ok(mut child) => {
-            if let Some(video_meta) = &highest_quality_video_file.video_meta {
-                let video_duration = video_meta.duration;
-
-                // TODO: This is NOT a reliable figure to measure encoded frames against to compute progress
-                // in percent, reason being that ffmpeg may noticably alter the target frame rate
-                // depending on the used format and encoder during encoding (and we would only know afterwards,
-                // unless we maybe enable and parse the additional up-front info from the ffmpeg invocation)
-                // let video_frames_estimated = match &format {
-                //     VideoFormat::Video { frame_rate: Some(target_frame_rate), .. } => {
-                //         (target_frame_rate * video_meta.duration) as usize
-                //     }
-                //     _ => (video_meta.video_frame_rate * video_meta.duration) as usize
-                // };
-
-                match child.stderr.take() {
-                    Some(stderr) => {
-                        let context_moving = Arc::clone(context);
-                        thread::spawn(move || {
-                            let stderr_reader = BufReader::with_capacity(1024, stderr);
-
-                            for result in stderr_reader.split(b'\r') {
-                                if let Ok(bytes) = result {
-                                    if let Ok(line) = std::str::from_utf8(&bytes) {
-                                        let duration = rendering_begin.elapsed().as_secs_f32();
-                                        let stats = FFmpegEncodingStats::parse(line);
-                                        let job_progress = JobProgress::new(duration, stats, video_duration);
-                                        context_moving.update_job_progress(&job_id, job_progress);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    None => {
-                        let message = String::from("Could not capture stderr for ffmpeg child process");
-                        return Err(message)
-                    }
-                }
-            }
-
-            let exit_status = match child.wait() {
-                Ok(exit_status) => exit_status,
-                Err(_) => {
-                    let message = String::from("The ffmpeg child process could not be waited for");
-                    return Err(message)
-                }
-            };
-
-            if exit_status.success() {
-                // If the video directory disappeared (was moved/removed) while we were encoding
-                // we discard our encoding output as we don't know where to put it anymore.
-                if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
-                    let message = String::from("The video directory has disappeared while we encoded video, the encoded audio was discarded");
-                    return Err(message)
-                }
-
-                let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
-                let format_suffix = video_format.file_name_suffix();
-                let base_name = format!("{file_stem}_{format_suffix}");
-
-                let mut iteration = 0;
-                let (output_file, output_path) = loop {
-                    let output_file = if iteration == 0 {
-                        format!("{base_name}.{extension}")
-                    } else {
-                        format!("{base_name}({iteration}).{extension}")
-                    };
-
-                    let output_path = context.site_dir
-                        .join(video.site_path.filesystem_relative())
-                        .join(&output_file);
-
-                    if output_path.exists() {
-                        iteration += 1;
-                        continue;
-                    }
-
-                    break (output_file, output_path);
-                };
-
-                // Move file from cache dir to video dir
-                fs::rename(&temp_path, &output_path).unwrap();
-
-                let file_meta = FileMeta::new(&output_path);
-                let video_file = VideoFile::new(file_meta, output_file, None);
-
-                Ok(video_file)
-            } else {
-                let error_code = match exit_status.code() {
-                    Some(code) => format!("error code {code}"),
-                    None => String::from("probably signal-terminated")
-                };
-
-                let the_ffmpeg_child_process_terminated_unsuccessfully = translations.the_xxx_child_process_terminated_unsuccessfully("ffmpeg");
-                let message = format!("{the_ffmpeg_child_process_terminated_unsuccessfully} ({error_code})");
-                Err(message)
-            }
-        }
+    let mut child = match command.spawn() {
+        Ok(child) => child,
         Err(err) => {
-            let the_ffmpeg_child_process_could_not_be_spawned = translations.the_xxx_child_process_could_not_be_spawned("ffmpeg");
-            let message = format!("{the_ffmpeg_child_process_could_not_be_spawned} ({err})");
-            Err(message)
+            let job_error = JobError::ChildProcessCouldNotBeExecuted {
+                err: err.to_string(),
+                program: "ffmpeg"
+            };
+            return Err(job_error);
+        }
+    };
+
+    if let Some(video_meta) = &highest_quality_video_file.video_meta {
+        let video_duration = video_meta.duration;
+
+        // TODO: This is NOT a reliable figure to measure encoded frames against to compute progress
+        // in percent, reason being that ffmpeg may noticably alter the target frame rate
+        // depending on the used format and encoder during encoding (and we would only know afterwards,
+        // unless we maybe enable and parse the additional up-front info from the ffmpeg invocation)
+        // let video_frames_estimated = match &format {
+        //     VideoFormat::Video { frame_rate: Some(target_frame_rate), .. } => {
+        //         (target_frame_rate * video_meta.duration) as usize
+        //     }
+        //     _ => (video_meta.video_frame_rate * video_meta.duration) as usize
+        // };
+
+        match child.stderr.take() {
+            Some(stderr) => {
+                let context_moving = Arc::clone(context);
+                thread::spawn(move || {
+                    let stderr_reader = BufReader::with_capacity(1024, stderr);
+
+                    for result in stderr_reader.split(b'\r') {
+                        if let Ok(bytes) = result {
+                            if let Ok(line) = std::str::from_utf8(&bytes) {
+                                let duration = rendering_begin.elapsed().as_secs_f32();
+                                let stats = FFmpegEncodingStats::parse(line);
+                                let job_progress = JobProgress::new(duration, stats, video_duration);
+                                context_moving.update_job_progress(&job_id, job_progress);
+                            }
+                        }
+                    }
+                });
+            }
+            None => {
+                let err = String::from("Could not capture stderr for ffmpeg child process");
+                return Err(JobError::Generic { err });
+            }
         }
     }
+
+    let exit_status = match child.wait() {
+        Ok(exit_status) => exit_status,
+        Err(_) => {
+            let err = String::from("The ffmpeg child process could not be waited for");
+            return Err(JobError::Generic { err });
+        }
+    };
+
+    if !exit_status.success() {
+        // TODO: Can we include an actual error message here as well?
+        let job_error = JobError::ChildProcessTerminatedUnsuccessfully {
+            code: exit_status.code(),
+            program: "ffmpeg"
+        };
+
+        return Err(job_error);
+    }
+
+    // If the video directory disappeared (was moved/removed) while we were encoding
+    // we discard our encoding output as we don't know where to put it anymore.
+    if !context.site_dir.join(video.site_path.filesystem_relative()).exists() {
+        let err = String::from("The video directory has disappeared while we encoded video, the encoded video was discarded");
+        return Err(JobError::Generic { err });
+    }
+
+    let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
+    let format_suffix = video_format.file_name_suffix();
+    let base_name = format!("{file_stem}_{format_suffix}");
+
+    let mut iteration = 0;
+    let (output_file, output_path) = loop {
+        let output_file = if iteration == 0 {
+            format!("{base_name}.{extension}")
+        } else {
+            format!("{base_name}({iteration}).{extension}")
+        };
+
+        let output_path = context.site_dir
+            .join(video.site_path.filesystem_relative())
+            .join(&output_file);
+
+        if output_path.exists() {
+            iteration += 1;
+            continue;
+        }
+
+        break (output_file, output_path);
+    };
+
+    // Move file from cache dir to video dir
+    fs::rename(&temp_path, &output_path).unwrap();
+
+    let file_meta = FileMeta::new(&output_path);
+    let video_file = VideoFile::new(file_meta, output_file, None);
+
+    Ok(video_file)
 }
 
 impl FFmpegEncodingStats {

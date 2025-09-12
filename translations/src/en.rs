@@ -66,7 +66,6 @@ impl Translations {
         copy_link: "Copy Link",
         copy_path: "Copy Path",
         copy_url: "Copy URL",
-        could_not_compute_metadata_for_xxx: "Could not compute metadata for {path}",
         create_new_site: "Create new site",
         create_new_site_confirmation_notes: indoc!("
             1. All future content of your site will be stored in this folder
@@ -306,7 +305,6 @@ impl Translations {
         the_subtitles_to_be_updated_were_not_found: "The subtitles to be updated were not found",
         the_test_file_contains_xxx_but_the_response_contained_xxx: "The test file contains '{expected}' but the response contained '{encountered}'",
         the_xxx_child_process_could_not_be_executed: "The {command} child process could not be executed",
-        the_xxx_child_process_could_not_be_spawned: "The {command} child process could not be spawned",
         the_xxx_child_process_terminated_unsuccessfully: "The {command} child process terminated unsuccessfully",
         theme: "Theme",
         there_was_no_source_video_to_compute_a_poster_from: "There was no source video to compute a poster from",

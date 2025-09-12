@@ -21,6 +21,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     JobDesc,
+    JobError,
     JobProgress,
     Language,
     Playlist,
@@ -124,8 +125,8 @@ pub enum SiteUpdate {
 /// variant value in case of failure). Any persistence on disk
 /// (manifest, assets) must be performed by the caller after a successful
 /// update.
-pub enum VideoUpdate<T> {
-    Error(String),
+pub enum VideoUpdate<R, E> {
+    Error(E),
     /// Updating is prohibited while there are pending (manifest) errors as
     /// this could potentially discard the entire manifest content due to
     /// just a simple simple syntax error.
@@ -134,7 +135,7 @@ pub enum VideoUpdate<T> {
     /// exists at the provided site_path.
     NotFound,
     Success {
-        optional_return_value: T,
+        optional_return_value: R,
         video_updated: Arc<Video>
     }
 }
@@ -148,7 +149,10 @@ impl Context {
     /// Blocks until all jobs in the job queue have been processed.
     /// This returns Err(…) if one or more jobs fail, but will still
     /// await all remaining jobs before doing so.
-    pub fn await_job_queue(&self) -> Result<(), String> {
+    pub fn await_job_queue(
+        &self,
+        translations: &Translations
+    ) -> Result<(), String> {
         let mut previous_failed_jobs = 0;
         let mut previous_pending_jobs = 0;
 
@@ -197,7 +201,12 @@ impl Context {
             let errors = job_queue
                 .iter()
                 .map(|job| {
-                    let error = &job.failure.as_ref().unwrap().error;
+                    let error = &job.failure
+                        .as_ref()
+                        .unwrap()
+                        .error
+                        .render(translations);
+
                     format!("- {error}")
                 })
                 .collect::<Vec<String>>()
@@ -1199,7 +1208,7 @@ impl Context {
         }
     }
 
-    pub fn fail_job(&self, error: String, id: &str) {
+    pub fn fail_job(&self, error: JobError, id: &str) {
         let mut job_queue = self.job_queue.lock().unwrap();
 
         if let Some(job) = job_queue
@@ -1252,7 +1261,6 @@ impl Context {
         custom_cache_dir: Option<&PathBuf>,
         custom_worker_count: Option<usize>,
         site_dir: &Path,
-        translations: &Translations
     ) -> Arc<Context> {
         // This compiles to fs::canonicalize(...) on all platforms but windows,
         // on windows it instead tries to supply a canonicalized path that uses
@@ -1292,7 +1300,7 @@ impl Context {
 
         context.compute_job_queue();
 
-        start_workers(&context, custom_worker_count, &translations);
+        start_workers(&context, custom_worker_count);
 
         context
     }
@@ -1589,11 +1597,11 @@ impl Context {
         }
     }
 
-    pub fn update_video<T>(
+    pub fn update_video<R, E>(
         &self,
-        mutation: impl FnOnce(&mut Video) -> Result<T, String>,
+        mutation: impl FnOnce(&mut Video) -> Result<R, E>,
         site_path: &SitePath
-    ) -> VideoUpdate<T> {
+    ) -> VideoUpdate<R, E> {
         let mut site_mut = self.get_site_mut();
 
         let result = if site_path.is_root_path() {

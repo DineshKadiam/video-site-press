@@ -58,15 +58,14 @@ fn main() -> ExitCode {
         custom_build_dir,
         custom_cache_dir,
         custom_worker_count,
-        site_dir,
-        translations
+        site_dir
     );
 
     let ip = args.get_one::<IpAddr>("ip");
     let port = args.get_one::<u16>("port");
 
     if args.get_flag("build") {
-        if let Err(err) = context.await_job_queue() {
+        if let Err(err) = context.await_job_queue(translations) {
             eprintln!("{err}");
             return ExitCode::FAILURE;
         }

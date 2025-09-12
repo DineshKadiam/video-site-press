@@ -36,8 +36,7 @@ pub fn start_editor(
         None,
         None,
         None,
-        site_dir,
-        &translations
+        site_dir
     );
 
     watch_site_dir(Arc::clone(&context));

@@ -8,7 +8,12 @@ use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Path as ActixPath, Redirect};
 
-use hyper8_core::{SitePath, Video, VideoUpdate};
+use hyper8_core::{
+    InfallibleResult,
+    SitePath,
+    Video,
+    VideoUpdate
+};
 use hyper8_core::infallible_mutation;
 
 use crate::{Context, SessionState};
@@ -22,7 +27,7 @@ pub async fn delete_poster(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let mutation = |video_mut: &mut Video| {
+    let mutation = |video_mut: &mut Video| -> InfallibleResult {
         if let Some(poster) = &video_mut.poster {
             let poster_path = context.site_dir
                 .join(video_mut.site_path.filesystem_relative())

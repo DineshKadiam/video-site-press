@@ -1026,11 +1026,11 @@ impl Playlist {
     /// Performs the passed mutation on the video under the given site path
     /// (if it exists). Should not be called directly, instead only through a
     /// cascade call originating from `update_video` on [Context].
-    pub fn update_video<T>(
+    pub fn update_video<R, E>(
         &mut self,
-        mutation: impl FnOnce(&mut Video) -> Result<T, String>,
+        mutation: impl FnOnce(&mut Video) -> Result<R, E>,
         site_path: &SitePath
-    ) -> VideoUpdate<T> {
+    ) -> VideoUpdate<R, E> {
         match self.videos
             .iter_mut()
             .find(|video| video.site_path == *site_path) {
