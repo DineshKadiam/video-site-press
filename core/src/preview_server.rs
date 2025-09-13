@@ -8,7 +8,7 @@ use actix_files::Files;
 use actix_web::{App, HttpServer};
 
 const DEFAULT_PREVIEW_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-const DEFAULT_PREVIEW_PORT: u16 = 8080;
+const DEFAULT_PREVIEW_PORT: u16 = 49737; // "Dial 127.0.0.1:HYPER"
 
 /// When DEFAULT_PREVIEW_PORT is unavailable, we try DEFAULT_PREVIEW_PORT + 1,
 /// then DEFAULT_PREVIEW_PORT + 2, etc., but after MAX_PORT_ATTEMPTS

@@ -48,9 +48,43 @@ function showOverlay(content) {
     overlay.innerHTML = content;
     overlay.showModal();
 
-    const quitButton = overlay.querySelector('button');
+    const quitButton = overlay.querySelector('button.quit');
     quitButton.addEventListener('click', close);
 
+    const copyIcon = document.querySelector('#copy_icon').content;
+    const failedIcon = document.querySelector('#failed_icon').content;
+    const successIcon = document.querySelector('#success_icon').content;
+
+    let endFeedbackEarly = null;
+
+    const copyButton = document.querySelector('.overlay button[data-url]');
+
+    function copyFeedback(content, feedbackIcon) {
+        if (endFeedbackEarly) { endFeedbackEarly(); }
+
+        copyButton.replaceChildren(feedbackIcon.cloneNode(true));
+
+        function endFeedback() {
+            copyButton.replaceChildren(copyIcon.cloneNode(true));
+            endFeedbackEarly = null;
+        }
+
+        const endFeedbackScheduled = setTimeout(endFeedback, 3000);
+
+        endFeedbackEarly = () => {
+            clearTimeout(endFeedbackScheduled);
+            endFeedback();
+        };
+    }
+    copyButton.addEventListener('click', () => {
+        const url = copyButton.dataset.url;
+        navigator.clipboard
+            .writeText(url)
+            .then(() => copyFeedback(content, successIcon))
+            .catch(_err => copyFeedback(content, failedIcon));
+    });
+
+    document.querySelector('.overlay').children[0].focus();
 }
 
 async function updateBody() {

@@ -67,7 +67,7 @@ pub fn copy_button(
     content_value: &str,
     label: &str
 ) -> String {
-    let copy_icon = hyper8_icons::COPY;
+    let copy_icon = hyper8_icons::copy(None);
     format!(r#"
         <button data-{content_key}="{content_value}" data-copy>
             <span class="icon">{copy_icon}</span>
@@ -80,7 +80,7 @@ pub fn copy_button(
 /// these are injected to the end of the body in the regular page and embed
 /// layouts.
 pub fn copy_button_icon_templates(translations: &Translations) -> String {
-    let copy_icon = hyper8_icons::COPY;
+    let copy_icon = hyper8_icons::copy(None);
     let failure_icon = hyper8_icons::failure(translations.failed);
     let success_icon = hyper8_icons::success(translations.copied);
 

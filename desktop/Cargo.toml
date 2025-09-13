@@ -26,6 +26,7 @@ hyper8-translations.path = "../translations"
 hyper8-version.path = "../version"
 hyper8-web.path = "../web"
 indoc.workspace = true
+local-ip-address.workspace = true
 serde.workspace = true
 serde_derive.workspace = true
 serde_json.workspace = true

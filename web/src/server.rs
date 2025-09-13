@@ -38,7 +38,7 @@ use crate::endpoints::{
 };
 
 const DEFAULT_EDITOR_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-const DEFAULT_EDITOR_PORT: u16 = 8080;
+const DEFAULT_EDITOR_PORT: u16 = 49737; // "Dial 127.0.0.1:HYPER"
 
 /// When DEFAULT_EDITOR_PORT is unavailable, we try DEFAULT_EDITOR_PORT + 1,
 /// then DEFAULT_EDITOR_PORT + 2, etc., but after MAX_PORT_ATTEMPTS

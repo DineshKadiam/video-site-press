@@ -107,11 +107,19 @@ pub const COLLABORATIVE_MODE: &str = indoc!(r#"
 /// depiction for "copy"). We currently always use it in a context where the
 /// text next to it adequately describes the action ("Copy link", "Copy") so
 /// we hide it from assistive technology using aria-hidden.
-pub const COPY: &str = indoc!(r#"
-    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-        <path d="m24.18 7.1387c-3.8714 0-7.0703 3.197-7.0703 7.0684h5.1992c0-1.0814 0.78966-1.8711 1.8711-1.8711h25.439c1.0814 0 1.8711 0.78966 1.8711 1.8711v25.441c0 1.0814-0.78966 1.8691-1.8711 1.8691v5.1992c3.8714 0 7.0684-3.197 7.0684-7.0684v-25.441c0-3.8714-3.197-7.0684-7.0684-7.0684h-25.439zm-9.9434 10.131c-3.8714 0-7.0684 3.1989-7.0684 7.0703v25.439c0 3.8714 3.197 7.0684 7.0684 7.0684h25.441c3.8714 0 7.0684-3.197 7.0684-7.0684v-25.439c0-3.8714-3.197-7.0703-7.0684-7.0703h-25.441zm0 5.1992h25.441c1.0814 0 1.8711 0.78966 1.8711 1.8711v25.439c0 1.0814-0.78966 1.8711-1.8711 1.8711h-25.441c-1.0814 0-1.8711-0.78966-1.8711-1.8711v-25.439c0-1.0814 0.78966-1.8711 1.8711-1.8711z"/>
-    </svg>
-"#);
+pub fn copy(label: Option<&str>) -> String {
+    let (aria_hidden, title) = match label {
+        Some(label) => ("", format!("<title>{label}</title>")),
+        None => (r#"aria-hidden="true""#, String::new())
+    };
+
+    formatdoc!(r#"
+        <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            {title}
+            <path d="m24.18 7.1387c-3.8714 0-7.0703 3.197-7.0703 7.0684h5.1992c0-1.0814 0.78966-1.8711 1.8711-1.8711h25.439c1.0814 0 1.8711 0.78966 1.8711 1.8711v25.441c0 1.0814-0.78966 1.8691-1.8711 1.8691v5.1992c3.8714 0 7.0684-3.197 7.0684-7.0684v-25.441c0-3.8714-3.197-7.0684-7.0684-7.0684h-25.439zm-9.9434 10.131c-3.8714 0-7.0684 3.1989-7.0684 7.0703v25.439c0 3.8714 3.197 7.0684 7.0684 7.0684h25.441c3.8714 0 7.0684-3.197 7.0684-7.0684v-25.439c0-3.8714-3.197-7.0703-7.0684-7.0703h-25.441zm0 5.1992h25.441c1.0814 0 1.8711 0.78966 1.8711 1.8711v25.439c0 1.0814-0.78966 1.8711-1.8711 1.8711h-25.441c-1.0814 0-1.8711-0.78966-1.8711-1.8711v-25.439c0-1.0814 0.78966-1.8711 1.8711-1.8711z"/>
+        </svg>
+    "#)
+}
 
 /// A rounded outline of a square, where the top-right corner is replaced with a plus sign
 pub const CREATE: &str = indoc!(r#"

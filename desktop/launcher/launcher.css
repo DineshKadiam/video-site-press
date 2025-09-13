@@ -23,7 +23,10 @@ button {
     font-family: inherit;
     font-size: 1em;
 }
-button:hover { color: var(--fg-1); }
+button:focus-visible,
+button:hover {
+    color: var(--fg-1);
+}
 input,
 button {
     outline: none;
@@ -222,16 +225,27 @@ main > button:not(:first-child) { margin-top: .1rem; }
     color: var(--fg-1);
     margin-left: .2rem;
 }
-.overlay button {
+.overlay > :nth-child(1) {
+    align-items: center;
+    display: flex;
+}
+.overlay > :nth-child(2) {
     background: var(--bg-2);
+    border-radius: .5rem;
+    font-size: .8rem;
+    max-width: 75%;
+    padding: .8rem;
+}
+.overlay > :nth-child(3) {
+    background: var(--action);
     border-radius: .2rem;
-    color: var(--fg-1);
+    color: var(--l-1);
     margin: .5rem 0 .5rem .5rem;
     padding: .3rem .8rem;
 }
-.overlay button:focus-visible,
-.overlay button:hover {
-    background: var(--bg-3);
+.overlay > :nth-child(3):focus-visible,
+.overlay > :nth-child(3):hover {
+    background: var(--action-hover);
 }
 .pane {
     align-items: center;
@@ -264,7 +278,8 @@ main > button:not(:first-child) { margin-top: .1rem; }
 }
 .pane > :nth-child(3) { flex-shrink: 1000; }
 .pane > :nth-child(4) { flex-shrink: 0; }
-.site.not_found > :nth-child(2) { color: var(--fg-mg); }
+.site.not_found .pane > :nth-child(2),
+.site.not_found .pane > :nth-child(3) { color: var(--fg-3); }
 .site:not(.not_found) { cursor: pointer; }
 .site:not(.expanded) > :nth-child(2) { display: none; }
 .site > :nth-child(2) {
