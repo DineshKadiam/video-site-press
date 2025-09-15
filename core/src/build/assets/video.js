@@ -34,6 +34,28 @@ const duration = parseFloat(video.dataset.duration);
 
 let playbackUpdateInterval;
 
+const fullscreen = {
+    // On iOS on iPhone, video playback must be started at least once before
+    // entering fullscreen on the video element works, therefore we track
+    // this state, and start playback when fullscreen is requested without a
+    // prior playback request.
+    alreadyPlayed: false,
+    // If requestFullscreen is available on the player wrapper (a non-video
+    // element), we know that we are on a device and browser that supports
+    // the generally agreed upon fullscreen API for browsers. If we aren't,
+    // it's reasonable to assume we are in the one environment that
+    // (intentionally) doesn't - iOS on iPhone - and we consecutively employ
+    // special handling for it.
+    // See:
+    // - https://caniuse.com/?search=requestfullscreen
+    //   (General overview of support across browsers)
+    // - https://developer.apple.com/forums/thread/133248
+    //   (Timeline of apple failing to support requestFullscreen on iOS since 2020)
+    // - https://developer.apple.com/documentation/webkitjs/htmlvideoelement/1633500-webkitenterfullscreen
+    //   (Apple developer documentation for their non-standard fullscreen API)
+    iPhoneMode: !playerWrapper.requestFullscreen
+};
+
 // We internally manage speed as (integer) percent values to avoid having to
 // deal with float rounding issues.
 let speed = 100;
@@ -203,27 +225,45 @@ function cycleVolume() {
 }
 
 function toggleFullscreen() {
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
+    if (fullscreen.iPhoneMode) {
+        if (video.webkitDisplayingFullscreen) {
+            video.webkitExitFullscreen();
+        } else {
+            if (!fullscreen.alreadyPlayed) {
+                video.play();
+            }
+            video.webkitEnterFullscreen();
+        }
     } else {
-        playerWrapper.requestFullscreen();
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            playerWrapper.requestFullscreen();
+        }
     }
 }
 
 function togglePlayback() {
     if (video.paused) {
-        playerWrapper.dataset.state = 'playing';
         video.play();
-        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
-        // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
-        //       Formula should/can take into account width of video on screen vs duration of video.
-        playbackUpdateInterval = setInterval(playbackUpdate, 80);
     } else {
         video.pause();
-        clearInterval(playbackUpdateInterval);
-        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
     }
 }
+
+video.addEventListener('pause', () => {
+    togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    clearInterval(playbackUpdateInterval);
+});
+
+video.addEventListener('play', () => {
+    fullscreen.alreadyPlayed = true;
+    playerWrapper.dataset.state = 'playing';
+    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+    // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
+    //       Formula should/can take into account width of video on screen vs duration of video.
+    playbackUpdateInterval = setInterval(playbackUpdate, 80);
+});
 
 function toggleVolume() {
     if (volume.value > 0) {
@@ -303,10 +343,19 @@ window.addEventListener('keydown', revealControls);
 playbackCycleVolumeButton.addEventListener('click', cycleVolume);
 playbackToggleFullscreenButton.addEventListener('click', toggleFullscreen);
 
-playerWrapper.addEventListener('fullscreenchange', () => {
-    const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
-    playbackToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
-});
+if (fullscreen.iPhoneMode) {
+    video.addEventListener('webkitbeginfullscreen', () => {
+        playbackToggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
+    });
+    video.addEventListener('webkitendfullscreen', () => {
+        playbackToggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
+    });
+} else {
+    playerWrapper.addEventListener('fullscreenchange', () => {
+        const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
+        playbackToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
+    });
+}
 
 playerWrapper.addEventListener('mousemove', revealControls);
 
@@ -316,10 +365,7 @@ playerWrapper.addEventListener('mousemove', revealControls);
 if (replayButton) {
     replayButton.addEventListener('click', event => {
         event.preventDefault();
-        playerWrapper.dataset.state = 'playing';
         video.play();
-        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
-        playbackUpdateInterval = setInterval(playbackUpdate, 80);
     });
 }
 
@@ -506,7 +552,6 @@ if (toggleTranscriptButton) {
 
 video.addEventListener('ended', () => {
     playerWrapper.dataset.state = 'outro';
-    clearInterval(playbackUpdateInterval);
     togglePlaybackButton.replaceChildren(replayIcon.cloneNode(true));
 });
 
@@ -543,7 +588,6 @@ window.addEventListener('keydown', event => {
 });
 
 timeline.addEventListener('click', () => {
-    playerWrapper.dataset.state = 'playing';
     const bounds = timeline.getBoundingClientRect();
     const factor = (event.clientX - bounds.x) / bounds.width;
     const newTime = factor * timelineInput.max;
@@ -668,6 +712,7 @@ function seekTo(newTime, andPlay = false) {
         // play icon again.
         if (playerWrapper.dataset.state === 'outro' &&
             video.currentTime < duration - Number.EPSILON) {
+            playerWrapper.dataset.state = 'playing';
             togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
         }
     }
