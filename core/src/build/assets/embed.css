@@ -195,6 +195,7 @@ img {
     display: flex;
 }
 .player_controls .timeline {
+    cursor: pointer;
     height: .8rem;
     position: relative;
 }
@@ -215,7 +216,7 @@ img {
     width: 100%;
     z-index: 3;
 }
-.player_controls .timeline input:focus-visible + .bar.outline { outline: 1px solid var(--l-1); }
+.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l-1); }
 .player_controls .timeline .bar.progress {
     background: var(--l-1);
     width: 0;
@@ -227,6 +228,7 @@ img {
     left: 0;
     margin: 0;
     opacity: 0;
+    pointer-events: none;
     position: absolute;
     right: 0;
     top: 0;

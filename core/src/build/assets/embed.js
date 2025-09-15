@@ -20,6 +20,7 @@ const playerWrapper = document.querySelector('.player_wrapper');
 const replayButton = document.querySelector('#replay');
 const speedControl = document.querySelector('#speed');
 const speedMultiplier = document.querySelector('#speed .multiplier');
+const timeline = document.querySelector('.timeline');
 const timelineInput = document.querySelector('.timeline input');
 const togglePlaybackButton = document.querySelector('#toggle_playback');
 const versionSelectorControl = document.querySelector('.selector_control.version');
@@ -31,6 +32,28 @@ const video = document.querySelector('video');
 const duration = parseFloat(video.dataset.duration);
 
 let playbackUpdateInterval;
+
+const fullscreen = {
+    // On iOS on iPhone, video playback must be started at least once before
+    // entering fullscreen on the video element works, therefore we track
+    // this state, and start playback when fullscreen is requested without a
+    // prior playback request.
+    alreadyPlayed: false,
+    // If requestFullscreen is available on the player wrapper (a non-video
+    // element), we know that we are on a device and browser that supports
+    // the generally agreed upon fullscreen API for browsers. If we aren't,
+    // it's reasonable to assume we are in the one environment that
+    // (intentionally) doesn't - iOS on iPhone - and we consecutively employ
+    // special handling for it.
+    // See:
+    // - https://caniuse.com/?search=requestfullscreen
+    //   (General overview of support across browsers)
+    // - https://developer.apple.com/forums/thread/133248
+    //   (Timeline of apple failing to support requestFullscreen on iOS since 2020)
+    // - https://developer.apple.com/documentation/webkitjs/htmlvideoelement/1633500-webkitenterfullscreen
+    //   (Apple developer documentation for their non-standard fullscreen API)
+    iPhoneMode: !playerWrapper.requestFullscreen
+};
 
 // We internally manage speed as (integer) percent values to avoid having to
 // deal with float rounding issues.
@@ -201,27 +224,46 @@ function cycleVolume() {
 }
 
 function toggleFullscreen() {
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
+    if (fullscreen.iPhoneMode) {
+        if (video.webkitDisplayingFullscreen) {
+            video.webkitExitFullscreen();
+        } else {
+            if (!fullscreen.alreadyPlayed) {
+                video.play();
+            }
+            video.webkitEnterFullscreen();
+        }
     } else {
-        playerWrapper.requestFullscreen();
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            playerWrapper.requestFullscreen();
+        }
     }
 }
 
 function togglePlayback() {
     if (video.paused) {
-        playerWrapper.dataset.state = 'playing';
         video.play();
-        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
-        // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
-        //       Formula should/can take into account width of video on screen vs duration of video.
-        playbackUpdateInterval = setInterval(playbackUpdate, 80);
     } else {
         video.pause();
-        clearInterval(playbackUpdateInterval);
-        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
     }
 }
+
+video.addEventListener('pause', () => {
+    togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+    clearInterval(playbackUpdateInterval);
+});
+
+video.addEventListener('play', () => {
+    fullscreen.alreadyPlayed = true;
+    playerWrapper.dataset.state = 'playing';
+    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+    // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
+    //       Formula should/can take into account width of video on screen vs duration of video.
+    playbackUpdateInterval = setInterval(playbackUpdate, 80);
+});
+
 
 function toggleVolume() {
     if (volume.value > 0) {
@@ -307,21 +349,35 @@ introToggleFullscreenButton.addEventListener('click', toggleFullscreen);
 playbackCycleVolumeButton.addEventListener('click', cycleVolume);
 playbackToggleFullscreenButton.addEventListener('click', toggleFullscreen);
 
-playerWrapper.addEventListener('fullscreenchange', () => {
-    const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
-    introToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
-    playbackToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
-});
+if (fullscreen.iPhoneMode) {
+    video.addEventListener('webkitbeginfullscreen', () => {
+        introToggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
+        playbackToggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
+    });
+    video.addEventListener('webkitendfullscreen', () => {
+        introToggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
+        playbackToggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
+    });
+} else {
+    playerWrapper.addEventListener('fullscreenchange', () => {
+        const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
+        introToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
+        playbackToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
+    });
+}
 
 playerWrapper.addEventListener('mousemove', revealControls);
 
-replayButton.addEventListener('click', event => {
-    event.preventDefault();
-    playerWrapper.dataset.state = 'playing';
-    video.play();
-    togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
-    playbackUpdateInterval = setInterval(playbackUpdate, 80);
-});
+// Unlisted videos are not included in the playlist listing in the player
+// outro screen, therefore there is no separate replay button for these
+// videos either. (It's possible that these cannot be embedded anyway,
+// but just to be sure we handle this case here as well)
+if (replayButton) {
+    replayButton.addEventListener('click', event => {
+        event.preventDefault();
+        video.play();
+    });
+}
 
 if (playbackSubtitlesSelectorControl) {
     const introCycleSubtitlesButton = document.querySelector('.intro_controls .cycle_subtitles');
@@ -480,7 +536,6 @@ togglePlaybackButton.addEventListener('click', togglePlayback);
 
 video.addEventListener('ended', () => {
     playerWrapper.dataset.state = 'outro';
-    clearInterval(playbackUpdateInterval);
     togglePlaybackButton.replaceChildren(replayIcon.cloneNode(true));
 });
 
@@ -492,46 +547,46 @@ window.addEventListener('keydown', event => {
         event.preventDefault();
     } else if (event.key === 'f' || event.key === 'F') {
         toggleFullscreen();
+        event.preventDefault();
     } else if (event.key === 'm' || event.key === 'M') {
         toggleVolume();
+        event.preventDefault();
     } else if (event.key === 'ArrowLeft') {
         if (video.currentTime - 5 < 0) {
-            video.currentTime = 0;
+            seekTo(0);
         } else {
-            video.currentTime -= 5;
+            seekTo(video.currentTime - 5);
         }
-
-        playbackUpdate();
-
-        // If we move the playback position backwards while we're on the outro
-        // screen we need to make sure the replay icon gets replaced by a
-        // play icon again.
-        if (playerWrapper.dataset.state === 'outro') {
-            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
-        }
+        event.preventDefault();
     } else if (event.key === 'ArrowRight') {
         if (video.currentTime + 5 > duration) {
-            video.currentTime = duration;
+            seekTo(duration);
         } else {
-            video.currentTime += 5;
+            seekTo(video.currentTime + 5);
         }
-
-        playbackUpdate();
+        event.preventDefault();
     }
 });
 
 timelineInput.addEventListener('input', _ => {
-    playerWrapper.dataset.state = 'playing';
-    video.currentTime = timelineInput.value;
+    seekTo(timelineInput.value);
+});
 
-    playbackUpdate();
+timeline.addEventListener('click', () => {
+    const bounds = timeline.getBoundingClientRect();
+    const factor = (event.clientX - bounds.x) / bounds.width;
+    const newTime = factor * timelineInput.max;
+    seekTo(newTime);
+    timeline.classList.add('focus_from_click');
+    timelineInput.focus();
+});
 
-    // If we move the playback position backwards while we're on the outro
-    // screen we need to make sure the replay icon gets replaced by a
-    // play icon again.
-    if (playerWrapper.dataset.state === 'outro') {
-        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
-    }
+timelineInput.addEventListener('blur', () => {
+    timeline.classList.remove('focus', 'focus_from_click');
+});
+
+timelineInput.addEventListener('focus', () => {
+    timeline.classList.add('focus');
 });
 
 const resizeObserver = new ResizeObserver(() => {
@@ -563,3 +618,23 @@ const resizeObserver = new ResizeObserver(() => {
 // Trigger version slice backdrop recomputation on resize (this also triggers
 // the first draw after the initial page load).
 resizeObserver.observe(playerWrapper);
+
+// Seek the video to a new timecode, reflect the change in the
+// timeline bar, update the playback button icon if needed
+function seekTo(newTime, andPlay = false) {
+    video.currentTime = newTime;
+    playbackUpdate();
+
+    if (andPlay && video.paused) {
+        togglePlayback();
+    } else {
+        // If we move the playback position backwards while we're on the outro
+        // screen we need to make sure the replay icon gets replaced by a
+        // play icon again.
+        if (playerWrapper.dataset.state === 'outro' &&
+            video.currentTime < duration - Number.EPSILON) {
+            playerWrapper.dataset.state = 'playing';
+            togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+        }
+    }
+}
