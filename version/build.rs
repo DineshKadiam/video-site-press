@@ -13,8 +13,8 @@ fn compute_revision() {
     git.args(["rev-parse", "--short", "HEAD"]);
 
     let revision = match git.output() {
-        Ok(output) => String::from_utf8(output.stdout).unwrap(),
-        Err(_) => String::from("unknown revision")
+        Ok(output) if output.status.success() => String::from_utf8(output.stdout).unwrap(),
+        _ => String::from("unknown revision")
     };
 
     println!("cargo:rustc-env=HYPER8_REVISION={revision}");
