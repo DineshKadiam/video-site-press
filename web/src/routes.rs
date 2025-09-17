@@ -84,8 +84,8 @@ pub fn convert_to_video(site_path: &SitePath) -> String {
 }
 
 pub const DASHBOARD: &str = "/";
-
 pub const DEPLOY: &str = "/deploy";
+pub const JOBS: &str = "/jobs";
 
 pub fn playlist_add_link(playlist: &Playlist) -> String {
     format!("/playlist/add-link/{}", playlist.site_path.normalized())

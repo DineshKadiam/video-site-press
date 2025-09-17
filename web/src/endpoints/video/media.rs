@@ -29,7 +29,26 @@ use crate::widgets::{layout, not_found, upload_widget};
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
     let video_meta = if let Some(video_file) = video.highest_quality_video_file() {
-        video_file.video_meta.as_ref().unwrap()
+        match &video_file.video_meta {
+            Some(video_meta) => video_meta,
+            None => {
+                let jobs_url = routes::JOBS;
+
+                // TODO: Translate/improve wording/usability
+                return formatdoc!(r#"
+                    Video metadata has not yet been computed – please click
+                    <a href="">refresh</a> in a few seconds to get re-encoding
+                    options for this video.
+                    <br><br>
+                    <small>
+                        If this persists, please have a look at the
+                        <a href="{jobs_url}">background jobs page</a>
+                        to check for potential errors during metadata
+                        computation.
+                    </small>
+                "#);
+            }
+        }
     } else {
         return String::new();
     };

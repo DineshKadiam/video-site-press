@@ -74,9 +74,11 @@ fn controls(
     let processing = {
         let job_queue = &context.job_queue.lock().unwrap();
 
+        let jobs_url = routes::JOBS;
+
         if job_queue.is_empty() {
             let t_idle = translations.idle;
-            format!(r#"<a class="processing" href="/jobs">{processing_icon} {t_idle}</a>"#)
+            format!(r#"<a class="processing" href="{jobs_url}">{processing_icon} {t_idle}</a>"#)
         } else {
             let mut failed_jobs = 0;
             let mut pending_jobs = 0;
@@ -133,7 +135,7 @@ fn controls(
             };
 
             formatdoc!(r#"
-                <a class="active processing" href="/jobs">
+                <a class="active processing" href="{jobs_url}">
                     {processing_icon} {jobs}{failed_badge}{pending_badge}
                 </a>
             "#)
