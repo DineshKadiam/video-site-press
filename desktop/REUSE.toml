@@ -5,8 +5,9 @@ path = [
 	# Tauri does not allow arbitrary files to be placed inside the `capabilities`
 	# directory (they are otherwise parsed as json, irrespective of their
 	# extension), therefore we need to manage the licensing information for
-	# capabilities/default.json here, from the parent directory.
-	"capabilities/default.json",
+	# capabilities/*.json here, from the parent directory.
+	"capabilities/editor.json",
+	"capabilities/launcher.json",
 	"tauri.conf.json"
 ]
 SPDX-FileCopyrightText = "2025 Simon Repp"

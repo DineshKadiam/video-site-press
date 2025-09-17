@@ -15,6 +15,7 @@ Thanks everyone for your support!
 [arnauld](https://codeberg.org/arnauld)<br>
 [BMKÖS](https://www.bmkoes.gv.at/)<br>
 [Bri Hefele](https://brhfl.com)<br>
+[bthj](https://sonomu.club/@aflands)<br>
 [Christian Pacaud](https://www.christianpacaud.com/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
 [dec23k](https://mastodon.ie/@dec23k)<br>
@@ -22,6 +23,7 @@ Thanks everyone for your support!
 [DURAD](https://durad.xyz)<br>
 [ecogex](https://ecogex.com/)<br>
 [Edgar Aichinger](https://build.opensuse.org/users/edogawa)<br>
+[Emanuel Pesendorfer](https://emanuel-pesendorfer.at/)<br>
 hatsch<br>
 [Ian Menz](https://norcal.social/@CallMePlayer)<br>
 [Internet Stiftung](https://www.internetstiftung.at/)<br>
