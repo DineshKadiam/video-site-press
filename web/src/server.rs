@@ -11,7 +11,8 @@ use actix_session::SessionMiddleware;
 use actix_session::storage::CookieSessionStore;
 use actix_web::{App, HttpServer};
 use actix_web::cookie::Key;
-use actix_web::web::{Data, get, post, resource};
+use actix_web::web::{Data, FormConfig};
+use actix_web::web::{get, post, resource};
 use actix_web::rt;
 
 use hyper8_core::Context as CoreContext;
@@ -174,6 +175,9 @@ pub fn start(
                     )
                     .service(
                         resource("/video/edit-subtitles/{file_name}/{site_path:.*}")
+                            // Raises the limit for URL encoded form payloads from 16kB to 512kB
+                            // to allow subtitle files with lots of content to be edited/submitted.
+                            .app_data(FormConfig::default().limit(512 * 1024))
                             .route(get().to(video::edit_subtitles))
                             .route(post().to(video::update_subtitles))
                     )

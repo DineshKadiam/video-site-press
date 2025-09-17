@@ -26,6 +26,7 @@ hatsch<br>
 [Ian Menz](https://norcal.social/@CallMePlayer)<br>
 [Internet Stiftung](https://www.internetstiftung.at/)<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
+[Lioh](https://codeberg.org/Lioh)<br>
 [Mads Kjeldgaard](https://madskjeldgaard.dk/)<br>
 [Matthias Bilger](https://codeberg.org/m42e)<br>
 [Meljoann](https://www.meljoann.com/)<br>
