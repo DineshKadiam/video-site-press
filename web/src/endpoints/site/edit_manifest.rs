@@ -53,7 +53,11 @@ pub fn edit_manifest_page(
 
     let manifest_path = context.site_dir.join("site.eno");
 
-    let content = fs::read_to_string(&manifest_path).unwrap();
+    let content = match manifest_path.exists() {
+        true => fs::read_to_string(&manifest_path).unwrap(),
+        false => String::new()
+    };
+
     let manifest_path_str = string_from_pathbuf(manifest_path);
 
     let mut textarea_content = Textarea::manifest("content", &manifest_path_str);
