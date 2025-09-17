@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use tauri::{
     AppHandle,
     Emitter,
-    State,
+    Manager,
     WebviewWindow
 };
 
@@ -15,13 +15,18 @@ use hyper8_web::EditorState;
 
 use crate::editor;
 
+/// Important: This command must be async (and/or the state retrieved inside
+/// the function body rather than passed through the function arguments itself)
+/// to avoid a deadlock on Windows that occurs when editor::start_editor later
+/// calls WebviewWindowBuilder::new() with the passed AppHandle.
 #[tauri::command]
-pub fn open_bookmarked_site(
+pub async fn open_bookmarked_site(
     app: AppHandle,
     launcher_window: WebviewWindow,
-    site_dir: &Path,
-    state: State<'_, Arc<Mutex<EditorState>>>
+    site_dir: PathBuf
 ) {
+    let state = app.state::<Arc<Mutex<EditorState>>>();
+
     // At this point the launcher could have been open for a long time
     // (and things on disk have changed quite a bit), therefore we check
     // again that the site_dir still exists.
@@ -53,7 +58,7 @@ pub fn open_bookmarked_site(
             app,
             launcher_window,
             mode,
-            site_dir,
+            &site_dir,
             translations
         );
     } else {
