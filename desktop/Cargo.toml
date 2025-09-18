@@ -19,6 +19,7 @@ tauri-build.workspace = true
 bincode.workspace = true
 dirs.workspace = true
 env_logger.workspace = true
+fix-path-env.workspace = true
 hyper8-cli.path = "../cli"
 hyper8-core.path = "../core"
 hyper8-icons.path = "../icons"

@@ -9,6 +9,10 @@ use std::process::ExitCode;
 fn main() -> ExitCode {
     env_logger::init();
 
+    // Make sure that on macOS desktop builds, ffmpeg/ffprobe is found
+    // from $PATH - try to do without in the long run
+    let _ = fix_path_env::fix();
+
     // If any commandline arguments are passed, hyper8 runs in
     // cli mode, returning an exit code after completion.
     if let Some(exit_code) = hyper8_cli_lib::handle_desktop() {
