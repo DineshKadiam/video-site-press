@@ -299,7 +299,14 @@ impl MarkdownSubset<'_> {
                         let label = html_escape_outside_attribute(&self.input[label_begin_index..label_end_index].replace("\\]", "]"));
 
                         let link = match self.output_format {
-                            OutputFormat::Html => format!(r#"<a href="{href}" target="_blank">{label}</a>"#),
+                            OutputFormat::Html => {
+                                if href.starts_with('#') {
+                                    // In-page links to an anchor (e.g. "#example") should not hint at opening a new tab
+                                    format!(r#"<a href="{href}">{label}</a>"#)
+                                } else {
+                                    format!(r#"<a href="{href}" target="_blank">{label}</a>"#)
+                                }
+                            }
                             OutputFormat::Plaintext => format!("{label} ({href})")
                         };
 
