@@ -2372,7 +2372,7 @@ dependencies = [
 
 [[package]]
 name = "hyper8"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "bincode",
  "dirs",
@@ -2397,7 +2397,7 @@ dependencies = [
 
 [[package]]
 name = "hyper8-cli"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "base64 0.22.1",
  "clap",
@@ -2415,7 +2415,7 @@ dependencies = [
 
 [[package]]
 name = "hyper8-core"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "actix-files",
  "actix-web",
@@ -2453,7 +2453,7 @@ dependencies = [
 
 [[package]]
 name = "hyper8-docs"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "base64 0.22.1",
  "enolib",
@@ -2465,25 +2465,25 @@ dependencies = [
 
 [[package]]
 name = "hyper8-icons"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "indoc",
 ]
 
 [[package]]
 name = "hyper8-translations"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "indoc",
 ]
 
 [[package]]
 name = "hyper8-version"
-version = "0.23.0"
+version = "0.24.0"
 
 [[package]]
 name = "hyper8-web"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "actix-files",
  "actix-multipart",

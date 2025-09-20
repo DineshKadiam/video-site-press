@@ -5,6 +5,123 @@
 
 # Changelog
 
+Rich release notes including screenshots, videos and detailed commit information are also available at:
+https://simonrepp.com/hyper8/changes/
+
+## 0.24
+
+Released on September 20, 2025
+
+### Transcripts
+
+The new transcript sidebar panel allows your visitors to browse and read
+through a transcript of the video (based on your provided subtitles).
+Visitors can interactively filter the transcript and click the timecode
+next to each line to jump to that specific part of the video.
+
+- Sketch out a basic transcript sidebar panel implementation ([`8510358`](https://codeberg.org/simonrepp/hyper8/commit/85103580297d9fdc8cb050bd69c0a1d0b35e04af))
+- Link to timecodes in the transcript sidebar, use millisecond precision ([`cea3fee`](https://codeberg.org/simonrepp/hyper8/commit/cea3fee37201d5bfc498c4ebefcab3fdad61c88e))
+- Implement transcript filter feature, layout and style transcript sidebar ([`75daca3`](https://codeberg.org/simonrepp/hyper8/commit/75daca390b9fbeffad1f650d7219fc0d5ed888f1))
+- Conditionally attach transcript filter handler, refactor volume initialization ([`db73457`](https://codeberg.org/simonrepp/hyper8/commit/db734577a5168a25d4a9288c233adbad356ec2db))
+
+### Desktop Integration
+
+Hyper 8 is now a native graphical application, fully integrated into the
+desktop! You can still, and will always be able to, use Hyper 8 from the
+command line (even as a separate CLI-only edition!), but you don't have to
+anymore. After installation you can start Hyper 8 right from your desktop,
+which opens the graphical launcher where you can open an existing (or a start
+a new) Hyper 8 site in the editor.
+
+The editor can now be used in three modes: Standalone -
+where the editor runs in its own window, Browser-based - where the editor opens in your
+system browser (as previously), and Collaborative - where the editor is also accessible
+to everyone on the same Wi-Fi or LAN as you.
+
+As all of this is a huge technical change and published for the first time,
+please help out by reporting any issues you encounter. With your help, in the
+coming weeks, 1.0 will officially introduce Hyper 8 as a desktop application,
+ready for the world.
+
+- Extract EditorConfig into own module ([`2ee0f0c`](https://codeberg.org/simonrepp/hyper8/commit/2ee0f0cac60b7891af44216b76d31c6e694cb1fa))
+- Split main crate into workspace subcrates (cli/core/icons/translations/web) ([`20a1486`](https://codeberg.org/simonrepp/hyper8/commit/20a1486885b4a2a87cc8ddb918a72f520a2a748e))
+- Switch from sidecar license files to adjacent REUSE.toml files ([`838643a`](https://codeberg.org/simonrepp/hyper8/commit/838643a8e4ba3ba71b82731f258de74913978b48))
+- Establish the desktop application prototype ([`feba75b`](https://codeberg.org/simonrepp/hyper8/commit/feba75ba8aca764ad4feeba5ef996c6c4ac5d9e7))
+- Extend and tweak Tauri bundle configuration ([`7700fe1`](https://codeberg.org/simonrepp/hyper8/commit/7700fe179fa5b692c49e71644d98ab58a35aba23))
+- Restructure launcher, merge language/translation abstractions ([`0896233`](https://codeberg.org/simonrepp/hyper8/commit/089623368f35fe41ef3cb4eebdc22cd473c5ebe9))
+- Exit the entire application when editor window is destroyed ([`8777e80`](https://codeberg.org/simonrepp/hyper8/commit/8777e800c9672dae35f96507a86fe5cf56ad84d8))
+- Iterate on launcher base layout and usability ([`b5d04c8`](https://codeberg.org/simonrepp/hyper8/commit/b5d04c86d446aecf3778428f2c302aab022e35d4))
+- Clean up launcher config and state separation, scaffold bookmark abstraction ([`12dd7c6`](https://codeberg.org/simonrepp/hyper8/commit/12dd7c6cf30d35d13619cf4b6cf906f2f3a0be73))
+- Probe and display title and live url for site bookmarks ([`b987f9d`](https://codeberg.org/simonrepp/hyper8/commit/b987f9d9bb649b744d8a181a99d4829eb7f1bce3))
+- Switch to programmatic launcher window creation ([`a7237c6`](https://codeberg.org/simonrepp/hyper8/commit/a7237c682a994b676052b142647cebc17c0f6c14))
+- Inject core theme vars in launcher based on prefers-color-scheme evaluation ([`904e970`](https://codeberg.org/simonrepp/hyper8/commit/904e970b0f7a94b623b40db313f869d14097d282))
+- Allow opening bookmarked sites in the file explorer ([`e4e9f0e`](https://codeberg.org/simonrepp/hyper8/commit/e4e9f0eaa17460df135b52a62d19b886e99676cf))
+- Implement quick start feature in launcher ([`8158559`](https://codeberg.org/simonrepp/hyper8/commit/81585592b06eeadae9ad272b3fb1867c760f9727))
+- Indicate and disable bookmarked but inaccessible sites in the launcher ([`7a66994`](https://codeberg.org/simonrepp/hyper8/commit/7a66994f0842e26e3bd55026e9656bec21a55c29))
+- Iterate on launcher design, layout and usability ([`a5127f5`](https://codeberg.org/simonrepp/hyper8/commit/a5127f59d00521439f5f11e00bea21af5b918671))
+- Only open the browser on editor server startup when requested ([`720f9f5`](https://codeberg.org/simonrepp/hyper8/commit/720f9f58e5a22712122b55220f0e8b1d90365ef5))
+- Implement dynamically passing back the url after editor server initialization ([`9a222b7`](https://codeberg.org/simonrepp/hyper8/commit/9a222b70fbb1e2c66645726999eb38e9d93d4e03))
+- Refine behavior, labeling and design for the main launcher actions ([`7cd104b`](https://codeberg.org/simonrepp/hyper8/commit/7cd104bc030941ab101ac8cac066da2839b7b5fb))
+- Persist launcher state after reordering bookmarks on opening a bookmarked site ([`90c1ba9`](https://codeberg.org/simonrepp/hyper8/commit/90c1ba971a170288d9c5fcf8546be875d6acc2e1))
+- Fully translate the graphical launcher ([`ef03e43`](https://codeberg.org/simonrepp/hyper8/commit/ef03e4363ab384c239941d6eb67b4571efa7eeef))
+- Handle horizontal and vertical overflow in the site bookmarks list ([`ece125d`](https://codeberg.org/simonrepp/hyper8/commit/ece125d4c17cc711f46154917af4d9c1e166fb48))
+- Don't ask permission when removing a site bookmark in the launcher ([`5fde411`](https://codeberg.org/simonrepp/hyper8/commit/5fde4119907fc709e238937f966db953686dd5d1))
+- Better place and style bookmark subactions in the launcher ([`834005c`](https://codeberg.org/simonrepp/hyper8/commit/834005c91154abe16aca29a684cab1d976e0fa25))
+- Introduce configurable browser/collaborative/standalone mode for the editor ([`f3069c6`](https://codeberg.org/simonrepp/hyper8/commit/f3069c6e949a62a41444c172c268cdc5c9e5ae89))
+- Implement browser preview in standalone mode (pending a potential Tauri bug) ([`8322e0f`](https://codeberg.org/simonrepp/hyper8/commit/8322e0f5c6c5c3376452c7752d058e47add5827b))
+- Share editor state across launcher, editor and cli ([`4ff292e`](https://codeberg.org/simonrepp/hyper8/commit/4ff292e56c9f3fd7ebeea6bfcc01a420b49aae64))
+- Provide a new theme selector in the launcher ([`eb4bceb`](https://codeberg.org/simonrepp/hyper8/commit/eb4bceb38f1b61e6bc4761b32ea3099357345b05))
+- Improve naming for the different editor modes ([`68c653f`](https://codeberg.org/simonrepp/hyper8/commit/68c653fa8353ada6c5d853b44c1a6b2f99b68139))
+- Split launcher command implementations into separate modules ([`c3c7d38`](https://codeberg.org/simonrepp/hyper8/commit/c3c7d38339cb5696fb2f97c398546c37a01b7ae3))
+- Encapsulate context creation fully in core, revisit site_dir existence checks ([`b0e101b`](https://codeberg.org/simonrepp/hyper8/commit/b0e101b43d782afd08d053c12a1e2c6f471630e4))
+- Allow accessing the command line interface in the desktop application as well ([`eec61f5`](https://codeberg.org/simonrepp/hyper8/commit/eec61f577a98b0ea7d5367c7b4bcf0d0d21c9984))
+- Use local network ip in collaborative mode, allow copying, provide more hints ([`91e0c97`](https://codeberg.org/simonrepp/hyper8/commit/91e0c97a9ac48d156869a756ca219554a5827f77))
+- Work around tauri opener plugin not opening preview in system browser ([`b56ff27`](https://codeberg.org/simonrepp/hyper8/commit/b56ff279d2933242ebf72ffecdeaad8b0973a95c))
+- Hide scrollbars when there is no overflow in launcher on windows ([`bebca28`](https://codeberg.org/simonrepp/hyper8/commit/bebca28af4f4abd2d2163ce3826dc788e36694ca))
+- Fix app/state related deadlock on opening a bookmarked site on Windows ([`854c11b`](https://codeberg.org/simonrepp/hyper8/commit/854c11bd7df2c4b04be6621df36e98c65691295e))
+- Ensure ffmpeg/ffprobe discovery on PATH for macOS desktop builds ([`05f97ab`](https://codeberg.org/simonrepp/hyper8/commit/05f97abc08210dcd8226d03f31741116137f868b))
+
+### Linking to timecodes
+
+You can now share links to your Hyper 8 videos that include a timecode
+reference. For instance a hypothetical link
+[https://example.com/video/#time=1h13m59s](https://example.com/video/#time=1h13m59s) will let the linked example video
+start right at 1:13:59.
+
+- Implement seeking through hash parameters at load and runtime ([`0e29e1c`](https://codeberg.org/simonrepp/hyper8/commit/0e29e1c0b1aab8bc071081669db3141b28f9f680))
+
+### View without server
+
+Hyper 8 sites are built to stand the test of time: As long as a copy of your site exists somewhere
+(online or offline), it can always be put back onto a regular static file server and will resume
+its duty just as on the day you first published it. More than that, if you build an archive-ready
+version of your site (simply the regular site with
+[clean urls disabled](https://simonrepp.com/hyper8/docs/site.html#disable_clean_urls)) your site
+will be browseable straight from disk, without a server being required for viewing! Due to some
+technicalities, this last feature was rendered inoperable for the past months, but 0.24 brings
+it back in order. Happy archiving!
+
+- Remove ESM based script imports in build, scope all scripts within IIFEs ([`9cbe79f`](https://codeberg.org/simonrepp/hyper8/commit/9cbe79f81ede2cf7e9e9a8b58f48352dd4018cb7))
+
+### WebKit and iOS fixes
+
+- Fix WebKit css issues with the splashscreen and select fields in the editor ([`b47942b`](https://codeberg.org/simonrepp/hyper8/commit/b47942b353e74abb42bf7c2e55becba7068b9674))
+- Hide native clear search indicator in WebKit browsers ([`5dd192e`](https://codeberg.org/simonrepp/hyper8/commit/5dd192e486219f70ccbdc87294fdf600982b2a92))
+- Intercept timeline input clicks to circumvent range/value deviation in WebKit ([`1666c2c`](https://codeberg.org/simonrepp/hyper8/commit/1666c2c2225fd388aa2881a111a3b6c0416e416c))
+- Handle arbitrary iOS/iPhone fullscreen behavior, improve player state handling ([`1b238e7`](https://codeberg.org/simonrepp/hyper8/commit/1b238e77cfd0d8b1fc255effb8554358011ea4e5)) (with [Matthias Bilger](https://codeberg.org/m42e))
+
+### Misc changes and fixes
+
+- Switch to strongly typed, on demand translatable job errors ([`16eefcf`](https://codeberg.org/simonrepp/hyper8/commit/16eefcf6694a324d8a6d2ac2e7e5e2b92597aca9))
+- Synchronize latest changes in site player implementation to embed player ([`07434d1`](https://codeberg.org/simonrepp/hyper8/commit/07434d1bd6c698c355d50763cc095feed4415a4f))
+- Wrap bubbles before they horizontally overflow ([`18dfb3d`](https://codeberg.org/simonrepp/hyper8/commit/18dfb3d8cae4728e11703d054dae07712a59b35b)) (with [bthj](https://sonomu.club/@aflands))
+- Prevent default event action on all global shortcut invocations ([`23ad3e3`](https://codeberg.org/simonrepp/hyper8/commit/23ad3e3d7516dc0881a942aec4620465860a01c2))
+- Handle race/error condition where we have no video metadata on a media subpage ([`dc20260`](https://codeberg.org/simonrepp/hyper8/commit/dc2026022006d3dac51a01e162ef3cbe757ddcde))
+- Handle manifests not yet existing when their respective edit page is rendered ([`8170f5f`](https://codeberg.org/simonrepp/hyper8/commit/8170f5ffcf03249e9a1ea07fa3dc69fa7d8ddd60))
+- Raise url-encoded form payload limit for the update_subtitles endpoint ([`acfc29b`](https://codeberg.org/simonrepp/hyper8/commit/acfc29bba99848ba0f0f61a77f6289b5f4b581e9)) (with [Lioh](https://social.anoxinon.de/@Lioh))
+- Do not hint at opening new tabs for anchor-based/timecode links ([`abbe96a`](https://codeberg.org/simonrepp/hyper8/commit/abbe96ab6cf3b0efbb19bfcece9538d963981bf5))
+- Catch git rev-parse executing but not succeeding when determining revision ([`74ff1ac`](https://codeberg.org/simonrepp/hyper8/commit/74ff1ac7cf46d5b472686d02bba4dafe1ba41180))
+
 ## 0.23
 
 Released on August 28, 2025
