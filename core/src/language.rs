@@ -108,11 +108,10 @@ impl Language {
             }
             _ => {
                 let icu_locale = code.parse::<IcuLocale>()
-                    .map_err(|err| {
+                    .unwrap_or_else(|err| {
                         warn!("Language code {code} could not be parsed as an ICU locale ({err}).");
                         icu_locale!("en")
-                    })
-                    .unwrap();
+                    });
 
                 Language::explicit(
                     ChronoLocale::en_US,
