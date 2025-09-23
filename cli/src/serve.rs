@@ -41,16 +41,21 @@ pub fn serve(
                 Err(err) => eprintln!("Please open the url manually in your browser (an automatic attempt to do so failed with the error '{err}').")
             }
 
-            println!(r#"Enter "exit" and confirm with Enter or press Ctrl+C to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)"#);
+            println!(r#"Enter "q", "quit" or "exit" and confirm with Enter to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)"#);
 
             // TODO: We could offer a simple utility console here (to get debug
             // information, list jobs, etc.).
             let mut input = String::new();
             loop {
                 if io::stdin().read_line(&mut input).is_ok() {
-                    if input.trim() == "exit" {
-                        break;
+                    match input.trim() {
+                        "exit" |
+                        "q" |
+                        "quit" => break,
+                        _ => input.clear()
                     }
+                } else {
+                    break;
                 }
             }
 
