@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::io;
 use std::net::IpAddr;
 use std::process::ExitCode;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::channel;
 
 use clap::ArgMatches;
 
@@ -41,23 +41,12 @@ pub fn serve(
                 Err(err) => eprintln!("Please open the url manually in your browser (an automatic attempt to do so failed with the error '{err}').")
             }
 
-            println!(r#"Enter "q", "quit" or "exit" and confirm with Enter to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)"#);
+            println!(r#"Press Ctrl+C to shut down the editor (if you have pending encoding jobs they will be discarded, otherwise this is safe to do at any point)"#);
 
-            // TODO: We could offer a simple utility console here (to get debug
-            // information, list jobs, etc.).
-            let mut input = String::new();
-            loop {
-                if io::stdin().read_line(&mut input).is_ok() {
-                    match input.trim() {
-                        "exit" |
-                        "q" |
-                        "quit" => break,
-                        _ => input.clear()
-                    }
-                } else {
-                    break;
-                }
-            }
+            // Wait for Ctrl+C using the ctrlc crate and channel-based signaling
+            let (signal_sender, signal_receiver) = channel();
+            ctrlc::set_handler(move || { signal_sender.send(()).unwrap(); }).unwrap();
+            signal_receiver.recv().unwrap();
 
             ExitCode::SUCCESS
         }

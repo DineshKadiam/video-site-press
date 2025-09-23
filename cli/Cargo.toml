@@ -13,6 +13,7 @@ name = "hyper8_cli_lib"
 [dependencies]
 base64.workspace = true
 clap.workspace = true
+ctrlc.workspace = true
 enolib.workspace = true
 env_logger.workspace = true
 hyper8-core.path = "../core"

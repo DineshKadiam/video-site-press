@@ -27,6 +27,7 @@ base64 = "0.22.1"
 bincode = "=1.3.3"
 chrono = { features = ["unstable-locales"], version = "0.4.42" }
 clap = { features = ["string"], version = "4.5.47" }
+ctrlc = "3.5.0"
 dirs = "6.0.0"
 dunce = "1.0.5"
 enolib = { git = "https://codeberg.org/simonrepp/enolib-rs", tag = "0.5.0" }
