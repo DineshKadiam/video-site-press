@@ -5,12 +5,11 @@ use std::sync::{Arc, Mutex};
 
 use tauri::State;
 
-use hyper8_web::EditorState;
+use crate::LauncherState;
 
 #[tauri::command]
-pub fn get_language(
-    state: State<'_, Arc<Mutex<EditorState>>>
+pub fn get_language_code(
+    state: State<'_, Arc<Mutex<LauncherState>>>
 ) -> String {
-    let state = state.lock().unwrap();
-    state.language.code.to_string()
+    state.lock().unwrap().get_language_code()
 }

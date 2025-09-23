@@ -77,7 +77,6 @@ install whichever format suits your needs.
 If you want to uninstall hyper8 at any later point, simply use your platform
 or package manager's native uninstallation method.
 
-
 ## B) Compiling/installing the command line application
 
 Inside the repository root directory run this command:

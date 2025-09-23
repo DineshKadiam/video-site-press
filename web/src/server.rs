@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::net::{IpAddr, Ipv4Addr};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -18,7 +18,7 @@ use actix_web::rt;
 use hyper8_core::Context as CoreContext;
 use hyper8_core::util::ensure_dir;
 
-use crate::{Context, EditorState};
+use crate::{Context, EditorStateConnection};
 use crate::endpoints::{
     build,
     collection,
@@ -51,7 +51,7 @@ const MAX_PORT_ATTEMPTS: u16 = 10;
 /// server failed
 pub fn start(
     core_context: Arc<CoreContext>,
-    editor_state: Arc<Mutex<EditorState>>,
+    editor_state: EditorStateConnection,
     ip_requested: Option<IpAddr>,
     port_requested: Option<u16>
 ) -> Result<String, String> {

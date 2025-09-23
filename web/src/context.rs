@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use hyper8_core::Context as CoreContext;
 
-use crate::EditorState;
+use crate::EditorStateConnection;
 
 pub struct Context {
     pub core_context: Arc<CoreContext>,
-    pub editor_state: Arc<Mutex<EditorState>>
+    pub editor_state: EditorStateConnection
 }
 
 impl Context {
     pub fn new(
         core_context: Arc<CoreContext>,
-        editor_state: Arc<Mutex<EditorState>>
+        editor_state: EditorStateConnection
     ) -> Context {
         Context {
             core_context,

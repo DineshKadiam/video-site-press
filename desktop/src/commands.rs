@@ -6,7 +6,7 @@ pub mod change_mode;
 pub mod change_theme;
 pub mod close;
 pub mod create_new_site;
-pub mod get_language;
+pub mod get_language_code;
 pub mod get_theme;
 pub mod open_bookmarked_site;
 pub mod open_existing_site;

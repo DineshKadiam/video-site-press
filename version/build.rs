@@ -20,7 +20,6 @@ fn compute_revision() {
     println!("cargo:rustc-env=HYPER8_REVISION={revision}");
 }
 
-
 fn main() {
     compute_revision();
     compute_version();

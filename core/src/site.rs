@@ -685,7 +685,7 @@ impl Site {
             eno.push_str(&format!("poster_aspect: {}\n", representation));
         }
 
-        eno.push_str(&format!("theme: {}\n", self.theme.key));
+        eno.push_str(&format!("theme: {}\n", self.theme.key()));
 
         if !self.ftp_config.is_empty() {
             if !eno.is_empty() { eno.push('\n'); }

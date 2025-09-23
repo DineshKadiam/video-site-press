@@ -2387,6 +2387,7 @@ version = "0.24.0"
 dependencies = [
  "bincode",
  "dirs",
+ "enolib",
  "env_logger",
  "fix-path-env",
  "hyper8-cli",
@@ -2505,7 +2506,6 @@ dependencies = [
  "bincode",
  "chrono",
  "dirs",
- "enolib",
  "futures-util",
  "hyper8-core",
  "hyper8-icons",

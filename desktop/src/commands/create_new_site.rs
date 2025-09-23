@@ -17,19 +17,18 @@ use tauri_plugin_dialog::{
     MessageDialogKind
 };
 
-use hyper8_web::{EditorState, SiteBookmark};
-
 use crate::editor;
+use crate::{LauncherState, SiteBookmark};
 
 #[tauri::command]
 pub fn create_new_site(
     app: AppHandle,
     launcher_window: WebviewWindow,
-    state: State<'_, Arc<Mutex<EditorState>>>
+    state: State<'_, Arc<Mutex<LauncherState>>>
 ) {
-    let state = state.lock().unwrap();
+    let launcher_state = state.lock().unwrap();
 
-    let translations = &state.language.translations;
+    let translations = launcher_state.get_translations();
 
     // TODO: Handle the None case by finding some other usable dir.
     //       (question is which though?)
@@ -76,28 +75,28 @@ pub fn create_new_site(
                     let bookmark = SiteBookmark::new(&site_dir);
 
                     // Note that the outer state handle we unlock in the root
-                    // scope of delete_site(…) immediately falls out of scope.
+                    // scope of create_new_site(…) immediately falls out of scope.
                     // Here we are in a new, later occuring execution context,
                     // hence we obtain a new handle on state.
-                    let state = app.state::<Arc<Mutex<EditorState>>>();
+                    let state = app.state::<Arc<Mutex<LauncherState>>>();
 
-                    let mode;
+                    let editor_mode;
                     let translations;
 
                     {
-                        let mut state_mut = state.lock().unwrap();
+                        let mut launcher_state = state.lock().unwrap();
 
-                        state_mut.site_bookmarks.insert(0, bookmark);
-                        state_mut.persist();
+                        launcher_state.site_bookmarks.insert(0, bookmark);
+                        launcher_state.persist();
 
-                        mode = state_mut.mode;
-                        translations = state_mut.language.translations.clone();
+                        editor_mode = launcher_state.editor_mode;
+                        translations = launcher_state.get_translations();
                     };
 
                     editor::start_editor(
                         app,
                         launcher_window,
-                        mode,
+                        editor_mode,
                         &site_dir,
                         translations
                     );

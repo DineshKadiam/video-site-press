@@ -10,24 +10,24 @@ use tauri::{
     State
 };
 
-use hyper8_web::EditorState;
+use crate::LauncherState;
 
 #[tauri::command]
 pub fn remove_site_bookmark(
     app: AppHandle,
     site_dir: PathBuf,
-    state: State<'_, Arc<Mutex<EditorState>>>
+    state: State<'_, Arc<Mutex<LauncherState>>>
 ) {
     {
-        let mut state = state.lock().unwrap();
+        let mut launcher_state = state.lock().unwrap();
 
-        if let Some(index) = state.site_bookmarks
+        if let Some(index) = launcher_state.site_bookmarks
             .iter()
             .position(|bookmark| bookmark.site_dir == site_dir) {
-            state.site_bookmarks.remove(index);
+            launcher_state.site_bookmarks.remove(index);
         }
 
-        state.persist();
+        launcher_state.persist();
     }
 
     let _ = app.emit("update-body", ());

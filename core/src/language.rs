@@ -7,6 +7,7 @@ use icu_collator::options::{CollatorOptions, Strength};
 use icu_locale::Locale as IcuLocale;
 use icu_locale::locale as icu_locale;
 use log::warn;
+use serde_derive::{Deserialize, Serialize};
 
 use hyper8_translations::Translations;
 
@@ -20,7 +21,8 @@ pub struct AvailableLanguage {
     pub name: &'static str
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(from = "&str", into = "String")]
 pub struct Language {
     pub chrono_locale: ChronoLocale,
     pub code: String,
@@ -175,6 +177,18 @@ impl Clone for Language {
             text_direction,
             translations,
         }
+    }
+}
+
+impl From<&str> for Language {
+    fn from(code: &str) -> Language {
+        Language::from_code(code)
+    }
+}
+
+impl Into<String> for Language {
+    fn into(self) -> String {
+        self.code.to_string()
     }
 }
 

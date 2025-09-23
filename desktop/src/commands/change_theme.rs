@@ -10,19 +10,21 @@ use tauri::{
 };
 
 use hyper8_core::Theme;
-use hyper8_web::EditorState;
+
+use crate::LauncherState;
 
 #[tauri::command]
 pub fn change_theme(
     app: AppHandle,
     key: &str,
-    state: State<'_, Arc<Mutex<EditorState>>>
+    state: State<'_, Arc<Mutex<LauncherState>>>
 ) {
     let theme = Theme::from_key(key).unwrap();
 
-    let mut state_mut = state.lock().unwrap();
-    state_mut.theme = theme;
-    state_mut.persist();
+    {
+        let mut launcher_state = state.lock().unwrap();
+        launcher_state.set_theme(theme);
+    }
 
     // TODO: As an optimization, send along the rendered theme css already
     //       (as we do with language)

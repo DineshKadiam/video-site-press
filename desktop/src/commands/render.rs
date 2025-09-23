@@ -10,15 +10,25 @@ use hyper8_core::Theme;
 use hyper8_core::AVAILABLE_LANGUAGES;
 use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
-use hyper8_web::{EditorState, Mode};
+
+use crate::{EditorMode, LauncherState};
 
 #[tauri::command]
 pub fn render(
-    state: State<'_, Arc<Mutex<EditorState>>>
+    state: State<'_, Arc<Mutex<LauncherState>>>
 ) -> String {
-    let state = state.lock().unwrap();
+    let launcher_state = state.lock().unwrap();
 
-    let translations = &state.language.translations;
+    let language_code;
+    let theme;
+    let translations;
+
+    {
+        let editor_state = launcher_state.editor_state.lock().unwrap();
+        language_code = editor_state.language.code.clone();
+        theme = editor_state.theme.clone();
+        translations = editor_state.language.translations.clone();
+    }
 
     let create_icon = hyper8_icons::CREATE;
     let t_create_new_site = translations.create_new_site;
@@ -39,7 +49,7 @@ pub fn render(
         </button>
     "#);
 
-    let sites_and_actions = if state.site_bookmarks.is_empty() {
+    let sites_and_actions = if launcher_state.site_bookmarks.is_empty() {
         formatdoc!(r#"
             {create_new_site}
             {open_existing_site}
@@ -47,7 +57,7 @@ pub fn render(
     } else {
         let configure_icon = hyper8_icons::configure(Some(translations.configure));
 
-        let sites = state.site_bookmarks
+        let sites = launcher_state.site_bookmarks
             .iter()
             .map(|bookmark| {
                 let not_found;
@@ -102,7 +112,7 @@ pub fn render(
     let language = AVAILABLE_LANGUAGES
         .iter()
         .find_map(|language| {
-            if language.code == state.language.code {
+            if language.code == language_code {
                 Some(language.name)
             } else {
                 None
@@ -125,15 +135,15 @@ pub fn render(
         .collect::<Vec<String>>()
         .join("");
 
-    let mode = state.mode.label(translations);
-    let mode_icon = state.mode.icon();
-    let modes = [Mode::Collaborative, Mode::BrowserBased, Mode::Standalone]
+    let mode = launcher_state.editor_mode.label(&translations);
+    let mode_icon = launcher_state.editor_mode.icon();
+    let modes = [EditorMode::Collaborative, EditorMode::BrowserBased, EditorMode::Standalone]
         .iter()
         .map(|mode| {
-            let description = mode.description(translations);
+            let description = mode.description(&translations);
             let icon = mode.icon();
             let key = mode.key();
-            let label = mode.label(translations);
+            let label = mode.label(&translations);
 
             formatdoc!(r#"
                 <button data-key="{key}">
@@ -145,11 +155,11 @@ pub fn render(
         .collect::<Vec<String>>()
         .join("");
 
-    let theme_icon = state.theme.icon();
-    let themes = Theme::variants(translations)
+    let theme_icon = theme.icon();
+    let themes = Theme::variants(&translations)
         .iter()
         .map(|(theme, label)| {
-            let key = theme.key;
+            let key = theme.key();
             let icon = theme.icon();
 
             formatdoc!(r#"

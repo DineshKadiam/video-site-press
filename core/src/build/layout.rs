@@ -78,7 +78,7 @@ impl Layout {
             extra_meta.push_str(&meta_link_tags(translations));
         }
 
-        let adaptive_theme_script = if let ThemeKind::Adaptive { .. } = site.theme.kind {
+        let adaptive_theme_script = if let ThemeKind::Adaptive { .. } = site.theme.kind() {
             let adaptive_theme_js_asset_hash = AssetHashes::ADAPTIVE_THEME_JS;
             format!(r#"<script defer src="{root_prefix}adaptive_theme.js?{adaptive_theme_js_asset_hash}"></script>"#)
         } else {
@@ -173,7 +173,7 @@ impl Layout {
 
         let dark_icon = hyper8_icons::dark(translations.dark_color_scheme);
         let light_icon = hyper8_icons::light(translations.light_color_scheme);
-        let theme_toggle = match &site.theme.kind {
+        let theme_toggle = match &site.theme.kind() {
             ThemeKind::Adaptive { .. } => formatdoc!(r#"
                 <div id="theme-toggles">
                     <button class="theme_toggle" id="toggle-dark">{dark_icon}</button>

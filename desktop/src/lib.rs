@@ -10,12 +10,18 @@ use tauri::{
 };
 
 use hyper8_version::VERSION_WITHOUT_PATCH;
-use hyper8_web::EditorState;
 
 const EXIT_CODE_SUCCESS: i32 = 0;
 
 mod commands;
 mod editor;
+mod editor_mode;
+mod launcher_state;
+mod site_bookmark;
+
+use editor_mode::EditorMode;
+use launcher_state::LauncherState;
+use site_bookmark::SiteBookmark;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,7 +39,7 @@ pub fn run() {
                     .build()
                     .unwrap();
 
-            let state = EditorState::init();
+            let state = LauncherState::retrieve_or_initialize();
             app.manage(Arc::new(Mutex::new(state)));
             Ok(())
         })
@@ -46,7 +52,7 @@ pub fn run() {
                 commands::change_theme::change_theme,
                 commands::close::close,
                 commands::create_new_site::create_new_site,
-                commands::get_language::get_language,
+                commands::get_language_code::get_language_code,
                 commands::get_theme::get_theme,
                 commands::open_bookmarked_site::open_bookmarked_site,
                 commands::open_existing_site::open_existing_site,

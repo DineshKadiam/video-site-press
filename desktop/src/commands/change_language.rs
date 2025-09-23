@@ -10,19 +10,21 @@ use tauri::{
 };
 
 use hyper8_core::Language;
-use hyper8_web::EditorState;
+
+use crate::LauncherState;
 
 #[tauri::command]
 pub fn change_language(
     app: AppHandle,
     code: &str,
-    state: State<'_, Arc<Mutex<EditorState>>>
+    state: State<'_, Arc<Mutex<LauncherState>>>
 ) {
     let language = Language::from_code(code);
 
-    let mut state_mut = state.lock().unwrap();
-    state_mut.language = language;
-    state_mut.persist();
+    {
+        let mut launcher_state = state.lock().unwrap();
+        launcher_state.set_language(language);
+    }
 
     let _ = app.emit("update-body", ());
     let _ = app.emit("update-language", code);

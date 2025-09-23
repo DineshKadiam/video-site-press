@@ -29,7 +29,7 @@ pub async fn styles(
 
     let splash_vars = Theme::print_splash_vars();
 
-    let theme_vars = match &theme.kind {
+    let theme_vars = match theme.kind() {
         ThemeKind::Adaptive { dark, light } => {
             let dark_vars_hsl = dark.print_hsl();
             let dark_vars_oklch = dark.print_oklch();

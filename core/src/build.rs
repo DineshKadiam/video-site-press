@@ -78,7 +78,7 @@ pub fn perform_build(context: &Context) {
     styles::generate_site_css(&mut asset_hashes, context, &site);
     scripts::generate_video_js(context);
 
-    if let ThemeKind::Adaptive { .. } = site.theme.kind {
+    if let ThemeKind::Adaptive { .. } = site.theme.kind() {
         scripts::generate_adaptive_theme_js(context);
     }
 

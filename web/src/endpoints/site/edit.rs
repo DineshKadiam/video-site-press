@@ -93,7 +93,7 @@ pub fn edit_page(
 
     let mut select_theme = Select::new("theme", translations.theme);
     for (theme, label) in Theme::variants(translations) {
-        select_theme.option(theme.key, label);
+        select_theme.option(theme.key(), label);
     }
 
     // TODO: For better usability, include detailed hints (help texts, possibly toggeable, hidden by default)
@@ -114,7 +114,7 @@ pub fn edit_page(
         input_ssh_config_path.validated_value(&unsaved.ssh_config_path);
         input_ssh_config_server.validated_value(&unsaved.ssh_config_server);
         input_ssh_config_user.validated_value(&unsaved.ssh_config_user);
-        select_theme.selected(unsaved.theme.key);
+        select_theme.selected(unsaved.theme.key());
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
@@ -139,7 +139,7 @@ pub fn edit_page(
         input_ssh_config_path.value_option(&site.ssh_config.path);
         input_ssh_config_server.value_option(&site.ssh_config.server);
         input_ssh_config_user.value_option(&site.ssh_config.user);
-        select_theme.selected(site.theme.key);
+        select_theme.selected(site.theme.key());
 
         String::new()
     };

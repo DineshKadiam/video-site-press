@@ -155,7 +155,7 @@ async function updateBody() {
 
 async function updateLanguage(code = null) {
     if (code === null) {
-        document.documentElement.lang = await invoke('get_language');
+        document.documentElement.lang = await invoke('get_language_code');
     } else {
         document.documentElement.lang = code;
     }

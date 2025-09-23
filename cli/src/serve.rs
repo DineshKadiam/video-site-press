@@ -3,14 +3,14 @@
 
 use std::net::IpAddr;
 use std::process::ExitCode;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::sync::mpsc::channel;
 
 use clap::ArgMatches;
 
 use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
-use hyper8_web::EditorState;
+use hyper8_web::{EditorState, EditorStateConnection};
 
 pub fn serve(
     args: ArgMatches,
@@ -20,14 +20,14 @@ pub fn serve(
 
     watch_site_dir(Arc::clone(&context));
 
-    let editor_state = Arc::new(Mutex::new(EditorState::init()));
+    let editor_state = EditorState::retrieve_or_initialize();
 
     let ip = args.get_one::<IpAddr>("ip");
     let port = args.get_one::<u16>("port");
 
     let result = hyper8_web::start_server(
         context,
-        editor_state,
+        EditorStateConnection::InheritDefaults(editor_state),
         ip.copied(),
         port.copied()
     );

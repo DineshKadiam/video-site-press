@@ -21,15 +21,16 @@ use tauri::{
 use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_translations::Translations;
-use hyper8_web::{EditorState, Mode};
+use hyper8_web::EditorStateConnection;
 
+use crate::{EditorMode, LauncherState};
 use crate::EXIT_CODE_SUCCESS;
 
 /// Make sure site_dir definitely exists when you call this
 pub fn start_editor(
     app: AppHandle,
     launcher_window: WebviewWindow,
-    mode: Mode,
+    editor_mode: EditorMode,
     site_dir: &Path,
     translations: Translations,
 ) {
@@ -42,7 +43,7 @@ pub fn start_editor(
 
     watch_site_dir(Arc::clone(&context));
 
-    let ip = if mode == Mode::Collaborative {
+    let ip = if editor_mode == EditorMode::Collaborative {
         match local_ip() {
             Ok(ip) => ip,
             // TODO: In this case the information that the address
@@ -58,18 +59,34 @@ pub fn start_editor(
         IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))
     };
 
-    let editor_state = (*app.state::<Arc<Mutex<EditorState>>>()).clone();
+    let state = app.state::<Arc<Mutex<LauncherState>>>();
+
+    let editor_state_connection = {
+        let launcher_state = state.lock().unwrap();
+
+        match editor_mode {
+            EditorMode::Collaborative => {
+                let editor_state = launcher_state.editor_state.lock().unwrap().clone();
+                EditorStateConnection::InheritDefaults(editor_state)
+            }
+            EditorMode::BrowserBased |
+            EditorMode::Standalone => {
+                let editor_state = launcher_state.editor_state.clone();
+                EditorStateConnection::Shared(editor_state)
+            }
+        }
+    };
 
     let result = hyper8_web::start_server(
         context,
-        editor_state,
+        editor_state_connection,
         Some(ip),
         None
     );
 
     match result {
         Ok(url) => {
-            if mode == Mode::Standalone {
+            if editor_mode == EditorMode::Standalone {
                 launcher_window.hide().unwrap();
 
                 let webview_url = WebviewUrl::External(Url::parse(&url).unwrap());
@@ -88,7 +105,7 @@ pub fn start_editor(
 
                 let _ = window.maximize();
             } else {
-                let editor_note = if mode == Mode::Collaborative {
+                let editor_note = if editor_mode == EditorMode::Collaborative {
                     translations.collaborative_editor_note
                 } else {
                     translations.local_editor_note

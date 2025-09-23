@@ -3,6 +3,8 @@
 
 use std::sync::Arc;
 
+use serde_derive::{Deserialize, Serialize};
+
 use hyper8_core::{
     Asc,
     Collection,
@@ -15,7 +17,7 @@ use hyper8_core::{
 };
 use hyper8_translations::Translations;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum TreeViewOrder {
     Default,
     SiteOrder,

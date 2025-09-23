@@ -11,8 +11,7 @@ use tauri::{
     WebviewWindow
 };
 
-use hyper8_web::EditorState;
-
+use crate::LauncherState;
 use crate::editor;
 
 /// Important: This command must be async (and/or the state retrieved inside
@@ -25,19 +24,19 @@ pub async fn open_bookmarked_site(
     launcher_window: WebviewWindow,
     site_dir: PathBuf
 ) {
-    let state = app.state::<Arc<Mutex<EditorState>>>();
+    let state = app.state::<Arc<Mutex<LauncherState>>>();
 
     // At this point the launcher could have been open for a long time
     // (and things on disk have changed quite a bit), therefore we check
     // again that the site_dir still exists.
     if site_dir.exists() {
-        let mode;
+        let editor_mode;
         let translations;
 
         {
-            let mut state_mut = state.lock().unwrap();
+            let mut launcher_state = state.lock().unwrap();
 
-            let index = state_mut.site_bookmarks
+            let index = launcher_state.site_bookmarks
                 .iter()
                 .position(|bookmark| bookmark.site_dir == site_dir)
                 .unwrap();
@@ -45,26 +44,26 @@ pub async fn open_bookmarked_site(
             // If the site is not at the top of our list of bookmarks,
             // put it there.
             if index > 0 {
-                let bookmark = state_mut.site_bookmarks.remove(index);
-                state_mut.site_bookmarks.insert(0, bookmark);
-                state_mut.persist();
+                let bookmark = launcher_state.site_bookmarks.remove(index);
+                launcher_state.site_bookmarks.insert(0, bookmark);
+                launcher_state.persist();
             }
 
-            mode = state_mut.mode;
-            translations = state_mut.language.translations.clone();
+            editor_mode = launcher_state.editor_mode;
+            translations = launcher_state.get_translations();
         }
 
         editor::start_editor(
             app,
             launcher_window,
-            mode,
+            editor_mode,
             &site_dir,
             translations
         );
     } else {
         {
-            let mut state_mut = state.lock().unwrap();
-            for bookmark in state_mut.site_bookmarks.iter_mut() {
+            let mut launcher_state = state.lock().unwrap();
+            for bookmark in launcher_state.site_bookmarks.iter_mut() {
                 if bookmark.site_dir == site_dir {
                     bookmark.found = false;
                 }

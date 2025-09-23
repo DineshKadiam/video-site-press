@@ -4,7 +4,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(from = "&Path", into = "PathBuf")]
 pub struct SiteBookmark {
     pub found: bool,
     pub live_url: Option<String>,
@@ -90,5 +93,17 @@ impl SiteBookmark {
         probe_title_from_manifest("collection.eno")
             .or_else(|| probe_title_from_manifest("playlist.eno"))
             .or_else(|| probe_title_from_manifest("video.eno"))
+    }
+}
+
+impl From<&Path> for SiteBookmark {
+    fn from(path: &Path) -> SiteBookmark {
+        SiteBookmark::new(path)
+    }
+}
+
+impl Into<PathBuf> for SiteBookmark {
+    fn into(self) -> PathBuf {
+        self.site_dir
     }
 }

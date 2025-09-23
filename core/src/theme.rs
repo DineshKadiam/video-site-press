@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
+use serde_derive::{Deserialize, Serialize};
 
 use hyper8_translations::Translations;
 
@@ -27,10 +28,20 @@ use light_neutral::LIGHT_NEUTRAL_VARS;
 use light_warm::LIGHT_WARM_VARS;
 use theme_vars::ThemeVars;
 
-#[derive(Clone, Debug)]
-pub struct Theme {
-    pub key: &'static str,
-    pub kind: ThemeKind
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Theme {
+    AdaptiveCool,
+    AdaptiveDeep,
+    AdaptiveNeutral,
+    AdaptiveWarm,
+    DarkCool,
+    DarkDeep,
+    DarkNeutral,
+    DarkWarm,
+    LightCool,
+    LightDeep,
+    LightNeutral,
+    LightWarm
 }
 
 #[derive(Clone, Debug)]
@@ -43,78 +54,6 @@ pub enum ThemeKind {
 }
 
 impl Theme {
-    const ADAPTIVE_COOL: Theme = Theme {
-        key: "adaptive_cool",
-        kind: ThemeKind::Adaptive {
-            dark: DARK_COOL_VARS,
-            light: LIGHT_COOL_VARS
-        }
-    };
-
-    const ADAPTIVE_DEEP: Theme = Theme {
-        key: "adaptive_deep",
-        kind: ThemeKind::Adaptive {
-            dark: DARK_DEEP_VARS,
-            light: LIGHT_DEEP_VARS
-        }
-    };
-
-    const ADAPTIVE_NEUTRAL: Theme = Theme {
-        key: "adaptive_neutral",
-        kind: ThemeKind::Adaptive {
-            dark: DARK_NEUTRAL_VARS,
-            light: LIGHT_NEUTRAL_VARS
-        }
-    };
-
-    const ADAPTIVE_WARM: Theme = Theme {
-        key: "adaptive_warm",
-        kind: ThemeKind::Adaptive {
-            dark: DARK_WARM_VARS,
-            light: LIGHT_WARM_VARS
-        }
-    };
-
-    const DARK_COOL: Theme = Theme {
-        key: "dark_cool",
-        kind: ThemeKind::Static(DARK_COOL_VARS)
-    };
-
-    const DARK_DEEP: Theme = Theme {
-        key: "dark_deep",
-        kind: ThemeKind::Static(DARK_DEEP_VARS)
-    };
-
-    const DARK_NEUTRAL: Theme = Theme {
-        key: "dark_neutral",
-        kind: ThemeKind::Static(DARK_NEUTRAL_VARS)
-    };
-
-    const DARK_WARM: Theme = Theme {
-        key: "dark_warm",
-        kind: ThemeKind::Static(DARK_WARM_VARS)
-    };
-
-    const LIGHT_COOL: Theme = Theme {
-        key: "light_cool",
-        kind: ThemeKind::Static(LIGHT_COOL_VARS)
-    };
-
-    const LIGHT_DEEP: Theme = Theme {
-        key: "light_deep",
-        kind: ThemeKind::Static(LIGHT_DEEP_VARS)
-    };
-
-    const LIGHT_NEUTRAL: Theme = Theme {
-        key: "light_neutral",
-        kind: ThemeKind::Static(LIGHT_NEUTRAL_VARS)
-    };
-
-    const LIGHT_WARM: Theme = Theme {
-        key: "light_warm",
-        kind: ThemeKind::Static(LIGHT_WARM_VARS)
-    };
-
     /// Splash gradient blend mode
     const SPLASH_BLEND: &'static str = "color";
 
@@ -136,20 +75,66 @@ impl Theme {
     /// Splash Southwest corner gradient color
     const SPLASH_SW: &'static str = "#f7dc00";
 
+    pub fn key(&self) -> &'static str {
+        match self {
+            Theme::AdaptiveCool => "adaptive_cool",
+            Theme::AdaptiveDeep => "adaptive_deep",
+            Theme::AdaptiveNeutral => "adaptive_neutral",
+            Theme::AdaptiveWarm => "adaptive_warm",
+            Theme::DarkCool => "dark_cool",
+            Theme::DarkDeep => "dark_deep",
+            Theme::DarkNeutral => "dark_neutral",
+            Theme::DarkWarm => "dark_warm",
+            Theme::LightCool => "light_cool",
+            Theme::LightDeep => "light_deep",
+            Theme::LightNeutral => "light_neutral",
+            Theme::LightWarm => "light_warm"
+        }
+    }
+
+    pub fn kind(&self) -> ThemeKind {
+        match self {
+            Theme::AdaptiveCool => ThemeKind::Adaptive {
+                dark: DARK_COOL_VARS,
+                light: LIGHT_COOL_VARS
+            },
+            Theme::AdaptiveDeep => ThemeKind::Adaptive {
+                dark: DARK_DEEP_VARS,
+                light: LIGHT_DEEP_VARS
+            },
+            Theme::AdaptiveNeutral => ThemeKind::Adaptive {
+                dark: DARK_NEUTRAL_VARS,
+                light: LIGHT_NEUTRAL_VARS
+            },
+            Theme::AdaptiveWarm => ThemeKind::Adaptive {
+                dark: DARK_WARM_VARS,
+                light: LIGHT_WARM_VARS
+            },
+            Theme::DarkCool => ThemeKind::Static(DARK_COOL_VARS),
+            Theme::DarkDeep => ThemeKind::Static(DARK_DEEP_VARS),
+            Theme::DarkNeutral => ThemeKind::Static(DARK_NEUTRAL_VARS),
+            Theme::DarkWarm => ThemeKind::Static(DARK_WARM_VARS),
+            Theme::LightCool => ThemeKind::Static(LIGHT_COOL_VARS),
+            Theme::LightDeep => ThemeKind::Static(LIGHT_DEEP_VARS),
+            Theme::LightNeutral => ThemeKind::Static(LIGHT_NEUTRAL_VARS),
+            Theme::LightWarm => ThemeKind::Static(LIGHT_WARM_VARS)
+        }
+    }
+
     pub fn from_key(key: &str) -> Result<Theme, String> {
         match key {
-            "adaptive_cool" => Ok(Theme::ADAPTIVE_COOL),
-            "adaptive_deep" => Ok(Theme::ADAPTIVE_DEEP),
-            "adaptive_neutral" => Ok(Theme::ADAPTIVE_NEUTRAL),
-            "adaptive_warm" => Ok(Theme::ADAPTIVE_WARM),
-            "dark_cool" => Ok(Theme::DARK_COOL),
-            "dark_deep" => Ok(Theme::DARK_DEEP),
-            "dark_neutral" => Ok(Theme::DARK_NEUTRAL),
-            "dark_warm" => Ok(Theme::DARK_WARM),
-            "light_cool" => Ok(Theme::LIGHT_COOL),
-            "light_deep" => Ok(Theme::LIGHT_DEEP),
-            "light_neutral" => Ok(Theme::LIGHT_NEUTRAL),
-            "light_warm" => Ok(Theme::LIGHT_WARM),
+            "adaptive_cool" => Ok(Theme::AdaptiveCool),
+            "adaptive_deep" => Ok(Theme::AdaptiveDeep),
+            "adaptive_neutral" => Ok(Theme::AdaptiveNeutral),
+            "adaptive_warm" => Ok(Theme::AdaptiveWarm),
+            "dark_cool" => Ok(Theme::DarkCool),
+            "dark_deep" => Ok(Theme::DarkDeep),
+            "dark_neutral" => Ok(Theme::DarkNeutral),
+            "dark_warm" => Ok(Theme::DarkWarm),
+            "light_cool" => Ok(Theme::LightCool),
+            "light_deep" => Ok(Theme::LightDeep),
+            "light_neutral" => Ok(Theme::LightNeutral),
+            "light_warm" => Ok(Theme::LightWarm),
             _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_cool', 'adaptive_deep', 'adaptive_neutral', 'adaptive_warm', 'dark_cool', 'dark_deep', 'dark_neutral', 'dark_warm', 'light_cool', 'light_neutral' and 'light_warm')"))
         }
     }
@@ -157,7 +142,7 @@ impl Theme {
     /// Renders an html and inline-css based icon that roughly indicates the
     /// color tone(s) of the theme
     pub fn icon(&self) -> String {
-        match &self.kind {
+        match self.kind() {
             ThemeKind::Adaptive { dark, light } => {
                 let dark_inline_vars = dark.preview_gradient_vars("d-");
                 let light_inline_vars = light.preview_gradient_vars("l-");
@@ -209,24 +194,24 @@ impl Theme {
         let t_warm = translations.warm;
 
         [
-            (Theme::ADAPTIVE_COOL, format!("{t_adaptive} {t_cool}")),
-            (Theme::ADAPTIVE_DEEP, format!("{t_adaptive} {t_deep}")),
-            (Theme::ADAPTIVE_NEUTRAL, format!("{t_adaptive} {t_neutral}")),
-            (Theme::ADAPTIVE_WARM, format!("{t_adaptive} {t_warm}")),
-            (Theme::DARK_COOL, format!("{t_dark} {t_cool}")),
-            (Theme::DARK_DEEP, format!("{t_dark} {t_deep}")),
-            (Theme::DARK_NEUTRAL, format!("{t_dark} {t_neutral}")),
-            (Theme::DARK_WARM, format!("{t_dark} {t_warm}")),
-            (Theme::LIGHT_COOL, format!("{t_light} {t_cool}")),
-            (Theme::LIGHT_DEEP, format!("{t_light} {t_deep}")),
-            (Theme::LIGHT_NEUTRAL, format!("{t_light} {t_neutral}")),
-            (Theme::LIGHT_WARM, format!("{t_light} {t_warm}"))
+            (Theme::AdaptiveCool, format!("{t_adaptive} {t_cool}")),
+            (Theme::AdaptiveDeep, format!("{t_adaptive} {t_deep}")),
+            (Theme::AdaptiveNeutral, format!("{t_adaptive} {t_neutral}")),
+            (Theme::AdaptiveWarm, format!("{t_adaptive} {t_warm}")),
+            (Theme::DarkCool, format!("{t_dark} {t_cool}")),
+            (Theme::DarkDeep, format!("{t_dark} {t_deep}")),
+            (Theme::DarkNeutral, format!("{t_dark} {t_neutral}")),
+            (Theme::DarkWarm, format!("{t_dark} {t_warm}")),
+            (Theme::LightCool, format!("{t_light} {t_cool}")),
+            (Theme::LightDeep, format!("{t_light} {t_deep}")),
+            (Theme::LightNeutral, format!("{t_light} {t_neutral}")),
+            (Theme::LightWarm, format!("{t_light} {t_warm}"))
         ]
     }
 }
 
 impl Default for Theme {
     fn default() -> Theme {
-        Theme::ADAPTIVE_NEUTRAL
+        Theme::AdaptiveNeutral
     }
 }

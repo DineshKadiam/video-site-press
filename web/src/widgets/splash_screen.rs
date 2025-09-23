@@ -20,9 +20,9 @@ pub fn splash_screen(session_state: &SessionState) -> String {
     let mut select_theme = Select::new("theme_key", translations.theme);
 
     for (theme, label) in Theme::variants(translations) {
-        select_theme.option(theme.key, label);
+        select_theme.option(theme.key(), label);
     }
-    select_theme.selected(session_state.theme.key);
+    select_theme.selected(session_state.theme.key());
 
     let link_icon = hyper8_icons::link(Some(translations.external_link));
     let t_documentation = translations.documentation;

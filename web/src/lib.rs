@@ -4,7 +4,6 @@
 mod actix;
 mod components;
 mod context;
-mod editor_config;
 mod editor_state;
 mod endpoints;
 mod field;
@@ -13,7 +12,6 @@ mod mode;
 mod routes;
 mod server;
 mod session_state;
-mod site_bookmark;
 mod tree_view_order;
 mod widgets;
 
@@ -27,8 +25,6 @@ use location::{Location, Subpage};
 use session_state::SessionState;
 use tree_view_order::TreeViewOrder;
 
-pub use editor_config::EditorConfig;
-pub use editor_state::EditorState;
+pub use editor_state::{EditorState, EditorStateConnection};
 pub use mode::Mode;
 pub use server::start as start_server;
-pub use site_bookmark::SiteBookmark;

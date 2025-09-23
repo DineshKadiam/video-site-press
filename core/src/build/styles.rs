@@ -51,7 +51,7 @@ pub fn generate_embed_css(asset_hashes: &mut AssetHashes, context: &Context, sit
 
     let static_css = include_str!("assets/embed.css");
 
-    let theme_vars = match &site.theme.kind {
+    let theme_vars = match &site.theme.kind() {
         ThemeKind::Adaptive { dark, light } => {
             let dark_vars_hsl = dark.print_hsl();
             let dark_vars_oklch = dark.print_oklch();
@@ -146,7 +146,7 @@ pub fn generate_site_css(asset_hashes: &mut AssetHashes, context: &Context, site
 
     let static_css = include_str!("assets/site.css");
 
-    let theme_vars = match &site.theme.kind {
+    let theme_vars = match &site.theme.kind() {
         ThemeKind::Adaptive { dark, light } => {
             let static_adaptive_theme_css = include_str!("assets/adaptive_theme.css");
 

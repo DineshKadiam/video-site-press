@@ -9,7 +9,7 @@ use serde_derive::Deserialize;
 
 use hyper8_core::{Language, Theme};
 
-use crate::{Context, Mode, SessionState};
+use crate::{Context, EditorStateConnection, SessionState};
 
 #[derive(Deserialize)]
 pub struct LanguageAndThemeForm {
@@ -28,20 +28,16 @@ pub async fn change_language_and_theme(
     form: Form<LanguageAndThemeForm>,
     session: Session
 ) -> Redirect {
-    {
-        let mut editor_state_mut = context.editor_state.lock().unwrap();
-
-        match editor_state_mut.mode {
-            Mode::BrowserBased |
-            Mode::Standalone => {
-                editor_state_mut.language = Language::from_code(&form.language_code);
-                editor_state_mut.theme = Theme::from_key(&form.theme_key).unwrap();
-                editor_state_mut.persist();
-            }
-            Mode::Collaborative => {
-                let _ = session.insert("language_code", &form.language_code);
-                let _ = session.insert("theme_key", &form.theme_key);
-            }
+    match &context.editor_state {
+        EditorStateConnection::InheritDefaults(_) => {
+            let _ = session.insert("language_code", &form.language_code);
+            let _ = session.insert("theme_key", &form.theme_key);
+        }
+        EditorStateConnection::Shared(editor_state) => {
+            let mut editor_state_mut = editor_state.lock().unwrap();
+            editor_state_mut.language = Language::from_code(&form.language_code);
+            editor_state_mut.theme = Theme::from_key(&form.theme_key).unwrap();
+            editor_state_mut.persist();
         }
     }
 
@@ -53,19 +49,15 @@ pub async fn change_tree_view_order(
     form: Form<TreeViewOrderForm>,
     session: Session
 ) -> Redirect {
-    {
-        let mut editor_state_mut = context.editor_state.lock().unwrap();
-
-        match editor_state_mut.mode {
-            Mode::BrowserBased |
-            Mode::Standalone => {
-                editor_state_mut.tree_view_order = editor_state_mut.tree_view_order.cycle();
-                editor_state_mut.persist();
-            }
-            Mode::Collaborative => {
-                let tree_view_order = SessionState::tree_view_order(&context.editor_state, &session);
-                let _ = session.insert("tree_view_order_key", tree_view_order.cycle().key());
-            }
+    match &context.editor_state {
+        EditorStateConnection::InheritDefaults(_) => {
+            let tree_view_order = SessionState::tree_view_order(&context.editor_state, &session);
+            let _ = session.insert("tree_view_order_key", tree_view_order.cycle().key());
+        }
+        EditorStateConnection::Shared(editor_state) => {
+            let mut editor_state_mut = editor_state.lock().unwrap();
+            editor_state_mut.tree_view_order = editor_state_mut.tree_view_order.cycle();
+            editor_state_mut.persist();
         }
     }
 
