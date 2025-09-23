@@ -110,6 +110,7 @@ pub struct Translations {
     pub download: &'static str,
     pub download_permalink: &'static str,
     pub downloads: &'static str,
+    pub edit: &'static str,
     pub embed: &'static str,
     pub embed_codes_permalink: &'static str,
     pub embedding: &'static str,

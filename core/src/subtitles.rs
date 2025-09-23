@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 use language_tags::LanguageTag;
 use rsubs_lib::{SRT, VTT};
 
+use crate::util::nanoid;
+
 /// Represents a single "line" in a subtitles file
 #[derive(Clone, Debug)]
 pub struct Subtitle {
@@ -18,6 +20,9 @@ pub struct Subtitle {
 pub struct SubtitleFile {
     pub explicitly_defined: bool,
     pub file_name: String,
+    /// Just a randomly generated unique id that is interpolated into the
+    /// target filenames during build.
+    pub id: String,
     pub label: String,
     /// Specified as BCP 47 code (e.g. 'en')
     /// (see e.g. https://www.rfc-editor.org/info/bcp47)
@@ -59,13 +64,13 @@ impl SubtitleFile {
 
         let subtitles = SubtitleFile::parse_subtitles(&file_name, &path);
 
-        SubtitleFile {
-            explicitly_defined: true,
+        SubtitleFile::new(
+            true,
             file_name,
             label,
             language,
             subtitles
-        }
+        )
     }
 
     pub fn from_path(path: &Path) -> SubtitleFile {
@@ -80,10 +85,29 @@ impl SubtitleFile {
 
         let subtitles = SubtitleFile::parse_subtitles(&file_name, &path);
 
-        SubtitleFile {
-            explicitly_defined: false,
+        SubtitleFile::new(
+            false,
             file_name,
-            label: file_stem,
+            file_stem,
+            language,
+            subtitles
+        )
+    }
+
+    pub fn new(
+        explicitly_defined: bool,
+        file_name: String,
+        label: String,
+        language: Option<String>,
+        subtitles: Result<Vec<Subtitle>, String>
+    ) -> SubtitleFile {
+        let id = nanoid();
+
+        SubtitleFile {
+            explicitly_defined,
+            file_name,
+            id,
+            label,
             language,
             subtitles
         }

@@ -192,7 +192,7 @@ fn collection_node(
 
         if collection.manifest_errors.is_empty() {
             let collection_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
-            let collection_settings_icon = hyper8_icons::EDIT;
+            let collection_settings_icon = hyper8_icons::edit(None);
             let t_collection_settings = translations.collection_settings;
             let collection_settings = formatdoc!(r#"
                 <a class="{collection_settings_active} subpage" href="{collection_settings_url}" style="padding-left: {padding_left};">
@@ -371,7 +371,7 @@ fn playlist_node(
 
         if playlist.manifest_errors.is_empty() {
             let playlist_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
-            let playlist_settings_icon = hyper8_icons::EDIT;
+            let playlist_settings_icon = hyper8_icons::edit(None);
             let t_playlist_settings = translations.playlist_settings;
             let playlist_settings = formatdoc!(r#"
                 <a class="{playlist_settings_active} subpage" href="{playlist_settings_url}" style="padding-left: {padding_left};">
@@ -726,7 +726,7 @@ fn video_node(
 
         if video.manifest_errors.is_empty() {
             let video_settings_active = if *subpage == Subpage::Edit { "active" } else { "" };
-            let video_settings_icon = hyper8_icons::EDIT;
+            let video_settings_icon = hyper8_icons::edit(None);
             let t_video_settings = translations.video_settings;
             let video_settings = formatdoc!(r#"
                 <a class="{video_settings_active} subpage" href="{video_settings_url}" style="padding-left: {padding_left};">

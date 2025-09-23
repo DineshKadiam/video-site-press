@@ -62,16 +62,35 @@ pub async fn subtitles(
                 method="post"
                 style="display: inline;">
                     <input name="file_name" type="hidden" value="{file_name}">
-                    <button class="danger delete_button">{delete_icon}</button>
+                    <button>{delete_icon}</button>
                 </form>
             "#);
 
-            let edit_subtitles_url = routes::video_edit_subtitles(&subtitle_file.file_name, &video);
+            let attachment;
+            let attachment_class;
+            if let Err(err) = &subtitle_file.subtitles {
+                attachment = format!(r#"<div>{err}</div>"#);
+                attachment_class = "attachment";
+            } else {
+                attachment = String::new();
+                attachment_class = "";
+            }
 
+            let edit_icon = hyper8_icons::edit(Some(translations.edit));
+            let edit_subtitles_url = routes::video_edit_subtitles(&subtitle_file.file_name, &video);
             formatdoc!(r#"
-                <div>
-                    <a href="{edit_subtitles_url}" style="text-decoration: underline;">{label}</a> ({file_name}, {language}) {delete_form}
+                <div class="actionable_item {attachment_class}">
+                    <div>
+                        <div>{label} / {language} / {file_name}</div>
+                    </div>
+                    <div>
+                        <a href="{edit_subtitles_url}">
+                            {edit_icon}
+                        </a>
+                        {delete_form}
+                    </div>
                 </div>
+                {attachment}
             "#)
         })
         .collect::<Vec<String>>()

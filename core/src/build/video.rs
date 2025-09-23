@@ -123,7 +123,7 @@ pub fn video_html(
         actions.push(toggle_playlist);
     }
 
-    if !video.subtitles.is_empty() {
+    if video.valid_subtitles().count() > 0 {
         let t_transcript = translations.transcript;
         let subtitles_icon = hyper8_icons::subtitles(None);
         let toggle_transcript = formatdoc!(r#"
@@ -217,10 +217,10 @@ pub fn video_html(
         "#);
     }
 
-    if !video.subtitles.is_empty() {
+    if video.valid_subtitles().count() > 0 {
         let mut content = String::new();
 
-        for subtitle_file in &video.subtitles {
+        for subtitle_file in video.valid_subtitles() {
             if let Ok(subtitles) = &subtitle_file.subtitles {
                 for subtitle in subtitles.iter() {
                     let start_display = subtitle.start.format_display();

@@ -12,6 +12,7 @@ use serde_derive::Deserialize;
 
 use hyper8_core::{
     SitePath,
+    SubtitleFile,
     Video,
     VideoUpdate
 };
@@ -97,7 +98,15 @@ pub async fn update_subtitles(
                         .join(video_mut.site_path.filesystem_relative())
                         .join(&subtitle_file.file_name);
 
-                    fs::write(subtitle_file_path, content).unwrap();
+                    fs::write(&subtitle_file_path, content).unwrap();
+
+                    // TODO: Optimize by not reading the content back in from the file,
+                    //       instead using the in-memory content variable (needs some
+                    //       light refactoring).
+                    subtitle_file.subtitles = SubtitleFile::parse_subtitles(
+                        &subtitle_file.file_name,
+                        &subtitle_file_path
+                    );
 
                     video_mut.write_manifest(&context);
 

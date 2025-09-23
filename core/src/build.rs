@@ -395,16 +395,27 @@ fn build_video(
         );
     }
 
-    for (index, subtitle_file) in video.subtitles.iter().enumerate() {
+    for subtitle_file in video.valid_subtitles() {
+        let id = &subtitle_file.id;
         let source_path = &context.site_dir
             .join(video.site_path.filesystem_relative())
             .join(&subtitle_file.file_name);
 
-        let target_path = video_build_dir.join(format!("{index}.vtt"));
+        // We always write a .vtt file for usage in the web player,
+        // even if the source is a different format like .srt
+        let target_path_vtt = video_build_dir.join(format!("{id}.vtt"));
 
         if subtitle_file.file_name.ends_with(".vtt") {
-            hard_link_or_copy(source_path, target_path);
-        } else if subtitle_file.file_name.ends_with(".srt") {
+            fs::copy(source_path, target_path_vtt).unwrap();
+        } else /* if subtitle_file.file_name.ends_with(".srt") */ {
+            // If downloads are enabled for this video, also write the original
+            // .srt file to the build so the original subtitle file can be
+            // downloaded
+            if video.download() {
+                let target_path_srt = video_build_dir.join(format!("{id}.srt"));
+                fs::copy(source_path, target_path_srt).unwrap();
+            }
+
             // TODO: Conversion could/should be a (only if necessary:
             // background) job eventually to save on redundant processing and
             // wait time during build. Also possible errors should be
@@ -413,7 +424,7 @@ fn build_video(
             // on read_dir invocation.
             let srt_content = fs::read_to_string(source_path).unwrap();
             let vtt = SRT::parse(srt_content).unwrap().to_vtt();
-            fs::write(target_path, vtt.to_string()).unwrap();
+            fs::write(target_path_vtt, vtt.to_string()).unwrap();
         }
     }
 

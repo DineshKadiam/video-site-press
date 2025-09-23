@@ -113,6 +113,7 @@ impl Translations {
         download: "Download",
         download_permalink: "download",
         downloads: "Downloads",
+        edit: "Edit",
         embed: "Embed",
         embed_codes_permalink: "embed-codes",
         embedding: "Embedding",

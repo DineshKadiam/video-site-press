@@ -1140,6 +1140,10 @@ impl Video {
         }
     }
 
+    pub fn valid_subtitles(&self) -> impl Iterator<Item = &SubtitleFile> {
+        self.subtitles.iter().filter(|subtitle_file| subtitle_file.subtitles.is_ok())
+    }
+
     pub fn video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {
         let mut video_files: Vec<VideoFile> = self.video_files.clone();
         video_files.sort_unstable_by(|a, b| VideoFile::cmp_fidelity(a, b, direction));

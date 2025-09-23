@@ -87,11 +87,11 @@ pub fn player(
 
     let subtitle_controls;
     let subtitle_tracks;
-    if !video.subtitles.is_empty() {
-        subtitle_tracks = video.subtitles
-            .iter()
-            .enumerate()
-            .map(|(index, subtitle_file)| {
+    if video.valid_subtitles().count() > 0 {
+        subtitle_tracks = video
+            .valid_subtitles()
+            .map(|subtitle_file| {
+                let id = &subtitle_file.id;
                 let label = html_escape_inside_attribute(&subtitle_file.label);
 
                 let srclang = match &subtitle_file.language {
@@ -104,7 +104,7 @@ pub fn player(
                     <track
                         kind="subtitles"
                         label="{label}"
-                        src="{video_prefix}{index}.vtt"
+                        src="{video_prefix}{id}.vtt"
                         {srclang}/>
                 "#)
             })
@@ -112,8 +112,8 @@ pub fn player(
             .join("\n");
 
 
-        let selector_options = video.subtitles
-            .iter()
+        let selector_options = video
+            .valid_subtitles()
             .map(|subtitle_file| {
                 let label = html_escape_outside_attribute(&subtitle_file.label);
 
@@ -322,11 +322,9 @@ pub fn player(
             false => format!("{video_prefix}index.html")
         };
 
-        let intro_subtitle_controls = if video.subtitles.is_empty() {
-            String::new()
-        } else {
-            let selector_options = video.subtitles
-                .iter()
+        let intro_subtitle_controls = if video.valid_subtitles().count() > 0 {
+            let selector_options = video
+                .valid_subtitles()
                 .map(|subtitle_file| {
                     let label = html_escape_outside_attribute(&subtitle_file.label);
 
@@ -353,6 +351,8 @@ pub fn player(
                     </div>
                 </div>
             "#)
+        } else {
+            String::new()
         };
 
         formatdoc!(r#"

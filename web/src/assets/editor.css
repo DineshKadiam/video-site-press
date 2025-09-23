@@ -2,6 +2,51 @@ a {
     color: var(--fg-1);
     text-decoration: none;
 }
+.actionable_item {
+    align-items: center;
+    background: var(--bg-2);
+    border-radius: .5rem;
+    column-gap: .5rem;
+    display: flex;
+    margin-top: 1rem;
+    padding: .5rem;
+}
+.actionable_item > :first-child {
+    flex-grow: 1;
+    padding-inline-start: .5rem;
+}
+.actionable_item > :last-child {
+    align-items: center;
+    column-gap: .5rem;
+    display: flex;
+}
+.actionable_item > :last-child a,
+.actionable_item > :last-child button {
+    align-items: center;
+    border-radius: .5rem;
+    display: flex;
+    justify-content: center;
+    padding: .5rem;
+}
+.actionable_item > :last-child a:focus-visible,
+.actionable_item > :last-child a:hover,
+.actionable_item > :last-child button:focus-visible,
+.actionable_item > :last-child button:hover {
+    background: var(--action-hover);
+    color: var(--l-1);
+}
+.actionable_item.attachment {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.actionable_item.attachment + div {
+    background: var(--danger);
+    border-bottom-left-radius: .5rem;
+    border-bottom-right-radius: .5rem;
+    color: var(--l-1);
+    font-size: .8rem;
+    padding: .5rem 1rem;
+}
 .badge {
     background: var(--fg-1);
     border-radius: .2rem;

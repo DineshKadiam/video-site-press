@@ -56,7 +56,7 @@ pub fn edit_subtitles_page(
     let translations = &session_state.language.translations;
     let t_not_saved = translations.not_saved;
 
-    let subtitles = match video.subtitles
+    let subtitle_file = match video.subtitles
         .iter()
         .find(|subtitle_file| subtitle_file.file_name == file_name) {
         Some(subtitle_file) => subtitle_file,
@@ -81,12 +81,12 @@ pub fn edit_subtitles_page(
 
         format!(r#"<span class="feedback">{t_not_saved}</span>"#)
     } else {
-        input_label.value(&subtitles.label);
-        input_language.value_option(&subtitles.language);
+        input_label.value(&subtitle_file.label);
+        input_language.value_option(&subtitle_file.language);
 
         let subtitle_file_path = context.site_dir
             .join(video.site_path.filesystem_relative())
-            .join(&subtitles.file_name);
+            .join(&subtitle_file.file_name);
 
         let content = fs::read_to_string(subtitle_file_path).unwrap();
 
@@ -99,6 +99,11 @@ pub fn edit_subtitles_page(
 
     let update_action = routes::video_edit_subtitles(file_name, video);
 
+    let error = match &subtitle_file.subtitles {
+        Ok(_) => String::new(),
+        Err(err) => format!(r#"<div class="error">{err}</div><br>"#)
+    };
+
     let body = formatdoc!(r#"
         <h2>{file_name}</h2>
         <div class="form_group">
@@ -106,6 +111,7 @@ pub fn edit_subtitles_page(
                 {input_label}
                 {input_language}
                 {textarea_content}
+                {error}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button class="action">{t_update_subtitles}</button> {feedback_update}
@@ -114,7 +120,7 @@ pub fn edit_subtitles_page(
         </div>
     "#);
 
-    let head_title = &subtitles.label;
+    let head_title = &subtitle_file.label;
     let html = layout(
         &body,
         context,

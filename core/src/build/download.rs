@@ -98,17 +98,24 @@ pub fn download_html(
         .join("\n");
 
     let t_subtitles = translations.subtitles;
-    let subtitle_buttons = video.subtitles
-        .iter()
+    let subtitle_buttons = video
+        .valid_subtitles()
         .map(|subtitle_file| {
             let file_name = &subtitle_file.file_name;
+            let id = &subtitle_file.id;
             let language = match &subtitle_file.language {
                 Some(language_code) => format!(r#"<div class="large_font">{language_code}</div>"#),
                 None => String::new()
             };
 
+            let href = if subtitle_file.file_name.ends_with(".vtt") {
+                format!("../{id}.vtt")
+            } else /* if subtitle_file.file_name.ends_with(".srt") */ {
+                format!("../{id}.srt")
+            };
+
             formatdoc!(r#"
-                <a download="{file_name}" class="align apart flex" href="../{file_name}">
+                <a class="align apart flex" download="{file_name}" href="{href}">
                     <div>
                         <div class="large_font">{file_name}</div>
                         <small>{t_subtitles}</small>
