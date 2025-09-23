@@ -66,7 +66,8 @@ pub fn download_html(
             let width = video_meta.width;
 
             let download_slug = video.slug().unwrap_or("video");
-            let download_name = Path::new(file_name).with_file_name(format!("{download_slug}_{width}x{height}")).to_string_lossy().to_string();
+            let download_extension = Path::new(file_name).extension().unwrap().to_string_lossy();
+            let download_name = format!("{download_slug}_{width}x{height}.{download_extension}");
 
             let format_label = format!("{width}×{height}");
             let vertical_resolution_label = format!("{height}p");
