@@ -14,7 +14,7 @@ use hyper8_core::{
     SitePath,
     Video
 };
-use hyper8_core::browser_support;
+use hyper8_core::BrowserSupport;
 use hyper8_core::util::{precise_duration, human_size};
 use hyper8_translations::Translations;
 
@@ -251,40 +251,50 @@ pub fn media_page(
                 let extension = file_name.rsplit_once('.').unwrap().1;
                 let size = human_size(audio_file.file_meta.size);
 
-                // TODO: See if we even need audio_meta to determine browser support here
-                let (browser_support, duration) = match &audio_file.audio_meta {
-                    Some(audio_meta) => {
-                        let duration = precise_duration(audio_meta.duration);
+                let attachment_type;
+                let duration;
+                let r_browser_support;
 
-                        let (browser_support, reasons) = match browser_support::audio_analysis(
+                // TODO: See if we even need audio_meta to determine browser support here
+                match &audio_file.audio_meta {
+                    Some(audio_meta) => {
+                        duration = precise_duration(audio_meta.duration);
+
+                        let reasons;
+                        let support;
+
+                        match BrowserSupport::audio_analysis(
                             audio_meta,
                             &audio_file.file_name,
-                            &session_state.language
+                            &translations
                         ) {
-                            Some(Ok(message)) => (
-                                translations.good_browser_support,
-                                message
-                            ),
-                            Some(Err(message)) => (
-                                translations.not_supported_by_browsers,
-                                message
-                            ),
-                            None => (
-                                translations.browser_support_unclear,
-                                translations.hyper_8_could_not_determine_whether_this_file_format_is_generally_compatible_with_browsers_or_not.to_string()
-                            )
-                        };
+                            BrowserSupport::Supported(verdict) => {
+                                attachment_type = "attached_success";
+                                reasons = verdict.explanation;
+                                support = format!("{} – {}", translations.good_browser_support, verdict.summary);
+                            }
+                            BrowserSupport::Unknown => {
+                                attachment_type = "attached_warning";
+                                reasons = translations.hyper_8_could_not_determine_whether_this_file_format_is_generally_compatible_with_browsers_or_not.to_string();
+                                support = translations.browser_support_unclear.to_string();
+                            }
+                            BrowserSupport::Unsupported(verdict) => {
+                                attachment_type = "attached_error";
+                                reasons = verdict.explanation;
+                                support = format!("{} – {}", translations.not_supported_by_browsers, verdict.summary);
+                            }
+                        }
 
-                        (
-                            format!(r#"<small class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></small>"#),
-                            duration
-                        )
+                        r_browser_support = format!(
+                            r#"{support} <span class="reasons" title="{reasons}">🛈</span>"#
+                        );
                     }
-                    None => (
-                        String::new(),
-                        translations.metadata_pending.to_string()
-                    )
-                };
+                    None => {
+                        attachment_type = "attached_info";
+                        duration = String::new();
+                        r_browser_support = translations.metadata_pending.to_string();
+                    }
+                }
 
                 let t_delete = translations.delete;
                 let t_really_delete = translations.really_delete;
@@ -296,20 +306,26 @@ pub fn media_page(
                         data-confirm
                         data-confirm-label="{t_delete}"
                         data-confirm-text="{t_really_delete}"
-                        method="post"
-                        style="display: inline;">
+                        method="post">
                         <input name="file_name" type="hidden" value="{file_name}">
-                        <button class="danger delete_button">{delete_icon}</button>
+                        <button>{delete_icon}</button>
                     </form>
                 "#);
 
                 formatdoc!(r#"
                     <li>
-                        <div>
-                            <div class="basics">{extension} {size} {delete_form}</div>
-                            <small>{duration} {file_name}</small>
+                        <div class="actionable_item attachment {attachment_type}">
+                            <div>
+                                <div>{extension} {size} / {file_name}</div>
+                                <small>{duration} {file_name}</small>
+                            </div>
+                            <div>
+                                {delete_form}
+                            </div>
                         </div>
-                        {browser_support}
+                        <div>
+                            {r_browser_support}
+                        </div>
                     </li>
                 "#)
             })
@@ -375,7 +391,12 @@ pub fn media_page(
         let video_files_rendered = video_files
             .iter()
             .map(|video_file| {
-                let (browser_support, label, video_meta) = match &video_file.video_meta {
+                let attachment_type;
+                let label;
+                let r_browser_support;
+                let r_video_meta;
+
+                match &video_file.video_meta {
                     Some(video_meta) => {
                         let duration = precise_duration(video_meta.duration);
                         let frame_rate = video_meta.video_frame_rate;
@@ -383,37 +404,44 @@ pub fn media_page(
                         let size = human_size(video_file.file_meta.size);
                         let width = video_meta.width;
 
-                        let (browser_support, reasons) = match browser_support::video_analysis(
+                        let reasons;
+                        let support;
+
+                        match BrowserSupport::video_analysis(
                             &video_file.file_name,
-                            &session_state.language,
+                            translations,
                             video_meta
                         ) {
-                            Some(Ok(message)) => (
-                                translations.good_browser_support,
-                                message
-                            ),
-                            Some(Err(message)) => (
-                                translations.not_supported_by_browsers,
-                                message
-                            ),
-                            None => (
-                                translations.browser_support_unclear,
-                                translations.hyper_8_could_not_determine_whether_this_file_format_is_generally_compatible_with_browsers_or_not.to_string()
-                            )
-                        };
+                            BrowserSupport::Supported(verdict) => {
+                                attachment_type = "attached_success";
+                                reasons = verdict.explanation;
+                                support = format!("{} – {}", translations.good_browser_support, verdict.summary);
+                            }
+                            BrowserSupport::Unknown => {
+                                attachment_type = "attached_warning";
+                                reasons = translations.hyper_8_could_not_determine_whether_this_file_format_is_generally_compatible_with_browsers_or_not.to_string();
+                                support = translations.browser_support_unclear.to_string();
+                            }
+                            BrowserSupport::Unsupported(verdict) => {
+                                attachment_type = "attached_error";
+                                reasons = verdict.explanation;
+                                support = format!("{} – {}", translations.not_supported_by_browsers, verdict.summary);
+                            }
+                        }
 
-                        (
-                            format!(r#"<small class="browser_support">{browser_support} <span class="reasons" title="{reasons}">🛈</span></small>"#),
-                            format!("{height}p {frame_rate}fps {size}"),
-                            format!("{width}×{height} {duration}")
-                        )
+                        label = format!("{height}p {frame_rate}fps {size}");
+                        r_browser_support = format!(
+                            r#"{support} <span class="reasons" title="{reasons}">🛈</span>"#
+                        );
+                        r_video_meta = format!("{width}×{height} {duration}");
                     }
-                    None => (
-                        String::new(),
-                        String::new(),
-                        translations.metadata_pending.to_string()
-                    )
-                };
+                    None => {
+                        attachment_type = "attached_info";
+                        label = String::new();
+                        r_browser_support = String::new();
+                        r_video_meta = translations.metadata_pending.to_string();
+                    }
+                }
 
                 let file_name = &video_file.file_name;
 
@@ -427,20 +455,26 @@ pub fn media_page(
                     data-confirm
                     data-confirm-label="{t_delete}"
                     data-confirm-text="{t_really_delete}"
-                    method="post"
-                    style="display: inline;">
+                    method="post">
                         <input name="file_name" type="hidden" value="{file_name}">
-                        <button class="danger delete_button">{delete_icon}</button>
+                        <button>{delete_icon}</button>
                     </form>
                 "#);
 
                 formatdoc!(r#"
                     <li>
-                        <div>
-                            <div class="basics">{label} {delete_form}</div>
-                            <small>{video_meta} {file_name}</small>
+                        <div class="actionable_item attachment {attachment_type}">
+                            <div>
+                                <div>{label}</div>
+                                <small>{r_video_meta} {file_name}</small>
+                            </div>
+                            <div>
+                                {delete_form}
+                            </div>
                         </div>
-                        {browser_support}
+                        <div>
+                            {r_browser_support}
+                        </div>
                     </li>
                 "#)
             })

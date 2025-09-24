@@ -6,6 +6,7 @@ mod audio_file;
 mod audio_format;
 mod audio_meta;
 mod banner;
+mod browser_support;
 mod build;
 mod cache;
 mod collection;
@@ -42,7 +43,6 @@ mod video_format;
 mod video_meta;
 mod video_order;
 
-pub mod browser_support;
 pub mod util;
 pub mod watcher;
 
@@ -66,6 +66,7 @@ pub use aspect_ratio::AspectRatio;
 pub use audio_file::AudioFile;
 pub use audio_format::AudioFormat;
 pub use banner::Banner;
+pub use browser_support::BrowserSupport;
 pub use build::perform_build;
 pub use collection::Collection;
 pub use container::Container;

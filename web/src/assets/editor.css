@@ -15,6 +15,7 @@ a {
     flex-grow: 1;
     padding-inline-start: .5rem;
 }
+.actionable_item > :first-child > :first-child { color: var(--fg-1); }
 .actionable_item > :last-child {
     align-items: center;
     column-gap: .5rem;
@@ -40,12 +41,26 @@ a {
     border-bottom-right-radius: 0;
 }
 .actionable_item.attachment + div {
-    background: var(--danger);
     border-bottom-left-radius: .5rem;
     border-bottom-right-radius: .5rem;
-    color: var(--l-1);
     font-size: .8rem;
     padding: .5rem 1rem;
+}
+.actionable_item.attached_error + div {
+    background: var(--danger);
+    color: var(--l-1);
+}
+.actionable_item.attached_info + div {
+    background: var(--bg-3);
+    color: var(--l-1);
+}
+.actionable_item.attached_success + div {
+    background: var(--bg-3);
+    color: var(--l-1);
+}
+.actionable_item.attached_warning + div {
+    background: var(--warning-bg);
+    color: var(--warning-fg);
 }
 .badge {
     background: var(--fg-1);
@@ -104,12 +119,12 @@ button {
 }
 a.action,
 button.action,
+button.cancel,
+button.danger,
 .button {
     align-items: center;
-    background: var(--bg-2);
     border-radius: .2rem;
     border: none;
-    color: var(--fg-1);
     column-gap: .3rem;
     display: flex;
     padding: .3rem 1rem;
@@ -118,8 +133,12 @@ button .icon svg,
 .button .icon svg {
     display: block;
 }
-button.action:focus-visible,
-button.action:hover {
+button.cancel {
+    color: var(--fg-2);
+    background: var(--bg-2);
+}
+button.cancel:focus-visible,
+button.cancel:hover {
     background: var(--bg-3);
 }
 a.action,
@@ -766,10 +785,6 @@ svg { fill: currentColor; }
 }
 .versions li {}
 .versions li:not(:first-child) { margin-top: .5rem; }
-.versions .basics {
-    color: var(--fg-1);
-    font-size: 1.2rem;
-}
 .versions .reasons {
     color: var(--fg-1);
     cursor: help;

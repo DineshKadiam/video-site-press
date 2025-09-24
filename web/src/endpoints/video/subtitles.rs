@@ -59,8 +59,7 @@ pub async fn subtitles(
                 data-confirm
                 data-confirm-label="{t_delete}"
                 data-confirm-text="{t_really_delete}"
-                method="post"
-                style="display: inline;">
+                method="post">
                     <input name="file_name" type="hidden" value="{file_name}">
                     <button>{delete_icon}</button>
                 </form>
@@ -70,7 +69,7 @@ pub async fn subtitles(
             let attachment_class;
             if let Err(err) = &subtitle_file.subtitles {
                 attachment = format!(r#"<div>{err}</div>"#);
-                attachment_class = "attachment";
+                attachment_class = "attachment attached_error";
             } else {
                 attachment = String::new();
                 attachment_class = "";
@@ -81,7 +80,8 @@ pub async fn subtitles(
             formatdoc!(r#"
                 <div class="actionable_item {attachment_class}">
                     <div>
-                        <div>{label} / {language} / {file_name}</div>
+                        <div>{label} ({language})</div>
+                        <small>{file_name}</small>
                     </div>
                     <div>
                         <a href="{edit_subtitles_url}">
