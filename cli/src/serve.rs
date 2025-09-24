@@ -10,7 +10,7 @@ use clap::ArgMatches;
 
 use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
-use hyper8_web::{EditorState, EditorStateConnection};
+use hyper8_web::{EditorState, ServerMode};
 
 pub fn serve(
     args: ArgMatches,
@@ -20,16 +20,17 @@ pub fn serve(
 
     watch_site_dir(Arc::clone(&context));
 
-    let editor_state = EditorState::retrieve_or_initialize();
+    let inherited_editor_state = EditorState::retrieve_or_initialize();
+    let server_mode = ServerMode::MultipleRemoteUsers { inherited_editor_state };
 
     let ip = args.get_one::<IpAddr>("ip");
     let port = args.get_one::<u16>("port");
 
     let result = hyper8_web::start_server(
         context,
-        EditorStateConnection::InheritDefaults(editor_state),
         ip.copied(),
-        port.copied()
+        port.copied(),
+        server_mode
     );
 
     match result {

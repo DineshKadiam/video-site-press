@@ -58,7 +58,7 @@ pub async fn edit(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> HttpResponse {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     match context.get_playlist(&site_path) {
         Some(playlist) => edit_page(&context, None, &playlist, &session_state),

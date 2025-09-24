@@ -79,14 +79,10 @@ impl LauncherState {
     }
 
     pub fn set_language(&mut self, language: Language) {
-        let mut editor_state = self.editor_state.lock().unwrap();
-        editor_state.language = language;
-        editor_state.persist();
+        self.editor_state.lock().unwrap().set_language(language);
     }
 
     pub fn set_theme(&mut self, theme: Theme) {
-        let mut editor_state = self.editor_state.lock().unwrap();
-        editor_state.theme = theme;
-        editor_state.persist();
+        self.editor_state.lock().unwrap().set_theme(theme);
     }
 }

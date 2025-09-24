@@ -18,7 +18,7 @@ pub async fn styles(
     context: Data<Arc<Context>>,
     session: Session
 ) -> HttpResponse {
-    let theme = SessionState::theme(&context.editor_state, &session);
+    let theme = SessionState::theme(&context.server_mode, &session);
 
     let default_family = Font::Default.family();
     let fonts_css = formatdoc!(r#"

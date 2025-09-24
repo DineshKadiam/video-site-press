@@ -21,7 +21,7 @@ pub async fn build(
     let pending_deployment = context.deploying.lock().unwrap().active();
 
     if pending_deployment {
-        let session_state = SessionState::all(&context.editor_state, &session);
+        let session_state = SessionState::all(&context.server_mode, &session);
         let message = session_state.language.translations.preview_is_only_available_again_after_the_current_deployment_is_finished;
         return Either::Right(error_page(&context, message, &session_state));
     }

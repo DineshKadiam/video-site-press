@@ -40,7 +40,7 @@ pub async fn upload_poster(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     while let Some(mut field) = payload.try_next().await? {
         if let Some(content_disposition) = field.content_disposition() {

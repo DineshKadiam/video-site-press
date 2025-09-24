@@ -44,7 +44,7 @@ pub async fn encode_audio(
             Either::Left(Redirect::to(redirect_url).see_other())
         }
         None => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
     }

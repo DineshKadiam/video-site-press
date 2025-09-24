@@ -25,6 +25,7 @@ use location::{Location, Subpage};
 use session_state::SessionState;
 use tree_view_order::TreeViewOrder;
 
-pub use editor_state::{EditorState, EditorStateConnection};
+pub use editor_state::EditorState;
 pub use mode::Mode;
+pub use server::ServerMode;
 pub use server::start as start_server;

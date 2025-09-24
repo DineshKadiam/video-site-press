@@ -44,11 +44,11 @@ pub async fn delete_poster(
     match context.update_video(mutation, &site_path) {
         VideoUpdate::Error(_) => infallible_mutation!(),
         VideoUpdate::InvalidManifest { video } => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(pending_manifest_errors(&context, &session_state, &video))
         }
         VideoUpdate::NotFound => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
         VideoUpdate::Success { video_updated, .. } => {

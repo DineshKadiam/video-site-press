@@ -50,11 +50,11 @@ pub async fn delete_link(
 
     match context.update_playlist(mutation, &site_path) {
         PlaylistUpdate::InvalidManifest { playlist } => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(pending_manifest_errors(&context, &playlist, &session_state))
         }
         PlaylistUpdate::NotFound => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
         PlaylistUpdate::Updated { playlist_updated, .. } => {

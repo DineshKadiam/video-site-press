@@ -48,7 +48,7 @@ pub async fn add_link(
     let url = match Url::parse(&form.url) {
         Ok(_) => form.url.clone(),
         Err(err) => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             let t_invalid_url = session_state.language.translations.invalid_url;
             let message = format!("{t_invalid_url} ({err})");
             return Either::Right(error_page(&context, &message, &session_state))
@@ -63,11 +63,11 @@ pub async fn add_link(
 
     match context.update_collection(mutation, &site_path) {
         CollectionUpdate::InvalidManifest { collection } => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(pending_manifest_errors(&collection, &context, &session_state))
         }
         CollectionUpdate::NotFound => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
         CollectionUpdate::Updated { collection_updated, .. } => {

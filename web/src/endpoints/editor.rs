@@ -9,11 +9,16 @@ use serde_derive::Deserialize;
 
 use hyper8_core::{Language, Theme};
 
-use crate::{Context, EditorStateConnection, SessionState};
+use crate::{Context, ServerMode, SessionState};
 
 #[derive(Deserialize)]
-pub struct LanguageAndThemeForm {
+pub struct LanguageForm {
     language_code: String,
+    redirect: String
+}
+
+#[derive(Deserialize)]
+pub struct ThemeForm {
     redirect: String,
     theme_key: String
 }
@@ -23,21 +28,36 @@ pub struct TreeViewOrderForm {
     redirect: String
 }
 
-pub async fn change_language_and_theme(
+pub async fn change_language(
     context: Data<Arc<Context>>,
-    form: Form<LanguageAndThemeForm>,
+    form: Form<LanguageForm>,
     session: Session
 ) -> Redirect {
-    match &context.editor_state {
-        EditorStateConnection::InheritDefaults(_) => {
+    match &context.server_mode {
+        ServerMode::MultipleRemoteUsers { .. } => {
             let _ = session.insert("language_code", &form.language_code);
+        }
+        ServerMode::SingleLocalUser { synced_editor_state } => {
+            let language = Language::from_code(&form.language_code);
+            synced_editor_state.lock().unwrap().set_language(language);
+        }
+    }
+
+    Redirect::to(form.redirect.clone()).see_other()
+}
+
+pub async fn change_theme(
+    context: Data<Arc<Context>>,
+    form: Form<ThemeForm>,
+    session: Session
+) -> Redirect {
+    match &context.server_mode {
+        ServerMode::MultipleRemoteUsers { .. } => {
             let _ = session.insert("theme_key", &form.theme_key);
         }
-        EditorStateConnection::Shared(editor_state) => {
-            let mut editor_state_mut = editor_state.lock().unwrap();
-            editor_state_mut.language = Language::from_code(&form.language_code);
-            editor_state_mut.theme = Theme::from_key(&form.theme_key).unwrap();
-            editor_state_mut.persist();
+        ServerMode::SingleLocalUser { synced_editor_state } => {
+            let theme = Theme::from_key(&form.theme_key).unwrap();
+            synced_editor_state.lock().unwrap().set_theme(theme);
         }
     }
 
@@ -49,15 +69,13 @@ pub async fn change_tree_view_order(
     form: Form<TreeViewOrderForm>,
     session: Session
 ) -> Redirect {
-    match &context.editor_state {
-        EditorStateConnection::InheritDefaults(_) => {
-            let tree_view_order = SessionState::tree_view_order(&context.editor_state, &session);
+    match &context.server_mode {
+        ServerMode::MultipleRemoteUsers { .. } => {
+            let tree_view_order = SessionState::tree_view_order(&context.server_mode, &session);
             let _ = session.insert("tree_view_order_key", tree_view_order.cycle().key());
         }
-        EditorStateConnection::Shared(editor_state) => {
-            let mut editor_state_mut = editor_state.lock().unwrap();
-            editor_state_mut.tree_view_order = editor_state_mut.tree_view_order.cycle();
-            editor_state_mut.persist();
+        ServerMode::SingleLocalUser { synced_editor_state } => {
+            synced_editor_state.lock().unwrap().cycle_tree_view_order();
         }
     }
 

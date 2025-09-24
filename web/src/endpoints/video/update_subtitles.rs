@@ -48,7 +48,7 @@ pub async fn update_subtitles(
 
     let label_error = match label_trimmed.is_empty() {
         true => {
-            let session_language = SessionState::language(&context.editor_state, &session);
+            let session_language = SessionState::language(&context.server_mode, &session);
             Some(session_language.translations.label_can_not_be_empty)
         }
         false => None
@@ -68,7 +68,7 @@ pub async fn update_subtitles(
     };
 
     if label_error.is_some() || language.is_err() {
-        let session_state = SessionState::all(&context.editor_state, &session);
+        let session_state = SessionState::all(&context.server_mode, &session);
 
         let video = match context.get_video(&site_path) {
             Some(video) => video,
@@ -113,7 +113,7 @@ pub async fn update_subtitles(
                     Ok(())
                 }
                 None => {
-                    let session_language = SessionState::language(&context.editor_state, &session);
+                    let session_language = SessionState::language(&context.server_mode, &session);
                     Err(session_language.translations.the_subtitles_to_be_updated_were_not_found.to_string())
                 }
             }
@@ -121,15 +121,15 @@ pub async fn update_subtitles(
 
         match context.update_video(mutation, &site_path) {
             VideoUpdate::Error(err) => {
-                let session_state = SessionState::all(&context.editor_state, &session);
+                let session_state = SessionState::all(&context.server_mode, &session);
                 Either::Right(error_page(&context, &err, &session_state))
             }
             VideoUpdate::InvalidManifest { video } => {
-                let session_state = SessionState::all(&context.editor_state, &session);
+                let session_state = SessionState::all(&context.server_mode, &session);
                 Either::Right(pending_manifest_errors(&context, &session_state, &video))
             }
             VideoUpdate::NotFound => {
-                let session_state = SessionState::all(&context.editor_state, &session);
+                let session_state = SessionState::all(&context.server_mode, &session);
                 Either::Right(not_found(&context, &session_state, &site_path))
             }
             VideoUpdate::Success { video_updated, .. } => {

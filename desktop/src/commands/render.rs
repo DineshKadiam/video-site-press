@@ -171,7 +171,7 @@ pub fn render(
         .collect::<Vec<String>>()
         .join("");
 
-    let close_icon = hyper8_icons::failure(translations.close);
+    let close_icon = hyper8_icons::close(translations.close);
     let language_icon = hyper8_icons::LANGUAGE;
     let link_icon = hyper8_icons::link(Some(translations.external_link));
 

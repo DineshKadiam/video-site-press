@@ -26,7 +26,7 @@ pub async fn edit_manifest(
     context: Data<Arc<Context>>,
     session: Session
 ) -> HttpResponse {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
     edit_manifest_page(&context, &session_state)
 }
 

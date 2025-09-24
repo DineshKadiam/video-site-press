@@ -37,7 +37,7 @@ pub async fn edit_subtitles(
     let (file_name, site_path_str) = path.into_inner();
     let site_path = SitePath::new(site_path_str);
 
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     match context.get_video(&site_path) {
         Some(video) => edit_subtitles_page(&context, &file_name, None, &session_state, &video),

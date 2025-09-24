@@ -254,7 +254,6 @@ pub struct Translations {
     pub remove_from_list: &'static str,
     pub render_format: &'static str,
     pub replay: &'static str,
-    pub report_a_bug: &'static str,
     pub resolution: &'static str,
     resolve_the_issue_on_disk_or_on_manifest_page: &'static str,
     pub resource_not_found: &'static str,

@@ -53,7 +53,7 @@ pub async fn upload_audio_video(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Result<Either<Redirect, HttpResponse>, Error> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     let container = context.get_any(&site_path);
 

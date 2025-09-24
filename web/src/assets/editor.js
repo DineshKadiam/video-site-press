@@ -297,7 +297,11 @@ const changeEditorLanguage = document.querySelector('#language_code');
 
 if (changeEditorLanguage) {
     changeEditorLanguage.addEventListener('change', () => {
-        localStorage.removeItem('hyper8SplashSeen');
+        if (splashWrapper?.open) {
+            // When we switch language while the splash screen is open,
+            // ensure the splash screen re-opens after the page refresh
+            localStorage.setItem('hyper8ForceSplash', '');
+        }
         changeEditorLanguage.form.redirect.value = location.pathname;
         changeEditorLanguage.form.submit();
     });
@@ -307,7 +311,11 @@ const changeEditorTheme = document.querySelector('#theme_key');
 
 if (changeEditorTheme) {
     changeEditorTheme.addEventListener('change', () => {
-        localStorage.removeItem('hyper8SplashSeen');
+        if (splashWrapper?.open) {
+            // When we switch language while the splash screen is open,
+            // ensure the splash screen re-opens after the page refresh
+            localStorage.setItem('hyper8ForceSplash', '');
+        }
         changeEditorTheme.form.redirect.value = location.pathname;
         changeEditorTheme.form.submit();
     });
@@ -322,9 +330,12 @@ if (changeTreeViewOrder) {
 }
 
 if (splashWrapper) {
+    const automaticSplash = splashWrapper.dataset.automatic !== undefined;
     const version = document.body.dataset.version;
-    if (localStorage.getItem('hyper8SplashSeen') !== version) {
+    if ((automaticSplash && localStorage.getItem('hyper8SplashSeen') !== version) ||
+        localStorage.getItem('hyper8ForceSplash') !== null) {
         splashWrapper.show();
+        localStorage.removeItem('hyper8ForceSplash');
         localStorage.setItem('hyper8SplashSeen', version);
     }
 }

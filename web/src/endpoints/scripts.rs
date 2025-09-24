@@ -16,7 +16,7 @@ pub async fn scripts(
 ) -> HttpResponse {
     let static_js = include_str!("../assets/editor.js");
 
-    let session_language = SessionState::language(&context.editor_state, &session);
+    let session_language = SessionState::language(&context.server_mode, &session);
     let translations = session_language.translations;
 
     // We selectively provide only those translations to the runtime js code

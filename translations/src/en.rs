@@ -257,7 +257,6 @@ impl Translations {
         remove_from_list: "Remove from list",
         render_format: "Render Format",
         replay: "Replay",
-        report_a_bug: "Report a bug",
         resolution: "Resolution",
         resolve_the_issue_on_disk_or_on_manifest_page: r#"You can either resolve the issue(s) by editing the file on disk or by making the necessary changes on the <a href="{manifest_url}">manifest page</a>."#,
         resource_not_found: "Resource not found",

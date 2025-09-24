@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::net::{IpAddr, Ipv4Addr};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 
@@ -18,7 +18,7 @@ use actix_web::rt;
 use hyper8_core::Context as CoreContext;
 use hyper8_core::util::ensure_dir;
 
-use crate::{Context, EditorStateConnection};
+use crate::{Context, EditorState};
 use crate::endpoints::{
     build,
     collection,
@@ -47,13 +47,22 @@ const DEFAULT_EDITOR_PORT: u16 = 49737; // "Dial 127.0.0.1:HYPER"
 /// than all ports taken.
 const MAX_PORT_ATTEMPTS: u16 = 10;
 
+pub enum ServerMode {
+    MultipleRemoteUsers {
+        inherited_editor_state: EditorState
+    },
+    SingleLocalUser {
+        synced_editor_state: Arc<Mutex<EditorState>>
+    }
+}
+
 /// Returns either the url of the started server or a message why starting the
 /// server failed
 pub fn start(
     core_context: Arc<CoreContext>,
-    editor_state: EditorStateConnection,
     ip_requested: Option<IpAddr>,
-    port_requested: Option<u16>
+    port_requested: Option<u16>,
+    server_mode: ServerMode
 ) -> Result<String, String> {
     // We ensure (and if present beforehand, wipe) the build directory on
     // build anyway, but as actix-files does not successfully register
@@ -61,7 +70,7 @@ pub fn start(
     // exist on startup, we create it here already.
     ensure_dir(&core_context.build_dir);
 
-    let context = Context::new(core_context, editor_state);
+    let context = Context::new(core_context, server_mode);
     let context = Arc::new(context);
     let data = Data::new(context);
 
@@ -84,7 +93,8 @@ pub fn start(
                     .route("/convert-to-collection/{site_path:.*}", post().to(convert::to_collection))
                     .route("/convert-to-playlist/{site_path:.*}", post().to(convert::to_playlist))
                     .route("/convert-to-video/{site_path:.*}", post().to(convert::to_video))
-                    .route("/change-language-and-theme", post().to(editor::change_language_and_theme))
+                    .route("/change-language", post().to(editor::change_language))
+                    .route("/change-theme", post().to(editor::change_theme))
                     .route("/change-tree-view-order", post().to(editor::change_tree_view_order))
                     .route("/collection/add-link/{site_path:.*}", post().to(collection::add_link))
                     .route("/collection/banner/{site_path:.*}", get().to(collection::banner))

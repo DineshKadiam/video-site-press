@@ -48,7 +48,7 @@ pub async fn update(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     let copy_link = match form.copy_link.as_str() {
         "disabled" => Some(false),

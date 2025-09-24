@@ -28,7 +28,7 @@ pub async fn delete(
         }
         Ok(None) => Either::Left(Redirect::to(routes::DASHBOARD).see_other()),
         Err(()) => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
     }

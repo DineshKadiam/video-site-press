@@ -17,7 +17,7 @@ pub async fn deploy(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
     let translations = &session_state.language.translations;
     let site = context.get_site();
 

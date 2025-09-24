@@ -39,11 +39,11 @@ pub async fn delete_banner(
 
     match context.update_collection(mutation, &site_path) {
         CollectionUpdate::InvalidManifest { collection } => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(pending_manifest_errors(&collection, &context, &session_state))
         }
         CollectionUpdate::NotFound => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
         CollectionUpdate::Updated { collection_updated, .. } => {

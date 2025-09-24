@@ -108,7 +108,7 @@ pub async fn update(
             theme
         };
 
-        let session_state = SessionState::all(&context.editor_state, &session);
+        let session_state = SessionState::all(&context.server_mode, &session);
         Either::Right(edit_page(&context, Some(form_feedback), &session_state, &site))
     } else {
         fn to_option(trimmed: &str) -> Option<String> {
@@ -143,7 +143,7 @@ pub async fn update(
 
         match context.update_site(mutation) {
             SiteUpdate::InvalidManifest { site } => {
-                let session_state = SessionState::all(&context.editor_state, &session);
+                let session_state = SessionState::all(&context.server_mode, &session);
                 Either::Right(pending_manifest_errors(&context, &session_state, &site))
             }
             SiteUpdate::Success { site_updated } => {

@@ -21,7 +21,7 @@ use tauri::{
 use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_translations::Translations;
-use hyper8_web::EditorStateConnection;
+use hyper8_web::ServerMode;
 
 use crate::{EditorMode, LauncherState};
 use crate::EXIT_CODE_SUCCESS;
@@ -61,27 +61,27 @@ pub fn start_editor(
 
     let state = app.state::<Arc<Mutex<LauncherState>>>();
 
-    let editor_state_connection = {
+    let server_mode = {
         let launcher_state = state.lock().unwrap();
 
         match editor_mode {
             EditorMode::Collaborative => {
-                let editor_state = launcher_state.editor_state.lock().unwrap().clone();
-                EditorStateConnection::InheritDefaults(editor_state)
+                let inherited_editor_state = launcher_state.editor_state.lock().unwrap().clone();
+                ServerMode::MultipleRemoteUsers { inherited_editor_state }
             }
             EditorMode::BrowserBased |
             EditorMode::Standalone => {
-                let editor_state = launcher_state.editor_state.clone();
-                EditorStateConnection::Shared(editor_state)
+                let synced_editor_state = launcher_state.editor_state.clone();
+                ServerMode::SingleLocalUser { synced_editor_state }
             }
         }
     };
 
     let result = hyper8_web::start_server(
         context,
-        editor_state_connection,
         Some(ip),
-        None
+        None,
+        server_mode
     );
 
     match result {

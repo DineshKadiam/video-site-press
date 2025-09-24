@@ -38,22 +38,22 @@ pub async fn update_poster(
 
             Ok(())
         } else {
-            let session_language = SessionState::language(&context.editor_state, &session);
+            let session_language = SessionState::language(&context.server_mode, &session);
             Err(session_language.translations.the_poster_to_be_updated_was_not_found.to_string())
         }
     };
 
     match context.update_video(mutation, &site_path) {
         VideoUpdate::Error(err) => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(error_page(&context, &err, &session_state))
         }
         VideoUpdate::InvalidManifest { video } => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(pending_manifest_errors(&context, &session_state, &video))
         }
         VideoUpdate::NotFound => {
-            let session_state = SessionState::all(&context.editor_state, &session);
+            let session_state = SessionState::all(&context.server_mode, &session);
             Either::Right(not_found(&context, &session_state, &site_path))
         }
         VideoUpdate::Success { video_updated, .. } => {

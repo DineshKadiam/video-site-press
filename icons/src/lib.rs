@@ -102,6 +102,16 @@ pub const COLLABORATIVE_MODE: &str = indoc!(r#"
     </svg>
 "#);
 
+/// Visually represented as a thin, fully symetric X
+pub fn close(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path d="m4.0471 0.87929-3.1678 3.1678 27.953 27.953-27.953 27.953 3.1678 3.1678 27.953-27.953 27.953 27.953 3.1678-3.1678-27.953-27.953 27.953-27.953-3.1678-3.1678-27.953 27.953z"/>
+        </svg>
+    "#)
+}
+
 /// Two squares with rounded corners slightly shifted from each other
 /// diagonally, with one being in front of the other (the common symbol
 /// depiction for "copy"). We currently always use it in a context where the
@@ -194,7 +204,7 @@ pub const EMBED: &str = indoc!(r#"
     </svg>
 "#);
 
-/// Visually represented as a fully symetric X
+/// Visually represented as a bold, fully symetric X
 pub fn failure(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

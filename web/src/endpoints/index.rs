@@ -26,7 +26,7 @@ pub async fn index(
     context: Data<Arc<Context>>,
     session: Session
 ) -> HttpResponse {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
     let site = context.get_site();
 
     let translations = &session_state.language.translations;

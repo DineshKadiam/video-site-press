@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use std::sync::{Arc, Mutex};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -17,14 +16,14 @@ pub struct EditorState {
     pub tree_view_order: TreeViewOrder
 }
 
-pub enum EditorStateConnection {
-    InheritDefaults(EditorState),
-    Shared(Arc<Mutex<EditorState>>)
-}
-
 impl EditorState {
     pub const CONFIG_DIR_NAME: &str = "hyper8";
     pub const CONFIG_FILE_NAME: &str = "editor.bincode";
+
+    pub fn cycle_tree_view_order(&mut self) {
+        self.tree_view_order = self.tree_view_order.cycle();
+        self.persist();
+    }
 
     /// Retrieves the editor state from the hyper8/ directory in the user
     /// system's config directory (or initializes a default state).
@@ -64,5 +63,15 @@ impl EditorState {
             let _ = fs::create_dir(&config_dir);
             let _ = fs::write(&config_file, config_serialized);
         }
+    }
+
+    pub fn set_language(&mut self, language: Language) {
+        self.language = language;
+        self.persist();
+    }
+
+    pub fn set_theme(&mut self, theme: Theme) {
+        self.theme = theme;
+        self.persist();
     }
 }

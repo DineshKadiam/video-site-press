@@ -18,7 +18,7 @@ pub async fn to_collection(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     match context.convert_to_collection(&session_state.language, &site_path) {
         Ok(collection) => {
@@ -37,7 +37,7 @@ pub async fn to_playlist(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     match context.convert_to_playlist(&session_state.language, &site_path) {
         Ok(playlist) => {
@@ -56,7 +56,7 @@ pub async fn to_video(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let session_state = SessionState::all(&context.editor_state, &session);
+    let session_state = SessionState::all(&context.server_mode, &session);
 
     match context.convert_to_video(&session_state.language, &site_path) {
         Ok(video) => {

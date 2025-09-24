@@ -257,7 +257,6 @@ impl Translations {
         remove_from_list: "Aus Liste entfernen",
         render_format: "Format rendern",
         replay: "Erneut abspielen",
-        report_a_bug: "Problem melden",
         resolution: "Auflösung",
         resolve_the_issue_on_disk_or_on_manifest_page: r#"Löse den/die Fehler indem du die Datei direkt editierst oder mache die nötigen Änderungen auf der <a href="{manifest_url}">Manifest Seite</a>."#,
         resource_not_found: "Resource nicht gefunden",

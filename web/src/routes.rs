@@ -11,6 +11,10 @@ use hyper8_core::{
     Video
 };
 
+pub const CHANGE_LANGUAGE: &str = "/change-language";
+pub const CHANGE_THEME: &str = "/change-theme";
+pub const CHANGE_TREE_VIEW_ORDER: &str = "/change-tree-view-order";
+
 pub fn collection_add_link(collection: &Collection) -> String {
     format!("/collection/add-link/{}", collection.site_path.normalized())
 }

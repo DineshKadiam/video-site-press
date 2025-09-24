@@ -6,21 +6,21 @@ use std::sync::Arc;
 
 use hyper8_core::Context as CoreContext;
 
-use crate::EditorStateConnection;
+use crate::ServerMode;
 
 pub struct Context {
     pub core_context: Arc<CoreContext>,
-    pub editor_state: EditorStateConnection
+    pub server_mode: ServerMode
 }
 
 impl Context {
     pub fn new(
         core_context: Arc<CoreContext>,
-        editor_state: EditorStateConnection
+        server_mode: ServerMode
     ) -> Context {
         Context {
             core_context,
-            editor_state
+            server_mode
         }
     }
 }
