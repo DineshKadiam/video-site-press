@@ -90,3 +90,20 @@ If you want to uninstall it at any point, run:
 ```
 cargo uninstall hyper8-cli
 ```
+
+## Additional build options
+
+You can use environment variables to adjust the build outcome:
+
+- Pass `HYPER8_VERSION` to override the version that is displayed throughout
+  Hyper 8 (e.g. in the launcher, editor and under `--help`), for instance:
+  `HYPER8_VERSION=2.0.0~preview cargo ...` (by default the version is taken
+  from the package version specified in the root `Cargo.toml`).
+
+- Pass `HYPER8_BUNDLED_FFMPEG` (e.g. `HYPER8_BUNDLED_FFMPEG=true cargo ...`)
+  to produce a Hyper 8 binary that will always and only execute `ffmpeg` and
+  `ffprobe` binaries that were placed adjacent to itself (i.e. the `hyper8`,
+  `ffmpeg` and `ffprobe` binaries all need to be in the same folder when you
+  run a `hyper8` binary built with `HYPER8_BUNDLED_FFMPEG`). This exists for
+  building and packaging on platforms that require bundling of ffmpeg and
+  ffprobe binaries for distribution (Windows, macOS).

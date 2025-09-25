@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2024-2025 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::env;
 use std::mem;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use serde_derive::Deserialize;
@@ -12,7 +13,17 @@ use crate::util::collect_output_stderr_stdout;
 
 use super::JobError;
 
-pub const FFPROBE: &str = if cfg!(windows) { "ffprobe.exe" } else { "ffprobe" };
+fn ffprobe_executable() -> PathBuf {
+    // If the HYPER8_BUNDLED_FFMPEG environment variable is specified at build
+    // time, ffprobe is expected to be a binary adjacent to the hyper8 binary
+    // itself. We use this for building and packaging on platforms that
+    // require bundled versions of ffmpeg to be shipped with Hyper 8.
+    if option_env!("HYPER8_BUNDLED_FFMPEG").is_some() {
+        env::current_exe().unwrap().parent().unwrap().join("ffprobe")
+    } else {
+        PathBuf::from("ffprobe")
+    }
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -70,7 +81,7 @@ fn parse_frame_rate(representation: &str) -> f32 {
 }
 
 pub fn probe_audio(path: &Path) -> Result<AudioMeta, JobError> {
-    let mut command = Command::new(FFPROBE);
+    let mut command = Command::new(ffprobe_executable());
 
     command
         .arg("-v")
@@ -148,7 +159,7 @@ pub fn probe_audio(path: &Path) -> Result<AudioMeta, JobError> {
 }
 
 pub fn probe_video(path: &Path) -> Result<VideoMeta, JobError> {
-    let mut command = Command::new(FFPROBE);
+    let mut command = Command::new(ffprobe_executable());
 
     command
         .arg("-v")
