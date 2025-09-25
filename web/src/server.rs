@@ -32,7 +32,6 @@ use crate::endpoints::{
     playlist,
     processing,
     scripts,
-    splash_logo,
     styles,
     site,
     video
@@ -167,7 +166,6 @@ pub fn start(
                             .route(get().to(site::edit_manifest))
                             .route(post().to(site::update_manifest))
                     )
-                    .route("/splash_logo.svg", get().to(splash_logo))
                     .route("/video/add-link/{site_path:.*}", post().to(video::add_link))
                     .route("/video/dangerous-actions/{site_path:.*}", get().to(video::dangerous_actions))
                     .route("/video/delete/{site_path:.*}", post().to(video::delete))

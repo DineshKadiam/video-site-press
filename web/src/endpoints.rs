@@ -31,9 +31,3 @@ pub async fn favicon() -> HttpResponse {
         .content_type("image/png")
         .body(include_bytes!("assets/favicon.png").as_slice())
 }
-
-pub async fn splash_logo() -> HttpResponse {
-    HttpResponse::Ok()
-        .content_type("image/svg+xml")
-        .body(include_bytes!("assets/splash_logo.svg").as_slice())
-}
