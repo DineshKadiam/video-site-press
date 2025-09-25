@@ -55,20 +55,25 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
     let t_delete = translations.delete;
     let t_hidden = translations.hidden;
     let t_really_delete = translations.really_delete;
+    let link_icon = hyper8_icons::link(None);
     let delete_icon = hyper8_icons::failure(t_delete);
     let links_rendered = links
         .iter()
         .map(|link| {
-            let (e_label, label_value) = match &link.label {
-                Some(label) => (
-                    html_escape_outside_attribute(label),
-                    format!(r#"value="{}""#, html_escape_inside_attribute(label))
-                ),
-                None => (String::new(), String::new())
-            };
+            let e_label;
+            let label_value;
 
             let url = link.url.to_string();
             let e_url = html_escape_outside_attribute(&url);
+
+            if let Some(label) = &link.label {
+                e_label = html_escape_outside_attribute(label);
+                label_value = format!(r#"value="{}""#, html_escape_inside_attribute(label));
+            } else {
+                e_label = e_url.clone();
+                label_value = String::new();
+            }
+
             let url_value = html_escape_inside_attribute(&url);
 
             let delete_form = formatdoc!(r#"
@@ -77,26 +82,42 @@ pub fn links(links: &[Link], submit_url: &str, translations: &Translations) -> S
                     data-confirm
                     data-confirm-label="{t_delete}"
                     data-confirm-text="{t_really_delete}"
-                    method="post"
-                    style="display: inline;">
+                    method="post">
                     <input name="label" type="hidden" {label_value}>
                     <input name="url" type="hidden" value="{url_value}">
-                    <button class="danger delete_button">{delete_icon}</button>
+                    <button>{delete_icon}</button>
                 </form>
             "#);
 
-            let hidden = if link.hidden { format!("[{t_hidden}]") } else { String::new() };
-            let rel_me = if link.rel_me { r#"[rel="me"]"# } else { "" };
+            let attributes = if link.hidden || link.rel_me {
+                let mut attributes = Vec::new();
+
+                if link.hidden {
+                    attributes.push(t_hidden);
+                }
+
+                if link.rel_me {
+                    attributes.push(r#"rel="me""#);
+                }
+
+                let attributes = attributes.join(", ");
+                format!(" ({attributes})")
+            } else {
+                String::new()
+            };
 
             formatdoc!(r#"
-                <div class="button_group">
-                    <span>
-                        {e_label} {rel_me} {hidden}<br>
+                <div class="actionable_item">
+                    <div>
+                        <div>{e_label}</div>
                         <small>
-                            <a href="{url}">{e_url}</a>
+                            <a href="{url}" style="align-items: center; display: inline-flex; column-gap: .2rem;">{link_icon} {e_url}</a>
+                            {attributes}
                         </small>
-                    </span>
-                    {delete_form}
+                    </div>
+                    <div>
+                        {delete_form}
+                    </div>
                 </div>
             "#)
         })

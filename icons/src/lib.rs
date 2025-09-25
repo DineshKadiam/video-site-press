@@ -492,6 +492,7 @@ pub fn success(label: &str) -> String {
     "#)
 }
 
+/// A closed lock
 pub fn unlisted(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -501,6 +502,7 @@ pub fn unlisted(label: &str) -> String {
     "#)
 }
 
+/// A cut-out piece of film from an analogue film reel
 pub fn video(label: &str) -> String {
     formatdoc!(r#"
         <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
