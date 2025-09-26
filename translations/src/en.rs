@@ -201,6 +201,7 @@ impl Translations {
         new_hyper8_site_folder_name: "new-hyper8-site",
         new_link: "New Link",
         new_playlist: "New Playlist",
+        new_results_available: "New results available",
         new_subcollection: "New Subcollection",
         new_video: "New Video",
         no_audio: "No audio",
@@ -251,6 +252,7 @@ impl Translations {
         queued: "Queued",
         really_delete: "Really delete?",
         really_deploy: "Really deploy?",
+        refresh: "Refresh",
         regular_link: "Regular link",
         release_date: "Release Date",
         release_date_ascending: "Release Date Ascending (Jan, Feb, Mar)",
@@ -364,7 +366,9 @@ impl Translations {
         warning: "Warning",
         website: "Website",
         worst: "Worst",
+        xxx_active_jobs: "{count} active jobs",
         xxx_characters_maximum: "{maximum} characters maximum",
+        xxx_pending_jobs: "{count} pending jobs",
         xxx_videos: "{count} videos",
         you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
     };

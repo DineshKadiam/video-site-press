@@ -6,7 +6,6 @@ use actix_web::HttpResponse;
 mod build;
 mod deployment;
 mod jobs;
-mod processing;
 mod scripts;
 mod styles;
 
@@ -16,13 +15,13 @@ pub mod deploy;
 pub mod editor;
 pub mod index;
 pub mod playlist;
+pub mod processing;
 pub mod site;
 pub mod video;
 
 pub use build::build;
 pub use deployment::deployment;
 pub use jobs::jobs;
-pub use processing::processing;
 pub use scripts::scripts;
 pub use styles::styles;
 

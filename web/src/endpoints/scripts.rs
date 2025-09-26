@@ -25,7 +25,11 @@ pub async fn scripts(
     let t_deploy = translations.deploy;
     let t_deploying = translations.deploying;
     let t_idle = translations.idle;
+    let t_new_results_available = translations.new_results_available;
     let t_really_deploy = translations.really_deploy;
+    let t_refresh = translations.refresh;
+    let t_xxx_active_jobs = translations.xxx_active_jobs;
+    let t_xxx_pending_jobs = translations.xxx_pending_jobs;
 
     let js = formatdoc!(r#"
         const t = {{
@@ -33,7 +37,11 @@ pub async fn scripts(
             deploy: '{t_deploy}',
             deploying: '{t_deploying}',
             idle: '{t_idle}',
-            reallyDeploy: '{t_really_deploy}'
+            newResultsAvailable: '{t_new_results_available}',
+            reallyDeploy: '{t_really_deploy}',
+            refresh: '{t_refresh}',
+            xxxActiveJobs: count => '{t_xxx_active_jobs}'.replace('{{count}}', count),
+            xxxPendingJobs: count => '{t_xxx_pending_jobs}'.replace('{{count}}', count)
         }};
         {static_js}
     "#);

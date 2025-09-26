@@ -177,6 +177,7 @@ fn controls(
     let storage_usage = human_size(site.storage_usage());
     let storage = format!(r#"<a href="/">{storage_icon} {storage_usage}</a>"#);
 
+    let reload_icon = hyper8_icons::reload(None);
     formatdoc!(r#"
         <div class="controls">
             {processing}
@@ -191,6 +192,9 @@ fn controls(
             </template>
             <template id="processing_icon">
                 {processing_icon}
+            </template>
+            <template id="reload_icon">
+                {reload_icon}
             </template>
         </div>
     "#)

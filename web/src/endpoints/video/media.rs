@@ -500,7 +500,9 @@ pub fn media_page(
 
     let render_additional_formats = additional_formats_form(translations, video);
 
+    let video_site_path = &video.site_path.normalized();
     let body = formatdoc!(r#"
+        <div class="local_processing" data-media-jobs="{video_site_path}"></div>
         <div class="form_group">
             {video_files}
         </div>

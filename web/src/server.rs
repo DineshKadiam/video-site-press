@@ -155,7 +155,8 @@ pub fn start(
                             .redirect_to_slash_directory()
                             .index_file("index.html")
                     )
-                    .route("/processing", get().to(processing))
+                    .route("/processing", get().to(processing::processing_general))
+                    .route("/processing/media/{site_path:.*}", get().to(processing::processing_media))
                     .service(
                         resource("/site/edit/")
                             .route(get().to(site::edit))

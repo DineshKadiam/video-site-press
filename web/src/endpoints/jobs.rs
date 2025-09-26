@@ -35,6 +35,8 @@ pub async fn jobs(
     let t_background_jobs = translations.background_jobs;
     body.push_str(&format!("<h2>{t_background_jobs}</h2>"));
 
+    body.push_str(r#"<div class="local_processing" data-jobs></div>"#);
+
     let mut no_jobs = true;
 
     let mut jobs_sorted = Vec::new();

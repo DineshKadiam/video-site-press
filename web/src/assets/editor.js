@@ -1,17 +1,24 @@
-const configureIcon = document.querySelector('#configure_icon');
-const confirmationDialog = document.querySelector('#confirmation_dialog');
+const configureIcon = document.querySelector('#configure_icon').content;
+const confirmationDialog = document.querySelector('#confirmation_dialog').content;
 const deploymentElement = document.querySelector('#deployment');
 const deploymentFeedback = document.querySelector('#deployment_feedback');
-const deploymentIcon = document.querySelector('#deployment_icon');
+const deploymentIcon = document.querySelector('#deployment_icon').content;
 const processingElement = document.querySelector('.processing');
-const processingIcon = document.querySelector('#processing_icon');
+const processingIcon = document.querySelector('#processing_icon').content;
+const reloadIcon = document.querySelector('#reload_icon').content;
 const splashWrapper = document.querySelector('.splash_wrapper');
 
+// Memorizes previously seen states for ongoing background processing so we
+// can determine whether to re-render live update widgets.
 const processing = {};
 
 const copyButtons = document.querySelectorAll('button[data-copy]');
 const copyNotificationTimeouts = {};
 if (copyButtons.length) {
+    const copyIcon = document.querySelector('#copy_icon').content;
+    const failureIcon = document.querySelector('#failure_icon').content;
+    const successIcon = document.querySelector('#success_icon').content;
+
     function copyToClipboard(button) {
         const notify = (success, content) => {
             if (content in copyNotificationTimeouts) {
@@ -19,14 +26,16 @@ if (copyButtons.length) {
                 delete copyNotificationTimeouts[content];
             }
 
-            const copyIcon = document.querySelector('#copy_icon').content.cloneNode(true);
-            const feedbackIcon = document.querySelector(success ? '#success_icon' : '#failure_icon').content.cloneNode(true);
+            const feedbackIcon = (success ? successIcon : failureIcon).cloneNode(true);
 
             const iconContainer = button.querySelector('.icon');
 
             iconContainer.replaceChildren(feedbackIcon);
 
-            copyNotificationTimeouts[content] = setTimeout(() => iconContainer.replaceChildren(copyIcon), 3000);
+            copyNotificationTimeouts[content] = setTimeout(
+                () => iconContainer.replaceChildren(copyIcon.cloneNode(true)),
+                3000
+            );
         };
 
         const content = button.dataset.copy;
@@ -53,130 +62,47 @@ function formatTime(seconds) {
 }
 
 function fetchProcessing() {
-    fetch('/processing')
+    const jobs = document.querySelector('div[data-jobs]');
+    const mediaJobs = document.querySelector('div[data-media-jobs]');
+
+    let processingUrl = '/processing';
+
+    if (mediaJobs) {
+        processingUrl += '/media/' + mediaJobs.dataset.mediaJobs;
+    }
+
+    fetch(processingUrl)
         .then(response => response.json())
         .then(response => {
-            const { deploymentInfo } = response;
+            const {
+                deploymentInfo,
+                globalJobReport,
+                localJobReport
+            } = response;
 
-            if (!deploymentInfo.configured) {
-                if (!deploymentElement.querySelector('a[href="/site/edit"]')) {
-                    const a = document.createElement('a');
-                    a.href = '/site/edit/';
-
-                    a.append(configureIcon.content.cloneNode(true));
-
-                    const text = document.createElement('span');
-                    text.textContent = t.configureDeployment;
-                    a.append(text);
-
-                    deploymentElement.replaceChildren(a);
-                }
-            } else if (deploymentInfo.deployingSince !== null) {
-                const a = document.createElement('a');
-                a.href = '/deployment';
-
-                a.append(deploymentIcon.content.cloneNode(true));
-
-                const text = document.createElement('span');
-                text.textContent = t.deploying;
-                a.append(text);
-
-                const durationText = document.createElement('span');
-                durationText.textContent = formatTime(deploymentInfo.deployingSince);
-                a.append(durationText);
-
-                deploymentElement.replaceChildren(a);
-            } else {
-                if (!deploymentElement.querySelector('form[action="/deploy"]')) {
-                    const form = document.createElement('form');
-                    form.action = '/deploy';
-                    form.method = 'post';
-
-                    form.addEventListener('submit', event => {
-                        event.preventDefault();
-                        const baseUrl = document.body.dataset.baseUrl;
-                        hyperConfirm(() => form.submit(), t.deploy, `${t.reallyDeploy} (${baseUrl})`);
-                    });
-
-                    const button = document.createElement('button');
-
-                    button.append(deploymentIcon.content.cloneNode(true));
-
-                    const text = document.createElement('span');
-                    text.textContent = t.deploy;
-                    button.append(text);
-
-                    form.append(button);
-
-                    deploymentElement.replaceChildren(form);
-                }
+            if (jobs) {
+                // When on the jobs page, update the local processing indicator widget
+                updateJobs(jobs, globalJobReport);
+            } else if (mediaJobs) {
+                // When on a video's media page, update the local processing indicator widget
+                updateMediaJobs(mediaJobs, localJobReport);
             }
 
+            // Update the "Configure Deployment/Deploy/Deploying since" button in the header
+            updateDeploymentButton(deploymentInfo);
+
+            // Update the live deployment feedback on the deployment page (if we are on it)
             if (deploymentFeedback) {
-                let feedback = deploymentInfo.feedback;
-
-                if (deploymentInfo.deployingSince !== null) {
-                    feedback += '\n…';
-                }
-
-                deploymentFeedback.textContent = feedback;
+                updateDeploymentPage(deploymentInfo);
             }
 
-            let content = [processingIcon.content.cloneNode(true)];
-
-            if (response.activeJobs.length) {
-                const text = document.createElement('div');
-
-                processingElement.classList.add('active');
-                for (const lastProgress of response.activeJobs) {
-                    const badge = document.createElement('div');
-
-                    badge.classList.add('processing_badge');
-
-                    if (lastProgress) {
-                        const left = document.createElement('span');
-                        left.textContent = lastProgress.percent.toString() + '%';
-
-                        const right = document.createElement('span');
-                        right.classList.add('inverted');
-                        right.textContent = '-' + formatTime(lastProgress.durationRemaining);
-
-                        badge.append(left, right);
-                    } else {
-                        const text = document.createElement('span');
-                        text.textContent = 'MISC';
-                        badge.append(text);
-                    }
-
-                    content.push(badge);
-                }
-            } else {
-                processingElement.classList.remove('active');
-
-                const text = document.createElement('span');
-                text.textContent = t.idle;
-
-                content.push(text);
-            }
-
-            if (response.failedCount > 0) {
-                const text = document.createElement('span');
-                text.textContent = `⚠${response.failedCount}`;
-                content.push(text);
-            }
-
-            if (response.pendingCount > 0) {
-                const text = document.createElement('span');
-                text.textContent = `+${response.pendingCount}`;
-                content.push(text);
-            }
-
-            processingElement.replaceChildren(...content);
+            // Update the processing information (Idle/Progress/etc.) in the header
+            updateProcessingWidget(globalJobReport);
         });
 }
 
 function hyperConfirm(callback, label, text) {
-    const dialog = confirmationDialog.content.cloneNode(true);
+    const dialog = confirmationDialog.cloneNode(true);
 
     dialog.querySelector('.confirm').textContent = label;
     dialog.querySelector('.text').textContent = text;
@@ -197,6 +123,257 @@ function hyperConfirm(callback, label, text) {
     appendedDialog.showModal();
 
     appendedDialog.querySelector('.confirm').focus();
+}
+
+function updateDeploymentButton(deploymentInfo) {
+    if (!deploymentInfo.configured) {
+        if (!deploymentElement.querySelector('a[href="/site/edit"]')) {
+            const a = document.createElement('a');
+            a.href = '/site/edit/';
+
+            a.append(configureIcon.cloneNode(true));
+
+            const text = document.createElement('span');
+            text.textContent = t.configureDeployment;
+            a.append(text);
+
+            deploymentElement.replaceChildren(a);
+        }
+    } else if (deploymentInfo.deployingSince !== null) {
+        const a = document.createElement('a');
+        a.href = '/deployment';
+
+        a.append(deploymentIcon.cloneNode(true));
+
+        const text = document.createElement('span');
+        text.textContent = t.deploying;
+        a.append(text);
+
+        const durationText = document.createElement('span');
+        durationText.textContent = formatTime(deploymentInfo.deployingSince);
+        a.append(durationText);
+
+        deploymentElement.replaceChildren(a);
+    } else if (!deploymentElement.querySelector('form[action="/deploy"]')) {
+        const form = document.createElement('form');
+        form.action = '/deploy';
+        form.method = 'post';
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            const baseUrl = document.body.dataset.baseUrl;
+            hyperConfirm(() => form.submit(), t.deploy, `${t.reallyDeploy} (${baseUrl})`);
+        });
+
+        const button = document.createElement('button');
+
+        button.append(deploymentIcon.cloneNode(true));
+
+        const text = document.createElement('span');
+        text.textContent = t.deploy;
+        button.append(text);
+
+        form.append(button);
+
+        deploymentElement.replaceChildren(form);
+    }
+}
+
+function updateDeploymentPage(deploymentInfo) {
+    let feedback = deploymentInfo.feedback;
+
+    if (deploymentInfo.deployingSince !== null) {
+        feedback += '\n…';
+    }
+
+    deploymentFeedback.textContent = feedback;
+}
+
+function updateJobs(jobs, globalJobReport) {
+    const {
+        activeJobs,
+        completedCount,
+        failedCount,
+        pendingCount
+    } = globalJobReport;
+
+    // Stores the last (currently displayed) render state, so we can make the
+    // determination to re-render (or not).
+    if (processing.state === undefined) {
+        processing.state = {
+            completedCount: {
+                initial: completedCount,
+                last: completedCount
+            },
+            failedCount: {
+                initial: failedCount,
+                last: failedCount
+            }
+        };
+    }
+
+    if (
+        activeJobs.length !== processing.state.activeCount ||
+        completedCount !== processing.state.completedCount.last ||
+        failedCount !== processing.state.failedCount.last ||
+        pendingCount !== processing.state.pendingCount
+    ) {
+        const content = [];
+
+        if (pendingCount > 0) {
+            const span = document.createElement('span');
+            span.textContent = t.xxxPendingJobs(pendingCount);
+            content.push(span);
+        }
+
+        if (activeJobs.length > 0) {
+            const span = document.createElement('span');
+            span.textContent = t.xxxActiveJobs(activeJobs.length);
+            content.push(span);
+        }
+
+        if (
+            completedCount !== processing.state.completedCount.initial ||
+            failedCount !== processing.state.failedCount.initial
+        ) {
+            const span = document.createElement('span');
+
+            const spanInner = document.createElement('span');
+            spanInner.textContent = t.newResultsAvailable;
+            span.append(spanInner);
+
+            const a = document.createElement('a');
+            a.href = '';
+            a.append(reloadIcon.cloneNode(true), t.refresh);
+            span.append(a);
+
+            content.push(span);
+        }
+
+        processing.state.activeCount = activeJobs.length;
+        processing.state.completedCount.last = completedCount;
+        processing.state.failedCount.last = failedCount;
+        processing.state.pendingCount = pendingCount;
+
+        jobs.replaceChildren(...content);
+    }
+}
+
+function updateMediaJobs(mediaJobs, localJobReport) {
+    const {
+        activeJobs,
+        completedCount,
+        pendingCount
+    } = localJobReport;
+
+    // Stores the last (currently displayed) render state, so we can make the
+    // determination to re-render (or not).
+    if (processing.state === undefined) {
+        processing.state = {
+            activeCount: 0,
+            completedCount: {
+                initial: completedCount,
+                last: completedCount
+            },
+            pendingCount: 0
+        };
+    }
+
+    if (
+        activeJobs.length !== processing.state.activeCount ||
+        completedCount !== processing.state.completedCount.last ||
+        pendingCount !== processing.state.pendingCount
+    ) {
+        const content = [];
+
+        if (pendingCount > 0) {
+            const span = document.createElement('span');
+            span.textContent = t.xxxPendingJobs(pendingCount);
+            content.push(span);
+        }
+
+        if (activeJobs.length > 0) {
+            const span = document.createElement('span');
+            span.textContent = t.xxxActiveJobs(activeJobs.length);
+            content.push(span);
+        }
+
+        if (completedCount !== processing.state.completedCount.initial) {
+            const span = document.createElement('span');
+
+            const spanInner = document.createElement('span');
+            spanInner.textContent = t.newResultsAvailable;
+            span.append(spanInner);
+
+            const a = document.createElement('a');
+            a.href = '';
+            a.append(reloadIcon.cloneNode(true), t.refresh);
+            span.append(a);
+
+            content.push(span);
+        }
+
+        processing.state.activeCount = activeJobs.length;
+        processing.state.completedCount.last = completedCount;
+        processing.state.pendingCount = pendingCount;
+
+        mediaJobs.replaceChildren(...content);
+    }
+}
+
+function updateProcessingWidget(globalJobReport) {
+    let content = [processingIcon.cloneNode(true)];
+
+    if (globalJobReport.activeJobs.length) {
+        const text = document.createElement('div');
+
+        processingElement.classList.add('active');
+        for (const lastProgress of globalJobReport.activeJobs) {
+            const badge = document.createElement('div');
+
+            badge.classList.add('processing_badge');
+
+            if (lastProgress) {
+                const left = document.createElement('span');
+                left.textContent = lastProgress.percent.toString() + '%';
+
+                const right = document.createElement('span');
+                right.classList.add('inverted');
+                right.textContent = '-' + formatTime(lastProgress.durationRemaining);
+
+                badge.append(left, right);
+            } else {
+                const text = document.createElement('span');
+                text.textContent = 'MISC';
+                badge.append(text);
+            }
+
+            content.push(badge);
+        }
+    } else {
+        processingElement.classList.remove('active');
+
+        const text = document.createElement('span');
+        text.textContent = t.idle;
+
+        content.push(text);
+    }
+
+    if (globalJobReport.failedCount > 0) {
+        const text = document.createElement('span');
+        text.textContent = `⚠${globalJobReport.failedCount}`;
+        content.push(text);
+    }
+
+    if (globalJobReport.pendingCount > 0) {
+        const text = document.createElement('span');
+        text.textContent = `+${globalJobReport.pendingCount}`;
+        content.push(text);
+    }
+
+    // TODO: We could make use of globalJobReport.completedCount if we want at some point
+
+    processingElement.replaceChildren(...content);
 }
 
 for (const form of document.querySelectorAll('form[data-confirm]')) {

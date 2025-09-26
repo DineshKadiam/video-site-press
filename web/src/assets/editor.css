@@ -403,6 +403,29 @@ input[type="file"] { display: none; }
 }
 .jobs li > :nth-child(2) { white-space: nowrap };
 .jobs small { font-size: .8rem; }
+.local_processing {
+    align-items: center;
+    background: var(--fg-1);
+    border-radius: .3rem;
+    color: var(--bg-1);
+    column-gap: .5rem;
+    display: flex;
+    margin-bottom: 3rem;
+    padding: .7rem 1rem;
+}
+.local_processing:empty { display: none; }
+.local_processing > * {
+    align-items: center;
+    column-gap: .3rem;
+    display: flex;
+}
+.local_processing a {
+    align-items: center;
+    column-gap: .3rem;
+    display: flex;
+    text-decoration: underline;
+    text-underline-position: under;
+}
 main {
     margin: 0 3rem 3rem 3rem;
     max-width: 32rem;

@@ -9,6 +9,7 @@ use crate::{
     AudioFormat,
     Collection,
     Playlist,
+    SitePath,
     Video,
     VideoFormat
 };
@@ -103,6 +104,22 @@ impl JobDesc {
             JobDesc::VideoPickPoster { video, .. } => {
                 video.title_or_slug_or_generic_label(translations)
             }
+        }
+    }
+
+    /// Whether the JobDesc refers to media processing for the video with the
+    /// given site_path
+    pub fn targets_media(&self, site_path: &SitePath) -> bool {
+        match self {
+            JobDesc::AudioFormat { video, .. } |
+            JobDesc::AudioMeta { video } |
+            JobDesc::VideoFastTasks { video, .. } |
+            JobDesc::VideoFormat { video, .. }  => {
+                video.site_path == *site_path
+            }
+            JobDesc::CollectionFastTasks { .. } |
+            JobDesc::PlaylistFastTasks { .. } |
+            JobDesc::VideoPickPoster { .. } => false
         }
     }
 }

@@ -3,13 +3,15 @@
 
 use std::sync::Arc;
 
-use actix_web::web::{Data, Json};
+use actix_web::web::{Data, Json, Path as ActixPath};
 use serde_derive::Serialize;
 
-use hyper8_core::{DeploymentState, JobProgress};
+use hyper8_core::{DeploymentState, JobProgress, SitePath};
 
 use crate::Context;
 
+/// Represents the state of the running deployment (or just deployment
+/// configuration) at request time
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeploymentInfo {
@@ -19,15 +21,27 @@ pub struct DeploymentInfo {
     feedback: String
 }
 
-/// Field names get camel-cased for JSON serialization and subsequent
-/// transmission over the /processing endpoint.
+/// Represents the state of a set of jobs (either all or a local subset) at
+/// request time
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JobReport {
+    pub active_jobs: Vec<Option<JobProgress>>,
+    pub completed_count: usize,
+    pub failed_count: usize,
+    pub pending_count: usize
+}
+
+/// Returned as (camel-cased) JSON through the /processing endpoint. The
+/// global job report feeds the live processing feedback displayed in the
+/// header, while the local job report optionally provides specific live job
+/// information for media processing of a video.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Report {
-    pub active_jobs: Vec<Option<JobProgress>>,
     pub deployment_info: DeploymentInfo,
-    pub failed_count: usize,
-    pub pending_count: usize
+    pub global_job_report: JobReport,
+    pub local_job_report: Option<JobReport>
 }
 
 impl DeploymentInfo {
@@ -60,66 +74,116 @@ impl DeploymentInfo {
     }
 }
 
-impl Report {
-    pub fn new(
-        active_jobs: Vec<Option<JobProgress>>,
-        deployment_info: DeploymentInfo,
-        failed_count: usize,
-        pending_count: usize
-    ) -> Report {
-        Report {
-            active_jobs,
-            deployment_info,
-            failed_count,
-            pending_count
+impl JobReport {
+    pub fn new() -> JobReport {
+        JobReport {
+            active_jobs: Vec::new(),
+            completed_count: 0,
+            failed_count: 0,
+            pending_count: 0
         }
     }
 }
 
-pub async fn processing(context: Data<Arc<Context>>) -> Json<Report> {
-    let report = {
-        let deployment_info = {
-            let site = context.get_site();
+impl Report {
+    pub fn new(
+        deployment_info: DeploymentInfo,
+        global_job_report: JobReport,
+        local_job_report: Option<JobReport>
+    ) -> Report {
+        Report {
+            deployment_info,
+            global_job_report,
+            local_job_report
+        }
+    }
+}
 
-            if site.complete_deployment_config() {
-                let deployment_state = context.deploying.lock().unwrap();
-                DeploymentInfo::configured(&deployment_state)
+pub async fn processing_general(
+    context: Data<Arc<Context>>
+) -> Json<Report> {
+    processing(&context, None)
+}
+
+pub async fn processing_media(
+    context: Data<Arc<Context>>,
+    site_path: ActixPath<SitePath>
+) -> Json<Report> {
+    processing(&context, Some(&site_path))
+}
+
+fn processing(
+    context: &Context,
+    site_path: Option<&SitePath>
+) -> Json<Report> {
+    let site = context.get_site();
+
+    let deployment_info = if site.complete_deployment_config() {
+        let deployment_state = context.deploying.lock().unwrap();
+        DeploymentInfo::configured(&deployment_state)
+    } else {
+        DeploymentInfo::not_configured()
+    };
+
+    let mut global_job_report = JobReport::new();
+    let mut local_job_report = match site_path.is_some() {
+        true => Some(JobReport::new()),
+        false => None
+    };
+
+    {
+        let job_queue = context.job_queue.lock().unwrap();
+
+        for job in job_queue.iter() {
+            // Register all jobs
+            if let Some(assignment) = &job.active_assignment {
+                global_job_report.active_jobs.push(assignment.last_progress.clone());
             } else {
-                DeploymentInfo::not_configured()
+                if job.failure.is_some() {
+                    global_job_report.failed_count += 1;
+                } else {
+                    global_job_report.pending_count += 1;
+                }
             }
-        };
 
-        let mut failed_count = 0;
-        let mut pending_count = 0;
-
-        let active_jobs = {
-            let job_queue = context.job_queue.lock().unwrap();
-
-            job_queue
-                .iter()
-                .filter_map(|job| {
+            // Register media specific jobs, if requested
+            if let Some(local_job_report) = &mut local_job_report {
+                if job.desc.targets_media(site_path.unwrap()) {
                     if let Some(assignment) = &job.active_assignment {
-                        Some(assignment.last_progress.clone())
+                        local_job_report.active_jobs.push(assignment.last_progress.clone());
                     } else {
                         if job.failure.is_some() {
-                            failed_count += 1;
+                            local_job_report.failed_count += 1;
                         } else {
-                            pending_count += 1;
+                            local_job_report.pending_count += 1;
                         }
-
-                        None
                     }
-                })
-                .collect()
-        };
+                }
+            }
+        }
+    }
 
-        Report::new(
-            active_jobs,
-            deployment_info,
-            failed_count,
-            pending_count
-        )
-    };
+    {
+        let completed_jobs = context.completed_jobs.lock().unwrap();
+
+        for job in completed_jobs.iter() {
+            // Register all jobs
+            global_job_report.completed_count += 1;
+
+            // Register media specific jobs, if requested
+            if let Some(local_job_report) = &mut local_job_report {
+                if job.desc.targets_media(site_path.unwrap()) {
+                    local_job_report.completed_count += 1;
+                }
+            }
+        }
+    }
+
+    let report = Report::new(
+        deployment_info,
+        global_job_report,
+        local_job_report
+    );
 
     Json(report)
 }

@@ -198,6 +198,7 @@ pub struct Translations {
     pub new_hyper8_site_folder_name: &'static str,
     pub new_link: &'static str,
     pub new_playlist: &'static str,
+    pub new_results_available: &'static str,
     pub new_subcollection: &'static str,
     pub new_video: &'static str,
     pub no_audio: &'static str,
@@ -248,6 +249,7 @@ pub struct Translations {
     pub queued: &'static str,
     pub really_delete: &'static str,
     pub really_deploy: &'static str,
+    pub refresh: &'static str,
     pub regular_link: &'static str,
     pub release_date: &'static str,
     pub release_date_ascending: &'static str,
@@ -355,7 +357,9 @@ pub struct Translations {
     pub warning: &'static str,
     pub website: &'static str,
     pub worst: &'static str,
+    pub xxx_active_jobs: &'static str,
     xxx_characters_maximum: &'static str,
+    pub xxx_pending_jobs: &'static str,
     pub xxx_videos: &'static str,
     pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str
 }
