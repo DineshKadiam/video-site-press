@@ -24,11 +24,13 @@ Thanks everyone for your support!
 [ecogex](https://ecogex.com/)<br>
 [Edgar Aichinger](https://build.opensuse.org/users/edogawa)<br>
 [Emanuel Pesendorfer](https://emanuel-pesendorfer.at/)<br>
+[Eric Peacock](https://ericpeacock.design/)<br>
 hatsch<br>
 [Ian Menz](https://norcal.social/@CallMePlayer)<br>
 [Internet Stiftung](https://www.internetstiftung.at/)<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
-[Lioh](https://codeberg.org/Lioh)<br>
+[Lioh](https://social.anoxinon.de/@Lioh)<br>
+[Lorenzo Miniero](https://fosstodon.org/@lminiero)<br>
 [Mads Kjeldgaard](https://madskjeldgaard.dk/)<br>
 [Matthias Bilger](https://codeberg.org/m42e)<br>
 [Meljoann](https://www.meljoann.com/)<br>
