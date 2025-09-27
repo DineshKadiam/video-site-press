@@ -585,6 +585,24 @@ impl Video {
         }
     }
 
+    /// How many bytes this video uses when it is written to the build directory
+    /// (Takes into account audio files and video files)
+    pub fn build_storage_usage(&self) -> u64 {
+        let mut storage_usage = 0;
+
+        storage_usage += self.audio_files
+            .iter()
+            .map(|audio_file| audio_file.file_meta.size)
+            .sum::<u64>();
+
+        storage_usage += self.video_files
+            .iter()
+            .map(|video_file| video_file.file_meta.size)
+            .sum::<u64>();
+
+        storage_usage
+    }
+
     /// When we convert between types (collection, playlist, video) we pass
     /// over existing inherited options using this method.
     pub fn copy_inherited_options(&self) -> InheritedOptions {

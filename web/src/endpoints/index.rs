@@ -36,17 +36,17 @@ pub async fn index(
             let mut videos = Vec::new();
 
             fn add_collection(collection: &Collection, videos: &mut Vec<Arc<Video>>) {
-                for playlist in &collection.playlists {
-                    for video in &playlist.videos {
+                for playlist in collection.published_playlists() {
+                    for video in playlist.published_videos() {
                         videos.push(Arc::clone(video));
                     }
                 }
 
-                for subcollection in &collection.subcollections {
+                for subcollection in collection.published_subcollections() {
                     add_collection(subcollection, videos);
                 }
 
-                for video in &collection.videos {
+                for video in collection.published_videos() {
                     videos.push(Arc::clone(video));
                 }
             }
@@ -63,10 +63,12 @@ pub async fn index(
         SiteContent::Empty => empty_site_html(translations),
         SiteContent::Invalid { error } => invalid_site_html(error, translations),
         SiteContent::Playlist(playlist) => {
-            if playlist.videos.is_empty() {
+            let videos: Vec<Arc<Video>> = playlist.published_videos().cloned().collect();
+
+            if videos.is_empty() {
                 String::new()
             } else {
-                storage_stats_html(translations, &playlist.videos)
+                storage_stats_html(translations, &videos)
             }
         }
         SiteContent::Video(video) => {

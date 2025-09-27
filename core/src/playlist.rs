@@ -477,6 +477,13 @@ impl Playlist {
         }
     }
 
+    /// How many bytes this playlist uses when it is written to the build directory
+    pub fn build_storage_usage(&self) -> u64 {
+        self.published_videos()
+            .map(|video| video.build_storage_usage())
+            .sum()
+    }
+
     /// When we convert between types (collection, playlist, video) we pass
     /// over existing inherited options using this method.
     pub fn copy_inherited_options(&self) -> InheritedOptions {

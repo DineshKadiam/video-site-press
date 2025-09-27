@@ -512,6 +512,25 @@ impl Collection {
         }
     }
 
+    /// How many bytes this collection uses when it is written to the build directory
+    pub fn build_storage_usage(&self) -> u64 {
+        let mut storage_usage = 0;
+
+        for playlist in self.published_playlists() {
+            storage_usage += playlist.build_storage_usage();
+        }
+
+        for subcollection in self.published_subcollections() {
+            storage_usage += subcollection.build_storage_usage();
+        }
+
+        for video in self.published_videos() {
+            storage_usage += video.build_storage_usage();
+        }
+
+        storage_usage
+    }
+
     /// When we convert between types (collection, playlist, video) we pass
     /// over existing inherited options using this method.
     pub fn copy_inherited_options(&self) -> InheritedOptions {
