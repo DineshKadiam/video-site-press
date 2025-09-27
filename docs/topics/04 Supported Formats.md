@@ -51,11 +51,9 @@ are always resized and transcoded for site builds.
 
 ## Subtitles
 
-Note that subtitle support is just an experimental prototype implementation
-right now. You can put subtitle files alongside your video file(s) and they
-will probably show up in the video player on your built site, but at this
-point the functionality is neither guaranteed nor maintained - but it will
-be in the future.
+You can add any number of subtitle files alongside your video file(s) and they
+will automatically show up in the video player on your built site. The supported
+formats are:
 
 - srt
 - vtt
