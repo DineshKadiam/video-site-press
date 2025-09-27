@@ -52,11 +52,11 @@ a {
 }
 .actionable_item.attached_info + div {
     background: var(--bg-3);
-    color: var(--l-1);
+    color: var(--fg-2);
 }
 .actionable_item.attached_success + div {
     background: var(--bg-3);
-    color: var(--l-1);
+    color: var(--fg-2);
 }
 .actionable_item.attached_warning + div {
     background: var(--warning-bg);
