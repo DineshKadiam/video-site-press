@@ -118,17 +118,17 @@ fn empty_site_html(translations: &Translations) -> String {
             </p>
             <br>
             <form action="{convert_to_collection_action}" method="post">
-                <button class="big">{collection_icon} {t_initialize_site_as_a_collection}</button>
+                <button class="action big">{collection_icon} {t_initialize_site_as_a_collection}</button>
                 <p>{t_a_site_presenting_any_number_of_videos_and_playlists}</p>
             </form>
             <br>
             <form action="{convert_to_playlist_action}" method="post">
-                <button class="big">{playlist_icon} {t_initialize_site_as_a_playlist}</button>
+                <button class="action big">{playlist_icon} {t_initialize_site_as_a_playlist}</button>
                 <p>{t_a_site_presenting_a_single_playlist_of_videos}</p>
             </form>
             <br>
             <form action="{convert_to_video_action}" method="post">
-                <button class="big">{video_icon} {t_initialize_site_as_a_video}</button>
+                <button class="action big">{video_icon} {t_initialize_site_as_a_video}</button>
                 <p>{t_a_site_presenting_just_a_single_video}</p>
             </form>
         </div>
