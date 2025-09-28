@@ -19,7 +19,6 @@ use hyper8_core::{
     AudioFile,
     Collection,
     CollectionUpdate,
-    FileMeta,
     GetAnyResult,
     HyperDir,
     InfallibleResult,
@@ -32,12 +31,7 @@ use hyper8_core::{
     VideoUpdate
 };
 use hyper8_core::infallible_mutation;
-use hyper8_core::util::{
-    deduplicate_filename,
-    deduplicate_filestem,
-    supported_audio_extension,
-    supported_video_extension
-};
+use hyper8_core::util::{deduplicate_filename, deduplicate_filestem};
 
 use crate::{Context, SessionState};
 use crate::endpoints::collection::pending_manifest_errors as pending_collection_manifest_errors;
@@ -66,8 +60,8 @@ pub async fn upload_audio_video(
         if let Some(content_disposition) = field.content_disposition() {
             if let Some(filename) = content_disposition.get_filename() {
 
-                let is_supported_audio = supported_audio_extension(filename);
-                let is_supported_video = supported_video_extension(filename);
+                let is_supported_audio = AudioFile::supported_extension(filename);
+                let is_supported_video = VideoFile::supported_extension(filename);
 
                 if is_supported_audio || is_supported_video {
                     let original_filename = filename.to_string();
@@ -181,14 +175,25 @@ pub async fn upload_audio_video(
                             }
                         }
                         GetAnyResult::Video(_) => {
-                            let file_meta = FileMeta::new(&storage_path);
-                            let file_name = storage_path.file_name().unwrap().to_string_lossy().to_string();
-
                             let mutation = |video: &mut Video| -> InfallibleResult {
                                 if is_supported_audio {
-                                    video.audio_files.push(AudioFile::new(None, file_meta, file_name));
+                                    let audio_file = AudioFile::new(
+                                        &context,
+                                        &storage_path,
+                                        true,
+                                        video
+                                    );
+
+                                    video.audio_files.push(audio_file);
                                 } else /* if is_supported_video */ {
-                                    video.video_files.push(VideoFile::new(file_meta, file_name, None));
+                                    let video_file = VideoFile::new(
+                                        &context,
+                                        &storage_path,
+                                        true,
+                                        video
+                                    );
+
+                                    video.video_files.push(video_file);
                                 }
 
                                 Ok(())

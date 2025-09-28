@@ -20,7 +20,7 @@ use hyper8_core::{
     VideoUpdate
 };
 use hyper8_core::infallible_mutation;
-use hyper8_core::util::{deduplicate_filename, supported_subtitles_extension};
+use hyper8_core::util::{deduplicate_filename};
 
 use crate::{Context, SessionState};
 use crate::routes;
@@ -47,7 +47,7 @@ pub async fn upload_subtitles(
     while let Some(mut field) = payload.try_next().await? {
         if let Some(content_disposition) = field.content_disposition() {
             if let Some(filename) = content_disposition.get_filename() {
-                if supported_subtitles_extension(filename) {
+                if SubtitleFile::supported_extension(filename) {
                     let mut candidate_filename = filename.to_string();
                     let mut storage_path = context.site_dir
                         .join(video.site_path.filesystem_relative())

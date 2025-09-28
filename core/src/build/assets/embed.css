@@ -43,8 +43,10 @@ img {
     color: var(--l-1);
     opacity: .9;
 }
-.intro_controls .selector_options { padding-bottom: .8rem; }
-.intro_controls .selector_options.right_aligned { right: 0; }
+.intro_controls .selector_options {
+    padding-bottom: .8rem;
+    right: 0;
+}
 .intro_controls .selector_options:focus-within .selector_options button,
 .intro_controls .selector_control.active:hover .selector_options button {
     opacity: .8;
@@ -293,13 +295,9 @@ img {
     padding-bottom: .5rem;
     pointer-events: none;
     position: absolute;
+    right: .5rem;
     z-index: 4;
 }
-.selector_options.centered {
-    left: 50%;
-    transform: translateX(-50%);
-}
-.selector_options.right_aligned { right: .5rem; }
 .selector_options:focus-within,
 .selector_control.active:hover .selector_options {
     opacity: 1;

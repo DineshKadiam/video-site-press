@@ -81,7 +81,7 @@ pub fn video_html(
         actions.push(copy_link);
     }
 
-    if video.embedding() && site.base_url.is_some() && !video.video_files.is_empty() {
+    if video.embedding() && site.base_url.is_some() && video.has_streamable_media() {
         let embed_icon = hyper8_icons::EMBED;
 
         let t_embed = &translations.embed;
@@ -96,7 +96,7 @@ pub fn video_html(
         actions.push(embed_action);
     }
 
-    if video.download() && !video.video_files.is_empty() {
+    if video.download() && video.has_downloadable_media() {
         let t_download = translations.download;
         let t_download_permalink = translations.download_permalink;
         let download_icon = hyper8_icons::DOWNLOAD;
@@ -297,7 +297,9 @@ pub fn video_html(
             }
 
             if platform_integration.content_embeds() {
-                if let Some(video_file) = video.recommended_video_file() {
+                // TODO: This should alternatively also utilize the default
+                // audio_file, if available
+                if let Some(video_file) = video.default_streamable_video_file() {
                     if let Some(video_meta) = &video_file.video_meta {
                         let player_url = site.absolute_url_dir_unchecked("embed/", &video.site_path);
                         let video_url = site.absolute_url_file_unchecked(&video_file.file_name, &video.site_path);

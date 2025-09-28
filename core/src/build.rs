@@ -355,14 +355,16 @@ fn build_video(
         fs::create_dir_all(&video_build_dir).unwrap();
     }
 
-    if let Some(audio_file) = video.recommended_audio_file() {
+    let default_streamable_audio_file = video.default_streamable_audio_file();
+
+    if let Some(audio_file) = default_streamable_audio_file {
         hard_link_or_copy(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&audio_file.file_name),
             video_build_dir.join(&audio_file.file_name)
         );
     }
 
-    for video_file in &video.video_files {
+    for video_file in video.streamable_video_files() {
         hard_link_or_copy(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
             video_build_dir.join(&video_file.file_name)
@@ -428,45 +430,68 @@ fn build_video(
         }
     }
 
-    // We only render the download and embed pages if there are any video files.
-    if !video.video_files.is_empty() {
-        if video.download() {
-            let traversal_download = traversal.with_virtual(translations.download);
+    if video.download() && video.has_downloadable_media() {
+        // Write all downloadable audio files to build, excluding the default
+        // streamable audio file, which we already have written above.
+        for audio_file in video.downloadable_audio_files() {
+            if default_streamable_audio_file.is_some_and(|streamable_audio_file| {
+                streamable_audio_file == audio_file
+            }) {
+                continue;
+            }
 
-            download_html(
+            hard_link_or_copy(
+                context.site_dir.join(video.site_path.filesystem_relative()).join(&audio_file.file_name),
+                video_build_dir.join(&audio_file.file_name)
+            );
+        }
+
+        // Write all downloadable video files to build, excluding all
+        // streamable video files, which we already have written above.
+        for video_file in video.downloadable_video_files() {
+            if !video_file.streamable() {
+                hard_link_or_copy(
+                    context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
+                    video_build_dir.join(&video_file.file_name)
+                );
+            }
+        }
+
+        let traversal_download = traversal.with_virtual(translations.download);
+
+        download_html(
+            asset_hashes,
+            context,
+            site,
+            video,
+            &traversal_download
+        );
+    }
+
+    if site.base_url.is_some() && video.has_streamable_media() {
+        if video.embedding() {
+            let traversal_embed_codes = traversal.with_virtual(translations.embed);
+
+            embed_codes_html(
                 asset_hashes,
                 context,
                 site,
                 video,
-                &traversal_download
+                &traversal_embed_codes
             );
         }
 
-        if site.base_url.is_some() {
-            if video.embedding() {
-                let traversal_embed_codes = traversal.with_virtual(translations.embed);
+        if video.embedding() || video.platform_integration().content_embeds() {
+            let traversal_embed = traversal.with_virtual(translations.embed);
 
-                embed_codes_html(
-                    asset_hashes,
-                    context,
-                    site,
-                    video,
-                    &traversal_embed_codes
-                );
-            }
-
-            if video.embedding() || video.platform_integration().content_embeds() {
-                let traversal_embed = traversal.with_virtual(translations.embed);
-
-                embed_html(
-                    asset_hashes,
-                    context,
-                    playlist,
-                    site,
-                    video,
-                    &traversal_embed
-                );
-            }
+            embed_html(
+                asset_hashes,
+                context,
+                playlist,
+                site,
+                video,
+                &traversal_embed
+            );
         }
     }
 

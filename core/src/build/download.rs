@@ -8,9 +8,9 @@ use indoc::formatdoc;
 
 use crate::{
     Context,
+    Desc,
     Site,
-    Video,
-    VideoFile
+    Video
 };
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
@@ -44,18 +44,37 @@ pub fn download_html(
         String::new()
     };
 
-    let mut video_files_with_meta: Vec<&VideoFile> = video.video_files
-        .iter()
-        .filter(|video_file| video_file.video_meta.is_some())
-        .collect();
+    let audio_buttons = video.downloadable_audio_files()
+        .map(|audio_file| {
+            // TODO: Clean up/better/more complete concept for how to build file names (e.g. maybe hide original names altogether!)
+            let file_name = audio_file.file_name.as_str();
+            let audio_meta = &audio_file.audio_meta.as_ref().unwrap();
 
-    video_files_with_meta.sort_unstable_by(|a, b| {
-        a.video_meta.as_ref().unwrap().height.cmp(
-            &b.video_meta.as_ref().unwrap().height
-        )
-    });
+            let download_slug = video.slug().unwrap_or("video");
+            let download_extension = Path::new(file_name).extension().unwrap().to_string_lossy();
+            let download_name = format!("{download_slug}.{download_extension}");
 
-    let format_buttons = video_files_with_meta
+            let size = human_size(audio_file.file_meta.size);
+
+            let t_no_audio = translations.no_audio;
+            let codec = audio_meta.codec.as_deref().unwrap_or(t_no_audio);
+
+            formatdoc!(r#"
+                <a download="{download_name}" class="align apart flex" href="../{file_name}">
+                    <div>
+                        <div class="large_font">{download_extension}</div>
+                        <small>{codec}</small>
+                    </div>
+                    <div class="large_font">{size}</div>
+                </a>
+            "#)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let downloadable_video_files_sorted_by_fidelity_desc = video.downloadable_video_files_sorted_by_fidelity(Desc);
+
+    let video_buttons = downloadable_video_files_sorted_by_fidelity_desc
         .iter()
         .map(|video_file| {
             // TODO: Clean up/better/more complete concept for how to build file names (e.g. maybe hide original names altogether!)
@@ -80,16 +99,11 @@ pub fn download_html(
             let t_no_video = translations.no_video;
             let video_codec = video_meta.video_codec.as_deref().unwrap_or(t_no_video);
 
-            let extension = Path::new(&video_file.file_name)
-                .extension()
-                .unwrap_or(std::ffi::OsStr::new(""))
-                .to_string_lossy();
-
             formatdoc!(r#"
                 <a download="{download_name}" class="align apart flex" href="../{file_name}">
                     <div>
                         <div class="large_font">{vertical_resolution_label}</div>
-                        <small>{format_label}, {audio_codec}, {video_codec}, {extension}</small>
+                        <small>{format_label}, {audio_codec}, {video_codec}, {download_extension}</small>
                     </div>
                     <div class="large_font">{size}</div>
                 </a>
@@ -131,7 +145,8 @@ pub fn download_html(
     let body = format!(r#"
         <div class="video_info">
             <h1>{e_title} {r_unlisted_badge}</h1>
-            {format_buttons}
+            {video_buttons}
+            {audio_buttons}
             {subtitle_buttons}
         </div>
     "#);

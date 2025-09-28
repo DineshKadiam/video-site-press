@@ -175,29 +175,42 @@ pub fn html_escape_outside_attribute(string: &str) -> String {
 /// Takes bytes, formats them like "313 B", "256 kB", "3.4 MB", "13 MB", "1.4 GB"
 pub fn human_size(bytes: u64) -> String {
     match bytes {
-        0..=999 => format!("{bytes} B"),
-        1000..=999999 => {
-            let kilobytes = bytes / 1000;
-            format!("{kilobytes} kB")
-        }
-        1000000..=999999999 => {
-            let megabytes = bytes as f64 / 1000000.0;
-            if megabytes >= 10.0 || megabytes.fract() < 0.1 {
-                format!("{} MB", megabytes as u64)
-            } else {
-                format!("{megabytes:.1} MB")
-            }
-        },
-        _ => {
-            let gigabytes = bytes as f64 / 1000000000.0;
-            if gigabytes.fract() < 0.1 {
-                format!("{} GB", gigabytes as u64)
-            } else if gigabytes.fract() < 0.01 {
-                format!("{gigabytes:.1} GB")
-            } else {
-                format!("{gigabytes:.2} GB")
-            }
-        }
+        0..=999 => human_size_bytes(bytes),
+        1000..=999999 => human_size_kilobytes(bytes),
+        1000000..=999999999 => human_size_megabytes(bytes),
+        _ => human_size_gigabytes(bytes)
+    }
+}
+
+fn human_size_bytes(bytes: u64) -> String {
+    format!("{bytes} B")
+}
+
+fn human_size_gigabytes(bytes: u64) -> String {
+    let gigabytes = bytes as f64 / 1000000000.0;
+
+    // TODO: These branches/conditions seem non-sensical,
+    //       figure out what the original intent was and adjust.
+    if gigabytes.fract() < 0.1 {
+        format!("{} GB", gigabytes as u64)
+    } else if gigabytes.fract() < 0.01 {
+        format!("{gigabytes:.1} GB")
+    } else {
+        format!("{gigabytes:.2} GB")
+    }
+}
+
+fn human_size_kilobytes(bytes: u64) -> String {
+    let kilobytes = bytes / 1000;
+    format!("{kilobytes} kB")
+}
+
+fn human_size_megabytes(bytes: u64) -> String {
+    let megabytes = bytes as f64 / 1000000.0;
+    if megabytes >= 10.0 || megabytes.fract() < 0.1 {
+        format!("{} MB", megabytes as u64)
+    } else {
+        format!("{megabytes:.1} MB")
     }
 }
 
@@ -277,22 +290,6 @@ pub fn string_from_pathbuf(path: PathBuf) -> String {
     string_from_os_string(path.into_os_string())
 }
 
-pub fn supported_audio_extension(filename: &str) -> bool {
-    match Path::new(filename).extension() {
-        Some(extension) => {
-            extension.eq_ignore_ascii_case("aac") ||
-            extension.eq_ignore_ascii_case("aiff") ||
-            extension.eq_ignore_ascii_case("alac") ||
-            extension.eq_ignore_ascii_case("flac") ||
-            extension.eq_ignore_ascii_case("mp3") ||
-            extension.eq_ignore_ascii_case("ogg") ||
-            extension.eq_ignore_ascii_case("opus") ||
-            extension.eq_ignore_ascii_case("wav")
-        }
-        None => false
-    }
-}
-
 pub fn supported_font_extension(filename: &str) -> bool {
     match Path::new(filename).extension() {
         Some(extension) => {
@@ -311,29 +308,6 @@ pub fn supported_image_extension(filename: &str) -> bool {
             extension.eq_ignore_ascii_case("jpeg") ||
             extension.eq_ignore_ascii_case("png") ||
             extension.eq_ignore_ascii_case("webp")
-        }
-        None => false
-    }
-}
-
-pub fn supported_subtitles_extension(filename: &str) -> bool {
-    match Path::new(filename).extension() {
-        Some(extension) => {
-            extension.eq_ignore_ascii_case("srt") ||
-            extension.eq_ignore_ascii_case("vtt")
-        }
-        None => false
-    }
-}
-
-pub fn supported_video_extension(filename: &str) -> bool {
-    match Path::new(filename).extension() {
-        Some(extension) => {
-            extension.eq_ignore_ascii_case("m4v") ||
-            extension.eq_ignore_ascii_case("mp4") ||
-            extension.eq_ignore_ascii_case("mkv") ||
-            extension.eq_ignore_ascii_case("mov") ||
-            extension.eq_ignore_ascii_case("webm")
         }
         None => false
     }

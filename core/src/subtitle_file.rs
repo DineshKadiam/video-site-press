@@ -50,6 +50,8 @@ impl Subtitle {
 }
 
 impl SubtitleFile {
+    pub const SUPPORTED_EXTENSIONS: [&str; 2] = ["srt", "vtt"];
+
     /// Ensure the language is already validated when passing it here.
     pub fn from_manifest(
         label_option: Option<String>,
@@ -77,8 +79,10 @@ impl SubtitleFile {
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
         let file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
-        // If the file stem is a valid BCP 47 language code we automatically derive the language from it
-        let language = match LanguageTag::parse(&file_stem).is_ok_and(|language_tag| language_tag.is_valid()) {
+        // If the file stem is a valid BCP 47 language code we automatically
+        // derive the language from it
+        let language = match LanguageTag::parse(&file_stem)
+            .is_ok_and(|language_tag| language_tag.is_valid()) {
             true => Some(file_stem.clone()),
             false => None
         };
@@ -167,6 +171,16 @@ impl SubtitleFile {
         } else {
             unreachable!()
         }
+    }
+
+    pub fn supported_extension(filename: &str) -> bool {
+        Path::new(filename).extension().is_some_and(|extension| {
+            SubtitleFile::SUPPORTED_EXTENSIONS
+                .iter()
+                .any(|supported_extension| {
+                    extension.eq_ignore_ascii_case(supported_extension)
+                })
+        })
     }
 }
 

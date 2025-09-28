@@ -41,32 +41,41 @@ pub fn player(
     let language = &site.language;
     let translations = &language.translations;
 
-    if video.audio_files.is_empty() && video.video_files.is_empty() {
+    if !video.has_streamable_media() {
         // TODO: Should use poster assets (different sizes)
         let poster = match &video.poster {
             Some(poster) => {
                 let alt = if let Some(description) = &poster.description {
-                    format!(r#"alt="{description}" "#)
+                    format!(r#"alt="{description}""#)
                 } else {
                     String::new()
                 };
 
-                format!(r#"<img {alt}class="thumbnail" src="{video_prefix}poster.jpg">"#)
+                // TODO: Compute, cache and use a compressed/normalized (high-res, but
+                // still constrained to a maximum resolution) version of the poster
+                // for use here
+                let original_extension = Path::new(&poster.file_name)
+                    .extension()
+                    .unwrap()
+                    .to_string_lossy();
+
+                format!(r#"<img {alt} class="thumbnail" src="{video_prefix}poster.{original_extension}">"#)
             }
             None => String::new()
         };
 
-        let t_video_not_yet_available = translations.video_not_yet_available;
+        let t_video_not_or_not_yet_available = translations.video_not_or_not_yet_available;
 
+        // TODO: Technically wrong to do an early return here - after all the video could have
+        //       a description, downloadable files, etc. - so we should really be rendering the
+        //       full page here, just with the player replaced with this teaser text/image widget
         return formatdoc!(r#"
-            <div style="border: 1px solid red; height: 12.8rem; width: 19.2rem;">
+            <div class="player_placeholder">
                 {poster}
-                {t_video_not_yet_available}
+                <span>{t_video_not_or_not_yet_available}</span>
             </div>
         "#);
     }
-
-    let recommended_video_file = video.recommended_video_file();
 
     let poster = match &video.poster {
         Some(poster) => {
@@ -131,7 +140,7 @@ pub fn player(
         subtitle_controls = formatdoc!(r#"
             <div class="selector_control subtitles">
                 <button class="cycle_subtitles dimmed" tabindex="-1">{subtitles_icon}</button>
-                <div class="selector_options right_aligned">
+                <div class="selector_options">
                     <button class="active">
                         <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
                     </button>
@@ -144,7 +153,18 @@ pub fn player(
         subtitle_tracks = String::new();
     };
 
-    let mut version_selector_options = video.video_files_sorted_by_fidelity(Desc)
+    let default_streamable_audio_file = video.default_streamable_audio_file();
+
+    let duration = match video.highest_quality_video_file() {
+        Some(video_file) => video_file.video_meta_unchecked().duration,
+        None => default_streamable_audio_file.unwrap().audio_meta_unchecked().duration
+    };
+
+    let streamable_video_files_sorted_by_fidelity_desc = video.streamable_video_files_sorted_by_fidelity(Desc);
+
+    let t_hour = translations.hour;
+
+    let mut version_selector_options = streamable_video_files_sorted_by_fidelity_desc
         .iter()
         .map(|video_file| {
             let video_meta = video_file.video_meta_unchecked();
@@ -153,25 +173,25 @@ pub fn player(
             let height = video_meta.height;
 
             let size_humanized = human_size(video_file.file_meta.size);
+            let size_per_hour_humanized = human_size((video_file.file_meta.size as f32 / duration * 3600.0) as u64);
 
             formatdoc!(r#"
                 <button data-label="{height}p" data-src="{video_prefix}{file_name_escaped}">
-                    <span class="active_marker_container">{active_marker_icon}</span> <strong>{height}p</strong>&nbsp;&nbsp;<small>{size_humanized}</small>
+                    <span class="active_marker_container">{active_marker_icon}</span> <strong>{height}p</strong>&nbsp;&nbsp;<small>{size_humanized} ({size_per_hour_humanized}/{t_hour})</small>
                 </button>
             "#)
         })
         .collect::<Vec<String>>();
 
-    let recommended_audio_file = video.recommended_audio_file();
-
-    if let Some(audio_file) = recommended_audio_file {
+    if let Some(audio_file) = default_streamable_audio_file {
         let file_name_escaped = urlencoding::encode(&audio_file.file_name);
         let size_humanized = human_size(audio_file.file_meta.size);
+        let size_per_hour_humanized = human_size((audio_file.file_meta.size as f32 / duration * 3600.0) as u64);
 
         let t_audio = translations.audio;
         let audio_option = formatdoc!(r#"
             <button data-label="{t_audio}" data-src="{video_prefix}{file_name_escaped}">
-                <span class="active_marker_container">{active_marker_icon}</span> <strong>{t_audio}</strong>&nbsp;&nbsp;<small>{size_humanized}</small>
+                <span class="active_marker_container">{active_marker_icon}</span> <strong>{t_audio}</strong>&nbsp;&nbsp;<small>{size_humanized} ({size_per_hour_humanized}/{t_hour})</small>
             </button>
         "#);
 
@@ -180,22 +200,24 @@ pub fn player(
 
     let version_selector_options = version_selector_options.join("\n");
 
-    let default_version_label = recommended_video_file
+    let default_streamable_video_file = video.default_streamable_video_file();
+
+    let default_version_label = default_streamable_video_file
         .map(|video_file| video_file.vertical_resolution_label())
         .unwrap_or_else(|| translations.audio.to_string());
 
     let version_controls = formatdoc!(r#"
-        <div class="selector_control version" style="position: relative;">
+        <div class="selector_control version">
             <button id="cycle_versions" tabindex="-1">{default_version_label}</button>
-            <div class="selector_options centered">
+            <div class="selector_options">
                 {version_selector_options}
             </div>
         </div>
     "#);
 
     let versions_ring_rendered = versions_ring(
-        recommended_audio_file,
-        recommended_video_file,
+        default_streamable_audio_file,
+        default_streamable_video_file,
         translations,
         video,
         video_prefix
@@ -242,7 +264,7 @@ pub fn player(
                     );
 
                     number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
-                    replay_indicator = hyper8_icons::replay(translations.replay);
+                    replay_indicator = hyper8_icons::reload(Some(translations.replay));
                     video_iterated_prefix = video_prefix.to_string();
                 } else {
                     current = "";
@@ -297,7 +319,7 @@ pub fn player(
             </div>
         "#)
     } else {
-        let replay_icon = hyper8_icons::replay(translations.replay);
+        let replay_icon = hyper8_icons::reload(Some(translations.replay));
         let t_replay = translations.replay;
         formatdoc!(r#"
             <div class="outro_video_context">
@@ -343,7 +365,7 @@ pub fn player(
             formatdoc!(r#"
                 <div class="selector_control subtitles">
                     <button class="cycle_subtitles dimmed icon_button" tabindex="-1">{subtitles_icon}</button>
-                    <div class="selector_options right_aligned">
+                    <div class="selector_options">
                         <button class="active">
                             <span class="active_marker_container">{active_marker_icon}</span> {t_no_subtitles}
                         </button>
@@ -374,14 +396,14 @@ pub fn player(
     let aspect_ratio;
     let duration;
     let src_escaped;
-    if let Some(video_file) = recommended_video_file {
+    if let Some(video_file) = default_streamable_video_file {
         let video_file_meta = video_file.video_meta.as_ref().unwrap();
 
         aspect_ratio = video_file_meta.aspect_ratio();
         duration = video_file_meta.duration;
         src_escaped = urlencoding::encode(&video_file.file_name);
     } else {
-        let audio_file = recommended_audio_file.unwrap();
+        let audio_file = default_streamable_audio_file.unwrap();
         let audio_file_meta = audio_file.audio_meta.as_ref().unwrap();
 
         aspect_ratio = site.poster_aspect.numeric();
@@ -442,7 +464,7 @@ pub fn player_icon_templates(translations: &Translations) -> String {
     let minimize_icon = hyper8_icons::minimize(translations.minimize);
     let pause_icon = hyper8_icons::pause(translations.pause);
     let play_icon = hyper8_icons::play(translations.play);
-    let replay_icon = hyper8_icons::replay(translations.replay);
+    let replay_icon = hyper8_icons::reload(Some(translations.replay));
     let subtitles_icon = hyper8_icons::subtitles(Some(translations.subtitles));
     let volume_loud_icon = hyper8_icons::volume_loud(translations.loud_volume);
     let volume_medium_icon = hyper8_icons::volume_medium(translations.medium_volume);
@@ -484,8 +506,8 @@ pub fn player_icon_templates(translations: &Translations) -> String {
 /// (or audio-only version) to watch the video in (and simultaneously start
 /// playback).
 fn versions_ring(
-    recommended_audio_file: Option<&AudioFile>,
-    recommended_video_file: Option<&VideoFile>,
+    default_streamable_audio_file: Option<&AudioFile>,
+    default_streamable_video_file: Option<&VideoFile>,
     translations: &Translations,
     video: &Video,
     video_prefix: &str
@@ -506,7 +528,7 @@ fn versions_ring(
 
     let mut largest_size = 0;
 
-    if let Some(audio_file) = recommended_audio_file {
+    if let Some(audio_file) = default_streamable_audio_file {
         let file_name = &audio_file.file_name;
         let label = translations.audio.to_string();
         let size = audio_file.file_meta.size;
@@ -519,10 +541,10 @@ fn versions_ring(
         }
     }
 
-    let video_files = video.video_files_sorted_by_fidelity(Asc);
+    let streamable_video_files_sorted_by_fidelity_asc = video.streamable_video_files_sorted_by_fidelity(Asc);
 
-    if !video_files.is_empty() {
-        for video_file in &video_files {
+    if !streamable_video_files_sorted_by_fidelity_asc.is_empty() {
+        for video_file in &streamable_video_files_sorted_by_fidelity_asc {
             let file_name = &video_file.file_name;
             let label = video_file.vertical_resolution_label();
             let size = video_file.file_meta.size;
@@ -653,15 +675,16 @@ fn versions_ring(
 
         let size_humanized = human_size(*size);
 
-        let default =
-            recommended_video_file.is_some_and(|video_file| video_file.file_name == **file_name) ||
-            recommended_audio_file.is_some_and(|audio_file| audio_file.file_name == **file_name);
+        let is_default =
+            default_streamable_video_file.is_some_and(|video_file| video_file.file_name == **file_name) ||
+            default_streamable_audio_file.is_some_and(|audio_file| audio_file.file_name == **file_name);
+
         let file_name_escaped = urlencoding::encode(file_name);
         let src = format!("{video_prefix}{file_name_escaped}");
         let slice_rendered = slice(
             arc_angle,
             begin_angle,
-            default,
+            is_default,
             resolution,
             &size_humanized,
             &src

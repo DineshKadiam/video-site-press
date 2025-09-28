@@ -14,7 +14,6 @@ use crate::{
     Codec,
     Context,
     EncodingApproach,
-    FileMeta,
     JobProgress,
     Video,
     VideoFile,
@@ -248,7 +247,7 @@ pub fn encode_audio(
     let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
 
     let mut iteration = 0;
-    let (output_file, output_path) = loop {
+    let output_path = loop {
         let output_file = if iteration == 0 {
             format!("{file_stem}.{extension}")
         } else {
@@ -264,14 +263,18 @@ pub fn encode_audio(
             continue;
         }
 
-        break (output_file, output_path);
+        break output_path;
     };
 
     // Move file from cache dir to video dir
     fs::rename(&temp_path, &output_path).unwrap();
 
-    let file_meta = FileMeta::new(&output_path);
-    let audio_file = AudioFile::new(None, file_meta, output_file);
+    let audio_file = AudioFile::new(
+        context,
+        &output_path,
+        false,
+        video
+    );
 
     Ok(audio_file)
 }
@@ -505,7 +508,7 @@ pub fn encode_video(
     let base_name = format!("{file_stem}_{format_suffix}");
 
     let mut iteration = 0;
-    let (output_file, output_path) = loop {
+    let output_path = loop {
         let output_file = if iteration == 0 {
             format!("{base_name}.{extension}")
         } else {
@@ -521,14 +524,18 @@ pub fn encode_video(
             continue;
         }
 
-        break (output_file, output_path);
+        break output_path;
     };
 
     // Move file from cache dir to video dir
     fs::rename(&temp_path, &output_path).unwrap();
 
-    let file_meta = FileMeta::new(&output_path);
-    let video_file = VideoFile::new(file_meta, output_file, None);
+    let video_file = VideoFile::new(
+        context,
+        &output_path,
+        false,
+        video
+    );
 
     Ok(video_file)
 }

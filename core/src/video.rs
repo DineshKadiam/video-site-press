@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 use icu_collator::CollatorBorrowed;
+use indoc::indoc;
 use language_tags::LanguageTag;
 use url::Url;
 
@@ -34,10 +35,7 @@ use crate::{
 };
 use crate::manifest::MAX_SYNOPSIS_CHARS;
 use crate::manifest::{attribute_error, element_error, not_supported_error};
-use crate::util::{
-    checked_remove_dir_all,
-    supported_subtitles_extension
-};
+use crate::util::checked_remove_dir_all;
 
 const VIDEO_OPTIONS: &[&str] = &[
     "copy_link",
@@ -99,7 +97,12 @@ impl Video {
         self.video_files.iter().all(|video_file| video_file.video_meta.is_some())
     }
 
-    fn apply_manifest(&mut self, context: &Context, manifest_path: &Path, site: &Site) {
+    fn apply_manifest(
+        &mut self,
+        context: &Context,
+        manifest_path: &Path,
+        site: &Site
+    ) {
         let content = fs::read_to_string(manifest_path).unwrap();
 
         let document = match enolib::parse(&content) {
@@ -112,6 +115,112 @@ impl Video {
 
         for element in document.elements() {
             match element.key() {
+                "audio_file" => 'audio_file: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            let mut download = None;
+                            let mut path = None;
+                            let mut streaming = None;
+
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "download" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value {
+                                                "disabled" => {
+                                                    download = Some(false);
+                                                }
+                                                "enabled" => {
+                                                    download = Some(true);
+                                                }
+                                                other => {
+                                                    let message = format!("The download attribute only supports the values 'enabled' and 'disabled', but {other} was found");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "file" => {
+                                        if let Some(value) = attribute.value() {
+                                            let absolute_path = manifest_path.parent().unwrap().join(value);
+
+                                            if absolute_path.exists() {
+                                                if AudioFile::supported_extension(value) {
+                                                    path = Some(absolute_path);
+                                                } else {
+                                                    let format_list = AudioFile::SUPPORTED_EXTENSIONS.join(", ");
+                                                    let message = format!("Unsupported audio format ({value}) – Please supply audio files in one of these formats: {format_list}");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            } else {
+                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                    "streaming" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value {
+                                                "disabled" => {
+                                                    streaming = Some(false);
+                                                }
+                                                "enabled" => {
+                                                    streaming = Some(true);
+                                                }
+                                                other => {
+                                                    let message = format!("The streaming attribute only supports the values 'enabled' and 'disabled', but {other} was found");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    other => {
+                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'download', 'file' and 'streaming'");
+                                        let error = attribute_error(attribute, manifest_path, &message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            if let Some(path) = path {
+                                let audio_file = AudioFile::new_from_manifest(
+                                    context,
+                                    download,
+                                    &path,
+                                    streaming,
+                                    self
+                                );
+                                self.audio_files.push(audio_file);
+                            } else {
+                                let message = indoc!("
+                                    The audio_file option must supply a file attribute at least, e.g.:
+
+                                    audio_file:
+                                    file = example.mp3
+                                ");
+                                let error = element_error(element, manifest_path, message);
+                                self.manifest_errors.push(error);
+                            }
+
+                            break 'audio_file;
+                        }
+                    }
+
+                    let message = indoc!("
+                        audio_file must be provided as a field with attributes, e.g.:
+
+                        audio_file:
+                        download = enabled
+                        file = example.mp3
+                        streaming = disabled
+                    ");
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
                 "copy_link" => 'copy_link: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(result) = field.value() {
@@ -464,7 +573,7 @@ impl Video {
                                             let absolute_path = manifest_path.parent().unwrap().join(value);
 
                                             if absolute_path.exists() {
-                                                if supported_subtitles_extension(value) {
+                                                if SubtitleFile::supported_extension(value) {
                                                     path = Some(absolute_path);
                                                 } else {
                                                     let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
@@ -576,6 +685,112 @@ impl Video {
                         self.manifest_errors.push(error);
                     }
                 }
+                "video_file" => 'video_file: {
+                    if let Ok(field) = element.as_field() {
+                        if let Ok(attributes) = field.attributes() {
+                            let mut download = None;
+                            let mut path = None;
+                            let mut streaming = None;
+
+                            for attribute in attributes {
+                                match attribute.key() {
+                                    "download" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value {
+                                                "disabled" => {
+                                                    download = Some(false);
+                                                }
+                                                "enabled" => {
+                                                    download = Some(true);
+                                                }
+                                                other => {
+                                                    let message = format!("The download attribute only supports the values 'enabled' and 'disabled', but {other} was found");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "file" => {
+                                        if let Some(value) = attribute.value() {
+                                            let absolute_path = manifest_path.parent().unwrap().join(value);
+
+                                            if absolute_path.exists() {
+                                                if VideoFile::supported_extension(value) {
+                                                    path = Some(absolute_path);
+                                                } else {
+                                                    let format_list = VideoFile::SUPPORTED_EXTENSIONS.join(", ");
+                                                    let message = format!("Unsupported video format ({value}) – Please supply video files in one of these formats: {format_list}");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            } else {
+                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                    "streaming" => {
+                                        if let Some(value) = attribute.value() {
+                                            match value {
+                                                "disabled" => {
+                                                    streaming = Some(false);
+                                                }
+                                                "enabled" => {
+                                                    streaming = Some(true);
+                                                }
+                                                other => {
+                                                    let message = format!("The streaming attribute only supports the values 'enabled' and 'disabled', but {other} was found");
+                                                    let error = attribute_error(attribute, manifest_path, &message);
+                                                    self.manifest_errors.push(error);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    other => {
+                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'download', 'file' and 'streaming'");
+                                        let error = attribute_error(attribute, manifest_path, &message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                            }
+
+                            if let Some(path) = path {
+                                let video_file = VideoFile::new_from_manifest(
+                                    context,
+                                    download,
+                                    &path,
+                                    streaming,
+                                    self
+                                );
+                                self.video_files.push(video_file);
+                            } else {
+                                let message = indoc!("
+                                    The video_file option must supply a file attribute at least, e.g.:
+
+                                    video_file:
+                                    file = example.mp4
+                                ");
+                                let error = element_error(element, manifest_path, message);
+                                self.manifest_errors.push(error);
+                            }
+
+                            break 'video_file;
+                        }
+                    }
+
+                    let message = indoc!("
+                        video_file must be provided as a field with attributes, e.g.:
+
+                        video_file:
+                        download = enabled
+                        file = example.mp4
+                        streaming = disabled
+                    ");
+                    let error = element_error(element, manifest_path, message);
+                    self.manifest_errors.push(error);
+                }
                 other => {
                     let message = not_supported_error("video.eno", other, &[VIDEO_OPTIONS]);
                     let error = element_error(element, manifest_path, &message);
@@ -585,20 +800,37 @@ impl Video {
         }
     }
 
-    /// How many bytes this video uses when it is written to the build directory
-    /// (Takes into account audio files and video files)
+    /// How many bytes this video uses when it is written to the build
+    /// directory (taking into account audio files, video files and various
+    /// configuration factors).
     pub fn build_storage_usage(&self) -> u64 {
         let mut storage_usage = 0;
 
-        storage_usage += self.audio_files
-            .iter()
-            .map(|audio_file| audio_file.file_meta.size)
-            .sum::<u64>();
+        let default_streamable_audio_file = self.default_streamable_audio_file();
 
-        storage_usage += self.video_files
-            .iter()
-            .map(|video_file| video_file.file_meta.size)
-            .sum::<u64>();
+        if let Some(audio_file) = default_streamable_audio_file {
+            storage_usage += audio_file.file_meta.size;
+        }
+
+        if self.download() {
+            for audio_file in self.downloadable_audio_files() {
+                if default_streamable_audio_file.is_some_and(|streamable_audio_file| {
+                    streamable_audio_file == audio_file
+                }) {
+                    continue;
+                }
+
+                storage_usage += audio_file.file_meta.size;
+            }
+        }
+
+        for video_file in self.published_video_files() {
+            if video_file.streamable() {
+                storage_usage += video_file.file_meta.size;
+            } else if self.download() && video_file.downloadable() {
+                storage_usage += video_file.file_meta.size;
+            }
+        }
 
         storage_usage
     }
@@ -756,6 +988,64 @@ impl Video {
         self.copy_link = enabled_option;
     }
 
+    /// Currently picks the audio file with the highest compatibility, if
+    /// there is any streamable audio file.
+    pub fn default_streamable_audio_file(&self) -> Option<&AudioFile> {
+        self.streamable_audio_files()
+            .find(|audio_file| {
+                audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
+                    audio_meta.codec.as_ref().is_some_and(|codec| codec == "mp3")
+                )
+            })
+            .or_else(|| {
+                self.audio_files.iter().find(|audio_file| {
+                    audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
+                        audio_meta.codec.as_ref().is_some_and(|codec| codec == "opus")
+                    )
+                })
+            })
+            .or_else(|| {
+                self.streamable_audio_files().next()
+            })
+    }
+
+    /// Applies a simple heuristic to determine the video to which the on-page
+    /// streaming player should default. Roughly speaking, something that is
+    /// not too high-res, not too low-res, but a nice balance between
+    /// resource consumption and visual fidelity.
+    pub fn default_streamable_video_file(&self) -> Option<&VideoFile> {
+        const IDEAL_FRAME_RATE: f32 = 27.0;
+        const IDEAL_HEIGHT: usize = 720;
+
+        struct Candidate<'a> {
+            frame_rate_distance: f32,
+            height_distance: u32,
+            video_file: &'a VideoFile
+        }
+
+        let mut candidate_option: Option<Candidate> = None;
+
+        for video_file in self.streamable_video_files() {
+            if let Some(video_meta) = &video_file.video_meta {
+                let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
+                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).unsigned_abs();
+
+                if candidate_option.is_none() || candidate_option.as_ref().is_some_and(|candidate| {
+                    frame_rate_distance <= candidate.frame_rate_distance &&
+                    height_distance <= candidate.height_distance
+                }) {
+                    candidate_option = Some(Candidate {
+                        frame_rate_distance,
+                        height_distance,
+                        video_file
+                    });
+                }
+            }
+        }
+
+        candidate_option.map(|candidate| candidate.video_file)
+    }
+
     /// Get the download setting resolved in the context of the site tree
     /// (= as set locally on the video or as inherited from an ancestor).
     pub fn download(&self) -> bool {
@@ -775,6 +1065,20 @@ impl Video {
     /// Set the download setting locally on the video.
     pub fn download_local_set(&mut self, enabled_option: Option<bool>) {
         self.download = enabled_option;
+    }
+
+    pub fn downloadable_audio_files(&self) -> impl Iterator<Item = &AudioFile> {
+        self.audio_files.iter().filter(|audio_file| audio_file.downloadable())
+    }
+
+    pub fn downloadable_video_files(&self) -> impl Iterator<Item = &VideoFile> {
+        self.video_files.iter().filter(|video_file| video_file.downloadable())
+    }
+
+    pub fn downloadable_video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {
+        let mut video_files: Vec<VideoFile> = self.downloadable_video_files().cloned().collect();
+        video_files.sort_unstable_by(|a, b| VideoFile::cmp_fidelity(a, b, direction));
+        video_files
     }
 
     /// Get the embedding setting resolved in the context of the site tree
@@ -803,6 +1107,20 @@ impl Video {
     /// build.
     pub fn embeds_requested(&self) -> bool {
         self.embedding() || self.platform_integration().content_embeds()
+    }
+
+    pub fn has_downloadable_media(&self) -> bool {
+        self.audio_files.iter().any(|audio_file| audio_file.downloadable()) ||
+        self.video_files.iter().any(|video_file| video_file.downloadable())
+    }
+
+    pub fn has_streamable_media(&self) -> bool {
+        self.audio_files.iter().any(|audio_file| audio_file.streamable()) ||
+        self.video_files.iter().any(|video_file| video_file.streamable())
+    }
+
+    pub fn has_streamable_video_files(&self) -> bool {
+        !self.video_files.iter().any(|video_file| video_file.streamable())
     }
 
     /// Return the video file with the maximum pixel count (horizontal ×
@@ -924,6 +1242,18 @@ impl Video {
         !self.offline && !self.unlisted
     }
 
+    /// Returns all published audio files for the audio, i.e. those on which
+    /// streaming and/or download is enabled
+    pub fn published_audio_files(&self) -> impl Iterator<Item = &AudioFile> {
+        self.audio_files.iter().filter(|audio_file| audio_file.published())
+    }
+
+    /// Returns all published video files for the video, i.e. those on which
+    /// streaming and/or download is enabled
+    pub fn published_video_files(&self) -> impl Iterator<Item = &VideoFile> {
+        self.video_files.iter().filter(|video_file| video_file.published())
+    }
+
     pub fn read_dir(
         context: &Context,
         hyper_dir: &HyperDir,
@@ -995,30 +1325,34 @@ impl Video {
             }
         }
 
-        for video_file_path in &hyper_dir.video_files {
-            let file_meta = FileMeta::new(video_file_path);
-            let file_name = video_file_path.file_name().unwrap().to_string_lossy().to_string();
-
-            let version_path = format!("{}{}", &video.site_path.normalized(), file_name);
-            let video_meta = context.cache.lock().unwrap().video_meta
+        for path in &hyper_dir.video_files {
+            if !video.video_files
                 .iter()
-                .find(|cached| cached.file_meta == file_meta && cached.path == version_path)
-                .map(|cached| cached.video_meta.clone());
+                .any(|video_file| *video_file.file_name == *path.file_name().unwrap()) {
+                let video_file = VideoFile::new(
+                    context,
+                    &path,
+                    true,
+                    &video
+                );
 
-            video.video_files.push(VideoFile::new(file_meta, file_name, video_meta));
+                video.video_files.push(video_file);
+            }
         }
 
-        for audio_file_path in &hyper_dir.audio_files {
-            let file_meta = FileMeta::new(audio_file_path);
-            let file_name = audio_file_path.file_name().unwrap().to_string_lossy().to_string();
-
-            let version_path = format!("{}{}", &video.site_path.normalized(), file_name);
-            let audio_meta = context.cache.lock().unwrap().audio_meta
+        for path in &hyper_dir.audio_files {
+            if !video.audio_files
                 .iter()
-                .find(|cached| cached.file_meta == file_meta && cached.path == version_path)
-                .map(|cached| cached.audio_meta.clone());
+                .any(|audio_file| *audio_file.file_name == *path.file_name().unwrap()) {
+                let audio_file = AudioFile::new(
+                    context,
+                    &path,
+                    true,
+                    &video
+                );
 
-            video.audio_files.push(AudioFile::new(audio_meta, file_meta, file_name));
+                video.audio_files.push(audio_file);
+            }
         }
 
         if !hyper_dir.errors.is_empty() {
@@ -1034,67 +1368,26 @@ impl Video {
         Arc::new(video)
     }
 
-    /// Currently picks the audio file with the highest compatibility, if
-    /// there is any audio file.
-    pub fn recommended_audio_file(&self) -> Option<&AudioFile> {
-        self.audio_files.iter().find(|audio_file| {
-                audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
-                    audio_meta.codec.as_ref().is_some_and(|codec| codec == "mp3")
-                )
-            })
-            .or_else(|| {
-                self.audio_files.iter().find(|audio_file| {
-                    audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
-                        audio_meta.codec.as_ref().is_some_and(|codec| codec == "opus")
-                    )
-                })
-            })
-            .or_else(|| self.audio_files.first())
-    }
-
-    /// Applies a simple heuristic to determine the "most recommended"
-    /// video file to watch. Roughly speaking, something that is not too
-    /// high-res, not too low-res, but a nice balance between resource
-    /// consumption and visual fidelity.
-    pub fn recommended_video_file(&self) -> Option<&VideoFile> {
-        const IDEAL_FRAME_RATE: f32 = 27.0;
-        const IDEAL_HEIGHT: usize = 720;
-
-        struct Candidate<'a> {
-            frame_rate_distance: f32,
-            height_distance: u32,
-            video_file: &'a VideoFile
-        }
-
-        let mut candidate_option: Option<Candidate> = None;
-
-        for video_file in &self.video_files {
-            if let Some(video_meta) = &video_file.video_meta {
-                let frame_rate_distance = (IDEAL_FRAME_RATE - video_meta.video_frame_rate).abs();
-                let height_distance = (IDEAL_HEIGHT as i32 - video_meta.height as i32).unsigned_abs();
-
-                if candidate_option.is_none() || candidate_option.as_ref().is_some_and(|candidate| {
-                    frame_rate_distance <= candidate.frame_rate_distance &&
-                    height_distance <= candidate.height_distance
-                }) {
-                    candidate_option = Some(Candidate {
-                        frame_rate_distance,
-                        height_distance,
-                        video_file
-                    });
-                }
-            }
-        }
-
-        candidate_option.map(|candidate| candidate.video_file)
-    }
-
     pub fn slug(&self) -> Option<&str> {
         self.site_path.last_component()
     }
 
     pub fn slug_unchecked(&self) -> &str {
         self.site_path.last_component_unchecked()
+    }
+
+    pub fn streamable_audio_files(&self) -> impl Iterator<Item = &AudioFile> {
+        self.audio_files.iter().filter(|audio_file| audio_file.streamable())
+    }
+
+    pub fn streamable_video_files(&self) -> impl Iterator<Item = &VideoFile> {
+        self.video_files.iter().filter(|video_file| video_file.streamable())
+    }
+
+    pub fn streamable_video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {
+        let mut video_files: Vec<VideoFile> = self.streamable_video_files().cloned().collect();
+        video_files.sort_unstable_by(|a, b| VideoFile::cmp_fidelity(a, b, direction));
+        video_files
     }
 
     pub fn title_or_slug_or_generic_label(&self, translations: &Translations) -> &str {
@@ -1239,6 +1532,22 @@ impl Video {
             eno.push_str(&format!("file = {}\n", poster.file_name));
         }
 
+        for audio_file in &self.audio_files {
+            if !audio_file.explicitly_defined { continue; }
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str("audio_file:\n");
+            eno.push_str(&format!("file = {}\n", audio_file.file_name));
+
+            if let Some(download) = audio_file.download {
+                eno.push_str(&format!("download = {}\n", if download { "enabled" } else { "disabled" }));
+            }
+
+            if let Some(streaming) = audio_file.streaming {
+                eno.push_str(&format!("streaming = {}\n", if streaming { "enabled" } else { "disabled" }));
+            }
+        }
+
         for subtitle_file in &self.subtitles {
             if !subtitle_file.explicitly_defined { continue; }
             if !eno.is_empty() { eno.push('\n'); }
@@ -1249,6 +1558,22 @@ impl Video {
 
             if let Some(language) = &subtitle_file.language {
                 eno.push_str(&format!("language = {}\n", language));
+            }
+        }
+
+        for video_file in &self.video_files {
+            if !video_file.explicitly_defined { continue; }
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str("video_file:\n");
+            eno.push_str(&format!("file = {}\n", video_file.file_name));
+
+            if let Some(download) = video_file.download {
+                eno.push_str(&format!("download = {}\n", if download { "enabled" } else { "disabled" }));
+            }
+
+            if let Some(streaming) = video_file.streaming {
+                eno.push_str(&format!("streaming = {}\n", if streaming { "enabled" } else { "disabled" }));
             }
         }
 

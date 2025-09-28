@@ -64,11 +64,19 @@ pub fn embed_codes_html(
 
     let embed_url = site.absolute_url_dir_unchecked("embed/", &video.site_path);
 
-    let recommended_video_file = video.recommended_video_file().unwrap();
-    let aspect_ratio = recommended_video_file.video_meta.as_ref().unwrap().aspect_ratio();
+    let aspect_ratio = match video.default_streamable_video_file() {
+        Some(video_file) => {
+            video_file.video_meta.as_ref().unwrap().aspect_ratio()
+        }
+        None => site.poster_aspect.numeric()
+    };
 
     let t_video_player_widget_for_xxx = translations.video_player_widget_for_xxx(&title);
-    let (embed_copy_code, embed_display_code) = embed_code(aspect_ratio, &embed_url, &t_video_player_widget_for_xxx);
+    let (embed_copy_code, embed_display_code) = embed_code(
+        aspect_ratio,
+        &embed_url,
+        &t_video_player_widget_for_xxx
+    );
 
     let t_copy = translations.copy;
     let copy_code_button = copy_button("content", &embed_copy_code, t_copy);

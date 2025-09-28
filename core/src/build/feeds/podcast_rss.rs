@@ -38,22 +38,12 @@ pub fn item_extensions(
 ) -> String {
     let mut extensions = Vec::new();
 
-    // Podcast RSS items without media/enclosure are probably not
-    // standard-compliant and we should anyhow rather filter them out of the
-    // feed entirely if we can not cleanly represent a "video with the actual
-    // video content yet to come". For now we do it like this just to handle
-    // these edge cases in a crash-free manner.
-    if !video.video_files.is_empty() {
+    if let Some(video_file) = video.default_streamable_video_file() {
         // <enclosure …>
 
-        let video_file = video.recommended_video_file().unwrap();
-
         let url = site.absolute_url_file_unchecked(&video_file.file_name, &video.site_path);
-
         let mime_type = video_file.mime_type();
-
         let filesize_bytes = video_file.file_meta.size;
-
         let enclosure = format!(r#"<enclosure length="{filesize_bytes}" type="{mime_type}" url="{url}"/>"#);
 
         extensions.push(enclosure);
@@ -62,9 +52,30 @@ pub fn item_extensions(
 
         let duration_seconds = video_file.video_meta.as_ref().unwrap().duration;
         let itunes_duration = format!(r#"<itunes:duration>{duration_seconds}</itunes:duration>"#);
-        extensions.push(itunes_duration);
-    }
 
+        extensions.push(itunes_duration);
+    } else if let Some(audio_file) = video.default_streamable_audio_file() {
+        // <enclosure …>
+
+        let url = site.absolute_url_file_unchecked(&audio_file.file_name, &video.site_path);
+        let mime_type = audio_file.mime_type();
+        let filesize_bytes = audio_file.file_meta.size;
+        let enclosure = format!(r#"<enclosure length="{filesize_bytes}" type="{mime_type}" url="{url}"/>"#);
+
+        extensions.push(enclosure);
+
+        // <itunes:duration …>
+
+        let duration_seconds = audio_file.audio_meta.as_ref().unwrap().duration;
+        let itunes_duration = format!(r#"<itunes:duration>{duration_seconds}</itunes:duration>"#);
+
+        extensions.push(itunes_duration);
+    } else {
+        // TODO: Podcast RSS items without media/enclosure are probably not
+        // standard-compliant and we should anyhow rather filter them out of the
+        // feed entirely if we can not cleanly represent a "video with the actual
+        // video content yet to come"?
+    }
 
     // <itunes:image …>
 

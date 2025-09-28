@@ -97,7 +97,7 @@ pub fn edit_poster_page(
             let thumbnail_aspect_numeric = site.poster_aspect.numeric();
             let thumbnail_aspect_representation = site.poster_aspect.representation();
 
-            let video_aspect_numeric = video.recommended_video_file()
+            let video_aspect_numeric = video.highest_quality_video_file()
                 .and_then(|video_file| video_file.video_meta.as_ref())
                 .map(|video_meta| video_meta.aspect_ratio())
                 .unwrap_or(thumbnail_aspect_numeric);
