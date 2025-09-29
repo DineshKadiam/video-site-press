@@ -364,6 +364,7 @@ pub fn encode_video(
             command.arg("-crf").arg(crf.to_string());
 
             command.arg("-movflags").arg("+faststart");
+            command.arg("-pix_fmt").arg("yuv420p");
         }
         Codec::Hevc => {
             // See https://trac.ffmpeg.org/wiki/Encode/H.265
