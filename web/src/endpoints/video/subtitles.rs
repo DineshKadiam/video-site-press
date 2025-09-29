@@ -38,7 +38,7 @@ pub async fn subtitles(
     let upload_url = routes::video_upload_subtitles(&video);
     let subtitles_upload_button = upload_widget(&upload_url, translations.upload_new_subtitles);
 
-    let subtitles_list = video.subtitles
+    let subtitles_list = video.subtitle_files
         .iter()
         .map(|subtitle_file| {
             let file_name = html_escape_outside_attribute(&subtitle_file.file_name);

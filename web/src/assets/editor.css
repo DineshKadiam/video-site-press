@@ -802,6 +802,13 @@ svg { fill: currentColor; }
     padding: .3rem;
 }
 .updates { color: red; }
+.usage {
+    background: var(--bg-3);
+    color: var(--fg-1);
+    cursor: pointer;
+    font-size: .9rem;
+    margin-top: .5rem;
+}
 .versions {
     list-style: none;
     padding-left: 0;

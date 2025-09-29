@@ -24,6 +24,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     Link,
+    MediaUsage,
     PlatformIntegration,
     PosterFile,
     Site,
@@ -38,6 +39,7 @@ use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::checked_remove_dir_all;
 
 const VIDEO_OPTIONS: &[&str] = &[
+    "audio_file",
     "copy_link",
     "description",
     "download",
@@ -48,10 +50,11 @@ const VIDEO_OPTIONS: &[&str] = &[
     "poster",
     "release_date",
     "sort_number",
-    "subtitles",
+    "subtitle_file",
     "synopsis",
     "title",
-    "unlisted"
+    "unlisted",
+    "video_file"
 ];
 
 #[derive(Clone, Debug)]
@@ -80,7 +83,7 @@ pub struct Video {
     pub release_date: Option<NaiveDate>,
     pub site_path: SitePath,
     pub sort_number: Option<i32>,
-    pub subtitles: Vec<SubtitleFile>,
+    pub subtitle_files: Vec<SubtitleFile>,
     pub synopsis: Option<String>,
     pub title: Option<String>,
     /// Unlisted videos are not linked from the site anywhere, one needs to
@@ -118,29 +121,11 @@ impl Video {
                 "audio_file" => 'audio_file: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(attributes) = field.attributes() {
-                            let mut download = None;
                             let mut path = None;
-                            let mut streaming = None;
+                            let mut usage = MediaUsage::Unrestricted;
 
                             for attribute in attributes {
                                 match attribute.key() {
-                                    "download" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "disabled" => {
-                                                    download = Some(false);
-                                                }
-                                                "enabled" => {
-                                                    download = Some(true);
-                                                }
-                                                other => {
-                                                    let message = format!("The download attribute only supports the values 'enabled' and 'disabled', but {other} was found");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
                                     "file" => {
                                         if let Some(value) = attribute.value() {
                                             let absolute_path = manifest_path.parent().unwrap().join(value);
@@ -161,17 +146,20 @@ impl Video {
                                             }
                                         }
                                     }
-                                    "streaming" => {
+                                    "usage" => {
                                         if let Some(value) = attribute.value() {
                                             match value {
-                                                "disabled" => {
-                                                    streaming = Some(false);
+                                                "download" => {
+                                                    usage = MediaUsage::Download;
                                                 }
-                                                "enabled" => {
-                                                    streaming = Some(true);
+                                                "offline" => {
+                                                    usage = MediaUsage::Offline;
+                                                }
+                                                "streaming" => {
+                                                    usage = MediaUsage::Streaming;
                                                 }
                                                 other => {
-                                                    let message = format!("The streaming attribute only supports the values 'enabled' and 'disabled', but {other} was found");
+                                                    let message = format!("The usage option only supports the values 'download', 'streaming' and 'offline', but {other} was found");
                                                     let error = attribute_error(attribute, manifest_path, &message);
                                                     self.manifest_errors.push(error);
                                                 }
@@ -179,7 +167,7 @@ impl Video {
                                         }
                                     }
                                     other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'download', 'file' and 'streaming'");
+                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file' and 'usage'");
                                         let error = attribute_error(attribute, manifest_path, &message);
                                         self.manifest_errors.push(error);
                                     }
@@ -189,11 +177,15 @@ impl Video {
                             if let Some(path) = path {
                                 let audio_file = AudioFile::new_from_manifest(
                                     context,
-                                    download,
                                     &path,
-                                    streaming,
+                                    usage,
                                     self
                                 );
+
+                                // TODO: Theoretically an audio file could be
+                                // defined twice in the manifest, effectively
+                                // duplicating it in the site tree - catch
+                                // this (same for video file)
                                 self.audio_files.push(audio_file);
                             } else {
                                 let message = indoc!("
@@ -214,9 +206,8 @@ impl Video {
                         audio_file must be provided as a field with attributes, e.g.:
 
                         audio_file:
-                        download = enabled
                         file = example.mp3
-                        streaming = disabled
+                        usage = download
                     ");
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
@@ -559,6 +550,7 @@ impl Video {
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
+                "subtitle_file" |
                 "subtitles" => 'subtitles: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(attributes) = field.attributes() {
@@ -625,9 +617,14 @@ impl Video {
 
                             if let Some(path) = path {
                                 let subtitles = SubtitleFile::from_manifest(label, language, path);
-                                self.subtitles.push(subtitles);
+                                self.subtitle_files.push(subtitles);
                             } else {
-                                let message = "The subtitles option must supply a file attribute at least, e.g.:\n\nsubtitles:\nfile = en.srt";
+                                let message = indoc!("
+                                    The subtitle_file option must supply a file attribute at least, e.g.:
+
+                                    subtitle_file:
+                                    file = en.srt
+                                ");
                                 let error = element_error(element, manifest_path, message);
                                 self.manifest_errors.push(error);
                             }
@@ -636,7 +633,14 @@ impl Video {
                         }
                     }
 
-                    let message = "subtitles must be provided as a field with attributes, e.g.:\n\nsubtitles:\nfile = en.srt\nlabel = English (closed captions)\nlanguage = en";
+                    let message = indoc!("
+                        subtitle_file must be provided as a field with attributes, e.g.:
+
+                        subtitle_file:
+                        file = en.srt
+                        label = English (closed captions)
+                        language = en
+                    ");
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
                 }
@@ -688,29 +692,11 @@ impl Video {
                 "video_file" => 'video_file: {
                     if let Ok(field) = element.as_field() {
                         if let Ok(attributes) = field.attributes() {
-                            let mut download = None;
                             let mut path = None;
-                            let mut streaming = None;
+                            let mut usage = MediaUsage::Unrestricted;
 
                             for attribute in attributes {
                                 match attribute.key() {
-                                    "download" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "disabled" => {
-                                                    download = Some(false);
-                                                }
-                                                "enabled" => {
-                                                    download = Some(true);
-                                                }
-                                                other => {
-                                                    let message = format!("The download attribute only supports the values 'enabled' and 'disabled', but {other} was found");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
                                     "file" => {
                                         if let Some(value) = attribute.value() {
                                             let absolute_path = manifest_path.parent().unwrap().join(value);
@@ -731,17 +717,20 @@ impl Video {
                                             }
                                         }
                                     }
-                                    "streaming" => {
+                                    "usage" => {
                                         if let Some(value) = attribute.value() {
                                             match value {
-                                                "disabled" => {
-                                                    streaming = Some(false);
+                                                "download" => {
+                                                    usage = MediaUsage::Download;
                                                 }
-                                                "enabled" => {
-                                                    streaming = Some(true);
+                                                "offline" => {
+                                                    usage = MediaUsage::Offline;
+                                                }
+                                                "streaming" => {
+                                                    usage = MediaUsage::Streaming;
                                                 }
                                                 other => {
-                                                    let message = format!("The streaming attribute only supports the values 'enabled' and 'disabled', but {other} was found");
+                                                    let message = format!("The usage option only supports the values 'download', 'streaming' and 'offline', but {other} was found");
                                                     let error = attribute_error(attribute, manifest_path, &message);
                                                     self.manifest_errors.push(error);
                                                 }
@@ -749,7 +738,7 @@ impl Video {
                                         }
                                     }
                                     other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'download', 'file' and 'streaming'");
+                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file' and 'usage'");
                                         let error = attribute_error(attribute, manifest_path, &message);
                                         self.manifest_errors.push(error);
                                     }
@@ -759,11 +748,15 @@ impl Video {
                             if let Some(path) = path {
                                 let video_file = VideoFile::new_from_manifest(
                                     context,
-                                    download,
                                     &path,
-                                    streaming,
+                                    usage,
                                     self
                                 );
+
+                                // TODO: Theoretically a video file could be
+                                // defined twice in the manifest, effectively
+                                // duplicating it in the site tree - catch
+                                // this (same for audio file)
                                 self.video_files.push(video_file);
                             } else {
                                 let message = indoc!("
@@ -784,9 +777,8 @@ impl Video {
                         video_file must be provided as a field with attributes, e.g.:
 
                         video_file:
-                        download = enabled
                         file = example.mp4
-                        streaming = disabled
+                        usage = download
                     ");
                     let error = element_error(element, manifest_path, message);
                     self.manifest_errors.push(error);
@@ -825,9 +817,9 @@ impl Video {
         }
 
         for video_file in self.published_video_files() {
-            if video_file.streamable() {
+            if !video_file.streaming_restricted() {
                 storage_usage += video_file.file_meta.size;
-            } else if self.download() && video_file.downloadable() {
+            } else if self.download() && !video_file.download_restricted() {
                 storage_usage += video_file.file_meta.size;
             }
         }
@@ -1046,6 +1038,7 @@ impl Video {
         candidate_option.map(|candidate| candidate.video_file)
     }
 
+    // TODO: Rename to download_enabled(_resolved) or such, currently a bit unclear
     /// Get the download setting resolved in the context of the site tree
     /// (= as set locally on the video or as inherited from an ancestor).
     pub fn download(&self) -> bool {
@@ -1068,11 +1061,11 @@ impl Video {
     }
 
     pub fn downloadable_audio_files(&self) -> impl Iterator<Item = &AudioFile> {
-        self.audio_files.iter().filter(|audio_file| audio_file.downloadable())
+        self.audio_files.iter().filter(|audio_file| !audio_file.download_restricted())
     }
 
     pub fn downloadable_video_files(&self) -> impl Iterator<Item = &VideoFile> {
-        self.video_files.iter().filter(|video_file| video_file.downloadable())
+        self.video_files.iter().filter(|video_file| !video_file.download_restricted())
     }
 
     pub fn downloadable_video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {
@@ -1110,17 +1103,17 @@ impl Video {
     }
 
     pub fn has_downloadable_media(&self) -> bool {
-        self.audio_files.iter().any(|audio_file| audio_file.downloadable()) ||
-        self.video_files.iter().any(|video_file| video_file.downloadable())
+        self.audio_files.iter().any(|audio_file| !audio_file.download_restricted()) ||
+        self.video_files.iter().any(|video_file| !video_file.download_restricted())
     }
 
     pub fn has_streamable_media(&self) -> bool {
-        self.audio_files.iter().any(|audio_file| audio_file.streamable()) ||
-        self.video_files.iter().any(|video_file| video_file.streamable())
+        self.audio_files.iter().any(|audio_file| !audio_file.streaming_restricted()) ||
+        self.video_files.iter().any(|video_file| !video_file.streaming_restricted())
     }
 
     pub fn has_streamable_video_files(&self) -> bool {
-        !self.video_files.iter().any(|video_file| video_file.streamable())
+        self.video_files.iter().any(|video_file| !video_file.streaming_restricted())
     }
 
     /// Return the video file with the maximum pixel count (horizontal ×
@@ -1179,7 +1172,7 @@ impl Video {
             release_date: None,
             site_path,
             sort_number: None,
-            subtitles: Vec::new(),
+            subtitle_files: Vec::new(),
             synopsis: None,
             title: None,
             unlisted: false,
@@ -1242,16 +1235,16 @@ impl Video {
         !self.offline && !self.unlisted
     }
 
-    /// Returns all published audio files for the audio, i.e. those on which
-    /// streaming and/or download is enabled
+    /// Returns all published audio files for the video, i.e. those not
+    /// restricted to offline usage only
     pub fn published_audio_files(&self) -> impl Iterator<Item = &AudioFile> {
-        self.audio_files.iter().filter(|audio_file| audio_file.published())
+        self.audio_files.iter().filter(|audio_file| !audio_file.offline())
     }
 
-    /// Returns all published video files for the video, i.e. those on which
-    /// streaming and/or download is enabled
+    /// Returns all published video files for the video, i.e. those not
+    /// restricted to offline usage only
     pub fn published_video_files(&self) -> impl Iterator<Item = &VideoFile> {
-        self.video_files.iter().filter(|video_file| video_file.published())
+        self.video_files.iter().filter(|video_file| !video_file.offline())
     }
 
     pub fn read_dir(
@@ -1318,10 +1311,10 @@ impl Video {
         }
 
         for path in &hyper_dir.subtitle_files {
-            if !video.subtitles
+            if !video.subtitle_files
                 .iter()
                 .any(|subtitle_file| *subtitle_file.file_name == *path.file_name().unwrap()) {
-                video.subtitles.push(SubtitleFile::from_path(path));
+                video.subtitle_files.push(SubtitleFile::from_path(path));
             }
         }
 
@@ -1377,11 +1370,11 @@ impl Video {
     }
 
     pub fn streamable_audio_files(&self) -> impl Iterator<Item = &AudioFile> {
-        self.audio_files.iter().filter(|audio_file| audio_file.streamable())
+        self.audio_files.iter().filter(|audio_file| !audio_file.streaming_restricted())
     }
 
     pub fn streamable_video_files(&self) -> impl Iterator<Item = &VideoFile> {
-        self.video_files.iter().filter(|video_file| video_file.streamable())
+        self.video_files.iter().filter(|video_file| !video_file.streaming_restricted())
     }
 
     pub fn streamable_video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {
@@ -1452,7 +1445,7 @@ impl Video {
     }
 
     pub fn valid_subtitles(&self) -> impl Iterator<Item = &SubtitleFile> {
-        self.subtitles.iter().filter(|subtitle_file| subtitle_file.subtitles.is_ok())
+        self.subtitle_files.iter().filter(|subtitle_file| subtitle_file.subtitles.is_ok())
     }
 
     pub fn video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {
@@ -1533,26 +1526,26 @@ impl Video {
         }
 
         for audio_file in &self.audio_files {
-            if !audio_file.explicitly_defined { continue; }
+            if audio_file.skip_manifest_entry() { continue; }
+
             if !eno.is_empty() { eno.push('\n'); }
 
             eno.push_str("audio_file:\n");
             eno.push_str(&format!("file = {}\n", audio_file.file_name));
 
-            if let Some(download) = audio_file.download {
-                eno.push_str(&format!("download = {}\n", if download { "enabled" } else { "disabled" }));
-            }
-
-            if let Some(streaming) = audio_file.streaming {
-                eno.push_str(&format!("streaming = {}\n", if streaming { "enabled" } else { "disabled" }));
+            match audio_file.usage {
+                MediaUsage::Download => eno.push_str("usage = download\n"),
+                MediaUsage::Offline => eno.push_str("usage = offline\n"),
+                MediaUsage::Streaming => eno.push_str("usage = streaming\n"),
+                MediaUsage::Unrestricted => ()
             }
         }
 
-        for subtitle_file in &self.subtitles {
+        for subtitle_file in &self.subtitle_files {
             if !subtitle_file.explicitly_defined { continue; }
             if !eno.is_empty() { eno.push('\n'); }
 
-            eno.push_str("subtitles:\n");
+            eno.push_str("subtitle_file:\n");
             eno.push_str(&format!("file = {}\n", subtitle_file.file_name));
             eno.push_str(&format!("label = {}\n", subtitle_file.label));
 
@@ -1562,18 +1555,18 @@ impl Video {
         }
 
         for video_file in &self.video_files {
-            if !video_file.explicitly_defined { continue; }
+            if video_file.skip_manifest_entry() { continue; }
+
             if !eno.is_empty() { eno.push('\n'); }
 
             eno.push_str("video_file:\n");
             eno.push_str(&format!("file = {}\n", video_file.file_name));
 
-            if let Some(download) = video_file.download {
-                eno.push_str(&format!("download = {}\n", if download { "enabled" } else { "disabled" }));
-            }
-
-            if let Some(streaming) = video_file.streaming {
-                eno.push_str(&format!("streaming = {}\n", if streaming { "enabled" } else { "disabled" }));
+            match video_file.usage {
+                MediaUsage::Download => eno.push_str("usage = download\n"),
+                MediaUsage::Offline => eno.push_str("usage = offline\n"),
+                MediaUsage::Streaming => eno.push_str("usage = streaming\n"),
+                MediaUsage::Unrestricted => ()
             }
         }
 

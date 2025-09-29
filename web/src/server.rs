@@ -202,10 +202,12 @@ pub fn start(
                     .route("/video/poster/{site_path:.*}", get().to(video::edit_poster))
                     .route("/video/stream/{site_path:.*}", get().to(video::stream))
                     .route("/video/subtitles/{site_path:.*}", get().to(video::subtitles))
+                    .route("/video/update-audio-file-usage/{site_path:.*}", post().to(video::update_audio_file_usage))
                     .route("/video/update-poster/{site_path:.*}", post().to(video::update_poster))
+                    .route("/video/update-video-file-usage/{site_path:.*}", post().to(video::update_video_file_usage))
+                    .route("/video/upload-audio-video/{site_path:.*}", post().to(video::upload_audio_video))
                     .route("/video/upload-poster/{site_path:.*}", post().to(video::upload_poster))
                     .route("/video/upload-subtitles/{site_path:.*}", post().to(video::upload_subtitles))
-                    .route("/video/upload-audio-video/{site_path:.*}", post().to(video::upload_audio_video))
             })
             .bind((ip, port))
         };

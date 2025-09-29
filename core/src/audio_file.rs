@@ -9,6 +9,7 @@ use crate::{
     AudioMeta,
     Context,
     FileMeta,
+    MediaUsage,
     Video
 };
 
@@ -18,11 +19,10 @@ use crate::{
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct AudioFile {
     pub audio_meta: Option<AudioMeta>,
-    pub download: Option<bool>,
     pub explicitly_defined: bool,
     pub file_meta: FileMeta,
     pub file_name: String,
-    pub streaming: Option<bool>
+    pub usage: MediaUsage
 }
 
 impl AudioFile {
@@ -41,9 +41,13 @@ impl AudioFile {
         self.audio_meta.as_ref().unwrap()
     }
 
-    pub fn downloadable(&self) -> bool {
-        self.download.is_none() ||
-        self.download.is_some_and(|enabled| enabled)
+    pub fn download_restricted(&self) -> bool {
+        match self.usage {
+            MediaUsage::Download |
+            MediaUsage::Unrestricted => false,
+            MediaUsage::Offline |
+            MediaUsage::Streaming => true
+        }
     }
 
     pub fn mime_type(&self) -> &'static str {
@@ -87,19 +91,17 @@ impl AudioFile {
 
         AudioFile {
             audio_meta,
-            download: None,
             explicitly_defined: false,
             file_meta,
             file_name,
-            streaming: None
+            usage: MediaUsage::Unrestricted
         }
     }
 
     pub fn new_from_manifest(
         context: &Context,
-        download: Option<bool>,
         path: &Path,
-        streaming: Option<bool>,
+        usage: MediaUsage,
         video: &Video
     ) -> AudioFile {
         let file_meta = FileMeta::new(path);
@@ -112,24 +114,42 @@ impl AudioFile {
             .map(|cached| cached.audio_meta.clone());
 
         AudioFile {
-            download,
+            audio_meta,
             explicitly_defined: true,
             file_meta,
             file_name,
-            streaming,
-            audio_meta
+            usage
         }
     }
 
-    /// An audio file is considered "published" if streaming and/or download is
-    /// enabled (and by default both are)
-    pub fn published(&self) -> bool {
-        self.downloadable() || self.streamable()
+    /// An audio file is considered offline if its usage has been restricted
+    /// to offline
+    pub fn offline(&self) -> bool {
+        match self.usage {
+            MediaUsage::Download |
+            MediaUsage::Streaming |
+            MediaUsage::Unrestricted => false,
+            MediaUsage::Offline => true
+        }
     }
 
-    pub fn streamable(&self) -> bool {
-        self.streaming.is_none() ||
-        self.streaming.is_some_and(|enabled| enabled)
+    /// Audio files are automatically registered and associated with its
+    /// video, and usually do not need to be mentioned in the manifest
+    /// (then this method returns true). However, if they were already
+    /// explicitly defined in the manifest when we initialized the [Video], or
+    /// if some non-default configuration value was set on the audio file, we
+    /// cannot skip the manifest entry (then this method returns false).
+    pub fn skip_manifest_entry(&self) -> bool {
+        !self.explicitly_defined && self.usage == MediaUsage::Unrestricted
+    }
+
+    pub fn streaming_restricted(&self) -> bool {
+        match self.usage {
+            MediaUsage::Download |
+            MediaUsage::Offline => true,
+            MediaUsage::Streaming |
+            MediaUsage::Unrestricted => false
+        }
     }
 
     pub fn supported_extension(filename: &str) -> bool {

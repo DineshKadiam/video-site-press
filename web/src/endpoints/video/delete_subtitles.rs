@@ -29,10 +29,10 @@ pub async fn delete_subtitles(
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
     let mutation = |video_mut: &mut Video| {
-        if let Some(subtitles) = video_mut.subtitles
+        if let Some(subtitles) = video_mut.subtitle_files
             .iter()
             .position(|subtitles| subtitles.file_name == form.file_name)
-            .map(|index| video_mut.subtitles.remove(index)) {
+            .map(|index| video_mut.subtitle_files.remove(index)) {
             let subtitles_path = context.site_dir
                 .join(site_path.filesystem_relative())
                 .join(&subtitles.file_name);

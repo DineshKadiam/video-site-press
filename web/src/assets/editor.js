@@ -442,6 +442,12 @@ document.addEventListener('change', event => {
     }
 });
 
+for (const usage of document.querySelectorAll('.usage')) {
+    usage.addEventListener('change', () => {
+        usage.form.submit();
+    });
+}
+
 document.addEventListener('click', event => {
     const { target } = event;
 

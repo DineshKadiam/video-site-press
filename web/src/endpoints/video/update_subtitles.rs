@@ -86,7 +86,7 @@ pub async fn update_subtitles(
         )
     } else {
         let mutation = |video_mut: &mut Video| {
-            match video_mut.subtitles
+            match video_mut.subtitle_files
                 .iter_mut()
                 .find(|subtitle_file| subtitle_file.file_name == *file_name) {
                 Some(subtitle_file) => {

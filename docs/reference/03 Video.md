@@ -16,18 +16,19 @@ my_video/                     <--- Video directory
 The name of the directory (which may only contain alphanumeric characters, `-`
 and `_`) determines the permalink for the video, that is, the URL/web address
 under which the video will appear publicy on the web if you publish your site
-online.
+online (e.g. a local directory name `my_video` could make the video available under
+the hypothetical web adress `https://example.com/my_video/`).
 
-More widely speaking, a *video* in Hyper 8 is a single video-based media
-artifact that can be (re)presented through different video (but also audio)
-files to cover a range of qualities/formats. It can also be augmented with
-subtitle files and a *poster* image that is shown in thumbnails and before
-the video is played back. In fact, if there is no *poster* image, Hyper 8
-will compute one automatically (by taking a frame from the video), always.
+More widely speaking, a *video* in Hyper 8 can be video and/or audio, and can
+be (re)presented through multiple video and audio files to cover a range of
+qualities/formats. It can also be augmented with subtitle files and
+a *poster* image that is shown in thumbnails and before the video is played
+back. If there is no *poster* image, Hyper 8 will always compute one
+automatically (by taking a frame from the video).
 
 ## Video files
 
-Currently the extensions `m4v`, `mp4`, `mkv`, `mov`, `webm` are supported.
+Currently the extensions `m4v`, `mp4`, `mkv`, `mov` and `webm` are supported.
 
 ## Subtitle files
 
@@ -37,14 +38,21 @@ By naming your subtitle files with a language code (in BCP 47 format), Hyper 8 c
 automatically determine its language, for instance `en.srt` would indicate english
 subtitles while `fr.vtt` would indicate french subtitles.
 
-## The video.eno manifest
+## Audio files
 
-> All options at a glance: [copy_link](#copy_link), [description](#description), [download](#download), [embedding](#embedding), [link](#link), [offline](#offline), [platform_integration](#platform_integration), [poster](#poster), [release_date](#release_date), [sort_number](#sort_number), [subtitles](#subtitles), [title](#title), [unlisted](#unlisted)
+Currently the extensions `aac`, `aiff`, `alac`, `flac`, `mp3`, `ogg`, `opus`,
+and `wav` are supported. Note that the streaming player will only present an
+automatically chosen single "Audio" option to your viewers, but viewers can
+access all audio formats through the downloads (when downloads are enabled).
+
+## The video.eno manifest
 
 Manifest for tagging and configuring a video, which can be placed inside the
 video directory. A video directory can be identified as a video directory
 also by just placing a `video.eno` file inside it, regardless of whether
 there is even already a video file in it.
+
+An example manifest:
 
 ```eno
 poster:
@@ -68,21 +76,86 @@ label = My Social Media
 url = https://social.example.com
 verification = rel-me
 
-subtitles:
+audio_file:
+file = compressed.mp3
+usage = streaming
+
+audio_file:
+file = lossless.flac
+usage = download
+
+subtitle_file:
 file = en.srt
 label = English
 language = en
 
-subtitles:
+subtitle_file:
 file = fr.srt
 label = Français
 language = fr
+
+video_file:
+file = highly_compressed_720p.mp4
+usage = streaming
+
+video_file:
+file = high_quality_1080p.mp4
+usage = download
+
+video_file:
+file = original.mp4
+usage = offline
 
 -- description
 An unsettling truth comes to light as three old friends
 reunite at an unexpected gathering.
 -- description
 ```
+
+Jump links for all options:
+
+- [audio_file](#audio_file)
+- [copy_link](#copy_link)
+- [description](#description)
+- [download](#download)
+- [embedding](#embedding)
+- [link](#link)
+- [offline](#offline)
+- [platform_integration](#platform_integration)
+- [poster](#poster)
+- [release_date](#release_date)
+- [sort_number](#sort_number)
+- [subtitle_file](#subtitle_file)
+- [title](#title)
+- [unlisted](#unlisted)
+- [video_file](#video_file)
+
+## <a name="audio_file"></a> `audio_file`
+
+Audio can currently be supplied through `aac`, `aiff`, `alac`, `flac`, `mp3`,
+`ogg`, `opus`, and `wav` files - simply putting such a file into a video
+directory already includes it as separate audio option in the video player on
+your site.
+
+To manually set the audio file to be restricted to streaming, download, or offline usage
+use the `audio_file` option like in these examples:
+
+```eno
+audio_file:
+file = compressed.mp3
+usage = streaming
+
+audio_file:
+file = lossless.flac
+usage = download
+
+audio_file:
+file = original.wav
+usage = offline
+```
+
+To remove usage restrictions for an audio file simply remove the entire
+`audio_file: ...` option (or just the `usage = ...` line).
 
 ## <a name="copy_link"></a> `copy_link`
 
@@ -232,7 +305,7 @@ playlist manifest can be used to modify this behavior - e.g. to use
 descending order or to sort by release date even if `sort_number` is present
 on videos, to sort alphabetically by title, etc.
 
-## <a name="subtitles"></a> `subtitles`
+## <a name="subtitle_file"></a> `subtitle_file`
 
 Subtitles can currently be supplied as `.srt` or `.vtt` files - simply putting
 such files into a video directory already includes them in the video player
@@ -240,10 +313,10 @@ on your site. If the filename is a valid language code¹ (e.g. `en.srt` or
 `de-at.srt`), its language info and label will be auto-inferred.
 
 To manually annotate the display label and language info for a subtitle file,
-use the `subtitles` option like this:
+use the `subtitle_file` option like this:
 
 ```eno
-subtitles:
+subtitle_file:
 file = en_0.srt
 label = English (closed captions)
 language = en
@@ -268,3 +341,29 @@ link to them, will know of their existence.
 ```eno
 unlisted
 ```
+
+## <a name="video_file"></a> `video_file`
+
+Videos can currently be supplied through `.m4v`, `.mp4`, `.mkv` and `.mov` files - simply putting
+such files into a video directory already includes them in the video player
+on your site.
+
+To manually set the video file to be restricted to streaming, download, or offline usage
+use the `video_file` option like in these examples:
+
+```eno
+video_file:
+file = highly_compressed_720p.mp4
+usage = streaming
+
+video_file:
+file = high_quality_1080p.mp4
+usage = download
+
+video_file:
+file = original.mp4
+usage = offline
+```
+
+To remove usage restrictions for a video file simply remove the entire
+`video_file: ...` option (or just the `usage = ...` line).

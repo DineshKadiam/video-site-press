@@ -14,7 +14,7 @@ use hyper8_core::{
     SitePath,
     Video
 };
-use hyper8_core::BrowserSupport;
+use hyper8_core::{BrowserSupport, MediaUsage};
 use hyper8_core::util::{precise_duration, human_size};
 use hyper8_translations::Translations;
 
@@ -312,12 +312,31 @@ pub fn media_page(
                     </form>
                 "#);
 
+                let usage_options = MediaUsage::variants(translations)
+                    .iter()
+                    .map(|(label, usage)| {
+                        let key = usage.key();
+                        let selected = if *usage == audio_file.usage { "selected" } else { "" };
+
+                        format!(r#"<option {selected} value="{key}">{label}</option>"#)
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+
+                let update_usage_url = routes::video_update_audio_file_usage(video);
+
                 formatdoc!(r#"
                     <li>
                         <div class="actionable_item attachment {attachment_type}">
                             <div>
-                                <div>{extension} {size} / {file_name}</div>
-                                <small>{duration} {file_name}</small>
+                                <div>{extension} {size}</div>
+                                <small>{file_name} ({duration})</small>
+                                <form action="{update_usage_url}" method="post">
+                                    <input name="file_name" type="hidden" value="{file_name}">
+                                    <select class="usage" name="usage">
+                                        {usage_options}
+                                    </select>
+                                </form>
                             </div>
                             <div>
                                 {delete_form}
@@ -404,6 +423,12 @@ pub fn media_page(
                         let size = human_size(video_file.file_meta.size);
                         let width = video_meta.width;
 
+                        let frame_rate_formatted = if frame_rate.fract() > f32::EPSILON {
+                            format!("{frame_rate:.3}")
+                        } else {
+                            format!("{frame_rate}")
+                        };
+
                         let reasons;
                         let support;
 
@@ -429,11 +454,11 @@ pub fn media_page(
                             }
                         }
 
-                        label = format!("{height}p {frame_rate}fps {size}");
+                        label = format!("{height}p {size}");
                         r_browser_support = format!(
                             r#"{support} <span class="reasons" title="{reasons}">🛈</span>"#
                         );
-                        r_video_meta = format!("{width}×{height} {duration}");
+                        r_video_meta = format!("{width}×{height}, {frame_rate_formatted}fps, {duration}");
                     }
                     None => {
                         attachment_type = "attached_info";
@@ -461,12 +486,31 @@ pub fn media_page(
                     </form>
                 "#);
 
+                let usage_options = MediaUsage::variants(translations)
+                    .iter()
+                    .map(|(label, usage)| {
+                        let key = usage.key();
+                        let selected = if *usage == video_file.usage { "selected" } else { "" };
+
+                        format!(r#"<option {selected} value="{key}">{label}</option>"#)
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+
+                let update_usage_url = routes::video_update_video_file_usage(video);
+
                 formatdoc!(r#"
                     <li>
                         <div class="actionable_item attachment {attachment_type}">
                             <div>
                                 <div>{label}</div>
-                                <small>{r_video_meta} {file_name}</small>
+                                <small>{file_name} ({r_video_meta})</small>
+                                <form action="{update_usage_url}" method="post">
+                                    <input name="file_name" type="hidden" value="{file_name}">
+                                    <select class="usage" name="usage">
+                                        {usage_options}
+                                    </select>
+                                </form>
                             </div>
                             <div>
                                 {delete_form}

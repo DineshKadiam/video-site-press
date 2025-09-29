@@ -71,7 +71,7 @@ pub async fn upload_subtitles(
                     }
 
                     let mutation = |video: &mut Video| -> InfallibleResult {
-                        video.subtitles.push(SubtitleFile::from_path(&storage_path));
+                        video.subtitle_files.push(SubtitleFile::from_path(&storage_path));
                         Ok(())
                     };
 

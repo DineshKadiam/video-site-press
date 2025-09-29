@@ -9,6 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{
     Context,
     FileMeta,
+    MediaUsage,
     SortDirection,
     Video,
     VideoMeta
@@ -19,11 +20,10 @@ use crate::{
 /// separate [VideoFile].
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct VideoFile {
-    pub download: Option<bool>,
     pub explicitly_defined: bool,
     pub file_meta: FileMeta,
     pub file_name: String,
-    pub streaming: Option<bool>,
+    pub usage: MediaUsage,
     pub video_meta: Option<VideoMeta>
 }
 
@@ -57,9 +57,13 @@ impl VideoFile {
         direction.orient(ordering)
     }
 
-    pub fn downloadable(&self) -> bool {
-        self.download.is_none() ||
-        self.download.is_some_and(|enabled| enabled)
+    pub fn download_restricted(&self) -> bool {
+        match self.usage {
+            MediaUsage::Download |
+            MediaUsage::Unrestricted => false,
+            MediaUsage::Offline |
+            MediaUsage::Streaming => true
+        }
     }
 
     pub fn mime_type(&self) -> &'static str {
@@ -101,20 +105,18 @@ impl VideoFile {
         };
 
         VideoFile {
-            download: None,
             explicitly_defined: false,
             file_meta,
             file_name,
-            streaming: None,
+            usage: MediaUsage::Unrestricted,
             video_meta
         }
     }
 
     pub fn new_from_manifest(
         context: &Context,
-        download: Option<bool>,
         path: &Path,
-        streaming: Option<bool>,
+        usage: MediaUsage,
         video: &Video
     ) -> VideoFile {
         let file_meta = FileMeta::new(path);
@@ -127,24 +129,42 @@ impl VideoFile {
             .map(|cached| cached.video_meta.clone());
 
         VideoFile {
-            download,
             explicitly_defined: true,
             file_meta,
             file_name,
-            streaming,
+            usage,
             video_meta
         }
     }
 
-    /// A video file is considered "published" if streaming and/or download is
-    /// enabled (and by default both are)
-    pub fn published(&self) -> bool {
-        self.downloadable() || self.streamable()
+    /// An video file is considered offline if its usage has been restricted
+    /// to offline
+    pub fn offline(&self) -> bool {
+        match self.usage {
+            MediaUsage::Download |
+            MediaUsage::Streaming |
+            MediaUsage::Unrestricted => false,
+            MediaUsage::Offline => true
+        }
     }
 
-    pub fn streamable(&self) -> bool {
-        self.streaming.is_none() ||
-        self.streaming.is_some_and(|enabled| enabled)
+    /// Video files are automatically registered and associated with its
+    /// video, and usually do not need to be mentioned in the manifest
+    /// (then this method returns true). However, if they were already
+    /// explicitly defined in the manifest when we initialized the [Video], or
+    /// if some non-default configuration value was set on the video file, we
+    /// cannot skip the manifest entry (then this method returns false).
+    pub fn skip_manifest_entry(&self) -> bool {
+        !self.explicitly_defined && self.usage == MediaUsage::Unrestricted
+    }
+
+    pub fn streaming_restricted(&self) -> bool {
+        match self.usage {
+            MediaUsage::Download |
+            MediaUsage::Offline => true,
+            MediaUsage::Streaming |
+            MediaUsage::Unrestricted => false
+        }
     }
 
     pub fn supported_extension(filename: &str) -> bool {

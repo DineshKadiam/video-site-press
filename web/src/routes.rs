@@ -248,8 +248,16 @@ pub fn video_subtitles(video: &Video) -> String {
     format!("/video/subtitles/{}", video.site_path.normalized())
 }
 
+pub fn video_update_audio_file_usage(video: &Video) -> String {
+    format!("/video/update-audio-file-usage/{}", video.site_path.normalized())
+}
+
 pub fn video_update_poster(video: &Video) -> String {
     format!("/video/update-poster/{}", video.site_path.normalized())
+}
+
+pub fn video_update_video_file_usage(video: &Video) -> String {
+    format!("/video/update-video-file-usage/{}", video.site_path.normalized())
 }
 
 pub fn video_upload_poster(video: &Video) -> String {

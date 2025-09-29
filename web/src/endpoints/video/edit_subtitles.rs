@@ -56,7 +56,7 @@ pub fn edit_subtitles_page(
     let translations = &session_state.language.translations;
     let t_not_saved = translations.not_saved;
 
-    let subtitle_file = match video.subtitles
+    let subtitle_file = match video.subtitle_files
         .iter()
         .find(|subtitle_file| subtitle_file.file_name == file_name) {
         Some(subtitle_file) => subtitle_file,

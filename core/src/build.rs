@@ -449,7 +449,7 @@ fn build_video(
         // Write all downloadable video files to build, excluding all
         // streamable video files, which we already have written above.
         for video_file in video.downloadable_video_files() {
-            if !video_file.streamable() {
+            if video_file.streaming_restricted() {
                 hard_link_or_copy(
                     context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
                     video_build_dir.join(&video_file.file_name)

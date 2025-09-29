@@ -765,7 +765,7 @@ fn video_node(
             subpages.push(video_audio_files);
 
             let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
-            let subtitles_count = video.subtitles.len();
+            let subtitles_count = video.subtitle_files.len();
             let subtitles_icon = hyper8_icons::subtitles(None);
             let subtitles_url = routes::video_subtitles(video);
              let t_subtitles = translations.subtitles;
