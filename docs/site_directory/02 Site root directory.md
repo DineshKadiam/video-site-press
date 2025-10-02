@@ -6,7 +6,7 @@
 # The site root directory
 
 The root directory of your site only has one notable characteristic: It is the
-the only place where the [site manifest](the-site-manifest-site-eno-.html)
+the only place where the [site manifest](site-manifest-site-eno.html)
 may be placed. The site manifest is a structured plaintext file that contains
 settings which globally apply to your entire site, such as the language,
 theme and deployment configuration. The contents of the site manifest

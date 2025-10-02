@@ -92,7 +92,7 @@ This allows visitors/you to copy embed codes (html) that they/you can use to
 embed your videos on their/your own sites.
 
 Embedding is disabled by default. If you want to enable it you also need to
-set the site's [base_url](site.html#base_url) (embeds work by displaying something from your site
+set the site's [base_url](site-manifest-site-eno.html#base_url) (embeds work by displaying something from your site
 on another site, for this the other site needs to point to your site's
 address), and then set `embedding: enabled`, either at the collection,
 playlist or video level. If you set it `enabled` at the catalog or playlist
@@ -115,7 +115,7 @@ Hyper 8 offers four different types of feeds on your site:
 Visitors can subscribe to the entire site (= to the root collection or
 playlist) or to each subcollection and playlist on a site individually.
 
-Feeds are enabled by default if you specified your site's [base_url](site.html#base_url).
+Feeds are enabled by default if you specified your site's [base_url](site-manifest-site-eno.html#base_url).
 
 To disable them:
 
