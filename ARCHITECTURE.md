@@ -34,9 +34,8 @@ depend on each other in different ways:
 
 - `docs`
 
-  An almost self-contained build target (depending only on `version`) that
-  generates the documentation that is available at
-  https://simonrepp.com/hyper8/docs/
+  A mostly self-contained build target that generates the documentation that
+  is available at https://simonrepp.com/hyper8/docs/
 
 - `icons`
 

@@ -188,6 +188,11 @@ pub fn main() {
         "docs/assets/docs.css",
         docs_out_dir.join("docs.css")
     ).unwrap();
+
+    fs::copy(
+        "docs/assets/favicon.png",
+        docs_out_dir.join("favicon.png")
+    ).unwrap();
 }
 
 fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
@@ -208,9 +213,12 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
     let examples = section_links(&docs.examples);
     let site_directory = section_links(&docs.site_directory);
     let topics = section_links(&docs.topics);
-    let index_active = if active_page == &docs.index { r#" class="active""# } else { "" };
+    let index_active = if active_page == &docs.index { "active" } else { "" };
 
     let docs_css_hash = url_safe_hash_base64(include_bytes!("../assets/docs.css"));
+    let docs_favicon_hash = url_safe_hash_base64(include_bytes!("../assets/favicon.png"));
+
+    let logo_polychrome_icon = hyper8_icons::logo_polychrome(Some("Hyper 8"));
 
     let title = &active_page.title;
 
@@ -222,12 +230,14 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
                 <meta charset="utf-8">
                 <meta name="description" content="{title}">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
+                <link href="favicon.png?{docs_favicon_hash}" rel="icon" type="image/png">
                 <link href="docs.css?{docs_css_hash}" rel="stylesheet">
             </head>
             <body>
                 <header>
-                    <a class="title" href="index.html">
-                        <span{index_active}>Hyper 8 Video System {VERSION_WITHOUT_PATCH}</span>
+                    <a class="{index_active} title" href="index.html">
+                        {logo_polychrome_icon}
+                        <span>Hyper 8 Video System {VERSION_WITHOUT_PATCH}</span>
                     </a>
                     <a class="open_nav" href="#nav">☰</a>
                 </header>

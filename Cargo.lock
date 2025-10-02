@@ -2470,6 +2470,7 @@ version = "0.24.0"
 dependencies = [
  "base64 0.22.1",
  "enolib",
+ "hyper8-icons",
  "hyper8-version",
  "indoc",
  "pulldown-cmark",

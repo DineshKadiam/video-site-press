@@ -10,6 +10,7 @@ version.workspace = true
 [dependencies]
 base64.workspace = true
 enolib.workspace = true
+hyper8-icons = { path = "../icons" }
 hyper8-version = { path = "../version" }
 indoc.workspace = true
 pulldown-cmark.workspace = true
