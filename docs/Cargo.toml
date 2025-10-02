@@ -7,8 +7,10 @@ name = "hyper8-docs"
 rust-version.workspace = true
 version.workspace = true
 
-[dependencies]
+[build-dependencies]
 base64.workspace = true
+
+[dependencies]
 enolib.workspace = true
 hyper8-icons = { path = "../icons" }
 hyper8-version = { path = "../version" }

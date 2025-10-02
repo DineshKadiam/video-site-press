@@ -3,11 +3,18 @@
     SPDX-License-Identifier: CC0-1.0
 -->
 
-# Playlist: Open Movies
+# Presenting only a single playlist
 
-An example site that features a single playlist presenting the
-[Blender Open Movies](https://studio.blender.org/films/)
+An example site directory for a site that features a single playlist
+presenting the [Blender Open Movies](https://studio.blender.org/films/)
 (note that this is an entirely hypothetical example).
+
+> Tip: If you compare this example with the previous example (which presents a
+> single video only), you will notice that the video from the previous example
+> (Cosmos Laundromat) has simply - without any modification - been moved into a
+> subdirectory here to form part of a playlist. This demonstrates that Hyper
+> 8's fundamental building blocks (videos, playlists, collections) can be
+> easily moved within and across Hyper 8 sites.
 
 ## File and folder layout
 
@@ -15,7 +22,6 @@ An example site that features a single playlist presenting the
 Open Movies/                  <--- Site/Playlist directory
 ├─ site.eno                     <--- Site manifest
 ├─ playlist.eno                 <--- Playlist manifest
-├─ Open Movies.png              <--- Banner image
 ├─ elephants-dream/             <--- Video directory
 │  ├─ video.eno                   <--- Video manifest
 │  ├─ poster.jpg                  <--- Poster image
@@ -31,6 +37,13 @@ Open Movies/                  <--- Site/Playlist directory
 └─ ...
 ```
 
+## Open Movies/site.eno
+
+```eno
+base_url: https://example.com/
+theme: adaptive_cool
+```
+
 ## Open Movies/playlist.eno
 
 ```eno
@@ -43,13 +56,6 @@ url = https://studio.blender.org/films/
 -- description
 Open movies by the Blender Institute and Studio, licensed under CC-BY.
 -- description
-```
-
-## Open Movies/site.eno
-
-```eno
-base_url: https://example.com/
-theme: adaptive_cool
 ```
 
 ## Open Movies/elephants-dream/video.eno

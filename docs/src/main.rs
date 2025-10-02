@@ -4,12 +4,9 @@
 use std::env;
 use std::fs;
 use std::fs::DirEntry;
-use std::hash::{DefaultHasher, Hash, Hasher};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
-use base64::Engine;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use enolib::HtmlPrinter;
 use hyper8_version::VERSION_WITHOUT_PATCH;
 use indoc::formatdoc;
@@ -17,14 +14,18 @@ use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 use pulldown_cmark::html;
 use slug::slugify;
 
-const EXAMPLES_TITLE: &str = "Examples";
+mod layout;
+
+use layout::layout;
+
+const SITE_DIRECTORY_EXAMPLES_TITLE: &str = "Site directory examples";
 const SITE_DIRECTORY_TITLE: &str = "The site directory";
 const TOPICS_TITLE: &str = "Topics";
 
 struct Docs {
-    examples: Vec<Page>,
     index: Page,
     site_directory: Vec<Page>,
+    site_directory_examples: Vec<Page>,
     topics: Vec<Page>
 }
 
@@ -112,7 +113,10 @@ pub fn main() {
 
     fs::create_dir(&docs_out_dir).unwrap();
 
-    let next_page = NextPage::next_section(TOPICS_TITLE, docs.topics.first().unwrap());
+    let next_page = NextPage::next_section(
+        TOPICS_TITLE,
+        docs.topics.first().unwrap()
+    );
 
     render_page(
         &docs,
@@ -127,24 +131,10 @@ pub fn main() {
             .peek()
             .map(|page| NextPage::same_section(page))
             .unwrap_or_else(|| {
-                NextPage::next_section(EXAMPLES_TITLE, docs.examples.first().unwrap())
-            });
-
-        render_page(
-            &docs,
-            &docs_out_dir,
-            Some(next_page),
-            page
-        );
-    }
-
-    let mut examples_iter = docs.examples.iter().peekable();
-    while let Some(page) = examples_iter.next() {
-        let next_page = topics_iter
-            .peek()
-            .map(|page| NextPage::same_section(page))
-            .unwrap_or_else(|| {
-                NextPage::next_section(SITE_DIRECTORY_TITLE, docs.site_directory.first().unwrap())
+                NextPage::next_section(
+                    SITE_DIRECTORY_TITLE,
+                    docs.site_directory.first().unwrap()
+                )
             });
 
         render_page(
@@ -158,6 +148,26 @@ pub fn main() {
     let mut site_directory_iter = docs.site_directory.iter().peekable();
     while let Some(page) = site_directory_iter.next() {
         let next_page = site_directory_iter
+            .peek()
+            .map(|page| NextPage::same_section(page))
+            .unwrap_or_else(|| {
+                NextPage::next_section(
+                    SITE_DIRECTORY_EXAMPLES_TITLE,
+                    docs.site_directory_examples.first().unwrap()
+                )
+            });
+
+        render_page(
+            &docs,
+            &docs_out_dir,
+            Some(next_page),
+            page
+        );
+    }
+
+    let mut site_directory_examples_iter = docs.site_directory_examples.iter().peekable();
+    while let Some(page) = site_directory_examples_iter.next() {
+        let next_page = site_directory_examples_iter
             .peek()
             .map(|page| NextPage::same_section(page));
 
@@ -195,83 +205,6 @@ pub fn main() {
     ).unwrap();
 }
 
-fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
-    let section_links = |pages: &[Page]| {
-        pages
-            .iter()
-            .map(|page| {
-                let active = if page == active_page { r#"class="active" "# } else { "" };
-                let slug = &page.slug;
-                let title = &page.title;
-
-                format!(r#"<a {active}href="{slug}.html">{title}</a>"#)
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
-    };
-
-    let examples = section_links(&docs.examples);
-    let site_directory = section_links(&docs.site_directory);
-    let topics = section_links(&docs.topics);
-    let index_active = if active_page == &docs.index { "active" } else { "" };
-
-    let docs_css_hash = url_safe_hash_base64(include_bytes!("../assets/docs.css"));
-    let docs_favicon_hash = url_safe_hash_base64(include_bytes!("../assets/favicon.png"));
-
-    let logo_polychrome_icon = hyper8_icons::logo_polychrome(Some("Hyper 8"));
-
-    let title = &active_page.title;
-
-    formatdoc!(r##"
-        <!doctype html>
-        <html>
-            <head>
-                <title>{title}</title>
-                <meta charset="utf-8">
-                <meta name="description" content="{title}">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <link href="favicon.png?{docs_favicon_hash}" rel="icon" type="image/png">
-                <link href="docs.css?{docs_css_hash}" rel="stylesheet">
-            </head>
-            <body>
-                <header>
-                    <a class="{index_active} title" href="index.html">
-                        {logo_polychrome_icon}
-                        <span>Hyper 8 Video System {VERSION_WITHOUT_PATCH}</span>
-                    </a>
-                    <a class="open_nav" href="#nav">☰</a>
-                </header>
-
-                <div class="split">
-                    <nav id="nav">
-                        <div class="nav_inner">
-                            <a class="close_nav" href="#">✕</a>
-
-                            <span>{TOPICS_TITLE}</span>
-                            {topics}
-
-                            <span>{EXAMPLES_TITLE}</span>
-                            {examples}
-
-                            <span>{SITE_DIRECTORY_TITLE}</span>
-                            {site_directory}
-
-                            <span>More Resources</span>
-                            <a href="https://simonrepp.com/hyper8/" target="_blank">Website</a>
-                            <a href="https://simonrepp.com/video/hyper8/" target="_blank">Video guides</a>
-                            <a href="https://simonrepp.com/hyper8/changes/" target="_blank">Release notes</a>
-                            <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source Code</a>
-                        </div>
-                    </nav>
-                    <main>
-                        {body}
-                    </main>
-                </div>
-            </body>
-        </html>
-    "##)
-}
-
 fn read_docs() -> Docs {
     let index_content = markdown_to_html(include_str!("../index.md"));
 
@@ -281,14 +214,14 @@ fn read_docs() -> Docs {
         title: format!("Hyper 8 Video System {VERSION_WITHOUT_PATCH}")
     };
 
-    let examples = read_pages(&Path::new("docs/examples"));
     let site_directory = read_pages(&Path::new("docs/site_directory"));
+    let site_directory_examples = read_pages(&Path::new("docs/site_directory_examples"));
     let topics = read_pages(&Path::new("docs/topics"));
 
     Docs {
-        examples,
         index,
         site_directory,
+        site_directory_examples,
         topics
     }
 }
@@ -364,16 +297,9 @@ fn render_page(
         content.clone()
     };
 
-    let html = layout(&body, docs, page);
+    let html = layout(page, &body, docs);
 
     let out_path = docs_out_dir.join(&page.slug).with_extension("html");
 
     fs::write(out_path, html).unwrap();
-}
-
-pub fn url_safe_hash_base64(hashable: &impl Hash) -> String {
-    let mut hasher = DefaultHasher::new();
-    hashable.hash(&mut hasher);
-    let hash = hasher.finish();
-    URL_SAFE_NO_PAD.encode(hash.to_le_bytes())
 }

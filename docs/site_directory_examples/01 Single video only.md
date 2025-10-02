@@ -3,10 +3,10 @@
     SPDX-License-Identifier: CC0-1.0
 -->
 
-# Video: Cosmos Laundromat
+# Presenting only a single video
 
-An example site that presents only a single video - the open movie
-[Cosmos Laundromat](https://gooseberry.blender.org/about/) by the
+An example site directory for a site presenting only a single video - the
+open movie [Cosmos Laundromat](https://gooseberry.blender.org/about/) by the
 Blender Institute (note that this is an entirely hypothetical example).
 
 ## File and folder layout
