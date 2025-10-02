@@ -28,6 +28,10 @@
     --text: #222;
 }
 a { color: var(--link); }
+a:focus-visible,
+a:hover {
+    color: #fff;
+}
 blockquote {
     background: var(--code);
     border-radius: .2rem;
@@ -112,7 +116,6 @@ nav a.active {
 p, ul {
     box-sizing: border-box;
     max-width: 33rem;
-    text-align: justify;
 }
 p code,
 h2 code,
@@ -150,6 +153,7 @@ pre {
     position: relative;
     top: .05rem;
 }
+ul { padding-left: 2rem; }
 
 @media (max-width: 50rem) {
     header { padding: 0 1rem; }
