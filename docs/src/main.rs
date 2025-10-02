@@ -17,11 +17,20 @@ use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 use pulldown_cmark::html;
 use slug::slugify;
 
+const EXAMPLES_TITLE: &str = "Examples";
+const SITE_DIRECTORY_TITLE: &str = "The site directory";
+const TOPICS_TITLE: &str = "Topics";
+
 struct Docs {
     examples: Vec<Page>,
     index: Page,
-    reference: Vec<Page>,
+    site_directory: Vec<Page>,
     topics: Vec<Page>
+}
+
+struct NextPage<'a> {
+    next_section: Option<&'static str>,
+    page: &'a Page
 }
 
 #[derive(PartialEq)]
@@ -29,6 +38,25 @@ struct Page {
     content: String,
     slug: String,
     title: String
+}
+
+impl<'a> NextPage<'a> {
+    pub fn next_section(
+        next_section: &'static str,
+        page: &'a Page
+    ) -> NextPage<'a> {
+        NextPage {
+            next_section: Some(next_section),
+            page
+        }
+    }
+
+    pub fn same_section(page: &'a Page) -> NextPage<'a> {
+        NextPage {
+            next_section: None,
+            page
+        }
+    }
 }
 
 pub fn markdown_to_html(markdown: &str) -> String {
@@ -84,40 +112,60 @@ pub fn main() {
 
     fs::create_dir(&docs_out_dir).unwrap();
 
+    let next_page = NextPage::next_section(TOPICS_TITLE, docs.topics.first().unwrap());
+
     render_page(
-        &docs_out_dir,
         &docs,
-        &docs.index,
-        docs.topics.first()
+        &docs_out_dir,
+        Some(next_page),
+        &docs.index
     );
 
     let mut topics_iter = docs.topics.iter().peekable();
     while let Some(page) = topics_iter.next() {
+        let next_page = topics_iter
+            .peek()
+            .map(|page| NextPage::same_section(page))
+            .unwrap_or_else(|| {
+                NextPage::next_section(EXAMPLES_TITLE, docs.examples.first().unwrap())
+            });
+
         render_page(
-            &docs_out_dir,
             &docs,
-            page,
-            topics_iter.peek().copied().or_else(|| docs.examples.first())
+            &docs_out_dir,
+            Some(next_page),
+            page
         );
     }
 
     let mut examples_iter = docs.examples.iter().peekable();
     while let Some(page) = examples_iter.next() {
+        let next_page = topics_iter
+            .peek()
+            .map(|page| NextPage::same_section(page))
+            .unwrap_or_else(|| {
+                NextPage::next_section(SITE_DIRECTORY_TITLE, docs.site_directory.first().unwrap())
+            });
+
         render_page(
-            &docs_out_dir,
             &docs,
-            page,
-            examples_iter.peek().copied().or_else(|| docs.reference.first())
+            &docs_out_dir,
+            Some(next_page),
+            page
         );
     }
 
-    let mut reference_iter = docs.reference.iter().peekable();
-    while let Some(page) = reference_iter.next() {
+    let mut site_directory_iter = docs.site_directory.iter().peekable();
+    while let Some(page) = site_directory_iter.next() {
+        let next_page = site_directory_iter
+            .peek()
+            .map(|page| NextPage::same_section(page));
+
         render_page(
-            &docs_out_dir,
             &docs,
-            page,
-            reference_iter.peek().copied()
+            &docs_out_dir,
+            next_page,
+            page
         );
     }
 
@@ -158,7 +206,7 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
     };
 
     let examples = section_links(&docs.examples);
-    let reference = section_links(&docs.reference);
+    let site_directory = section_links(&docs.site_directory);
     let topics = section_links(&docs.topics);
     let index_active = if active_page == &docs.index { r#" class="active""# } else { "" };
 
@@ -189,17 +237,19 @@ fn layout(body: &str, docs: &Docs, active_page: &Page) -> String {
                         <div class="nav_inner">
                             <a class="close_nav" href="#">✕</a>
 
-                            <span>Topics</span>
+                            <span>{TOPICS_TITLE}</span>
                             {topics}
 
-                            <span>Examples</span>
+                            <span>{EXAMPLES_TITLE}</span>
                             {examples}
 
-                            <span>Reference</span>
-                            {reference}
+                            <span>{SITE_DIRECTORY_TITLE}</span>
+                            {site_directory}
 
                             <span>More Resources</span>
                             <a href="https://simonrepp.com/hyper8/" target="_blank">Website</a>
+                            <a href="https://simonrepp.com/video/hyper8/" target="_blank">Video guides</a>
+                            <a href="https://simonrepp.com/hyper8/changes/" target="_blank">Release notes</a>
                             <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source Code</a>
                         </div>
                     </nav>
@@ -222,13 +272,13 @@ fn read_docs() -> Docs {
     };
 
     let examples = read_pages(&Path::new("docs/examples"));
-    let reference = read_pages(&Path::new("docs/reference"));
+    let site_directory = read_pages(&Path::new("docs/site_directory"));
     let topics = read_pages(&Path::new("docs/topics"));
 
     Docs {
         examples,
         index,
-        reference,
+        site_directory,
         topics
     }
 }
@@ -268,22 +318,36 @@ fn read_pages(dir: &Path) -> Vec<Page> {
 }
 
 fn render_page(
-    docs_out_dir: &Path,
     docs: &Docs,
-    page: &Page,
-    next_page: Option<&Page>
+    docs_out_dir: &Path,
+    next_page: Option<NextPage>,
+    page: &Page
 ) {
     let content = &page.content;
 
     let body = if let Some(next_page) = next_page {
-        let next_page_slug = &next_page.slug;
-        let next_page_title = &next_page.title;
+        let next_page_slug = &next_page.page.slug;
+        let next_page_title = &next_page.page.title;
+
+        let next_page_or_section_label;
+        let next_page_or_section_title;
+
+        match next_page.next_section {
+            Some(next_section_title) => {
+                next_page_or_section_label = "Next section";
+                next_page_or_section_title = next_section_title;
+            }
+            None => {
+                next_page_or_section_label = "Next page";
+                next_page_or_section_title = next_page_title;
+            }
+        }
 
         formatdoc!(r#"
             {content}
 
             <div class="next_page">
-                Next page: <a href="{next_page_slug}.html">{next_page_title}</a>
+                {next_page_or_section_label}: <a href="{next_page_slug}.html">{next_page_or_section_title}</a>
             </div>
         "#)
     } else {

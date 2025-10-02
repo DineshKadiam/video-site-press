@@ -3,18 +3,11 @@
     SPDX-License-Identifier: CC0-1.0
 -->
 
-# Site
-
-The site refers to the entirety of content in your Hyper 8 site. More
-specifically the site resides at the root of the site directory, so this is
-also where - and the only place where - the `site.eno` manifest can be
-placed.
-
-## The site.eno manifest
-
-> All options at a glance: [base_url](#base_url), [disable_clean_urls](#disable_clean_urls), [ftp_config](#ftp_config), [language](#language), [poster_aspect](#poster_aspect), [rsync_config](#rsync_config), [theme](#theme)
+# The site manifest (site.eno)
 
 Manifest for configuring the site.
+
+An example manifest:
 
 ```eno
 base_url: https://example.com
@@ -31,6 +24,16 @@ port = 21
 server = ftp-user123.example.com
 user = user123
 ```
+
+Jump links for all options:
+
+- [base_url](#base_url)
+- [disable_clean_urls](#disable_clean_urls)
+- [ftp_config](#ftp_config)
+- [language](#language)
+- [poster_aspect](#poster_aspect)
+- [ssh_config](#ssh_config)
+- [theme](#theme)
 
 ## <a name="base_url"></a> `base_url`
 
@@ -122,9 +125,9 @@ for instance `9:16` for exclusively mobile video content.
 poster_aspect: 16:9
 ```
 
-## <a name="rsync_config"></a> `rsync_config`
+## <a name="ssh_config"></a> `ssh_config`
 
-With `rsync_config` you can configure the remote server, path and user for an
+With `ssh_config` you can configure the remote server, path and user for an
 ssh/rsync based deployment.
 
 Note that for now only password-less (ssh public/private key) authentication
@@ -132,13 +135,13 @@ is possible for this option.
 
 In order to prevent accidental deployments to wrong remote servers and paths,
 deployment requires the [base_url](#base_url) to be specified and the server to be set
-up so the contents at `rsync_config.path` are already accessible through the
+up so the contents at `ssh_config.path` are already accessible through the
 public [base_url](#base_url). Before deployment, Hyper 8 will do a test upload of a text file
 to the remote path and check if it's accessible through the public url - if
 it isn't, the test file is removed and the deployment aborted.
 
 ```eno
-rsync_config:
+ssh_config:
 path = /data/web/user123/html
 server = ssh-user123.example.com
 user = user123
