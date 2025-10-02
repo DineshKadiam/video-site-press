@@ -33,32 +33,39 @@ label = My Social Media
 url = https://social.example.com
 verification = rel-me
 
+> Heads up – not yet available but coming in 1.0
 audio_file:
 file = compressed.mp3
 usage = streaming
 
+> Heads up – not yet available but coming in 1.0
 audio_file:
 file = lossless.flac
 usage = download
 
+> Heads up – until 1.0 use "subtitles" instead of "subtitle_file"
 subtitle_file:
 file = en.srt
 label = English
 language = en
 
+> Heads up – until 1.0 use "subtitles" instead of "subtitle_file"
 subtitle_file:
 file = fr.srt
 label = Français
 language = fr
 
+> Heads up – not yet available but coming in 1.0
 video_file:
 file = highly_compressed_720p.mp4
 usage = streaming
 
+> Heads up – not yet available but coming in 1.0
 video_file:
 file = high_quality_1080p.mp4
 usage = download
 
+> Heads up – not yet available but coming in 1.0
 video_file:
 file = original.mp4
 usage = offline
@@ -71,7 +78,7 @@ reunite at an unexpected gathering.
 
 Jump links for all options:
 
-- [audio_file](#audio_file)
+- [audio_file](#audio_file) (not yet available, coming in 1.0)
 - [copy_link](#copy_link)
 - [description](#description)
 - [download](#download)
@@ -82,12 +89,12 @@ Jump links for all options:
 - [poster](#poster)
 - [release_date](#release_date)
 - [sort_number](#sort_number)
-- [subtitle_file](#subtitle_file)
+- [subtitle_file](#subtitle_file) (until 1.0 use "subtitles" instead of "subtitle_file")
 - [title](#title)
 - [unlisted](#unlisted)
-- [video_file](#video_file)
+- [video_file](#video_file) (not yet available, coming in 1.0)
 
-## <a name="audio_file"></a> `audio_file`
+## <a name="audio_file"></a> `audio_file` (not yet available but coming in 1.0)
 
 Audio can currently be supplied through `aac`, `aiff`, `alac`, `flac`, `mp3`,
 `ogg`, `opus`, and `wav` files - simply putting such a file into a video
@@ -262,7 +269,7 @@ playlist manifest can be used to modify this behavior - e.g. to use
 descending order or to sort by release date even if `sort_number` is present
 on videos, to sort alphabetically by title, etc.
 
-## <a name="subtitle_file"></a> `subtitle_file`
+## <a name="subtitle_file"></a> `subtitle_file` (until 1.0 use "subtitles" instead of "subtitle_file")
 
 Subtitles can currently be supplied as `.srt` or `.vtt` files - simply putting
 such files into a video directory already includes them in the video player
@@ -299,7 +306,7 @@ link to them, will know of their existence.
 unlisted
 ```
 
-## <a name="video_file"></a> `video_file`
+## <a name="video_file"></a> `video_file`  (not yet available but coming in 1.0)
 
 Videos can currently be supplied through `.m4v`, `.mp4`, `.mkv` and `.mov` files - simply putting
 such files into a video directory already includes them in the video player
