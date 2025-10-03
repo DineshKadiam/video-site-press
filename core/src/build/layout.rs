@@ -210,6 +210,7 @@ impl Layout {
         let t_open_browse_panel = translations.open_browse_panel;
         let t_play_pause_video = translations.play_pause_video;
         let t_shortcuts = translations.shortcuts;
+        let t_skip_to_main_content = translations.skip_to_main_content;
         let t_space = translations.space;
         let t_video_player = translations.video_player;
         let body = formatdoc!(r##"
@@ -217,6 +218,7 @@ impl Layout {
                 <script>
                     window.hyper8 = {{ rootPrefix: '{root_prefix}', sitePath: '{site_path}' }};
                 </script>
+                <a class="skip_to_content" href="#content">{t_skip_to_main_content}</a>
                 <div class="layout">
                     <header>
                         <a href="{root_url}">
@@ -227,7 +229,7 @@ impl Layout {
                         {theme_toggle}
                     </header>
                     <div class="growing">
-                        <div class="center">
+                        <div class="center" id="content">
                             {body}
                         </div>
                     </div>

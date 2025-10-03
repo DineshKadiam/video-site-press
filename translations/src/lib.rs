@@ -280,6 +280,7 @@ pub struct Translations {
     pub site_setup: &'static str,
     pub site_setup_change_note: &'static str,
     site_setup_text: &'static str,
+    pub skip_to_main_content: &'static str,
     pub sort_number: &'static str,
     pub sort_number_ascending: &'static str,
     pub sort_number_descending: &'static str,

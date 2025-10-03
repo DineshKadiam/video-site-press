@@ -283,6 +283,7 @@ impl Translations {
         site_setup: "Seite einrichten",
         site_setup_change_note: "Du kannst später jederzeit zwischen Collection, Playlist und Video wechseln, wähle einfach was jetzt gerade am meisten Sinn macht.",
         site_setup_text: r#"Deine Seite ist aktuell leer. Du kannst sie initialisieren indem du eine der Optionen unten wählst oder indem du manuell Inhalte im Seitenverzeichnis platzierst - folge dafür der <a href="{docs_link}" target="_blank">Dokumentation</a>."#,
+        skip_to_main_content: "Zum Hauptinhalt springen",
         sort_number: "Sortiernummer",
         sort_number_ascending: "Sortiernummer Aufsteigend (1, 2, 3)",
         sort_number_descending: "Sortiernummer Absteigend (3, 2, 1)",

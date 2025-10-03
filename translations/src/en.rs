@@ -283,6 +283,7 @@ impl Translations {
         site_setup: "Site Setup",
         site_setup_change_note: "Note that you can change between collection, playlist and video at any later point, just pick what makes most sense for you now.",
         site_setup_text: r#"Your site is currently empty. You can initialize it by picking one of the options below or by manually placing content in the site directory following the <a href="{docs_link}" target="_blank">documentation</a>."#,
+        skip_to_main_content: "Skip to main content",
         sort_number: "Sort Number",
         sort_number_ascending: "Sort Number Ascending (1, 2, 3)",
         sort_number_descending: "Sort Number Descending (3, 2, 1)",
