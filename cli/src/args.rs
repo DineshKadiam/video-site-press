@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use clap::value_parser;
+use indoc::indoc;
 
 use hyper8_version::VERSION_WITH_PATCH_AND_REVISION;
 
@@ -42,12 +43,26 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .short('b');
 
     let build_dir = Arg::new("build-dir")
-        .help("The path to which the deployable, built site is written")
+        .help(indoc!("
+            The path to which the deployable, built site is written
+
+            WARNING: This directory is WIPED during the build process.
+            Please pay very close attention where you point this to.
+
+            (Default location: .hyper8_build/ inside the site directory)
+        ").trim_end())
         .long("build-dir")
         .value_parser(value_parser!(PathBuf));
 
     let cache_dir = Arg::new("cache-dir")
-        .help("The path at which all computational results are stored (computed metadata, images and videos)")
+        .help(indoc!("
+            The path at which all computational results (computed metadata, resized images, temporary encoding artifacts) are stored.
+
+            WARNING: This directory may be WIPED during the build process.
+            Please pay very close attention where you point this to.
+
+            (Default location: .hyper8_cache/ inside the site directory)
+        ").trim_end())
         .long("cache-dir")
         .value_parser(value_parser!(PathBuf));
 
@@ -58,12 +73,12 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .short('d');
 
     let ip = Arg::new("ip")
-        .help("Manually sets the ip address used by the web editor (otherwise defaults to localhost)")
+        .help("Manually sets the ip address used by the editor or preview server (otherwise defaults to localhost)")
         .long("ip")
         .value_parser(value_parser!(IpAddr));
 
     let port = Arg::new("port")
-        .help("Manually sets the port used by the web editor (otherwise hyper8 chooses an available port on its own)")
+        .help("Manually sets the port used by the web editor (otherwise chooses an available port on its own)")
         .long("port")
         .value_parser(value_parser!(u16));
 

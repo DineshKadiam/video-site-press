@@ -26,8 +26,7 @@ from within a video page. Assuming you are publishing a vlog, just released a ne
 and want to link to various parts of your video, this is what you could
 put into your `description` field for the episode:
 
-```eno
--- description
+```
 In today's vlog entry I show off my favorite memes!
 
 [What is a meme](#time=1m20s)
@@ -35,7 +34,6 @@ In today's vlog entry I show off my favorite memes!
 [The Einstein-Rosen-Podolsky bridge theory meme](#time=52m12s)
 [The new Bielefeld conspiracy meme](#time=1h26m3s)
 [1080 Stunt Dog meme](#time=2h7m)
--- description
 ```
 
 ## Details on the syntax used

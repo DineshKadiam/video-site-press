@@ -7,9 +7,10 @@ use hyper8_version::VERSION_WITHOUT_PATCH;
 
 use crate::{Docs, Page};
 use crate::{
+    COMMAND_LINE_INTERFACE_TITLE,
+    DESKTOP_APPLICATION_TITLE,
     SITE_DIRECTORY_EXAMPLES_TITLE,
-    SITE_DIRECTORY_TITLE,
-    TOPICS_TITLE
+    SITE_DIRECTORY_TITLE
 };
 
 const ASSET_HASH_DOCS_CSS: &str = env!("HYPER8_DOCS_STATIC_ASSET_HASH_DOCS_CSS");
@@ -34,9 +35,10 @@ pub fn layout(
             .join("\n")
     };
 
+    let command_line_interface = section_links(&docs.command_line_interface);
+    let desktop_application = section_links(&docs.desktop_application);
     let site_directory = section_links(&docs.site_directory);
     let site_directory_examples = section_links(&docs.site_directory_examples);
-    let topics = section_links(&docs.topics);
     let index_active = if active_page == &docs.index { "active" } else { "" };
 
     let logo_polychrome_icon = hyper8_icons::logo_polychrome(Some("Hyper 8"));
@@ -68,8 +70,11 @@ pub fn layout(
                         <div class="nav_inner">
                             <a class="close_nav" href="#">✕</a>
 
-                            <span>{TOPICS_TITLE}</span>
-                            {topics}
+                            <span>{DESKTOP_APPLICATION_TITLE}</span>
+                            {desktop_application}
+
+                            <span>{COMMAND_LINE_INTERFACE_TITLE}</span>
+                            {command_line_interface}
 
                             <span>{SITE_DIRECTORY_TITLE}</span>
                             {site_directory}
@@ -81,7 +86,7 @@ pub fn layout(
                             <a href="https://simonrepp.com/hyper8/" target="_blank">Website</a>
                             <a href="https://simonrepp.com/video/hyper8/" target="_blank">Video guides</a>
                             <a href="https://simonrepp.com/hyper8/changes/" target="_blank">Release notes</a>
-                            <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source Code</a>
+                            <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source code</a>
                         </div>
                     </nav>
                     <main>

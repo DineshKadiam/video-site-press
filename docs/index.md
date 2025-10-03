@@ -5,25 +5,34 @@
 
 # Hyper 8 Video System
 
-## Topics
+## Desktop application
 
-For an introduction go through the topics in order. These show how Hyper 8
-works in general and swiftly guide you to your first hyper8 site.
+This section addresses all users equally - it provides all basic information
+to simply get started using Hyper 8 through the **desktop application**. If
+you're unsure what to do or where to start, this is your first destination.
 
-## Reference
+## Command line interface
 
-The reference pages explain all available options and metadata that you can
-set in your manifests, giving detailed info for each setting.
+This section is mostly for people familiar with command line interfaces (and it
+is entirely optional). With the command line interface you are able to
+automate and script various workflows that utilize the Hyper 8.
 
-## Examples
+## Site directory specification
 
-These each explain a fictional Hyper 8 site - how the files and folders are
-laid out, which manifests are placed where, and what content they hold. This
-teaches by example, but does not nearly show every feature there is in
-hyper8, so also consider going through the reference to get the full
-picture.
+This section lets you take a peek *under the hood* of a - or actually, all -
+Hyper 8 sites. Here you will find complete and detailed information on how a
+site is stored on disk (spoiler: it's a simple system) and how you can
+therefore manually edit and extend it using any tool(s) you like - from a
+file explorer to a text editor to scripted workflows. **It's all just
+(plaintext) files and folders underneath.**
 
-This section is still partially in progress.
+## Site directory examples
+
+These each explain a fictional Hyper 8 site directory - how the files and
+folders are laid out, which manifests are placed where, and what content they
+hold. This teaches by example, but does not nearly show all features
+available in Hyper 8, so it is recommended to additionally go through the
+site directory specification to get the full picture.
 
 ## Other resources
 

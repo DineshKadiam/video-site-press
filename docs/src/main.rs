@@ -18,15 +18,17 @@ mod layout;
 
 use layout::layout;
 
+const COMMAND_LINE_INTERFACE_TITLE: &str = "Command line interface";
+const DESKTOP_APPLICATION_TITLE: &str = "Desktop application";
 const SITE_DIRECTORY_EXAMPLES_TITLE: &str = "Site directory examples";
-const SITE_DIRECTORY_TITLE: &str = "The site directory";
-const TOPICS_TITLE: &str = "Topics";
+const SITE_DIRECTORY_TITLE: &str = "Site directory specification";
 
 struct Docs {
+    command_line_interface: Vec<Page>,
+    desktop_application: Vec<Page>,
     index: Page,
     site_directory: Vec<Page>,
-    site_directory_examples: Vec<Page>,
-    topics: Vec<Page>
+    site_directory_examples: Vec<Page>
 }
 
 struct NextPage<'a> {
@@ -114,8 +116,8 @@ pub fn main() {
     fs::create_dir(&docs_out_dir).unwrap();
 
     let next_page = NextPage::next_section(
-        TOPICS_TITLE,
-        docs.topics.first().unwrap()
+        DESKTOP_APPLICATION_TITLE,
+        docs.desktop_application.first().unwrap()
     );
 
     render_page(
@@ -125,9 +127,29 @@ pub fn main() {
         &docs.index
     );
 
-    let mut topics_iter = docs.topics.iter().peekable();
-    while let Some(page) = topics_iter.next() {
-        let next_page = topics_iter
+    let mut desktop_application_iter = docs.desktop_application.iter().peekable();
+    while let Some(page) = desktop_application_iter.next() {
+        let next_page = desktop_application_iter
+            .peek()
+            .map(|page| NextPage::same_section(page))
+            .unwrap_or_else(|| {
+                NextPage::next_section(
+                    COMMAND_LINE_INTERFACE_TITLE,
+                    docs.command_line_interface.first().unwrap()
+                )
+            });
+
+        render_page(
+            &docs,
+            &docs_out_dir,
+            Some(next_page),
+            page
+        );
+    }
+
+    let mut command_line_interface_iter = docs.command_line_interface.iter().peekable();
+    while let Some(page) = command_line_interface_iter.next() {
+        let next_page = command_line_interface_iter
             .peek()
             .map(|page| NextPage::same_section(page))
             .unwrap_or_else(|| {
@@ -214,18 +236,24 @@ fn read_docs() -> Docs {
         title: format!("Hyper 8 Video System {VERSION_WITHOUT_PATCH}")
     };
 
+    let command_line_interface = read_pages(&Path::new("docs/command_line_interface"));
+    let desktop_application = read_pages(&Path::new("docs/desktop_application"));
     let site_directory = read_pages(&Path::new("docs/site_directory"));
     let site_directory_examples = read_pages(&Path::new("docs/site_directory_examples"));
-    let topics = read_pages(&Path::new("docs/topics"));
 
     Docs {
+        command_line_interface,
+        desktop_application,
         index,
         site_directory,
-        site_directory_examples,
-        topics
+        site_directory_examples
     }
 }
 
+/// Reads all .md files inside the given directory and returns the parsed
+/// pages. Pages are sorted by filename, the title of each page is derived by
+/// removing the leading numbering and following whitespace in the file name,
+/// and the content is simply transformed from markdown to html.
 fn read_pages(dir: &Path) -> Vec<Page> {
     let mut pages: Vec<DirEntry> = fs::read_dir(dir)
         .unwrap()

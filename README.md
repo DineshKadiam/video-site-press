@@ -7,11 +7,9 @@
 
 **A static site generator for video publishing**
 
-Hyper 8 lets you create video sites, from single videos to playlists to entire
-video archives. Use the graphical user interface to build and publish your
-site, or do it all from your text editor and terminal, or both. Hyper 8
-generates sites that require no database, no programming, no maintenance, and
-are compatible with virtually every webhost on this planet.
+Build and publish video sites, from single videos to large archives.<br>
+No database, no programming, no maintenance required.<br>
+Compatible with virtually every webhost on this planet.
 
 Latest Release: **`0.24`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
 
@@ -26,26 +24,18 @@ The [website](https://simonrepp.com/hyper8) is the central information hub:
 - Showcase of sites using Hyper 8
 - Links to further resources
 
-The [docs](https://simonrepp.com/hyper8/docs) cover specific aspects:
+The [docs](https://simonrepp.com/hyper8/docs) provide detailed guidance on these aspects:
 
-- Usage instructions
-- Reference
-- Examples
-- Information on various topics
+- Desktop application (Getting started, Various topics)
+- Command line interface (Overview, Usage, Reference)
+- Site directory specification (How a Hyper 8 site is represented and edited on disk)
+- Site directory examples (Different site directory examples as reference)
 
 The [release notes](https://simonrepp.com/hyper8/changes) give insight into development:
 
 - What's new in the latest version
 - What changed in previous versions
 - Sometimes also: What's coming in an upcoming version
-
-## Hyper 8 is in Beta
-
-Hyper 8 provides a complete package for video publishing on the web. A dozen
-sites are already live out there using it! Officially, Hyper 8 is still in
-Beta though, so  occasionally things might still be moving around a bit in
-the interface. Making backups of your Hyper 8 site directory is also
-generally recommended while Hyper 8 is still in beta.
 
 ## Development in 2025
 

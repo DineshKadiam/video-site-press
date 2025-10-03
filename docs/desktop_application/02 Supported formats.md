@@ -41,8 +41,8 @@ The audio formats Hyper 8 currently recognizes are:
 
 ## Images
 
-These are the formats you can use for poster images. Poster images
-are always resized and transcoded for site builds.
+These are the formats you can use for poster images. Poster images are always
+resized and transcoded for site builds, and this happens automatically.
 
 - gif
 - jpg/jpeg
@@ -51,9 +51,7 @@ are always resized and transcoded for site builds.
 
 ## Subtitles
 
-You can add any number of subtitle files alongside your video file(s) and they
-will automatically show up in the video player on your built site. The supported
-formats are:
+The supported subtitle file formats are:
 
 - srt
 - vtt
