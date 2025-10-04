@@ -6,12 +6,16 @@
 # Getting started with the desktop application
 
 Download and install the **full desktop edition** from the
-[download page](https://simonrepp.com/hyper8/download.html)
-on the [website](https://simonrepp.com/hyper8/).
+[download page](https://simonrepp.com/hyper8/download.html).
 
 After the installation is complete, open the application from your desktop's
 application menu and click `Create new site` to get started.
 
-The editor is - at least intended to be - mostly self-explanatory, but to get
-some guidance on how it is operated, you can have a look at a number of
-videos showcasing Hyper 8 at [simonrepp.com/video/hyper8](https://simonrepp.com/video/hyper8/).
+After this you will be in the *graphical editor*, in which you can build your
+entire site structure, add video, audio, image and subtitle files, preview
+the site, deploy the site, etc. (in short - everything is found in there).
+
+The editor is intended to be as self-explanatory as possible, but for some
+guidance on how it is operated (and related topics), have a look at the
+remaining pages in this section, as well as the videos showcasing Hyper 8 at
+[simonrepp.com/video/hyper8](https://simonrepp.com/video/hyper8/).

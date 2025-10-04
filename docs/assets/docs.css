@@ -113,6 +113,10 @@ nav a.active {
 .nav_inner a { white-space: nowrap; }
 .nav_inner span { margin: 2rem 0 .2rem 0; }
 .next_page { margin: 3rem 0 2rem 0; }
+ol,
+ul {
+    padding-left: 2rem;
+}
 p, ul {
     box-sizing: border-box;
     max-width: 33rem;
@@ -153,7 +157,6 @@ pre {
     position: relative;
     top: .05rem;
 }
-ul { padding-left: 2rem; }
 
 @media (max-width: 50rem) {
     header { padding: 0 1rem; }
