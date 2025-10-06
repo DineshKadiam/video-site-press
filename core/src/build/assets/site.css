@@ -23,6 +23,10 @@ a:hover { color: var(--fg-3); }
 .actions button:hover {
     background: var(--bg-3);
 }
+.actions button.active {
+    border: 1px solid var(--bg-mg);
+    padding: calc(.3rem - 1px) calc(.4rem - 1px);
+}
 /* TODO: Temporarily hidden - unhide in an upcoming version when we figured out
          layout questions around banner. */
 .banner { display: none; }
@@ -1074,7 +1078,7 @@ video {
     footer { justify-content: center; }
     .outro_playlist_context img { height: 3rem; }
     .parent_context { align-items: flex-start; }
-    .video_header {
+    .video_layout .video_header {
         align-items: flex-start;
         flex-direction: column;
     }

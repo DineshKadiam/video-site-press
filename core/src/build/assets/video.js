@@ -526,9 +526,11 @@ if (togglePlaylistButton) {
     function togglePlaylist() {
         if (videoLayout.dataset.panel === 'playlist') {
             sessionStorage.setItem(hidePlaylistStorageKey, '')
+            togglePlaylistButton.classList.remove('active');
             delete videoLayout.dataset.panel;
         } else {
             sessionStorage.removeItem(hidePlaylistStorageKey);
+            togglePlaylistButton.classList.add('active');
             videoLayout.dataset.panel = 'playlist';
         }
     }
@@ -541,8 +543,10 @@ if (toggleTranscriptButton) {
 
     function toggleTranscript() {
         if (videoLayout.dataset.panel === 'transcript') {
+            toggleTranscriptButton.classList.remove('active');
             delete videoLayout.dataset.panel;
         } else {
+            toggleTranscriptButton.classList.add('active');
             videoLayout.dataset.panel = 'transcript';
         }
     }

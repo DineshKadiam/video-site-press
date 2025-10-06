@@ -115,7 +115,7 @@ pub fn video_html(
         let playlist_icon = hyper8_icons::playlist(None);
         let playlist_site_path = playlist.site_path.normalized();
         let toggle_playlist = formatdoc!(r#"
-            <button data-site-path="{playlist_site_path}" id="toggle_playlist">
+            <button class="active" data-site-path="{playlist_site_path}" id="toggle_playlist">
                 {playlist_icon} {t_playlist}
             </button>
         "#);
@@ -171,9 +171,9 @@ pub fn video_html(
         "#)
     };
 
-    let mut sidebar_active_panel = String::new();
-    let mut sidebar_panels = Vec::new();
-    let mut sidebar_postscript = String::new();
+    let mut active_panel = String::new();
+    let mut panels = Vec::new();
+    let mut panel_postscript = String::new();
 
     if let Some(playlist) = playlist {
         let playlist_context = TraversalStep::crumb_playlist(
@@ -182,16 +182,31 @@ pub fn video_html(
             Some(video)
         );
 
-        sidebar_panels.push(playlist_context);
+        panels.push(playlist_context);
 
         let playlist_site_path = playlist.site_path.normalized();
 
-        sidebar_active_panel = String::from(r#"data-panel="playlist""#);
-        sidebar_postscript = formatdoc!(r#"
+        active_panel = String::from(r#"data-panel="playlist""#);
+
+        // We automatically hide the playlist panel during page load if ...
+        // a) it has been explicitly closed by the user before,
+        //    for this or another video in the same playlist.
+        // b) the viewport is so narrow that we'd display the playlist panel
+        //    below the video (which would likely push the video description
+        //    "below the fold" in the initially visible page - not desired).
+        //    (Note that the associated media query must be kept up-to-date
+        //     with the query used for the playlist panel in site.css)
+        panel_postscript = formatdoc!(r#"
             <script>
-                if (sessionStorage.getItem('hyper8HidePlaylist:{playlist_site_path}') !== null) {{
+                const playlistBelowVideo = matchMedia('(width < 55rem)');
+                if (
+                    sessionStorage.getItem('hyper8HidePlaylist:{playlist_site_path}') !== null ||
+                    playlistBelowVideo.matches
+                ) {{
+                    const togglePlaylistButton = document.querySelector('#toggle_playlist');
                     const videoLayout = document.currentScript.previousElementSibling;
                     delete videoLayout.dataset.panel;
+                    togglePlaylistButton.classList.remove('active');
                 }}
             </script>
         "#);
@@ -228,19 +243,19 @@ pub fn video_html(
             </div>
         "#);
 
-        sidebar_panels.push(transcript);
+        panels.push(transcript);
     }
 
-    let sidebar_panels = sidebar_panels.join("\n");
+    let panels = panels.join("\n");
 
     let body = formatdoc!(r#"
-        <div class="video_layout" {sidebar_active_panel}>
+        <div class="video_layout" {active_panel}>
             <div class="video_header">
                 <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
                 {parent_context}
             </div>
             {player_rendered}
-            {sidebar_panels}
+            {panels}
             <div class="video_footer">
                 <div>
                     {release_date}
@@ -252,7 +267,7 @@ pub fn video_html(
                 {description}
             </div>
         </div>
-        {sidebar_postscript}
+        {panel_postscript}
     "#);
 
     let platform_integration = video.platform_integration();
