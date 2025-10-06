@@ -447,7 +447,7 @@ if (playerWrapper) {
                 const regexp = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 
                 for (const entry of entries.children) {
-                    const display = regexp.test(entry.children[1].textContent);
+                    const display = regexp.test(entry.children[0].textContent);
                     entry.style.setProperty('display', display ? null : 'none');
                 }
             } else {
