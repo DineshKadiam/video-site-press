@@ -197,13 +197,6 @@ pub fn edit_poster_page(
                 </div>
             </form>
 
-            <p style="background: var(--warning-bg); border-radius: .5rem; color: var(--warning-fg); padding: 1rem;">
-                Heads up: Poster changes do not immediately show up (this is due
-                to posters being computed in background job). Wait 1-2 seconds,
-                then refresh the page to see them. This will be improved in a
-                future version of Hyper 8.
-            </p>
-
             <script>
                 const randomFrameButton = document.querySelector('#random_frame');
                 const timecode = document.querySelector('input[name="timecode"');

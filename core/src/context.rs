@@ -1330,16 +1330,21 @@ impl Context {
         }
     }
 
-    pub fn queue_job(&self, job_desc: JobDesc) {
-        if let Ok(mut job_queue) = self.job_queue.lock() {
-            if !job_queue
-                .iter()
-                .any(|existing_job|
-                    existing_job.desc == job_desc && existing_job.failure.is_none()
-                ) {
-                job_queue.push(QueuedJob::new(job_desc));
+    pub fn queue_job(&self, job_desc: JobDesc) -> String {
+        let mut job_queue = self.job_queue.lock().unwrap();
+
+        for existing_job in job_queue.iter() {
+            if existing_job.desc == job_desc && existing_job.failure.is_none() {
+                return existing_job.id.clone();
             }
         }
+
+        let job = QueuedJob::new(job_desc);
+        let job_id = job.id.clone();
+
+        job_queue.push(job);
+
+        job_id
     }
 
     fn queue_playlist_jobs(

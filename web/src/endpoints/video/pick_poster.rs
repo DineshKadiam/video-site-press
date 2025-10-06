@@ -7,6 +7,7 @@ use actix_session::Session;
 use actix_web::{Either, HttpResponse};
 use actix_web::web::{Data, Form, Path as ActixPath, Redirect};
 use serde_derive::Deserialize;
+use tokio::time::Duration;
 
 use hyper8_core::{
     JobDesc,
@@ -41,7 +42,25 @@ pub async fn pick_poster(
                 video: Arc::clone(&video)
             };
 
-            context.queue_job(pick_poster_job_desc);
+            let job_id = context.queue_job(pick_poster_job_desc);
+
+            // Wait until the job we just queued either has completed or failed
+            loop {
+                tokio::time::sleep(Duration::from_millis(200)).await;
+
+                // TODO: Report a failure in the response of this request -
+                // right now we just handle it the same as if the job had
+                // succeeded (i.e. we ignore it).
+                if !context.job_queue
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .any(|queued_job| {
+                        queued_job.id == job_id && queued_job.failure.is_none()
+                    }) {
+                    break;
+                }
+            }
 
             let redirect_url = routes::video_poster(&video);
             Either::Left(Redirect::to(redirect_url).see_other())
