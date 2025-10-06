@@ -752,13 +752,29 @@ impl Worker {
         if let Some(highest_quality_video_file) = &video_with_metadata.highest_quality_video_file() {
             let video_meta = highest_quality_video_file.video_meta.as_ref().unwrap();
 
-            let bounded_timecode = if timecode < 0.0 {
-                0.0
-            } else if timecode > video_meta.duration {
-                video_meta.duration
-            } else {
-                timecode
-            };
+            // TODO: A possibly more correct approach to the issue and
+            // workaround described below would be to separately store the
+            // longest audio and video stream duration - the issue might stem
+            // from the video stream ending earlier than the accompanying
+            // audio stream.
+            //
+            // If ffmpeg itself (through ffprobe) determines a given video
+            // duration - let's say, 9.123 seconds - it is not automatically
+            // guaranteed that every timecode up until the very last
+            // theoretically valid timecode - in our example exactly 9.123
+            // seconds - is safe to use as a target timecode to seek to when
+            // rendering an image from the video. Instead, trying to render
+            // an image at a timecode very close to the end has proven to
+            // fail both in obvious (ffmpeg returns an error code) and
+            // non-obvious (ffmpeg returns a success code despite not
+            // producing an image) ways. Therefore, as a safe duration
+            // approximation, we subtract the duration of one frame in the
+            // video (1.0 divide by the framerate) from the actual duration
+            // and ensure that the timecode that was supplied is clamped
+            // against this upper boundary.
+            let decoding_safe_range_end = video_meta.duration - (1.0 / video_meta.video_frame_rate);
+
+            let bounded_timecode = timecode.clamp(0.0, decoding_safe_range_end);
 
             let video_with_computed_poster = Worker::compute_poster(
                 context,
