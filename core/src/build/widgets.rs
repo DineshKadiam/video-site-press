@@ -48,7 +48,11 @@ pub fn bubbles(prefix: &str, videos: &[Arc<Video>]) -> String {
             if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
                 let background = poster_meta.lqip.gradient_radial();
                 let video_slug = video.slug_unchecked();
-                formatdoc!(r#"<li><a href="{prefix}{video_slug}/" style="{background}"></a></li>"#)
+                formatdoc!(r#"
+                    <li>
+                        <a href="{prefix}{video_slug}/" style="{background}" tabindex="-1"></a>
+                    </li>
+                "#)
             } else {
                 String::new()
             }
@@ -56,7 +60,7 @@ pub fn bubbles(prefix: &str, videos: &[Arc<Video>]) -> String {
         .collect::<Vec<String>>()
         .join("");
 
-    format!(r#"<ul class="bubbles">{bubbles}</ul>"#)
+    format!(r#"<ul aria-hidden="true" class="bubbles">{bubbles}</ul>"#)
 }
 
 /// A button enriched with data attributes that client scripting can use to
