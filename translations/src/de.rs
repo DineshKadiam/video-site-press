@@ -238,6 +238,7 @@ impl Translations {
         plain_rss_description: "Ein simpler bild- und textbasierter RSS-Feed der nur zu den Video und Audio-Inhalten auf der Website linkt.",
         play: "Abspielen",
         play_pause_video: "Video abspielen oder anhalten",
+        playback_position: "Abspielposition",
         playlist: "Playlist",
         playlist_manifest: "Playlist Manifest",
         playlist_settings: "Playlist Einstellungen",

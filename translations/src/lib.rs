@@ -235,6 +235,7 @@ pub struct Translations {
     pub plain_rss_description: &'static str,
     pub play: &'static str,
     pub play_pause_video: &'static str,
+    pub playback_position: &'static str,
     pub playlist: &'static str,
     pub playlist_manifest: &'static str,
     pub playlist_settings: &'static str,

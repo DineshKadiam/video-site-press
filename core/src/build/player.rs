@@ -414,6 +414,7 @@ pub fn player(
     let duration_formatted = precise_duration(duration);
 
     let play_icon = hyper8_icons::play(translations.play);
+    let t_playback_position = translations.playback_position;
     formatdoc!(r#"
         <style>
             :root {{ --video-aspect: {aspect_ratio}; }}
@@ -430,7 +431,15 @@ pub fn player(
                 <div class="timeline">
                     <div class="bar backdrop"></div>
                     <div class="bar progress"></div>
-                    <input aria-valuenow="0" aria-valuetext="00:00" max="{duration}" min="0" step="any" type="range" value="0">
+                    <input
+                        aria-label="{t_playback_position}"
+                        aria-valuenow="0"
+                        aria-valuetext="00:00"
+                        max="{duration}"
+                        min="0"
+                        step="any"
+                        type="range"
+                        value="0">
                     <div class="bar outline"></div>
                 </div>
                 <div class="control_pane">
@@ -636,6 +645,7 @@ fn versions_ring(
                 data-label="{label}"
                 data-src="{src}"
                 tabindex="0">
+                <title>{label} {size}</title>
                 {play_button}
                 {slice}
                 <rect class="backdrop" filter="url(#text_shadow)" rx="5"/>
@@ -645,7 +655,6 @@ fn versions_ring(
                 <text class="size" text-anchor="middle" x="{text_x}" y="{text_size_y}">
                     {size}
                 </text>
-                <title>{label} {size}</title>
             </g>
         "#)
     };

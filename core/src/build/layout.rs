@@ -123,7 +123,7 @@ impl Layout {
                     <div class="search">
                         <span class="icon">{search_icon}</span>
                         <span aria-hidden="true" class="label">{t_search}</span>
-                        <input autocomplete="off" type="search">
+                        <input aria-label="{t_search}" autocomplete="off" type="search">
                         <button>
                             {close_icon}
                         </button>
