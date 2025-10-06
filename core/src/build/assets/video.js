@@ -558,8 +558,14 @@ video.addEventListener('ended', () => {
 video.addEventListener('click', togglePlayback);
 
 window.addEventListener('keydown', event => {
-    if (searchContainer?.contains(event.target) ||
-        event.target === filterTranscriptInput) return;
+    if (
+        searchContainer?.contains(event.target) ||
+        event.target === filterTranscriptInput ||
+        event.altKey ||
+        event.ctrlKey
+    ) {
+        return;
+    }
 
     if (event.key === ' ') {
         togglePlayback();
