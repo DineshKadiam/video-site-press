@@ -202,6 +202,8 @@ pub fn media_page(
     let site = context.get_site();
     let translations = &session_state.language.translations;
 
+    let t_usage_restrictions = translations.usage_restrictions;
+
     let audio_files = if video.audio_files.is_empty() {
         String::new()
     } else {
@@ -333,7 +335,7 @@ pub fn media_page(
                                 <small>{file_name} ({duration})</small>
                                 <form action="{update_usage_url}" method="post">
                                     <input name="file_name" type="hidden" value="{file_name}">
-                                    <select class="usage" name="usage">
+                                    <select aria-label="{t_usage_restrictions}" class="usage" name="usage">
                                         {usage_options}
                                     </select>
                                 </form>
@@ -507,7 +509,7 @@ pub fn media_page(
                                 <small>{file_name} ({r_video_meta})</small>
                                 <form action="{update_usage_url}" method="post">
                                     <input name="file_name" type="hidden" value="{file_name}">
-                                    <select class="usage" name="usage">
+                                    <select aria-label="{t_usage_restrictions}"class="usage" name="usage">
                                         {usage_options}
                                     </select>
                                 </form>

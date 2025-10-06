@@ -351,6 +351,7 @@ impl Translations {
         upload_poster: "Upload Poster",
         upload_video_or_audio_file: "Upload video or audio file",
         url: "URL",
+        usage_restrictions: "Usage restrictions",
         use_a_dedicated_editor_window: "Use a dedicated editor window",
         use_the_editor_in_your_browser: "Use the editor in your browser",
         version: "Version",

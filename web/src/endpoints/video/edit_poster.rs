@@ -127,7 +127,7 @@ pub fn edit_poster_page(
                         --video-aspect: {video_aspect_numeric};
                     }}
                 </style>
-                <div class="poster_preview_outer">
+                <div aria-hidden="true" class="poster_preview_outer">
                     <div class="video_frame_outer">
                         <div class="video_frame"></div>
                         <div class="poster_frame">

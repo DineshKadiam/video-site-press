@@ -227,6 +227,8 @@ fn footer(
     let change_language_url = routes::CHANGE_LANGUAGE;
     let change_theme_url = routes::CHANGE_THEME;
 
+    let t_language = translations.language;
+    let t_theme = translations.theme;
     formatdoc!(r#"
         <footer>
             <div>
@@ -234,7 +236,7 @@ fn footer(
                 <form action="{change_language_url}" method="post">
                     <input name="redirect" type="hidden">
                     <div class="form_split even">
-                        <select id="language_code" name="language_code">
+                        <select aria-label="{t_language}" id="language_code" name="language_code">
                             {language_options}
                         </select>
                     </div>
@@ -245,7 +247,7 @@ fn footer(
                 <form action="{change_theme_url}" method="post">
                     <input name="redirect" type="hidden">
                     <div class="form_split even">
-                        <select id="theme_key" name="theme_key">
+                        <select aria-label="{t_theme}" id="theme_key" name="theme_key">
                             {theme_options}
                         </select>
                     </div>
