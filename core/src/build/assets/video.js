@@ -1,5 +1,6 @@
 const playerWrapper = document.querySelector('.player_wrapper');
 const togglePlaylistButton = document.querySelector('#toggle_playlist');
+const toggleTranscriptButton = document.querySelector('#toggle_transcript');
 
 // If there are no media files, or if all of them have been restricted for
 // offline usage, we don't have a player on the page (only a video
@@ -29,7 +30,6 @@ if (playerWrapper) {
     const timeline = document.querySelector('.timeline');
     const timelineInput = document.querySelector('.timeline input');
     const togglePlaybackButton = document.querySelector('#toggle_playback');
-    const toggleTranscriptButton = document.querySelector('#toggle_transcript');
     const versionSelectorControl = document.querySelector('.selector_control.version');
     const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
     const versionsRing = document.querySelector('.versions_ring');
@@ -533,6 +533,10 @@ if (playerWrapper) {
                 toggleTranscriptButton.classList.remove('active');
                 delete videoLayout.dataset.panel;
             } else {
+                if (togglePlaylistButton) {
+                    togglePlaylistButton.classList.remove('active');
+                }
+
                 toggleTranscriptButton.classList.add('active');
                 videoLayout.dataset.panel = 'transcript';
             }
@@ -750,6 +754,10 @@ if (togglePlaylistButton) {
             togglePlaylistButton.classList.remove('active');
             delete videoLayout.dataset.panel;
         } else {
+            if (toggleTranscriptButton) {
+                toggleTranscriptButton.classList.remove('active');
+            }
+
             sessionStorage.removeItem(hidePlaylistStorageKey);
             togglePlaylistButton.classList.add('active');
             videoLayout.dataset.panel = 'playlist';
