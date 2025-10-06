@@ -1334,7 +1334,9 @@ impl Context {
         if let Ok(mut job_queue) = self.job_queue.lock() {
             if !job_queue
                 .iter()
-                .any(|existing_job| existing_job.desc == job_desc) {
+                .any(|existing_job|
+                    existing_job.desc == job_desc && existing_job.failure.is_none()
+                ) {
                 job_queue.push(QueuedJob::new(job_desc));
             }
         }
