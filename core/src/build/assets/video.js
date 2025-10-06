@@ -520,16 +520,16 @@ speedControl.addEventListener('wheel', event => {
 togglePlaybackButton.addEventListener('click', togglePlayback);
 
 if (togglePlaylistButton) {
-    const sidebar = document.querySelector('.sidebar');
+    const videoLayout = document.querySelector('.video_layout');
     const hidePlaylistStorageKey = `hyper8HidePlaylist:${togglePlaylistButton.dataset.sitePath}`;
 
     function togglePlaylist() {
-        if (sidebar.dataset.panel === 'playlist') {
+        if (videoLayout.dataset.panel === 'playlist') {
             sessionStorage.setItem(hidePlaylistStorageKey, '')
-            delete sidebar.dataset.panel;
+            delete videoLayout.dataset.panel;
         } else {
             sessionStorage.removeItem(hidePlaylistStorageKey);
-            sidebar.dataset.panel = 'playlist';
+            videoLayout.dataset.panel = 'playlist';
         }
     }
 
@@ -537,13 +537,13 @@ if (togglePlaylistButton) {
 }
 
 if (toggleTranscriptButton) {
-    const sidebar = document.querySelector('.sidebar');
+    const videoLayout = document.querySelector('.video_layout');
 
     function toggleTranscript() {
-        if (sidebar.dataset.panel === 'transcript') {
-            delete sidebar.dataset.panel;
+        if (videoLayout.dataset.panel === 'transcript') {
+            delete videoLayout.dataset.panel;
         } else {
-            sidebar.dataset.panel = 'transcript';
+            videoLayout.dataset.panel = 'transcript';
         }
     }
 

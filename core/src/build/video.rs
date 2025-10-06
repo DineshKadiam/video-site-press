@@ -171,26 +171,6 @@ pub fn video_html(
         "#)
     };
 
-    let video_content = formatdoc!(r#"
-        <div>
-            <div class="video_info top">
-                <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
-                {parent_context}
-            </div>
-            {player_rendered}
-            <div class="video_info">
-                <div class="align_start apart flex wrap" style="margin-top: 2rem;">
-                    <div>
-                        {release_date}
-                    </div>
-                    {actions}
-                </div>
-                {links_rendered}
-                {description}
-            </div>
-        </div>
-    "#);
-
     let mut sidebar_active_panel = String::new();
     let mut sidebar_panels = Vec::new();
     let mut sidebar_postscript = String::new();
@@ -210,8 +190,8 @@ pub fn video_html(
         sidebar_postscript = formatdoc!(r#"
             <script>
                 if (sessionStorage.getItem('hyper8HidePlaylist:{playlist_site_path}') !== null) {{
-                    const sidebar = document.currentScript.previousElementSibling;
-                    delete sidebar.dataset.panel;
+                    const videoLayout = document.currentScript.previousElementSibling;
+                    delete videoLayout.dataset.panel;
                 }}
             </script>
         "#);
@@ -228,8 +208,8 @@ pub fn video_html(
                     let text_escaped = html_escape_outside_attribute(&subtitle.text);
                     let subtitle_html = formatdoc!(r#"
                         <div>
-                            <a href="{start_link}">{start_display}</a>
                             <span>{text_escaped}</span>
+                            <a href="{start_link}">{start_display}</a>
                         </div>
                     "#);
 
@@ -251,21 +231,29 @@ pub fn video_html(
         sidebar_panels.push(transcript);
     }
 
-    let body = if sidebar_panels.is_empty() {
-        video_content
-    } else {
-        let sidebar_panels = sidebar_panels.join("\n");
+    let sidebar_panels = sidebar_panels.join("\n");
 
-        formatdoc!(r#"
-            <div class="layout_split">
-                {video_content}
-                <div class="sidebar" {sidebar_active_panel}>
-                    {sidebar_panels}
-                </div>
-                {sidebar_postscript}
+    let body = formatdoc!(r#"
+        <div class="video_layout" {sidebar_active_panel}>
+            <div class="video_header">
+                <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
+                {parent_context}
             </div>
-        "#)
-    };
+            {player_rendered}
+            {sidebar_panels}
+            <div class="video_footer">
+                <div>
+                    {release_date}
+                </div>
+                {actions}
+            </div>
+            <div class="video_info">
+                {links_rendered}
+                {description}
+            </div>
+        </div>
+        {sidebar_postscript}
+    "#);
 
     let platform_integration = video.platform_integration();
     if platform_integration.enabled() {
