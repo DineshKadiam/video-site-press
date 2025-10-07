@@ -25,7 +25,7 @@ fn controls(
 ) -> String {
     let t_configure_deployment = translations.configure_deployment;
     let configure_icon = hyper8_icons::configure(Some(translations.configure));
-    let deployment_icon = hyper8_icons::deployment(translations.deployment);
+    let deploy_icon = hyper8_icons::DEPLOY;
     let deployment_button = match site.complete_deployment_config() {
         true => {
             let deployment = &context.deploying.lock().unwrap();
@@ -34,7 +34,7 @@ fn controls(
                 let duration = precise_duration(deployment.started_at.unwrap().elapsed().map(|duration| duration.as_secs_f32()).unwrap_or(0.0));
                 formatdoc!(r#"
                     <a href="/deployment">
-                        {deployment_icon} {t_deploying} ({duration})
+                        {deploy_icon} {t_deploying} ({duration})
                     </a>
                 "#)
             } else {
@@ -53,7 +53,7 @@ fn controls(
                         data-confirm-label="{t_deploy}"
                         data-confirm-text="{t_really_deploy}{base_url}"
                         method="post"">
-                        <button>{deployment_icon} {t_deploy}</button>
+                        <button>{deploy_icon} {t_deploy}</button>
                     </form>
                 "#)
             }
@@ -143,7 +143,7 @@ fn controls(
     };
 
     let t_preview = translations.preview;
-    let preview_icon = hyper8_icons::preview(t_preview);
+    let preview_icon = hyper8_icons::PREVIEW;
     let preview_url = routes::preview(&SitePath::root_path());
     let preview = formatdoc!(r#"
         <a href="{preview_url}" target="_blank">
@@ -187,8 +187,8 @@ fn controls(
             <template id="configure_icon">
                 {configure_icon}
             </template>
-            <template id="deployment_icon">
-                {deployment_icon}
+            <template id="deploy_icon">
+                {deploy_icon}
             </template>
             <template id="processing_icon">
                 {processing_icon}

@@ -166,7 +166,7 @@ pub fn resource_actions(
     let t_preview = translations.preview;
     let failure_icon = hyper8_icons::failure(translations.failed);
     let success_icon = hyper8_icons::success(translations.copied);
-    let preview_icon = hyper8_icons::preview(t_preview);
+    let preview_icon = hyper8_icons::PREVIEW;
     formatdoc!(r#"
         {live_url_displayed}
         {local_path_displayed}

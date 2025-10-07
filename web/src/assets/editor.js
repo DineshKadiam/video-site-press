@@ -1,8 +1,8 @@
 const configureIcon = document.querySelector('#configure_icon').content;
 const confirmationDialog = document.querySelector('#confirmation_dialog').content;
+const deployIcon = document.querySelector('#deploy_icon').content;
 const deploymentElement = document.querySelector('#deployment');
 const deploymentFeedback = document.querySelector('#deployment_feedback');
-const deploymentIcon = document.querySelector('#deployment_icon').content;
 const processingElement = document.querySelector('.processing');
 const processingIcon = document.querySelector('#processing_icon').content;
 const reloadIcon = document.querySelector('#reload_icon').content;
@@ -143,7 +143,7 @@ function updateDeploymentButton(deploymentInfo) {
         const a = document.createElement('a');
         a.href = '/deployment';
 
-        a.append(deploymentIcon.cloneNode(true));
+        a.append(deployIcon.cloneNode(true));
 
         const text = document.createElement('span');
         text.textContent = t.deploying;
@@ -167,7 +167,7 @@ function updateDeploymentButton(deploymentInfo) {
 
         const button = document.createElement('button');
 
-        button.append(deploymentIcon.cloneNode(true));
+        button.append(deployIcon.cloneNode(true));
 
         const text = document.createElement('span');
         text.textContent = t.deploy;
