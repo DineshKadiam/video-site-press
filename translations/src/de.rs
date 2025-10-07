@@ -353,7 +353,6 @@ impl Translations {
         usage_restrictions: "Einsatzbeschränkungen",
         use_a_dedicated_editor_window: "Der Editor läuft in einem eigenen Fenster",
         use_the_editor_in_your_browser: "Der Editor wird über den Browser verwendet",
-        version: "Version",
         video: "Video",
         video_audio_files: "Video/Audiodateien",
         video_codec: "Video Codec",

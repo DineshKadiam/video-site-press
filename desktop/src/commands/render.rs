@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use tauri::State;
 
 use hyper8_core::Theme;
-use hyper8_core::AVAILABLE_LANGUAGES;
+use hyper8_core::{AVAILABLE_LANGUAGES, SPLASH_SVG};
 use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
 
@@ -173,16 +173,15 @@ pub fn render(
 
     let close_icon = hyper8_icons::close(translations.close);
     let language_icon = hyper8_icons::LANGUAGE;
-    let link_icon = hyper8_icons::link(Some(translations.external_link));
 
     let t_donate = translations.donate;
     let t_website = translations.website;
-    format!(r#"
+    format!(r##"
         <header data-tauri-drag-region>
-            <img alt="Hyper 8" src="assets/logo.svg">
+            {SPLASH_SVG}
             <button class="close">{close_icon}</button>
             <a class="version" href="https://simonrepp.com/hyper8/changes/{VERSION_WITH_PATCH}" target="_blank">
-                {link_icon} {VERSION_ADAPTIVE_PATCH}
+                {VERSION_ADAPTIVE_PATCH}
             </a>
         </header>
         <main>
@@ -191,10 +190,10 @@ pub fn render(
         <footer>
             <div>
                 <a href="https://simonrepp.com/hyper8" target="_blank">
-                    {link_icon} {t_website}
+                    {t_website}
                 </a>
                 <a href="https://simonrepp.com/hyper8/#donate" target="_blank">
-                    {link_icon} {t_donate}
+                    {t_donate}
                 </a>
             </div>
             <div class="options">
@@ -225,5 +224,5 @@ pub fn render(
             </div>
         </footer>
         <dialog class="overlay" data-tauri-drag-region></dialog>
-    "#)
+    "##)
 }

@@ -345,7 +345,6 @@ pub struct Translations {
     pub usage_restrictions: &'static str,
     pub use_a_dedicated_editor_window: &'static str,
     pub use_the_editor_in_your_browser: &'static str,
-    pub version: &'static str,
     pub video: &'static str,
     pub video_audio_files: &'static str,
     pub video_codec: &'static str,

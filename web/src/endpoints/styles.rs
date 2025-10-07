@@ -8,7 +8,7 @@ use actix_web::HttpResponse;
 use actix_web::web::Data;
 use indoc::formatdoc;
 
-use hyper8_core::{Font, Theme, ThemeKind};
+use hyper8_core::{Font, ThemeKind};
 
 use crate::{Context, SessionState};
 
@@ -26,8 +26,6 @@ pub async fn styles(
             font-family: {default_family};
         }}
     "#);
-
-    let splash_vars = Theme::print_splash_vars();
 
     let theme_vars = match theme.kind() {
         ThemeKind::Adaptive { dark, light } => {
@@ -76,7 +74,6 @@ pub async fn styles(
 
     let static_css = include_str!("../assets/editor.css");
     let css = formatdoc!(r#"
-        {splash_vars}
         {theme_vars}
         {fonts_css}
         {static_css}

@@ -32,28 +32,21 @@ button {
     outline: none;
 }
 .close {
-    background: var(--bg-2);
+    align-items: center;
+    background: none;
+    border-radius: 50%;
     color: var(--fg-1);
-    font-size: 1.2rem;
-    padding: .5rem;
-    position: absolute;
-    right: 0;
-    top: 0;
-
+    display: flex;
+    font-size: 1rem;
+    justify-content: center;
     padding: .5rem;
     position: absolute;
     right: .5rem;
-    opacity: .5;
     top: .5rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
 }
 .close:focus-visible,
 .close:hover {
-    opacity: 1;
+    color: var(--fg-3);
 }
 .configure {
     color: var(--bg-mg);
@@ -96,19 +89,37 @@ footer a svg { font-size: .8rem; }
 header {
     align-items: center;
     aspect-ratio: 1.85;
-    background:
-        radial-gradient(ellipse at top left, var(--splash-nw), transparent),
-        radial-gradient(ellipse at top right, var(--splash-ne), transparent),
-        radial-gradient(ellipse at bottom right, var(--splash-se), transparent),
-        radial-gradient(ellipse at bottom left, var(--splash-sw), transparent);
-    background-blend-mode: var(--splash-blend);
+    box-shadow: 0 0 .1rem var(--bg-mg);
+    color: var(--fg-1);
     display: flex;
     justify-content: center;
     position: relative;
 }
-header img {
+header a {
+    align-items: center;
+    background: var(--fg-1);
+    border-radius: .2rem;
+    color: var(--bg-1);
+    column-gap: .2rem;
+    display: flex;
+    font-size: .9rem;
+    font-weight: 500;
+    padding: .25rem .4rem;
+}
+header a:focus-visible,
+header a:hover {
+    background: var(--fg-3);
+    color: var(--bg-1);
+}
+header > svg {
+    height: 100%;
     pointer-events: none;
-    width: 60%;
+    width: 80%;
+}
+header .version {
+    bottom: 1.2rem;
+    position: absolute;
+    right: 1.2rem;
 }
 main {
     flex-grow: 1;
@@ -309,29 +320,4 @@ svg {
     fill: currentColor;
     height: 1em;
     width: 1em;
-}
-header a {
-    align-items: center;
-    border: 1px solid var(--splash-fg);
-    border-radius: .2rem;
-    color: var(--splash-fg);
-    column-gap: .2rem;
-    display: flex;
-    font-size: .9rem;
-    padding: .2rem .4rem;
-}
-header a:focus-visible,
-header a:hover {
-    background: var(--splash-fg);
-    color: var(--splash-bg);
-}
-header .links {
-    align-items: center;
-    column-gap: .8rem;
-    display: flex;
-}
-header .version {
-    bottom: .8rem;
-    position: absolute;
-    right: .8rem;
 }

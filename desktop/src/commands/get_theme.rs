@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use indoc::formatdoc;
 use tauri::State;
 
-use hyper8_core::{Theme, ThemeKind};
+use hyper8_core::ThemeKind;
 
 use crate::LauncherState;
 
@@ -15,15 +15,12 @@ use crate::LauncherState;
 pub fn get_theme(
     state: State<'_, Arc<Mutex<LauncherState>>>
 ) -> (String, String) {
-    let icon;
-    let theme_vars;
-
     let theme = state.lock().unwrap().get_theme();
 
-    icon = theme.icon();
+    let icon = theme.icon();
 
     // TODO: Technically the same as in styles.rs - unify/reuse?
-    theme_vars = match theme.kind() {
+    let css = match theme.kind() {
         ThemeKind::Adaptive { dark, light } => {
             let dark_vars_hsl = dark.print_hsl();
             let dark_vars_oklch = dark.print_oklch();
@@ -67,9 +64,6 @@ pub fn get_theme(
             "#)
         }
     };
-
-    let splash_vars = Theme::print_splash_vars();
-    let css = format!("{splash_vars}{theme_vars}");
 
     (css, icon)
 }

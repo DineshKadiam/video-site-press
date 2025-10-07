@@ -102,6 +102,7 @@ pub use site_path::SitePath;
 pub use site_url::SiteUrl;
 pub use sort::{Asc, Comparison, Desc};
 pub use subtitle_file::SubtitleFile;
+pub use theme::SPLASH_SVG;
 pub use theme::{Theme, ThemeKind};
 pub use util::InfallibleResult;
 pub use video::Video;

@@ -354,7 +354,6 @@ impl Translations {
         usage_restrictions: "Usage restrictions",
         use_a_dedicated_editor_window: "Use a dedicated editor window",
         use_the_editor_in_your_browser: "Use the editor in your browser",
-        version: "Version",
         video: "Video",
         video_audio_files: "Video/Audio files",
         video_codec: "Video Codec",
