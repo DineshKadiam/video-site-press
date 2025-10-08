@@ -28,6 +28,7 @@ Thanks everyone for your support!
 hatsch<br>
 [Ian Menz](https://norcal.social/@CallMePlayer)<br>
 [Internet Stiftung](https://www.internetstiftung.at/)<br>
+[Johannes Burström](https://johannesburstrom.se/)<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
 [Lioh](https://social.anoxinon.de/@Lioh)<br>
 [Lorenzo Miniero](https://fosstodon.org/@lminiero)<br>

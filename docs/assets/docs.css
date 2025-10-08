@@ -51,7 +51,7 @@ body {
 .close_nav {
     color: var(--text);
     font-size: 1.5rem;
-    position: absolute;
+    position: fixed;
     right: 1.3rem;
     top: 1rem;
 }
@@ -90,13 +90,11 @@ main {
     min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: 0 1.8rem;
+    padding-inline: 1.8rem;
 }
 nav {
-    box-sizing: border-box;
-    display: flex;
-    justify-content: center;
-    padding: 0 1.8rem;
+    overflow-y: auto;
+    padding-inline: 1.8rem;
 }
 nav a { text-decoration: none; }
 nav a.active {
@@ -105,13 +103,19 @@ nav a.active {
     border-left: 0.2rem solid var(--link);
     padding: 0 0.5rem;
 }
-.nav_inner {
+nav > div {
+    display: flex;
+    flex-direction: column;
+    margin-block: 2rem;
+    row-gap: 2rem;
+}
+nav > div > div {
     align-items: flex-start;
     display: flex;
     flex-direction: column;
 }
-.nav_inner a { white-space: nowrap; }
-.nav_inner span { margin: 2rem 0 .2rem 0; }
+nav > div a { white-space: nowrap; }
+nav > div span { margin-bottom: .2em; }
 .next_page { margin: 3rem 0 2rem 0; }
 ol,
 ul {
@@ -158,7 +162,7 @@ pre {
     top: .05rem;
 }
 
-@media (max-width: 50rem) {
+@media (width <= 50rem) {
     header { padding: 0 1rem; }
     main {
         flex-grow: 1;
@@ -166,19 +170,20 @@ pre {
         overflow-y: auto;
         padding: 0 1rem;
     }
-    nav {
+    nav:not(:target) {
         display: none;
     }
     nav:target {
-        align-items: center;
         background: var(--background);
         bottom: 0;
-        display: flex;
         left: 0;
         position: absolute;
         right: 0;
         top: 0;
         z-index: 2;
+    }
+    nav:target > div {
+        margin-inline: auto;
     }
     pre {
         margin-left: -1rem;
@@ -188,7 +193,7 @@ pre {
     }
 }
 
-@media (min-width: 50.0001rem) {
+@media (width > 50rem) {
     .close_nav { display: none; }
     nav {
         border-right: 1px solid var(--divider);

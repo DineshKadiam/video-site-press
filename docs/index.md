@@ -15,7 +15,7 @@ you're unsure what to do or where to start, this is your first destination.
 
 This section is mostly for people familiar with command line interfaces (and it
 is entirely optional). With the command line interface you are able to
-automate and script various workflows that utilize the Hyper 8.
+automate and script various workflows that utilize Hyper 8.
 
 ## Site directory specification
 

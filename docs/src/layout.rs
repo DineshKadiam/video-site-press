@@ -67,26 +67,31 @@ pub fn layout(
 
                 <div class="split">
                     <nav id="nav">
-                        <div class="nav_inner">
-                            <a class="close_nav" href="#">✕</a>
-
-                            <span>{DESKTOP_APPLICATION_TITLE}</span>
-                            {desktop_application}
-
-                            <span>{COMMAND_LINE_INTERFACE_TITLE}</span>
-                            {command_line_interface}
-
-                            <span>{SITE_DIRECTORY_TITLE}</span>
-                            {site_directory}
-
-                            <span>{SITE_DIRECTORY_EXAMPLES_TITLE}</span>
-                            {site_directory_examples}
-
-                            <span>More Resources</span>
-                            <a href="https://simonrepp.com/hyper8/" target="_blank">Website</a>
-                            <a href="https://simonrepp.com/video/hyper8/" target="_blank">Video guides</a>
-                            <a href="https://simonrepp.com/hyper8/changes/" target="_blank">Release notes</a>
-                            <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source code</a>
+                        <a class="close_nav" href="#">✕</a>
+                        <div>
+                            <div>
+                                <span>{DESKTOP_APPLICATION_TITLE}</span>
+                                {desktop_application}
+                            </div>
+                            <div>
+                                <span>{COMMAND_LINE_INTERFACE_TITLE}</span>
+                                {command_line_interface}
+                            </div>
+                            <div>
+                                <span>{SITE_DIRECTORY_TITLE}</span>
+                                {site_directory}
+                            </div>
+                            <div>
+                                <span>{SITE_DIRECTORY_EXAMPLES_TITLE}</span>
+                                {site_directory_examples}
+                            </div>
+                            <div>
+                                <span>More Resources</span>
+                                <a href="https://simonrepp.com/hyper8/" target="_blank">Website</a>
+                                <a href="https://simonrepp.com/video/hyper8/" target="_blank">Video guides</a>
+                                <a href="https://simonrepp.com/hyper8/changes/" target="_blank">Release notes</a>
+                                <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source code</a>
+                            </div>
                         </div>
                     </nav>
                     <main>
