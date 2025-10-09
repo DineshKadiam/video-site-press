@@ -428,7 +428,7 @@ input[type="file"] { display: none; }
 }
 main {
     margin: 0 3rem 3rem 3rem;
-    max-width: 32rem;
+    max-width: 36rem;
 }
 nav {
     background: var(--bg-2);
