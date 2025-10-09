@@ -75,3 +75,9 @@ impl EditorState {
         self.persist();
     }
 }
+
+impl Default for EditorState {
+    fn default() -> EditorState {
+        EditorState::retrieve_or_initialize()
+    }
+}

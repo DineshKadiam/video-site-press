@@ -15,6 +15,13 @@ use crate::{EditorMode, SiteBookmark};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LauncherState {
     pub editor_mode: EditorMode,
+    /// Editor state is serialized to its own config file, hence it is
+    /// excluded from being de/serialized from/to the launcher state config
+    /// file. However, because EditorState's Default implementation delegates
+    /// to its retrieve_or_initialize() method, we still automatically
+    /// deserialize the editor state from its own config file when we
+    /// deserialize the launcher state!
+    #[serde(skip)]
     pub editor_state: Arc<Mutex<EditorState>>,
     pub site_bookmarks: Vec<SiteBookmark>
 }
