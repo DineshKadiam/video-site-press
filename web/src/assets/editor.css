@@ -707,6 +707,7 @@ select {
     top: 0;
     width: .9rem;
 }
+.splash > svg { width: 100%; }
 .splash_wrapper {
     align-items: center;
     background: none;
