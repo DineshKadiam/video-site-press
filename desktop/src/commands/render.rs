@@ -9,7 +9,7 @@ use tauri::State;
 use hyper8_core::Theme;
 use hyper8_core::{AVAILABLE_LANGUAGES, SPLASH_SVG};
 use hyper8_core::util::html_escape_outside_attribute;
-use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
+use hyper8_version::{CHANGES_URL, VERSION_ADAPTIVE_PATCH};
 
 use crate::{EditorMode, LauncherState};
 
@@ -176,11 +176,12 @@ pub fn render(
 
     let t_donate = translations.donate;
     let t_website = translations.website;
+    let t_whats_new = translations.whats_new;
     format!(r##"
         <header data-tauri-drag-region>
             {SPLASH_SVG}
             <button class="close">{close_icon}</button>
-            <a class="version" href="https://simonrepp.com/hyper8/changes/{VERSION_WITH_PATCH}" target="_blank">
+            <a href="{CHANGES_URL}" target="_blank">
                 {VERSION_ADAPTIVE_PATCH}
             </a>
         </header>
@@ -194,6 +195,9 @@ pub fn render(
                 </a>
                 <a href="https://simonrepp.com/hyper8/#donate" target="_blank">
                     {t_donate}
+                </a>
+                <a href="{CHANGES_URL}" target="_blank">
+                    {t_whats_new}
                 </a>
             </div>
             <div class="options">

@@ -363,6 +363,7 @@ pub struct Translations {
     pub warm: &'static str,
     pub warning: &'static str,
     pub website: &'static str,
+    pub whats_new: &'static str,
     pub worst: &'static str,
     pub xxx_active_jobs: &'static str,
     xxx_characters_maximum: &'static str,

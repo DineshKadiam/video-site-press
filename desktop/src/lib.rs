@@ -9,7 +9,7 @@ use tauri::{
     WebviewWindowBuilder
 };
 
-use hyper8_version::VERSION_WITHOUT_PATCH;
+use hyper8_version::VERSION_ADAPTIVE_PATCH;
 
 const EXIT_CODE_SUCCESS: i32 = 0;
 
@@ -27,7 +27,7 @@ use site_bookmark::SiteBookmark;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let title = format!("Hyper 8 v{VERSION_WITHOUT_PATCH}");
+            let title = format!("Hyper8 {VERSION_ADAPTIVE_PATCH}");
 
             let _ = WebviewWindowBuilder::new(app, "launcher", WebviewUrl::default())
                     .center()

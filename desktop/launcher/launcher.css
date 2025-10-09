@@ -95,31 +95,26 @@ header {
     justify-content: center;
     position: relative;
 }
-header a {
-    align-items: center;
-    background: var(--fg-1);
+header > a {
+    border: 1px solid;
     border-radius: .2rem;
-    color: var(--bg-1);
-    column-gap: .2rem;
-    display: flex;
+    bottom: 1rem;
+    color: var(--fg-3);
     font-size: .9rem;
-    font-weight: 500;
     padding: .25rem .4rem;
+    position: absolute;
+    right: 1rem;
 }
-header a:focus-visible,
-header a:hover {
-    background: var(--fg-3);
+header > a:focus-visible,
+header > a:hover {
+    background: var(--fg-1);
+    border-color: var(--fg-1);
     color: var(--bg-1);
 }
 header > svg {
     height: 100%;
     pointer-events: none;
     width: 80%;
-}
-header .version {
-    bottom: 1.2rem;
-    position: absolute;
-    right: 1.2rem;
 }
 main {
     flex-grow: 1;

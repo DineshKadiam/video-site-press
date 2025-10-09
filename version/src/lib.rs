@@ -8,6 +8,12 @@
 //! For instance to build the docs for version "2.0.0~pre1":
 //! "HYPER8_VERSION=2.0.0~pre1 cargo run -p hyper8-docs -- [output_path]"
 
+/// The link https://simonrepp.com/hyper8/changes/[major.minor.patch]/ for
+/// regular tag-based releases. If the version is being overridden using
+/// HYPER8_VERSION, it falls back to the more generic release notes index
+/// page (https://simonrepp.com/hyper8/changes/).
+pub const CHANGES_URL: &str = env!("HYPER8_CHANGES_URL");
+
 /// 7-digit short commit hash or "unknown revision"
 pub const REVISION: &str = env!("HYPER8_REVISION");
 

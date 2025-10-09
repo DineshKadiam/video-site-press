@@ -4,7 +4,7 @@
 use indoc::formatdoc;
 
 use hyper8_core::SPLASH_SVG;
-use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
+use hyper8_version::{CHANGES_URL, VERSION_ADAPTIVE_PATCH};
 
 use crate::SessionState;
 
@@ -31,7 +31,7 @@ pub fn splash_screen(session_state: &SessionState) -> String {
                     <a class="donate" href="https://simonrepp.com/hyper8/#donate" target="_blank">
                         {t_donate}
                     </a>
-                    <a class="version" href="https://simonrepp.com/hyper8/changes/{VERSION_WITH_PATCH}/" target="_blank">
+                    <a class="version" href="{CHANGES_URL}" target="_blank">
                         <span>{VERSION_ADAPTIVE_PATCH}</span>
                     </a>
                 </div>

@@ -21,6 +21,7 @@ use tauri::{
 use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
 use hyper8_translations::Translations;
+use hyper8_version::VERSION_ADAPTIVE_PATCH;
 use hyper8_web::ServerMode;
 
 use crate::{EditorMode, LauncherState};
@@ -93,7 +94,7 @@ pub fn start_editor(
 
                 let window = WebviewWindowBuilder::new(&app, "editor", webview_url)
                     .enable_clipboard_access() // (possibly not needed, probably can't hurt either)
-                    .title(&format!("Hyper 8 – {}", site_dir.display()))
+                    .title(&format!("Hyper8 {VERSION_ADAPTIVE_PATCH} – {}", site_dir.display()))
                     .build()
                     .unwrap();
 

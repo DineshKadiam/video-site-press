@@ -372,6 +372,7 @@ impl Translations {
         warm: "Warm",
         warning: "Warning",
         website: "Website",
+        whats_new: "What's new",
         worst: "Worst",
         xxx_active_jobs: "{count} active jobs",
         xxx_characters_maximum: "{maximum} characters maximum",
