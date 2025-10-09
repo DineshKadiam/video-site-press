@@ -178,12 +178,22 @@ pub fn resource_actions(
                 (()=>{{
                     const previewLink = document.currentScript.previousElementSibling;
                     if (previewLink.href) {{
-                        // When running the editor inside the desktop application, this link can only be opened
-                        // if it points to an absolute url, hence we transform the relative to an absolute url here.
-                        // Note that although the href attribute is relative here (e.g. "/build/"), accessing .href
-                        // returns the fully resolved url, therefore we replace the relative url with a fully resolved
-                        // one here.
-                        previewLink.setAttribute('href', previewLink.href);
+                        // Work around https://github.com/tauri-apps/plugins-workspace/issues/2990
+                        // TODO: Remove/revisit as soon as the (already merged) tauri-plugin-opener bugfix is released
+                        if (window.__TAURI__) {{
+                            const {{ openUrl }} = window.__TAURI__.opener;
+                            previewLink.addEventListener('click', event => {{
+                                event.preventDefault();
+                                openUrl(previewLink.href);
+                            }})
+                        }} else {{
+                            // When running the editor inside the desktop application, this link can only be opened
+                            // if it points to an absolute url, hence we transform the relative to an absolute url here.
+                            // Note that although the href attribute is relative here (e.g. "/build/"), accessing .href
+                            // returns the fully resolved url, therefore we replace the relative url with a fully resolved
+                            // one here.
+                            previewLink.setAttribute('href', previewLink.href);
+                        }}
                     }}
                 }})();
             </script>

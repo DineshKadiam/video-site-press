@@ -154,7 +154,7 @@ fn controls(
                 const previewLink = document.currentScript.previousElementSibling;
 
                 // Work around https://github.com/tauri-apps/plugins-workspace/issues/2990
-                // TODO: Remove/revisit as soon as we have an official solution
+                // TODO: Remove/revisit as soon as the (already merged) tauri-plugin-opener bugfix is released
                 if (window.__TAURI__) {{
                     const {{ openUrl }} = window.__TAURI__.opener;
                     previewLink.addEventListener('click', event => {{
