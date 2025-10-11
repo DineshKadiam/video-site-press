@@ -307,9 +307,8 @@ impl Translations {
 
             Error details: {error}
         "),
-        the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: "The test file upload for verifying your deployment configuration did not succeed",
-        the_file_requested_for_deletion_was_not_found: "The file requested for deletion was not found",
         the_editor_is_available_at_xxx: r#"The editor is available at <a href="{url}" target="_blank">{url}</a>"#,
+        the_file_requested_for_deletion_was_not_found: "The file requested for deletion was not found",
         the_link_requested_for_deletion_was_not_found: "The link requested for deletion was not found",
         the_poster_to_be_updated_was_not_found: "The poster to be updated was not found",
         the_resource_xxx_was_not_found_message: "The resource {path} was not found, maybe it has been renamed, moved, or deleted?",
@@ -317,6 +316,8 @@ impl Translations {
         the_subtitle_requested_for_deletion_was_not_found: "The subtitles requested for deletion were not found",
         the_subtitles_to_be_updated_were_not_found: "The subtitles to be updated were not found",
         the_test_file_contains_xxx_but_the_response_contained_xxx: "The test file contains '{expected}' but the response contained '{encountered}'",
+        the_test_file_could_not_be_removed_again: "The test file cound not be removed again ({error})",
+        the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: "The test file upload for verifying your deployment configuration did not succeed",
         the_xxx_child_process_could_not_be_executed: "The {command} child process could not be executed",
         the_xxx_child_process_terminated_unsuccessfully: "The {command} child process terminated unsuccessfully",
         theme: "Theme",

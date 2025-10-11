@@ -342,7 +342,10 @@ pub fn config_probe(
                 if previous_result.is_err() {
                     previous_result
                 } else {
-                    Err(file_removal_err.to_string())
+                    let message = translations.the_test_file_could_not_be_removed_again(
+                        &file_removal_err.to_string()
+                    );
+                    Err(message)
                 }
             }
         }

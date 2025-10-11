@@ -306,9 +306,8 @@ impl Translations {
 
             Fehlerdetails: {error}
         "),
-        the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: "Das Hochladen einer Testdatei um die Deploymentkonfiguration zu verifizieren war nicht erfolgreich",
-        the_file_requested_for_deletion_was_not_found: "Die zu löschende Datei wurde nicht gefunden",
         the_editor_is_available_at_xxx: r#"Der Editor ist unter <a href="{url}" target="_blank">{url}</a> verfügbar"#,
+        the_file_requested_for_deletion_was_not_found: "Die zu löschende Datei wurde nicht gefunden",
         the_link_requested_for_deletion_was_not_found: "Der zu löschende Link wurde nicht gefunden",
         the_poster_to_be_updated_was_not_found: "Das Poster das aktualisiert werden sollte wurde nicht gefunden",
         the_resource_xxx_was_not_found_message: "Die Resource {path} wurde nicht gefunden, vielleicht wurde sie umbenannt, verschoben oder gelöscht?",
@@ -316,6 +315,8 @@ impl Translations {
         the_subtitle_requested_for_deletion_was_not_found: "Die zu löschenden Untertitel wurden nicht gefunden",
         the_subtitles_to_be_updated_were_not_found: "Die zu aktualisierenden Untertitel wurden nicht gefunden",
         the_test_file_contains_xxx_but_the_response_contained_xxx: "Die Testdatei enthält '{expected}' aber die Rückmeldung enthält '{encountered}'",
+        the_test_file_could_not_be_removed_again: "Die Testdatei konnte nicht wieder entfernt werden ({error})",
+        the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: "Das Hochladen einer Testdatei um die Deploymentkonfiguration zu verifizieren war nicht erfolgreich",
         the_xxx_child_process_could_not_be_executed: "Der Unterprozess {command} konnte nicht ausgeführt werden",
         the_xxx_child_process_terminated_unsuccessfully: "Der Unterprozess {command} endete unerfolgreich",
         theme: "Theme",

@@ -298,9 +298,8 @@ pub struct Translations {
     pub subtitles: &'static str,
     pub synopsis: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
-    pub the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: &'static str,
-    pub the_file_requested_for_deletion_was_not_found: &'static str,
     the_editor_is_available_at_xxx: &'static str,
+    pub the_file_requested_for_deletion_was_not_found: &'static str,
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
     the_resource_xxx_was_not_found_message: &'static str,
@@ -308,6 +307,8 @@ pub struct Translations {
     pub the_subtitle_requested_for_deletion_was_not_found: &'static str,
     pub the_subtitles_to_be_updated_were_not_found: &'static str,
     the_test_file_contains_xxx_but_the_response_contained_xxx: &'static str,
+    the_test_file_could_not_be_removed_again: &'static str,
+    pub the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: &'static str,
     the_xxx_child_process_could_not_be_executed: &'static str,
     the_xxx_child_process_terminated_unsuccessfully: &'static str,
     pub theme: &'static str,
@@ -500,6 +501,14 @@ impl Translations {
             .replace("{expected}", expected)
     }
 
+    pub fn the_test_file_could_not_be_removed_again(
+        &self,
+        error: &str
+    ) -> String {
+        self.the_test_file_could_not_be_removed_again
+            .replace("{error}", error)
+    }
+
     pub fn the_xxx_child_process_could_not_be_executed(&self, command: &str) -> String {
         self.the_xxx_child_process_could_not_be_executed.replace("{command}", command)
     }
@@ -602,6 +611,7 @@ fn check_translations() {
         assert!(&translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.contains("{filename}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{expected}"));
+        assert!(&translations.the_test_file_could_not_be_removed_again.contains("{error}"));
         assert!(&translations.the_xxx_child_process_could_not_be_executed.contains("{command}"));
         assert!(&translations.the_xxx_child_process_terminated_unsuccessfully.contains("{command}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
