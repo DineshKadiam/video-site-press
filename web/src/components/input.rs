@@ -25,6 +25,7 @@ pub struct Input<'a> {
 enum InputType {
     Date,
     Number,
+    Password,
     Permalink {
         prefix: String
     },
@@ -58,6 +59,11 @@ impl<'a> Input<'a> {
     /// Initialize an input for a number
     pub fn number(key: &'a str, label: &'a str) -> Input<'a> {
         Input::new(key, label, InputType::Number)
+    }
+
+    /// Initialize an input for password
+    pub fn password(key: &'a str, label: &'a str) -> Input<'a> {
+        Input::new(key, label, InputType::Password)
     }
 
     /// Initialize an input for a permalink
@@ -119,6 +125,7 @@ impl Display for Input<'_> {
         let r#type = match self.r#type {
             InputType::Date => r#"type="date""#,
             InputType::Number => r#"type="number""#,
+            InputType::Password => r#"type="password""#,
             InputType::Permalink { .. } => "",
             InputType::Text => "",
             InputType::Url => r#"type="url""#

@@ -80,7 +80,7 @@ pub fn edit_page(
     let mut checkbox_clean_urls = Checkbox::new("clean_urls", translations.clean_urls_label);
     let mut checkbox_ftp_config_secure = Checkbox::new("ftp_config_secure", translations.ftp_config_secure_label);
     let mut input_base_url = Input::url("base_url", translations.public_address_label);
-    let mut input_ftp_config_password = Input::text("ftp_config_password", translations.ftp_config_password_label);
+    let mut input_ftp_config_password = Input::password("ftp_config_password", translations.ftp_config_password_label);
     let mut input_ftp_config_path = Input::text("ftp_config_path", translations.ftp_config_path_label);
     let mut input_ftp_config_port = Input::number("ftp_config_port", translations.ftp_config_port_label);
     let mut input_ftp_config_server = Input::text("ftp_config_server", translations.ftp_config_server_label);
