@@ -3,7 +3,7 @@
     SPDX-License-Identifier: CC0-1.0
 -->
 
-# Video processing Hyper 8
+# Video processing in Hyper 8
 
 On platforms like YouTube you upload a video, usually in the highest possible
 quality, and then it is automatically processed on their servers. After a
