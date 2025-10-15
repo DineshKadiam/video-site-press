@@ -75,4 +75,4 @@ webbrowser = "1.0.5"
 [workspace.package]
 edition = "2021"
 rust-version = "1.82"
-version = "0.24.0"
+version = "1.0.0"

@@ -8,6 +8,105 @@
 Rich release notes including screenshots, videos and detailed commit information are also available at:
 https://simonrepp.com/hyper8/changes/
 
+## 1.0
+
+Released on October 15, 2025
+
+With the release 1.0 a new chapter begins for Hyper 8: Fully integrated for desktop environments
+on Windows, Mac and Linux, and yet continuing to build on a very simple, file-based
+foundation that allows hybrid workflows spanning terminal usage, graphical editing with Hyper 8's
+integrated editor, up to fully automated, scripted pipelines utilizing Hyper 8's command line
+edition.
+
+Among the many additions and improvements, this release introduces the new
+usage restriction option for dedicated streaming, download or offline usage
+of media files, and is accompanied by a complete overhaul of the
+[documentation](https://simonrepp.com/hyper8/docs) and the introduction of
+the new, video-augmented [tutorial](https://simonrepp.com/hyper8/tutorial.html).
+
+Enjoy!
+
+### Desktop integration finishing
+
+- Separate concerns and amend state sharing between cli, launcher and editor ([`51715dd`](https://codeberg.org/simonrepp/hyper8/commit/51715dd2a5a920ab2a6e9fae6fb85f552f7fd141))
+- Move editor settings to footer, tie automatic splash behavior to server mode ([`8d6046e`](https://codeberg.org/simonrepp/hyper8/commit/8d6046e6391d6a25d08dfb3681f358c963fcc7af))
+- Remove unused splash logo asset ([`179dcd0`](https://codeberg.org/simonrepp/hyper8/commit/179dcd0532a32fe8e741f2046ea0958ed8cfc588))
+- Integrate 1.0 splash graphics, tweak the launcher and splash screen ([`b81c9f4`](https://codeberg.org/simonrepp/hyper8/commit/b81c9f454c36ac7e48a1db421cad0fba1319f733))
+- Fine-tune version display, precompute release notes url in version module ([`64aa2e6`](https://codeberg.org/simonrepp/hyper8/commit/64aa2e6155b3d413d3f8ebbe5c07b27604959174))
+- Correctly handle nested de/serialization of editor state within launcher state ([`38fe807`](https://codeberg.org/simonrepp/hyper8/commit/38fe8072e946e7b5675fe9acd2292d325ab96c54))
+- Explicitly set splash image dimensions within editor splash screen ([`e423468`](https://codeberg.org/simonrepp/hyper8/commit/e4234686808a96b5e96b632690685327e528d0a3))
+- Add HYPER8_BUNDLED_FFMPEG flag for building and packaging with bundled ffmpeg ([`c407b4f`](https://codeberg.org/simonrepp/hyper8/commit/c407b4f687b5073d08108905460f1b08bc85f09a))
+- Return an explicit error message when the deployment probe can not be removed ([`54314ff`](https://codeberg.org/simonrepp/hyper8/commit/54314ff968f3ed82313ac7fe807dc009761ad535)) (with [bran(...)pos](https:/www.soundcrack.net))
+- Do not visibly show the password in the editor site settings ([`324c1a0`](https://codeberg.org/simonrepp/hyper8/commit/324c1a0b1c44d601211a71628c347086394a7d5a))
+
+### Media usage restrictions
+
+- Introduce downloadable/streamable properties and data-usage-per-hour metric ([`2d562cd`](https://codeberg.org/simonrepp/hyper8/commit/2d562cd79cbf326e5186b42786611687fcc9775e))
+- Expose and document streaming-only, download-only and offline usage options ([`bb6a8a7`](https://codeberg.org/simonrepp/hyper8/commit/bb6a8a73eb39b602ab4090dd9b20e49056efff86))
+
+### Editor usability and design
+
+- Provide live feedback during state changes on the media and jobs pages ([`8e9af24`](https://codeberg.org/simonrepp/hyper8/commit/8e9af247064cbfaa1b9fcb2ce861a79f13d18977))
+- Iterate on file list design/usability, improve browser support indication ([`c78fc36`](https://codeberg.org/simonrepp/hyper8/commit/c78fc362f461e5dbc60d94694c8df1f082ec76f5))
+- Iterate on link list design/usability ([`6c12270`](https://codeberg.org/simonrepp/hyper8/commit/6c12270c3f3a5fc06b8e2b85cae483df6c4727c1))
+- Fix text color not following theme in video list browser support attachments ([`1af3400`](https://codeberg.org/simonrepp/hyper8/commit/1af34007fc5b4cd2491499593f90630d707b897f))
+- Restore styling on index page site initialization buttons ([`372e751`](https://codeberg.org/simonrepp/hyper8/commit/372e75198370f586eb24e225c0cfc9c89fa81f77))
+- Switch to a grid-based, dynamically and precisely aligned video page layout ([`fac5aa4`](https://codeberg.org/simonrepp/hyper8/commit/fac5aa4756134967d4959503f09d74e8ff24d7f9))
+- Indicate active playlist/transcript buttons, auto-hide playlist on mobile ([`2abf97e`](https://codeberg.org/simonrepp/hyper8/commit/2abf97e6a2862f4186e793a5912b93926b5edcbc))
+- Simplify the collection icon ([`a61f99a`](https://codeberg.org/simonrepp/hyper8/commit/a61f99a54078772390c40710e2d4663b3528c735))
+- Fix horizontal overflow and scripting issues with new panels implementation ([`63d4f4d`](https://codeberg.org/simonrepp/hyper8/commit/63d4f4dd5aa13a481e4c72d8786acc138cd22f40))
+- Fix regression in transcript filtering ([`7e815a7`](https://codeberg.org/simonrepp/hyper8/commit/7e815a77437fda8a2e98988fc2c1b4a8756488e0))
+- Await poster computation before returning from a poster computation request ([`6125626`](https://codeberg.org/simonrepp/hyper8/commit/6125626a18ff8a98a8bd9b76393305d02c7021cd))
+- Widen the editor interface main area ([`082e957`](https://codeberg.org/simonrepp/hyper8/commit/082e95731eea884c78b3cc1cb33461b0721234b8))
+
+### Accessibility
+
+- Allow skipping to main content in keyboard-based site navigation ([`1843eea`](https://codeberg.org/simonrepp/hyper8/commit/1843eeabedb05b7c1525a9db1a85ba8a8e098e9d))
+- Exclude decorative bubbles from assistive technology and keyboard navigation ([`dccfa16`](https://codeberg.org/simonrepp/hyper8/commit/dccfa16af9b7bfa63b114173ccacf287460f45ea))
+- Add aria labels for search and seekbar inputs ([`8291c3c`](https://codeberg.org/simonrepp/hyper8/commit/8291c3cfff9f601525943cb0393253f8cabef69d))
+- Add missing aria labels and aria-hide purely visual elements in editor ([`2df3fcb`](https://codeberg.org/simonrepp/hyper8/commit/2df3fcbe5635d33aacf25404fc21751171dc0966))
+- Remove redundant assistive descriptions on preview and deploy buttons ([`bf4eb12`](https://codeberg.org/simonrepp/hyper8/commit/bf4eb12d43912e391b87c62b45f6aaa7fed8340c))
+
+### Misc
+
+- Broadly improve subtitles in terms of editor usability and internal handling ([`7197498`](https://codeberg.org/simonrepp/hyper8/commit/71974981d1009cf4ff57f17f08648bc6ac44f8bc)) (with [Arnauld](https://codeberg.org/arnauld))
+- Inset icon with a 10% margin
+  * Inset app icon with a 10% margin ([`ee059d6`](https://codeberg.org/simonrepp/hyper8/commit/ee059d6cc34d74c205cf9cf03c087bea333b9667))
+  * Inset favicons with a 10% margin ([`5c31ca6`](https://codeberg.org/simonrepp/hyper8/commit/5c31ca6e51114309514503bc9a28ea0bd0ecdd52))
+- Introduce data-usage-per-hour metric in the player's bottom-right version selector
+  * Introduce downloadable/streamable properties and data-usage-per-hour metric ([`2d562cd`](https://codeberg.org/simonrepp/hyper8/commit/2d562cd79cbf326e5186b42786611687fcc9775e))
+- Enforce yuv420p pixel format when encoding H264 to ensure widest compatibility ([`7e0c0f7`](https://codeberg.org/simonrepp/hyper8/commit/7e0c0f727535d1925a5ab067ca37214a9a37130c)) (with [Eric Peacock](https://ericpeacock.design))
+- Do not capture known shortcut codes when combined with alt/ctrl modifiers ([`c258a60`](https://codeberg.org/simonrepp/hyper8/commit/c258a60562dc7c6e79ea27072f2c4fd77afbda54))
+- Allow queuing a job whose description matches an existing but failed job ([`a520869`](https://codeberg.org/simonrepp/hyper8/commit/a5208690b23af053c31076a4a39cf16dd8f94196))
+- Clamp timecode to a "decoding safe range" when computing a poster on request ([`cc5f203`](https://codeberg.org/simonrepp/hyper8/commit/cc5f2032589428b629f517b03ee68db5203796a3))
+
+### Fixes
+
+- Restore functionality for closing a cli-invoked server with Ctrl+C shortcut
+  * Clear input between reading quit commands while serving the editor from cli ([`4c698f1`](https://codeberg.org/simonrepp/hyper8/commit/4c698f1a937dbac12b59f68b5abd099c4da0a87a))
+  * Revert cli server termination to a purely Ctrl+C based mechanism ([`22b0c1b`](https://codeberg.org/simonrepp/hyper8/commit/22b0c1bc22c9332a92bd0383966f5c386f95d8f5))
+- Add missing extension to download name hint for videos ([`b405979`](https://codeberg.org/simonrepp/hyper8/commit/b405979f0c0025200c5a1abc6414e5d2d0b38a01))
+- Fix misimplemented icu_locale parse fallback ([`fd8103b`](https://codeberg.org/simonrepp/hyper8/commit/fd8103b5360e7d61b122dae184aad3544c40bbb8))
+- Only consider published videos when calculating build storage usage ([`b530ab8`](https://codeberg.org/simonrepp/hyper8/commit/b530ab8adff28e6bf0113469a28bf780890b2bd8))
+- Initialize video player scripting only when a player is present ([`81cda63`](https://codeberg.org/simonrepp/hyper8/commit/81cda6329e1372e64b2b0b19b1a84253fcfbacce))
+- Extend tauri opener plugin bug workaround to local preview action buttons ([`8f02463`](https://codeberg.org/simonrepp/hyper8/commit/8f02463524396bf613b842f5d6b0570f2bd43b05))
+
+### Documentation
+
+- Update outdated subtitle support docs ([`9010826`](https://codeberg.org/simonrepp/hyper8/commit/9010826734501dba58ef99b07617100129ac0e76))
+- Add documentation on linking to timecodes ([`c2d02bc`](https://codeberg.org/simonrepp/hyper8/commit/c2d02bc38fe7303a6b55258facefcd49daa5c7d9)) (with [Lorenzo Miniero](https://fosstodon.org/@lminiero))
+- Add architectural documentation ([`2ec092f`](https://codeberg.org/simonrepp/hyper8/commit/2ec092f554f2ef59687e3ec20a5533923e5e5c0d))
+- Restructure/reword and extend reference docs into new "site directory" section ([`2ce8c83`](https://codeberg.org/simonrepp/hyper8/commit/2ce8c83b21e4528e5fa2a72c144a9ae1c03a33ad))
+- Add the new logo icon to the docs ([`6511262`](https://codeberg.org/simonrepp/hyper8/commit/6511262483503bc8355027816120bb2f0ab6e6c8))
+- Annotate 1.0-only functionality in docs to allow for continuous doc releases ([`0cb1aa9`](https://codeberg.org/simonrepp/hyper8/commit/0cb1aa9d50a2b8157526a9b10bb6657fc798df72))
+- Indicate link hover states, remove block justification, reindent lists in docs ([`2939553`](https://codeberg.org/simonrepp/hyper8/commit/2939553f716c5e0902bbbc5113960bd9f0223b1e))
+- Restructure and extend examples in docs, extract layout into own module ([`0af4d4f`](https://codeberg.org/simonrepp/hyper8/commit/0af4d4f2c41d0b6a126c8cbc0a80b8bf1329ab39))
+- Update outdated cross-links in docs ([`162e0d3`](https://codeberg.org/simonrepp/hyper8/commit/162e0d38eea058e83e5c2a238809d5fcdad9f9b0))
+- Separate desktop application and CLI docs, extend CLI argument texts ([`c4b66a1`](https://codeberg.org/simonrepp/hyper8/commit/c4b66a1e761faf991762dd56b0cb73e49aaa14b5))
+- Document video handling and the ecological/societal context of Hyper 8 ([`9f02a82`](https://codeberg.org/simonrepp/hyper8/commit/9f02a8232debb492671ce2b698a68c7492325883))
+- Fix vertical clipping in the docs navigation ([`41ebea1`](https://codeberg.org/simonrepp/hyper8/commit/41ebea18dbd91c987897811d49de6aaee9139075)) (with [Johannes Burström](https://johannesburstrom.se))
+- Replace hard-coded colors in docs css with dark/light adaptive variables ([`64f3288`](https://codeberg.org/simonrepp/hyper8/commit/64f3288b1bb305bc7b9b4a860624f0c1f37829c6)) (with [Johannes Burström](https://johannesburstrom.se))
+
 ## 0.24
 
 Released on September 20, 2025
