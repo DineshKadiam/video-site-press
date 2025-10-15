@@ -39,6 +39,7 @@ hatsch<br>
 [Robert Pfotenhauer](https://pftnhr.xyz)<br>
 [Sam](https://ethicalrevolution.co.uk/)<br>
 [Sam Muirhead](https://www.animate-activate.studio/)<br>
+[Sid](https://kjelsrud.dev/)<br>
 [sknob](https://sknob.fr/)<br>
 [surface mount dove](https://taube.xyz/)<br>
 [Walter Ebert](https://walterebert.com/)<br>
