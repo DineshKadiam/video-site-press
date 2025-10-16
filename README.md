@@ -11,7 +11,7 @@ Build and publish video sites, from single videos to large archives.<br>
 No database, no programming, no maintenance required.<br>
 Compatible with virtually every webhost on this planet.
 
-Latest Release: **`0.24`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
+Latest Release: **`1.0`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
 
 <img src="https://simonrepp.com/hyper8/readme.png?2" alt="Screenshot showing the Hyper 8 browser editor and a built page"/>
 
@@ -37,21 +37,21 @@ The [release notes](https://simonrepp.com/hyper8/changes) give insight into deve
 - What changed in previous versions
 - Sometimes also: What's coming in an upcoming version
 
+## Donations
+
+If you'd like to support Hyper 8's ongoing development you can donate to the project at [Liberapay](https://liberapay.com/simonrepp) and [Ko-fi](https://ko-fi.com/simonrepp).
+
 ## Development in 2025
 
-Major developments in 2025 are being funded by [netidee](https://netidee.at), a campaign by the austrian [Internet Stiftung](https://internetstiftung.at/en/).
+Major developments on Hyper 8 in 2025 (from version 0.18 up to 1.0) were funded by [netidee](https://netidee.at), a campaign by the austrian [Internet Stiftung](https://internetstiftung.at/en/).
 
 ![netidee Förderungen](https://simonrepp.com/hyper8/readme_netidee.svg)
 
 ## Development in 2023/2024
 
-Development up to the first Beta was funded by the [Austrian Federal Ministry for Arts, Culture, Civil Service and Sport](https://www.bmkoes.gv.at/en.html).
+Development up to the first Beta (version 0.13) was funded by the [Austrian Federal Ministry for Arts, Culture, Civil Service and Sport](https://www.bmkoes.gv.at/en.html).
 
 ![Federal Ministry Republic of Austria Arts, Culture, Civil Service and Sport](https://simonrepp.com/hyper8/readme_bmkoes.svg)
-
-## Direct funding
-
-If you'd like to support Hyper 8's ongoing development you can donate to the project at [Liberapay](https://liberapay.com/simonrepp) and [Ko-fi](https://ko-fi.com/simonrepp).
 
 ## License
 
