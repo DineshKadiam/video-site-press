@@ -93,6 +93,7 @@ header {
     color: var(--fg-1);
     display: flex;
     justify-content: center;
+    min-height: 0;
     position: relative;
 }
 header > a {
