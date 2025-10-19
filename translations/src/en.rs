@@ -186,7 +186,6 @@ impl Translations {
         local_editor_note: "Open this address in your browser to start editing - it is only accessible to you, on this device.",
         local_path: "Local Path",
         loud_volume: "Loud Volume",
-        markdown_inline_links_are_supported_standalone_urls_are_automatically_linked: r#"Markdown inline links are supported: [Example](https://example.com)<br>Stand-alone URLs are automatically linked."#,
         maximize: "Maximize",
         media_rss_description: "An RSS feed that distributes video and audio content in all available formats directly over the feed.",
         medium_volume: "Medium Volume",
@@ -307,6 +306,7 @@ impl Translations {
 
             Error details: {error}
         "),
+        textarea_formatting_hint_text: r#"URLs are automatically linked - <code>https://example.com</code> is rendered as <a href="https://example.com" target="_blank">example.com</a><br>To set the link label use <code>[Example](https://example.com)</code> - this is rendered as <a href="https://example.com" target="_blank">Example</a>"#,
         the_editor_is_available_at_xxx: r#"The editor is available at <a href="{url}" target="_blank">{url}</a>"#,
         the_file_requested_for_deletion_was_not_found: "The file requested for deletion was not found",
         the_link_requested_for_deletion_was_not_found: "The link requested for deletion was not found",

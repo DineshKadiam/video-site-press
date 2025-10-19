@@ -814,7 +814,22 @@ svg { fill: currentColor; }
     align-self: flex-end;
     color: var(--fg-3);
     font-size: .8rem;
+    line-height: 1.4;
     text-align: right;
+}
+.textarea_with_hint span a {
+    color: var(--fg-2);
+    text-decoration: underline;
+}
+.textarea_with_hint span a:focus-visible,
+.textarea_with_hint span a:hover {
+    color: var(--fg-3);
+    text-decoration: underline;
+}
+.textarea_with_hint span code {
+    background: var(--bg-2);
+    border-radius: .1rem;
+    padding-inline: .2em;
 }
 #toggle-splash svg { pointer-events: none; }
 .tree_view_options {

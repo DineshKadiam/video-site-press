@@ -56,9 +56,7 @@ impl<'a> Textarea<'a> {
         key: &'a str,
         label: &'a str
     ) -> Textarea<'a> {
-        let hint = Some(
-            translations.markdown_inline_links_are_supported_standalone_urls_are_automatically_linked.to_string()
-        );
+        let hint = Some(translations.textarea_formatting_hint_text.to_string());
         Textarea::new(
             hint,
             key,

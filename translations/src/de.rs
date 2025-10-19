@@ -186,7 +186,6 @@ impl Translations {
         local_editor_note: "Öffne diese Adresse in deinem Browser um mit dem Editieren zu beginnen - sie ist nur für dich und von diesem Gerät zugänglich.",
         local_path: "Lokaler Pfad",
         loud_volume: "Hohe Lautstärke",
-        markdown_inline_links_are_supported_standalone_urls_are_automatically_linked: r#"Markdown Inline-Links werden unterstützt: [Beispiel](https://example.com)<br>Alleinstehende URLs werden automatisch verlinkt."#,
         maximize: "Maximieren",
         media_rss_description: "Ein RSS-Feed der Video und Audio-Inhalte in allen verfügbaren Formaten direkt über den Feed verbreitet.",
         medium_volume: "Mittlere Lautstärke",
@@ -306,6 +305,7 @@ impl Translations {
 
             Fehlerdetails: {error}
         "),
+        textarea_formatting_hint_text: r#"URLs werden automatisch verlinkt - <code>https://example.com</code> wird zu <a href="https://example.com" target="_blank">example.com</a><br>Für Linktexte verwende <code>[Beispiel](https://example.com)</code> - dies wird zu <a href="https://example.com" target="_blank">Beispiel</a>"#,
         the_editor_is_available_at_xxx: r#"Der Editor ist unter <a href="{url}" target="_blank">{url}</a> verfügbar"#,
         the_file_requested_for_deletion_was_not_found: "Die zu löschende Datei wurde nicht gefunden",
         the_link_requested_for_deletion_was_not_found: "Der zu löschende Link wurde nicht gefunden",
