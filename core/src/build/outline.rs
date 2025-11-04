@@ -322,11 +322,9 @@ impl TraversalStep<'_> {
                         details.push(date);
                     }
 
-                    if let Some(video_meta) = &video_iterated
-                        .highest_quality_video_file()
-                        .and_then(|video_file| video_file.video_meta.as_ref()) {
-                        let duration = casual_duration(video_meta.duration, translations);
-                        details.push(duration);
+                    if let Some(duration) = video_iterated.duration_public() {
+                        let duration_formatted = casual_duration(duration, translations);
+                        details.push(duration_formatted);
                     }
 
                     let details = details.join(", ");

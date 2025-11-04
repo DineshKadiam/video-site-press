@@ -1074,6 +1074,42 @@ impl Video {
         video_files
     }
 
+    /// Returns the duration in seconds using either the default streamable
+    /// video or audio file or any downloadable media file as a source. Note
+    /// that if all media files are designated to be kept offline, no
+    /// duration is returned, hence the `_public` suffix in the name - this
+    /// is only a "displayable duration" to be publicly shown on built
+    /// sites.
+    pub fn duration_public(&self) -> Option<f32> {
+        if let Some(video_meta) = self
+            .default_streamable_video_file()
+            .and_then(|video_file| video_file.video_meta.as_ref()) {
+            return Some(video_meta.duration);
+        }
+
+        if let Some(audio_meta) = self
+            .default_streamable_audio_file()
+            .and_then(|audio_file| audio_file.audio_meta.as_ref()) {
+            return Some(audio_meta.duration);
+        }
+
+        if let Some(video_meta) = self
+            .downloadable_video_files()
+            .next()
+            .and_then(|video_file| video_file.video_meta.as_ref()) {
+            return Some(video_meta.duration);
+        }
+
+        if let Some(audio_meta) = self
+            .downloadable_audio_files()
+            .next()
+            .and_then(|audio_file| audio_file.audio_meta.as_ref()) {
+            return Some(audio_meta.duration);
+        }
+
+        None
+    }
+
     /// Get the embedding setting resolved in the context of the site tree
     /// (= as set locally on the video or as inherited from an ancestor).
     pub fn embedding(&self) -> bool {
