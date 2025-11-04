@@ -36,6 +36,7 @@ hatsch<br>
 [Mads Kjeldgaard](https://madskjeldgaard.dk/)<br>
 [Matthias Bilger](https://codeberg.org/m42e)<br>
 [Meljoann](https://www.meljoann.com/)<br>
+[Michael Fritzsch](https://codeberg.org/michael-fritzsch)<br>
 [Robert Pfotenhauer](https://pftnhr.xyz)<br>
 [Sam](https://ethicalrevolution.co.uk/)<br>
 [Sam Muirhead](https://www.animate-activate.studio/)<br>

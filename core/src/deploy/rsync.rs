@@ -128,7 +128,7 @@ pub fn config_probe(
                             }
                         };
 
-                        let remote_probe_path = format!("{}/{RSYNC_CONFIG_PROBE_FILE_NAME}", site.ftp_config.path_unchecked());
+                        let remote_probe_path = format!("{}/{RSYNC_CONFIG_PROBE_FILE_NAME}", site.ssh_config.path_unchecked());
 
                         let err = translations.the_test_file_contains_xxx_but_the_response_contained_xxx(
                             &truncate(&probe_content),
@@ -144,7 +144,7 @@ pub fn config_probe(
                     }
                 }
                 Err(err) => {
-                    let remote_probe_path = format!("{}/{RSYNC_CONFIG_PROBE_FILE_NAME}", site.ftp_config.path_unchecked());
+                    let remote_probe_path = format!("{}/{RSYNC_CONFIG_PROBE_FILE_NAME}", site.ssh_config.path_unchecked());
                     let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
                         &remote_probe_path,
                         &public_probe_url,
@@ -155,7 +155,7 @@ pub fn config_probe(
             }
         }
         Err(err) => {
-            let remote_probe_path = format!("{}/{RSYNC_CONFIG_PROBE_FILE_NAME}", site.ftp_config.path_unchecked());
+            let remote_probe_path = format!("{}/{RSYNC_CONFIG_PROBE_FILE_NAME}", site.ssh_config.path_unchecked());
             let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
                 &remote_probe_path,
                 &public_probe_url,
