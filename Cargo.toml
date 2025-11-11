@@ -62,10 +62,10 @@ slug = "0.1.6"
 # new/changed features we don't use.
 suppaftp = { features = ["native-tls"], version = "=6.3.0" }
 sys-locale = "0.3.2"
-tauri = { features = [], version = "2.8.5" }
-tauri-build = { features = [], version = "2.4.1" }
-tauri-plugin-dialog = "2.4.0"
-tauri-plugin-opener = "2.5.0"
+tauri = { features = [], version = "2.9.2" }
+tauri-build = { features = [], version = "2.5.1" }
+tauri-plugin-dialog = "2.4.2"
+tauri-plugin-opener = "2.5.2"
 tokio = { features = ["macros", "rt-multi-thread"], version = "1.47.1" }
 url = "2.5.7"
 urlencoding = "2.1.3"
