@@ -13,10 +13,12 @@ listed here, just say the word.
 Thanks everyone for your support!
 
 [arnauld](https://codeberg.org/arnauld)<br>
+[Björn Wijers](https://burobjorn.nl/)<br>
 [BMKÖS](https://www.bmkoes.gv.at/)<br>
 [bran(...)pos](https://www.soundcrack.net/)<br>
 [Bri Hefele](https://brhfl.com)<br>
 [bthj](https://sonomu.club/@aflands)<br>
+[Camille](https://social.praxis.nyc/@camille)<br>
 [Christian Pacaud](https://www.christianpacaud.com/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
 [dec23k](https://mastodon.ie/@dec23k)<br>
