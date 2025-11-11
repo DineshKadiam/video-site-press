@@ -72,7 +72,7 @@ impl VideoFile {
         // This mapping must be kept up-to-date with
         // [SUPPORTED_EXTENSIONS], otherwise it's a full on-crash somewhere
         // (but at least something that is quickly and easily discovered).
-        match extension {
+        match extension.to_ascii_lowercase().as_str() {
             "m4v" |
             "mp4" => "video/mp4",
             "mkv" => "video/x-matroska",
