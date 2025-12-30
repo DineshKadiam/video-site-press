@@ -195,7 +195,7 @@ Hyper 8 sites are built to stand the test of time: As long as a copy of your sit
 (online or offline), it can always be put back onto a regular static file server and will resume
 its duty just as on the day you first published it. More than that, if you build an archive-ready
 version of your site (simply the regular site with
-[clean urls disabled](https://simonrepp.com/hyper8/docs/site.html#disable_clean_urls)) your site
+[clean urls disabled](https://simonrepp.com/hyper8/docs/site-manifest-site-eno.html#disable_clean_urls)) your site
 will be browseable straight from disk, without a server being required for viewing! Due to some
 technicalities, this last feature was rendered inoperable for the past months, but 0.24 brings
 it back in order. Happy archiving!
