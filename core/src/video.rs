@@ -990,7 +990,7 @@ impl Video {
                 )
             })
             .or_else(|| {
-                self.audio_files.iter().find(|audio_file| {
+                self.streamable_audio_files().find(|audio_file| {
                     audio_file.audio_meta.as_ref().is_some_and(|audio_meta|
                         audio_meta.codec.as_ref().is_some_and(|codec| codec == "opus")
                     )
