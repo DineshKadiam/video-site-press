@@ -163,9 +163,10 @@ fn controls(
         </script>
     "#);
 
+    let dashboard_url = routes::DASHBOARD;
     let storage_icon = hyper8_icons::storage(Some(translations.storage_usage));
     let storage_usage = human_size(site.build_storage_usage());
-    let storage = format!(r#"<a href="/">{storage_icon} {storage_usage}</a>"#);
+    let storage = format!(r#"<a href="{dashboard_url}">{storage_icon} {storage_usage}</a>"#);
 
     let reload_icon = hyper8_icons::reload(None);
     formatdoc!(r#"

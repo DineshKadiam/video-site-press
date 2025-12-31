@@ -817,9 +817,8 @@ impl Video {
         }
 
         for video_file in self.published_video_files() {
-            if !video_file.streaming_restricted() {
-                storage_usage += video_file.file_meta.size;
-            } else if self.download() && !video_file.download_restricted() {
+            if !video_file.streaming_restricted() ||
+                (self.download() && !video_file.download_restricted()) {
                 storage_usage += video_file.file_meta.size;
             }
         }
