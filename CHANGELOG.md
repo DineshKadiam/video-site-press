@@ -8,6 +8,32 @@
 Rich release notes including screenshots, videos and detailed commit information are also available at:
 https://simonrepp.com/hyper8/changes/
 
+## 1.0.1
+
+Released on January 1, 2026
+
+### Interface improvements
+
+- Use a clearer description/textarea formatting hint text ([`d431e59`](https://codeberg.org/simonrepp/hyper8/commit/d431e59d11e28c3e503f61b17b49f670ae6bb806)) (with [Björn Wijers](https://burobjorn.nl/))
+
+### Fixes
+
+- Fix windows webview specific layout glitch in launcher ([`2ef485d`](https://codeberg.org/simonrepp/hyper8/commit/2ef485d5c1b3174f2769588e45db796fe38ebae2))
+- Replace accidental ftp config acccess in rsync config probe routine ([`7c362ae`](https://codeberg.org/simonrepp/hyper8/commit/7c362ae0626e65c7643c7a87619fae15d114523c)) (with [Michael Fritzsch](https://codeberg.org/michael-fritzsch))
+- Ensure duration is always rendered for both video and audio on built sites ([`c6baa0a`](https://codeberg.org/simonrepp/hyper8/commit/c6baa0a4df05e4e850851419a6b3e29acf934693)) (with [arnauld](https://codeberg.org/arnauld))
+- Perform lowercase video extension comparison when mapping to mime types ([`fd5d0b3`](https://codeberg.org/simonrepp/hyper8/commit/fd5d0b3ec40c9af093623c06f308cb81968f62fb)) (with [namatoj](https://autonomous.zone/@namatoj))
+- Prevent playlist sidebar with many items vertically expanding the player ([`9297f12`](https://codeberg.org/simonrepp/hyper8/commit/9297f12fec7fed496082d4a42ecb284e4797c800)) (with [Lioh Möller](https://social.anoxinon.de/@Lioh))
+- Fix opus audio files being able to bypass streaming media restrictions ([`dee8954`](https://codeberg.org/simonrepp/hyper8/commit/dee89540d7171967a6ef78dcc7838d0e618f9b09))
+- Incorporate media usage restrictions in dashboard chart/stats construction ([`c7c12d1`](https://codeberg.org/simonrepp/hyper8/commit/c7c12d1f5aa5aa367dc384729bbcd963dc36c6a3)) (with [Dave Riedstra](https://daveriedstra.com/))
+
+### Maintenance
+
+- Remove obsolete opener plugin issue workaround (with [Legend-Master](https://github.com/Legend-Master))
+  * Update tauri dependencies and remove obsolete opener plugin issue workaround ([`de5b137`](https://codeberg.org/simonrepp/hyper8/commit/de5b13762919485e7b10a82db9ed6f46b4f39097))
+- Update all unpinned dependencies to latest, raise MSRV from 1.82 to 1.83
+  * Update all unpinned dependencies to latest, raise MSRV from 1.82 to 1.83 ([`70c308a`](https://codeberg.org/simonrepp/hyper8/commit/70c308a99b9d6c337e64d0d25886a586495b47c7))
+  * Update all unpinned dependencies to latest ([`8394822`](https://codeberg.org/simonrepp/hyper8/commit/8394822db63a5dc08da8fd12d4a9a8dc6ac0b6c0))
+
 ## 1.0
 
 Released on October 15, 2025

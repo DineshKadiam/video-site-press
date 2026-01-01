@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024-2025 Simon Repp
+    SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -11,7 +11,7 @@ Build and publish video sites, from single videos to large archives.<br>
 No database, no programming, no maintenance required.<br>
 Compatible with virtually every webhost on this planet.
 
-Latest Release: **`1.0`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
+Latest Release: **`1.0.1`** – Visit the [website](https://simonrepp.com/hyper8) for more information.
 
 <img src="https://simonrepp.com/hyper8/readme.png?2" alt="Screenshot showing the Hyper 8 browser editor and a built page"/>
 
