@@ -1,16 +1,5 @@
-# SPDX-FileCopyrightText: 2025 Simon Repp
+# SPDX-FileCopyrightText: 2025-2026 Simon Repp
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
-[package]
-description = "The fully graphical Hyper 8 desktop application"
-edition.workspace = true
-name = "hyper8"
-rust-version.workspace = true
-version.workspace = true
-
-[lib]
-crate-type = ["cdylib", "rlib", "staticlib"]
-name = "hyper8_desktop_lib"
 
 [build-dependencies]
 tauri-build.workspace = true
@@ -35,3 +24,15 @@ serde_json.workspace = true
 tauri.workspace = true
 tauri-plugin-dialog.workspace = true
 tauri-plugin-opener.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib", "staticlib"]
+name = "hyper8_desktop_lib"
+
+[package]
+default-run="hyper8"
+description = "The fully graphical Hyper 8 desktop application"
+edition.workspace = true
+name = "hyper8"
+rust-version.workspace = true
+version.workspace = true
