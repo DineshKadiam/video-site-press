@@ -17,6 +17,11 @@ use tauri::{
     WebviewWindowBuilder,
     WindowEvent
 };
+use tauri_plugin_dialog::{
+    DialogExt,
+    MessageDialogButtons,
+    MessageDialogKind
+};
 
 use hyper8_core::Context;
 use hyper8_core::watcher::watch_site_dir;
@@ -146,8 +151,13 @@ pub fn start_editor(
             };
         }
         Err(err) => {
-            // TODO: Provide the error message in the application, then everything can crash.
-            panic!("{err}");
+            app
+                .dialog()
+                .message(err)
+                .kind(MessageDialogKind::Info)
+                .title(translations.error)
+                .buttons(MessageDialogButtons::Ok)
+                .show(move |_| { });
         }
     }
 }
