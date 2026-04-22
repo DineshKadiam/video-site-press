@@ -1,7 +1,7 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
@@ -14,8 +14,11 @@ use actix_web::cookie::Key;
 use actix_web::web::{Data, FormConfig};
 use actix_web::web::{get, post, resource};
 use actix_web::rt;
+use indoc::formatdoc;
 
 use hyper8_core::Context as CoreContext;
+use hyper8_core::DEFAULT_IP;
+use hyper8_core::{default_ports_display, default_ports_iter};
 use hyper8_core::util::ensure_dir;
 
 use crate::{Context, EditorState};
@@ -37,14 +40,6 @@ use crate::endpoints::{
     video
 };
 
-const DEFAULT_EDITOR_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-const DEFAULT_EDITOR_PORT: u16 = 49737; // "Dial 127.0.0.1:HYPER"
-
-/// When DEFAULT_EDITOR_PORT is unavailable, we try DEFAULT_EDITOR_PORT + 1,
-/// then DEFAULT_EDITOR_PORT + 2, etc., but after MAX_PORT_ATTEMPTS
-/// iterations we stop, as probably something is else is wrong then, rather
-/// than all ports taken.
-const MAX_PORT_ATTEMPTS: u16 = 10;
 
 pub enum ServerMode {
     MultipleRemoteUsers {
@@ -73,7 +68,7 @@ pub fn start(
     let context = Arc::new(context);
     let data = Data::new(context);
 
-    let ip = ip_requested.unwrap_or(DEFAULT_EDITOR_IP);
+    let ip = ip_requested.unwrap_or(DEFAULT_IP);
 
     let (sender, receiver) = channel();
 
@@ -222,19 +217,28 @@ pub fn start(
                 }
             }
         } else {
-            let mut port = DEFAULT_EDITOR_PORT;
+            let mut default_ports = default_ports_iter().peekable();
 
             loop {
+                let port = default_ports.next().unwrap();
+
                 match bind_server(data.clone(), ip, port) {
                     Ok(server) => break (server, port),
                     Err(err) => {
-                        if port > DEFAULT_EDITOR_PORT + MAX_PORT_ATTEMPTS {
-                            let message = format!("Could not bind preview server to {ip} on any port in the range {DEFAULT_EDITOR_PORT}-{port} (last error was {err}).\nUse --port to manually set a port and/or check that no other issue is at play");
+                        if default_ports.peek().is_none() {
+                            let default_ports_display = default_ports_display();
+
+                            let message = formatdoc!("
+                                Could not bind preview server to {ip} on any of the default ports ({default_ports_display}).
+                                The last error was: {err}
+                                Inspect your system and ensure that at least one of the default ports is free to use by Hyper 8.
+                                When running from the command line you can use --port to manually set a port to work around this as well.
+                            ");
+
                             sender.send(Err(message)).unwrap();
+
                             return;
                         }
-
-                        port += 1;
                     }
                 }
             }
