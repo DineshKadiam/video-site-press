@@ -3,76 +3,76 @@
 
 [workspace]
 members = [
-	"cli",
-	"core",
-	"desktop",
-	"docs",
-	"icons",
-	"translations",
-	"version",
-	"web"
+    "cli",
+    "core",
+    "desktop",
+    "docs",
+    "icons",
+    "translations",
+    "version",
+    "web"
 ]
-resolver = "2"
+resolver = "3"
 
 [workspace.dependencies]
-actix-files = "0.6.9"
+actix-files = "0.6.10"
 actix-multipart = "0.7.2"
 actix-session = { features = ["cookie-session"], version = "0.11.0" }
+# actix-web 4.13.0 is available but raises the MSRV to 1.88.0, therefore we'll
+# wait a bit until we update (~July 2026 or so)
 actix-web = { version = "4.12.1" }
 base64 = "0.22.1"
-# bincode 2.x is available but it includes breaking changes (on the API level,
-# encoded data is "completely compatible if the same configuration is used")
-# and raises the MSRV to 1.85.0, therefore we'll wait a good bit until we
-# update (potentially around spring/summer 2026)
+# Newer releases of bincode 1.3.3 are available, but unless we face strong
+# reasons to make changes here we stick with the pinned version, because
+# "(...) development has officially ceased and will not resume. Version 1.3.3
+# is considered a complete version of bincode that is not in need of any
+# updates. Updates will only be pushed to the in the unlikely event of
+# CVEs." (https://git.sr.ht/~stygianentity/bincode)
 bincode = "=1.3.3"
-chrono = { features = ["unstable-locales"], version = "0.4.42" }
-clap = { features = ["string"], version = "4.5.53" }
-ctrlc = "3.5.1"
+chrono = { features = ["unstable-locales"], version = "0.4.44" }
+clap = { features = ["string"], version = "4.6.1" }
+ctrlc = "3.5.2"
 dirs = "6.0.0"
 dunce = "1.0.5"
-enolib = { git = "https://codeberg.org/simonrepp/enolib-rs", tag = "0.5.0" }
+enolib = { git = "https://codeberg.org/simonrepp/enolib-rs", tag = "0.7.0" }
 env_logger = "0.11.8"
 # For now included to make sure that on macOS desktop builds,
 # ffmpeg/ffprobe is found from $PATH - try to do without in the long run
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 form_urlencoded = "1.2.2"
-futures-util = "0.3.31"
-icu_collator = "2.1.1"
-icu_locale = "2.1.1"
-# image 0.25.8 is available but raises the MSRV to 1.85.0, therefore we'll
-# wait until we update (no crucial updates we absolutely need here)
-image = "=0.25.6"
+futures-util = "0.3.32"
+icu_collator = "2.2.0"
+icu_locale = "2.2.0"
+# image 0.25.10 is available but raises the MSRV to 1.88.0, therefore we'll
+# wait a bit until we update (~July 2026 or so)
+image = "=0.25.9"
 indoc = "2.0.7"
 language-tags = "0.3.2"
-local-ip-address = "0.6.8"
+local-ip-address = "0.6.12"
 log = "0.4.29"
 minreq = { features = ["https-rustls"], version = "2.14.1" }
 nanoid = "0.4.0"
 notify = "8.2.0"
-pulldown-cmark = { default-features = false, features = ["html", "simd"], version = "0.13.0" }
-rand = "0.9.2"
-rsubs-lib = "0.3.3"
+pulldown-cmark = { default-features = false, features = ["html", "simd"], version = "0.13.3" }
+rand = "0.10.1"
+rsubs-lib = "0.3.4"
 serde = "1.0.228"
 serde_derive = "1.0.228"
-serde_json = "1.0.148"
+serde_json = "1.0.149"
 slug = "0.1.6"
-# suppaftp 7.0.x is available but requires an MSRV of 1.85.1, we'll wait a
-# good bit (tentatively speaking maybe spring/summer 2026 or so) until we
-# update because right now there are no critical fixes or such we need, just
-# new/changed features we don't use.
-suppaftp = { features = ["native-tls"], version = "=6.3.0" }
+suppaftp = { features = ["native-tls"], version = "8.0.2" }
 sys-locale = "0.3.2"
-tauri = { features = [], version = "2.9.5" }
-tauri-build = { features = [], version = "2.5.3" }
-tauri-plugin-dialog = "2.4.2"
-tauri-plugin-opener = "2.5.2"
-tokio = { features = ["macros", "rt-multi-thread"], version = "1.48.0" }
-url = "2.5.7"
+tauri = { features = [], version = "2.10.3" }
+tauri-build = { features = [], version = "2.5.6" }
+tauri-plugin-dialog = "2.7.0"
+tauri-plugin-opener = "2.5.3"
+tokio = { features = ["macros", "rt-multi-thread"], version = "1.52.1" }
+url = "2.5.8"
 urlencoding = "2.1.3"
-uuid = { features = ["v5"], version = "1.19.0" }
-webbrowser = "1.0.6"
+uuid = { features = ["v5"], version = "1.23.1" }
+webbrowser = "1.2.1"
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.83"
+edition = "2024"
+rust-version = "1.86"
 version = "1.0.1"

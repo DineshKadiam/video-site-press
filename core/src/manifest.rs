@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use enolib::{Attribute, SectionElement};
+use enolib::{Attribute, RootElement};
 
 pub const MAX_SYNOPSIS_CHARS: usize = 256;
 
@@ -18,7 +18,7 @@ pub fn attribute_error(
 
 // TODO: Use element.snippet(), i.e. make this a element_error_with_snippet() (?) – Need to make sure this nicely displays also in interface
 pub fn element_error(
-    element: &Box<dyn SectionElement>,
+    element: &Box<dyn RootElement>,
     manifest_path: &Path,
     error: &str
 ) -> String {
