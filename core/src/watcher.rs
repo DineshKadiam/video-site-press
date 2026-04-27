@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::{Path, PathBuf};
@@ -37,7 +37,10 @@ pub fn watch_site_dir(context: Arc<Context>) {
             // if it is not contained within a path we already have queued.
             if !queue.iter().any(|iterated| path.starts_with(iterated)) {
                 // Unqueue any paths that are contained within the path we are adding to the queue
-                *queue = queue.drain(..).filter(|iterated| iterated.starts_with(path)).collect::<Vec<PathBuf>>();
+                *queue = queue
+                    .drain(..)
+                    .filter(|iterated| !iterated.starts_with(path))
+                    .collect::<Vec<PathBuf>>();
 
                 queue.push(path.to_owned());
             }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::cmp;
@@ -875,7 +875,7 @@ impl Playlist {
         }
 
         if !hyper_dir.video_files.is_empty() {
-            let mut error = "No video files should be directly in a playlist directory, maybe you wanted to put them in subfolder instead?".to_string();
+            let mut error = "No video files should be directly in a playlist directory, maybe you wanted to put them in a subdirectory instead?".to_string();
 
             for video_file in &hyper_dir.video_files {
                 error.push_str(&format!("\n- {}", video_file.display()));

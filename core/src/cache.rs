@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::collections::HashMap;
@@ -48,7 +48,7 @@ pub struct AudioMetaCached {
     /// The path is relative to the site_dir. This ensures
     /// that we can correctly re-associate files on each build, even
     /// if the site dir directory moves around on disk.
-    pub path: String,
+    pub path: String
 }
 
 pub struct Cache {

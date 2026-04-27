@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2025 Simon Repp
+    SPDX-FileCopyrightText: 2025-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -9,7 +9,7 @@
 
 What you need to have installed to build and run hyper8:
 
-- **Rust (version 1.82 or later)**
+- **Rust (version 1.86 or later)**
 
   Install [rust](https://rust-lang.org) on your system following the official [installation instructions](https://www.rust-lang.org/tools/install).
 
