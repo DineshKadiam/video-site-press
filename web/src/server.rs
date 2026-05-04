@@ -11,9 +11,9 @@ use actix_session::SessionMiddleware;
 use actix_session::storage::CookieSessionStore;
 use actix_web::{App, HttpServer};
 use actix_web::cookie::Key;
+use actix_web::rt;
 use actix_web::web::{Data, FormConfig};
 use actix_web::web::{get, post, resource};
-use actix_web::rt;
 use indoc::formatdoc;
 
 use hyper8_core::Context as CoreContext;
@@ -39,7 +39,6 @@ use crate::endpoints::{
     site,
     video
 };
-
 
 pub enum ServerMode {
     MultipleRemoteUsers {

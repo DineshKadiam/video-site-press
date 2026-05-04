@@ -24,7 +24,7 @@ use super::{FtpStreamWrapper, SyncError};
 
 const FTP_CONFIG_PROBE_FILE_NAME: &str = ".hyper8_ftp_config_probe.txt";
 const FTP_CONFIG_PROBE_TEXT: &str = indoc!("
-    This file was created by Hyper 8 (https://simonrepp.com/hyper8) to verify
+    This file was created by Hyper 8 (https://hyper8.org) to verify
     the configured server and path for FTP deployment matches up with the
     configured website url. It serves no further purpose anymore and may
     safely be deleted.

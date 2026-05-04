@@ -89,7 +89,7 @@ pub fn atom(
             <author>
                 <name>{author_name}</name>
             </author>
-            <generator uri="https://simonrepp.com/hyper8" version="{VERSION_WITH_PATCH}">
+            <generator uri="https://hyper8.org" version="{VERSION_WITH_PATCH}">
                 Hyper 8 Video System {VERSION_WITH_PATCH_AND_REVISION}
             </generator>
             <id>{site_url}</id>

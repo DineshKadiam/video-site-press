@@ -7,7 +7,7 @@
 
 You can download and install either the full desktop edition
 or the command line edition from the
-[download page](https://simonrepp.com/hyper8/download.html) – **both include
+[download page](https://hyper8.org/download.html) – **both include
 the command line interface**.
 
 All remaining sections on this page will assume that you already have a

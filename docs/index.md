@@ -38,6 +38,6 @@ site directory specification to get the full picture.
 
 See some [video guides and demonstrations](https://simonrepp.com/video/hyper8/).
 
-See the [website](https://simonrepp.com/hyper8).
+See the [website](https://hyper8.org).
 
 See the [repository](https://codeberg.org/simonrepp/hyper8) for the source code.

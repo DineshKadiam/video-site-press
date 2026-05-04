@@ -237,7 +237,7 @@ impl Layout {
                         <a href="{root_url}">
                             {e_site_title}
                         </a>
-                        <a href="https://simonrepp.com/hyper8" target="_blank">
+                        <a href="https://hyper8.org" target="_blank">
                             {logo_monochrome_icon} Hyper 8 Video System {VERSION_WITHOUT_PATCH}
                         </a>
                         <button class="shortcuts">

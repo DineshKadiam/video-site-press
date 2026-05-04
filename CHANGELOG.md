@@ -6,7 +6,7 @@
 # Changelog
 
 Rich release notes including screenshots, videos and detailed commit information are also available at:
-https://simonrepp.com/hyper8/changes/
+https://hyper8.org/changes/
 
 ## 1.0.1
 
@@ -47,8 +47,8 @@ edition.
 Among the many additions and improvements, this release introduces the new
 usage restriction option for dedicated streaming, download or offline usage
 of media files, and is accompanied by a complete overhaul of the
-[documentation](https://simonrepp.com/hyper8/docs) and the introduction of
-the new, video-augmented [tutorial](https://simonrepp.com/hyper8/tutorial.html).
+[documentation](https://hyper8.org/docs) and the introduction of
+the new, video-augmented [tutorial](https://hyper8.org/tutorial.html).
 
 Enjoy!
 
@@ -221,7 +221,7 @@ Hyper 8 sites are built to stand the test of time: As long as a copy of your sit
 (online or offline), it can always be put back onto a regular static file server and will resume
 its duty just as on the day you first published it. More than that, if you build an archive-ready
 version of your site (simply the regular site with
-[clean urls disabled](https://simonrepp.com/hyper8/docs/site-manifest-site-eno.html#disable_clean_urls)) your site
+[clean urls disabled](https://hyper8.org/docs/latest/site-manifest-site-eno.html#disable_clean_urls)) your site
 will be browseable straight from disk, without a server being required for viewing! Due to some
 technicalities, this last feature was rendered inoperable for the past months, but 0.24 brings
 it back in order. Happy archiving!

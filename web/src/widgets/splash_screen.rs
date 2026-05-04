@@ -25,10 +25,10 @@ pub fn splash_screen(session_state: &SessionState) -> String {
                 </form>
                 {SPLASH_SVG}
                 <div>
-                    <a href="https://simonrepp.com/hyper8" target="_blank">
+                    <a href="https://hyper8.org" target="_blank">
                         {t_website}
                     </a>
-                    <a class="donate" href="https://simonrepp.com/hyper8/#donate" target="_blank">
+                    <a class="donate" href="https://hyper8.org/#donate" target="_blank">
                         {t_donate}
                     </a>
                     <a class="version" href="{CHANGES_URL}" target="_blank">

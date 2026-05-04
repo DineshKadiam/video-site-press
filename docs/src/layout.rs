@@ -87,9 +87,9 @@ pub fn layout(
                             </div>
                             <div>
                                 <span>More Resources</span>
-                                <a href="https://simonrepp.com/hyper8/" target="_blank">Website</a>
+                                <a href="https://hyper8.org/" target="_blank">Website</a>
                                 <a href="https://simonrepp.com/video/hyper8/" target="_blank">Video guides</a>
-                                <a href="https://simonrepp.com/hyper8/changes/" target="_blank">Release notes</a>
+                                <a href="https://hyper8.org/changes/" target="_blank">Release notes</a>
                                 <a href="https://codeberg.org/simonrepp/hyper8/" target="_blank">Source code</a>
                             </div>
                         </div>

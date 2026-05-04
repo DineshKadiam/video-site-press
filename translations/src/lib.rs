@@ -6,7 +6,7 @@ use std::path::Path;
 mod de;
 mod en;
 
-pub const DOCS_LINK: &str = "https://simonrepp.com/hyper8/docs";
+pub const DOCS_LINK: &str = "https://hyper8.org/docs";
 
 #[derive(Clone, Debug)]
 pub struct Translations {

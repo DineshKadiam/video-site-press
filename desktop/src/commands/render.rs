@@ -190,10 +190,10 @@ pub fn render(
         </main>
         <footer>
             <div>
-                <a href="https://simonrepp.com/hyper8" target="_blank">
+                <a href="https://hyper8.org" target="_blank">
                     {t_website}
                 </a>
-                <a href="https://simonrepp.com/hyper8/#donate" target="_blank">
+                <a href="https://hyper8.org/#donate" target="_blank">
                     {t_donate}
                 </a>
                 <a href="{CHANGES_URL}" target="_blank">

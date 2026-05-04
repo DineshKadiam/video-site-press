@@ -6,7 +6,7 @@
 # Getting started with the desktop application
 
 Download and install the **full desktop edition** from the
-[download page](https://simonrepp.com/hyper8/download.html).
+[download page](https://hyper8.org/download.html).
 
 After the installation is complete, open the application from your desktop's
 application menu and click `Create new site` to get started.

@@ -4,7 +4,7 @@
 use std::env;
 use std::process::Command;
 
-const CHANGES_INDEX_URL: &str = "https://simonrepp.com/hyper8/changes/";
+const CHANGES_INDEX_URL: &str = "https://hyper8.org/changes/";
 
 /// Call git to determine the 7-digit short hash of the current revision.
 /// If git is not available, we fall back to "unknown revision".

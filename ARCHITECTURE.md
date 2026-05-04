@@ -40,7 +40,7 @@ depend on each other in different ways:
 - `docs`
 
   A mostly self-contained build target that generates the documentation that
-  is available at https://simonrepp.com/hyper8/docs/
+  is available at https://hyper8.org/docs/
 
 - `icons`
 
