@@ -20,7 +20,7 @@ impl SitePath {
     /// Returns the closest descendant to go from this site path to
     /// another site path:
     /// - "foo/" is the closest descendant to go from "" to "foo/bar/" (or "foo/bar/...")
-    /// - "foo/bar/" is the closests descendant to go from "foo/" to "foo/bar/baz" (or "foo/bar/baz/...")
+    /// - "foo/bar/" is the closest descendant to go from "foo/" to "foo/bar/baz" (or "foo/bar/baz/...")
     /// - etc.
     pub fn closest_descendant_to_unchecked(&self, other: &SitePath) -> SitePath {
         let remainder = other.normalized.strip_prefix(&self.normalized).unwrap();
