@@ -41,6 +41,12 @@ The [release notes](https://hyper8.org/changes) give insight into development:
 
 If you'd like to support Hyper 8's ongoing development you can donate to the project at [Liberapay](https://liberapay.com/simonrepp) and [Ko-fi](https://ko-fi.com/simonrepp).
 
+## Development in 2026
+
+Major developments beyond Hyper 8 1.0 in 2026 are being funded and supported by [NLnet](https://nlnet.nl) and [NGI Zero](https://nlnet.nl/NGI0/) through the [NGI Zero Commons Fund](https://nlnet.nl/commonsfund/), financed by the European Commission's Next Generation Internet programme (see the [project grant website](https://nlnet.nl/project/Hyper8/) for more details).
+
+![nlnet foundation](https://hyper8.org/readme_nlnet.svg)
+
 ## Development in 2025
 
 Major developments on Hyper 8 in 2025 (from version 0.18 up to 1.0) were funded by [netidee](https://netidee.at), a campaign by the austrian [Internet Stiftung](https://internetstiftung.at/en/).
