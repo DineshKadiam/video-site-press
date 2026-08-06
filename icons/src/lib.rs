@@ -241,6 +241,18 @@ pub fn link(label: Option<&str>) -> String {
     "#)
 }
 
+/// The pause icon, split in two paths and annotated with classes which are
+/// used to animate it with css
+pub fn loading(label: &str) -> String {
+    formatdoc!(r#"
+        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <title>{label}</title>
+            <path class="loading_left" d="m11.494 56.995v-49.985h15.592v49.985z"/>
+            <path class="loading_right" d="m36.915 56.995v-49.985h15.592v49.985z"/>
+        </svg>
+    "#)
+}
+
 /// The Hyper 8 logo in its reduced, monochrome variant.
 /// For `label` provide either a label that should be read for screen readers,
 /// or None to declare the icon invisible to screenreaders (e.g. when it would

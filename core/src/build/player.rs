@@ -467,45 +467,22 @@ pub fn player(
 /// these are injected to the end of the body in the regular page and embed
 /// layouts.
 pub fn player_icon_templates(translations: &Translations) -> String {
-    let maximize_icon = hyper8_icons::maximize(translations.maximize);
-    let minimize_icon = hyper8_icons::minimize(translations.minimize);
-    let pause_icon = hyper8_icons::pause(translations.pause);
-    let play_icon = hyper8_icons::play(translations.play);
-    let replay_icon = hyper8_icons::reload(Some(translations.replay));
-    let subtitles_icon = hyper8_icons::subtitles(Some(translations.subtitles));
-    let volume_loud_icon = hyper8_icons::volume_loud(translations.loud_volume);
-    let volume_medium_icon = hyper8_icons::volume_medium(translations.medium_volume);
-    let volume_muted_icon = hyper8_icons::volume_muted(translations.sound_muted);
+    let template = |id, icon| format!(r#"<template id="{id}">{icon}</template>"#);
 
-    formatdoc!(r#"
-        <template id="maximize_icon">
-            {maximize_icon}
-        </template>
-        <template id="minimize_icon">
-            {minimize_icon}
-        </template>
-        <template id="pause_icon">
-            {pause_icon}
-        </template>
-        <template id="play_icon">
-            {play_icon}
-        </template>
-        <template id="replay_icon">
-            {replay_icon}
-        </template>
-        <template id="subtitles_icon">
-            {subtitles_icon}
-        </template>
-        <template id="volume_loud_icon">
-            {volume_loud_icon}
-        </template>
-        <template id="volume_medium_icon">
-            {volume_medium_icon}
-        </template>
-        <template id="volume_muted_icon">
-            {volume_muted_icon}
-        </template>
-    "#)
+    let templates = vec![
+        template("loading_icon", hyper8_icons::loading(translations.loading)),
+        template("maximize_icon", hyper8_icons::maximize(translations.maximize)),
+        template("minimize_icon", hyper8_icons::minimize(translations.minimize)),
+        template("pause_icon", hyper8_icons::pause(translations.pause)),
+        template("play_icon", hyper8_icons::play(translations.play)),
+        template("replay_icon", hyper8_icons::reload(Some(translations.replay))),
+        template("subtitles_icon", hyper8_icons::subtitles(Some(translations.subtitles))),
+        template("volume_loud_icon", hyper8_icons::volume_loud(translations.loud_volume)),
+        template("volume_medium_icon", hyper8_icons::volume_medium(translations.medium_volume)),
+        template("volume_muted_icon", hyper8_icons::volume_muted(translations.sound_muted))
+    ];
+
+    templates.join("")
 }
 
 /// A ring with slices and a play button in the middle, displayed on

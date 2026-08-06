@@ -7,6 +7,7 @@ const toggleTranscriptButton = document.querySelector('#toggle_transcript');
 // placeholder). In this case we need to skip almost all of the
 // initialization.
 if (playerWrapper) {
+    const loadingIcon = document.querySelector('#loading_icon').content;
     const maximizeIcon = document.querySelector('#maximize_icon').content;
     const minimizeIcon = document.querySelector('#minimize_icon').content;
     const playIcon = document.querySelector('#play_icon').content;
@@ -269,6 +270,14 @@ if (playerWrapper) {
         // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
         //       Formula should/can take into account width of video on screen vs duration of video.
         playbackUpdateInterval = setInterval(playbackUpdate, 80);
+    });
+
+    video.addEventListener('playing', event => {
+        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+    });
+
+    video.addEventListener('waiting', event => {
+        togglePlaybackButton.replaceChildren(loadingIcon.cloneNode(true));
     });
 
     function toggleVolume() {

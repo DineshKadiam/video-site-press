@@ -183,6 +183,7 @@ impl Translations {
         link_type: "Link type",
         link_with_rel_me_attribute: r#"Link with rel="me" attribute"#,
         links: "Links",
+        loading: "Loading",
         local_editor_note: "Open this address in your browser to start editing - it is only accessible to you, on this device.",
         local_path: "Local Path",
         loud_volume: "Loud Volume",

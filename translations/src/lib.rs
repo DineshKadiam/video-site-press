@@ -180,6 +180,7 @@ pub struct Translations {
     pub link_type: &'static str,
     pub link_with_rel_me_attribute: &'static str,
     pub links: &'static str,
+    pub loading: &'static str,
     pub local_editor_note: &'static str,
     pub local_path: &'static str,
     pub loud_volume: &'static str,
