@@ -1551,7 +1551,8 @@ impl Collection {
 
         if let Some(description) = &self.description {
             if !eno.is_empty() { eno.push('\n'); }
-            eno.push_str(&format!("-- description\n{}\n-- description\n", description));
+            let embed_sequence = enolib::escaped_embed_sequence("description", description);
+            eno.push_str(&format!("-- {embed_sequence}\n{description}\n-- {embed_sequence}\n"));
         }
 
         let path = context.site_dir
