@@ -118,129 +118,119 @@ impl Video {
 
         for element in document.elements() {
             match element.key() {
-                "audio_file" => 'audio_file: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            let mut path = None;
-                            let mut usage = MediaUsage::Unrestricted;
+                "audio_file" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut path = None;
+                        let mut usage = MediaUsage::Unrestricted;
 
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "file" => {
-                                        if let Some(value) = attribute.value() {
-                                            let absolute_path = manifest_path.parent().unwrap().join(value);
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "file" => {
+                                    if let Some(value) = attribute.value() {
+                                        let absolute_path = manifest_path.parent().unwrap().join(value);
 
-                                            if absolute_path.exists() {
-                                                if AudioFile::supported_extension(value) {
-                                                    path = Some(absolute_path);
-                                                } else {
-                                                    let format_list = AudioFile::SUPPORTED_EXTENSIONS.join(", ");
-                                                    let message = format!("Unsupported audio format ({value}) – Please supply audio files in one of these formats: {format_list}");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
+                                        if absolute_path.exists() {
+                                            if AudioFile::supported_extension(value) {
+                                                path = Some(absolute_path);
                                             } else {
-                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                                let format_list = AudioFile::SUPPORTED_EXTENSIONS.join(", ");
+                                                let message = format!("Unsupported audio format ({value}) – Please supply audio files in one of these formats: {format_list}");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        } else {
+                                            let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                            let error = attribute_error(attribute, manifest_path, &message);
+                                            self.manifest_errors.push(error);
+                                        }
+                                    }
+                                }
+                                "usage" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "download" => {
+                                                usage = MediaUsage::Download;
+                                            }
+                                            "offline" => {
+                                                usage = MediaUsage::Offline;
+                                            }
+                                            "streaming" => {
+                                                usage = MediaUsage::Streaming;
+                                            }
+                                            other => {
+                                                let message = format!("The usage option only supports the values 'download', 'streaming' and 'offline', but {other} was found");
                                                 let error = attribute_error(attribute, manifest_path, &message);
                                                 self.manifest_errors.push(error);
                                             }
                                         }
                                     }
-                                    "usage" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "download" => {
-                                                    usage = MediaUsage::Download;
-                                                }
-                                                "offline" => {
-                                                    usage = MediaUsage::Offline;
-                                                }
-                                                "streaming" => {
-                                                    usage = MediaUsage::Streaming;
-                                                }
-                                                other => {
-                                                    let message = format!("The usage option only supports the values 'download', 'streaming' and 'offline', but {other} was found");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file' and 'usage'");
-                                        let error = attribute_error(attribute, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
+                                }
+                                other => {
+                                    let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file' and 'usage'");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
                                 }
                             }
+                        }
 
-                            if let Some(path) = path {
-                                let audio_file = AudioFile::new_from_manifest(
-                                    context,
-                                    &path,
-                                    usage,
-                                    self
-                                );
+                        if let Some(path) = path {
+                            let audio_file = AudioFile::new_from_manifest(
+                                context,
+                                &path,
+                                usage,
+                                self
+                            );
 
-                                // TODO: Theoretically an audio file could be
-                                // defined twice in the manifest, effectively
-                                // duplicating it in the site tree - catch
-                                // this (same for video file)
-                                self.audio_files.push(audio_file);
-                            } else {
-                                let message = indoc!("
-                                    The audio_file option must supply a file attribute at least, e.g.:
+                            // TODO: Theoretically an audio file could be
+                            // defined twice in the manifest, effectively
+                            // duplicating it in the site tree - catch
+                            // this (same for video file)
+                            self.audio_files.push(audio_file);
+                        } else {
+                            let message = indoc!("
+                                The audio_file option must supply a file attribute at least, e.g.:
 
-                                    audio_file:
-                                    file = example.mp3
-                                ");
-                                let error = element_error(element, manifest_path, message);
+                                audio_file:
+                                file = example.mp3
+                            ");
+                            let error = element_error(element, manifest_path, message);
+                            self.manifest_errors.push(error);
+                        }
+                    } else {
+                        let message = indoc!("
+                            audio_file must be provided as a field with attributes, e.g.:
+
+                            audio_file:
+                            file = example.mp3
+                            usage = download
+                        ");
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "copy_link" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.copy_link = Some(true);
+                            }
+                            "disabled" => {
+                                self.copy_link = Some(false);
+                            }
+                            other => {
+                                let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
                                 self.manifest_errors.push(error);
                             }
-
-                            break 'audio_file;
                         }
+                    } else {
+                        let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = indoc!("
-                        audio_file must be provided as a field with attributes, e.g.:
-
-                        audio_file:
-                        file = example.mp3
-                        usage = download
-                    ");
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "copy_link" => 'copy_link: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.copy_link = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.copy_link = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'copy_link;
-                            }
-                        }
-                    }
-
-                    let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 "description" => {
-                    if let Ok(embed) = element.as_embed() {
+                    if let Some(embed) = element.as_embed() {
                         if let Some(value) = embed.value() {
                             self.description = Some(value.to_string());
                         } else {
@@ -252,146 +242,126 @@ impl Video {
                         self.manifest_errors.push(error);
                     }
                 }
-                "download" => 'download: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.download = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.download = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'download;
+                "download" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.download = Some(true);
                             }
-                        }
-                    }
-
-                    let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "embedding" => 'embedding: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.embedding = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.embedding = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'embedding;
+                            "disabled" => {
+                                self.download = Some(false);
                             }
-                        }
-                    }
-
-                    let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "link" => 'link: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match Url::parse(value) {
-                                    Ok(_) => {
-                                        let link = Link::new(false, None, false, value);
-                                        self.links.push(link);
-                                    }
-                                    Err(err) => {
-                                        let message = format!("The url supplied for the link seems to be malformed ({err})");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            break 'link;
-                        } else if let Ok(attributes) = field.attributes() {
-                            let mut hidden = false;
-                            let mut label = None;
-                            let mut rel_me = false;
-                            let mut url = None;
-
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "label" => {
-                                        if let Some(value) = attribute.value() {
-                                            label = Some(value.to_string());
-                                        }
-                                    }
-                                    "url" => {
-                                        if let Some(value) = attribute.value() {
-                                            match Url::parse(value) {
-                                                Ok(_) => url = Some(value),
-                                                Err(err) => {
-                                                    let message = format!("The url supplied for the link seems to be malformed ({err})");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    "verification" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "rel-me" => {
-                                                    hidden = false;
-                                                    rel_me = true;
-                                                }
-                                                "rel-me-hidden" => {
-                                                    hidden = true;
-                                                    rel_me = true;
-                                                }
-                                                _ => {
-                                                    let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
-                                        let error = attribute_error(attribute, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            if let Some(url) = url {
-                                let link = Link::new(hidden, label, rel_me, url);
-                                self.links.push(link);
-                            } else {
-                                let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
-                                let error = element_error(element, manifest_path, message);
+                            other => {
+                                let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
                                 self.manifest_errors.push(error);
                             }
-
-                            break 'link;
                         }
+                    } else {
+                        let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
+                }
+                "embedding" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.embedding = Some(true);
+                            }
+                            "disabled" => {
+                                self.embedding = Some(false);
+                            }
+                            other => {
+                                let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "link" => {
+                    if let Some(value) = element.field_value() {
+                        match Url::parse(value) {
+                            Ok(_) => {
+                                let link = Link::new(false, None, false, value);
+                                self.links.push(link);
+                            }
+                            Err(err) => {
+                                let message = format!("The url supplied for the link seems to be malformed ({err})");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else if let Some(attributes) = element.attributes() {
+                        let mut hidden = false;
+                        let mut label = None;
+                        let mut rel_me = false;
+                        let mut url = None;
 
-                    let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "label" => {
+                                    if let Some(value) = attribute.value() {
+                                        label = Some(value.to_string());
+                                    }
+                                }
+                                "url" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Url::parse(value) {
+                                            Ok(_) => url = Some(value),
+                                            Err(err) => {
+                                                let message = format!("The url supplied for the link seems to be malformed ({err})");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
+                                "verification" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "rel-me" => {
+                                                hidden = false;
+                                                rel_me = true;
+                                            }
+                                            "rel-me-hidden" => {
+                                                hidden = true;
+                                                rel_me = true;
+                                            }
+                                            _ => {
+                                                let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
+                                other => {
+                                    let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
+                                }
+                            }
+                        }
+
+                        if let Some(url) = url {
+                            let link = Link::new(hidden, label, rel_me, url);
+                            self.links.push(link);
+                        } else {
+                            let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
+                            let error = element_error(element, manifest_path, message);
+                            self.manifest_errors.push(error);
+                        }
+                    } else {
+                        let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
                 }
                 "offline" => {
                     if element.is_flag() {
@@ -402,250 +372,225 @@ impl Video {
                         self.manifest_errors.push(error);
                     }
                 }
-                "platform_integration" => 'platform_integration: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match PlatformIntegration::from_key(value) {
-                                    Some(platform_integration) => {
-                                        self.platform_integration = Some(platform_integration);
-                                    }
-                                    None => {
-                                        let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'platform_integration;
+                "platform_integration" => {
+                    if let Some(value) = element.field_value() {
+                        match PlatformIntegration::from_key(value) {
+                            Some(platform_integration) => {
+                                self.platform_integration = Some(platform_integration);
                             }
-                        }
-                    }
-
-                    let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "poster" => 'poster: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            let mut description = None;
-                            let mut file = None;
-
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "description" => {
-                                        if let Some(value) = attribute.value() {
-                                            description = Some(value.to_string());
-                                        }
-                                    }
-                                    "file" => {
-                                        if let Some(value) = attribute.value() {
-                                            let absolute_path = manifest_path.parent().unwrap().join(value);
-
-                                            if absolute_path.exists() {
-                                                file = Some((absolute_path, value.to_string()));
-                                            } else {
-                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
-                                                let error = attribute_error(attribute, manifest_path, &message);
-                                                self.manifest_errors.push(error);
-                                            }
-                                        }
-                                    }
-                                    _ => {
-                                        let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an poster field";
-                                        let error = attribute_error(attribute, manifest_path, message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            if let Some((absolute_path, file_name)) = file {
-                                let file_meta = FileMeta::new(&absolute_path);
-
-                                let assets;
-                                let poster_meta;
-
-                                {
-                                    // Obtain lock on the cache, immediately drop it afterwards
-                                    let cache = context.cache.lock().unwrap();
-
-                                    assets = cache.fetch_poster_assets(
-                                        &file_meta,
-                                        &file_name,
-                                        site.poster_aspect.numeric(),
-                                        &self.site_path
-                                    );
-
-                                    poster_meta = cache.fetch_poster_source(
-                                        &file_meta,
-                                        &file_name,
-                                        &self.site_path
-                                    );
-                                }
-
-                                let poster = PosterFile::new(
-                                    assets,
-                                    description,
-                                    file_meta,
-                                    file_name,
-                                    poster_meta
-                                );
-                                self.poster = Some(poster);
-                            }
-
-                            break 'poster;
-                        }
-                    }
-
-                    let message = "poster needs to be provided as a field with attributes, e.g.:\n\nposter:\ndescription = Denis, giggling uncontrollably\nfile = denis.jpg";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "release_date" => 'release_date: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match NaiveDate::parse_from_str(value, "%Y-%m-%d") {
-                                    Ok(date) => {
-                                        self.release_date = Some(date);
-                                    }
-                                    Err(err) => {
-                                        let message = format!("Invalid date value '{value}': {err}");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            break 'release_date;
-                        }
-                    }
-
-                    let message = "release_date needs to be provided as a field with a date value in the format YYYY-MM-DD, e.g.: 'release_date: 2025-02-17'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "sort_number" => 'sort_number: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value.parse::<i32>() {
-                                    Ok(number) => {
-                                        self.sort_number = Some(number);
-                                    }
-                                    Err(err) => {
-                                        let message = format!("Invalid number value '{value}': {err}");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            break 'sort_number;
-                        }
-                    }
-
-                    let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "subtitle_file" |
-                "subtitles" => 'subtitles: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            let mut label = None;
-                            let mut language = None;
-                            let mut path = None;
-
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "file" => {
-                                        if let Some(value) = attribute.value() {
-                                            let absolute_path = manifest_path.parent().unwrap().join(value);
-
-                                            if absolute_path.exists() {
-                                                if SubtitleFile::supported_extension(value) {
-                                                    path = Some(absolute_path);
-                                                } else {
-                                                    let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            } else {
-                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
-                                                let error = attribute_error(attribute, manifest_path, &message);
-                                                self.manifest_errors.push(error);
-                                            }
-                                        }
-                                    }
-                                    "label" => {
-                                        if let Some(value) = attribute.value() {
-                                            label = Some(value.to_string());
-                                        }
-                                    }
-                                    "language" => {
-                                        if let Some(value) = attribute.value() {
-                                            match LanguageTag::parse(value) {
-                                                Ok(language_tag) => {
-                                                    match language_tag.validate() {
-                                                        Ok(()) => {
-                                                            language = Some(language_tag.to_string())
-                                                        }
-                                                        Err(err) => {
-                                                            let message = format!("The language code supplied for the subtitles is not recognized ({err})");
-                                                            let error = attribute_error(attribute, manifest_path, &message);
-                                                            self.manifest_errors.push(error);
-                                                        }
-                                                    }
-                                                }
-                                                Err(err) => {
-                                                    let message = format!("The language code supplied for the subtitles is not properly formatted ({err})");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file', 'label' and 'language'");
-                                        let error = attribute_error(attribute, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            if let Some(path) = path {
-                                let subtitles = SubtitleFile::from_manifest(label, language, path);
-                                self.subtitle_files.push(subtitles);
-                            } else {
-                                let message = indoc!("
-                                    The subtitle_file option must supply a file attribute at least, e.g.:
-
-                                    subtitle_file:
-                                    file = en.srt
-                                ");
-                                let error = element_error(element, manifest_path, message);
+                            None => {
+                                let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
                                 self.manifest_errors.push(error);
                             }
-
-                            break 'subtitles;
                         }
+                    } else {
+                        let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
+                }
+                "poster" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut description = None;
+                        let mut file = None;
 
-                    let message = indoc!("
-                        subtitle_file must be provided as a field with attributes, e.g.:
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "description" => {
+                                    if let Some(value) = attribute.value() {
+                                        description = Some(value.to_string());
+                                    }
+                                }
+                                "file" => {
+                                    if let Some(value) = attribute.value() {
+                                        let absolute_path = manifest_path.parent().unwrap().join(value);
 
-                        subtitle_file:
-                        file = en.srt
-                        label = English (closed captions)
-                        language = en
-                    ");
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
+                                        if absolute_path.exists() {
+                                            file = Some((absolute_path, value.to_string()));
+                                        } else {
+                                            let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                            let error = attribute_error(attribute, manifest_path, &message);
+                                            self.manifest_errors.push(error);
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an poster field";
+                                    let error = attribute_error(attribute, manifest_path, message);
+                                    self.manifest_errors.push(error);
+                                }
+                            }
+                        }
+
+                        if let Some((absolute_path, file_name)) = file {
+                            let file_meta = FileMeta::new(&absolute_path);
+
+                            let assets;
+                            let poster_meta;
+
+                            {
+                                // Obtain lock on the cache, immediately drop it afterwards
+                                let cache = context.cache.lock().unwrap();
+
+                                assets = cache.fetch_poster_assets(
+                                    &file_meta,
+                                    &file_name,
+                                    site.poster_aspect.numeric(),
+                                    &self.site_path
+                                );
+
+                                poster_meta = cache.fetch_poster_source(
+                                    &file_meta,
+                                    &file_name,
+                                    &self.site_path
+                                );
+                            }
+
+                            let poster = PosterFile::new(
+                                assets,
+                                description,
+                                file_meta,
+                                file_name,
+                                poster_meta
+                            );
+                            self.poster = Some(poster);
+                        }
+                    } else {
+                        let message = "poster needs to be provided as a field with attributes, e.g.:\n\nposter:\ndescription = Denis, giggling uncontrollably\nfile = denis.jpg";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "release_date" => {
+                    if let Some(value) = element.field_value() {
+                        match NaiveDate::parse_from_str(value, "%Y-%m-%d") {
+                            Ok(date) => {
+                                self.release_date = Some(date);
+                            }
+                            Err(err) => {
+                                let message = format!("Invalid date value '{value}': {err}");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = "release_date needs to be provided as a field with a date value in the format YYYY-MM-DD, e.g.: 'release_date: 2025-02-17'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "sort_number" => {
+                    if let Some(value) = element.field_value() {
+                        match value.parse::<i32>() {
+                            Ok(number) => {
+                                self.sort_number = Some(number);
+                            }
+                            Err(err) => {
+                                let message = format!("Invalid number value '{value}': {err}");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                // TODO: Do we need to remove one of the keys eventually? (which?)
+                "subtitle_file" |
+                "subtitles" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut label = None;
+                        let mut language = None;
+                        let mut path = None;
+
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "file" => {
+                                    if let Some(value) = attribute.value() {
+                                        let absolute_path = manifest_path.parent().unwrap().join(value);
+
+                                        if absolute_path.exists() {
+                                            if SubtitleFile::supported_extension(value) {
+                                                path = Some(absolute_path);
+                                            } else {
+                                                let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        } else {
+                                            let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                            let error = attribute_error(attribute, manifest_path, &message);
+                                            self.manifest_errors.push(error);
+                                        }
+                                    }
+                                }
+                                "label" => {
+                                    if let Some(value) = attribute.value() {
+                                        label = Some(value.to_string());
+                                    }
+                                }
+                                "language" => {
+                                    if let Some(value) = attribute.value() {
+                                        match LanguageTag::parse(value) {
+                                            Ok(language_tag) => {
+                                                match language_tag.validate() {
+                                                    Ok(()) => {
+                                                        language = Some(language_tag.to_string())
+                                                    }
+                                                    Err(err) => {
+                                                        let message = format!("The language code supplied for the subtitles is not recognized ({err})");
+                                                        let error = attribute_error(attribute, manifest_path, &message);
+                                                        self.manifest_errors.push(error);
+                                                    }
+                                                }
+                                            }
+                                            Err(err) => {
+                                                let message = format!("The language code supplied for the subtitles is not properly formatted ({err})");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
+                                other => {
+                                    let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file', 'label' and 'language'");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
+                                }
+                            }
+                        }
+
+                        if let Some(path) = path {
+                            let subtitles = SubtitleFile::from_manifest(label, language, path);
+                            self.subtitle_files.push(subtitles);
+                        } else {
+                            let message = indoc!("
+                                The subtitle_file option must supply a file attribute at least, e.g.:
+
+                                subtitle_file:
+                                file = en.srt
+                            ");
+                            let error = element_error(element, manifest_path, message);
+                            self.manifest_errors.push(error);
+                        }
+                    } else {
+                        let message = indoc!("
+                            subtitle_file must be provided as a field with attributes, e.g.:
+
+                            subtitle_file:
+                            file = en.srt
+                            label = English (closed captions)
+                            language = en
+                        ");
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
                 }
                 "synopsis" => {
-                    if let Ok(embed) = element.as_embed() {
+                    if let Some(embed) = element.as_embed() {
                         if let Some(value) = embed.value() {
                             let synopsis_chars = value.chars().count();
 
@@ -665,20 +610,14 @@ impl Video {
                         self.manifest_errors.push(error);
                     }
                 }
-                "title" => 'title: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                self.title = Some(value.to_string());
-                            }
-
-                            break 'title;
-                        }
+                "title" => {
+                    if let Some(value) = element.field_value() {
+                        self.title = Some(value.to_string());
+                    } else {
+                        let message = "title needs to be provided as a field with a value, e.g.: 'title: Denis Supercut'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "title needs to be provided as a field with a value, e.g.: 'title: Denis Supercut'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 "unlisted" => {
                     if element.is_flag() {
@@ -689,99 +628,95 @@ impl Video {
                         self.manifest_errors.push(error);
                     }
                 }
-                "video_file" => 'video_file: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            let mut path = None;
-                            let mut usage = MediaUsage::Unrestricted;
+                "video_file" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut path = None;
+                        let mut usage = MediaUsage::Unrestricted;
 
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "file" => {
-                                        if let Some(value) = attribute.value() {
-                                            let absolute_path = manifest_path.parent().unwrap().join(value);
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "file" => {
+                                    if let Some(value) = attribute.value() {
+                                        let absolute_path = manifest_path.parent().unwrap().join(value);
 
-                                            if absolute_path.exists() {
-                                                if VideoFile::supported_extension(value) {
-                                                    path = Some(absolute_path);
-                                                } else {
-                                                    let format_list = VideoFile::SUPPORTED_EXTENSIONS.join(", ");
-                                                    let message = format!("Unsupported video format ({value}) – Please supply video files in one of these formats: {format_list}");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
+                                        if absolute_path.exists() {
+                                            if VideoFile::supported_extension(value) {
+                                                path = Some(absolute_path);
                                             } else {
-                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                                let format_list = VideoFile::SUPPORTED_EXTENSIONS.join(", ");
+                                                let message = format!("Unsupported video format ({value}) – Please supply video files in one of these formats: {format_list}");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        } else {
+                                            let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                            let error = attribute_error(attribute, manifest_path, &message);
+                                            self.manifest_errors.push(error);
+                                        }
+                                    }
+                                }
+                                "usage" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "download" => {
+                                                usage = MediaUsage::Download;
+                                            }
+                                            "offline" => {
+                                                usage = MediaUsage::Offline;
+                                            }
+                                            "streaming" => {
+                                                usage = MediaUsage::Streaming;
+                                            }
+                                            other => {
+                                                let message = format!("The usage option only supports the values 'download', 'streaming' and 'offline', but {other} was found");
                                                 let error = attribute_error(attribute, manifest_path, &message);
                                                 self.manifest_errors.push(error);
                                             }
                                         }
                                     }
-                                    "usage" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "download" => {
-                                                    usage = MediaUsage::Download;
-                                                }
-                                                "offline" => {
-                                                    usage = MediaUsage::Offline;
-                                                }
-                                                "streaming" => {
-                                                    usage = MediaUsage::Streaming;
-                                                }
-                                                other => {
-                                                    let message = format!("The usage option only supports the values 'download', 'streaming' and 'offline', but {other} was found");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file' and 'usage'");
-                                        let error = attribute_error(attribute, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
+                                }
+                                other => {
+                                    let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'file' and 'usage'");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
                                 }
                             }
-
-                            if let Some(path) = path {
-                                let video_file = VideoFile::new_from_manifest(
-                                    context,
-                                    &path,
-                                    usage,
-                                    self
-                                );
-
-                                // TODO: Theoretically a video file could be
-                                // defined twice in the manifest, effectively
-                                // duplicating it in the site tree - catch
-                                // this (same for audio file)
-                                self.video_files.push(video_file);
-                            } else {
-                                let message = indoc!("
-                                    The video_file option must supply a file attribute at least, e.g.:
-
-                                    video_file:
-                                    file = example.mp4
-                                ");
-                                let error = element_error(element, manifest_path, message);
-                                self.manifest_errors.push(error);
-                            }
-
-                            break 'video_file;
                         }
+
+                        if let Some(path) = path {
+                            let video_file = VideoFile::new_from_manifest(
+                                context,
+                                &path,
+                                usage,
+                                self
+                            );
+
+                            // TODO: Theoretically a video file could be
+                            // defined twice in the manifest, effectively
+                            // duplicating it in the site tree - catch
+                            // this (same for audio file)
+                            self.video_files.push(video_file);
+                        } else {
+                            let message = indoc!("
+                                The video_file option must supply a file attribute at least, e.g.:
+
+                                video_file:
+                                file = example.mp4
+                            ");
+                            let error = element_error(element, manifest_path, message);
+                            self.manifest_errors.push(error);
+                        }
+                    } else {
+                        let message = indoc!("
+                            video_file must be provided as a field with attributes, e.g.:
+
+                            video_file:
+                            file = example.mp4
+                            usage = download
+                        ");
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = indoc!("
-                        video_file must be provided as a field with attributes, e.g.:
-
-                        video_file:
-                        file = example.mp4
-                        usage = download
-                    ");
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 other => {
                     let message = not_supported_error("video.eno", other, &[VIDEO_OPTIONS]);

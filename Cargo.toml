@@ -16,12 +16,10 @@ resolver = "3"
 
 [workspace.dependencies]
 actix-files = "0.6.10"
-actix-multipart = "0.7.2"
+actix-multipart = "0.8.0"
 actix-session = { features = ["cookie-session"], version = "0.11.0" }
-# actix-web 4.13.0 is available but raises the MSRV to 1.88.0, therefore we'll
-# wait a bit until we update (~July 2026 or so)
-actix-web = { version = "4.12.1" }
-base64 = "0.22.1"
+actix-web = { version = "4.14.0" }
+base64 = "0.23.1"
 # Newer releases of bincode 1.3.3 are available, but unless we face strong
 # reasons to make changes here we stick with the pinned version, because
 # "(...) development has officially ceased and will not resume. Version 1.3.3
@@ -29,50 +27,48 @@ base64 = "0.22.1"
 # updates. Updates will only be pushed to the in the unlikely event of
 # CVEs." (https://git.sr.ht/~stygianentity/bincode)
 bincode = "=1.3.3"
-chrono = { features = ["unstable-locales"], version = "0.4.44" }
-clap = { features = ["string"], version = "4.6.1" }
+chrono = { features = ["unstable-locales"], version = "0.4.45" }
+clap = { features = ["string"], version = "4.6.5" }
 ctrlc = "3.5.2"
 dirs = "6.0.0"
 dunce = "1.0.5"
-enolib = { git = "https://codeberg.org/simonrepp/enolib-rs", tag = "0.7.0" }
-env_logger = "0.11.8"
+enolib = { git = "https://codeberg.org/simonrepp/enolib-rs", tag = "0.8.0" }
+env_logger = "0.11.11"
 # For now included to make sure that on macOS desktop builds,
 # ffmpeg/ffprobe is found from $PATH - try to do without in the long run
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 form_urlencoded = "1.2.2"
-futures-util = "0.3.32"
-icu_collator = "2.2.0"
+futures-util = "0.3.33"
+icu_collator = "2.2.1"
 icu_locale = "2.2.0"
-# image 0.25.10 is available but raises the MSRV to 1.88.0, therefore we'll
-# wait a bit until we update (~July 2026 or so)
-image = "=0.25.9"
+image = "0.25.10"
 indoc = "2.0.7"
 language-tags = "0.3.2"
-local-ip-address = "0.6.12"
-log = "0.4.29"
-minreq = { features = ["https-rustls"], version = "2.14.1" }
-nanoid = "0.4.0"
+local-ip-address = "0.6.13"
+log = "0.4.33"
+minreq = { features = ["https-rustls"], version = "3.0.0" }
+nanoid = "0.5.0"
 notify = "8.2.0"
-pulldown-cmark = { default-features = false, features = ["html", "simd"], version = "0.13.3" }
-rand = "0.10.1"
+pulldown-cmark = { default-features = false, features = ["html", "simd"], version = "0.13.4" }
+rand = "0.10.2"
 rsubs-lib = "0.3.4"
-serde = "1.0.228"
-serde_derive = "1.0.228"
-serde_json = "1.0.149"
+serde = "1.0.229"
+serde_derive = "1.0.229"
+serde_json = "1.0.151"
 slug = "0.1.6"
-suppaftp = { features = ["native-tls"], version = "8.0.2" }
+suppaftp = { features = ["native-tls"], version = "10.0.1" }
 sys-locale = "0.3.2"
-tauri = { features = [], version = "2.10.3" }
-tauri-build = { features = [], version = "2.5.6" }
-tauri-plugin-dialog = "2.7.0"
-tauri-plugin-opener = "2.5.3"
-tokio = { features = ["macros", "rt-multi-thread"], version = "1.52.1" }
+tauri = { features = [], version = "2.11.5" }
+tauri-build = { features = [], version = "2.6.3" }
+tauri-plugin-dialog = "2.7.2"
+tauri-plugin-opener = "2.5.4"
+tokio = { features = ["macros", "rt-multi-thread"], version = "1.53.1" }
 url = "2.5.8"
 urlencoding = "2.1.3"
-uuid = { features = ["v5"], version = "1.23.1" }
-webbrowser = "1.2.1"
+uuid = { features = ["v5"], version = "1.24.0" }
+webbrowser = "1.2.4"
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.88"
 version = "1.0.1"

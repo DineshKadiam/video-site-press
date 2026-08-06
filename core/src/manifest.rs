@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use enolib::{Attribute, RootElement};
+use enolib::{Attribute, Element};
 
 pub const MAX_SYNOPSIS_CHARS: usize = 256;
 
@@ -13,12 +13,12 @@ pub fn attribute_error(
     manifest_path: &Path,
     error: &str
 ) -> String {
-    format!("Error in {}:{}:\n\n{}", manifest_path.display(), attribute.line_number, error)
+    format!("Error in {}:{}:\n\n{}", manifest_path.display(), attribute.line_number(), error)
 }
 
 // TODO: Use element.snippet(), i.e. make this a element_error_with_snippet() (?) – Need to make sure this nicely displays also in interface
 pub fn element_error(
-    element: &Box<dyn RootElement>,
+    element: &Element,
     manifest_path: &Path,
     error: &str
 ) -> String {

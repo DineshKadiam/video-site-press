@@ -140,29 +140,23 @@ impl Site {
 
         for element in document.elements() {
             match element.key() {
-                "base_url" => 'base_url: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match SiteUrl::parse(value) {
-                                    Ok(url) => {
-                                        self.base_url = Some(url);
-                                    }
-                                    Err(err) => {
-                                        let message = format!("The supplied url seems to be malformed ({err})");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
+                "base_url" => {
+                    if let Some(value) = element.field_value() {
+                        match SiteUrl::parse(value) {
+                            Ok(url) => {
+                                self.base_url = Some(url);
                             }
-
-                            break 'base_url;
+                            Err(err) => {
+                                let message = format!("The supplied url seems to be malformed ({err})");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
                         }
+                    } else {
+                        let message = "base_url needs to be provided as a field with a value, e.g.: 'base_url: https://example.com'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "base_url needs to be provided as a field with a value, e.g.: 'base_url: https://example.com'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 "disable_clean_urls" => {
                     if element.is_flag() {
@@ -173,153 +167,131 @@ impl Site {
                         self.manifest_errors.push(error);
                     }
                 }
-                "font" => 'font: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                let absolute_path = manifest_path.parent().unwrap().join(value);
-                                if absolute_path.exists() {
-                                    if supported_font_extension(value) {
-                                        self.font = Font::Custom(value.to_string());
-                                    } else {
-                                        let message = "The provided font file extension is not supported, only woff and woff2 are";
-                                        let error = element_error(element, manifest_path, message);
-                                        self.manifest_errors.push(error);
+                "font" => {
+                    if let Some(value) = element.field_value() {
+                        let absolute_path = manifest_path.parent().unwrap().join(value);
+                        if absolute_path.exists() {
+                            if supported_font_extension(value) {
+                                self.font = Font::Custom(value.to_string());
+                            } else {
+                                let message = "The provided font file extension is not supported, only woff and woff2 are";
+                                let error = element_error(element, manifest_path, message);
+                                self.manifest_errors.push(error);
+                            }
+                        } else {
+                            let message = "The provided font file name is invalid - the file was not found";
+                            let error = element_error(element, manifest_path, message);
+                            self.manifest_errors.push(error);
+                        }
+                    } else {
+                        let message = "font needs to be provided as a field with a value specifying the woff or woff2 font file name, e.g.: 'font: custom_sans.woff2'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "ftp_config" => {
+                     if let Some(attributes) = element.attributes() {
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "mode" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "insecure" => {
+                                                self.ftp_config.secure = Some(false);
+                                            }
+                                            "secure" => {
+                                                self.ftp_config.secure = Some(true);
+                                            }
+                                            other => {
+                                                let message = format!("The mode option only supports the value 'insecure' or 'secure'. The given value '{other}' was not recognized.");
+                                                let error = element_error(element, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
                                     }
-                                } else {
-                                    let message = "The provided font file name is invalid - the file was not found";
-                                    let error = element_error(element, manifest_path, message);
+                                }
+                                "password" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ftp_config.password = Some(value.to_string());
+                                    }
+                                }
+                                "path" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ftp_config.path = Some(value.to_string());
+                                    }
+                                }
+                                "port" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value.parse::<usize>() {
+                                            Ok(number) => self.ftp_config.port = Some(number),
+                                            Err(err) => {
+                                                let message = format!("The port option only accepts positive integer numbers ({err})");
+                                                let error = element_error(element, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
+                                "server" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ftp_config.server = Some(value.to_string());
+                                    }
+                                }
+                                "user" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ftp_config.user = Some(value.to_string());
+                                    }
+                                }
+                                _ => {
+                                    let message = "The key/name of this attribute was not recognized, only 'password', 'path', 'server' and 'user' are recognized inside an ftp_config field";
+                                    let error = attribute_error(attribute, manifest_path, message);
                                     self.manifest_errors.push(error);
                                 }
                             }
-
-                            break 'font;
                         }
-                    }
+                    } else {
+                        let message = indoc!("
+                            ftp_config needs to be provided as a field with attributes, e.g.:
 
-                    let message = "font needs to be provided as a field with a value specifying the woff or woff2 font file name, e.g.: 'font: custom_sans.woff2'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
+                            ftp_config:
+                            password = SuchExquisitelyLongSecret
+                            path = /data/web/user123/html
+                            server = ftp-user123.example.com
+                            user = user123
+                        ");
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
                 }
-                "ftp_config" => 'ftp_config: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "mode" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "insecure" => {
-                                                    self.ftp_config.secure = Some(false);
-                                                }
-                                                "secure" => {
-                                                    self.ftp_config.secure = Some(true);
-                                                }
-                                                other => {
-                                                    let message = format!("The mode option only supports the value 'insecure' or 'secure'. The given value '{other}' was not recognized.");
-                                                    let error = element_error(element, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    "password" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ftp_config.password = Some(value.to_string());
-                                        }
-                                    }
-                                    "path" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ftp_config.path = Some(value.to_string());
-                                        }
-                                    }
-                                    "port" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value.parse::<usize>() {
-                                                Ok(number) => self.ftp_config.port = Some(number),
-                                                Err(err) => {
-                                                    let message = format!("The port option only accepts positive integer numbers ({err})");
-                                                    let error = element_error(element, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    "server" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ftp_config.server = Some(value.to_string());
-                                        }
-                                    }
-                                    "user" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ftp_config.user = Some(value.to_string());
-                                        }
-                                    }
-                                    _ => {
-                                        let message = "The key/name of this attribute was not recognized, only 'password', 'path', 'server' and 'user' are recognized inside an ftp_config field";
-                                        let error = attribute_error(attribute, manifest_path, message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            break 'ftp_config;
-                        }
+                "language" => {
+                    if let Some(value) = element.field_value() {
+                        self.language = Language::from_code(value);
+                    } else {
+                        let message = "language needs to be provided as a field with a value, e.g.: 'language: de'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = indoc!("
-                        ftp_config needs to be provided as a field with attributes, e.g.:
-
-                        ftp_config:
-                        password = SuchExquisitelyLongSecret
-                        path = /data/web/user123/html
-                        server = ftp-user123.example.com
-                        user = user123
-                    ");
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
-                "language" => 'language: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                self.language = Language::from_code(value);
+                "poster_aspect" => {
+                    if let Some(value) = element.field_value() {
+                        match AspectRatio::from_representation(value) {
+                            Ok(aspect_ratio) => {
+                                self.poster_aspect = aspect_ratio;
                             }
-
-                            break 'language;
-                        }
-                    }
-
-                    let message = "language needs to be provided as a field with a value, e.g.: 'language: de'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "poster_aspect" => 'poster_aspect: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match AspectRatio::from_representation(value) {
-                                    Ok(aspect_ratio) => {
-                                        self.poster_aspect = aspect_ratio;
-                                    }
-                                    Err(err) => {
-                                        let message = format!("The supplied aspect ratio was not recognized ({err})");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
+                            Err(err) => {
+                                let message = format!("The supplied aspect ratio was not recognized ({err})");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
                             }
-
-                            break 'poster_aspect;
                         }
+                    } else {
+                        let message = "poster_aspect needs to be provided as a field with a value, e.g.: 'poster_aspect: 16:9'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "poster_aspect needs to be provided as a field with a value, e.g.: 'poster_aspect: 16:9'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 "deploy_config" |
-                "ssh_config" => 'ssh_config: {
+                "ssh_config" => {
                     // TODO: Eventually implement a message about the
                     // deploy_config key being deprecated (or hard-deprecate
                     // it right away then), for now we rely on the option
@@ -327,71 +299,61 @@ impl Site {
                     // upgraded through users saving the site settings in the
                     // editor.
 
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "path" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ssh_config.path = Some(value.to_string());
-                                        }
-                                    }
-                                    "server" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ssh_config.server = Some(value.to_string());
-                                        }
-                                    }
-                                    "user" => {
-                                        if let Some(value) = attribute.value() {
-                                            self.ssh_config.user = Some(value.to_string());
-                                        }
-                                    }
-                                    _ => {
-                                        let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside an ssh_config field";
-                                        let error = attribute_error(attribute, manifest_path, message);
-                                        self.manifest_errors.push(error);
+                    if let Some(attributes) = element.attributes() {
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "path" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ssh_config.path = Some(value.to_string());
                                     }
                                 }
+                                "server" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ssh_config.server = Some(value.to_string());
+                                    }
+                                }
+                                "user" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ssh_config.user = Some(value.to_string());
+                                    }
+                                }
+                                _ => {
+                                    let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside an ssh_config field";
+                                    let error = attribute_error(attribute, manifest_path, message);
+                                    self.manifest_errors.push(error);
+                                }
                             }
-
-                            break 'ssh_config;
                         }
+                    } else {
+                        let message = indoc!("
+                            ssh_config needs to be provided as a field with attributes, e.g.:
+
+                            ssh_config:
+                            path = /data/web/user123/html
+                            server = ssh-user123.example.com
+                            user = user123
+                        ");
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = indoc!("
-                        ssh_config needs to be provided as a field with attributes, e.g.:
-
-                        ssh_config:
-                        path = /data/web/user123/html
-                        server = ssh-user123.example.com
-                        user = user123
-                    ");
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
-                "theme" => 'theme: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match Theme::from_key(value) {
-                                    Ok(theme) => {
-                                        self.theme = theme;
-                                    }
-                                    Err(err) => {
-                                        let message = format!("The supplied theme key was no recognized ({err})");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
+                "theme" => {
+                    if let Some(value) = element.field_value() {
+                        match Theme::from_key(value) {
+                            Ok(theme) => {
+                                self.theme = theme;
                             }
-
-                            break 'theme;
+                            Err(err) => {
+                                let message = format!("The supplied theme key was no recognized ({err})");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
                         }
+                    } else {
+                        let message = "theme needs to be provided as a field with a value, e.g.: 'theme: light_warm'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "theme needs to be provided as a field with a value, e.g.: 'theme: light_warm'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 other => {
                     let message = not_supported_error("site.eno", other, &[SITE_OPTIONS]);

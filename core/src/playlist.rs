@@ -98,91 +98,81 @@ impl Playlist {
 
         for element in document.elements() {
             match element.key() {
-                "banner" => 'banner: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(attributes) = field.attributes() {
-                            let mut description = None;
-                            let mut file = None;
+                "banner" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut description = None;
+                        let mut file = None;
 
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "description" => {
-                                        if let Some(value) = attribute.value() {
-                                            description = Some(value.to_string());
-                                        }
-                                    }
-                                    "file" => {
-                                        if let Some(value) = attribute.value() {
-                                            let absolute_path = manifest_path.parent().unwrap().join(value);
-
-                                            if absolute_path.exists() {
-                                                file = Some((absolute_path, value.to_string()));
-                                            } else {
-                                                let message = format!("The referenced file was not found ({})", absolute_path.display());
-                                                let error = attribute_error(attribute, manifest_path, &message);
-                                                self.manifest_errors.push(error);
-                                            }
-                                        }
-                                    }
-                                    _ => {
-                                        let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an banner field";
-                                        let error = attribute_error(attribute, manifest_path, message);
-                                        self.manifest_errors.push(error);
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "description" => {
+                                    if let Some(value) = attribute.value() {
+                                        description = Some(value.to_string());
                                     }
                                 }
+                                "file" => {
+                                    if let Some(value) = attribute.value() {
+                                        let absolute_path = manifest_path.parent().unwrap().join(value);
+
+                                        if absolute_path.exists() {
+                                            file = Some((absolute_path, value.to_string()));
+                                        } else {
+                                            let message = format!("The referenced file was not found ({})", absolute_path.display());
+                                            let error = attribute_error(attribute, manifest_path, &message);
+                                            self.manifest_errors.push(error);
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    let message = "The key/name of this attribute was not recognized, only 'description' and 'file' are recognized inside an banner field";
+                                    let error = attribute_error(attribute, manifest_path, message);
+                                    self.manifest_errors.push(error);
+                                }
                             }
-
-                            if let Some((absolute_path, file_name)) = file {
-                                let file_meta = FileMeta::new(&absolute_path);
-
-                                let assets = context.cache.lock().unwrap().fetch_poster_assets(
-                                    &file_meta,
-                                    &file_name,
-                                    0.0, // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
-                                    &self.site_path
-                                );
-
-                                let banner = Banner::new(assets, description, file_meta, file_name);
-                                self.banner = Some(banner);
-                            }
-
-                            break 'banner;
                         }
-                    }
 
-                    let message = "banner needs to be provided as a field with attributes, e.g.:\n\nbanner:\ndescription = Strange geometric patterns\nfile = patterns.jpg";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
+                        if let Some((absolute_path, file_name)) = file {
+                            let file_meta = FileMeta::new(&absolute_path);
+
+                            let assets = context.cache.lock().unwrap().fetch_poster_assets(
+                                &file_meta,
+                                &file_name,
+                                0.0, // TODO: Banners have no poster_aspect, pending better modeling we just hard-code it to 0 always
+                                &self.site_path
+                            );
+
+                            let banner = Banner::new(assets, description, file_meta, file_name);
+                            self.banner = Some(banner);
+                        }
+                    } else {
+                        let message = "banner needs to be provided as a field with attributes, e.g.:\n\nbanner:\ndescription = Strange geometric patterns\nfile = patterns.jpg";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
                 }
-                "copy_link" => 'copy_link: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.copy_link = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.copy_link = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'copy_link;
+                "copy_link" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.copy_link = Some(true);
+                            }
+                            "disabled" => {
+                                self.copy_link = Some(false);
+                            }
+                            other => {
+                                let message = format!("The copy_link option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
                             }
                         }
+                    } else {
+                        let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "copy_link needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'copy_link: disabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 "description" => {
-                    if let Ok(embed) = element.as_embed() {
+                    if let Some(embed) = element.as_embed() {
                         if let Some(value) = embed.value() {
                             self.description = Some(value.to_string());
                         } else {
@@ -194,173 +184,147 @@ impl Playlist {
                         self.manifest_errors.push(error);
                     }
                 }
-                "download" => 'download: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.download = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.download = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'download;
+                "download" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.download = Some(true);
                             }
-                        }
-                    }
-
-                    let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "embedding" => 'embedding: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.embedding = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.embedding = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'embedding;
+                            "disabled" => {
+                                self.download = Some(false);
                             }
-                        }
-                    }
-
-                    let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "feeds" => 'feeds: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value {
-                                    "enabled" => {
-                                        self.feeds = Some(true);
-                                    }
-                                    "disabled" => {
-                                        self.feeds = Some(false);
-                                    }
-                                    other => {
-                                        let message = format!("The feeds option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'feeds;
-                            }
-                        }
-                    }
-
-                    let message = "feeds needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'feeds: enabled'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
-                }
-                "link" => 'link: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match Url::parse(value) {
-                                    Ok(_) => {
-                                        let link = Link::new(false, None, false, value);
-                                        self.links.push(link);
-                                    }
-                                    Err(err) => {
-                                        let message = format!("The url supplied for the link seems to be malformed ({err})");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            break 'link;
-                        } else if let Ok(attributes) = field.attributes() {
-                            let mut hidden = false;
-                            let mut label = None;
-                            let mut rel_me = false;
-                            let mut url = None;
-
-                            for attribute in attributes {
-                                match attribute.key() {
-                                    "label" => {
-                                        if let Some(value) = attribute.value() {
-                                            label = Some(value.to_string());
-                                        }
-                                    }
-                                    "url" => {
-                                        if let Some(value) = attribute.value() {
-                                            match Url::parse(value) {
-                                                Ok(_) => url = Some(value),
-                                                Err(err) => {
-                                                    let message = format!("The url supplied for the link seems to be malformed ({err})");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    "verification" => {
-                                        if let Some(value) = attribute.value() {
-                                            match value {
-                                                "rel-me" => {
-                                                    hidden = false;
-                                                    rel_me = true;
-                                                }
-                                                "rel-me-hidden" => {
-                                                    hidden = true;
-                                                    rel_me = true;
-                                                }
-                                                _ => {
-                                                    let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
-                                                    let error = attribute_error(attribute, manifest_path, &message);
-                                                    self.manifest_errors.push(error);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    other => {
-                                        let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
-                                        let error = attribute_error(attribute, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-                            }
-
-                            if let Some(url) = url {
-                                let link = Link::new(hidden, label, rel_me, url);
-                                self.links.push(link);
-                            } else {
-                                let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
-                                let error = element_error(element, manifest_path, message);
+                            other => {
+                                let message = format!("The download option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
                                 self.manifest_errors.push(error);
                             }
-
-                            break 'link;
                         }
+                    } else {
+                        let message = "download needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'download: enabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
+                }
+                "embedding" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.embedding = Some(true);
+                            }
+                            "disabled" => {
+                                self.embedding = Some(false);
+                            }
+                            other => {
+                                let message = format!("The embedding option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = "embedding needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'embedding: enabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "feeds" => {
+                    if let Some(value) = element.field_value() {
+                        match value {
+                            "enabled" => {
+                                self.feeds = Some(true);
+                            }
+                            "disabled" => {
+                                self.feeds = Some(false);
+                            }
+                            other => {
+                                let message = format!("The feeds option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = "feeds needs to be provided as a field with the value 'enabled' or 'disabled', e.g.: 'feeds: enabled'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "link" => {
+                    if let Some(value) = element.field_value() {
+                        match Url::parse(value) {
+                            Ok(_) => {
+                                let link = Link::new(false, None, false, value);
+                                self.links.push(link);
+                            }
+                            Err(err) => {
+                                let message = format!("The url supplied for the link seems to be malformed ({err})");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else if let Some(attributes) = element.attributes() {
+                        let mut hidden = false;
+                        let mut label = None;
+                        let mut rel_me = false;
+                        let mut url = None;
 
-                    let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "label" => {
+                                    if let Some(value) = attribute.value() {
+                                        label = Some(value.to_string());
+                                    }
+                                }
+                                "url" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Url::parse(value) {
+                                            Ok(_) => url = Some(value),
+                                            Err(err) => {
+                                                let message = format!("The url supplied for the link seems to be malformed ({err})");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
+                                "verification" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "rel-me" => {
+                                                hidden = false;
+                                                rel_me = true;
+                                            }
+                                            "rel-me-hidden" => {
+                                                hidden = true;
+                                                rel_me = true;
+                                            }
+                                            _ => {
+                                                let message = format!("The verification attribute value '{value}' is not recognized, allowed are 'rel-me' and 'rel-me-hidden'");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
+                                other => {
+                                    let message = format!("The attribute '{other}' is not recognized here (supported attributes are 'label', 'url' and 'verification'");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
+                                }
+                            }
+                        }
+
+                        if let Some(url) = url {
+                            let link = Link::new(hidden, label, rel_me, url);
+                            self.links.push(link);
+                        } else {
+                            let message = "The link option must supply an url attribute at least, e.g.:\n\nlink:\nurl = https://example.com";
+                            let error = element_error(element, manifest_path, message);
+                            self.manifest_errors.push(error);
+                        }
+                    } else {
+                        let message = "link must be provided as a basic field with a value (e.g. 'link: https://example.com') or in its extended form as a field with attributes, e.g.:\n\nlink:\nurl = https://example.com\nlabel = Example";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
                 }
                 "offline" => {
                     if element.is_flag() {
@@ -371,93 +335,69 @@ impl Playlist {
                         self.manifest_errors.push(error);
                     }
                 }
-                "order" => 'order: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match VideoOrder::from_key(value) {
-                                    Some(order) => {
-                                        self.order = order;
-                                    }
-                                    None => {
-                                        let supported_keys = VideoOrder::supported_keys();
-                                        let message = format!("The supplied order was not recognized (supported are {supported_keys})");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
+                "order" => {
+                    if let Some(value) = element.field_value() {
+                        match VideoOrder::from_key(value) {
+                            Some(order) => {
+                                self.order = order;
                             }
-
-                            break 'order;
+                            None => {
+                                let supported_keys = VideoOrder::supported_keys();
+                                let message = format!("The supplied order was not recognized (supported are {supported_keys})");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
                         }
+                    } else {
+                        let message = "order needs to be provided as a field with a value, e.g.: 'order: release_date_asc'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "order needs to be provided as a field with a value, e.g.: 'order: release_date_asc'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
-                "platform_integration" => 'platform_integration: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match PlatformIntegration::from_key(value) {
-                                    Some(platform_integration) => {
-                                        self.platform_integration = Some(platform_integration);
-                                    }
-                                    None => {
-                                        let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
-
-                                break 'platform_integration;
+                "platform_integration" => {
+                    if let Some(value) = element.field_value() {
+                        match PlatformIntegration::from_key(value) {
+                            Some(platform_integration) => {
+                                self.platform_integration = Some(platform_integration);
+                            }
+                            None => {
+                                let message = format!("The platform_integration option only supports the value 'link_previews', 'content_embeds' or 'disabled'. The given value '{value}' was not recognized.");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
                             }
                         }
+                    } else {
+                        let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "platform_integration needs to be provided as a field with the value 'link_previews', 'content_embeds' or 'disabled', e.g.: 'platform_integration: link_previews'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
-                "sort_number" => 'sort_number: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                match value.parse::<i32>() {
-                                    Ok(number) => {
-                                        self.sort_number = Some(number);
-                                    }
-                                    Err(err) => {
-                                        let message = format!("Invalid number value '{value}': {err}");
-                                        let error = element_error(element, manifest_path, &message);
-                                        self.manifest_errors.push(error);
-                                    }
-                                }
+                "sort_number" => {
+                    if let Some(value) = element.field_value() {
+                        match value.parse::<i32>() {
+                            Ok(number) => {
+                                self.sort_number = Some(number);
                             }
-
-                            break 'sort_number;
+                            Err(err) => {
+                                let message = format!("Invalid number value '{value}': {err}");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
                         }
+                    } else {
+                        let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "sort_number needs to be provided as a field with a number value, e.g.: 'sort_number: 13'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
-                "title" => 'title: {
-                    if let Ok(field) = element.as_field() {
-                        if let Ok(result) = field.value() {
-                            if let Some(value) = result {
-                                self.title = Some(value.to_string());
-                            }
-
-                            break 'title;
-                        }
+                "title" => {
+                    if let Some(value) = element.field_value() {
+                        self.title = Some(value.to_string());
+                    } else {
+                        let message = "title needs to be provided as a field with a value, e.g.: 'title: Best clips from the 90ies'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
                     }
-
-                    let message = "title needs to be provided as a field with a value, e.g.: 'title: Best clips from the 90ies'";
-                    let error = element_error(element, manifest_path, message);
-                    self.manifest_errors.push(error);
                 }
                 "unlisted" => {
                     if element.is_flag() {
