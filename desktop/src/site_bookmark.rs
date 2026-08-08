@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -47,14 +47,9 @@ impl SiteBookmark {
         };
 
         if let Some(element) = document.elements()
-            .iter()
             .find(|element| element.key() == "base_url") {
-            if let Ok(field) = element.as_field() {
-                if let Ok(result) = field.value() {
-                    if let Some(value) = result {
-                        return Some(value.to_string());
-                    }
-                }
+            if let Some(value) = element.field_value() {
+                return Some(value.to_string());
             }
         }
 
@@ -76,14 +71,9 @@ impl SiteBookmark {
             };
 
             if let Some(element) = document.elements()
-                .iter()
                 .find(|element| element.key() == "title") {
-                if let Ok(field) = element.as_field() {
-                    if let Ok(result) = field.value() {
-                        if let Some(value) = result {
-                            return Some(value.to_string());
-                        }
-                    }
+                if let Some(value) = element.field_value() {
+                    return Some(value.to_string());
                 }
             }
 
