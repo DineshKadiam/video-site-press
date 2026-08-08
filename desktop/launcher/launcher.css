@@ -1,11 +1,11 @@
 a {
-    color: var(--fg-1);
+    color: var(--f1);
     text-decoration: inherit;
 }
-a:hover { color: var(--fg-3); }
+a:hover { color: var(--f3); }
 body {
-    background: var(--bg-1);
-    color: var(--fg-2);
+    background: var(--b1);
+    color: var(--f2);
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -18,14 +18,14 @@ body, button {
 button {
     background: none;
     border: none;
-    color: var(--fg-2);
+    color: var(--f2);
     cursor: pointer;
     font-family: inherit;
     font-size: 1em;
 }
 button:focus-visible,
 button:hover {
-    color: var(--fg-1);
+    color: var(--f1);
 }
 input,
 button {
@@ -35,7 +35,7 @@ button {
     align-items: center;
     background: none;
     border-radius: 50%;
-    color: var(--fg-1);
+    color: var(--f1);
     display: flex;
     font-size: 1rem;
     justify-content: center;
@@ -46,17 +46,17 @@ button {
 }
 .close:focus-visible,
 .close:hover {
-    color: var(--fg-3);
+    color: var(--f3);
 }
 .configure {
-    color: var(--bg-mg);
+    color: var(--bm);
     flex-shrink: 0;
     font-size: .8rem;
     padding: .3rem .2rem;
 }
 .configure:focus-visible,
 .configure:hover {
-    color: var(--fg-1) !important;
+    color: var(--f1) !important;
 }
 footer {
     align-items: center;
@@ -75,7 +75,7 @@ footer > div > a,
 footer > div > button {
     align-items: center;
     column-gap: .3rem;
-    color: var(--fg-3);
+    color: var(--f3);
     display: flex;
     padding: .5rem;
 }
@@ -83,14 +83,14 @@ footer > div > a:focus-visible,
 footer > div > a:hover,
 footer > div > button:focus-visible,
 footer > div > button:hover {
-    color: var(--fg-1);
+    color: var(--f1);
 }
 footer a svg { font-size: .8rem; }
 header {
     align-items: center;
     aspect-ratio: 1.85;
-    box-shadow: 0 0 .1rem var(--bg-mg);
-    color: var(--fg-1);
+    box-shadow: 0 0 .1rem var(--bm);
+    color: var(--f1);
     display: flex;
     justify-content: center;
     min-height: 0;
@@ -100,7 +100,7 @@ header > a {
     border: 1px solid;
     border-radius: .2rem;
     bottom: 1rem;
-    color: var(--fg-3);
+    color: var(--f3);
     font-size: .9rem;
     padding: .25rem .4rem;
     position: absolute;
@@ -108,9 +108,9 @@ header > a {
 }
 header > a:focus-visible,
 header > a:hover {
-    background: var(--fg-1);
-    border-color: var(--fg-1);
-    color: var(--bg-1);
+    background: var(--f1);
+    border-color: var(--f1);
+    color: var(--b1);
 }
 header > svg {
     height: 100%;
@@ -133,11 +133,11 @@ main > button {
 }
 main > button:focus-visible,
 main > button:hover {
-    background: var(--bg-2);
+    background: var(--b2);
 }
 main > button:not(:first-child) { margin-top: .1rem; }
 .options {
-    color: var(--fg-1);
+    color: var(--f1);
     column-gap: .5rem;
     display: flex;
     position: relative;
@@ -149,8 +149,8 @@ main > button:not(:first-child) { margin-top: .1rem; }
     right: 0;
 }
 .options .selector .panel {
-    background: var(--bg-2);
-    border: 1px solid var(--bg-3);
+    background: var(--b2);
+    border: 1px solid var(--b3);
     border-radius: .4rem;
     display: flex;
     flex-direction: column;
@@ -163,7 +163,7 @@ main > button:not(:first-child) { margin-top: .1rem; }
     white-space: nowrap;
 }
 .options .selector button:focus-visible,
-.options .selector button:hover { background: var(--fg-1); }
+.options .selector button:hover { background: var(--f1); }
 .options .selector button:first-child {
     border-top-left-radius: .4rem;
     border-top-right-radius: .4rem;
@@ -175,12 +175,12 @@ main > button:not(:first-child) { margin-top: .1rem; }
 .options .selector button > :nth-child(1) {
     align-items: center;
     column-gap: .3rem;
-    color: var(--fg-1);
+    color: var(--f1);
     display: flex;
 }
 .options .selector button:focus-visible > :nth-child(1),
 .options .selector button:hover > :nth-child(1) {
-    color: var(--bg-1);
+    color: var(--b1);
 }
 .options .selector button > :nth-child(1) svg {
     position: relative;
@@ -188,13 +188,13 @@ main > button:not(:first-child) { margin-top: .1rem; }
     top: .4rem;
 }
 .options .selector button > :nth-child(2) {
-    color: var(--fg-3);
+    color: var(--f3);
     font-size: .8rem;
     padding-inline-start: 1.2rem;
 }
 .options .selector button:focus-visible > :nth-child(2),
 .options .selector button:hover > :nth-child(2) {
-    color: var(--bg-3);
+    color: var(--b3);
 }
 .options .selector.language { right: 2.5rem; }
 .options .selector.language button { justify-content: center; }
@@ -213,7 +213,7 @@ main > button:not(:first-child) { margin-top: .1rem; }
     align-items: center;
     border: 0;
     background: none;
-    color: var(--fg-2);
+    color: var(--f2);
     display: flex;
     flex-direction: column;
     opacity: 0;
@@ -223,13 +223,13 @@ main > button:not(:first-child) { margin-top: .1rem; }
 }
 .overlay[open] { opacity: 1; }
 .overlay::backdrop {
-    background: var(--bg-1);
+    background: var(--b1);
     opacity: 0;
     transition: opacity 1s ease;
 }
 .overlay[open]::backdrop { opacity: 1; }
 .overlay a {
-    color: var(--fg-1);
+    color: var(--f1);
     margin-left: .2rem;
 }
 .overlay > :nth-child(1) {
@@ -237,7 +237,7 @@ main > button:not(:first-child) { margin-top: .1rem; }
     display: flex;
 }
 .overlay > :nth-child(2) {
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .5rem;
     font-size: .8rem;
     max-width: 75%;
@@ -246,7 +246,7 @@ main > button:not(:first-child) { margin-top: .1rem; }
 .overlay > :nth-child(3) {
     background: var(--action);
     border-radius: .2rem;
-    color: var(--l-1);
+    color: var(--l1);
     margin: .5rem 0 .5rem .5rem;
     padding: .3rem .8rem;
 }
@@ -264,15 +264,15 @@ main > button:not(:first-child) { margin-top: .1rem; }
 }
 .pane:focus-visible,
 .pane:hover {
-    background: var(--bg-2);
+    background: var(--b2);
 }
 .pane:focus-visible .configure,
 .pane:hover .configure {
-    color: var(--mg);
+    color: var(--m);
 }
 .pane > :nth-child(1) { flex-shrink: 0; }
 .pane > :nth-child(2) {
-    color: var(--fg-1);
+    color: var(--f1);
     flex-grow: 1;
     flex-shrink: .001;
 }
@@ -286,22 +286,22 @@ main > button:not(:first-child) { margin-top: .1rem; }
 .pane > :nth-child(3) { flex-shrink: 1000; }
 .pane > :nth-child(4) { flex-shrink: 0; }
 .site.not_found .pane > :nth-child(2),
-.site.not_found .pane > :nth-child(3) { color: var(--fg-3); }
+.site.not_found .pane > :nth-child(3) { color: var(--f3); }
 .site:not(.not_found) { cursor: pointer; }
 .site:not(.expanded) > :nth-child(2) { display: none; }
 .site > :nth-child(2) {
     padding-inline-start: .5rem;
 }
 .site > :nth-child(2) button {
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .2rem;
-    color: var(--fg-1);
+    color: var(--f1);
     margin: .5rem 0 .5rem .5rem;
     padding: .3rem .8rem;
 }
 .site > :nth-child(2) button:focus-visible,
 .site > :nth-child(2) button:hover {
-    background: var(--bg-3);
+    background: var(--b3);
 }
 .sites {
     display: flex;

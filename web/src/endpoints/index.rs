@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -115,7 +115,7 @@ fn empty_site_html(translations: &Translations) -> String {
         <div class="form_group">
             <h2>{t_site_setup}</h2>
             <p>{t_site_setup_text}</p>
-            <p style="background: var(--warning-bg); border-radius: .5rem; color: var(--warning-fg); padding: 1rem;">
+            <p style="background: var(--warning-b); border-radius: .5rem; color: var(--warning-f); padding: 1rem;">
                 {t_site_setup_change_note}
             </p>
             <br>
@@ -168,7 +168,7 @@ fn storage_stats_html(
         let default_streamable_audio_file = video.default_streamable_audio_file();
 
         if let Some(audio_file) = default_streamable_audio_file {
-            let color = String::from("var(--mg)");
+            let color = String::from("var(--m)");
             let size = audio_file.file_meta.size;
             let title = format!("{video_label}: {}", audio_file.file_name);
             let e_title = html_escape_outside_attribute(&title);
@@ -184,7 +184,7 @@ fn storage_stats_html(
                     continue;
                 }
 
-                let color = String::from("var(--mg)");
+                let color = String::from("var(--m)");
                 let size = audio_file.file_meta.size;
                 let title = format!("{video_label}: {}", audio_file.file_name);
                 let e_title = html_escape_outside_attribute(&title);
@@ -212,10 +212,10 @@ fn storage_stats_html(
                                 _ => unreachable!()
                             }
                         }
-                        None => String::from("var(--mg)")
+                        None => String::from("var(--m)")
                     }
                 }
-                None => String::from("var(--mg)")
+                None => String::from("var(--m)")
             };
             let size = video_file.file_meta.size;
             let title = format!("{video_label}: {}", video_file.file_name);

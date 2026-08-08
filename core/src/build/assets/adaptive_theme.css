@@ -7,7 +7,7 @@ body:not(.light) #toggle-dark {
     background: none;
     border: none;
     border-radius: .9rem;
-    color: var(--fg-3);
+    color: var(--f3);
     cursor: pointer;
     display: inline-flex;
     height: 1.8rem;
@@ -15,8 +15,8 @@ body:not(.light) #toggle-dark {
     padding: 0;
     width: 1.8rem;
 }
-.theme_toggle:focus-visible { outline: .2rem solid var(--fg-1); }
+.theme_toggle:focus-visible { outline: .2rem solid var(--f1); }
 .theme_toggle:focus-visible,
 .theme_toggle:hover {
-    color: var(--fg-1);
+    color: var(--f1);
 }

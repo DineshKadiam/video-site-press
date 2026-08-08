@@ -1,14 +1,14 @@
 a {
-    color: var(--fg-1);
+    color: var(--f1);
     text-decoration: none;
 }
 body {
-    background: var(--bg-1);
-    color: var(--fg-2);
+    background: var(--b1);
+    color: var(--f2);
     margin: 0;
 }
 button {
-    color: var(--fg-2);
+    color: var(--f2);
     font-size: 1rem;
 }
 .caption {
@@ -30,9 +30,9 @@ img {
 }
 .intro_controls .icon_button {
     align-items: center;
-    background: var(--d-1-85);
+    background: var(--d1-85);
     border-radius: 50%;
-    color: var(--l-2);
+    color: var(--l2);
     display: flex;
     height: 2.2em;
     justify-content: center;
@@ -40,7 +40,7 @@ img {
     width: 2.2em;
 }
 .intro_controls .icon_button:hover {
-    color: var(--l-1);
+    color: var(--l1);
     opacity: .9;
 }
 .intro_controls .selector_options {
@@ -53,7 +53,7 @@ img {
 }
 .intro_controls .selector_control.active:hover .selector_options button:focus,
 .intro_controls .selector_control.active:hover .selector_options button:hover {
-    color: var(--l-1);
+    color: var(--l1);
     opacity: .9;
 }
 .intro_controls .selector_options:focus-within,
@@ -68,11 +68,11 @@ img {
 }
 .intro_heading {
     align-items: center;
-    background: var(--l-1);
+    background: var(--l1);
     border-bottom-left-radius: .5rem;
     border-top-right-radius: .5rem;
     bottom: 0;
-    color: var(--d-1);
+    color: var(--d1);
     column-gap: .2rem;
     display: flex;
     font-size: .8rem;
@@ -104,11 +104,11 @@ img {
 .outro_playlist_context > a:hover,
 .outro_playlist_context > button:focus-visible,
 .outro_playlist_context > button:hover {
-    background: var(--l-1-10);
+    background: var(--l1-10);
 }
 .outro_playlist_context .description {
     align-items: flex-start;
-    color: var(--l-1);
+    color: var(--l1);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -116,21 +116,21 @@ img {
     margin-right: 1rem;
 }
 .outro_playlist_context .details {
-    color: var(--l-3);
+    color: var(--l3);
     font-size: .8rem;
 }
 .outro_playlist_context .label { font-size: .9rem;  }
 .outro_playlist_context .number_context {
-    background: var(--l-3);
+    background: var(--l3);
     border-radius: .2rem;
-    color: var(--d-1);
+    color: var(--d1);
     font-size: .8rem;
     margin-bottom: .2rem;
     padding: .15rem .36rem;
 }
 .outro_playlist_context img {
     aspect-ratio: var(--poster-aspect);
-    background: var(--d-1);
+    background: var(--d1);
     border-radius: .3rem;
     display: block;
     flex-shrink: 0;
@@ -231,7 +231,7 @@ path.loading_right {
 .player_controls .right_playback_controls button:last-child { padding-right: .9rem; }
 .player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
-    background: var(--d-1-85);
+    background: var(--d1-85);
     border-bottom-left-radius: .5rem;
     border-bottom-right-radius: .5rem;
     display: flex;
@@ -267,7 +267,7 @@ path.loading_right {
 }
 .player_controls .timeline:hover .bar { height: .35rem; }
 .player_controls .timeline .bar.backdrop {
-    background: var(--d-3);
+    background: var(--d3);
     width: 100%;
     z-index: 1;
 }
@@ -275,9 +275,9 @@ path.loading_right {
     width: 100%;
     z-index: 4;
 }
-.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l-1); }
+.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1); }
 .player_controls .timeline .bar.progress {
-    background: var(--l-1);
+    background: var(--l1);
     width: 0;
     z-index: 3;
 }
@@ -286,7 +286,7 @@ path.loading_right {
     z-index: 2;
 }
 .player_controls .timeline .bar.buffered > div {
-    background: var(--mg);
+    background: var(--m);
     bottom: 0;
     position: absolute;
     top: 0;
@@ -327,18 +327,18 @@ path.loading_right {
 .player_wrapper {
     background: #000;
     border-radius: .5rem;
-    color: var(--l-2);
+    color: var(--l2);
     position: relative;
 }
 .player_wrapper button {
     background: none;
     border: none;
-    color: var(--l-2);
+    color: var(--l2);
     cursor: pointer;
 }
-.player_wrapper button:hover { color: var(--l-1); }
-.player_wrapper button.dimmed { color: var(--mg); }
-.player_wrapper button.dimmed:hover { color: var(--l-3); }
+.player_wrapper button:hover { color: var(--l1); }
+.player_wrapper button.dimmed { color: var(--m); }
+.player_wrapper button.dimmed:hover { color: var(--l3); }
 .player_wrapper > *:not(video) { z-index: 1; }
 .player_wrapper[data-state="intro"] .player_controls { display: none; }
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
@@ -372,7 +372,7 @@ path.loading_right {
 }
 .selector_options button {
     align-items: center;
-    background: var(--d-1-85);
+    background: var(--d1-85);
     display: flex;
     white-space: nowrap;
 }
@@ -403,10 +403,10 @@ svg {
     width: auto;
 }
 .versions_ring circle.backdrop {
-    fill: var(--d-1);
+    fill: var(--d1);
     opacity: .9;
 }
-.versions_ring path { fill: var(--l-1); }
+.versions_ring path { fill: var(--l1); }
 .versions_ring g {
     cursor: pointer;
     opacity: .9;
@@ -417,12 +417,12 @@ svg {
     outline: none;
 }
 .versions_ring text {
-    fill: var(--d-1);
+    fill: var(--d1);
     font-size: 1.3rem;
 }
-.versions_ring rect.backdrop { fill: var(--l-1); }
+.versions_ring rect.backdrop { fill: var(--l1); }
 .versions_ring text.size {
-    fill: var(--d-3);
+    fill: var(--d3);
     font-size: 1rem;
 }
 .versions_ring.interacting g:not(:focus-visible):not(:hover) { opacity: .5; }
@@ -433,12 +433,12 @@ video {
     width: 100%;
 }
 .video {
-    color: var(--fg-2);
+    color: var(--f2);
     display: flex;
     flex-direction: column;
 }
 .video_title {
-    color: var(--fg-1);
+    color: var(--f1);
     margin: 0;
 }
 .videos {

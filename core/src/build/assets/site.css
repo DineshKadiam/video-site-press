@@ -1,15 +1,15 @@
 a {
-    color: var(--fg-1);
+    color: var(--f1);
     text-decoration: none;
 }
-a:hover { color: var(--fg-3); }
+a:hover { color: var(--f3); }
 .actions a,
 .actions button {
     align-items: center;
-    background: var(--bg-2);
+    background: var(--b2);
     border: none;
     border-radius: .2rem;
-    color: var(--fg-1);
+    color: var(--f1);
     column-gap: .3rem;
     cursor: pointer;
     display: flex;
@@ -21,33 +21,33 @@ a:hover { color: var(--fg-3); }
 .actions a:hover,
 .actions button:focus-visible,
 .actions button:hover {
-    background: var(--bg-3);
+    background: var(--b3);
 }
 .actions button.active {
-    border: 1px solid var(--bg-mg);
+    border: 1px solid var(--bm);
     padding: calc(.3rem - 1px) calc(.4rem - 1px);
 }
 /* TODO: Temporarily hidden - unhide in an upcoming version when we figured out
          layout questions around banner. */
 .banner { display: none; }
 body {
-    background: var(--bg-1);
-    color: var(--fg-2);
+    background: var(--b1);
+    color: var(--f2);
     margin: 0;
 }
 .browse {
     background: none;
     border: none;
     border-radius: .2rem;
-    color: var(--fg-3);
+    color: var(--f3);
     cursor: pointer;
     outline: none;
     padding: .2rem .3rem;
 }
-.browse:hover { color: var(--fg-1); }
+.browse:hover { color: var(--f1); }
 .browse:focus-visible {
-    background: var(--fg-2);
-    color: var(--bg-1);
+    background: var(--f2);
+    color: var(--b1);
 }
 .bubbles {
     display: flex;
@@ -65,10 +65,10 @@ body {
 }
 .bubbles a:focus-visible,
 .bubbles a:hover {
-    box-shadow: 0 0 .15rem var(--mg);
+    box-shadow: 0 0 .15rem var(--m);
 }
 button {
-    color: var(--fg-2);
+    color: var(--f2);
     font-size: inherit;
 }
 .caption {
@@ -98,17 +98,17 @@ button {
 }
 .container_title h1 { margin: 0; }
 #copy-link::after {
-    color: var(--fg-2);
+    color: var(--f2);
     padding-left: .5rem;
 }
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
 dialog.shortcuts {
-    background: var(--bg-1);
+    background: var(--b1);
     border-radius: .5rem;
-    border: 1px solid var(--bg-3);
-    box-shadow: 0 0 1rem var(--d-1-15);
-    color: var(--fg-2);
+    border: 1px solid var(--b3);
+    box-shadow: 0 0 1rem var(--d1-15);
+    color: var(--f2);
     flex-direction: column;
     left: 0;
     margin: 0;
@@ -124,7 +124,7 @@ dialog.shortcuts button {
     background: var(--action);
     border: none;
     border-radius: .2rem;
-    color: var(--l-1);
+    color: var(--l1);
     cursor: pointer;
     font-size: .9rem;
     padding: .3rem .4rem;
@@ -150,7 +150,7 @@ dialog.shortcuts li {
 }
 dialog.shortcuts li > span {
     align-items: center;
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .3rem;
     box-sizing: border-box;
     display: flex;
@@ -169,7 +169,7 @@ dialog.shortcuts ul {
     row-gap: .5rem;
 }
 .feed_card {
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: 1rem;
     display: flex;
     flex-direction: column;
@@ -178,7 +178,7 @@ dialog.shortcuts ul {
 }
 .feed_card > * { margin: 0; }
 .feed_card a { text-decoration: underline; }
-.feed_card button { background: var(--bg-1); }
+.feed_card button { background: var(--b1); }
 .feed_card h2 {
     align-items: center;
     display: flex;
@@ -206,27 +206,27 @@ footer {
     padding: 1rem;
     width: 100%;
 }
-footer > :first-child { color: var(--fg-1); }
+footer > :first-child { color: var(--f1); }
 footer a,
 footer button {
     align-items: center;
     background: none;
     border: none;
-    color: var(--fg-3);
+    color: var(--f3);
     column-gap: .4rem;
     cursor: pointer;
     display: flex;
 }
 footer a:hover,
 footer button:hover {
-    color: var(--fg-1);
+    color: var(--f1);
 }
 footer a:not(:hover) svg,
 footer button:not(:hover) svg {
-    color: var(--fg-mg);
+    color: var(--fm);
 }
 h1 {
-    color: var(--fg-1);
+    color: var(--f1);
     font-size: 1.5rem;
     font-weight: 500;
     margin-bottom: 2rem;
@@ -251,8 +251,8 @@ header > :nth-child(1) {
     outline: none;
 }
 header > :nth-child(1):focus-visible {
-    background: var(--fg-2);
-    color: var(--bg-1);
+    background: var(--f2);
+    color: var(--b1);
 }
 header > :nth-child(1) svg { flex-shrink: 0; }
 header .navigation {
@@ -300,9 +300,9 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 }
 .links > a {
     align-items: center;
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .2rem;
-    color: var(--fg-1);
+    color: var(--f1);
     column-gap: .3rem;
     display: flex;
     padding: .3rem .4rem;
@@ -311,11 +311,11 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .links > a:not(:first-child) { margin-top: .5rem; }
 .links > a:focus-visible,
 .links > a:hover {
-    background: var(--bg-3);
+    background: var(--b3);
 }
 .logo {
-    background: var(--fg-2);
-    color: var(--bg-1);
+    background: var(--f2);
+    color: var(--b1);
     font-weight: 500;
     padding: .5rem;
 }
@@ -335,11 +335,11 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .outro_playlist_context > a:hover,
 .outro_playlist_context > button:focus-visible,
 .outro_playlist_context > button:hover {
-    background: var(--l-1-10);
+    background: var(--l1-10);
 }
 .outro_playlist_context .description {
     align-items: flex-start;
-    color: var(--l-1);
+    color: var(--l1);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -347,21 +347,21 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
     margin-right: 1rem;
 }
 .outro_playlist_context .details {
-    color: var(--l-3);
+    color: var(--l3);
     font-size: .8rem;
 }
 .outro_playlist_context .label { font-size: .9rem;  }
 .outro_playlist_context .number_context {
-    background: var(--l-3);
+    background: var(--l3);
     border-radius: .2rem;
-    color: var(--d-1);
+    color: var(--d1);
     font-size: .8rem;
     margin-bottom: .2rem;
     padding: .15rem .36rem;
 }
 .outro_playlist_context img {
     aspect-ratio: var(--poster-aspect);
-    background: var(--d-1);
+    background: var(--d1);
     border-radius: .3rem;
     display: block;
     flex-shrink: 0;
@@ -477,7 +477,7 @@ path.loading_right {
 .player_controls button { padding: .9rem .7rem; }
 .player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
-    background: var(--d-1-85);
+    background: var(--d1-85);
     border-bottom-left-radius: .5rem;
     border-bottom-right-radius: .5rem;
     display: flex;
@@ -515,7 +515,7 @@ path.loading_right {
 }
 .player_controls .timeline:hover .bar { height: .35rem; }
 .player_controls .timeline .bar.backdrop {
-    background: var(--d-3);
+    background: var(--d3);
     width: 100%;
     z-index: 1;
 }
@@ -523,9 +523,9 @@ path.loading_right {
     width: 100%;
     z-index: 4;
 }
-.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l-1); }
+.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1); }
 .player_controls .timeline .bar.progress {
-    background: var(--l-1);
+    background: var(--l1);
     width: 0;
     z-index: 3;
 }
@@ -534,7 +534,7 @@ path.loading_right {
     z-index: 2;
 }
 .player_controls .timeline .bar.buffered > div {
-    background: var(--mg);
+    background: var(--m);
     bottom: 0;
     position: absolute;
     top: 0;
@@ -574,7 +574,7 @@ path.loading_right {
 .player_placeholder {
     align-items: center;
     aspect-ratio: var(--poster-aspect);
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .5rem;
     display: flex;
     justify-content: center;
@@ -585,9 +585,9 @@ path.loading_right {
     width: 100%;
 }
 .player_placeholder span {
-    background: var(--fg-1);
+    background: var(--f1);
     border-radius: .2rem;
-    color: var(--bg-1);
+    color: var(--b1);
     left: 50%;
     padding: .4rem .7rem;
     position: absolute;
@@ -598,24 +598,24 @@ path.loading_right {
 .player_wrapper {
     background: #000;
     border-radius: .5rem;
-    color: var(--l-2);
+    color: var(--l2);
     position: relative;
 }
 .player_wrapper a,
 .player_wrapper button {
-    color: var(--l-2);
+    color: var(--l2);
 }
 .player_wrapper a:hover,
 .player_wrapper button:hover {
-    color: var(--l-1);
+    color: var(--l1);
 }
 .player_wrapper button {
     background: none;
     border: none;
     cursor: pointer;
 }
-.player_wrapper button.dimmed { color: var(--mg); }
-.player_wrapper button.dimmed:hover { color: var(--l-3); }
+.player_wrapper button.dimmed { color: var(--m); }
+.player_wrapper button.dimmed:hover { color: var(--l3); }
 .player_wrapper > *:not(video) { z-index: 1; }
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
 .player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
@@ -647,7 +647,7 @@ path.loading_right {
     position: relative;
 }
 .playlist_context > a:focus-visible,
-.playlist_context > a:hover { background: var(--bg-2); }
+.playlist_context > a:hover { background: var(--b2); }
 .playlist_context > a:not(:last-child) {
     margin-bottom: .5rem;
 }
@@ -661,7 +661,7 @@ path.loading_right {
 }
 .playlist_context .description {
     align-items: flex-start;
-    color: var(--fg-1);
+    color: var(--f1);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -669,21 +669,21 @@ path.loading_right {
     padding: .2rem .8rem;
 }
 .playlist_context .details {
-    color: var(--fg-3);
+    color: var(--f3);
     font-size: .8rem;
 }
 .playlist_context .label { font-size: .9rem; }
 .playlist_context .number_context {
-    background: var(--fg-3);
+    background: var(--f3);
     border-radius: .2rem;
-    color: var(--bg-1);
+    color: var(--b1);
     font-size: .8rem;
     margin-bottom: .2rem;
     padding: .15rem .36rem;
 }
 .playlist_context img {
     aspect-ratio: var(--poster-aspect);
-    background: var(--d-1);
+    background: var(--d1);
     border-radius: .3rem;
     display: block;
     flex-shrink: 0;
@@ -704,30 +704,30 @@ path.loading_right {
     padding: .5rem;
 }
 .playlist_page > *:focus-visible,
-.playlist_page > *:hover { background: var(--bg-2); }
+.playlist_page > *:hover { background: var(--b2); }
 .playlist_page .description {
     align-items: center;
-    color: var(--fg-1);
+    color: var(--f1);
     display: flex;
     flex-grow: 1;
 }
 .reading_width { max-width: 32rem; }
 .release_date {
-    color: var(--fg-3);
+    color: var(--f3);
     display: inline-block;
     margin-top: .2rem;
 }
 .right_playback_controls { position: relative; }
 .search {
     align-items: center;
-    color: var(--fg-3);
+    color: var(--f3);
     column-gap: .3rem;
     display: flex;
     margin-inline: .3rem;
     position: relative;
     transition: margin-right 200ms ease, width 200ms ease;
 }
-.search:hover { color: var(--fg-1); }
+.search:hover { color: var(--f1); }
 .search:focus-within input,
 .search.query_present input {
     cursor: text;
@@ -751,7 +751,7 @@ path.loading_right {
     border-bottom: 1px solid transparent;
     border: none;
     bottom: 0;
-    color: var(--fg-3);
+    color: var(--f3);
     cursor: pointer;
     font-size: 1em;
     left: 0;
@@ -761,7 +761,7 @@ path.loading_right {
     transition: width 200ms ease;
     width: 100%;
 }
-.search input:focus { border-bottom: 1px solid var(--mg); }
+.search input:focus { border-bottom: 1px solid var(--m); }
 .search.query_present input,
 .search input:focus {
     padding: .3em 1.4em calc(.3em - 1px) 1.2em;
@@ -774,14 +774,14 @@ path.loading_right {
     display: none;
 }
 .site_title {
-    color: var(--fg-2);
+    color: var(--f2);
     font-size: 1.17rem;
 }
 .site_tree {
-    background: var(--bg-1);
-    border: 1px solid var(--bg-3);
+    background: var(--b1);
+    border: 1px solid var(--b3);
     border-radius: .5em;
-    box-shadow: 0 0 2rem var(--d-1-15);
+    box-shadow: 0 0 2rem var(--d1-15);
     box-sizing: border-box;
     display: flex;
     max-height: 80dvh;
@@ -817,8 +817,8 @@ path.loading_right {
 }
 .site_tree .elements a:focus-visible,
 .site_tree .elements a:hover {
-    background: var(--bg-2);
-    color: var(--fg-1);
+    background: var(--b2);
+    color: var(--f1);
     outline: none;
 }
 .site_tree .elements a:not(.visible) { display: none; }
@@ -832,14 +832,14 @@ path.loading_right {
 }
 .site_tree .elements .container > :nth-child(1) svg {
     border-radius: 50%;
-    color: var(--fg-1);
+    color: var(--f1);
     font-size: .6rem;
     padding: .2rem;
 }
-.site_tree .elements .container:hover > :nth-child(1) svg { background: var(--bg-1); }
+.site_tree .elements .container:hover > :nth-child(1) svg { background: var(--b1); }
 .site_tree .elements .container > :nth-child(1):hover svg {
-    background: var(--fg-3);
-    color: var(--bg-1);
+    background: var(--f3);
+    color: var(--b1);
 }
 .site_tree .elements .container.expanded > :nth-child(1) svg { transform: rotate(90deg); }
 .site_tree .elements .container > :nth-child(2) {
@@ -850,11 +850,11 @@ path.loading_right {
     padding-block: .3rem;
 }
 .site_tree .elements .container > :nth-child(2) svg {
-    color: var(--mg);
+    color: var(--m);
     font-size: .5rem;
 }
 .site_tree .elements .container > :nth-child(3) {
-    color: var(--fg-3);
+    color: var(--f3);
     margin-left: .3rem;
     white-space: nowrap;
 }
@@ -874,10 +874,10 @@ path.loading_right {
     row-gap: .1rem;
 }
 .site_tree .elements .video > :nth-child(2) > :nth-child(2) {
-    color: var(--fg-3);
+    color: var(--f3);
     font-size: .8rem;
 }
-.site_tree .elements .placeholder { background: var(--bg-3); }
+.site_tree .elements .placeholder { background: var(--b3); }
 .site_tree:not(.open) { display: none; }
 #speed .x { font-size: .8em; }
 .selector_control {
@@ -903,7 +903,7 @@ path.loading_right {
 }
 .selector_options button {
     align-items: center;
-    background: var(--d-1-85);
+    background: var(--d1-85);
     display: flex;
     white-space: nowrap;
 }
@@ -924,9 +924,9 @@ path.loading_right {
 .selector_options button:not(:first-child) { padding-top: .5rem; }
 .selector_options button:not(:last-child) { padding-bottom: .5rem; }
 .skip_to_content {
-    background: var(--fg-3);
+    background: var(--f3);
     border-radius: .3rem;
-    color: var(--bg-1) !important;
+    color: var(--b1) !important;
     left: 50%;
     padding: .5rem 1rem;
     position: fixed;
@@ -952,15 +952,15 @@ svg {
     row-gap: 1.5em;
 }
 .transcript input {
-    background: var(--bg-2);
-    border: 1px solid var(--bg-3);
+    background: var(--b2);
+    border: 1px solid var(--b3);
     border-radius: .2rem;
-    color: var(--fg-2);
+    color: var(--f2);
     outline: none;
     padding: .2em;
     width: 100%;
 }
-.transcript input:focus { background: var(--bg-3); }
+.transcript input:focus { background: var(--b3); }
 .transcript > :nth-child(2) {
     display: flex;
     flex-direction: column;
@@ -982,24 +982,24 @@ svg {
 }
 .thumbnail {
     aspect-ratio: var(--poster-aspect);
-    background: var(--d-1);
+    background: var(--d1);
     border-radius: .5rem;
     flex-shrink: 0;
     object-fit: contain;
 }
 .thumbnail_wrapper { position: relative; }
 .thumbnail_wrapper .duration {
-    background: var(--bg-1-85);
+    background: var(--b1-85);
     border-radius: .2rem;
     bottom: calc(var(--poster-aspect) * 3%);
-    color: var(--fg-1);
+    color: var(--f1);
     font-size: .8rem;
     padding: .1rem .3rem;
     position: absolute;
     right: 3%;
 }
 .unlisted_badge {
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .2rem;
     padding: .3rem;
 }
@@ -1010,10 +1010,10 @@ svg {
     width: auto;
 }
 .versions_ring circle.backdrop {
-    fill: var(--d-1);
+    fill: var(--d1);
     opacity: .9;
 }
-.versions_ring path { fill: var(--l-1); }
+.versions_ring path { fill: var(--l1); }
 .versions_ring g {
     cursor: pointer;
     opacity: .9;
@@ -1024,12 +1024,12 @@ svg {
     outline: none;
 }
 .versions_ring text {
-    fill: var(--d-1);
+    fill: var(--d1);
     font-size: 1.3rem;
 }
-.versions_ring rect.backdrop { fill: var(--l-1); }
+.versions_ring rect.backdrop { fill: var(--l1); }
 .versions_ring text.size {
-    fill: var(--d-3);
+    fill: var(--d3);
     font-size: 1rem;
 }
 .versions_ring.interacting g:not(:focus-visible):not(:hover) { opacity: .5; }
@@ -1065,7 +1065,7 @@ video {
     justify-content: space-between;
 }
 .video_title {
-    color: var(--fg-1);
+    color: var(--f1);
     font-size: 1.4rem;
     margin: 0;
     margin-bottom: .3em;
@@ -1170,7 +1170,7 @@ video {
 }
 @media (width < 45rem) {
     .site_tree {
-        background: linear-gradient(var(--bg-1), var(--bg-1-85));
+        background: linear-gradient(var(--b1), var(--b1-85));
         border: none;
         bottom: 0;
         box-shadow: unset;

@@ -4,7 +4,7 @@ a {
 }
 .actionable_item {
     align-items: center;
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .5rem;
     column-gap: .5rem;
     display: flex;
@@ -15,7 +15,7 @@ a {
     flex-grow: 1;
     padding-inline-start: .5rem;
 }
-.actionable_item > :first-child > :first-child { color: var(--fg-1); }
+.actionable_item > :first-child > :first-child { color: var(--f1); }
 .actionable_item > :last-child {
     align-items: center;
     column-gap: .5rem;
@@ -34,7 +34,7 @@ a {
 .actionable_item > :last-child button:focus-visible,
 .actionable_item > :last-child button:hover {
     background: var(--action-hover);
-    color: var(--l-1);
+    color: var(--l1);
 }
 .actionable_item.attachment {
     border-bottom-left-radius: 0;
@@ -48,30 +48,30 @@ a {
 }
 .actionable_item.attached_error + div {
     background: var(--danger);
-    color: var(--l-1);
+    color: var(--l1);
 }
 .actionable_item.attached_info + div {
-    background: var(--bg-3);
-    color: var(--fg-2);
+    background: var(--b3);
+    color: var(--f2);
 }
 .actionable_item.attached_success + div {
-    background: var(--bg-3);
-    color: var(--fg-2);
+    background: var(--b3);
+    color: var(--f2);
 }
 .actionable_item.attached_warning + div {
-    background: var(--warning-bg);
-    color: var(--warning-fg);
+    background: var(--warning-b);
+    color: var(--warning-f);
 }
 .badge {
-    background: var(--fg-1);
+    background: var(--f1);
     border-radius: .2rem;
-    color: var(--bg-1);
+    color: var(--b1);
     font-size: .8rem;
     padding: .2rem .4rem;
 }
 body {
-    background: var(--bg-1);
-    color: var(--fg-2);
+    background: var(--b1);
+    color: var(--f2);
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -98,7 +98,7 @@ body {
 .breadcrumbs a:first-child { margin-left: -.6rem; }
 .breadcrumbs a:focus-visible,
 .breadcrumbs a:hover {
-    background: var(--bg-2);
+    background: var(--b2);
 }
 .breadcrumbs a svg {
     height: 1.5rem;
@@ -134,17 +134,17 @@ button .icon svg,
     display: block;
 }
 button.cancel {
-    color: var(--fg-2);
-    background: var(--bg-2);
+    color: var(--f2);
+    background: var(--b2);
 }
 button.cancel:focus-visible,
 button.cancel:hover {
-    background: var(--bg-3);
+    background: var(--b3);
 }
 a.action,
 button.action {
     background: var(--action);
-    color: var(--l-1);
+    color: var(--l1);
 }
 a.action:focus-visible,
 a.action:hover,
@@ -154,13 +154,13 @@ button.action:hover {
 }
 a.action.disabled,
 button.action[disabled] {
-    background: var(--bg-2);
-    color: var(--mg);
+    background: var(--b2);
+    color: var(--m);
     cursor: default;
 }
 button.danger {
     background: var(--danger);
-    color: var(--l-1);
+    color: var(--l1);
 }
 button.danger:focus-visible,
 button.danger:hover {
@@ -176,28 +176,28 @@ button.big {
     margin: 1rem 0;
 }
 .collection_title {
-    color: var(--bg-1);
+    color: var(--b1);
     font-size: 1.17rem;
 }
 .confirmation_wrapper {
-    background: var(--bg-1);
+    background: var(--b1);
     border-radius: .5rem;
-    border: 1px solid var(--bg-3);
+    border: 1px solid var(--b3);
     box-shadow: 0 0 2rem #0006;
-    color: var(--fg-2);
+    color: var(--f2);
     display: flex;
     flex-direction: column;
     padding: 2rem;
     row-gap: 2rem;
 }
-.confirmation_wrapper::backdrop { background: var(--bg-1-85); }
+.confirmation_wrapper::backdrop { background: var(--b1-85); }
 .confirmation_wrapper .buttons {
     column-gap: .5rem;
     display: flex;
     justify-content: flex-end;
 }
 .controls {
-    background: var(--bg-1-85);
+    background: var(--b1-85);
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -228,7 +228,7 @@ button.big {
 .controls a:hover,
 .controls button:focus-visible,
 .controls button:hover {
-    background: var(--bg-2);
+    background: var(--b2);
 }
 .delete_button {
     align-items: center;
@@ -241,7 +241,7 @@ button.big {
 .error {
     background: var(--danger);
     border-radius: .2rem;
-    color: var(--l-1);
+    color: var(--l1);
     padding: .5rem;
 }
 .errors_badge {
@@ -259,9 +259,9 @@ button.big {
 @keyframes hide { to { opacity: 0; } }
 #filter_tree { min-width: 0; }
 footer {
-    background: var(--bg-1-85);
+    background: var(--b1-85);
     border-radius: .5rem;
-    border: 1px solid var(--bg-2);
+    border: 1px solid var(--b2);
     bottom: .8rem;
     box-sizing: border-box;
     column-gap: .5em;
@@ -275,7 +275,7 @@ footer {
 }
 footer button {
     background: none;
-    color: var(--fg-2);
+    color: var(--f2);
     padding: .2rem .4rem;
 }
 footer select {
@@ -306,7 +306,7 @@ footer > * {
 .form_split.divide_3_1 > *:last-child { width: 25%; }
 .form_split.even > * { width: 50%; }
 header {
-    background: var(--fg-2);
+    background: var(--f2);
     display: flex;
     justify-content: space-between;
     padding: 1rem;
@@ -314,7 +314,7 @@ header {
 h1,
 h2,
 h3 {
-    color: var(--fg-1);
+    color: var(--f1);
     font-weight: 400;
 }
 h1 {
@@ -322,7 +322,7 @@ h1 {
     margin: 0;
 }
 h2 {
-    color: var(--fg-1);
+    color: var(--f1);
     font-size: 1.3rem;
 }
 h2.with_button {
@@ -352,29 +352,29 @@ h2.with_button + a svg {
     width: .8rem;
 }
 .hint {
-    background: var(--warning-bg);
+    background: var(--warning-b);
     border-radius: .3rem;
-    color: var(--warning-fg);
+    color: var(--warning-f);
     font-size: .8rem;
     margin-top: .3rem;
     padding: .5rem;
 }
 img { max-width: 100%; }
 input, textarea {
-    background: var(--bg-1);
-    border: 1px solid var(--mg);
+    background: var(--b1);
+    border: 1px solid var(--m);
     border-radius: .2rem;
     box-sizing: border-box;
-    color: var(--fg-2);
+    color: var(--f2);
     padding: .3rem;
 }
 input[type="file"] { display: none; }
 .input_prefix {
-    background: var(--bg-2);
+    background: var(--b2);
     border-bottom-left-radius: .2rem;
     border-top-left-radius: .2rem;
-    border: 1px solid var(--mg);
-    color: var(--fg-3);
+    border: 1px solid var(--m);
+    color: var(--f3);
     direction: rtl;
     overflow-x: hidden;
     padding: .4rem;
@@ -405,9 +405,9 @@ input[type="file"] { display: none; }
 .jobs small { font-size: .8rem; }
 .local_processing {
     align-items: center;
-    background: var(--fg-1);
+    background: var(--f1);
     border-radius: .3rem;
-    color: var(--bg-1);
+    color: var(--b1);
     column-gap: .5rem;
     display: flex;
     margin-bottom: 3rem;
@@ -431,7 +431,7 @@ main {
     max-width: 36rem;
 }
 nav {
-    background: var(--bg-2);
+    background: var(--b2);
     max-width: 20rem;
 }
 nav ul {
@@ -448,7 +448,7 @@ nav a {
 }
 nav a:focus-visible,
 nav a:hover {
-    background: var(--bg-3);
+    background: var(--b3);
 }
 nav a .icon {
     align-items: center;
@@ -469,7 +469,7 @@ nav a .labels {
 }
 nav > a .path { direction: rtl; }
 nav a .path {
-    color: var(--fg-3);
+    color: var(--f3);
     font-size: .8rem;
     overflow-x: hidden;
     text-overflow: ellipsis;
@@ -479,14 +479,14 @@ nav a .title {
     overflow-x: hidden;
     text-overflow: ellipsis;
 }
-nav .active { background: var(--bg-3); }
+nav .active { background: var(--b3); }
 nav li { margin-top: .1rem; }
-.no_title { color: var(--mg); }
+.no_title { color: var(--m); }
 p a {
     text-decoration: underline;
 }
 .path_extension {
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .3rem;
     padding: .2rem;
 }
@@ -499,7 +499,7 @@ p a {
 }
 .path_widget > * {
     align-items: center;
-    background: var(--bg-1);
+    background: var(--b1);
     display: flex;
     justify-content: space-between;
     padding: 1rem;
@@ -600,40 +600,40 @@ p a {
 pre.error {
     background: var(--danger);
     border-radius: .2rem;
-    color: var(--l-1);
+    color: var(--l1);
     padding: 1rem;
     white-space: normal;
 }
 .processing.active svg { color: var(--danger-bg); }
 .processing_badge {
     background: var(--danger);
-    border: 1px solid var(--fg-1);
+    border: 1px solid var(--f1);
     border-radius: .2rem;
-    color: var(--l-1);
+    color: var(--l1);
     display: flex;
     font-size: .8rem;
 }
 .processing_badge span { padding: .15rem .3rem; }
 .processing_badge span.inverted {
     border-bottom-right-radius: .2rem;
-    border-left: 1px dotted var(--fg-1);
+    border-left: 1px dotted var(--f1);
     border-top-right-radius: .2rem;
 }
 select {
-    background: var(--bg-1);
-    border: 1px solid var(--mg);
+    background: var(--b1);
+    border: 1px solid var(--m);
     border-radius: .2rem;
-    color: var(--fg-2);
+    color: var(--f2);
     padding: .3em .6em;
     -webkit-appearance: none;
 }
 .splash {
     align-items: center;
-    background: var(--bg-1);
-    border: 1px solid var(--bg-3);
+    background: var(--b1);
+    border: 1px solid var(--b3);
     border-radius: .5rem;
-    box-shadow: 0 0 4rem var(--bg-1);
-    color: var(--fg-1);
+    box-shadow: 0 0 4rem var(--b1);
+    color: var(--f1);
     display: flex;
     height: 24rem;
     justify-content: center;
@@ -655,24 +655,24 @@ select {
     outline: none;
     padding: .5rem;
 }
-.splash .close button:focus-visible svg { filter: drop-shadow(0 0 .2rem var(--fg-1)); }
-.splash .close button:hover { color: var(--fg-3); }
+.splash .close button:focus-visible svg { filter: drop-shadow(0 0 .2rem var(--f1)); }
+.splash .close button:hover { color: var(--f3); }
 .splash > div {
-    background: var(--bg-1);
+    background: var(--b1);
     bottom: 1.2rem;
     box-shadow:
-        1rem 0 1rem var(--bg-1),
-        -1rem 0 1rem var(--bg-1),
-        0 0 1rem var(--bg-1),
-        1rem 0 2rem var(--bg-1),
-        -1rem 0 2rem var(--bg-1),
-        0 0 2rem var(--bg-1),
-        0 0 3rem var(--bg-1),
-        0 0 3rem var(--bg-1),
-        0 0 3rem var(--bg-1),
-        0 0 4rem var(--bg-1),
-        0 0 4rem var(--bg-1),
-        0 0 4rem var(--bg-1);
+        1rem 0 1rem var(--b1),
+        -1rem 0 1rem var(--b1),
+        0 0 1rem var(--b1),
+        1rem 0 2rem var(--b1),
+        -1rem 0 2rem var(--b1),
+        0 0 2rem var(--b1),
+        0 0 3rem var(--b1),
+        0 0 3rem var(--b1),
+        0 0 3rem var(--b1),
+        0 0 4rem var(--b1),
+        0 0 4rem var(--b1),
+        0 0 4rem var(--b1);
     column-gap: .8rem;
     display: flex;
     position: absolute;
@@ -680,7 +680,7 @@ select {
 }
 .splash > div > a {
     align-items: center;
-    background: var(--bg-1);
+    background: var(--b1);
     border-radius: .2rem;
     column-gap: .2rem;
     display: flex;
@@ -689,18 +689,18 @@ select {
 }
 .splash > div > a:focus-visible,
 .splash > div > a:hover {
-    background: var(--fg-1);
-    color: var(--bg-1);
+    background: var(--f1);
+    color: var(--b1);
 }
 .splash > div > a.donate > svg { color: red; }
 .splash > div > a.version {
-    background: var(--fg-1);
-    color: var(--bg-1);
+    background: var(--f1);
+    color: var(--b1);
     font-weight: 500;
 }
 .splash > div > a.version:focus-visible,
 .splash > div > a.version:hover {
-    background: var(--fg-2);
+    background: var(--f2);
 }
 .splash > div > a svg {
     height: .9rem;
@@ -748,10 +748,10 @@ select {
 }
 .storage_graph path:not(.marker) { cursor: pointer; }
 .storage_graph path.marker {
-    stroke: var(--fg-1);
+    stroke: var(--f1);
     stroke-width: .5;
 }
-.storage_graph path:not(.marker):hover { fill: var(--fg-1); }
+.storage_graph path:not(.marker):hover { fill: var(--f1); }
 .storage_graph text { stroke: currentColor; }
 .storage_legend {
     display: flex;
@@ -792,7 +792,7 @@ select {
 }
 .subpage.active {
     background: var(--action);
-    color: var(--l-1);
+    color: var(--l1);
 }
 .subpages { padding-block: .7rem; }
 .subpages .errors_badge {
@@ -800,7 +800,7 @@ select {
     right: -.1em;
 }
 summary {
-    color: var(--fg-1);
+    color: var(--f1);
     cursor: pointer;
     margin: -.5rem 0 1rem 0;
 }
@@ -812,22 +812,22 @@ svg { fill: currentColor; }
 }
 .textarea_with_hint span {
     align-self: flex-end;
-    color: var(--fg-3);
+    color: var(--f3);
     font-size: .8rem;
     line-height: 1.4;
     text-align: right;
 }
 .textarea_with_hint span a {
-    color: var(--fg-2);
+    color: var(--f2);
     text-decoration: underline;
 }
 .textarea_with_hint span a:focus-visible,
 .textarea_with_hint span a:hover {
-    color: var(--fg-3);
+    color: var(--f3);
     text-decoration: underline;
 }
 .textarea_with_hint span code {
-    background: var(--bg-2);
+    background: var(--b2);
     border-radius: .1rem;
     padding-inline: .2em;
 }
@@ -845,8 +845,8 @@ svg { fill: currentColor; }
 }
 .updates { color: red; }
 .usage {
-    background: var(--bg-3);
-    color: var(--fg-1);
+    background: var(--b3);
+    color: var(--f1);
     cursor: pointer;
     font-size: .9rem;
     margin-top: .5rem;
@@ -858,7 +858,7 @@ svg { fill: currentColor; }
 .versions li {}
 .versions li:not(:first-child) { margin-top: .5rem; }
 .versions .reasons {
-    color: var(--fg-1);
+    color: var(--f1);
     cursor: help;
 }
 video { max-width: 100%; }
@@ -873,7 +873,7 @@ video { max-width: 100%; }
     row-gap: .5rem;
 }
 .visibility { font-size: .8rem; }
-.visibility.inherited { color: var(--fg-3); }
+.visibility.inherited { color: var(--f3); }
 .visibility svg {
     height: .8rem;
     position: relative;

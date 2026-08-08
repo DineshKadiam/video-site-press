@@ -691,7 +691,7 @@ fn versions_ring(
                     <feGaussianBlur in="SourceGraphic" stdDeviation="{BLUR_DEVIATION}" />
                 </filter>
                 <filter id="text_shadow">
-                    <feDropShadow dx="0" dy="3" flood-color="var(--d-2)" flood-opacity="0.4" stdDeviation="3"/>
+                    <feDropShadow dx="0" dy="3" flood-color="var(--d2)" flood-opacity="0.4" stdDeviation="3"/>
                 </filter>
             </defs>
             <circle class="backdrop" cx="{RADIUS}" cy="{BACKDROP_Y}" filter="url(#ring_shadow)" r="{BACKDROP_RADIUS}"/>

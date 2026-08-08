@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -95,7 +95,7 @@ pub fn edit_banner_page(
     let body = formatdoc!(r#"
         <div class="form_group">
             <h2>{t_banner_image}</h2>
-            <p style="background: var(--warning-bg); border-radius: .5rem; color: var(--warning-fg); padding: 1rem;">
+            <p style="background: var(--warning-b); border-radius: .5rem; color: var(--warning-f); padding: 1rem;">
                 Banner images are not yet used, but this will be included in a future version of Hyper 8
             </p>
             {banner_form}
