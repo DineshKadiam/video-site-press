@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024-2025 Simon Repp
+    SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -28,10 +28,12 @@ Thanks everyone for your support!
 [Edgar Aichinger](https://build.opensuse.org/users/edogawa)<br>
 [Emanuel Pesendorfer](https://emanuel-pesendorfer.at/)<br>
 [Eric Peacock](https://ericpeacock.design/)<br>
+[Groza Dănuț](https://grozadanut.eu/)<br>
 hatsch<br>
 [Ian Menz](https://norcal.social/@CallMePlayer)<br>
 [Internet Stiftung](https://www.internetstiftung.at/)<br>
 [Johannes Burström](https://johannesburstrom.se/)<br>
+[jowerner](https://codeberg.org/jowerner)<br>
 [Kristoffer Lislegaard](https://lisleg.com/)<br>
 [Lioh](https://social.anoxinon.de/@Lioh)<br>
 [Lorenzo Miniero](https://fosstodon.org/@lminiero)<br>
