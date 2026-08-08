@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -429,6 +429,7 @@ pub fn player(
                 <div class="timeline">
                     <div class="bar backdrop"></div>
                     <div class="bar progress"></div>
+                    <div class="bar buffered"></div>
                     <input
                         aria-label="{t_playback_position}"
                         aria-valuenow="0"

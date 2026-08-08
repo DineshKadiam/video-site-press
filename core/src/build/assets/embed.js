@@ -32,6 +32,12 @@ const video = document.querySelector('video');
 // Before we even begin playback video.duration is NaN, so we use our own data throughout
 const duration = parseFloat(video.dataset.duration);
 
+// The HTMLMediaElement buffered property is a TimeRanges interface
+// (see https://developer.mozilla.org/en-US/docs/Web/API/TimeRanges).
+// We use an interlaced array instead ([start, end, start, end]).
+let lastBuffered = [];
+let bufferedUpdateInterval = null;
+
 let playbackUpdateInterval;
 
 const fullscreen = {
@@ -263,6 +269,10 @@ video.addEventListener('play', () => {
     // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
     //       Formula should/can take into account width of video on screen vs duration of video.
     playbackUpdateInterval = setInterval(playbackUpdate, 80);
+
+    if (bufferedUpdateInterval === null) {
+        bufferedUpdateInterval = setInterval(updateBuffered, 500);
+    }
 });
 
 video.addEventListener('playing', event => {
@@ -287,6 +297,69 @@ function toggleVolume() {
 
     updateVolume();
     localStorage.setItem('hyper8Volume', volume.value);
+}
+
+function updateBuffered() {
+    const buffered = video.buffered;
+
+    // Check if the already buffered ranges have changed
+
+    let needsUpdate = false;
+
+    if (buffered.length * 2 !== lastBuffered.length) {
+        needsUpdate = true;
+    } else {
+        for (let index = 0; index < buffered.length; index++) {
+            if (buffered.start(index) !== lastBuffered[index * 2] ||
+                buffered.end(index) !== lastBuffered[index * 2 + 1])
+            {
+                needsUpdate = true;
+                break;
+            }
+        }
+    }
+
+    if (!needsUpdate) return;
+
+    // Perform an update if something has changed
+
+    lastBuffered = [];
+
+    const bufferedBar = document.querySelector('.bar.buffered');
+
+    for (let index = 0; index < buffered.length; index++) {
+        const start = buffered.start(index);
+        const end = buffered.end(index);
+
+        lastBuffered.push(start);
+        lastBuffered.push(end);
+
+        if (index >= bufferedBar.children.length) {
+            bufferedBar.appendChild(document.createElement('div'));
+        }
+
+        bufferedBar.children[index].style.left = `${(start / duration) * 100}%`;
+        bufferedBar.children[index].style.right = `${((duration - end) / duration) * 100}%`;
+    }
+
+    while (bufferedBar.children.length > buffered.length) {
+        bufferedBar.children[bufferedBar.children.length - 1].remove();
+    }
+
+    // If we have loaded practically the entire video, we stop the
+    // interval that updates the buffered areas. The final buffered area
+    // should always start at 0, but it will often (always?) end before
+    // the actual end of the video (likely at the last available frame).
+    // To account for this we grant 100ms leeway, which is more than
+    // the length of a sample in a 12fps video and yet so small that it
+    // will likely not visually register as a gap, even if we end our
+    // updates prematurely before even the last frame is buffered.
+    if (lastBuffered.length === 2 &&
+        lastBuffered[0] === 0 &&
+        Math.abs(duration - lastBuffered[1]) <= 0.1)
+    {
+        clearInterval(bufferedUpdateInterval);
+    }
 }
 
 function updateVolume() {

@@ -273,13 +273,23 @@ path.loading_right {
 }
 .player_controls .timeline .bar.outline {
     width: 100%;
-    z-index: 3;
+    z-index: 4;
 }
 .player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l-1); }
 .player_controls .timeline .bar.progress {
     background: var(--l-1);
     width: 0;
+    z-index: 3;
+}
+.player_controls .timeline .bar.buffered {
+    width: 100%;
     z-index: 2;
+}
+.player_controls .timeline .bar.buffered > div {
+    background: var(--mg);
+    bottom: 0;
+    position: absolute;
+    top: 0;
 }
 .player_controls .timeline input {
     appearance: none;
