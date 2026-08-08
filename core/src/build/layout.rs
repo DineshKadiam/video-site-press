@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
@@ -69,6 +69,7 @@ impl Layout {
         let e_site_title = html_escape_outside_attribute(site.title());
 
         let mut extra_meta = String::new();
+        let mut scripts = Vec::new();
 
         if !self.indexing {
             extra_meta.push_str(META_ROBOTS_NOINDEX_NOFOLLOW);
@@ -78,35 +79,26 @@ impl Layout {
             extra_meta.push_str(&meta_link_tags(translations));
         }
 
-        let adaptive_theme_script = if let ThemeKind::Adaptive { .. } = site.theme.kind() {
+        if let ThemeKind::Adaptive { .. } = site.theme.kind() {
             let adaptive_theme_js_asset_hash = AssetHashes::ADAPTIVE_THEME_JS;
-            format!(r#"<script defer src="{root_prefix}adaptive_theme.js?{adaptive_theme_js_asset_hash}"></script>"#)
-        } else {
-            String::new()
-        };
+            let adaptive_theme_script = format!(r#"<script defer src="{root_prefix}adaptive_theme.js?{adaptive_theme_js_asset_hash}"></script>"#);
+            scripts.push(adaptive_theme_script);
+        }
 
-        let clipboard_script = if self.clipboard_script {
+        if self.clipboard_script {
             let clipboard_js_asset_hash = AssetHashes::CLIPBOARD_JS;
-            format!(r#"<script defer src="{root_prefix}clipboard.js?{clipboard_js_asset_hash}"></script>"#)
-        } else {
-            String::new()
-        };
+            let clipboard_script = format!(r#"<script defer src="{root_prefix}clipboard.js?{clipboard_js_asset_hash}"></script>"#);
+            scripts.push(clipboard_script);
+        }
 
         if let Some(meta) = &self.platform_integration_meta {
             extra_meta.push_str(&meta.tags(site));
         }
 
-        let video_script = if self.video_script {
-            let video_js_asset_hash = AssetHashes::VIDEO_JS;
-            format!(r#"<script defer src="{root_prefix}video.js?{video_js_asset_hash}"></script>"#)
-        } else {
-            String::new()
-        };
-
         let mut templates = String::new();
 
         let navigation;
-        let navigation_script;
+
         if let Some(navigation_js_asset_hash) = &asset_hashes.navigation_js {
             let browse_icon = hyper8_icons::BROWSE;
             let close_icon = hyper8_icons::failure(translations.close);
@@ -135,7 +127,8 @@ impl Layout {
                 </div>
             "#);
 
-            navigation_script = format!(r#"<script defer src="{root_prefix}navigation.js?{navigation_js_asset_hash}"></script>"#);
+            let navigation_script = format!(r#"<script defer src="{root_prefix}navigation.js?{navigation_js_asset_hash}"></script>"#);
+            scripts.push(navigation_script);
 
             let chevron_right_icon = hyper8_icons::CHEVRON_RIGHT;
             let navigation_templates = formatdoc!(r#"
@@ -147,13 +140,24 @@ impl Layout {
             templates.push_str(&navigation_templates);
         } else {
             navigation = String::new();
-            navigation_script = String::new();
-        };
+        }
+
+        let shortcuts_js_asset_hash = AssetHashes::SHORTCUTS_JS;
+        let shortcuts_script = format!(r#"<script defer src="{root_prefix}shortcuts.js?{shortcuts_js_asset_hash}"></script>"#);
+        scripts.push(shortcuts_script);
+
+        if self.video_script {
+            let video_js_asset_hash = AssetHashes::VIDEO_JS;
+            let video_script = format!(r#"<script defer src="{root_prefix}video.js?{video_js_asset_hash}"></script>"#);
+            scripts.push(video_script);
+        }
 
         let favicon_png_asset_hash = AssetHashes::FAVICON_PNG;
         let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
 
         let meta_generator = meta_generator();
+
+        let scripts = scripts.join("");
 
         let head = formatdoc!(r#"
             <head>
@@ -164,10 +168,7 @@ impl Layout {
                 {extra_meta}
                 <link href="{root_prefix}favicon.png?{favicon_png_asset_hash}" rel="icon" type="image/png">
                 <link rel="stylesheet" href="{root_prefix}site.css?{site_css_asset_hash}">
-                {adaptive_theme_script}
-                {clipboard_script}
-                {video_script}
-                {navigation_script}
+                {scripts}
             </head>
         "#);
 

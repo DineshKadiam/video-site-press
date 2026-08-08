@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /// When we link to assets on the rendered pages, we append a unique asset
@@ -17,6 +17,7 @@ impl AssetHashes {
     pub const CLIPBOARD_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_CLIPBOARD_JS");
     pub const EMBED_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_EMBED_JS");
     pub const FAVICON_PNG: &str = env!("HYPER8_STATIC_ASSET_HASH_FAVICON_PNG");
+    pub const SHORTCUTS_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_SHORTCUTS_JS");
     pub const VIDEO_JS: &str = env!("HYPER8_STATIC_ASSET_HASH_VIDEO_JS");
 
     pub fn new() -> AssetHashes {

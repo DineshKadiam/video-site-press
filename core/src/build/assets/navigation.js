@@ -3,9 +3,6 @@ const chevronRightIcon = document.querySelector('#chevron_right_icon').content;
 const browseButton = document.querySelector('button.browse');
 const filterTranscriptInput = document.querySelector('.transcript input');
 
-const shortcutsButton = document.querySelector('button.shortcuts');
-const shortcutsPanel = document.querySelector('dialog.shortcuts');
-
 const navigation = document.querySelector('header .navigation');
 
 const searchContainer = document.querySelector('.search');
@@ -432,14 +429,6 @@ function collapseExpand(siteTreeElement, expand = undefined) {
 
     visitContainer(siteContent);
 }
-
-shortcutsButton.addEventListener('click', () => {
-    if (shortcutsPanel.open) {
-        shortcutsPanel.close();
-    } else {
-        shortcutsPanel.show();
-    }
-});
 
 window.addEventListener('keydown', event => {
     if (event.target === searchInput ||

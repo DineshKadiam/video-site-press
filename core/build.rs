@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -25,6 +25,11 @@ fn main() {
     provide_asset_hash(
         include_bytes!("src/build/assets/favicon.png"),
         "FAVICON_PNG"
+    );
+
+    provide_asset_hash(
+        include_bytes!("src/build/assets/shortcuts.js"),
+        "SHORTCUTS_JS"
     );
 
     provide_asset_hash(

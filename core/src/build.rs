@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -73,6 +73,11 @@ pub fn perform_build(context: &Context) {
     fs::write(
         context.build_dir.join("favicon.png"),
         include_bytes!("build/assets/favicon.png")
+    ).unwrap();
+
+    fs::write(
+        context.build_dir.join("shortcuts.js"),
+        include_bytes!("build/assets/shortcuts.js")
     ).unwrap();
 
     styles::generate_site_css(&mut asset_hashes, context, &site);
