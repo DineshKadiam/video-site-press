@@ -77,20 +77,26 @@ pub fn player(
         "#);
     }
 
-    let poster = match &video.poster {
-        Some(poster) => {
-            // TODO: Compute, cache and use a compressed/normalized (high-res, but
-            // still constrained to a maximum resolution) version of the poster
-            // for use here
-            let original_extension = Path::new(&poster.file_name)
-                .extension()
-                .unwrap()
-                .to_string_lossy();
+    let poster;
+    let poster_preload;
 
-            format!(r#"poster="{video_prefix}poster.{original_extension}""#)
-        }
-        None => String::new()
-    };
+    if let Some(poster_file) = &video.poster {
+        // TODO: Compute, cache and use a compressed/normalized (high-res, but
+        // still constrained to a maximum resolution) version of the poster
+        // for use here
+        let original_extension = Path::new(&poster_file.file_name)
+            .extension()
+            .unwrap()
+            .to_string_lossy();
+
+        let href = format!("{video_prefix}poster.{original_extension}");
+
+        poster = format!(r#"poster="{href}""#);
+        poster_preload = format!(r#"<link rel="preload" href="{href}" as="image" fetchpriority="high">"#);
+    } else {
+        poster = String::new();
+        poster_preload = String::new();
+    }
 
     let active_marker_icon = hyper8_icons::active_marker(translations.active);
 
@@ -457,7 +463,14 @@ pub fn player(
                     </div>
                 </div>
             </div>
-            <video data-duration="{duration}" playsinline {poster} preload="none" src="{video_prefix}{src_escaped}">
+            {poster_preload}
+            <video
+                data-duration="{duration}"
+                playsinline
+                loading="lazy"
+                {poster}
+                preload="none"
+                src="{video_prefix}{src_escaped}">
                 {subtitle_tracks}
             </video>
         </div>
