@@ -118,7 +118,8 @@ fn git_describe() -> Option<String> {
     git.args(["describe"]);
 
     if let Ok(output) = git.output() && output.status.success() {
-        Some(String::from_utf8(output.stdout).unwrap())
+        // We trim this because the output includes a trailing newline
+        Some(String::from_utf8(output.stdout).unwrap().trim().into())
     } else {
         None
     }
@@ -133,7 +134,8 @@ fn git_revision() -> String {
     git.args(["rev-parse", "--short", "HEAD"]);
 
     if let Ok(output) = git.output() && output.status.success() {
-        String::from_utf8(output.stdout).unwrap()
+        // We trim this because the output includes a trailing newline
+        String::from_utf8(output.stdout).unwrap().trim().into()
     } else {
         String::from("unknown revision")
     }
