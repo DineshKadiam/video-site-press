@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
@@ -9,7 +9,7 @@ use tauri::State;
 use hyper8_core::Theme;
 use hyper8_core::{AVAILABLE_LANGUAGES, SPLASH_SVG};
 use hyper8_core::util::html_escape_outside_attribute;
-use hyper8_version::{CHANGES_URL, VERSION_ADAPTIVE_PATCH};
+use hyper8_version::{RELEASE_NOTES, VERSION_ADAPTIVE_PATCH};
 
 use crate::{EditorMode, LauncherState};
 
@@ -181,7 +181,7 @@ pub fn render(
         <header data-tauri-drag-region>
             {SPLASH_SVG}
             <button class="close">{close_icon}</button>
-            <a href="{CHANGES_URL}" target="_blank">
+            <a href="{RELEASE_NOTES}" target="_blank">
                 {VERSION_ADAPTIVE_PATCH}
             </a>
         </header>
@@ -196,7 +196,7 @@ pub fn render(
                 <a href="https://hyper8.org/#donate" target="_blank">
                     {t_donate}
                 </a>
-                <a href="{CHANGES_URL}" target="_blank">
+                <a href="{RELEASE_NOTES}" target="_blank">
                     {t_whats_new}
                 </a>
             </div>

@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
 
 use hyper8_core::SPLASH_SVG;
-use hyper8_version::{CHANGES_URL, VERSION_ADAPTIVE_PATCH};
+use hyper8_version::{RELEASE_NOTES, VERSION_ADAPTIVE_PATCH};
 
 use crate::SessionState;
 
@@ -31,7 +31,7 @@ pub fn splash_screen(session_state: &SessionState) -> String {
                     <a class="donate" href="https://hyper8.org/#donate" target="_blank">
                         {t_donate}
                     </a>
-                    <a class="version" href="{CHANGES_URL}" target="_blank">
+                    <a class="version" href="{RELEASE_NOTES}" target="_blank">
                         <span>{VERSION_ADAPTIVE_PATCH}</span>
                     </a>
                 </div>
