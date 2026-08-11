@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -6,6 +6,7 @@ use std::fs;
 use indoc::formatdoc;
 
 use hyper8_translations::Translations;
+use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
     Context,
@@ -15,7 +16,6 @@ use crate::{
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, unlisted_badge};
-use crate::util::html_escape_outside_attribute;
 
 use super::feeds::{
     ATOM_FILENAME,

@@ -7,6 +7,13 @@ use std::path::Path;
 use indoc::formatdoc;
 
 use hyper8_translations::Translations;
+use hyper8_util::{
+    casual_duration,
+    human_size,
+    html_escape_inside_attribute,
+    html_escape_outside_attribute,
+    precise_duration
+};
 
 use crate::{
     Asc,
@@ -18,14 +25,7 @@ use crate::{
     VideoFile
 };
 use crate::build::widgets::thumbnail;
-use crate::util::{
-    casual_duration,
-    html_escape_inside_attribute,
-    html_escape_outside_attribute,
-    human_size,
-    localized_date_d_mmm_yyyy,
-    precise_duration
-};
+use crate::util::localized_date_d_mmm_yyyy;
 
 /// Renders the video player.
 pub fn player(

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! Various abstractions for integrating hyper8 with platforms (e.g. mastodon
@@ -10,9 +10,9 @@
 //! - https://developers.facebook.com/docs/sharing/webmasters/#video
 
 use hyper8_translations::Translations;
+use hyper8_util::html_escape_inside_attribute;
 
 use crate::Site;
-use crate::util::html_escape_inside_attribute;
 
 pub struct Embed {
     pub height: usize,

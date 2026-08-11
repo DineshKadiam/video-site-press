@@ -1,9 +1,11 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
 
 use indoc::formatdoc;
+
+use hyper8_util::{casual_duration, url_safe_hash_base64};
 
 use crate::{
     Collection,
@@ -15,11 +17,7 @@ use crate::{
     SiteContent,
     Video
 };
-use crate::util::{
-    casual_duration,
-    localized_date_d_mmm_yyyy,
-    url_safe_hash_base64
-};
+use crate::util::localized_date_d_mmm_yyyy;
 
 use super::AssetHashes;
 
@@ -176,7 +174,7 @@ pub fn generate_navigation_js(
 
         js.push_str(&scope_js(include_str!("assets/navigation.js")));
 
-        asset_hashes.navigation_js = Some(url_safe_hash_base64(&js));
+        asset_hashes.navigation_js = Some(url_safe_hash_base64(js.as_bytes()));
 
         let path = context.build_dir.join("navigation.js");
 

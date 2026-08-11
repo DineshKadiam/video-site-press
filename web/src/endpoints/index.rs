@@ -15,8 +15,8 @@ use hyper8_core::{
     SitePath,
     Video
 };
-use hyper8_core::util::{html_escape_outside_attribute, human_size};
 use hyper8_translations::Translations;
+use hyper8_util::{html_escape_outside_attribute, human_size};
 
 use crate::{Context, Location, SessionState};
 use crate::routes;

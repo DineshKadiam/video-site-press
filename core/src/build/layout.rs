@@ -3,6 +3,7 @@
 
 use indoc::formatdoc;
 
+use hyper8_util::html_escape_outside_attribute;
 use hyper8_version::VERSION_WITHOUT_PATCH;
 
 use crate::{PlatformIntegrationMeta, Site, ThemeKind};
@@ -10,7 +11,6 @@ use crate::build::{AssetHashes, Traversal};
 use crate::build::feeds::meta_link_tags;
 use crate::build::player::player_icon_templates;
 use crate::build::widgets::copy_button_icon_templates;
-use crate::util::html_escape_outside_attribute;
 
 use super::{META_ROBOTS_NOINDEX_NOFOLLOW};
 use super::meta_generator;

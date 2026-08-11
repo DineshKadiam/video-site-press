@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! Atom specification for reference:
@@ -11,6 +11,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use indoc::formatdoc;
 
+use hyper8_util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_WITH_PATCH, VERSION_WITH_PATCH_AND_REVISION};
 
 use crate::{
@@ -20,7 +21,6 @@ use crate::{
     SitePath,
     Video
 };
-use crate::util::html_escape_outside_attribute;
 
 use super::ATOM_FILENAME;
 

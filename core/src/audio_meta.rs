@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -6,8 +6,9 @@ use std::path::Path;
 
 use serde_derive::{Deserialize, Serialize};
 
+use hyper8_util::hash;
+
 use crate::{Context, FileMeta, SitePath, AudioMetaCached};
-use crate::util::hash;
 
 /// Stores metadata that is specific to an audio file
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]

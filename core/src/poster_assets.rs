@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -7,6 +7,8 @@ use std::path::Path;
 
 use serde_derive::{Deserialize, Serialize};
 
+use hyper8_util::hash_closure;
+
 use crate::{
     Context,
     FileMeta,
@@ -14,7 +16,6 @@ use crate::{
     PosterAssetsCached,
     SitePath
 };
-use crate::util::hash_closure;
 
 pub struct ImgAttributes {
     pub src: String,

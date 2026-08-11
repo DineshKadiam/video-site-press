@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -6,8 +6,9 @@ use std::path::Path;
 
 use indoc::formatdoc;
 
+use hyper8_util::url_safe_hash_base64;
+
 use crate::{Context, Font, Site, ThemeKind};
-use crate::util::url_safe_hash_base64;
 
 use super::AssetHashes;
 
@@ -103,7 +104,7 @@ pub fn generate_embed_css(asset_hashes: &mut AssetHashes, context: &Context, sit
         {static_css}
     "#);
 
-    asset_hashes.embed_css = Some(url_safe_hash_base64(&css));
+    asset_hashes.embed_css = Some(url_safe_hash_base64(css.as_bytes()));
 
     fs::write(context.build_dir.join("embed.css"), css).unwrap();
 }
@@ -201,7 +202,7 @@ pub fn generate_site_css(asset_hashes: &mut AssetHashes, context: &Context, site
         {static_css}
     "#);
 
-    asset_hashes.site_css = Some(url_safe_hash_base64(&css));
+    asset_hashes.site_css = Some(url_safe_hash_base64(css.as_bytes()));
 
     fs::write(context.build_dir.join("site.css"), css).unwrap();
 }

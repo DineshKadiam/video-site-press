@@ -9,6 +9,7 @@ members = [
     "docs",
     "icons",
     "translations",
+    "util",
     "version",
     "web"
 ]

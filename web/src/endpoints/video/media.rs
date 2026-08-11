@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -15,8 +15,8 @@ use hyper8_core::{
     Video
 };
 use hyper8_core::{BrowserSupport, MediaUsage};
-use hyper8_core::util::{precise_duration, human_size};
 use hyper8_translations::Translations;
+use hyper8_util::{precise_duration, human_size};
 
 use crate::{
     Context,

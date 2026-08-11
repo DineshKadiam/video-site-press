@@ -8,7 +8,7 @@ use tauri::State;
 
 use hyper8_core::Theme;
 use hyper8_core::{AVAILABLE_LANGUAGES, SPLASH_SVG};
-use hyper8_core::util::html_escape_outside_attribute;
+use hyper8_util::html_escape_outside_attribute;
 use hyper8_version::{RELEASE_NOTES, VERSION_ADAPTIVE_PATCH};
 
 use crate::{EditorMode, LauncherState};

@@ -1,14 +1,9 @@
-# SPDX-FileCopyrightText: 2024-2025 Simon Repp
+# SPDX-FileCopyrightText: 2024-2026 Simon Repp
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
-[package]
-edition.workspace = true
-name = "hyper8-core"
-rust-version.workspace = true
-version.workspace = true
 
 [build-dependencies]
 base64.workspace = true
+hyper8-util.path = "../util"
 
 [dependencies]
 actix-files.workspace = true
@@ -21,6 +16,7 @@ enolib.workspace = true
 form_urlencoded.workspace = true
 hyper8-icons.path = "../icons"
 hyper8-translations.path = "../translations"
+hyper8-util.path = "../util"
 hyper8-version.path = "../version"
 icu_collator.workspace = true
 icu_locale.workspace = true
@@ -43,3 +39,9 @@ uuid.workspace = true
 url.workspace = true
 urlencoding.workspace = true
 webbrowser.workspace = true
+
+[package]
+edition.workspace = true
+name = "hyper8-core"
+rust-version.workspace = true
+version.workspace = true

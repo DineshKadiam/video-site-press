@@ -1,9 +1,11 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
 
 use indoc::formatdoc;
+
+use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
     Context,
@@ -22,10 +24,7 @@ use crate::build::widgets::{
     thumbnail,
     unlisted_badge
 };
-use crate::util::{
-    html_escape_outside_attribute,
-    localized_date_d_mmmm_yyyy
-};
+use crate::util::localized_date_d_mmmm_yyyy;
 
 pub fn playlist_html(
     asset_hashes: &AssetHashes,

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::Path;
@@ -14,8 +14,8 @@ use hyper8_core::{
     SitePath,
     Video
 };
-use hyper8_core::util::html_escape_outside_attribute;
 use hyper8_translations::Translations;
+use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
     Location,

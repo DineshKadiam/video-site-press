@@ -20,6 +20,7 @@ futures-util.workspace = true
 hyper8-core.path = "../core"
 hyper8-icons.path = "../icons"
 hyper8-translations.path = "../translations"
+hyper8-util.path = "../util"
 hyper8-version.path = "../version"
 indoc.workspace = true
 language-tags.workspace = true

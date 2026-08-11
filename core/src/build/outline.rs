@@ -1,7 +1,12 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
+
+use hyper8_util::{
+    casual_duration,
+    html_escape_outside_attribute
+};
 
 use crate::{
     Collection,
@@ -12,11 +17,7 @@ use crate::{
 };
 use crate::build::thumbnail;
 use crate::build::widgets::bubbles;
-use crate::util::{
-    casual_duration,
-    html_escape_outside_attribute,
-    localized_date_d_mmm_yyyy
-};
+use crate::util::localized_date_d_mmm_yyyy;
 
 pub struct Breadcrumb<'a> {
     pub href: String,

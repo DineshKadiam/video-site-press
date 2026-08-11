@@ -1,16 +1,16 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::formatdoc;
 
 use hyper8_core::{Site, SitePath, Theme};
-use hyper8_core::util::{
+use hyper8_translations::Translations;
+use hyper8_util::{
     html_escape_outside_attribute,
     human_size,
     precise_duration
 };
-use hyper8_translations::Translations;
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
 
 use crate::{Context, Location, SessionState};

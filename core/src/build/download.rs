@@ -1,10 +1,12 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
 use std::path::Path;
 
 use indoc::formatdoc;
+
+use hyper8_util::{html_escape_outside_attribute, human_size};
 
 use crate::{
     Context,
@@ -15,10 +17,6 @@ use crate::{
 use crate::build::{AssetHashes, Layout};
 use crate::build::outline::Traversal;
 use crate::build::widgets::unlisted_badge;
-use crate::util::{
-    html_escape_outside_attribute,
-    human_size
-};
 
 /// Writes the page on which various downloads for a video are made available
 /// (video, audio and subtitle assets)

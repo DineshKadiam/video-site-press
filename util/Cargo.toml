@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Simon Repp
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[dependencies]
+base64.workspace = true
+hyper8-translations.path = "../translations"
+
+[package]
+edition.workspace = true
+name = "hyper8-util"
+rust-version.workspace = true
+version.workspace = true

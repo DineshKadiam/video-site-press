@@ -2608,6 +2608,7 @@ dependencies = [
  "hyper8-core",
  "hyper8-icons",
  "hyper8-translations",
+ "hyper8-util",
  "hyper8-version",
  "hyper8-web",
  "indoc",
@@ -2654,6 +2655,7 @@ dependencies = [
  "form_urlencoded",
  "hyper8-icons",
  "hyper8-translations",
+ "hyper8-util",
  "hyper8-version",
  "icu_collator",
  "icu_locale",
@@ -2685,6 +2687,7 @@ dependencies = [
  "base64 0.23.1",
  "enolib",
  "hyper8-icons",
+ "hyper8-util",
  "hyper8-version",
  "indoc",
  "pulldown-cmark",
@@ -2703,6 +2706,14 @@ name = "hyper8-translations"
 version = "1.0.1"
 dependencies = [
  "indoc",
+]
+
+[[package]]
+name = "hyper8-util"
+version = "1.0.1"
+dependencies = [
+ "base64 0.23.1",
+ "hyper8-translations",
 ]
 
 [[package]]
@@ -2725,6 +2736,7 @@ dependencies = [
  "hyper8-core",
  "hyper8-icons",
  "hyper8-translations",
+ "hyper8-util",
  "hyper8-version",
  "indoc",
  "language-tags",

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use chrono::offset::Local;
 use indoc::formatdoc;
 
 use hyper8_core::JobDesc;
-use hyper8_core::util::{
+use hyper8_util::{
     casual_duration,
     html_escape_outside_attribute
 };

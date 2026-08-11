@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! This module contains the building blocks for generating the plain rss,
@@ -15,10 +15,10 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use indoc::formatdoc;
 
+use hyper8_util::html_escape_outside_attribute;
 use hyper8_version::{VERSION_WITH_PATCH_AND_REVISION, VERSION_WITHOUT_PATCH};
 
 use crate::{MarkdownSubset, Site, Video};
-use crate::util::html_escape_outside_attribute;
 
 pub fn rss(
     build_time: DateTime<Utc>,

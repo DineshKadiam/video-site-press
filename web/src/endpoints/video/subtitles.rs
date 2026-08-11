@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
 
 use hyper8_core::SitePath;
-use hyper8_core::util::html_escape_outside_attribute;
+use hyper8_util::html_escape_outside_attribute;
 
 use crate::{Context, Location, SessionState};
 use crate::routes;
