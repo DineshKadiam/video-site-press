@@ -136,9 +136,9 @@ pub fn config_probe(
                         );
 
                         let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                            &remote_probe_path,
+                            &err,
                             &public_probe_url,
-                            &err
+                            &remote_probe_path
                         );
                         remove_probe_and_return(Err(message))
                     }
