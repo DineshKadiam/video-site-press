@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::indoc;
@@ -39,6 +39,7 @@ impl Translations {
         banner_image_variants: "Banner Bildvarianten",
         beginning_deployment_over_insecure_ftp_unencrypted: "Initiiere Deployment über unsicheres FTP (unverschlüsselt)",
         beginning_deployment_over_secure_ftp_tls_ssl: "Initiiere Deployment über sicheres FTPS (TLS/SSL)",
+        beginning_deployment_over_ssh: "Initiiere Deployment über SSH",
         best: "Beste",
         browse: "Stöbern",
         browser_based: "Browser-basiert",
@@ -140,7 +141,7 @@ impl Translations {
         frame_rate: "Bildfrequenz",
         ftp_config_password_label: "Passwort (nur in einem vertrauenswürdigen Umfeld eingeben - die Speicherung erfolgt unverschlüsselt)",
         ftp_config_path_label: "Verzeichnis am Server (z.b. /data/web/user123/html)",
-        ftp_config_port_label: "Port Nummer (falls unklar einfach leerlassen, ein Standardport wird für dich gewählt)",
+        ftp_config_port_label: "Port Nummer (optional, der Standardport 21 wird sonst automatisch gewählt)",
         ftp_config_secure_label: "Sichere Verbindung über SSL/TLS (sollte nur in begründeten Ausnahmefällen deaktiviert werden)",
         ftp_config_server_label: "Serveradresse (z.b. ftp-user123.example.com)",
         ftp_config_user_label: "Benutzername (z.b. user123)",
@@ -269,8 +270,6 @@ impl Translations {
         resolution: "Auflösung",
         resolve_the_issue_on_disk_or_on_manifest_page: r#"Löse den/die Fehler indem du die Datei direkt editierst oder mache die nötigen Änderungen auf der <a href="{manifest_url}">Manifest Seite</a>."#,
         resource_not_found: "Resource nicht gefunden",
-        rsync_deployment: "rsync Deployment",
-        rsync_deployment_text: "rsync-basiertes Deployment wird aktuell nur durch SSH Keyfile-basierte rsync Hintergrundsynchronisation unterstützt. Vor dem ersten Deployment sollte ein manueller Login durchgeführt werden um interaktive Prompts wie das Bestätigen der Server Identität manuell zu bestätigen. Der Deployment Ordner am Server muss manuell erstellt werden und die öffentliche Adresse der Seite gesetzt sein - Hyper 8 führt damit ein Testdeployment zum Bestätigen der Einstellungen durch bevor die eigentliche Filesynchronisierung erfolgt.",
         search: "Suchen",
         sec: "sek",
         set_current_frame_as_poster: "Aktuelles Standbild als Poster setzen",
@@ -290,9 +289,13 @@ impl Translations {
         sort_number_descending: "Sortiernummer Absteigend (3, 2, 1)",
         sound_muted: "Ton stummgeschalten",
         space: "Leertaste",
+        ssh_config_password_label: "Passwort (nur in einem vertrauenswürdigen Umfeld eingeben - die Speicherung erfolgt unverschlüsselt)",
         ssh_config_path_label: "Verzeichnis am Server (z.b. /data/web/user123/html)",
+        ssh_config_port_label: "Port Nummer (optional, der Standardport 22 wird sonst automatisch gewählt)",
         ssh_config_server_label: "Serveradresse (z.b. ssh-user123.example.com)",
         ssh_config_user_label: "Benutzername (z.b. user123)",
+        ssh_deployment: "SSH Deployment",
+        ssh_deployment_text: "Wenn sowohl eine FTP wie auch SSH Deployment Konfiguration vorliegen werden SSH Deployments durchgeführt.",
         standalone: "Standalone",
         storage_usage: "Speicherverbrauch",
         streaming_only: "Nur zum Streamen",

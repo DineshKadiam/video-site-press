@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs::File;
@@ -22,6 +22,8 @@ use super::SyncError;
 
 const DEFAULT_FTP_PORT: usize = 21;
 
+// TODO: Not the case anymore, we could now access the needed traits
+// (requires reimplementation of a few things here of course)
 /// The crate we use for FTP interaction (suppaftp) does not publicly expose
 /// the traits we would need to generically implement insecure/secure FTP
 /// stream interaction, therefore we put both stream types into our own
@@ -146,6 +148,12 @@ impl FtpStreamWrapper {
         let remote_path_str = remote_path.as_ref().to_string_lossy();
 
         trace!("put_with_stream {} {remote_path_str}", local_path.display());
+
+        // TODO: In the SSH sync implementation, BufReader based file transfer
+        // has proven to be massively slower (than just doing file.write_all(...))
+        // even for rather small files (e.g. 52MB). We should re-evaluate if we
+        // can make these gains here too (but there might have been a reason to go
+        // for the BufReader approach here, so check/test carefully).
 
         match self {
             FtpStreamWrapper::Insecure(stream) => {

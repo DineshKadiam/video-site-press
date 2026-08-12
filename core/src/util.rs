@@ -1,14 +1,12 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::io::{Error, ErrorKind};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Output;
 
 use chrono::{Locale as ChronoLocale, NaiveDate};
-use nanoid::nanoid;
 use slug::slugify;
 
 use crate::Context;
@@ -140,28 +138,6 @@ pub fn localized_date_d_mmmm_yyyy(date: NaiveDate, chrono_locale: ChronoLocale) 
     date
         .format_localized_with_items(format.iter(), chrono_locale)
         .to_string()
-}
-
-pub fn nanoid() -> String {
-    nanoid!(8)
-}
-
-/// Reusable, efficient implementation of the annoying &OsStr to String conversion
-pub fn string_from_os_str(os_str: &OsStr) -> String {
-    os_str.to_string_lossy().into()
-}
-
-/// Reusable, efficient implementation of the annoying OsString to String conversion
-pub fn string_from_os_string(os_string: OsString) -> String {
-    match os_string.into_string() {
-        Ok(string) => string,
-        Err(os_string) => os_string.to_string_lossy().into()
-    }
-}
-
-/// Reusable, efficient implementation of the annoying PathBuf to String conversion
-pub fn string_from_pathbuf(path: PathBuf) -> String {
-    string_from_os_string(path.into_os_string())
 }
 
 pub fn supported_font_extension(filename: &str) -> bool {

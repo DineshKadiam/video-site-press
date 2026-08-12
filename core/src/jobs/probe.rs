@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::env;
@@ -259,6 +259,7 @@ pub fn probe_video(path: &Path) -> Result<VideoMeta, JobError> {
         }
     }
 
+    // TODO: This panics if the "video file" does not contain a video stream, but should be handled gracefully
     let video_meta = VideoMeta::new(
         audio_codec,
         duration,

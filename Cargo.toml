@@ -57,6 +57,7 @@ serde = "1.0.229"
 serde_derive = "1.0.229"
 serde_json = "1.0.151"
 slug = "0.1.6"
+ssh2 = "0.9.6"
 suppaftp = { features = ["native-tls"], version = "10.0.1" }
 sys-locale = "0.3.2"
 tauri = { features = [], version = "2.11.5" }

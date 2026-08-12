@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -302,9 +302,26 @@ impl Site {
                     if let Some(attributes) = element.attributes() {
                         for attribute in attributes {
                             match attribute.key() {
+                                "password" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ssh_config.password = Some(value.to_string());
+                                    }
+                                }
                                 "path" => {
                                     if let Some(value) = attribute.value() {
                                         self.ssh_config.path = Some(value.to_string());
+                                    }
+                                }
+                                "port" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value.parse::<usize>() {
+                                            Ok(number) => self.ssh_config.port = Some(number),
+                                            Err(err) => {
+                                                let message = format!("The port option only accepts positive integer numbers ({err})");
+                                                let error = element_error(element, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
                                     }
                                 }
                                 "server" => {
@@ -318,7 +335,7 @@ impl Site {
                                     }
                                 }
                                 _ => {
-                                    let message = "The key/name of this attribute was not recognized, only 'path', 'server' and 'user' are recognized inside an ssh_config field";
+                                    let message = "The key/name of this attribute was not recognized, only 'password', 'path', 'port', 'server' and 'user' are recognized inside an ssh_config field";
                                     let error = attribute_error(attribute, manifest_path, message);
                                     self.manifest_errors.push(error);
                                 }
@@ -627,27 +644,28 @@ impl Site {
             eno.push_str("ftp_config:\n");
 
             if let Some(secure) = self.ftp_config.secure {
-                eno.push_str(&format!("mode = {}\n", if secure { "secure" } else { "insecure" }));
+                let mode = if secure { "secure" } else { "insecure" };
+                eno.push_str(&format!("mode = {mode}\n"));
             }
 
             if let Some(password) = &self.ftp_config.password {
-                eno.push_str(&format!("password = {}\n", password));
+                eno.push_str(&format!("password = {password}\n"));
             }
 
             if let Some(path) = &self.ftp_config.path {
-                eno.push_str(&format!("path = {}\n", path));
+                eno.push_str(&format!("path = {path}\n"));
             }
 
             if let Some(port) = &self.ftp_config.port {
-                eno.push_str(&format!("port = {}\n", port));
+                eno.push_str(&format!("port = {port}\n"));
             }
 
             if let Some(server) = &self.ftp_config.server {
-                eno.push_str(&format!("server = {}\n", server));
+                eno.push_str(&format!("server = {server}\n"));
             }
 
             if let Some(user) = &self.ftp_config.user {
-                eno.push_str(&format!("user = {}\n", user));
+                eno.push_str(&format!("user = {user}\n"));
             }
         }
 
@@ -656,16 +674,24 @@ impl Site {
 
             eno.push_str("ssh_config:\n");
 
+            if let Some(password) = &self.ssh_config.password {
+                eno.push_str(&format!("password = {password}\n"));
+            }
+
             if let Some(path) = &self.ssh_config.path {
-                eno.push_str(&format!("path = {}\n", path));
+                eno.push_str(&format!("path = {path}\n"));
+            }
+
+            if let Some(port) = &self.ssh_config.port {
+                eno.push_str(&format!("port = {port}\n"));
             }
 
             if let Some(server) = &self.ssh_config.server {
-                eno.push_str(&format!("server = {}\n", server));
+                eno.push_str(&format!("server = {server}\n"));
             }
 
             if let Some(user) = &self.ssh_config.user {
-                eno.push_str(&format!("user = {}\n", user));
+                eno.push_str(&format!("user = {user}\n"));
             }
         }
 

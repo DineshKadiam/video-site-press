@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::env;
@@ -9,6 +9,8 @@ use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
+
+use hyper8_util::nanoid;
 
 use crate::{
     AudioFile,
@@ -21,11 +23,7 @@ use crate::{
     VideoFile,
     VideoFormat
 };
-use crate::util::{
-    collect_output_stderr_stdout,
-    deduplicate_filename,
-    nanoid
-};
+use crate::util::{collect_output_stderr_stdout, deduplicate_filename};
 
 use super::JobError;
 

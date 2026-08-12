@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::io;
@@ -14,12 +14,12 @@ use hyper8_translations::Translations;
 /// and errors to the terminal. Also asks for explicit ("opt-in") confirmation
 /// before performing the actual deployment.
 pub fn perform_deploy_blocking_cli(
-    context_ref: &Arc<Context>,
+    context: &Arc<Context>,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
     if site.base_url.is_none() {
-        let site_manifest_path = context_ref.site_dir.join("site.eno");
+        let site_manifest_path = context.site_dir.join("site.eno");
         let message = translations.public_address_must_be_configured_for_deployment_text_cli(&site_manifest_path);
         return Err(message);
     }
@@ -44,20 +44,20 @@ pub fn perform_deploy_blocking_cli(
         Err(err) => return Err(err.to_string())
     }
 
-    if let Err(err) = config_probe(context_ref, site, translations) {
+    if let Err(err) = config_probe(site, translations) {
         let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
         let message = format!("{t_deployment_configuration_could_not_be_verified} ({err})");
         return Err(message);
     }
 
-    start_deploy(context_ref, site, translations)?;
+    start_deploy(context, site, translations)?;
 
     let mut seen_feedback = 0;
 
     loop {
         thread::sleep(Duration::from_secs(1));
 
-        if let Ok(deployment) = context_ref.deploying.lock() {
+        if let Ok(deployment) = context.deploying.lock() {
             let feedback = &deployment.feedback;
 
             if feedback.len() > seen_feedback {

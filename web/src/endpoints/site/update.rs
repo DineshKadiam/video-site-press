@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -36,7 +36,9 @@ pub struct UpdateForm {
     ftp_config_user: String,
     language: String,
     poster_aspect: String,
+    ssh_config_password: String,
     ssh_config_path: String,
+    ssh_config_port: String,
     ssh_config_server: String,
     ssh_config_user: String,
     theme: String
@@ -56,6 +58,7 @@ pub async fn update(
     let ftp_config_user_trimmed = form.ftp_config_user.trim();
     let language_trimmed = form.language.trim();
     let poster_aspect_trimmed = form.poster_aspect.trim();
+    let ssh_config_password_trimmed = form.ssh_config_password.trim();
     let ssh_config_path_trimmed = form.ssh_config_path.trim();
     let ssh_config_server_trimmed = form.ssh_config_server.trim();
     let ssh_config_user_trimmed = form.ssh_config_user.trim();
@@ -86,9 +89,20 @@ pub async fn update(
         )
     };
 
+    let ssh_config_port_trimmed = form.ssh_config_port.trim();
+    let ssh_config_port = if ssh_config_port_trimmed.is_empty() {
+        None
+    } else {
+        Some(
+            ssh_config_port_trimmed.parse::<usize>().map_err(|err| err.to_string())
+        )
+    };
+
     if base_url.as_ref().is_some_and(|base_url| base_url.is_err()) ||
         poster_aspect.is_err() ||
-        ftp_config_port.as_ref().is_some_and(|ftp_config_port| ftp_config_port.is_err()) {
+        ftp_config_port.as_ref().is_some_and(|ftp_config_port| ftp_config_port.is_err()) ||
+        ssh_config_port.as_ref().is_some_and(|ssh_config_port| ssh_config_port.is_err())
+    {
         let site = context.get_site();
 
         let form_feedback = UpdateFormFeedback {
@@ -102,7 +116,9 @@ pub async fn update(
             ftp_config_user: Field::valid(ftp_config_user_trimmed),
             language: Field::valid(language_trimmed),
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
+            ssh_config_password: Field::valid(ssh_config_password_trimmed),
             ssh_config_path: Field::valid(ssh_config_path_trimmed),
+            ssh_config_port: Field::validated(ssh_config_port_trimmed, ssh_config_port.and_then(|ssh_config_port| ssh_config_port.err())),
             ssh_config_server: Field::valid(ssh_config_server_trimmed),
             ssh_config_user: Field::valid(ssh_config_user_trimmed),
             theme
@@ -135,7 +151,9 @@ pub async fn update(
             site_mut.ftp_config.user = to_option(ftp_config_user_trimmed);
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
+            site_mut.ssh_config.password = to_option(ssh_config_password_trimmed);
             site_mut.ssh_config.path = to_option(ssh_config_path_trimmed);
+            site_mut.ssh_config.port = ssh_config_port.and_then(|ssh_config_port| ssh_config_port.ok());
             site_mut.ssh_config.server = to_option(ssh_config_server_trimmed);
             site_mut.ssh_config.user = to_option(ssh_config_user_trimmed);
             site_mut.theme = theme;

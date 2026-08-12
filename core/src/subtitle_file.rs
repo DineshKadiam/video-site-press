@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use language_tags::LanguageTag;
 use rsubs_lib::{SRT, VTT};
 
-use crate::util::nanoid;
+use hyper8_util::nanoid;
 
 /// Represents a single "line" in a subtitles file
 #[derive(Clone, Debug)]

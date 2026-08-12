@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::Path;
@@ -40,8 +40,9 @@ pub struct Translations {
     pub background_jobs: &'static str,
     pub banner_image: &'static str,
     pub banner_image_variants: &'static str,
-    pub beginning_deployment_over_secure_ftp_tls_ssl: &'static str,
     pub beginning_deployment_over_insecure_ftp_unencrypted: &'static str,
+    pub beginning_deployment_over_secure_ftp_tls_ssl: &'static str,
+    pub beginning_deployment_over_ssh: &'static str,
     pub best: &'static str,
     pub browse: &'static str,
     pub browser_based: &'static str,
@@ -266,8 +267,6 @@ pub struct Translations {
     pub resolution: &'static str,
     resolve_the_issue_on_disk_or_on_manifest_page: &'static str,
     pub resource_not_found: &'static str,
-    pub rsync_deployment: &'static str,
-    pub rsync_deployment_text: &'static str,
     pub search: &'static str,
     pub sec: &'static str,
     pub set_current_frame_as_poster: &'static str,
@@ -287,9 +286,13 @@ pub struct Translations {
     pub sort_number_descending: &'static str,
     pub sound_muted: &'static str,
     pub space: &'static str,
+    pub ssh_config_password_label: &'static str,
     pub ssh_config_path_label: &'static str,
+    pub ssh_config_port_label: &'static str,
     pub ssh_config_server_label: &'static str,
     pub ssh_config_user_label: &'static str,
+    pub ssh_deployment: &'static str,
+    pub ssh_deployment_text: &'static str,
     pub standalone: &'static str,
     pub storage_usage: &'static str,
     pub streaming_only: &'static str,

@@ -4,6 +4,7 @@
 [dependencies]
 base64.workspace = true
 hyper8-translations.path = "../translations"
+nanoid.workspace = true
 
 [package]
 edition.workspace = true

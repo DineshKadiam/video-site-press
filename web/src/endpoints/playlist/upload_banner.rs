@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -21,7 +21,8 @@ use hyper8_core::{
     PlaylistUpdate,
     SitePath
 };
-use hyper8_core::util::{nanoid, supported_image_extension};
+use hyper8_core::util::supported_image_extension;
+use hyper8_util::nanoid;
 
 use crate::{Context, SessionState};
 use crate::routes;

@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024-2025 Simon Repp
+    SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -127,11 +127,8 @@ poster_aspect: 16:9
 
 ## <a name="ssh_config"></a> `ssh_config`
 
-With `ssh_config` you can configure the remote server, path and user for an
-ssh/rsync based deployment.
-
-Note that for now only password-less (ssh public/private key) authentication
-is possible for this option.
+With `ssh_config` you can configure the remote `server`, `password`, `path`, `port`
+and `user` for SSH-based deployment.
 
 In order to prevent accidental deployments to wrong remote servers and paths,
 deployment requires the [base_url](#base_url) to be specified and the server to be set
@@ -142,7 +139,9 @@ it isn't, the test file is removed and the deployment aborted.
 
 ```eno
 ssh_config:
+password = correcthorsebatterystaple
 path = /data/web/user123/html
+port = 22
 server = ssh-user123.example.com
 user = user123
 ```

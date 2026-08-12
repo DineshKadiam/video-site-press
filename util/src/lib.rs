@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::ffi::{OsStr, OsString};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::path::PathBuf;
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use nanoid::nanoid;
 
 use hyper8_translations::Translations;
 
@@ -109,6 +112,10 @@ fn human_size_megabytes(bytes: u64) -> String {
     }
 }
 
+pub fn nanoid() -> String {
+    nanoid!(8)
+}
+
 /// Takes seconds, formats it like "00:13", "03:15", "2:06:48"
 pub fn precise_duration(seconds: f32) -> String {
     if seconds < 60.0 {
@@ -127,6 +134,24 @@ pub fn precise_duration(seconds: f32) -> String {
             seconds as u16 % 60
         )
     }
+}
+
+/// Reusable, efficient implementation of the annoying &OsStr to String conversion
+pub fn string_from_os_str(os_str: &OsStr) -> String {
+    os_str.to_string_lossy().into()
+}
+
+/// Reusable, efficient implementation of the annoying OsString to String conversion
+pub fn string_from_os_string(os_string: OsString) -> String {
+    match os_string.into_string() {
+        Ok(string) => string,
+        Err(os_string) => os_string.to_string_lossy().into()
+    }
+}
+
+/// Reusable, efficient implementation of the annoying PathBuf to String conversion
+pub fn string_from_pathbuf(path: PathBuf) -> String {
+    string_from_os_string(path.into_os_string())
 }
 
 pub fn url_safe_hash_base64(content: &[u8]) -> String {

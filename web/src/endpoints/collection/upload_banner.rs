@@ -21,7 +21,8 @@ use hyper8_core::{
     JobDesc,
     SitePath
 };
-use hyper8_core::util::{nanoid, supported_image_extension};
+use hyper8_core::util::supported_image_extension;
+use hyper8_util::nanoid;
 
 use crate::{Context, SessionState};
 use crate::routes;

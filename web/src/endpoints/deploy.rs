@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -32,7 +32,7 @@ pub async fn deploy(
         return Either::Right(error_page(&context, message, &session_state));
     }
 
-    if let Err(err) = config_probe(&context, &site, translations) {
+    if let Err(err) = config_probe(&site, translations) {
         let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
         let message = format!("{t_deployment_configuration_could_not_be_verified} {err}");
         return Either::Right(error_page(&context, &message, &session_state));

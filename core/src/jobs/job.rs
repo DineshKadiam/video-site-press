@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
-use crate::util::nanoid;
+use hyper8_util::nanoid;
 
 use super::{JobDesc, JobError, JobProgress};
 

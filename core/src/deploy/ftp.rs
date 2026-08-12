@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::cmp::Ordering;
-use std::fmt::{Debug, Formatter};
 use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
@@ -13,14 +11,21 @@ use chrono::{DateTime, Utc};
 use indoc::indoc;
 
 use hyper8_translations::Translations;
+use hyper8_util::{nanoid, string_from_os_string};
 
 use crate::{Context, Site, SitePath};
-use crate::util::{
-    nanoid,
-    string_from_os_string
+
+use super::{
+    FtpStreamWrapper,
+    SyncAction,
+    SyncEntry,
+    SyncError
 };
 
-use super::{FtpStreamWrapper, SyncError};
+/// FTP sync actions and entries represent modified time as date strings of
+/// the form yyyymmddHHMMSS, e.g. "20250509105623"
+type FtpSyncAction = SyncAction<String>;
+type FtpSyncEntry = SyncEntry<String>;
 
 const FTP_CONFIG_PROBE_FILE_NAME: &str = ".hyper8_ftp_config_probe.txt";
 const FTP_CONFIG_PROBE_TEXT: &str = indoc!("
@@ -30,98 +35,15 @@ const FTP_CONFIG_PROBE_TEXT: &str = indoc!("
     safely be deleted.
 ");
 
-const EARLIER: Ordering = Ordering::Less;
-const LATER: Ordering = Ordering::Greater;
-
-enum SyncAction {
-    AddFile {
-        local_entry: SyncEntry,
-        remote_path: PathBuf
-    },
-    CreateDir { remote_path: PathBuf },
-    DeleteDir { remote_path: PathBuf },
-    DeleteFile { remote_entry: SyncEntry },
-    PrereqDeleteDir { remote_path: PathBuf },
-    PrereqDeleteFile { remote_entry: SyncEntry },
-    UpdateFile {
-        local_entry: SyncEntry,
-        remote_entry: SyncEntry,
-        /// During deployment we want some files to be updated later, or even
-        /// at the latest possible point. For instance, updating the RSS feed
-        /// files should only happen as the very last step, as everything
-        /// that the feed points to should be uploaded and in order the
-        /// moment that feed subscribers receive an update! This index is
-        /// derived from the file extensions and helps us to order files
-        /// accordingly.
-        type_based_retardation_index: usize
-    }
-}
-
-#[derive(Debug)]
-struct SyncEntry {
-    pub file_name: String,
-    pub is_dir: bool,
-    // yyyymmddHHMMSS (e.g. "20250509105623")
-    pub modified: String,
-    pub path: PathBuf,
-    pub size: usize
-}
-
-impl Debug for SyncAction {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SyncAction::AddFile { local_entry, remote_path } => {
-                write!(f, "SyncAction::AddFile [{}, {}]", remote_path.display(), local_entry.size)
-            }
-            SyncAction::CreateDir { remote_path } => {
-                write!(f, "SyncAction::CreateDir [{}]", remote_path.display())
-            }
-            SyncAction::DeleteDir { remote_path } => {
-                write!(f, "SyncAction::DeleteDir [{}]", remote_path.display())
-            }
-            SyncAction::DeleteFile { remote_entry } => {
-                write!(f, "SyncAction::DeleteFile [{}, {}]", remote_entry.path.display(), remote_entry.size)
-            }
-            SyncAction::PrereqDeleteDir { remote_path } => {
-                write!(f, "SyncAction::PrereqDeleteDir [{}]", remote_path.display())
-            }
-            SyncAction::PrereqDeleteFile { remote_entry } => {
-                write!(f, "SyncAction::PrereqDeleteFile [{} {}]", remote_entry.path.display(), remote_entry.size)
-            }
-            SyncAction::UpdateFile { local_entry, remote_entry, .. } => {
-                write!(f, "SyncAction::UpdateFile [{}, {}]", remote_entry.path.display(), local_entry.size)
-            }
-        }
-    }
-}
-
-impl SyncEntry {
-    pub fn type_based_retardation_index(&self) -> usize {
-        match Path::new(&self.file_name).extension() {
-            Some(extension) => {
-                match &*extension.to_ascii_lowercase().to_string_lossy() {
-                    "atom" | "rss" => 5,
-                    "html" => 4,
-                    "css" => 3,
-                    "js" => 2,
-                    "avif" | "jpeg" | "jpg" | "png" | "webp" => 1,
-                    _ => 0
-                }
-            }
-            None => 0
-        }
-    }
-}
-
 /// Register `local_dir` and all recursively contained dirs and files for addition
 fn collect_add_actions(
-    actions: &mut Vec<SyncAction>,
-    local_dir: SyncEntry,
+    actions: &mut Vec<FtpSyncAction>,
+    local_dir: FtpSyncEntry,
     remote_containing_dir: &Path
 ) -> Result<(), SyncError> {
     // Add containing dir
     let remote_dir = remote_containing_dir.join(&local_dir.file_name);
-    actions.push(SyncAction::CreateDir { remote_path: remote_dir.clone() });
+    actions.push(FtpSyncAction::CreateDir { remote_path: remote_dir.clone() });
 
     let local_child_entries = get_local_entries(false, &local_dir.path)?;
 
@@ -132,7 +54,7 @@ fn collect_add_actions(
         } else {
             // Add child file
             let remote_path = remote_dir.join(&local_entry.file_name);
-            actions.push(SyncAction::AddFile { local_entry, remote_path });
+            actions.push(FtpSyncAction::AddFile { local_entry, remote_path });
         }
     }
 
@@ -141,9 +63,9 @@ fn collect_add_actions(
 
 /// Register `remote_dir` and all recursively contained dirs and files for deletion
 fn collect_delete_actions(
-    actions: &mut Vec<SyncAction>,
+    actions: &mut Vec<FtpSyncAction>,
     ftp_stream_wrapper: &mut FtpStreamWrapper,
-    remote_dir: SyncEntry
+    remote_dir: FtpSyncEntry
 ) -> Result<(), SyncError> {
     let remote_child_entries = get_remote_entries(ftp_stream_wrapper, false, &remote_dir.path)?;
 
@@ -153,21 +75,21 @@ fn collect_delete_actions(
             collect_delete_actions(actions, ftp_stream_wrapper, remote_entry)?;
         } else {
             // Delete child file
-            actions.push(SyncAction::DeleteFile { remote_entry });
+            actions.push(FtpSyncAction::DeleteFile { remote_entry });
         }
     }
 
     // Delete containing dir
-    actions.push(SyncAction::DeleteDir { remote_path: remote_dir.path });
+    actions.push(FtpSyncAction::DeleteDir { remote_path: remote_dir.path });
 
     Ok(())
 }
 
 /// Register `remote_dir` and all recursively contained dirs and files for prerequisite deletion
 fn collect_prerequisite_delete_actions(
-    actions: &mut Vec<SyncAction>,
+    actions: &mut Vec<FtpSyncAction>,
     ftp_stream_wrapper: &mut FtpStreamWrapper,
-    remote_dir: SyncEntry
+    remote_dir: FtpSyncEntry
 ) -> Result<(), SyncError> {
     let remote_child_entries = get_remote_entries(ftp_stream_wrapper, false, &remote_dir.path)?;
 
@@ -177,29 +99,28 @@ fn collect_prerequisite_delete_actions(
             collect_prerequisite_delete_actions(actions, ftp_stream_wrapper, remote_entry)?;
         } else {
             // Delete child file
-            actions.push(SyncAction::PrereqDeleteFile { remote_entry });
+            actions.push(FtpSyncAction::PrereqDeleteFile { remote_entry });
         }
     }
 
     // Delete containing dir
-    actions.push(SyncAction::PrereqDeleteDir { remote_path: remote_dir.path });
+    actions.push(FtpSyncAction::PrereqDeleteDir { remote_path: remote_dir.path });
 
     Ok(())
 }
 
-/// Compare local and remote directories and files within this directory and
-/// register the respective syncing actions (add, replace, recurse, remove,
-/// etc.) for each.
+/// Compare local and remote directories and files and register the respective
+/// syncing actions (add, replace, recurse, remove, etc.) for each
 fn collect_sync_actions(
-    actions: &mut Vec<SyncAction>,
+    actions: &mut Vec<FtpSyncAction>,
     ftp_stream_wrapper: &mut FtpStreamWrapper,
-    local_dir: &Path,
-    remote_dir: &Path,
     // When we call this at the root/entry level of our sync operation we
     // ignore hidden files, as they might be owned by the server
     // infrastructure and should not be meddled with
     // (e.g. ".ftpquota" or ".htaccess" files)
-    ignore_hidden: bool
+    ignore_hidden: bool,
+    local_dir: &Path,
+    remote_dir: &Path
 ) -> Result<(), SyncError> {
     let local_entries = get_local_entries(ignore_hidden, local_dir)?;
     let mut remote_entries = get_remote_entries(ftp_stream_wrapper, ignore_hidden, remote_dir)?;
@@ -218,13 +139,13 @@ fn collect_sync_actions(
                         collect_sync_actions(
                             actions,
                             ftp_stream_wrapper,
+                            false,
                             &local_entry.path,
-                            &remote_entry.path,
-                            false
+                            &remote_entry.path
                         )?;
                     } else {
                         // Replace remote file with dir
-                        actions.push(SyncAction::PrereqDeleteFile { remote_entry });
+                        actions.push(FtpSyncAction::PrereqDeleteFile { remote_entry });
                         collect_add_actions(actions, local_entry, remote_dir)?;
                     }
                 } else if remote_entry.is_dir {
@@ -233,12 +154,12 @@ fn collect_sync_actions(
 
                     // Add new file to the remote
                     let remote_path = remote_dir.join(&local_entry.file_name);
-                    actions.push(SyncAction::AddFile { local_entry, remote_path });
+                    actions.push(FtpSyncAction::AddFile { local_entry, remote_path });
                 } else if remote_entry.modified != local_entry.modified {
                     let type_based_retardation_index = remote_entry.type_based_retardation_index();
 
                     // Replace remote file with new file
-                    let action = SyncAction::UpdateFile {
+                    let action = FtpSyncAction::UpdateFile {
                         local_entry,
                         remote_entry,
                         type_based_retardation_index
@@ -252,7 +173,7 @@ fn collect_sync_actions(
                 } else {
                     // Add new file to the remote
                     let remote_path = remote_dir.join(&local_entry.file_name);
-                    actions.push(SyncAction::AddFile { local_entry, remote_path });
+                    actions.push(FtpSyncAction::AddFile { local_entry, remote_path });
                 }
             }
         };
@@ -266,7 +187,7 @@ fn collect_sync_actions(
             collect_delete_actions(actions, ftp_stream_wrapper, remote_entry)?;
         } else {
             // Delete remote file
-            let action = SyncAction::DeleteFile { remote_entry };
+            let action = FtpSyncAction::DeleteFile { remote_entry };
             actions.push(action);
         }
     }
@@ -404,14 +325,14 @@ pub fn config_probe(
 /// directories to be created that contain other directories need to be
 /// created before their children, etc.
 fn execute_sync_actions(
-    actions: &[SyncAction],
+    actions: &[FtpSyncAction],
     ftp_stream_wrapper: &mut FtpStreamWrapper,
     report: &mut impl FnMut(&str),
     translations: &Translations
 ) -> Result<(), SyncError> {
     for action in actions {
         match action {
-            SyncAction::AddFile { local_entry, remote_path } => {
+            FtpSyncAction::AddFile { local_entry, remote_path } => {
                 let message = translations.adding_file_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
@@ -426,27 +347,27 @@ fn execute_sync_actions(
 
                 ftp_stream_wrapper.custom_command(&mfmt)?;
             }
-            SyncAction::CreateDir { remote_path } => {
+            FtpSyncAction::CreateDir { remote_path } => {
                 let message = translations.creating_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
                 ftp_stream_wrapper.mkdir(remote_path)?;
             }
-            SyncAction::DeleteDir { remote_path } |
-            SyncAction::PrereqDeleteDir { remote_path } => {
+            FtpSyncAction::DeleteDir { remote_path } |
+            FtpSyncAction::PrereqDeleteDir { remote_path } => {
                 let message = translations.deleting_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
                 ftp_stream_wrapper.rmdir(remote_path)?;
             }
-            SyncAction::DeleteFile { remote_entry } |
-            SyncAction::PrereqDeleteFile { remote_entry } => {
+            FtpSyncAction::DeleteFile { remote_entry } |
+            FtpSyncAction::PrereqDeleteFile { remote_entry } => {
                 let message = translations.deleting_file_xxx(&remote_entry.path.to_string_lossy());
                 report(&message);
 
                 ftp_stream_wrapper.rm(&remote_entry.path)?;
             }
-            SyncAction::UpdateFile { local_entry, remote_entry, .. } => {
+            FtpSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
                 let message = translations.updating_file_xxx(&remote_entry.path.to_string_lossy());
                 report(&message);
 
@@ -472,7 +393,7 @@ fn execute_sync_actions(
 fn get_local_entries(
     ignore_hidden: bool,
     local_dir: &Path
-) -> Result<Vec<SyncEntry>, SyncError> {
+) -> Result<Vec<FtpSyncEntry>, SyncError> {
     let mut local_entries = Vec::new();
 
     for dir_entry_result in fs::read_dir(local_dir)? {
@@ -489,9 +410,9 @@ fn get_local_entries(
             let modified_date_time: DateTime<Utc> = modified_system_time.into();
             let modified = modified_date_time.format("%Y%m%d%H%M%S").to_string();
             let path = dir_entry.path();
-            let size = if is_dir { 0 } else { metadata.len() as usize };
+            let size = if is_dir { 0 } else { metadata.len() };
 
-            let sync_entry = SyncEntry {
+            let sync_entry = FtpSyncEntry {
                 file_name,
                 is_dir,
                 modified,
@@ -507,13 +428,12 @@ fn get_local_entries(
 }
 
 /// Constructs a dir/file listing with all relevant data points for syncing
-/// from a remote dir. `remote_dir` must be an absolute path (in the remote
-/// context).
+/// from a remote dir. `remote_dir` must be an absolute path.
 fn get_remote_entries(
     ftp_stream_wrapper: &mut FtpStreamWrapper,
     ignore_hidden: bool,
     remote_dir: &Path
-) -> Result<Vec<SyncEntry>, SyncError> {
+) -> Result<Vec<FtpSyncEntry>, SyncError> {
     let remote_entries = ftp_stream_wrapper.mlsd(remote_dir)?
         .iter()
         .filter_map(|item| {
@@ -525,8 +445,7 @@ fn get_remote_entries(
             // The virtual directory entries "." and ".." have their own
             // types - "cdir" and "pdir" - and are therefore covered
             // (= excluded) by the is_dir || is_file check.
-            if is_dir || is_file &&
-                !(ignore_hidden && file_name.starts_with('.')) {
+            if (is_dir || is_file) && !(ignore_hidden && file_name.starts_with('.')) {
                 let file_name = file_name.to_string();
                 let modified = facts
                     .split_once("modify=")
@@ -545,13 +464,13 @@ fn get_remote_entries(
                         .split(';')
                         .next()
                         .unwrap()
-                        .parse::<usize>()
+                        .parse::<u64>()
                         .unwrap()
                 } else {
                     0
                 };
 
-                let sync_entry = SyncEntry {
+                let sync_entry = FtpSyncEntry {
                     file_name,
                     is_dir,
                     modified,
@@ -564,163 +483,19 @@ fn get_remote_entries(
                 None
             }
         })
-        .collect::<Vec<SyncEntry>>();
+        .collect::<Vec<FtpSyncEntry>>();
 
     Ok(remote_entries)
 }
 
-// Default strategy (prioritize avoidance of glitches/service interruptions, at cost of temporary storage usage peaks)
-// "Prioritize avoidance of service interruptions during deployment"
-//
-// 1. Delete all files that need to be deleted as a prerequisite to later actions, going from biggest to smallest
-// 2. Delete all directories that need to be deleted as a prerequisite to later actions, going from deepest to shallowest
-// 3. Create all missing directories, going from shallowest to deepest
-// 4. Upload all completely new files, going from biggest to smallest
-// 5. Replace updated files, going from biggest to smallest
-// 6. Delete all files, from biggest to smallest
-// 7. Delete all directories, going from deepest to shallowest
-fn order_sync_actions_quality_approach(actions: &mut [SyncAction]) {
-    actions.sort_unstable_by(|a, b| {
-        match a {
-            SyncAction::AddFile { local_entry: a_local_entry, .. } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { .. } => LATER,
-                    SyncAction::PrereqDeleteDir { .. } => LATER,
-                    SyncAction::CreateDir { .. } => LATER,
-                    SyncAction::AddFile { local_entry: b_local_entry, .. } => {
-                        // Bigger files are deleted earlier, smaller files later
-                        // (Delete Gigabytes -> Delete Megabytes -> Delete Kilobytes)
-                        b_local_entry.size.cmp(&a_local_entry.size)
-                    }
-                    SyncAction::UpdateFile { .. } => EARLIER,
-                    SyncAction::DeleteFile { .. } => EARLIER,
-                    SyncAction::DeleteDir { .. } => EARLIER
-                }
-            }
-            SyncAction::CreateDir { remote_path: a_remote_path } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { .. } => LATER,
-                    SyncAction::PrereqDeleteDir { .. } => LATER,
-                    SyncAction::CreateDir { remote_path: b_remote_path } => {
-                        // Shallower directories are created earlier, deeper directories later
-                        // (Create /foo -> Create /foo/bar -> Create /foo/bar/baz)
-                        a_remote_path.components().count().cmp(&b_remote_path.components().count())
-                    }
-                    SyncAction::AddFile { .. } => EARLIER,
-                    SyncAction::UpdateFile { .. } => EARLIER,
-                    SyncAction::DeleteFile { .. } => EARLIER,
-                    SyncAction::DeleteDir { .. } => EARLIER
-                }
-            }
-            SyncAction::DeleteDir { remote_path: a_remote_path } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { .. } => LATER,
-                    SyncAction::PrereqDeleteDir { .. } => LATER,
-                    SyncAction::CreateDir { .. } => LATER,
-                    SyncAction::AddFile { .. } => LATER,
-                    SyncAction::UpdateFile { .. } => LATER,
-                    SyncAction::DeleteFile { .. } => LATER,
-                    SyncAction::DeleteDir { remote_path: b_remote_path } => {
-                        // Deeper directories are deleted earlier, shallower directories later
-                        // (Delete /foo/bar/baz -> Delete /foo/bar -> Delete /foo)
-                        b_remote_path.components().count().cmp(&a_remote_path.components().count())
-                    }
-                }
-            }
-            SyncAction::DeleteFile { remote_entry: a_remote_entry } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { .. } => LATER,
-                    SyncAction::PrereqDeleteDir { .. } => LATER,
-                    SyncAction::CreateDir { .. } => LATER,
-                    SyncAction::AddFile { .. } => LATER,
-                    SyncAction::UpdateFile { .. } => LATER,
-                    SyncAction::DeleteFile { remote_entry: b_remote_entry } => {
-                        // Bigger files are deleted earlier, smaller files later
-                        // (Delete Gigabytes -> Delete Megabytes -> Delete Kilobytes)
-                        b_remote_entry.size.cmp(&a_remote_entry.size)
-                    }
-                    SyncAction::DeleteDir { .. } => EARLIER
-                }
-            }
-            SyncAction::PrereqDeleteDir { remote_path: a_remote_path } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { .. } => LATER,
-                    SyncAction::PrereqDeleteDir { remote_path: b_remote_path } => {
-                        // Deeper directories are deleted earlier, shallower directories later
-                        // (Delete /foo/bar/baz -> Delete /foo/bar -> Delete /foo)
-                        b_remote_path.components().count().cmp(&a_remote_path.components().count())
-                    }
-                    SyncAction::CreateDir { .. } => EARLIER,
-                    SyncAction::AddFile { .. } => EARLIER,
-                    SyncAction::UpdateFile { .. } => EARLIER,
-                    SyncAction::DeleteFile { .. } => EARLIER,
-                    SyncAction::DeleteDir { .. } => EARLIER
-                }
-            }
-            SyncAction::PrereqDeleteFile { remote_entry: a_remote_entry } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { remote_entry: b_remote_entry } => {
-                        // Bigger files are deleted earlier, smaller files later
-                        // (Delete Gigabytes -> Delete Megabytes -> Delete Kilobytes)
-                        b_remote_entry.size.cmp(&a_remote_entry.size)
-                    }
-                    SyncAction::PrereqDeleteDir { .. } => EARLIER,
-                    SyncAction::CreateDir { .. } => EARLIER,
-                    SyncAction::AddFile { .. } => EARLIER,
-                    SyncAction::UpdateFile { .. } => EARLIER,
-                    SyncAction::DeleteFile { .. } => EARLIER,
-                    SyncAction::DeleteDir { .. } => EARLIER
-                }
-            }
-            SyncAction::UpdateFile {
-                local_entry: a_local_entry,
-                type_based_retardation_index: a_type_based_retardation_index,
-                ..
-            } => {
-                match b {
-                    SyncAction::PrereqDeleteFile { .. } => LATER,
-                    SyncAction::PrereqDeleteDir { .. } => LATER,
-                    SyncAction::CreateDir { .. } => LATER,
-                    SyncAction::AddFile { .. } => LATER,
-                    SyncAction::UpdateFile {
-                        local_entry: b_local_entry,
-                        type_based_retardation_index: b_type_based_retardation_index,
-                        ..
-                    } => {
-                        a_type_based_retardation_index.cmp(b_type_based_retardation_index)
-                            // Bigger files are updated earlier, smaller files later
-                            // (Update Gigabytes -> Update Megabytes -> Update Kilobytes)
-                            .then(b_local_entry.size.cmp(&a_local_entry.size))
-                    }
-                    SyncAction::DeleteFile { .. } => EARLIER,
-                    SyncAction::DeleteDir { .. } => EARLIER
-                }
-            }
-        }
-    })
-}
-
-// TODO: Implement
-// Tight storage quota strategy (prioritize keeping used storage as low as possible at every point of the deployment)
-// "Prioritize avoidance of storage quota overflows during deployment"
-//
-// 1. Create all missing directories (recursively - going from shallowest to deepest path)
-// 2. Delete all files, from biggest to smallest
-// 3. Delete all directories (recursively - going from deepest to shallowest path)
-// 4. Replace updated files, going from biggest to smallest
-// 5. Upload all completely NEW files, going from biggest to smallest
-// fn order_sync_actions_survival_approach(actions: &mut Vec<SyncAction>) {
-//     unimplemented!()
-// }
-
 pub fn start_deploy(
-    context_ref: &Arc<Context>,
+    context: &Arc<Context>,
     mut ftp_stream_wrapper: FtpStreamWrapper,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
     {
-        let mut deployment = context_ref.deploying.lock().unwrap();
+        let mut deployment = context.deploying.lock().unwrap();
         if deployment.active() {
             let message = translations.already_deploying_can_only_deploy_again_when_current_deployment_is_finished;
             return Err(message.to_string());
@@ -729,9 +504,9 @@ pub fn start_deploy(
         }
     }
 
-    let context = Arc::clone(context_ref);
-    let ftp_config_path = PathBuf::from(site.ftp_config.path_unchecked());
-    let translations_moving = translations.clone();
+    let context = Arc::clone(context);
+    let remote_path = PathBuf::from(site.ftp_config.path_unchecked());
+    let translations = translations.clone();
 
     thread::spawn(move || {
         let mut report = |message: &str| {
@@ -739,9 +514,9 @@ pub fn start_deploy(
         };
 
         if ftp_stream_wrapper.is_secure() {
-            report(translations_moving.beginning_deployment_over_secure_ftp_tls_ssl);
+            report(translations.beginning_deployment_over_secure_ftp_tls_ssl);
         } else {
-            report(translations_moving.beginning_deployment_over_insecure_ftp_unencrypted);
+            report(translations.beginning_deployment_over_insecure_ftp_unencrypted);
         }
 
         let mut actions = Vec::new();
@@ -749,25 +524,25 @@ pub fn start_deploy(
         match collect_sync_actions(
             &mut actions,
             &mut ftp_stream_wrapper,
+            true,
             &context.build_dir,
-            &ftp_config_path,
-            true
+            &remote_path
         ) {
             Ok(()) => {
-                order_sync_actions_quality_approach(&mut actions);
+                actions.sort_unstable_by(FtpSyncAction::minimal_service_interruptions_sort);
 
                 // TODO: Implement and make accessible through some option
-                // order_sync_actions_survival_approach(&mut actions);
+                // actions.sort_unstable_by(FtpSyncAction::minimal_storage_peaks_sort);
 
-                report(translations_moving.deployment_steps_successfully_determined_file_synchronization_will_now_commence);
+                report(translations.deployment_steps_successfully_determined_file_synchronization_will_now_commence);
 
                 match execute_sync_actions(
                     &actions,
                     &mut ftp_stream_wrapper,
                     &mut report,
-                    &translations_moving
+                    &translations
                 ) {
-                    Ok(()) => report(translations_moving.deployment_completed_successfully),
+                    Ok(()) => report(translations.deployment_completed_successfully),
                     Err(err) => report(&err.to_string())
                 }
             }

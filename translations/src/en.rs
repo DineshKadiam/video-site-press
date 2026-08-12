@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::indoc;
@@ -39,6 +39,7 @@ impl Translations {
         banner_image_variants: "Banner image variants",
         beginning_deployment_over_insecure_ftp_unencrypted: "Beginning deployment over insecure FTP (unencrypted)",
         beginning_deployment_over_secure_ftp_tls_ssl: "Beginning deployment over secure FTP (TLS/SSL)",
+        beginning_deployment_over_ssh: "Beginning deployment over SSH",
         best: "Best",
         browse: "Browse",
         browser_based: "Browser-based",
@@ -140,7 +141,7 @@ impl Translations {
         frame_rate: "Frame Rate",
         ftp_config_password_label: "Password (only enter in a trusted environment - storage is unencrypted)",
         ftp_config_path_label: "Remote server directory (e.g. /data/web/user123/html)",
-        ftp_config_port_label: "Port number (leave empty if unsure, a default port will be picked for you)",
+        ftp_config_port_label: "Port number (optional, the default port 21 is otherwise automatically picked)",
         ftp_config_secure_label: "Secure connection over SSL/TLS (should only be disabled in extraordinary circumstances)",
         ftp_config_server_label: "Server address (e.g. ftp-user123.example.com)",
         ftp_config_user_label: "Username (e.g. user123)",
@@ -269,8 +270,6 @@ impl Translations {
         resolution: "Resolution",
         resolve_the_issue_on_disk_or_on_manifest_page: r#"You can either resolve the issue(s) by editing the file on disk or by making the necessary changes on the <a href="{manifest_url}">manifest page</a>."#,
         resource_not_found: "Resource not found",
-        rsync_deployment: "rsync Deployment",
-        rsync_deployment_text: "rsync-basd deployment is currently supported only through ssh keyfile-authenticated rsync in the background. Before the first deployment a manual login should be performed to complete interactive prompts such as trusting the authenticity of the server. The remote directory needs to created manually and the public site adress configured - with this Hyper 8 can perform a test deployment to verify correctness of your settings before performing actual file synchronization.",
         search: "Search",
         sec: "sec",
         set_current_frame_as_poster: "Set current frame as poster",
@@ -290,9 +289,13 @@ impl Translations {
         sort_number_descending: "Sort Number Descending (3, 2, 1)",
         sound_muted: "Sound muted",
         space: "Space",
+        ssh_config_password_label: "Password (only enter in a trusted environment - storage is unencrypted)",
         ssh_config_path_label: "Remote server directory (e.g. /data/web/user123/html)",
+        ssh_config_port_label: "Port number (optional, the default port 22 is otherwise automatically picked)",
         ssh_config_server_label: "Server address (e.g. ssh-user123.example.com)",
         ssh_config_user_label: "Username (e.g. user123)",
+        ssh_deployment: "SSH Deployment",
+        ssh_deployment_text: "When both an FTP and SSH deployment configuration are provided, SSH deployments are performed.",
         standalone: "Standalone",
         storage_usage: "Storage Usage",
         streaming_only: "Streaming only",

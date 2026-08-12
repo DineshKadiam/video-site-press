@@ -1,17 +1,21 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::{Display, Formatter};
 
-use suppaftp::FtpError;
-
-/// Just a glue type that allows us to treat different types of
-/// sync-related error types (FtpError, std::io::Error, String)
-/// as one with the ? operator.
+/// Just a glue type that allows us to treat different types of sync-related
+/// error types (suppaftp::FtpError, ssh2::Error, std::io::Error, String) as
+/// one with the ? operator.
 pub struct SyncError(String);
 
-impl From<FtpError> for SyncError {
-    fn from(error: FtpError) -> SyncError {
+impl From<ssh2::Error> for SyncError {
+    fn from(error: ssh2::Error) -> SyncError {
+        SyncError(error.to_string())
+    }
+}
+
+impl From<suppaftp::FtpError> for SyncError {
+    fn from(error: suppaftp::FtpError) -> SyncError {
         SyncError(error.to_string())
     }
 }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -10,7 +10,7 @@ use actix_web::web::{Data, Path as ActixPath};
 use indoc::formatdoc;
 
 use hyper8_core::{Collection, SitePath};
-use hyper8_core::util::string_from_pathbuf;
+use hyper8_util::string_from_pathbuf;
 
 use crate::actix::html_response;
 use crate::{

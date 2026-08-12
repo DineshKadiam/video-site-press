@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -11,12 +11,16 @@ use crate::{Context, Site};
 mod ftp;
 mod ftp_config;
 mod ftp_stream_wrapper;
-mod ftp_sync_error;
-mod rsync;
+mod ssh;
 mod ssh_config;
+mod sync_action;
+mod sync_entry;
+mod sync_error;
 
 use ftp_stream_wrapper::FtpStreamWrapper;
-use ftp_sync_error::SyncError;
+use sync_action::SyncAction;
+use sync_entry::SyncEntry;
+use sync_error::SyncError;
 
 pub use ftp_config::FtpConfig;
 pub use ssh_config::SshConfig;
@@ -64,16 +68,15 @@ impl DeploymentState {
     }
 }
 
-/// Caller needs to ensure that there is either a complete FTP or rsync
+/// Caller needs to ensure that there is either a complete FTP or SSH
 /// configuration available, otherwise will panic.
 pub fn config_probe(
-    context: &Context,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
-    // We prefer rsync-based deployment if available
+    // We prefer SSH-based deployment if available
     if site.ssh_config.complete() {
-        return rsync::config_probe(context, site, translations);
+        return ssh::config_probe(site, translations);
     }
 
     if site.ftp_config.complete() {
@@ -83,26 +86,26 @@ pub fn config_probe(
         return result;
     }
 
-    panic!("Caller must ensure that a complete FTP or rsync config is available")
+    panic!("Caller must ensure that a complete FTP or SSH config is available")
 }
 
-/// Caller needs to ensure that there is either a complete FTP or rsync
+/// Caller needs to ensure that there is either a complete FTP or SSH
 /// configuration available, otherwise will panic.
 pub fn start_deploy(
-    context_ref: &Arc<Context>,
+    context: &Arc<Context>,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
-    // We prefer rsync-based deployment if available
+    // We prefer SSH-based deployment if available
     if site.ssh_config.complete() {
-        return rsync::start_deploy(context_ref, site, translations);
+        return ssh::start_deploy(context, site, translations);
     }
 
     if site.ftp_config.complete() {
         let ftp_stream_wrapper = FtpStreamWrapper::connect(site)?;
-        let result = ftp::start_deploy(context_ref, ftp_stream_wrapper, site, translations);
+        let result = ftp::start_deploy(context, ftp_stream_wrapper, site, translations);
         return result;
     }
 
-    panic!("Caller must ensure that a complete FTP or rsync config is available")
+    panic!("Caller must ensure that a complete FTP or SSH config is available")
 }

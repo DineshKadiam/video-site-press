@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs::File;
@@ -7,9 +7,9 @@ use std::path::Path;
 use image::{DynamicImage, GenericImageView, ImageFormat};
 use image::imageops::FilterType;
 
-use crate::{Context, Lqip, PosterMeta};
-use crate::util::nanoid;
+use hyper8_util::nanoid;
 
+use crate::{Context, Lqip, PosterMeta};
 
 pub enum ResizeMode {
     /// Perform a crop to a rectangle with the minimum target aspect ratio (if needed),

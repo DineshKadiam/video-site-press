@@ -8,9 +8,8 @@ use actix_web::http::header::ContentType;
 use indoc::formatdoc;
 
 use hyper8_core::{Site,SitePath};
-use hyper8_core::util::string_from_pathbuf;
 use hyper8_translations::Translations;
-use hyper8_util::html_escape_outside_attribute;
+use hyper8_util::{html_escape_outside_attribute, string_from_pathbuf};
 
 use crate::{Context, Location, SessionState};
 use crate::routes;
