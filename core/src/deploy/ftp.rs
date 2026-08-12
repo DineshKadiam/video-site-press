@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::cmp::Ordering;
@@ -360,7 +360,7 @@ pub fn config_probe(
                         remove_probe_and_return(Ok(()))
                     } else {
                         let truncate = |text: &str| -> String {
-                            match text.char_indices().nth(10) {
+                            match text.char_indices().nth(64) {
                                 Some((index, _)) => format!("{}…", &text[..index]),
                                 None => text.to_string()
                             }
@@ -381,9 +381,9 @@ pub fn config_probe(
                 }
                 Err(err) => {
                     let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                        &err.to_string(),
                         &remote_probe_path.to_string_lossy(),
-                        &public_probe_url,
-                        &err.to_string()
+                        &public_probe_url
                     );
                     remove_probe_and_return(Err(message))
                 }
@@ -391,9 +391,9 @@ pub fn config_probe(
         }
         Err(err) => {
             let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                &err.to_string(),
                 &remote_probe_path.to_string_lossy(),
-                &public_probe_url,
-                &err.to_string()
+                &public_probe_url
             );
             remove_probe_and_return(Err(message))
         }
