@@ -57,7 +57,6 @@ impl Translations {
         collection_settings: "Collection Einstellungen",
         completed: "Fertig",
         configure: "Konfigurieren",
-        configure_deployment: "Deployment konfigurieren",
         container: "Container",
         container_order: "Container Reihenfolge",
         content: "Inhalt",
@@ -108,6 +107,7 @@ impl Translations {
         deployment_completed_successfully: "Deployment erfolgreich abgeschlossen",
         deployment_configuration_could_not_be_verified: "Die Deployment Konfiguration konnte nicht verifiziert werden.",
         deployment_configuration_is_incomplete_can_not_deploy: "Die Deployment Konfiguration ist nicht vollständig, deshalb kann nicht deployed werden.",
+        deployment_finished: "Deployment abgeschlossen",
         deployment_steps_successfully_determined_file_synchronization_will_now_commence: "Erforderliche Deploymentschritte erfolgreich ermittelt, die Dateiensynchronisation beginnt nun",
         description: "Beschreibung",
         disabled: "Deaktiviert",
@@ -118,6 +118,7 @@ impl Translations {
         download_permalink: "download",
         downloads: "Downloads",
         edit: "Editieren",
+        edit_configuration: "Konfiguration editieren",
         embed: "Einbetten",
         embed_codes_permalink: "einbett-codes",
         embedding: "Einbetten",
@@ -209,6 +210,7 @@ impl Translations {
         new_subcollection: "Neue Subcollection",
         new_video: "Neues Video",
         no_audio: "Kein Audio",
+        no_complete_deployment_configuration_found: "Keine vollständige Deployment Konfiguration gefunden",
         no_jobs_yet: "Noch keine Hintergrundberechnungen",
         no_language_info: "Keine Sprachinfo",
         no_sites: "Keine Seiten",
@@ -264,6 +266,7 @@ impl Translations {
         release_date_ascending: "Veröffentlichungsdatum Aufsteigend (Jän, Feb, Mär)",
         release_date_descending: "Veröffentlichungsdatum Absteigend (Dez, Nov, Okt)",
         remote_dir_does_not_exist_ancestor_dir_found: r#"Das konfigurierte Zielverzeichnis am Server ("{remote_dir}") existiert nicht oder erlaubt keinen Zugriff ("{remote_dir_error}") - es muss manuell erstellt werden um Hyper 8 zu ermöglichen die Konfiguration vor dem Deployen zu verifizieren. Das darüber nächstgelegene Verzeichnis das gefunden wurde ist "{ancestor_dir}"."#,
+        remote_dir_xxx_is_not_a_directory: r#"Das konfigurierte Zielverzeichnis am Server ("{remote_dir}") ist kein Verzeichnis."#,
         remove_from_list: "Aus Liste entfernen",
         render_format: "Format rendern",
         replay: "Erneut abspielen",
@@ -295,7 +298,7 @@ impl Translations {
         ssh_config_server_label: "Serveradresse (z.b. ssh-user123.example.com)",
         ssh_config_user_label: "Benutzername (z.b. user123)",
         ssh_deployment: "SSH Deployment",
-        ssh_deployment_text: "Wenn sowohl eine FTP wie auch SSH Deployment Konfiguration vorliegen werden SSH Deployments durchgeführt.",
+        ssh_deployment_text: "",
         standalone: "Standalone",
         storage_usage: "Speicherverbrauch",
         streaming_only: "Nur zum Streamen",
@@ -382,6 +385,7 @@ impl Translations {
         xxx_characters_maximum: "Maximal {maximum} Zeichen",
         xxx_pending_jobs: "{count} eingereihte Jobs",
         xxx_videos: "{count} Videos",
-        you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "Du musst nicht sowohl einen Titel als auch einen Permalink angeben, aber eines von beiden muss ausgefüllt sein."
+        you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "Du musst nicht sowohl einen Titel als auch einen Permalink angeben, aber eines von beiden muss ausgefüllt sein.",
+        you_need_to_additionally_pass_ftp_or_ssh_text: "Du musst zusätzlich --ftp oder --ssh spezifizieren um das Deployment Protokoll auszuwählen"
     };
 }

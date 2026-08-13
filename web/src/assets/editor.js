@@ -1,8 +1,7 @@
-const configureIcon = document.querySelector('#configure_icon').content;
 const confirmationDialog = document.querySelector('#confirmation_dialog').content;
-const deployIcon = document.querySelector('#deploy_icon').content;
-const deploymentElement = document.querySelector('#deployment');
 const deploymentFeedback = document.querySelector('#deployment_feedback');
+const deploymentMenu = document.querySelector('#deployment');
+const deploymentStatus = document.querySelector('.deployment_status');
 const processingElement = document.querySelector('.processing');
 const processingIcon = document.querySelector('#processing_icon').content;
 const reloadIcon = document.querySelector('#reload_icon').content;
@@ -88,8 +87,8 @@ function fetchProcessing() {
                 updateMediaJobs(mediaJobs, localJobReport);
             }
 
-            // Update the "Configure Deployment/Deploy/Deploying since" button in the header
-            updateDeploymentButton(deploymentInfo);
+            // Update the status line in the deployment menu ("Deploying since/Deployed in")
+            updateDeploymentStatus(deploymentInfo);
 
             // Update the live deployment feedback on the deployment page (if we are on it)
             if (deploymentFeedback) {
@@ -125,25 +124,15 @@ function hyperConfirm(callback, label, text) {
     appendedDialog.querySelector('.confirm').focus();
 }
 
-function updateDeploymentButton(deploymentInfo) {
-    if (!deploymentInfo.configured) {
-        if (!deploymentElement.querySelector('a[href="/site/edit"]')) {
-            const a = document.createElement('a');
-            a.href = '/site/edit/';
+function updateDeploymentStatus(deploymentInfo) {
+    if (deploymentInfo.deployingSince !== null) {
+        deploymentMenu.classList.add('active');
 
-            a.append(configureIcon.cloneNode(true));
-
-            const text = document.createElement('span');
-            text.textContent = t.configureDeployment;
-            a.append(text);
-
-            deploymentElement.replaceChildren(a);
-        }
-    } else if (deploymentInfo.deployingSince !== null) {
         const a = document.createElement('a');
         a.href = '/deployment';
 
-        a.append(deployIcon.cloneNode(true));
+        // TODO: Maybe introduce a progress icon here (spinner, clock, ?)
+        // a.append(deployIcon.cloneNode(true));
 
         const text = document.createElement('span');
         text.textContent = t.deploying;
@@ -153,29 +142,25 @@ function updateDeploymentButton(deploymentInfo) {
         durationText.textContent = formatTime(deploymentInfo.deployingSince);
         a.append(durationText);
 
-        deploymentElement.replaceChildren(a);
-    } else if (!deploymentElement.querySelector('form[action="/deploy"]')) {
-        const form = document.createElement('form');
-        form.action = '/deploy';
-        form.method = 'post';
+        deploymentStatus.replaceChildren(a);
+    } else if (deploymentInfo.deployedIn !== null && deploymentMenu.classList.contains('active')) {
+        const a = document.createElement('a');
+        a.href = '/deployment';
 
-        form.addEventListener('submit', event => {
-            event.preventDefault();
-            const baseUrl = document.body.dataset.baseUrl;
-            hyperConfirm(() => form.submit(), t.deploy, `${t.reallyDeploy} (${baseUrl})`);
-        });
-
-        const button = document.createElement('button');
-
-        button.append(deployIcon.cloneNode(true));
+        // TODO: Maybe introduce a success icon here (checkmark)
+        // a.append(deployIcon.cloneNode(true));
 
         const text = document.createElement('span');
-        text.textContent = t.deploy;
-        button.append(text);
+        text.textContent = t.deploymentFinished;
+        a.append(text);
 
-        form.append(button);
+        const durationText = document.createElement('span');
+        durationText.textContent = formatTime(deploymentInfo.deployedIn);
+        a.append(durationText);
 
-        deploymentElement.replaceChildren(form);
+        deploymentStatus.replaceChildren(a);
+
+        deploymentMenu.classList.remove('active')
     }
 }
 

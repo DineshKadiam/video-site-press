@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -21,9 +21,8 @@ pub async fn scripts(
 
     // We selectively provide only those translations to the runtime js code
     // that are absolutely required, handpicking them here.
-    let t_configure_deployment = translations.configure_deployment;
-    let t_deploy = translations.deploy;
     let t_deploying = translations.deploying;
+    let t_deployment_finished = translations.deployment_finished;
     let t_idle = translations.idle;
     let t_new_results_available = translations.new_results_available;
     let t_really_deploy = translations.really_deploy;
@@ -33,9 +32,8 @@ pub async fn scripts(
 
     let js = formatdoc!(r#"
         const t = {{
-            configureDeployment: '{t_configure_deployment}',
-            deploy: '{t_deploy}',
             deploying: '{t_deploying}',
+            deploymentFinished: '{t_deployment_finished}',
             idle: '{t_idle}',
             newResultsAvailable: '{t_new_results_available}',
             reallyDeploy: '{t_really_deploy}',

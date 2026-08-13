@@ -6,8 +6,13 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use hyper8_core::{Context, Site};
-use hyper8_core::{config_probe, start_deploy};
+use hyper8_core::{Context, DeployKind, Site};
+use hyper8_core::{
+    start_ftp_deployment,
+    start_ssh_deployment,
+    verify_ftp_deployment_config,
+    verify_ssh_deployment_config
+};
 use hyper8_translations::Translations;
 
 /// Performs deployment in a synchronous fashion, reporting back all messages
@@ -15,6 +20,7 @@ use hyper8_translations::Translations;
 /// before performing the actual deployment.
 pub fn perform_deploy_blocking_cli(
     context: &Arc<Context>,
+    deploy_kind: Option<DeployKind>,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
@@ -24,10 +30,29 @@ pub fn perform_deploy_blocking_cli(
         return Err(message);
     }
 
-    if !site.complete_deployment_config() {
-        let message = translations.deployment_configuration_is_incomplete_can_not_deploy.to_string();
-        return Err(message);
-    }
+    let deploy_kind = if let Some(deploy_kind) = deploy_kind {
+        if (deploy_kind.ftp() && !site.ftp_config.complete()) ||
+            (deploy_kind.ssh() && !site.ssh_config.complete())
+        {
+            let message = translations.deployment_configuration_is_incomplete_can_not_deploy.to_string();
+            return Err(message);
+        }
+
+        deploy_kind
+    } else {
+        match (site.ftp_config.complete(), site.ssh_config.complete()) {
+            (true, true) => {
+                let message = translations.you_need_to_additionally_pass_ftp_or_ssh_text.to_string();
+                return Err(message);
+            }
+            (true, false) => DeployKind::Ftp,
+            (false, true) => DeployKind::Ssh,
+            (false, false) => {
+                let message = translations.no_complete_deployment_configuration_found.to_string();
+                return Err(message);
+            }
+        }
+    };
 
     let t_really_deploy = translations.really_deploy;
     let base_url = &site.base_url.as_ref().unwrap().representation;
@@ -44,13 +69,23 @@ pub fn perform_deploy_blocking_cli(
         Err(err) => return Err(err.to_string())
     }
 
-    if let Err(err) = config_probe(site, translations) {
+    let verification = if deploy_kind.ftp() {
+        verify_ftp_deployment_config(site, translations)
+    } else {
+        verify_ssh_deployment_config(site, translations)
+    };
+
+    if let Err(err) = verification {
         let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
         let message = format!("{t_deployment_configuration_could_not_be_verified} ({err})");
         return Err(message);
     }
 
-    start_deploy(context, site, translations)?;
+    if deploy_kind.ftp() {
+        start_ftp_deployment(context, site, translations)?;
+    } else {
+        start_ssh_deployment(context, site, translations)?;
+    };
 
     let mut seen_feedback = 0;
 

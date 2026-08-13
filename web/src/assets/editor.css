@@ -430,6 +430,36 @@ main {
     margin: 0 3rem 3rem 3rem;
     max-width: 36rem;
 }
+.menu { position: relative; }
+.menu > div {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+}
+.menu > div > ul {
+    background: var(--b1);
+    border-radius: .4rem;
+    border: 1px solid var(--b3);
+    margin-top: .5rem;
+}
+.menu li { white-space: nowrap; }
+.menu li li { padding-left: 1rem; }
+.menu li .section {
+    font-size: .9rem;
+    font-weight: 600;
+    padding: .3rem .6rem;
+}
+.menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.menu:focus-within > div,
+.menu:hover > div {
+    display: flex;
+}
+.menu.active > button svg { color: red; }
 nav {
     background: var(--b2);
     max-width: 20rem;

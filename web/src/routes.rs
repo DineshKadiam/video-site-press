@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! Routes in this file must be kept up to date with the mapping we keep in
@@ -88,7 +88,8 @@ pub fn convert_to_video(site_path: &SitePath) -> String {
 }
 
 pub const DASHBOARD: &str = "/";
-pub const DEPLOY: &str = "/deploy";
+pub const DEPLOY_FTP: &str = "/deploy-ftp";
+pub const DEPLOY_SSH: &str = "/deploy-ssh";
 pub const JOBS: &str = "/jobs";
 
 pub fn playlist_add_link(playlist: &Playlist) -> String {

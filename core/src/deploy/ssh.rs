@@ -35,8 +35,8 @@ type SshSyncEntry = SyncEntry<u64>;
 
 const DEFAULT_SSH_PORT: usize = 22;
 
-const SSH_CONFIG_PROBE_FILE_NAME: &str = ".hyper8_ssh_config_probe.txt";
-const SSH_CONFIG_PROBE_TEXT: &str = indoc!("
+const SSH_DEPLOYMENT_VERIFICATION_FILE_NAME: &str = ".hyper8_ssh_deployment_verification.txt";
+const SSH_DEPLOYMENT_VERIFICATION_TEXT: &str = indoc!("
     This file was created by Hyper 8 (https://hyper8.org) to verify
     the configured server and path for ssh deployment matches up with the
     configured website url. It serves no further purpose anymore and may
@@ -204,142 +204,6 @@ fn collect_sync_actions(
     Ok(())
 }
 
-/// Uploads a file named ".hyper8_ssh_config_probe.txt", which also contains a random token,
-/// to the remote, thereby first verifying that the deployment configuration is actually
-/// correct and working. Then, right next, tries to fetch that same file through the public
-/// url of the website (e.g. https://example.com/.hyper8_ssh_config_probe.txt), thereby confirming
-/// that the website is set up correctly (although that is a side effect), but more importantly
-/// ensuring that no other website (or remote content of any kind) is accidentally wiped if the
-/// remote path has been accidentally set incorrectly. Regardless of failure or success of the
-/// check, the probe file is removed from the remote again, leaving a clean state.
-pub fn config_probe(
-    site: &Site,
-    translations: &Translations
-) -> Result<(), String> {
-    let probe_signature = nanoid();
-    let probe_content = format!("{SSH_CONFIG_PROBE_TEXT}\n\n{probe_signature}");
-
-    let port = site.ssh_config.port.unwrap_or(DEFAULT_SSH_PORT);
-    let server = site.ssh_config.server_unchecked();
-
-    let address = format!("{server}:{port}");
-
-    let tcp = TcpStream::connect(address).unwrap();
-
-    let mut session = Session::new().unwrap();
-    session.set_tcp_stream(tcp);
-    session.handshake().unwrap();
-
-    let user = site.ssh_config.user_unchecked();
-    // TODO: Maybe dynamically fallback to agent/keyfile-based
-    // authentication if there is no password (none is required for the SSH
-    // configuration to be complete right now)
-    let password = site.ssh_config.password_unchecked();
-
-    session.userauth_password(user, password).unwrap();
-
-    if !session.authenticated() {
-        return Err(String::from("Not authenticated in spite of successful userauth_password invocation"));
-    }
-
-    let sftp = match session.sftp() {
-        Ok(sftp) => sftp,
-        Err(err) => return Err(format!("SFTP subsystem could not be initialized ({err})"))
-    };
-
-    let remote_dir = site.ssh_config.path_unchecked();
-
-    let remote_probe_path = Path::new(remote_dir).join(SSH_CONFIG_PROBE_FILE_NAME);
-
-    // Write probe file
-    match sftp.create(&remote_probe_path) {
-        Ok(mut file) => {
-            match file.write_all(probe_content.as_bytes()) {
-                Ok(_) => (),
-                Err(err) => return Err(format!("Could not write probe file ({err})"))
-            }
-        }
-        Err(err) => return Err(format!("Could not write probe file ({err})"))
-    }
-
-    let public_probe_url = site.absolute_url_file_unchecked(SSH_CONFIG_PROBE_FILE_NAME, &SitePath::root_path());
-
-    let remove_probe_and_return = |previous_result: Result<(), String>| -> Result<(), String> {
-        match sftp.unlink(&remote_probe_path) {
-            Ok(()) => {
-                let _ = session.disconnect(
-                    Some(DisconnectCode::ByApplication),
-                    "",
-                    None
-                );
-
-                previous_result
-            }
-            Err(file_removal_err) => {
-                // If removing the probe fails when we already had a previous
-                // error, we prioritize returning the earlier error, as it
-                // likely provides a more meaningful context.
-                if previous_result.is_err() {
-                    previous_result
-                } else {
-                    let message = translations.the_test_file_could_not_be_removed_again(
-                        &file_removal_err.to_string()
-                    );
-                    Err(message)
-                }
-            }
-        }
-    };
-
-    // Fetch probe file through public url and return result
-    match minreq::get(public_probe_url.clone()).send() {
-        Ok(response) => {
-            match response.as_str() {
-                Ok(body) => {
-                    if body == probe_content {
-                        remove_probe_and_return(Ok(()))
-                    } else {
-                        let truncate = |text: &str| -> String {
-                            match text.char_indices().nth(64) {
-                                Some((index, _)) => format!("{}…", &text[..index]),
-                                None => text.to_string()
-                            }
-                        };
-
-                        let err = translations.the_test_file_contains_xxx_but_the_response_contained_xxx(
-                            &truncate(&probe_content),
-                            &truncate(body)
-                        );
-
-                        let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                            &err,
-                            &public_probe_url,
-                            &remote_probe_path.to_string_lossy()
-                        );
-                        remove_probe_and_return(Err(message))
-                    }
-                }
-                Err(err) => {
-                    let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                        &err.to_string(),
-                        &public_probe_url,
-                        &remote_probe_path.to_string_lossy()
-                    );
-                    remove_probe_and_return(Err(message))
-                }
-            }
-        }
-        Err(err) => {
-            let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                &err.to_string(),
-                &public_probe_url,
-                &remote_probe_path.to_string_lossy()
-            );
-            remove_probe_and_return(Err(message))
-        }
-    }
-}
-
 /// The order of passed sync actions must be correct and sensible (!), i.e.
 /// directories to be created that contain other directories need to be
 /// created before their children, etc.
@@ -473,7 +337,7 @@ fn get_remote_entries(
     Ok(remote_entries)
 }
 
-pub fn start_deploy(
+pub fn start_ssh_deployment(
     context: &Arc<Context>,
     site: &Site,
     translations: &Translations
@@ -567,6 +431,182 @@ pub fn start_deploy(
     });
 
     Ok(())
+}
+
+/// Uploads a file named ".hyper8_ssh_deployment_verification.txt", which also contains a random token,
+/// to the remote, thereby first verifying that the deployment configuration is actually
+/// correct and working. Then, right next, tries to fetch that same file through the public
+/// url of the website (e.g. https://example.com/.hyper8_ssh_deployment_verification.txt), thereby confirming
+/// that the website is set up correctly (although that is a side effect), but more importantly
+/// ensuring that no other website (or remote content of any kind) is accidentally wiped if the
+/// remote path has been accidentally set incorrectly. Regardless of failure or success of the
+/// check, the probe file is removed from the remote again, leaving a clean state.
+pub fn verify_ssh_deployment_config(
+    site: &Site,
+    translations: &Translations
+) -> Result<(), String> {
+    let probe_signature = nanoid();
+    let probe_content = format!("{SSH_DEPLOYMENT_VERIFICATION_TEXT}\n\n{probe_signature}");
+
+    let port = site.ssh_config.port.unwrap_or(DEFAULT_SSH_PORT);
+    let server = site.ssh_config.server_unchecked();
+
+    let address = format!("{server}:{port}");
+
+    let tcp = TcpStream::connect(address).unwrap();
+
+    let mut session = Session::new().unwrap();
+    session.set_tcp_stream(tcp);
+    session.handshake().unwrap();
+
+    let user = site.ssh_config.user_unchecked();
+    // TODO: Maybe dynamically fallback to agent/keyfile-based
+    // authentication if there is no password (none is required for the SSH
+    // configuration to be complete right now)
+    let password = site.ssh_config.password_unchecked();
+
+    session.userauth_password(user, password).unwrap();
+
+    if !session.authenticated() {
+        return Err(String::from("Not authenticated in spite of successful userauth_password invocation"));
+    }
+
+    let sftp = match session.sftp() {
+        Ok(sftp) => sftp,
+        Err(err) => return Err(format!("SFTP subsystem could not be initialized ({err})"))
+    };
+
+    let remote_dir = site.ssh_config.path_unchecked();
+
+    // Check if the configured remote directory exists and is a file
+    match sftp.stat(Path::new(remote_dir)) {
+        Ok(file_stat) => {
+            if !file_stat.is_dir() {
+                let message = translations.remote_dir_xxx_is_not_a_directory(remote_dir);
+                return Err(message);
+            }
+        }
+        Err(remote_dir_err) => {
+            // If the configured remote directory does not exist, try changing
+            // into each of its ancestor directories (going from deepest to
+            // shallowest) in order to determine and report the first existing
+            // directory that is part of the user's configured remote directory
+            // path.
+            while let Some(ancestor_dir) = Path::new(remote_dir).parent() {
+                if sftp.stat(&ancestor_dir).is_ok() {
+                    let message = translations.remote_dir_does_not_exist_ancestor_dir_found(
+                        &ancestor_dir.to_string_lossy(),
+                        remote_dir,
+                        &remote_dir_err.to_string()
+                    );
+
+                    return Err(message);
+                }
+            }
+
+            let message = translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found(
+                remote_dir,
+                &remote_dir_err.to_string()
+            );
+
+            return Err(message);
+        }
+    }
+
+    let remote_probe_path = Path::new(remote_dir).join(SSH_DEPLOYMENT_VERIFICATION_FILE_NAME);
+
+    // Write probe file
+    match sftp.create(&remote_probe_path) {
+        Ok(mut file) => {
+            if let Err(err) = file.write_all(probe_content.as_bytes()) {
+                let t_message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
+                let message = format!("{t_message} ({err})");
+                return Err(message);
+            }
+        }
+        Err(err) => {
+            let t_message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
+            let message = format!("{t_message} ({err})");
+            return Err(message);
+        }
+    }
+
+    let public_probe_url = site.absolute_url_file_unchecked(SSH_DEPLOYMENT_VERIFICATION_FILE_NAME, &SitePath::root_path());
+
+    let remove_probe_and_return = |previous_result: Result<(), String>| -> Result<(), String> {
+        match sftp.unlink(&remote_probe_path) {
+            Ok(()) => {
+                let _ = session.disconnect(
+                    Some(DisconnectCode::ByApplication),
+                    "",
+                    None
+                );
+
+                previous_result
+            }
+            Err(file_removal_err) => {
+                // If removing the probe fails when we already had a previous
+                // error, we prioritize returning the earlier error, as it
+                // likely provides a more meaningful context.
+                if previous_result.is_err() {
+                    previous_result
+                } else {
+                    let message = translations.the_test_file_could_not_be_removed_again(
+                        &file_removal_err.to_string()
+                    );
+                    Err(message)
+                }
+            }
+        }
+    };
+
+    // Fetch probe file through public url and return result
+    match minreq::get(public_probe_url.clone()).send() {
+        Ok(response) => {
+            match response.as_str() {
+                Ok(body) => {
+                    if body == probe_content {
+                        remove_probe_and_return(Ok(()))
+                    } else {
+                        let truncate = |text: &str| -> String {
+                            match text.char_indices().nth(64) {
+                                Some((index, _)) => format!("{}…", &text[..index]),
+                                None => text.to_string()
+                            }
+                        };
+
+                        let err = translations.the_test_file_contains_xxx_but_the_response_contained_xxx(
+                            &truncate(&probe_content),
+                            &truncate(body)
+                        );
+
+                        let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                            &err,
+                            &public_probe_url,
+                            &remote_probe_path.to_string_lossy()
+                        );
+                        remove_probe_and_return(Err(message))
+                    }
+                }
+                Err(err) => {
+                    let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                        &err.to_string(),
+                        &public_probe_url,
+                        &remote_probe_path.to_string_lossy()
+                    );
+                    remove_probe_and_return(Err(message))
+                }
+            }
+        }
+        Err(err) => {
+            let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                &err.to_string(),
+                &public_probe_url,
+                &remote_probe_path.to_string_lossy()
+            );
+            remove_probe_and_return(Err(message))
+        }
+    }
 }
 
 fn write_entry(

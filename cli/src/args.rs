@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::net::IpAddr;
@@ -70,7 +70,15 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .action(ArgAction::SetTrue)
         .help("Directly deploys the site - only applicable in combination with --build")
         .long("deploy")
+        .requires("build")
         .short('d');
+
+    let ftp = Arg::new("ftp")
+        .action(ArgAction::SetTrue)
+        .conflicts_with("ssh")
+        .help("Use FTP deployment when both FTP and SSH deployment are configured – use with --deploy")
+        .long("ftp")
+        .requires("deploy");
 
     let ip = Arg::new("ip")
         .help("Manually sets the ip address used by the editor or preview server (otherwise defaults to localhost)")
@@ -86,12 +94,20 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .action(ArgAction::SetTrue)
         .help("Use in conjunction with --build to immediately open the site in the browser after the build is complete")
         .long("preview")
+        .requires("build")
         .short('p');
 
     let site_dir = Arg::new("site-dir")
         .help("The path at which the site resides (user videos and metadata)")
         .required(site_dir_required)
         .value_parser(value_parser!(PathBuf));
+
+    let ssh = Arg::new("ssh")
+        .action(ArgAction::SetTrue)
+        .conflicts_with("ftp")
+        .help("Use SSH deployment when both FTP and SSH deployment are configured – use with --deploy")
+        .long("ssh")
+        .requires("deploy");
 
     let workers = Arg::new("workers")
         .help("The number of threads to run for background processing (metadata computation, image processing, video/audio transcoding, etc.)")
@@ -104,10 +120,12 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .arg(build_dir)
         .arg(cache_dir)
         .arg(deploy)
+        .arg(ftp)
         .arg(ip)
         .arg(port)
         .arg(preview)
         .arg(site_dir)
+        .arg(ssh)
         .arg(workers)
         .next_line_help(true)
         .version(version);

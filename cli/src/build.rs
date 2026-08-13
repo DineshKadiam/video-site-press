@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::net::IpAddr;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use clap::ArgMatches;
 
-use hyper8_core::Context;
+use hyper8_core::{Context, DeployKind};
 use hyper8_core::{perform_build, start_preview_server};
 use hyper8_translations::Translations;
 
@@ -25,7 +25,30 @@ pub fn build(
 
     perform_build(&context);
 
-    if args.get_flag("preview") {
+    if args.get_flag("deploy") {
+        let site = context.get_site();
+
+        let deploy_kind = if args.get_flag("ftp") {
+            Some(DeployKind::Ftp)
+        } else if args.get_flag("ssh") {
+            Some(DeployKind::Ssh)
+        } else {
+            None
+        };
+
+        match perform_deploy_blocking_cli(
+            &context,
+            deploy_kind,
+            &site,
+            &translations
+        ) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(err) => {
+                eprintln!("{err}");
+                ExitCode::FAILURE
+            }
+        }
+    } else if args.get_flag("preview") {
         let site = context.get_site();
 
         if site.clean_urls {
@@ -47,16 +70,6 @@ pub fn build(
                 ExitCode::FAILURE
             } else {
                 ExitCode::SUCCESS
-            }
-        }
-    } else if args.get_flag("deploy") {
-        let site = context.get_site();
-
-        match perform_deploy_blocking_cli(&context, &site, &translations) {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(err) => {
-                eprintln!("{err}");
-                ExitCode::FAILURE
             }
         }
     } else {

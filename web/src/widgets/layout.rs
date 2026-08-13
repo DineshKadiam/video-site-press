@@ -23,51 +23,113 @@ fn controls(
     site: &Site,
     translations: &Translations
 ) -> String {
-    let t_configure_deployment = translations.configure_deployment;
-    let configure_icon = hyper8_icons::configure(Some(translations.configure));
-    let deploy_icon = hyper8_icons::DEPLOY;
-    let deployment_button = match site.complete_deployment_config() {
-        true => {
-            let deployment = &context.deploying.lock().unwrap();
-            if deployment.active() {
-                let t_deploying  = translations.deploying;
-                let duration = precise_duration(deployment.started_at.unwrap().elapsed().map(|duration| duration.as_secs_f32()).unwrap_or(0.0));
-                formatdoc!(r#"
-                    <a href="/deployment">
-                        {deploy_icon} {t_deploying} ({duration})
-                    </a>
-                "#)
-            } else {
-                let base_url = match &site.base_url {
-                    Some(base_url) => format!(" ({})", base_url.representation),
-                    None => String::new()
-                };
-                let t_deploy = translations.deploy;
-                let t_really_deploy = translations.really_deploy;
-
-                let deploy_action = routes::DEPLOY;
-                formatdoc!(r#"
-                    <form
-                        action="{deploy_action}"
-                        data-confirm
-                        data-confirm-label="{t_deploy}"
-                        data-confirm-text="{t_really_deploy}{base_url}"
-                        method="post"">
-                        <button>{deploy_icon} {t_deploy}</button>
-                    </form>
-                "#)
-            }
-        }
-        false => {
-            let site_edit_url = routes::SITE_EDIT;
+    let deployment_status = if site.complete_deployment_config() {
+        let deployment = &context.deploying.lock().unwrap();
+        if deployment.active() {
+            let t_deploying  = translations.deploying;
+            let duration = precise_duration(deployment.duration_secs_unchecked());
             formatdoc!(r#"
-                <a href="{site_edit_url}">
-                    {configure_icon} {t_configure_deployment}
+                <a href="/deployment">
+                    {t_deploying} ({duration})
                 </a>
             "#)
+        } else if deployment.completed() {
+            let t_deployment_finished = translations.deployment_finished;
+            let duration = precise_duration(deployment.duration_secs_unchecked());
+            formatdoc!(r#"
+                <a href="/deployment">
+                    {t_deployment_finished} {duration}
+                </a>
+            "#)
+        } else {
+            String::new()
         }
+    } else {
+        String::new()
     };
-    let deployment = format!(r#"<div id="deployment">{deployment_button}</div>"#);
+
+    let ftp_deployment = if site.ftp_config.complete() {
+        let base_url = match &site.base_url {
+            Some(base_url) => format!(" ({})", base_url.representation),
+            None => String::new()
+        };
+        let t_deploy = translations.deploy;
+        let t_really_deploy = translations.really_deploy;
+
+        let deploy_action = routes::DEPLOY_FTP;
+        let ftp_ftps = if site.ftp_config.secure() { "FTPS" } else { "FTP" };
+         formatdoc!(r#"
+            <li>
+                <span class="section">{ftp_ftps}</span>
+                <ul>
+                    <li>
+                        <form
+                            action="{deploy_action}"
+                            data-confirm
+                            data-confirm-label="{t_deploy}"
+                            data-confirm-text="{t_really_deploy}{base_url}"
+                            method="post">
+                            <button>{t_deploy}</button>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+        "#)
+    } else {
+        String::new()
+    };
+
+    let ssh_deployment = if site.ssh_config.complete() {
+        let base_url = match &site.base_url {
+            Some(base_url) => format!(" ({})", base_url.representation),
+            None => String::new()
+        };
+        let t_deploy = translations.deploy;
+        let t_really_deploy = translations.really_deploy;
+
+        let deploy_action = routes::DEPLOY_SSH;
+        formatdoc!(r#"
+            <li>
+                <span class="section">SSH</span>
+                <ul>
+                    <li>
+                        <form
+                            action="{deploy_action}"
+                            data-confirm
+                            data-confirm-label="{t_deploy}"
+                            data-confirm-text="{t_really_deploy}{base_url}"
+                            method="post">
+                            <button>{t_deploy}</button>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+        "#)
+    } else {
+        String::new()
+    };
+
+    let deploy_icon = hyper8_icons::DEPLOY;
+    let site_edit_url = routes::SITE_EDIT;
+    let t_edit_configuration = translations.edit_configuration;
+    let t_deployment = translations.deployment;
+    let deployment = formatdoc!(r#"
+        <div class="menu" id="deployment">
+            <button>{deploy_icon} {t_deployment}</button>
+            <div>
+                <ul>
+                    {ssh_deployment}
+                    {ftp_deployment}
+                    <li>
+                        <a href="{site_edit_url}">
+                            {t_edit_configuration}
+                        </a>
+                    </li>
+                    <li class="deployment_status">{deployment_status}</li>
+                </ul>
+            </div>
+        </div>
+    "#);
 
     let t_processing = translations.processing;
     let processing_icon = hyper8_icons::processing(t_processing);
@@ -175,18 +237,8 @@ fn controls(
             {storage}
             {preview}
             {deployment}
-            <template id="configure_icon">
-                {configure_icon}
-            </template>
-            <template id="deploy_icon">
-                {deploy_icon}
-            </template>
-            <template id="processing_icon">
-                {processing_icon}
-            </template>
-            <template id="reload_icon">
-                {reload_icon}
-            </template>
+            <template id="processing_icon">{processing_icon}</template>
+            <template id="reload_icon">{reload_icon}</template>
         </div>
     "#)
 }

@@ -7,14 +7,36 @@ use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::web::{Data, Either, Redirect};
 
-use hyper8_core::{config_probe, perform_build, start_deploy};
+use hyper8_core::DeployKind;
+use hyper8_core::{
+    perform_build,
+    start_ftp_deployment,
+    start_ssh_deployment,
+    verify_ftp_deployment_config,
+    verify_ssh_deployment_config
+};
 
 use crate::{Context, SessionState};
 use crate::routes;
 use crate::widgets::error_page;
 
-pub async fn deploy(
+pub async fn deploy_ftp(
     context: Data<Arc<Context>>,
+    session: Session
+) -> Either<Redirect, HttpResponse> {
+    deploy(context, DeployKind::Ftp, session)
+}
+
+pub async fn deploy_ssh(
+    context: Data<Arc<Context>>,
+    session: Session
+) -> Either<Redirect, HttpResponse> {
+    deploy(context, DeployKind::Ssh, session)
+}
+
+fn deploy(
+    context: Data<Arc<Context>>,
+    deploy_kind: DeployKind,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
     let session_state = SessionState::all(&context.server_mode, &session);
@@ -27,12 +49,20 @@ pub async fn deploy(
         return Either::Right(error_page(&context, &message, &session_state));
     }
 
-    if !site.complete_deployment_config() {
+    if (deploy_kind.ftp() && !site.ftp_config.complete()) ||
+        (deploy_kind.ssh() && !site.ssh_config.complete())
+    {
         let message = translations.deployment_configuration_is_incomplete_can_not_deploy;
         return Either::Right(error_page(&context, message, &session_state));
     }
 
-    if let Err(err) = config_probe(&site, translations) {
+    let verification = if deploy_kind.ftp() {
+        verify_ftp_deployment_config(&site, translations)
+    } else {
+        verify_ssh_deployment_config(&site, translations)
+    };
+
+    if let Err(err) = verification {
         let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
         let message = format!("{t_deployment_configuration_could_not_be_verified} {err}");
         return Either::Right(error_page(&context, &message, &session_state));
@@ -40,7 +70,13 @@ pub async fn deploy(
 
     perform_build(&context);
 
-    match start_deploy(&context.core_context, &site, translations) {
+    let deploy_result = if deploy_kind.ftp() {
+        start_ftp_deployment(&context.core_context, &site, translations)
+    } else {
+        start_ssh_deployment(&context.core_context, &site, translations)
+    };
+
+    match deploy_result {
         Ok(()) => Either::Left(Redirect::to("/deployment").see_other()),
         Err(err) => Either::Right(error_page(&context, &err, &session_state))
     }

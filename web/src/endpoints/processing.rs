@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -16,6 +16,8 @@ use crate::Context;
 #[serde(rename_all = "camelCase")]
 pub struct DeploymentInfo {
     configured: bool,
+    /// Duration of last completed deployment
+    deployed_in: Option<f32>,
     /// Duration of ongoing deployment in seconds
     deploying_since: Option<f32>,
     feedback: String
@@ -46,20 +48,23 @@ pub struct Report {
 
 impl DeploymentInfo {
     pub fn configured(deployment_state: &DeploymentState) -> DeploymentInfo {
-        let deploying_since = if deployment_state.active() {
-            let duration = deployment_state.started_at
-                .unwrap()
-                .elapsed()
-                .map(|duration| duration.as_secs_f32())
-                .unwrap_or(0.0);
+        let deployed_in;
+        let deploying_since;
 
-            Some(duration)
+        if deployment_state.active() {
+            deployed_in = None;
+            deploying_since = Some(deployment_state.duration_secs_unchecked());
+        } else if deployment_state.completed() {
+            deployed_in = Some(deployment_state.duration_secs_unchecked());
+            deploying_since = None;
         } else {
-            None
+            deployed_in = None;
+            deploying_since = None;
         };
 
         DeploymentInfo {
             configured: true,
+            deployed_in,
             deploying_since,
             feedback: deployment_state.feedback.clone()
         }
@@ -68,6 +73,7 @@ impl DeploymentInfo {
     pub fn not_configured() -> DeploymentInfo {
         DeploymentInfo {
             configured: false,
+            deployed_in: None,
             deploying_since: None,
             feedback: String::new()
         }

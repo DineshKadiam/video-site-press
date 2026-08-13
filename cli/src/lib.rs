@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::PathBuf;
@@ -59,12 +59,6 @@ fn handle(args: ArgMatches) -> ExitCode {
 
     if args.get_flag("build") {
         build(args, context, translations)
-    } else if args.get_flag("deploy") {
-        eprintln!("Passing -d/--deploy requires explictly passing -b/--build as well");
-        ExitCode::FAILURE
-    } else if args.get_flag("preview") {
-        eprintln!("Passing -p/--preview requires explictly passing -b/--build as well");
-        ExitCode::FAILURE
     } else {
         serve(args, context)
     }

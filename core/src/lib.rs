@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod aspect_ratio;
@@ -82,9 +82,13 @@ pub use context::{
 	VideoParent,
 	VideoUpdate
 };
-pub use deploy::DeploymentState;
-// TODO: Rename "config_probe" to something clearer? (e.g. test_deployment_config or such)
-pub use deploy::{config_probe, start_deploy};
+pub use deploy::{DeployKind, DeploymentState};
+pub use deploy::{
+	start_ftp_deployment,
+	start_ssh_deployment,
+	verify_ftp_deployment_config,
+    verify_ssh_deployment_config
+};
 pub use file_meta::FileMeta;
 pub use font::Font;
 pub use hyper_dir::HyperDir;

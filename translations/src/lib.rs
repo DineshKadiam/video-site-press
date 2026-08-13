@@ -60,7 +60,6 @@ pub struct Translations {
     pub collection_settings: &'static str,
     pub completed: &'static str,
     pub configure: &'static str,
-    pub configure_deployment: &'static str,
     pub container: &'static str,
     pub container_order: &'static str,
     pub content: &'static str,
@@ -105,6 +104,7 @@ pub struct Translations {
     pub deployment_completed_successfully: &'static str,
     pub deployment_configuration_could_not_be_verified: &'static str,
     pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
+    pub deployment_finished: &'static str,
     pub deployment_steps_successfully_determined_file_synchronization_will_now_commence: &'static str,
     pub description: &'static str,
     pub disabled: &'static str,
@@ -115,6 +115,7 @@ pub struct Translations {
     pub download_permalink: &'static str,
     pub downloads: &'static str,
     pub edit: &'static str,
+    pub edit_configuration: &'static str,
     pub embed: &'static str,
     pub embed_codes_permalink: &'static str,
     pub embedding: &'static str,
@@ -206,6 +207,7 @@ pub struct Translations {
     pub new_subcollection: &'static str,
     pub new_video: &'static str,
     pub no_audio: &'static str,
+    pub no_complete_deployment_configuration_found: &'static str,
     pub no_jobs_yet: &'static str,
     pub no_language_info: &'static str,
     pub no_sites: &'static str,
@@ -261,6 +263,7 @@ pub struct Translations {
     pub release_date_ascending: &'static str,
     pub release_date_descending: &'static str,
     remote_dir_does_not_exist_ancestor_dir_found: &'static str,
+    remote_dir_xxx_is_not_a_directory: &'static str,
     pub remove_from_list: &'static str,
     pub render_format: &'static str,
     pub replay: &'static str,
@@ -374,7 +377,8 @@ pub struct Translations {
     xxx_characters_maximum: &'static str,
     pub xxx_pending_jobs: &'static str,
     pub xxx_videos: &'static str,
-    pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str
+    pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str,
+    pub you_need_to_additionally_pass_ftp_or_ssh_text: &'static str
 }
 
 impl Translations {
@@ -454,6 +458,14 @@ impl Translations {
             .replace("{ancestor_dir}", ancestor_dir)
             .replace("{remote_dir}", remote_dir)
             .replace("{remote_dir_error}", remote_dir_error)
+    }
+
+    pub fn remote_dir_xxx_is_not_a_directory(
+        &self,
+        remote_dir: &str
+    ) -> String {
+        self.remote_dir_xxx_is_not_a_directory
+            .replace("{remote_dir}", remote_dir)
     }
 
     pub fn resolve_the_issue_on_disk_or_on_manifest_page(
@@ -605,6 +617,7 @@ fn check_translations() {
         assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{ancestor_dir}"));
         assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{remote_dir}"));
         assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{remote_dir_error}"));
+        assert!(&translations.remote_dir_xxx_is_not_a_directory.contains("{remote_dir}"));
         assert!(&translations.resolve_the_issue_on_disk_or_on_manifest_page.contains("{manifest_url}"));
         assert!(&translations.site_setup_text.contains("{docs_link}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{error}"));

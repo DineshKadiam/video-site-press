@@ -57,7 +57,6 @@ impl Translations {
         collection_settings: "Collection settings",
         completed: "Completed",
         configure: "Configure",
-        configure_deployment: "Configure Deployment",
         container: "Container",
         container_order: "Container Order",
         content: "Content",
@@ -108,6 +107,7 @@ impl Translations {
         deployment_completed_successfully: "Deployment completed successfully",
         deployment_configuration_could_not_be_verified: "The deployment configuration could not be verified.",
         deployment_configuration_is_incomplete_can_not_deploy: "The deployment configuration is not complete, therefore deployment is not possible.",
+        deployment_finished: "Deployment finished",
         deployment_steps_successfully_determined_file_synchronization_will_now_commence: "Deployment steps successfully determined, file synchronization will now commence",
         description: "Description",
         disabled: "Disabled",
@@ -118,6 +118,7 @@ impl Translations {
         download_permalink: "download",
         downloads: "Downloads",
         edit: "Edit",
+        edit_configuration: "Edit configuration",
         embed: "Embed",
         embed_codes_permalink: "embed-codes",
         embedding: "Embedding",
@@ -209,6 +210,7 @@ impl Translations {
         new_subcollection: "New Subcollection",
         new_video: "New Video",
         no_audio: "No audio",
+        no_complete_deployment_configuration_found: "No complete deployment configuration found",
         no_jobs_yet: "No jobs yet",
         no_language_info: "No language info",
         no_sites: "No sites",
@@ -264,6 +266,7 @@ impl Translations {
         release_date_ascending: "Release Date Ascending (Jan, Feb, Mar)",
         release_date_descending: "Release Date Descending (Dec, Nov, Oct)",
         remote_dir_does_not_exist_ancestor_dir_found: r#"The remote server directory you configured ("{remote_dir}") does not exist or is not accessible ("{remote_dir_error}") - it must be manually created in order to let Hyper 8 verify your configuration before deployment. The closest existing ancestor directory that was found on the server is "{ancestor_dir}"."#,
+        remote_dir_xxx_is_not_a_directory: r#"The remote server directory you configured ("{remote_dir}") is not a directory."#,
         remove_from_list: "Remove from list",
         render_format: "Render Format",
         replay: "Replay",
@@ -295,7 +298,7 @@ impl Translations {
         ssh_config_server_label: "Server address (e.g. ssh-user123.example.com)",
         ssh_config_user_label: "Username (e.g. user123)",
         ssh_deployment: "SSH Deployment",
-        ssh_deployment_text: "When both an FTP and SSH deployment configuration are provided, SSH deployments are performed.",
+        ssh_deployment_text: "",
         standalone: "Standalone",
         storage_usage: "Storage Usage",
         streaming_only: "Streaming only",
@@ -383,6 +386,7 @@ impl Translations {
         xxx_characters_maximum: "{maximum} characters maximum",
         xxx_pending_jobs: "{count} pending jobs",
         xxx_videos: "{count} videos",
-        you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided."
+        you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided.",
+        you_need_to_additionally_pass_ftp_or_ssh_text: "You need to additionally pass --ftp or --ssh to select which protocol should be used for deployment"
     };
 }
