@@ -202,6 +202,7 @@ fn execute_sync_actions(
     actions: &[FtpSyncAction],
     ftp_stream_wrapper: &mut FtpStreamWrapper,
     report: &mut impl FnMut(&str),
+    simulate: bool,
     translations: &Translations
 ) -> Result<(), SyncError> {
     for action in actions {
@@ -210,51 +211,43 @@ fn execute_sync_actions(
                 let message = translations.adding_file_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.put_with_stream(&local_entry.path, remote_path)?;
-
-                // https://en.wikipedia.org/wiki/File_Transfer_Protocol#Additional_commands
-                // https://support.solarwinds.com/SuccessCenter/s/article/MFMT-FTP-command
-                // https://forum.filezilla-project.org/viewtopic.php?t=15686
-                let local_modified = &local_entry.modified;
-                let remote_path = remote_path.display();
-                let mfmt = format!("MFMT {local_modified} {remote_path}");
-
-                ftp_stream_wrapper.custom_command(&mfmt)?;
+                if !simulate {
+                    write_entry(ftp_stream_wrapper, local_entry, remote_path)?;
+                }
             }
             FtpSyncAction::CreateDir { remote_path } => {
                 let message = translations.creating_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.mkdir(remote_path)?;
+                if !simulate {
+                    ftp_stream_wrapper.mkdir(remote_path)?;
+                }
             }
             FtpSyncAction::DeleteDir { remote_path } |
             FtpSyncAction::PrereqDeleteDir { remote_path } => {
                 let message = translations.deleting_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.rmdir(remote_path)?;
+                if !simulate {
+                    ftp_stream_wrapper.rmdir(remote_path)?;
+                }
             }
             FtpSyncAction::DeleteFile { remote_entry } |
             FtpSyncAction::PrereqDeleteFile { remote_entry } => {
                 let message = translations.deleting_file_xxx(&remote_entry.path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.rm(&remote_entry.path)?;
+                if !simulate {
+                    ftp_stream_wrapper.rm(&remote_entry.path)?;
+                }
             }
             FtpSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
                 let message = translations.updating_file_xxx(&remote_entry.path.to_string_lossy());
                 report(&message);
 
-                ftp_stream_wrapper.put_with_stream(&local_entry.path, &remote_entry.path)?;
-
-                // https://en.wikipedia.org/wiki/File_Transfer_Protocol#Additional_commands
-                // https://support.solarwinds.com/SuccessCenter/s/article/MFMT-FTP-command
-                // https://forum.filezilla-project.org/viewtopic.php?t=15686
-                let local_modified = &local_entry.modified;
-                let remote_path = remote_entry.path.display();
-                let mfmt = format!("MFMT {local_modified} {remote_path}");
-
-                ftp_stream_wrapper.custom_command(&mfmt)?;
+                if !simulate {
+                    write_entry(ftp_stream_wrapper, local_entry, &remote_entry.path)?;
+                }
             }
         }
     }
@@ -364,6 +357,7 @@ fn get_remote_entries(
 
 pub fn start_ftp_deployment(
     context: &Arc<Context>,
+    simulate: bool,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
@@ -385,7 +379,12 @@ pub fn start_ftp_deployment(
 
     thread::spawn(move || {
         let mut report = |message: &str| {
-            context.deploying.lock().unwrap().report(message);
+            if simulate {
+                let message = format!("(simulated) {message}");
+                context.deploying.lock().unwrap().report(&message)
+            } else {
+                context.deploying.lock().unwrap().report(message)
+            }
         };
 
         if ftp_stream_wrapper.is_secure() {
@@ -415,6 +414,7 @@ pub fn start_ftp_deployment(
                     &actions,
                     &mut ftp_stream_wrapper,
                     &mut report,
+                    simulate,
                     &translations
                 ) {
                     Ok(()) => report(translations.deployment_completed_successfully),
@@ -560,4 +560,23 @@ pub fn verify_ftp_deployment_config(
             remove_probe_and_return(Err(message))
         }
     }
+}
+
+fn write_entry(
+    ftp_stream_wrapper: &mut FtpStreamWrapper,
+    local_entry: &FtpSyncEntry,
+    remote_path: &Path
+) -> Result<(), SyncError> {
+    ftp_stream_wrapper.put_with_stream(&local_entry.path, remote_path)?;
+
+    // https://en.wikipedia.org/wiki/File_Transfer_Protocol#Additional_commands
+    // https://support.solarwinds.com/SuccessCenter/s/article/MFMT-FTP-command
+    // https://forum.filezilla-project.org/viewtopic.php?t=15686
+    let local_modified = &local_entry.modified;
+    let remote_path = remote_path.display();
+    let mfmt = format!("MFMT {local_modified} {remote_path}");
+
+    ftp_stream_wrapper.custom_command(&mfmt)?;
+
+    Ok(())
 }

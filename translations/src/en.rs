@@ -280,6 +280,7 @@ impl Translations {
         shortcuts: "Shortcuts",
         showing_xxx_results_for_xxx: "Showing {count} results for '{query}'",
         shut_down_editor_and_quit: "Shut down editor and quit",
+        simulate: "Simulate",
         site_manifest: "Site manifest",
         site_order: "Site Order",
         site_settings: "Site settings",

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use clap::ArgMatches;
 
-use hyper8_core::{Context, DeployKind};
+use hyper8_core::{Context, DeploymentProtocol};
 use hyper8_core::{perform_build, start_preview_server};
 use hyper8_translations::Translations;
 
@@ -28,17 +28,20 @@ pub fn build(
     if args.get_flag("deploy") {
         let site = context.get_site();
 
-        let deploy_kind = if args.get_flag("ftp") {
-            Some(DeployKind::Ftp)
+        let protocol = if args.get_flag("ftp") {
+            Some(DeploymentProtocol::Ftp)
         } else if args.get_flag("ssh") {
-            Some(DeployKind::Ssh)
+            Some(DeploymentProtocol::Ssh)
         } else {
             None
         };
 
+        let simulate = args.get_flag("simulate");
+
         match perform_deploy_blocking_cli(
             &context,
-            deploy_kind,
+            protocol,
+            simulate,
             &site,
             &translations
         ) {

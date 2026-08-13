@@ -97,6 +97,12 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .requires("build")
         .short('p');
 
+    let simulate = Arg::new("simulate")
+        .action(ArgAction::SetTrue)
+        .help("Simulate deployment, merely reporting, but not taking, any planned file synchronization actions – use with --deploy")
+        .long("simulate")
+        .requires("deploy");
+
     let site_dir = Arg::new("site-dir")
         .help("The path at which the site resides (user videos and metadata)")
         .required(site_dir_required)
@@ -124,6 +130,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .arg(ip)
         .arg(port)
         .arg(preview)
+        .arg(simulate)
         .arg(site_dir)
         .arg(ssh)
         .arg(workers)

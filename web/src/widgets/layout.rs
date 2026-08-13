@@ -55,8 +55,10 @@ fn controls(
         };
         let t_deploy = translations.deploy;
         let t_really_deploy = translations.really_deploy;
+        let t_simulate = translations.simulate;
 
-        let deploy_action = routes::DEPLOY_FTP;
+        let deploy_ftp_action = routes::DEPLOY_FTP;
+        let simulate_deploy_ftp_action = routes::SIMULATE_DEPLOY_FTP;
         let ftp_ftps = if site.ftp_config.secure() { "FTPS" } else { "FTP" };
          formatdoc!(r#"
             <li>
@@ -64,12 +66,17 @@ fn controls(
                 <ul>
                     <li>
                         <form
-                            action="{deploy_action}"
+                            action="{deploy_ftp_action}"
                             data-confirm
                             data-confirm-label="{t_deploy}"
                             data-confirm-text="{t_really_deploy}{base_url}"
                             method="post">
                             <button>{t_deploy}</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="{simulate_deploy_ftp_action}" method="post">
+                            <button>{t_simulate}</button>
                         </form>
                     </li>
                 </ul>
@@ -86,20 +93,27 @@ fn controls(
         };
         let t_deploy = translations.deploy;
         let t_really_deploy = translations.really_deploy;
+        let t_simulate = translations.simulate;
 
-        let deploy_action = routes::DEPLOY_SSH;
+        let deploy_ssh_action = routes::DEPLOY_SSH;
+        let simulate_deploy_ssh_action = routes::SIMULATE_DEPLOY_SSH;
         formatdoc!(r#"
             <li>
                 <span class="section">SSH</span>
                 <ul>
                     <li>
                         <form
-                            action="{deploy_action}"
+                            action="{deploy_ssh_action}"
                             data-confirm
                             data-confirm-label="{t_deploy}"
                             data-confirm-text="{t_really_deploy}{base_url}"
                             method="post">
                             <button>{t_deploy}</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="{simulate_deploy_ssh_action}" method="post">
+                            <button>{t_simulate}</button>
                         </form>
                     </li>
                 </ul>

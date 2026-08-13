@@ -152,6 +152,8 @@ pub fn start(
                     )
                     .route("/processing", get().to(processing::processing_general))
                     .route("/processing/media/{site_path:.*}", get().to(processing::processing_media))
+                    .route("/simulate-deploy-ftp", post().to(deploy::simulate_deploy_ftp))
+                    .route("/simulate-deploy-ssh", post().to(deploy::simulate_deploy_ssh))
                     .service(
                         resource("/site/edit/")
                             .route(get().to(site::edit))

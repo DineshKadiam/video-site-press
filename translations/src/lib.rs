@@ -277,6 +277,7 @@ pub struct Translations {
     pub shortcuts: &'static str,
     pub showing_xxx_results_for_xxx: &'static str,
     pub shut_down_editor_and_quit: &'static str,
+    pub simulate: &'static str,
     pub site_manifest: &'static str,
     pub site_order: &'static str,
     pub site_settings: &'static str,

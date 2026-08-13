@@ -82,7 +82,7 @@ pub use context::{
 	VideoParent,
 	VideoUpdate
 };
-pub use deploy::{DeployKind, DeploymentState};
+pub use deploy::{DeploymentMode, DeploymentProtocol, DeploymentState};
 pub use deploy::{
 	start_ftp_deployment,
 	start_ssh_deployment,

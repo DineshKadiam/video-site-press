@@ -6,7 +6,12 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use hyper8_core::{Context, DeployKind, Site};
+use hyper8_core::{
+    Context,
+    DeploymentMode,
+    DeploymentProtocol,
+    Site
+};
 use hyper8_core::{
     start_ftp_deployment,
     start_ssh_deployment,
@@ -20,7 +25,8 @@ use hyper8_translations::Translations;
 /// before performing the actual deployment.
 pub fn perform_deploy_blocking_cli(
     context: &Arc<Context>,
-    deploy_kind: Option<DeployKind>,
+    protocol: Option<DeploymentProtocol>,
+    simulate: bool,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
@@ -30,23 +36,23 @@ pub fn perform_deploy_blocking_cli(
         return Err(message);
     }
 
-    let deploy_kind = if let Some(deploy_kind) = deploy_kind {
-        if (deploy_kind.ftp() && !site.ftp_config.complete()) ||
-            (deploy_kind.ssh() && !site.ssh_config.complete())
+    let mode = if let Some(protocol) = protocol {
+        if (protocol.ftp() && !site.ftp_config.complete()) ||
+            (protocol.ssh() && !site.ssh_config.complete())
         {
             let message = translations.deployment_configuration_is_incomplete_can_not_deploy.to_string();
             return Err(message);
         }
 
-        deploy_kind
+        DeploymentMode::new(protocol, simulate)
     } else {
         match (site.ftp_config.complete(), site.ssh_config.complete()) {
             (true, true) => {
                 let message = translations.you_need_to_additionally_pass_ftp_or_ssh_text.to_string();
                 return Err(message);
             }
-            (true, false) => DeployKind::Ftp,
-            (false, true) => DeployKind::Ssh,
+            (true, false) => if simulate { DeploymentMode::FtpSimulated } else { DeploymentMode::Ftp },
+            (false, true) => if simulate { DeploymentMode::SshSimulated } else { DeploymentMode::Ssh },
             (false, false) => {
                 let message = translations.no_complete_deployment_configuration_found.to_string();
                 return Err(message);
@@ -54,22 +60,24 @@ pub fn perform_deploy_blocking_cli(
         }
     };
 
-    let t_really_deploy = translations.really_deploy;
-    let base_url = &site.base_url.as_ref().unwrap().representation;
-    println!("{t_really_deploy} ({base_url})");
-    println!("{}", translations.type_y_and_press_enter_to_confirm_anything_else_will_abort);
+    if !simulate {
+        let t_really_deploy = translations.really_deploy;
+        let base_url = &site.base_url.as_ref().unwrap().representation;
+        println!("{t_really_deploy} ({base_url})");
+        println!("{}", translations.type_y_and_press_enter_to_confirm_anything_else_will_abort);
 
-    let mut input = String::new();
-    match io::stdin().read_line(&mut input) {
-        Ok(_) => {
-            if input.trim() != "y" {
-                return Ok(());
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => {
+                if input.trim() != "y" {
+                    return Ok(());
+                }
             }
+            Err(err) => return Err(err.to_string())
         }
-        Err(err) => return Err(err.to_string())
     }
 
-    let verification = if deploy_kind.ftp() {
+    let verification = if mode.ftp() {
         verify_ftp_deployment_config(site, translations)
     } else {
         verify_ssh_deployment_config(site, translations)
@@ -81,10 +89,20 @@ pub fn perform_deploy_blocking_cli(
         return Err(message);
     }
 
-    if deploy_kind.ftp() {
-        start_ftp_deployment(context, site, translations)?;
+    if mode.ftp() {
+        start_ftp_deployment(
+            context,
+            mode.simulate(),
+            site,
+            translations
+        )?;
     } else {
-        start_ssh_deployment(context, site, translations)?;
+        start_ssh_deployment(
+            context,
+            mode.simulate(),
+            site,
+            translations
+        )?;
     };
 
     let mut seen_feedback = 0;

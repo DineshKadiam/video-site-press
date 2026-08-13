@@ -157,8 +157,9 @@ pub fn preview(site_path: &SitePath) -> String {
     format!("/build/{}", site_path.normalized())
 }
 
+pub const SIMULATE_DEPLOY_FTP: &str = "/simulate-deploy-ftp";
+pub const SIMULATE_DEPLOY_SSH: &str = "/simulate-deploy-ssh";
 pub const SITE_EDIT: &str = "/site/edit/";
-
 pub const SITE_MANIFEST: &str = "/site/manifest/";
 
 // TODO: This is nested in the video endpoint, but currently this is called

@@ -211,6 +211,7 @@ fn execute_sync_actions(
     actions: &[SshSyncAction],
     report: &mut impl FnMut(&str),
     sftp: &Sftp,
+    simulate: bool,
     translations: &Translations
 ) -> Result<(), SyncError> {
     for action in actions {
@@ -219,36 +220,46 @@ fn execute_sync_actions(
                 let message = translations.adding_file_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                write_entry(local_entry, remote_path, sftp)?;
+                if !simulate {
+                    write_entry(local_entry, remote_path, sftp)?;
+                }
             }
             SshSyncAction::CreateDir { remote_path } => {
                 let message = translations.creating_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                // 775 (octal) = rwxr-xr-x (7 = rwx (owner), 5 = rx (group/others))
-                let mode = 0o755;
+                if !simulate {
+                    // 775 (octal) = rwxr-xr-x (7 = rwx (owner), 5 = rx (group/others))
+                    let mode = 0o755;
 
-                sftp.mkdir(remote_path, mode)?;
+                    sftp.mkdir(remote_path, mode)?;
+                }
             }
             SshSyncAction::DeleteDir { remote_path } |
             SshSyncAction::PrereqDeleteDir { remote_path } => {
                 let message = translations.deleting_directory_xxx(&remote_path.to_string_lossy());
                 report(&message);
 
-                sftp.rmdir(remote_path)?;
+                if !simulate {
+                    sftp.rmdir(remote_path)?;
+                }
             }
             SshSyncAction::DeleteFile { remote_entry } |
             SshSyncAction::PrereqDeleteFile { remote_entry } => {
                 let message = translations.deleting_file_xxx(&remote_entry.path.to_string_lossy());
                 report(&message);
 
-                sftp.unlink(&remote_entry.path)?;
+                if !simulate {
+                    sftp.unlink(&remote_entry.path)?;
+                }
             }
             SshSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
                 let message = translations.updating_file_xxx(&remote_entry.path.to_string_lossy());
                 report(&message);
 
-                write_entry(local_entry, &remote_entry.path, sftp)?;
+                if !simulate {
+                    write_entry(local_entry, &remote_entry.path, sftp)?;
+                }
             }
         }
     }
@@ -339,6 +350,7 @@ fn get_remote_entries(
 
 pub fn start_ssh_deployment(
     context: &Arc<Context>,
+    simulate: bool,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
@@ -386,7 +398,12 @@ pub fn start_ssh_deployment(
 
     thread::spawn(move || {
         let mut report = |message: &str| {
-            context.deploying.lock().unwrap().report(message);
+            if simulate {
+                let message = format!("(simulated) {message}");
+                context.deploying.lock().unwrap().report(&message)
+            } else {
+                context.deploying.lock().unwrap().report(message)
+            }
         };
 
         report(translations.beginning_deployment_over_ssh);
@@ -412,6 +429,7 @@ pub fn start_ssh_deployment(
                     &actions,
                     &mut report,
                     &sftp,
+                    simulate,
                     &translations
                 ) {
                     Ok(()) => report(translations.deployment_completed_successfully),

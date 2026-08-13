@@ -22,8 +22,16 @@ pub use ftp_config::FtpConfig;
 pub use ssh::{start_ssh_deployment, verify_ssh_deployment_config};
 pub use ssh_config::SshConfig;
 
-#[derive(Debug)]
-pub enum DeployKind {
+#[derive(Clone, Copy, Debug)]
+pub enum DeploymentMode {
+    Ftp,
+    FtpSimulated,
+    Ssh,
+    SshSimulated
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DeploymentProtocol {
     Ftp,
     Ssh
 }
@@ -39,13 +47,55 @@ pub struct DeploymentState {
     pub started_at: Option<SystemTime>
 }
 
-impl DeployKind {
+impl DeploymentMode {
     pub fn ftp(&self) -> bool {
-        matches!(self, DeployKind::Ftp)
+        match self {
+            DeploymentMode::Ftp => true,
+            DeploymentMode::FtpSimulated => true,
+            DeploymentMode::Ssh => false,
+            DeploymentMode::SshSimulated => false
+        }
+    }
+
+    pub fn new(protocol: DeploymentProtocol, simulate: bool) -> DeploymentMode {
+        match protocol {
+            DeploymentProtocol::Ftp => if simulate { DeploymentMode::FtpSimulated } else { DeploymentMode::Ftp },
+            DeploymentProtocol::Ssh => if simulate { DeploymentMode::SshSimulated } else { DeploymentMode::Ssh }
+        }
+    }
+
+    pub fn simulate(&self) -> bool {
+        match self {
+            DeploymentMode::Ftp => false,
+            DeploymentMode::FtpSimulated => true,
+            DeploymentMode::Ssh => false,
+            DeploymentMode::SshSimulated => true
+        }
     }
 
     pub fn ssh(&self) -> bool {
-        matches!(self, DeployKind::Ssh)
+        match self {
+            DeploymentMode::Ftp => false,
+            DeploymentMode::FtpSimulated => false,
+            DeploymentMode::Ssh => true,
+            DeploymentMode::SshSimulated => true
+        }
+    }
+}
+
+impl DeploymentProtocol {
+    pub fn ftp(&self) -> bool {
+        match self {
+            DeploymentProtocol::Ftp => true,
+            DeploymentProtocol::Ssh => false
+        }
+    }
+
+    pub fn ssh(&self) -> bool {
+        match self {
+            DeploymentProtocol::Ftp => false,
+            DeploymentProtocol::Ssh => true
+        }
     }
 }
 
