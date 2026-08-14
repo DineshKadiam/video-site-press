@@ -23,11 +23,13 @@ fn controls(
     site: &Site,
     translations: &Translations
 ) -> String {
-    let deployment_status = if site.complete_deployment_config() {
+    let deployment_status = {
         let deployment = &context.deploying.lock().unwrap();
+
         if deployment.active() {
             let t_deploying  = translations.deploying;
             let duration = precise_duration(deployment.duration_secs_unchecked());
+
             formatdoc!(r#"
                 <a href="/deployment">
                     {t_deploying} ({duration})
@@ -36,6 +38,7 @@ fn controls(
         } else if deployment.completed() {
             let t_deployment_finished = translations.deployment_finished;
             let duration = precise_duration(deployment.duration_secs_unchecked());
+
             formatdoc!(r#"
                 <a href="/deployment">
                     {t_deployment_finished} {duration}
@@ -44,8 +47,6 @@ fn controls(
         } else {
             String::new()
         }
-    } else {
-        String::new()
     };
 
     let ftp_deployment = if site.ftp_config.complete() {
@@ -53,12 +54,14 @@ fn controls(
             Some(base_url) => format!(" ({})", base_url.representation),
             None => String::new()
         };
+        let t_configuration_check = translations.configuration_check;
         let t_deploy = translations.deploy;
         let t_really_deploy = translations.really_deploy;
         let t_simulate = translations.simulate;
 
-        let deploy_ftp_action = routes::DEPLOY_FTP;
-        let simulate_deploy_ftp_action = routes::SIMULATE_DEPLOY_FTP;
+        let check_deploy_ftp_action = routes::DEPLOY_CHECK_FTP;
+        let execute_deploy_ftp_action = routes::DEPLOY_EXECUTE_FTP;
+        let simulate_deploy_ftp_action = routes::DEPLOY_SIMULATE_FTP;
         let ftp_ftps = if site.ftp_config.secure() { "FTPS" } else { "FTP" };
          formatdoc!(r#"
             <li>
@@ -66,7 +69,7 @@ fn controls(
                 <ul>
                     <li>
                         <form
-                            action="{deploy_ftp_action}"
+                            action="{execute_deploy_ftp_action}"
                             data-confirm
                             data-confirm-label="{t_deploy}"
                             data-confirm-text="{t_really_deploy}{base_url}"
@@ -77,6 +80,11 @@ fn controls(
                     <li>
                         <form action="{simulate_deploy_ftp_action}" method="post">
                             <button>{t_simulate}</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="{check_deploy_ftp_action}" method="post">
+                            <button>{t_configuration_check}</button>
                         </form>
                     </li>
                 </ul>
@@ -91,19 +99,21 @@ fn controls(
             Some(base_url) => format!(" ({})", base_url.representation),
             None => String::new()
         };
+        let t_configuration_check = translations.configuration_check;
         let t_deploy = translations.deploy;
         let t_really_deploy = translations.really_deploy;
         let t_simulate = translations.simulate;
 
-        let deploy_ssh_action = routes::DEPLOY_SSH;
-        let simulate_deploy_ssh_action = routes::SIMULATE_DEPLOY_SSH;
+        let check_deploy_ssh_action = routes::DEPLOY_CHECK_SSH;
+        let execute_deploy_ssh_action = routes::DEPLOY_EXECUTE_SSH;
+        let simulate_deploy_ssh_action = routes::DEPLOY_SIMULATE_SSH;
         formatdoc!(r#"
             <li>
                 <span class="section">SSH</span>
                 <ul>
                     <li>
                         <form
-                            action="{deploy_ssh_action}"
+                            action="{execute_deploy_ssh_action}"
                             data-confirm
                             data-confirm-label="{t_deploy}"
                             data-confirm-text="{t_really_deploy}{base_url}"
@@ -114,6 +124,11 @@ fn controls(
                     <li>
                         <form action="{simulate_deploy_ssh_action}" method="post">
                             <button>{t_simulate}</button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="{check_deploy_ssh_action}" method="post">
+                            <button>{t_configuration_check}</button>
                         </form>
                     </li>
                 </ul>

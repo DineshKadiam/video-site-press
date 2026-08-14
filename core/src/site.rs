@@ -11,6 +11,7 @@ use crate::{
     AspectRatio,
     Context,
     Collection,
+    DeploymentProtocol,
     Font,
     FtpConfig,
     GetAnyResult,
@@ -395,9 +396,11 @@ impl Site {
         }
     }
 
-    pub fn complete_deployment_config(&self) -> bool {
-        // TODO: We could possibly check for base_url here already as well?
-        self.ftp_config.complete() || self.ssh_config.complete()
+    pub fn complete_deployment_config(&self, protocol: DeploymentProtocol) -> bool {
+        match protocol {
+            DeploymentProtocol::Ftp => self.ftp_config.complete(),
+            DeploymentProtocol::Ssh => self.ssh_config.complete()
+        }
     }
 
     /// Traverses the site tree to determine if any published video on the

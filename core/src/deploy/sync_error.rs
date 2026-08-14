@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 /// Just a glue type that allows us to treat different types of sync-related
 /// error types (suppaftp::FtpError, ssh2::Error, std::io::Error, String) as
 /// one with the ? operator.
-pub struct SyncError(String);
+pub struct SyncError(pub String);
 
 impl From<ssh2::Error> for SyncError {
     fn from(error: ssh2::Error) -> SyncError {

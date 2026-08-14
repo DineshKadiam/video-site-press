@@ -5,86 +5,119 @@ use std::sync::Arc;
 
 use actix_session::Session;
 use actix_web::HttpResponse;
+use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Either, Redirect};
 
-use hyper8_core::DeploymentMode;
+use hyper8_core::{DeploymentProtocol, Site};
 use hyper8_core::{
+    check_deployment_config,
     perform_build,
-    start_ftp_deployment,
-    start_ssh_deployment,
-    verify_ftp_deployment_config,
-    verify_ssh_deployment_config
+    start_deployment
 };
+use hyper8_translations::Translations;
+use hyper8_util::html_escape_outside_attribute;
 
-use crate::{Context, SessionState};
-use crate::routes;
-use crate::widgets::error_page;
+use crate::{Context, Location, SessionState};
+use crate::widgets::{error_page, layout};
 
-pub async fn deploy_ftp(
+fn check(
     context: Data<Arc<Context>>,
+    protocol: DeploymentProtocol,
     session: Session
-) -> Either<Redirect, HttpResponse> {
-    deploy(context, DeploymentMode::Ftp, session)
+) -> HttpResponse {
+    let session_state = SessionState::all(&context.server_mode, &session);
+    let translations = &session_state.language.translations;
+    let site = context.get_site();
+
+    if let Err(err) = ensure_config(protocol, &site, translations) {
+        return error_page(&context, &err, &session_state);
+    }
+
+    let steps = check_deployment_config(protocol, &site, translations);
+
+    let failed_icon = hyper8_icons::failure(translations.failed);
+    let successful_icon = hyper8_icons::success(translations.successful);
+
+    let body = steps
+        .iter()
+        .map(|step| {
+            match step {
+                Ok(message) => {
+                    let message_escaped = html_escape_outside_attribute(message);
+                    format!("<div>{successful_icon} {message_escaped}</div>")
+                }
+                Err(message) => {
+                    let message_escaped = html_escape_outside_attribute(message);
+                    format!("<div>{failed_icon} {message_escaped}</div>")
+                }
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("");
+
+    let html = layout(
+        &body,
+        &context,
+        Location::AuxiliaryPage,
+        &session_state,
+        &site,
+        translations.deployment_configuration_check
+    );
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
 }
 
-pub async fn deploy_ssh(
+pub async fn check_ftp(
     context: Data<Arc<Context>>,
     session: Session
-) -> Either<Redirect, HttpResponse> {
-    deploy(context, DeploymentMode::Ssh, session)
+) -> HttpResponse {
+    check(context, DeploymentProtocol::Ftp, session)
 }
 
-fn deploy(
+pub async fn check_ssh(
     context: Data<Arc<Context>>,
-    mode: DeploymentMode,
     session: Session
+) -> HttpResponse {
+    check(context, DeploymentProtocol::Ssh, session)
+}
+
+fn ensure_config<'a>(
+    protocol: DeploymentProtocol,
+    site: &Site,
+    translations: &'a Translations
+) -> Result<(), &'a str> {
+    if site.complete_deployment_config(protocol) {
+        Ok(())
+    } else {
+        Err(translations.deployment_configuration_is_incomplete_can_not_deploy)
+    }
+}
+
+fn execute(
+    context: Data<Arc<Context>>,
+    protocol: DeploymentProtocol,
+    session: Session,
+    simulate: bool
 ) -> Either<Redirect, HttpResponse> {
     let session_state = SessionState::all(&context.server_mode, &session);
     let translations = &session_state.language.translations;
     let site = context.get_site();
 
-    if site.base_url.is_none() {
-        let site_edit_url = routes::SITE_EDIT;
-        let message = translations.public_address_must_be_configured_for_deployment_text(site_edit_url);
-        return Either::Right(error_page(&context, &message, &session_state));
-    }
-
-    if (mode.ftp() && !site.ftp_config.complete()) ||
-        (mode.ssh() && !site.ssh_config.complete())
-    {
-        let message = translations.deployment_configuration_is_incomplete_can_not_deploy;
-        return Either::Right(error_page(&context, message, &session_state));
-    }
-
-    let verification = if mode.ftp() {
-        verify_ftp_deployment_config(&site, translations)
-    } else {
-        verify_ssh_deployment_config(&site, translations)
-    };
-
-    if let Err(err) = verification {
-        let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
-        let message = format!("{t_deployment_configuration_could_not_be_verified} {err}");
-        return Either::Right(error_page(&context, &message, &session_state));
+    if let Err(err) = ensure_config(protocol, &site, translations) {
+        return Either::Right(error_page(&context, &err, &session_state));
     }
 
     perform_build(&context);
 
-    let deploy_result = if mode.ftp() {
-        start_ftp_deployment(
-            &context.core_context,
-            mode.simulate(),
-            &site,
-            translations
-        )
-    } else {
-        start_ssh_deployment(
-            &context.core_context,
-            mode.simulate(),
-            &site,
-            translations
-        )
-    };
+    let deploy_result = start_deployment(
+        &context.core_context,
+        protocol,
+        simulate,
+        &site,
+        translations
+    );
 
     match deploy_result {
         Ok(()) => Either::Left(Redirect::to("/deployment").see_other()),
@@ -92,16 +125,50 @@ fn deploy(
     }
 }
 
-pub async fn simulate_deploy_ftp(
+pub async fn execute_ftp(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    deploy(context, DeploymentMode::FtpSimulated, session)
+    execute(
+        context,
+        DeploymentProtocol::Ftp,
+        session,
+        false
+    )
 }
 
-pub async fn simulate_deploy_ssh(
+pub async fn execute_ssh(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    deploy(context, DeploymentMode::SshSimulated, session)
+    execute(
+        context,
+        DeploymentProtocol::Ssh,
+        session,
+        false
+    )
+}
+
+pub async fn simulate_ftp(
+    context: Data<Arc<Context>>,
+    session: Session
+) -> Either<Redirect, HttpResponse> {
+    execute(
+        context,
+        DeploymentProtocol::Ftp,
+        session,
+        true
+    )
+}
+
+pub async fn simulate_ssh(
+    context: Data<Arc<Context>>,
+    session: Session
+) -> Either<Redirect, HttpResponse> {
+    execute(
+        context,
+        DeploymentProtocol::Ssh,
+        session,
+        true
+    )
 }

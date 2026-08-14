@@ -74,21 +74,16 @@ pub use collection::Collection;
 pub use container::Container;
 pub use container_order::ContainerOrder;
 pub use context::{
-	CollectionUpdate,
-	Context,
-	GetAnyResult,
-	PlaylistUpdate,
-	SiteUpdate,
-	VideoParent,
-	VideoUpdate
+    CollectionUpdate,
+    Context,
+    GetAnyResult,
+    PlaylistUpdate,
+    SiteUpdate,
+    VideoParent,
+    VideoUpdate
 };
-pub use deploy::{DeploymentMode, DeploymentProtocol, DeploymentState};
-pub use deploy::{
-	start_ftp_deployment,
-	start_ssh_deployment,
-	verify_ftp_deployment_config,
-    verify_ssh_deployment_config
-};
+pub use deploy::{DeploymentProtocol, DeploymentState};
+pub use deploy::{check_deployment_config, start_deployment};
 pub use file_meta::FileMeta;
 pub use font::Font;
 pub use hyper_dir::HyperDir;

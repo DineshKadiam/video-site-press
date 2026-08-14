@@ -8,16 +8,10 @@ use std::time::Duration;
 
 use hyper8_core::{
     Context,
-    DeploymentMode,
     DeploymentProtocol,
     Site
 };
-use hyper8_core::{
-    start_ftp_deployment,
-    start_ssh_deployment,
-    verify_ftp_deployment_config,
-    verify_ssh_deployment_config
-};
+use hyper8_core::start_deployment;
 use hyper8_translations::Translations;
 
 /// Performs deployment in a synchronous fashion, reporting back all messages
@@ -25,34 +19,26 @@ use hyper8_translations::Translations;
 /// before performing the actual deployment.
 pub fn perform_deploy_blocking_cli(
     context: &Arc<Context>,
-    protocol: Option<DeploymentProtocol>,
+    explicit_protocol: Option<DeploymentProtocol>,
     simulate: bool,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
-    if site.base_url.is_none() {
-        let site_manifest_path = context.site_dir.join("site.eno");
-        let message = translations.public_address_must_be_configured_for_deployment_text_cli(&site_manifest_path);
-        return Err(message);
-    }
-
-    let mode = if let Some(protocol) = protocol {
-        if (protocol.ftp() && !site.ftp_config.complete()) ||
-            (protocol.ssh() && !site.ssh_config.complete())
-        {
+    let protocol = if let Some(protocol) = explicit_protocol {
+        if !site.complete_deployment_config(protocol) {
             let message = translations.deployment_configuration_is_incomplete_can_not_deploy.to_string();
             return Err(message);
         }
 
-        DeploymentMode::new(protocol, simulate)
+        protocol
     } else {
         match (site.ftp_config.complete(), site.ssh_config.complete()) {
             (true, true) => {
                 let message = translations.you_need_to_additionally_pass_ftp_or_ssh_text.to_string();
                 return Err(message);
             }
-            (true, false) => if simulate { DeploymentMode::FtpSimulated } else { DeploymentMode::Ftp },
-            (false, true) => if simulate { DeploymentMode::SshSimulated } else { DeploymentMode::Ssh },
+            (true, false) => DeploymentProtocol::Ftp,
+            (false, true) => DeploymentProtocol::Ssh,
             (false, false) => {
                 let message = translations.no_complete_deployment_configuration_found.to_string();
                 return Err(message);
@@ -77,33 +63,13 @@ pub fn perform_deploy_blocking_cli(
         }
     }
 
-    let verification = if mode.ftp() {
-        verify_ftp_deployment_config(site, translations)
-    } else {
-        verify_ssh_deployment_config(site, translations)
-    };
-
-    if let Err(err) = verification {
-        let t_deployment_configuration_could_not_be_verified = translations.deployment_configuration_could_not_be_verified;
-        let message = format!("{t_deployment_configuration_could_not_be_verified} ({err})");
-        return Err(message);
-    }
-
-    if mode.ftp() {
-        start_ftp_deployment(
-            context,
-            mode.simulate(),
-            site,
-            translations
-        )?;
-    } else {
-        start_ssh_deployment(
-            context,
-            mode.simulate(),
-            site,
-            translations
-        )?;
-    };
+    start_deployment(
+        context,
+        protocol,
+        simulate,
+        site,
+        translations
+    )?;
 
     let mut seen_feedback = 0;
 

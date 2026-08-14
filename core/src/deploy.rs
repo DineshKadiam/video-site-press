@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::sync::Arc;
 use std::time::SystemTime;
+
+use hyper8_translations::Translations;
+
+use crate::{Context, Site};
 
 mod ftp;
 mod ftp_config;
@@ -17,18 +22,8 @@ use sync_action::SyncAction;
 use sync_entry::SyncEntry;
 use sync_error::SyncError;
 
-pub use ftp::{start_ftp_deployment, verify_ftp_deployment_config};
 pub use ftp_config::FtpConfig;
-pub use ssh::{start_ssh_deployment, verify_ssh_deployment_config};
 pub use ssh_config::SshConfig;
-
-#[derive(Clone, Copy, Debug)]
-pub enum DeploymentMode {
-    Ftp,
-    FtpSimulated,
-    Ssh,
-    SshSimulated
-}
 
 #[derive(Clone, Copy, Debug)]
 pub enum DeploymentProtocol {
@@ -45,42 +40,6 @@ pub struct DeploymentState {
     // as well as in the CLI.
     pub feedback: String,
     pub started_at: Option<SystemTime>
-}
-
-impl DeploymentMode {
-    pub fn ftp(&self) -> bool {
-        match self {
-            DeploymentMode::Ftp => true,
-            DeploymentMode::FtpSimulated => true,
-            DeploymentMode::Ssh => false,
-            DeploymentMode::SshSimulated => false
-        }
-    }
-
-    pub fn new(protocol: DeploymentProtocol, simulate: bool) -> DeploymentMode {
-        match protocol {
-            DeploymentProtocol::Ftp => if simulate { DeploymentMode::FtpSimulated } else { DeploymentMode::Ftp },
-            DeploymentProtocol::Ssh => if simulate { DeploymentMode::SshSimulated } else { DeploymentMode::Ssh }
-        }
-    }
-
-    pub fn simulate(&self) -> bool {
-        match self {
-            DeploymentMode::Ftp => false,
-            DeploymentMode::FtpSimulated => true,
-            DeploymentMode::Ssh => false,
-            DeploymentMode::SshSimulated => true
-        }
-    }
-
-    pub fn ssh(&self) -> bool {
-        match self {
-            DeploymentMode::Ftp => false,
-            DeploymentMode::FtpSimulated => false,
-            DeploymentMode::Ssh => true,
-            DeploymentMode::SshSimulated => true
-        }
-    }
 }
 
 impl DeploymentProtocol {
@@ -142,5 +101,53 @@ impl DeploymentState {
         self.completed_at = None;
         self.feedback.clear();
         self.started_at = Some(SystemTime::now());
+    }
+}
+
+pub fn check_deployment_config(
+    protocol: DeploymentProtocol,
+    site: &Site,
+    translations: &Translations
+) -> Vec<Result<String, String>> {
+    match protocol {
+        DeploymentProtocol::Ftp => {
+            ftp::check_deployment_config(
+                site,
+                translations
+            )
+        }
+        DeploymentProtocol::Ssh => {
+            ssh::check_deployment_config(
+                site,
+                translations
+            )
+        }
+    }
+}
+
+pub fn start_deployment(
+    context: &Arc<Context>,
+    protocol: DeploymentProtocol,
+    simulate: bool,
+    site: &Site,
+    translations: &Translations
+) -> Result<(), String> {
+    match protocol {
+        DeploymentProtocol::Ftp => {
+            ftp::start_deployment(
+                context,
+                simulate,
+                site,
+                translations
+            )
+        }
+        DeploymentProtocol::Ssh => {
+            ssh::start_deployment(
+                context,
+                simulate,
+                site,
+                translations
+            )
+        }
     }
 }

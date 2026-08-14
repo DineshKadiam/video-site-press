@@ -7,15 +7,17 @@ use std::process::ExitCode;
 use clap::ArgMatches;
 use sys_locale::get_locale;
 
-use hyper8_core::{Context, Language};
+use hyper8_core::{Context, DeploymentProtocol, Language};
 
 mod args;
 mod build;
+mod check;
 mod deploy;
 mod serve;
 
 use args::ArgMode;
 use build::build;
+use check::check;
 use deploy::perform_deploy_blocking_cli;
 use serve::serve;
 
@@ -57,7 +59,11 @@ fn handle(args: ArgMatches) -> ExitCode {
         site_dir
     );
 
-    if args.get_flag("build") {
+    if args.get_flag("check-ftp") {
+        check(context, DeploymentProtocol::Ftp, translations)
+    } else if args.get_flag("check-ssh") {
+        check(context, DeploymentProtocol::Ssh, translations)
+    } else if args.get_flag("build") {
         build(args, context, translations)
     } else {
         serve(args, context)

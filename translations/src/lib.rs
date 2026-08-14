@@ -30,6 +30,7 @@ pub struct Translations {
     pub audio_metadata: &'static str,
     audio_file_xxx: &'static str,
     pub audio_files: &'static str,
+    pub authentication_failed: &'static str,
     pub automatic_link_previews_and_content_embedding_on_platforms: &'static str,
     pub automatic_original_frame_rate_or_encoder_preference: &'static str,
     pub average_compression_and_speed_reasonable_for_temporarily_used_media: &'static str,
@@ -59,6 +60,7 @@ pub struct Translations {
     pub collection_manifest: &'static str,
     pub collection_settings: &'static str,
     pub completed: &'static str,
+    pub configuration_check: &'static str,
     pub configure: &'static str,
     pub container: &'static str,
     pub container_order: &'static str,
@@ -102,7 +104,7 @@ pub struct Translations {
     pub deploying: &'static str,
     pub deployment: &'static str,
     pub deployment_completed_successfully: &'static str,
-    pub deployment_configuration_could_not_be_verified: &'static str,
+    pub deployment_configuration_check: &'static str,
     pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
     pub deployment_finished: &'static str,
     pub deployment_steps_successfully_determined_file_synchronization_will_now_commence: &'static str,
@@ -136,6 +138,7 @@ pub struct Translations {
     files_are_being_deployed_to_xxx: &'static str,
     pub filter: &'static str,
     pub focus_search_field: &'static str,
+    pub found: &'static str,
     pub frame_rate: &'static str,
     pub ftp_config_password_label: &'static str,
     pub ftp_config_path_label: &'static str,
@@ -185,6 +188,7 @@ pub struct Translations {
     pub loading: &'static str,
     pub local_editor_note: &'static str,
     pub local_path: &'static str,
+    pub login: &'static str,
     pub loud_volume: &'static str,
     pub maximize: &'static str,
     pub media_rss_description: &'static str,
@@ -264,6 +268,7 @@ pub struct Translations {
     pub release_date_descending: &'static str,
     remote_dir_does_not_exist_ancestor_dir_found: &'static str,
     remote_dir_xxx_is_not_a_directory: &'static str,
+    pub remote_directory: &'static str,
     pub remove_from_list: &'static str,
     pub render_format: &'static str,
     pub replay: &'static str,
@@ -272,7 +277,9 @@ pub struct Translations {
     pub resource_not_found: &'static str,
     pub search: &'static str,
     pub sec: &'static str,
+    pub server_configuration: &'static str,
     pub set_current_frame_as_poster: &'static str,
+    pub sftp_subsystem_could_not_be_initialized: &'static str,
     pub share_the_editor_over_the_network: &'static str,
     pub shortcuts: &'static str,
     pub showing_xxx_results_for_xxx: &'static str,
@@ -303,13 +310,18 @@ pub struct Translations {
     pub subscribe: &'static str,
     pub subscribe_permalink: &'static str,
     pub subtitles: &'static str,
+    pub successful: &'static str,
     pub synopsis: &'static str,
+    pub test_file_created: &'static str,
+    pub test_file_removed: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
     pub textarea_formatting_hint_text: &'static str,
     the_editor_is_available_at_xxx: &'static str,
     pub the_file_requested_for_deletion_was_not_found: &'static str,
     pub the_link_requested_for_deletion_was_not_found: &'static str,
     pub the_poster_to_be_updated_was_not_found: &'static str,
+    pub the_public_site_address_is_not_configured_this_prevents_checking_text: &'static str,
+    the_public_site_address_xxx_correctly_serves_content_in_remote_dir_xxx_text: &'static str,
     the_resource_xxx_was_not_found_message: &'static str,
     the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files: &'static str,
     pub the_subtitle_requested_for_deletion_was_not_found: &'static str,
@@ -374,6 +386,7 @@ pub struct Translations {
     pub website: &'static str,
     pub whats_new: &'static str,
     pub worst: &'static str,
+    pub writeable: &'static str,
     pub xxx_active_jobs: &'static str,
     xxx_characters_maximum: &'static str,
     pub xxx_pending_jobs: &'static str,
@@ -495,6 +508,16 @@ impl Translations {
 
     pub fn the_editor_is_available_at_xxx(&self, url: &str) -> String {
         self.the_editor_is_available_at_xxx.replace("{url}", url)
+    }
+
+    pub fn the_public_site_address_xxx_correctly_serves_content_in_remote_dir_xxx_text(
+        &self,
+        remote_dir: &str,
+        site_address: &str
+    ) -> String {
+        self.the_public_site_address_xxx_correctly_serves_content_in_remote_dir_xxx_text
+            .replace("{remote_dir}", remote_dir)
+            .replace("{site_address}", site_address)
     }
 
     pub fn the_resource_xxx_was_not_found_message(&self, path: &str) -> String {
@@ -625,6 +648,8 @@ fn check_translations() {
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{public_address}"));
         assert!(&translations.test_file_successfully_uploaded_but_remote_verification_failed_message.contains("{remote_path}"));
         assert!(&translations.the_editor_is_available_at_xxx.contains("{url}"));
+        assert!(&translations.the_public_site_address_xxx_correctly_serves_content_in_remote_dir_xxx_text.contains("{remote_dir}"));
+        assert!(&translations.the_public_site_address_xxx_correctly_serves_content_in_remote_dir_xxx_text.contains("{site_address}"));
         assert!(&translations.the_resource_xxx_was_not_found_message.contains("{path}"));
         assert!(&translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.contains("{filename}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));

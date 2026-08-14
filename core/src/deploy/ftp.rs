@@ -27,13 +27,174 @@ use super::{
 type FtpSyncAction = SyncAction<String>;
 type FtpSyncEntry = SyncEntry<String>;
 
-const FTP_DEPLOYMENT_VERIFICATION_FILE_NAME: &str = ".hyper8_ftp_deployment_verification.txt";
-const FTP_DEPLOYMENT_VERIFICATION_TEXT: &str = indoc!("
-    This file was created by Hyper 8 (https://hyper8.org) to verify
-    the configured server and path for FTP deployment matches up with the
-    configured website url. It serves no further purpose anymore and may
-    safely be deleted.
+const FTP_DEPLOYMENT_CHECK_FILE_NAME: &str = ".hyper8_ftp_deployment_check.txt";
+const FTP_DEPLOYMENT_CHECK_TEXT: &str = indoc!("
+    This file was created by Hyper 8 (https://hyper8.org) to check if the
+    configured server and path for FTP deployment matches up with the
+    configured public website URL. It serves no further purpose anymore and
+    may safely be deleted.
 ");
+
+/// First tries to connect to the remote, thereby verifying the credentials.
+/// Then uploads a test file with a random token to the configured remote
+/// directory, verifying it is present and writeable. Then tries to fetch
+/// that same file through the public url of the website (if configured),
+/// thereby confirming that the website is set up correctly and no other
+/// website (or other data) will be wiped due to a wrongly set remote path.
+/// Regardless of failure or success of the check, the test file is removed
+/// from the remote again, leaving a clean state.
+pub fn check_deployment_config(
+    site: &Site,
+    translations: &Translations
+) -> Vec<Result<String, String>> {
+    let mut steps = Vec::new();
+
+    let t_login = translations.login;
+
+    let mut ftp_stream_wrapper = match FtpStreamWrapper::connect(site) {
+        Ok(ftp_stream_wrapper) => ftp_stream_wrapper,
+        Err(err) => {
+            let t_failed = translations.failed;
+            steps.push(Err(format!("{t_login} – {t_failed} ({err})")));
+            return steps;
+        }
+    };
+
+    let t_successful = translations.successful;
+    steps.push(Ok(format!("{t_login} – {t_successful}")));
+
+    let remote_dir = site.ftp_config.path_unchecked();
+
+    let t_remote_directory = translations.remote_directory;
+
+    // Check if the configured remote directory exists (by changing into it)
+    if let Err(remote_dir_err) = ftp_stream_wrapper.cwd(&remote_dir) {
+        // If the configured remote directory does not exist, try changing
+        // into each of its ancestor directories (going from deepest to
+        // shallowest) in order to determine and report the first existing
+        // directory that is part of the user's configured remote directory
+        // path.
+        while let Some(ancestor_dir) = Path::new(remote_dir).parent() {
+            if ftp_stream_wrapper.cwd(&ancestor_dir).is_ok() {
+                let message = translations.remote_dir_does_not_exist_ancestor_dir_found(
+                    &ancestor_dir.to_string_lossy(),
+                    remote_dir,
+                    &remote_dir_err.to_string()
+                );
+
+                steps.push(Err(format!("{t_remote_directory} – {message}")));
+                return steps;
+            }
+        }
+
+        let message = translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found(
+            remote_dir,
+            &remote_dir_err.to_string()
+        );
+
+        steps.push(Err(format!("{t_remote_directory} – {message}")));
+        return steps;
+    }
+
+    let t_found = translations.found;
+    steps.push(Ok(format!("{t_remote_directory} – {t_found}")));
+
+    let probe_signature = nanoid();
+    let probe_content = format!("{FTP_DEPLOYMENT_CHECK_TEXT}\n\n{probe_signature}");
+    let remote_probe_path = Path::new(remote_dir).join(FTP_DEPLOYMENT_CHECK_FILE_NAME);
+
+    // Write probe file
+    let mut reader = Cursor::new(probe_content.as_bytes());
+    if let Err(err) = ftp_stream_wrapper.put_file(&remote_probe_path, &mut reader) {
+        let message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
+        steps.push(Err(format!("{t_remote_directory} – {message} ({err})")));
+        return steps;
+    }
+
+    let t_writeable = translations.writeable;
+    steps.push(Ok(format!("{t_remote_directory} – {t_writeable}")));
+    steps.push(Ok(translations.test_file_created.to_string()));
+
+    let t_server_configuration = translations.server_configuration;
+
+    if let Some(base_url) = &site.base_url {
+        let public_probe_url = site.absolute_url_file_unchecked(
+            FTP_DEPLOYMENT_CHECK_FILE_NAME,
+            &SitePath::root_path()
+        );
+
+        // Fetch probe file through public url and return result
+        match minreq::get(public_probe_url.clone()).send() {
+            Ok(response) => {
+                match response.as_str() {
+                    Ok(body) => {
+                        if body == probe_content {
+                            let message = translations.the_public_site_address_xxx_correctly_serves_content_in_remote_dir_xxx_text(
+                                remote_dir,
+                                &base_url.representation
+                            );
+                            steps.push(Ok(format!("{t_server_configuration} – {message}")));
+                        } else {
+                            let truncate = |text: &str| -> String {
+                                match text.char_indices().nth(64) {
+                                    Some((index, _)) => format!("{}…", &text[..index]),
+                                    None => text.to_string()
+                                }
+                            };
+
+                            let err = translations.the_test_file_contains_xxx_but_the_response_contained_xxx(
+                                &truncate(&probe_content),
+                                &truncate(body)
+                            );
+
+                            let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                                &err,
+                                &public_probe_url,
+                                &remote_probe_path.to_string_lossy()
+                            );
+
+                            steps.push(Err(format!("{t_server_configuration} – {message}")));
+                        }
+                    }
+                    Err(err) => {
+                        let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                            &err.to_string(),
+                            &remote_probe_path.to_string_lossy(),
+                            &public_probe_url
+                        );
+
+                        steps.push(Err(format!("{t_server_configuration} – {message}")));
+                    }
+                }
+            }
+            Err(err) => {
+                let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
+                    &err.to_string(),
+                    &remote_probe_path.to_string_lossy(),
+                    &public_probe_url
+                );
+
+                steps.push(Err(format!("{t_server_configuration} – {message}")));
+            }
+        }
+    } else {
+        let message = translations.the_public_site_address_is_not_configured_this_prevents_checking_text;
+        steps.push(Err(format!("{t_server_configuration} – {message}")));
+    }
+
+    match ftp_stream_wrapper.rm(&remote_probe_path) {
+        Ok(()) => {
+            steps.push(Ok(translations.test_file_removed.to_string()));
+            let _ = ftp_stream_wrapper.quit();
+        }
+        Err(err) => {
+            let message = translations.the_test_file_could_not_be_removed_again(&err.to_string());
+            steps.push(Err(message));
+        }
+    }
+
+    steps
+}
 
 /// Register `local_dir` and all recursively contained dirs and files for addition
 fn collect_add_actions(
@@ -355,7 +516,7 @@ fn get_remote_entries(
     Ok(remote_entries)
 }
 
-pub fn start_ftp_deployment(
+pub fn start_deployment(
     context: &Arc<Context>,
     simulate: bool,
     site: &Site,
@@ -430,136 +591,6 @@ pub fn start_ftp_deployment(
     });
 
     Ok(())
-}
-
-/// Uploads a file named ".hyper8_ftp_deployment_verification.txt", which also contains a
-/// random token, to the remote, thereby first verifying that the deployment
-/// configuration is correct and working. Then, right next, tries to fetch
-/// that same file through the public url of the website
-/// (e.g. https://example.com/.hyper8_ftp_deployment_verification.txt), thereby confirming
-/// that the website is set up correctly and, more importantly, that no other
-/// website (or remote content of any kind) will be wiped due to a wrongly
-/// set remote path. Regardless of failure or success of the check, the probe
-/// file is removed from the remote again, leaving a clean state.
-pub fn verify_ftp_deployment_config(
-    site: &Site,
-    translations: &Translations
-) -> Result<(), String> {
-    let mut ftp_stream_wrapper = FtpStreamWrapper::connect(site)?;
-
-    let probe_signature = nanoid();
-    let probe_content = format!("{FTP_DEPLOYMENT_VERIFICATION_TEXT}\n\n{probe_signature}");
-
-    let remote_dir = site.ftp_config.path_unchecked();
-
-    // Check if the configured remote directory exists (by changing into it)
-    if let Err(remote_dir_err) = ftp_stream_wrapper.cwd(&remote_dir) {
-        // If the configured remote directory does not exist, try changing
-        // into each of its ancestor directories (going from deepest to
-        // shallowest) in order to determine and report the first existing
-        // directory that is part of the user's configured remote directory
-        // path.
-        while let Some(ancestor_dir) = Path::new(remote_dir).parent() {
-            if ftp_stream_wrapper.cwd(&ancestor_dir).is_ok() {
-                let message = translations.remote_dir_does_not_exist_ancestor_dir_found(
-                    &ancestor_dir.to_string_lossy(),
-                    remote_dir,
-                    &remote_dir_err.to_string()
-                );
-
-                return Err(message);
-            }
-        }
-
-        let message = translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found(
-            remote_dir,
-            &remote_dir_err.to_string()
-        );
-
-        return Err(message);
-    }
-
-    let remote_probe_path = Path::new(remote_dir).join(FTP_DEPLOYMENT_VERIFICATION_FILE_NAME);
-
-    // Write probe file
-    let mut reader = Cursor::new(probe_content.as_bytes());
-    if let Err(err) = ftp_stream_wrapper.put_file(&remote_probe_path, &mut reader) {
-        let t_message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
-        let message = format!("{t_message} ({err})");
-        return Err(message);
-    }
-
-    let public_probe_url = site.absolute_url_file_unchecked(FTP_DEPLOYMENT_VERIFICATION_FILE_NAME, &SitePath::root_path());
-
-    let mut remove_probe_and_return = |previous_result: Result<(), String>| -> Result<(), String> {
-        match ftp_stream_wrapper.rm(&remote_probe_path) {
-            Ok(()) => {
-                let _ = ftp_stream_wrapper.quit();
-                previous_result
-            }
-            Err(file_removal_err) => {
-                // If removing the probe fails when we already had a previous
-                // error, we prioritize returning the earlier error, as it
-                // likely provides a more meaningful context.
-                if previous_result.is_err() {
-                    previous_result
-                } else {
-                    let message = translations.the_test_file_could_not_be_removed_again(
-                        &file_removal_err.to_string()
-                    );
-                    Err(message)
-                }
-            }
-        }
-    };
-
-    // Fetch probe file through public url and return result
-    match minreq::get(public_probe_url.clone()).send() {
-        Ok(response) => {
-            match response.as_str() {
-                Ok(body) => {
-                    if body == probe_content {
-                        remove_probe_and_return(Ok(()))
-                    } else {
-                        let truncate = |text: &str| -> String {
-                            match text.char_indices().nth(64) {
-                                Some((index, _)) => format!("{}…", &text[..index]),
-                                None => text.to_string()
-                            }
-                        };
-
-                        let err = translations.the_test_file_contains_xxx_but_the_response_contained_xxx(
-                            &truncate(&probe_content),
-                            &truncate(body)
-                        );
-
-                        let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                            &err,
-                            &public_probe_url,
-                            &remote_probe_path.to_string_lossy()
-                        );
-                        remove_probe_and_return(Err(message))
-                    }
-                }
-                Err(err) => {
-                    let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                        &err.to_string(),
-                        &remote_probe_path.to_string_lossy(),
-                        &public_probe_url
-                    );
-                    remove_probe_and_return(Err(message))
-                }
-            }
-        }
-        Err(err) => {
-            let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
-                &err.to_string(),
-                &remote_probe_path.to_string_lossy(),
-                &public_probe_url
-            );
-            remove_probe_and_return(Err(message))
-        }
-    }
 }
 
 fn write_entry(

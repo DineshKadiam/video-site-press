@@ -66,6 +66,16 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .long("cache-dir")
         .value_parser(value_parser!(PathBuf));
 
+    let check_ftp = Arg::new("check-ftp")
+        .action(ArgAction::SetTrue)
+        .help("Run a check to verify that the FTP deployment configuration and server setup is correct")
+        .long("check-ftp");
+
+    let check_ssh = Arg::new("check-ssh")
+        .action(ArgAction::SetTrue)
+        .help("Run a check to verify that the SSH deployment configuration and server setup is correct")
+        .long("check-ssh");
+
     let deploy = Arg::new("deploy")
         .action(ArgAction::SetTrue)
         .help("Directly deploys the site - only applicable in combination with --build")
@@ -125,6 +135,8 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .arg(build)
         .arg(build_dir)
         .arg(cache_dir)
+        .arg(check_ftp)
+        .arg(check_ssh)
         .arg(deploy)
         .arg(ftp)
         .arg(ip)

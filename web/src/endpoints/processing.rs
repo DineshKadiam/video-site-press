@@ -10,12 +10,10 @@ use hyper8_core::{DeploymentState, JobProgress, SitePath};
 
 use crate::Context;
 
-/// Represents the state of the running deployment (or just deployment
-/// configuration) at request time
+/// Represents the state of a running deployment at request time
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeploymentInfo {
-    configured: bool,
     /// Duration of last completed deployment
     deployed_in: Option<f32>,
     /// Duration of ongoing deployment in seconds
@@ -47,7 +45,7 @@ pub struct Report {
 }
 
 impl DeploymentInfo {
-    pub fn configured(deployment_state: &DeploymentState) -> DeploymentInfo {
+    pub fn new(deployment_state: &DeploymentState) -> DeploymentInfo {
         let deployed_in;
         let deploying_since;
 
@@ -63,19 +61,9 @@ impl DeploymentInfo {
         };
 
         DeploymentInfo {
-            configured: true,
             deployed_in,
             deploying_since,
             feedback: deployment_state.feedback.clone()
-        }
-    }
-
-    pub fn not_configured() -> DeploymentInfo {
-        DeploymentInfo {
-            configured: false,
-            deployed_in: None,
-            deploying_since: None,
-            feedback: String::new()
         }
     }
 }
@@ -122,13 +110,9 @@ fn processing(
     context: &Context,
     site_path: Option<&SitePath>
 ) -> Json<Report> {
-    let site = context.get_site();
-
-    let deployment_info = if site.complete_deployment_config() {
+    let deployment_info = {
         let deployment_state = context.deploying.lock().unwrap();
-        DeploymentInfo::configured(&deployment_state)
-    } else {
-        DeploymentInfo::not_configured()
+        DeploymentInfo::new(&deployment_state)
     };
 
     let mut global_job_report = JobReport::new();
