@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::fs;
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
-use hyper8_version::{VERSION_WITH_PATCH_AND_REVISION};
 use rsubs_lib::SRT;
+
+use hyper8_util::ffs;
+use hyper8_version::VERSION_WITH_PATCH_AND_REVISION;
 
 use crate::{
     Collection,
@@ -55,7 +56,7 @@ pub fn meta_generator() -> String {
     format!(r#"<meta name="generator" content="Hyper 8 Video System {VERSION_WITH_PATCH_AND_REVISION}">"#)
 }
 
-pub fn perform_build(context: &Context) {
+pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
     let mut site = context.get_site();
 
     while !site.all_metadata_computed() {
@@ -70,15 +71,15 @@ pub fn perform_build(context: &Context) {
 
     let traversal = Traversal::new();
 
-    fs::write(
+    ffs::write(
         context.build_dir.join("favicon.png"),
         include_bytes!("build/assets/favicon.png")
-    ).unwrap();
+    )?;
 
-    fs::write(
+    ffs::write(
         context.build_dir.join("shortcuts.js"),
         include_bytes!("build/assets/shortcuts.js")
-    ).unwrap();
+    )?;
 
     styles::generate_site_css(&mut asset_hashes, context, &site);
     scripts::generate_video_js(context);
@@ -114,39 +115,44 @@ pub fn perform_build(context: &Context) {
 
     match &site.content {
         SiteContent::Collection(collection) => {
-            if collection.offline() { return; }
-            build_collection(
-                &asset_hashes,
-                context,
-                collection,
-                &site,
-                &traversal
-            );
+            if !collection.offline() {
+                build_collection(
+                    &asset_hashes,
+                    context,
+                    collection,
+                    &site,
+                    &traversal
+                )?;
+            }
         }
         SiteContent::Empty => (),
         SiteContent::Invalid { .. } => unimplemented!(),
         SiteContent::Playlist(playlist) => {
-            if playlist.offline() { return; }
-            build_playlist(
-                &asset_hashes,
-                context,
-                playlist,
-                &site,
-                &traversal
-            );
+            if !playlist.offline() {
+                build_playlist(
+                    &asset_hashes,
+                    context,
+                    playlist,
+                    &site,
+                    &traversal
+                )?;
+            }
         }
         SiteContent::Video(video) => {
-            if video.offline() { return; }
-            build_video(
-                &asset_hashes,
-                context,
-                None,
-                &site,
-                &traversal,
-                video
-            );
+            if !video.offline() {
+                build_video(
+                    &asset_hashes,
+                    context,
+                    None,
+                    &site,
+                    &traversal,
+                    video
+                )?;
+            }
         }
     }
+
+    Ok(())
 }
 
 fn build_collection(
@@ -155,14 +161,14 @@ fn build_collection(
     collection: &Collection,
     site: &Site,
     traversal_previous: &Traversal
-) {
+) -> Result<(), ffs::Error> {
     let translations = &site.language.translations;
     let traversal = traversal_previous.with_collection(collection);
 
     let collection_build_dir = context.build_dir.join(collection.site_path.filesystem_relative());
 
     if !collection.site_path.is_root_path() {
-        fs::create_dir_all(&collection_build_dir).unwrap();
+        ffs::create_dir_all(&collection_build_dir)?;
     }
 
     if let Some(banner) = &collection.banner {
@@ -172,13 +178,13 @@ fn build_collection(
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
                     collection_build_dir.join(&target_filename)
-                );
+                )?;
             }
         } else {
             hard_link_or_copy(
                 context.site_dir.join(collection.site_path.filesystem_relative()).join(&banner.file_name),
                 collection_build_dir.join("banner.jpg")
-            );
+            )?;
         }
     }
 
@@ -223,38 +229,43 @@ fn build_collection(
     );
 
     for subcollection in &collection.subcollections {
-        if subcollection.offline() { continue; }
-        build_collection(
-            asset_hashes,
-            context,
-            subcollection,
-            site,
-            &traversal
-        );
+        if !subcollection.offline() {
+            build_collection(
+                asset_hashes,
+                context,
+                subcollection,
+                site,
+                &traversal
+            )?;
+        }
     }
 
     for playlist in &collection.playlists {
-        if playlist.offline() { continue; }
-        build_playlist(
-            asset_hashes,
-            context,
-            playlist,
-            site,
-            &traversal
-        );
+        if !playlist.offline() {
+            build_playlist(
+                asset_hashes,
+                context,
+                playlist,
+                site,
+                &traversal
+            )?;
+        }
     }
 
     for video in &collection.videos {
-        if video.offline() { continue; }
-        build_video(
-            asset_hashes,
-            context,
-            None,
-            site,
-            &traversal,
-            video
-        );
+        if !video.offline() {
+            build_video(
+                asset_hashes,
+                context,
+                None,
+                site,
+                &traversal,
+                video
+            )?;
+        }
     }
+
+    Ok(())
 }
 
 fn build_playlist(
@@ -263,14 +274,14 @@ fn build_playlist(
     playlist: &Playlist,
     site: &Site,
     traversal_previous: &Traversal
-) {
+) -> Result<(), ffs::Error> {
     let translations = &site.language.translations;
     let traversal = traversal_previous.with_playlist(playlist);
 
     let playlist_build_dir = context.build_dir.join(playlist.site_path.filesystem_relative());
 
     if !playlist.site_path.is_root_path() {
-        fs::create_dir_all(&playlist_build_dir).unwrap();
+        ffs::create_dir_all(&playlist_build_dir)?;
     }
 
     if let Some(banner) = &playlist.banner {
@@ -280,13 +291,13 @@ fn build_playlist(
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
                     playlist_build_dir.join(&target_filename)
-                );
+                )?;
             }
         } else {
             hard_link_or_copy(
                 context.site_dir.join(playlist.site_path.filesystem_relative()).join(&banner.file_name),
                 playlist_build_dir.join("banner.jpg")
-            );
+            )?;
         }
     }
 
@@ -331,16 +342,19 @@ fn build_playlist(
     );
 
     for video in &playlist.videos {
-        if video.offline() { continue; }
-        build_video(
-            asset_hashes,
-            context,
-            Some(playlist),
-            site,
-            &traversal,
-            video
-        );
+        if !video.offline() {
+            build_video(
+                asset_hashes,
+                context,
+                Some(playlist),
+                site,
+                &traversal,
+                video
+            )?;
+        }
     }
+
+    Ok(())
 }
 
 fn build_video(
@@ -350,14 +364,14 @@ fn build_video(
     site: &Site,
     traversal_previous: &Traversal,
     video: &Video
-) {
+) -> Result<(), ffs::Error> {
     let translations = &site.language.translations;
     let traversal = traversal_previous.with_video(video);
 
     let video_build_dir = context.build_dir.join(video.site_path.filesystem_relative());
 
     if !video.site_path.is_root_path() {
-        fs::create_dir_all(&video_build_dir).unwrap();
+        ffs::create_dir_all(&video_build_dir)?;
     }
 
     let default_streamable_audio_file = video.default_streamable_audio_file();
@@ -366,14 +380,14 @@ fn build_video(
         hard_link_or_copy(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&audio_file.file_name),
             video_build_dir.join(&audio_file.file_name)
-        );
+        )?;
     }
 
     for video_file in video.streamable_video_files() {
         hard_link_or_copy(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
             video_build_dir.join(&video_file.file_name)
-        );
+        )?;
     }
 
     if let Some(poster) = &video.poster {
@@ -383,7 +397,7 @@ fn build_video(
                 hard_link_or_copy(
                     context.cache_dir.join(&asset.file_name),
                     video_build_dir.join(&target_filename)
-                );
+                )?;
             }
         }
 
@@ -399,7 +413,7 @@ fn build_video(
         hard_link_or_copy(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&poster.file_name),
             video_build_dir.join(original_filename)
-        );
+        )?;
     }
 
     for subtitle_file in video.valid_subtitles() {
@@ -413,14 +427,14 @@ fn build_video(
         let target_path_vtt = video_build_dir.join(format!("{id}.vtt"));
 
         if subtitle_file.file_name.ends_with(".vtt") {
-            fs::copy(source_path, target_path_vtt).unwrap();
+            ffs::copy(source_path, target_path_vtt)?;
         } else /* if subtitle_file.file_name.ends_with(".srt") */ {
             // If downloads are enabled for this video, also write the original
             // .srt file to the build so the original subtitle file can be
             // downloaded
             if video.download() {
                 let target_path_srt = video_build_dir.join(format!("{id}.srt"));
-                fs::copy(source_path, target_path_srt).unwrap();
+                ffs::copy(source_path, target_path_srt)?;
             }
 
             // TODO: Conversion could/should be a (only if necessary:
@@ -429,9 +443,9 @@ fn build_video(
             // communicated as early as possible, e.g. checking the integrity
             // of the subtitle format right when we try to attach it to the video
             // on read_dir invocation.
-            let srt_content = fs::read_to_string(source_path).unwrap();
+            let srt_content = ffs::read_to_string(source_path)?;
             let vtt = SRT::parse(srt_content).unwrap().to_vtt();
-            fs::write(target_path_vtt, vtt.to_string()).unwrap();
+            ffs::write(target_path_vtt, vtt.to_string())?;
         }
     }
 
@@ -448,7 +462,7 @@ fn build_video(
             hard_link_or_copy(
                 context.site_dir.join(video.site_path.filesystem_relative()).join(&audio_file.file_name),
                 video_build_dir.join(&audio_file.file_name)
-            );
+            )?;
         }
 
         // Write all downloadable video files to build, excluding all
@@ -458,7 +472,7 @@ fn build_video(
                 hard_link_or_copy(
                     context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
                     video_build_dir.join(&video_file.file_name)
-                );
+                )?;
             }
         }
 
@@ -508,4 +522,6 @@ fn build_video(
         &traversal,
         video
     );
+
+    Ok(())
 }

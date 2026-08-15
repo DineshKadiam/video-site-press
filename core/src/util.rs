@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use std::io::{Error, ErrorKind};
+use std::io;
 use std::path::Path;
 use std::process::Output;
 
 use chrono::{Locale as ChronoLocale, NaiveDate};
 use slug::slugify;
+
+use hyper8_util::ffs;
 
 use crate::Context;
 
@@ -22,7 +24,7 @@ macro_rules! infallible_mutation {
 
 pub type InfallibleResult = Result<(), ()>;
 
-pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Error> {
+pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), ffs::Error> {
     if !path.starts_with(&context.site_dir) {
         panic!(
             "[CRITICAL, PLEASE READ] Aborted recursive directory removal of '{}', which was determined to be outside of the site directory '{}'.\nThis is a highly critical error and should be reported to https://codeberg.org/simonrepp/hyper8/issues (alongside a short description after which action the error occurred).\nYour bug report will crucially help to avoid data loss in the future, thank you!",
@@ -31,7 +33,7 @@ pub fn checked_remove_dir_all(context: &Context, path: &Path) -> Result<(), Erro
         );
     }
 
-    fs::remove_dir_all(path)
+    ffs::remove_dir_all(path)
 }
 
 pub fn collect_output_stderr_stdout(output: Output) -> String {
@@ -88,7 +90,7 @@ pub fn ensure_dir(dir: &Path) {
 pub fn ensure_empty_dir(dir: &Path) {
     match fs::remove_dir_all(dir) {
         Ok(()) => (),
-        Err(ref err) if err.kind() == ErrorKind::NotFound => (), // just what we want anyway \o/
+        Err(ref err) if err.kind() == io::ErrorKind::NotFound => (), // just what we want anyway \o/
         Err(err) => panic!("{}", err)
     };
     fs::create_dir_all(dir).unwrap();
@@ -99,11 +101,15 @@ pub fn ensure_empty_dir(dir: &Path) {
 /// If hard links can not be created (e.g. because cache and build directory
 /// are on different file systems) we just silently fall back to regular
 /// copying.
-pub fn hard_link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) {
-    fs::hard_link(&from, &to)
-        .unwrap_or_else(|_| {
-            fs::copy(&from, &to).unwrap();
-        });
+pub fn hard_link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(
+    from: P,
+    to: Q
+) -> Result<(), ffs::Error> {
+    if fs::hard_link(&from, &to).is_err() {
+        ffs::copy(&from, &to)?;
+    }
+
+    Ok(())
 }
 
 /// E.g. 1 Jan 2000

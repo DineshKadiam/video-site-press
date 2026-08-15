@@ -109,7 +109,11 @@ fn execute(
         return Either::Right(error_page(&context, &err, &session_state));
     }
 
-    perform_build(&context);
+    if let Err(err) = perform_build(&context) {
+        let t_build_failed = translations.build_failed;
+        let message = format!("{t_build_failed}\n{err}");
+        return Either::Right(error_page(&context, &message, &session_state));
+    }
 
     let deploy_result = start_deployment(
         &context.core_context,

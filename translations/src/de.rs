@@ -45,6 +45,7 @@ impl Translations {
         browse: "Stöbern",
         browser_based: "Browser-basiert",
         browser_support_unclear: "Browserunterstützung unklar",
+        build_failed: "Build fehlgeschlagen",
         cancel: "Abbrechen",
         clean_urls_label: "Dekorative URLs (example.com/xyz/ statt example.com/xyz/index.html)",
         clear_search_or_close_browse_panel: "Suche zurücksetzen oder Inhaltsübersicht schliessen",

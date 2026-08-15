@@ -23,7 +23,10 @@ pub fn build(
         return ExitCode::FAILURE;
     }
 
-    perform_build(&context);
+    if let Err(err) = perform_build(&context) {
+        eprintln!("Build failed:\n{err}");
+        return ExitCode::FAILURE;
+    }
 
     if args.get_flag("deploy") {
         let site = context.get_site();
