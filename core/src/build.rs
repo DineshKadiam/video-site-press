@@ -20,7 +20,7 @@ use crate::{
     Video
 };
 use crate::build::widgets::thumbnail;
-use crate::util::{ensure_empty_dir, hard_link_or_copy};
+use crate::util::{ensure_empty_dir, hard_link_or_copy_readable};
 
 mod asset_hashes;
 mod collection;
@@ -175,13 +175,13 @@ fn build_collection(
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
                 let target_filename = asset.target_filename("banner");
-                hard_link_or_copy(
+                hard_link_or_copy_readable(
                     context.cache_dir.join(&asset.file_name),
                     collection_build_dir.join(&target_filename)
                 )?;
             }
         } else {
-            hard_link_or_copy(
+            hard_link_or_copy_readable(
                 context.site_dir.join(collection.site_path.filesystem_relative()).join(&banner.file_name),
                 collection_build_dir.join("banner.jpg")
             )?;
@@ -288,13 +288,13 @@ fn build_playlist(
         if let Some(banner_assets) = &banner.assets {
             for asset in &banner_assets.all() {
                 let target_filename = asset.target_filename("banner");
-                hard_link_or_copy(
+                hard_link_or_copy_readable(
                     context.cache_dir.join(&asset.file_name),
                     playlist_build_dir.join(&target_filename)
                 )?;
             }
         } else {
-            hard_link_or_copy(
+            hard_link_or_copy_readable(
                 context.site_dir.join(playlist.site_path.filesystem_relative()).join(&banner.file_name),
                 playlist_build_dir.join("banner.jpg")
             )?;
@@ -377,14 +377,14 @@ fn build_video(
     let default_streamable_audio_file = video.default_streamable_audio_file();
 
     if let Some(audio_file) = default_streamable_audio_file {
-        hard_link_or_copy(
+        hard_link_or_copy_readable(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&audio_file.file_name),
             video_build_dir.join(&audio_file.file_name)
         )?;
     }
 
     for video_file in video.streamable_video_files() {
-        hard_link_or_copy(
+        hard_link_or_copy_readable(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
             video_build_dir.join(&video_file.file_name)
         )?;
@@ -394,7 +394,7 @@ fn build_video(
         if let Some(poster_assets) = &poster.assets {
             for asset in &poster_assets.all() {
                 let target_filename = asset.target_filename("poster");
-                hard_link_or_copy(
+                hard_link_or_copy_readable(
                     context.cache_dir.join(&asset.file_name),
                     video_build_dir.join(&target_filename)
                 )?;
@@ -410,7 +410,7 @@ fn build_video(
             .to_string_lossy();
         let original_filename = format!("poster.{original_extension}");
 
-        hard_link_or_copy(
+        hard_link_or_copy_readable(
             context.site_dir.join(video.site_path.filesystem_relative()).join(&poster.file_name),
             video_build_dir.join(original_filename)
         )?;
@@ -459,7 +459,7 @@ fn build_video(
                 continue;
             }
 
-            hard_link_or_copy(
+            hard_link_or_copy_readable(
                 context.site_dir.join(video.site_path.filesystem_relative()).join(&audio_file.file_name),
                 video_build_dir.join(&audio_file.file_name)
             )?;
@@ -469,7 +469,7 @@ fn build_video(
         // streamable video files, which we already have written above.
         for video_file in video.downloadable_video_files() {
             if video_file.streaming_restricted() {
-                hard_link_or_copy(
+                hard_link_or_copy_readable(
                     context.site_dir.join(video.site_path.filesystem_relative()).join(&video_file.file_name),
                     video_build_dir.join(&video_file.file_name)
                 )?;

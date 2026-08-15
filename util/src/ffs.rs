@@ -3,7 +3,13 @@
 
 use std::fmt::{Display, Formatter};
 use std::fs;
-use std::fs::{DirEntry, File, FileType};
+use std::fs::{
+    DirEntry,
+    File,
+    FileType,
+    Metadata,
+    Permissions
+};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -83,8 +89,17 @@ pub fn file_type(
         .map_err(|error| Error::read(error, dir_entry.path()))
 }
 
+/// A drop-in replacement for fs::metadata that returns a richer error type
+/// including e.g. the path which was attempted to be read.
+pub fn metadata(
+    path: impl AsRef<Path>
+) -> Result<Metadata, Error> {
+    fs::metadata(&path)
+        .map_err(|error| Error::read(error, path.as_ref()))
+}
+
 /// A drop-in replacement for File::open that returns a richer error type
-/// including e.g. the path which was attempted to be stat'ed.
+/// including e.g. the path which was attempted to be opened
 pub fn open(
     path: impl AsRef<Path>
 ) -> Result<File, Error> {
@@ -151,6 +166,16 @@ pub fn rename(
 ) -> Result<(), Error> {
     fs::rename(&from, &to)
         .map_err(|error| Error::rename(error, from.as_ref(), to.as_ref()))
+}
+
+/// A drop-in replacement for fs::set_permissions that returns a richer error
+/// type including e.g. the path to which was attempted to be written.
+pub fn set_permissions(
+    path: impl AsRef<Path>,
+    permissions: Permissions
+) -> Result<(), Error> {
+    fs::set_permissions(&path, permissions)
+        .map_err(|error| Error::write(error, path.as_ref()))
 }
 
 /// A drop-in replacement for fs::write that returns a richer error type

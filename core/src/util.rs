@@ -101,12 +101,50 @@ pub fn ensure_empty_dir(dir: &Path) {
 /// If hard links can not be created (e.g. because cache and build directory
 /// are on different file systems) we just silently fall back to regular
 /// copying.
-pub fn hard_link_or_copy<P: AsRef<Path>, Q: AsRef<Path>>(
+pub fn hard_link_or_copy_readable<P: AsRef<Path>, Q: AsRef<Path>>(
     from: P,
     to: Q
 ) -> Result<(), ffs::Error> {
-    if fs::hard_link(&from, &to).is_err() {
-        ffs::copy(&from, &to)?;
+    // On unix systems we ensure that the resulting files are readable by
+    // everyone (at least r--r--r-- permissions). To do this we only use hard
+    // linking if the source file has the desired permissions and otherwise
+    // fall back straight to copying, correcting permissions on the resulting
+    // copied file. We could also hard link and change the permissions on
+    // both the source and target file, but we want to generally leave source
+    // files untouched.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let metadata = ffs::metadata(&from)?;
+        let mut permissions = metadata.permissions();
+        let mode = permissions.mode();
+
+        let r_r_r_mask = 0o444; // r--r--r--
+
+        let source_readable_by_everyone = (mode & r_r_r_mask) == r_r_r_mask;
+
+        if source_readable_by_everyone {
+            if fs::hard_link(&from, &to).is_err() {
+                ffs::copy(&from, &to)?;
+            }
+        } else {
+            ffs::copy(&from, &to)?;
+
+            // Set read bit for owner, group and others
+            permissions.set_mode(mode | r_r_r_mask);
+
+            ffs::set_permissions(&to, permissions)?;
+        }
+    }
+
+    // Outside of unix systems we don't have access to permissions through the
+    // PermissionsExt trait, hence we just use a simple implementation.
+    #[cfg(not(unix))]
+    {
+        if fs::hard_link(&from, &to).is_err() {
+            ffs::copy(&from, &to)?;
+        }
     }
 
     Ok(())
