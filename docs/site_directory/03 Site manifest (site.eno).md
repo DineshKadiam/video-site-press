@@ -66,12 +66,14 @@ disable_clean_urls
 With `ftp_config` you can configure the remote `server`, `path`, `user`,
 `password`, `port` and `mode` for FTP/SFTP deployment.
 
-In order to prevent accidental deployments to wrong remote servers or paths,
-deployment requires the [base_url](#base_url) to be specified and the server to be set
-up so the contents at `ftp_config.path` are already accessible through the
-public [base_url](#base_url). Before deployment, Hyper 8 will do a test upload of a text
-file to the remote path and check if it's accessible through the public url -
-if it isn't, the test file is removed and the deployment aborted.
+The `port` and `mode` fields are optional for FTP deployments – defaults are
+used when they are not provided.
+
+In the CLI you can use the `--check-ftp` flag to safely validate your
+configuration before doing a live deployment. Additionally the `--simulate`
+flag allows running a simulated deployment for gaining extra confidence
+before deployment. In the graphical editor this functionality is also
+available in the top-right header menu.
 
 ```eno
 ftp_config:
@@ -130,12 +132,19 @@ poster_aspect: 16:9
 With `ssh_config` you can configure the remote `server`, `password`, `path`, `port`
 and `user` for SSH-based deployment.
 
-In order to prevent accidental deployments to wrong remote servers and paths,
-deployment requires the [base_url](#base_url) to be specified and the server to be set
-up so the contents at `ssh_config.path` are already accessible through the
-public [base_url](#base_url). Before deployment, Hyper 8 will do a test upload of a text file
-to the remote path and check if it's accessible through the public url - if
-it isn't, the test file is removed and the deployment aborted.
+A complete SSH configuration requires a `server`, `user`, and `path` at least, while
+`password` and `port` are optional.
+
+SSH deployment currently supports two authentication methods: Basic
+password-based authentication is performed if you supply a password. If you
+specify no password, authentication is attempted with the first public key
+found in your SSH agent.
+
+In the CLI you can use the `--check-ssh` flag to safely validate your
+configuration before doing a live deployment. Additionally the `--simulate`
+flag allows running a simulated deployment for gaining extra confidence
+before deployment. In the graphical editor this functionality is also
+available in the top-right header menu.
 
 ```eno
 ssh_config:

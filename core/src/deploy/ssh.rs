@@ -452,12 +452,15 @@ fn connect(
     session.handshake()?;
 
     let user = site.ssh_config.user_unchecked();
-    // TODO: Maybe dynamically fallback to agent/keyfile-based
-    // authentication if there is no password (none is required for the SSH
-    // configuration to be complete right now)
-    let password = site.ssh_config.password_unchecked();
 
-    session.userauth_password(user, password)?;
+    if let Some(password) = &site.ssh_config.password {
+        session.userauth_password(user, password)?;
+    } else {
+        // Without password we fall back to authentication through the primary
+        // identity of the system's ssh agent
+        // (see https://docs.rs/ssh2/latest/ssh2/struct.Session.html#method.userauth_agent)
+        session.userauth_agent(user)?;
+    }
 
     if !session.authenticated() {
         let message = translations.authentication_failed;

@@ -310,7 +310,7 @@ impl Translations {
         ssh_config_server_label: "Server address (e.g. ssh-user123.example.com)",
         ssh_config_user_label: "Username (e.g. user123)",
         ssh_deployment: "SSH Deployment",
-        ssh_deployment_text: "",
+        ssh_deployment_text: "SSH deployment currently supports two authentication methods: Basic password-based authentication is performed if you supply a password. If you specify no password, authentication is attempted with the first public key found in your SSH agent.",
         standalone: "Standalone",
         storage_usage: "Storage Usage",
         streaming_only: "Streaming only",
