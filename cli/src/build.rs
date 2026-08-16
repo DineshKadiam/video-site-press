@@ -37,9 +37,11 @@ pub fn build(
             DeploymentProtocol::Ssh
         };
 
+        let confirm = !args.get_flag("no-confirm");
         let simulate = args.get_flag("simulate");
 
         match perform_deploy_blocking_cli(
+            confirm,
             &context,
             protocol,
             simulate,

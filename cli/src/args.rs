@@ -108,6 +108,11 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .long("ip")
         .value_parser(value_parser!(IpAddr));
 
+    let no_confirm = Arg::new("no-confirm")
+        .action(ArgAction::SetTrue)
+        .help(r#"Skip all interactive confirmation prompts ("Really deploy?", etc.). For judicious use in automated pipelines."#)
+        .long("no-confirm");
+
     let port = Arg::new("port")
         .help("Manually set the port used by the web editor (otherwise automatically choose an available port)")
         .long("port")
@@ -150,6 +155,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .arg(deploy_ftp)
         .arg(deploy_ssh)
         .arg(ip)
+        .arg(no_confirm)
         .arg(port)
         .arg(preview)
         .arg(simulate)

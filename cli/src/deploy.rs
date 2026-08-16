@@ -22,6 +22,7 @@ use crate::style::{BRIGHT_BLACK, BRIGHT_YELLOW};
 /// back all messages and errors to the terminal. Asks for explicit
 /// (opt-in) confirmation before performing a live deployment.
 pub fn perform_deploy_blocking_cli(
+    confirm: bool,
     context: &Arc<Context>,
     protocol: DeploymentProtocol,
     simulate: bool,
@@ -33,7 +34,7 @@ pub fn perform_deploy_blocking_cli(
         return Err(message);
     }
 
-    if !simulate {
+    if !simulate && confirm {
         let t_really_deploy = translations.really_deploy;
         let base_url = &site.base_url.as_ref().unwrap().representation;
         eprintln!("{t_really_deploy} {BRIGHT_BLACK}{base_url}{BRIGHT_BLACK:#}");

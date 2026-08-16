@@ -49,6 +49,10 @@ the usage information.
 
   Manually set the ip address used by the editor or preview server (otherwise default to localhost)
 
+- `--no-confirm`
+
+  Skip all interactive confirmation prompts (*Really deploy?*, etc.). For judicious use in automated pipelines.
+
 - `--port <PORT>`
 
   Manually set the port used by the web editor (otherwise automatically choose an available port)
