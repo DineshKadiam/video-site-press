@@ -63,9 +63,10 @@ fn controls(
         let execute_deploy_ftp_action = routes::DEPLOY_EXECUTE_FTP;
         let simulate_deploy_ftp_action = routes::DEPLOY_SIMULATE_FTP;
         let ftp_ftps = if site.ftp_config.secure() { "FTPS" } else { "FTP" };
+        let server = site.ftp_config.server_unchecked();
          formatdoc!(r#"
             <li>
-                <span class="section">{ftp_ftps}</span>
+                <div class="section">{ftp_ftps} <span>{server}</span></div>
                 <ul>
                     <li>
                         <form
@@ -107,9 +108,10 @@ fn controls(
         let check_deploy_ssh_action = routes::DEPLOY_CHECK_SSH;
         let execute_deploy_ssh_action = routes::DEPLOY_EXECUTE_SSH;
         let simulate_deploy_ssh_action = routes::DEPLOY_SIMULATE_SSH;
+        let server = site.ssh_config.server_unchecked();
         formatdoc!(r#"
             <li>
-                <span class="section">SSH</span>
+                <div class="section">SSH <span>{server}</span></div>
                 <ul>
                     <li>
                         <form

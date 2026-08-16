@@ -223,7 +223,7 @@ impl Site {
                                 }
                                 "port" => {
                                     if let Some(value) = attribute.value() {
-                                        match value.parse::<usize>() {
+                                        match value.parse::<u16>() {
                                             Ok(number) => self.ftp_config.port = Some(number),
                                             Err(err) => {
                                                 let message = format!("The port option only accepts positive integer numbers ({err})");
@@ -315,7 +315,7 @@ impl Site {
                                 }
                                 "port" => {
                                     if let Some(value) = attribute.value() {
-                                        match value.parse::<usize>() {
+                                        match value.parse::<u16>() {
                                             Ok(number) => self.ssh_config.port = Some(number),
                                             Err(err) => {
                                                 let message = format!("The port option only accepts positive integer numbers ({err})");

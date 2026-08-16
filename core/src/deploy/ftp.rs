@@ -15,7 +15,9 @@ use hyper8_util::{nanoid, string_from_os_string};
 
 use crate::{Context, Site, SitePath};
 
+use super::DEFAULT_FTP_PORT;
 use super::{
+    DeploymentCheckStep,
     FtpStreamWrapper,
     SyncAction,
     SyncEntry,
@@ -46,26 +48,38 @@ const FTP_DEPLOYMENT_CHECK_TEXT: &str = indoc!("
 pub fn check_deployment_config(
     site: &Site,
     translations: &Translations
-) -> Vec<Result<String, String>> {
+) -> Vec<DeploymentCheckStep> {
     let mut steps = Vec::new();
 
-    let t_login = translations.login;
+    // Login
+
+    let port = site.ftp_config.port.unwrap_or(DEFAULT_FTP_PORT);
+    let server = site.ftp_config.server_unchecked();
+    let user = site.ftp_config.user_unchecked();
+
+    let mut login = DeploymentCheckStep::new(translations.login);
+
+    login.context(format!("{user}@{server}:{port}"));
 
     let mut ftp_stream_wrapper = match FtpStreamWrapper::connect(site) {
         Ok(ftp_stream_wrapper) => ftp_stream_wrapper,
         Err(err) => {
-            let t_failed = translations.failed;
-            steps.push(Err(format!("{t_login} – {t_failed} ({err})")));
+            login.message(err);
+
+            steps.push(login.fail());
             return steps;
         }
     };
 
-    let t_successful = translations.successful;
-    steps.push(Ok(format!("{t_login} – {t_successful}")));
+    steps.push(login.pass());
+
+    // Open remote directory
 
     let remote_dir = site.ftp_config.path_unchecked();
 
-    let t_remote_directory = translations.remote_directory;
+    let mut open_remote_directory = DeploymentCheckStep::new(translations.open_remote_directory);
+
+    open_remote_directory.context(remote_dir);
 
     // Check if the configured remote directory exists (by changing into it)
     if let Err(remote_dir_err) = ftp_stream_wrapper.cwd(&remote_dir) {
@@ -82,7 +96,9 @@ pub fn check_deployment_config(
                     &remote_dir_err.to_string()
                 );
 
-                steps.push(Err(format!("{t_remote_directory} – {message}")));
+                open_remote_directory.message(message);
+
+                steps.push(open_remote_directory.fail());
                 return steps;
             }
         }
@@ -92,36 +108,46 @@ pub fn check_deployment_config(
             &remote_dir_err.to_string()
         );
 
-        steps.push(Err(format!("{t_remote_directory} – {message}")));
+        open_remote_directory.message(message);
+
+        steps.push(open_remote_directory.fail());
         return steps;
     }
 
-    let t_found = translations.found;
-    steps.push(Ok(format!("{t_remote_directory} – {t_found}")));
+    steps.push(open_remote_directory.pass());
+
+    // Create test file
 
     let probe_signature = nanoid();
     let probe_content = format!("{FTP_DEPLOYMENT_CHECK_TEXT}\n\n{probe_signature}");
     let remote_probe_path = Path::new(remote_dir).join(FTP_DEPLOYMENT_CHECK_FILE_NAME);
 
-    // Write probe file
+    let mut create_test_file = DeploymentCheckStep::new(translations.create_test_file);
+
+    create_test_file.context(remote_probe_path.display().to_string());
+
     let mut reader = Cursor::new(probe_content.as_bytes());
+
+    // Perform write
     if let Err(err) = ftp_stream_wrapper.put_file(&remote_probe_path, &mut reader) {
-        let message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
-        steps.push(Err(format!("{t_remote_directory} – {message} ({err})")));
+        create_test_file.message(err.to_string());
+        steps.push(create_test_file.fail());
         return steps;
     }
 
-    let t_writeable = translations.writeable;
-    steps.push(Ok(format!("{t_remote_directory} – {t_writeable}")));
-    steps.push(Ok(translations.test_file_created.to_string()));
+    steps.push(create_test_file.pass());
 
-    let t_server_configuration = translations.server_configuration;
+    // Download and compare test file
+
+    let mut download_and_compare_test_file = DeploymentCheckStep::new(translations.download_and_compare_test_file);
 
     if let Some(base_url) = &site.base_url {
         let public_probe_url = site.absolute_url_file_unchecked(
             FTP_DEPLOYMENT_CHECK_FILE_NAME,
             &SitePath::root_path()
         );
+
+        download_and_compare_test_file.context(&public_probe_url);
 
         // Fetch probe file through public url and return result
         match minreq::get(public_probe_url.clone()).send() {
@@ -133,7 +159,10 @@ pub fn check_deployment_config(
                                 remote_dir,
                                 &base_url.representation
                             );
-                            steps.push(Ok(format!("{t_server_configuration} – {message}")));
+
+                            download_and_compare_test_file.message(message);
+
+                            steps.push(download_and_compare_test_file.pass());
                         } else {
                             let truncate = |text: &str| -> String {
                                 match text.char_indices().nth(64) {
@@ -153,7 +182,9 @@ pub fn check_deployment_config(
                                 &remote_probe_path.to_string_lossy()
                             );
 
-                            steps.push(Err(format!("{t_server_configuration} – {message}")));
+                            download_and_compare_test_file.message(message);
+
+                            steps.push(download_and_compare_test_file.fail());
                         }
                     }
                     Err(err) => {
@@ -163,7 +194,9 @@ pub fn check_deployment_config(
                             &public_probe_url
                         );
 
-                        steps.push(Err(format!("{t_server_configuration} – {message}")));
+                        download_and_compare_test_file.message(message);
+
+                        steps.push(download_and_compare_test_file.fail());
                     }
                 }
             }
@@ -174,22 +207,31 @@ pub fn check_deployment_config(
                     &public_probe_url
                 );
 
-                steps.push(Err(format!("{t_server_configuration} – {message}")));
+                download_and_compare_test_file.message(message);
+
+                steps.push(download_and_compare_test_file.fail());
             }
         }
     } else {
         let message = translations.the_public_site_address_is_not_configured_this_prevents_checking_text;
-        steps.push(Err(format!("{t_server_configuration} – {message}")));
+        download_and_compare_test_file.message(message);
+        steps.push(download_and_compare_test_file.skip());
     }
+
+    // Remove test file
+
+    let mut remove_test_file = DeploymentCheckStep::new(translations.remove_test_file);
+
+    remove_test_file.context(remote_probe_path.display().to_string());
 
     match ftp_stream_wrapper.rm(&remote_probe_path) {
         Ok(()) => {
-            steps.push(Ok(translations.test_file_removed.to_string()));
             let _ = ftp_stream_wrapper.quit();
+            steps.push(remove_test_file.pass());
         }
         Err(err) => {
-            let message = translations.the_test_file_could_not_be_removed_again(&err.to_string());
-            steps.push(Err(message));
+            remove_test_file.message(err.to_string());
+            steps.push(remove_test_file.fail());
         }
     }
 

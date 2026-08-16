@@ -25,6 +25,35 @@ use sync_error::SyncError;
 pub use ftp_config::FtpConfig;
 pub use ssh_config::SshConfig;
 
+const DEFAULT_FTP_PORT: u16 = 21;
+const DEFAULT_SSH_PORT: u16 = 22;
+
+#[derive(Debug)]
+pub struct DeploymentCheckStep {
+    /// Additional short, inlineable info such as the user, server, directory used
+    /// for the respective step
+    pub context: Option<String>,
+    /// Optional long (single or multi-line) message containing success or
+    /// error details
+    pub message: Option<String>,
+    result: DeploymentCheckStepResult,
+    pub subject: String
+}
+
+#[derive(Debug)]
+pub struct DeploymentCheckStepBuilder {
+    pub context: Option<String>,
+    pub message: Option<String>,
+    pub subject: String
+}
+
+#[derive(Debug)]
+enum DeploymentCheckStepResult {
+    Failed,
+    Passed,
+    Skipped
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum DeploymentProtocol {
     Ftp,
@@ -40,6 +69,69 @@ pub struct DeploymentState {
     // as well as in the CLI.
     pub feedback: String,
     pub started_at: Option<SystemTime>
+}
+
+impl DeploymentCheckStep {
+    pub fn failed(&self) -> bool {
+        matches!(self.result, DeploymentCheckStepResult::Failed)
+    }
+
+    pub fn new(subject: impl Into<String>) -> DeploymentCheckStepBuilder {
+        let subject = subject.into();
+
+        DeploymentCheckStepBuilder {
+            context: None,
+            message: None,
+            subject
+        }
+    }
+
+    pub fn passed(&self) -> bool {
+        matches!(self.result, DeploymentCheckStepResult::Passed)
+    }
+
+    pub fn skipped(&self) -> bool {
+        matches!(self.result, DeploymentCheckStepResult::Skipped)
+    }
+}
+
+impl DeploymentCheckStepBuilder {
+    pub fn context(&mut self, context: impl Into<String>) -> &DeploymentCheckStepBuilder {
+        self.context = Some(context.into());
+        self
+    }
+
+    pub fn fail(self) -> DeploymentCheckStep {
+        DeploymentCheckStep {
+            context: self.context,
+            message: self.message,
+            result: DeploymentCheckStepResult::Failed,
+            subject: self.subject
+        }
+    }
+
+    pub fn message(&mut self, message: impl Into<String>) -> &DeploymentCheckStepBuilder {
+        self.message = Some(message.into());
+        self
+    }
+
+    pub fn pass(self) -> DeploymentCheckStep {
+        DeploymentCheckStep {
+            context: self.context,
+            message: self.message,
+            result: DeploymentCheckStepResult::Passed,
+            subject: self.subject
+        }
+    }
+
+    pub fn skip(self) -> DeploymentCheckStep {
+        DeploymentCheckStep {
+            context: self.context,
+            message: self.message,
+            result: DeploymentCheckStepResult::Skipped,
+            subject: self.subject
+        }
+    }
 }
 
 impl DeploymentProtocol {
@@ -108,7 +200,7 @@ pub fn check_deployment_config(
     protocol: DeploymentProtocol,
     site: &Site,
     translations: &Translations
-) -> Vec<Result<String, String>> {
+) -> Vec<DeploymentCheckStep> {
     match protocol {
         DeploymentProtocol::Ftp => {
             ftp::check_deployment_config(

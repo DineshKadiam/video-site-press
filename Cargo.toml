@@ -20,6 +20,8 @@ actix-files = "0.6.10"
 actix-multipart = "0.8.0"
 actix-session = { features = ["cookie-session"], version = "0.11.0" }
 actix-web = { version = "4.14.0" }
+anstream = "1.0.0"
+anstyle = "1.0.14"
 base64 = "0.23.1"
 # Newer releases of bincode 1.3.3 are available, but unless we face strong
 # reasons to make changes here we stick with the pinned version, because

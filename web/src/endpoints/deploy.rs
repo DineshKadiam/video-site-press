@@ -35,25 +35,43 @@ fn check(
 
     let steps = check_deployment_config(protocol, &site, translations);
 
-    let failed_icon = hyper8_icons::failure(translations.failed);
-    let successful_icon = hyper8_icons::success(translations.successful);
-
-    let body = steps
+    let r_steps = steps
         .iter()
         .map(|step| {
-            match step {
-                Ok(message) => {
-                    let message_escaped = html_escape_outside_attribute(message);
-                    format!("<div>{successful_icon} {message_escaped}</div>")
-                }
-                Err(message) => {
-                    let message_escaped = html_escape_outside_attribute(message);
-                    format!("<div>{failed_icon} {message_escaped}</div>")
-                }
-            }
+            let context = if let Some(context) = &step.context {
+                let context_escaped = html_escape_outside_attribute(context);
+                format!(r#"<span class="check_context">{context_escaped}</span>"#)
+            } else {
+                String::new()
+            };
+
+            let icon = if step.failed() {
+                let icon = hyper8_icons::failure(translations.failed);
+                format!(r#"<span style="color: red;">{icon}</span>"#)
+            } else if step.passed() {
+                let icon = hyper8_icons::success(translations.successful);
+                format!(r#"<span style="color: green;">{icon}</span>"#)
+            } else /* if step.skipped() */ {
+                // TODO: Dedicated icon (e.g. "a slash/strike")
+                let icon = hyper8_icons::failure(translations.skipped);
+                format!(r#"<span style="color: orange;">{icon}</span>"#)
+            };
+
+            let message = if let Some(message) = &step.message {
+                let message_escaped = html_escape_outside_attribute(message);
+                format!(r#"<p class="check_message">{message_escaped}</p>"#)
+            } else {
+                String::new()
+            };
+
+            let subject = &step.subject;
+
+            format!(r#"<div>{icon} <span class="check_subject">{subject}</span> {context}</div>{message}"#)
         })
         .collect::<Vec<_>>()
         .join("");
+
+    let body = format!(r#"<div class="check">{r_steps}</div>"#);
 
     let html = layout(
         &body,

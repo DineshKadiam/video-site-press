@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024-2025 Simon Repp
+# SPDX-FileCopyrightText: 2024-2026 Simon Repp
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 [package]
@@ -11,6 +11,8 @@ version.workspace = true
 name = "hyper8_cli_lib"
 
 [dependencies]
+anstream.workspace = true
+anstyle.workspace = true
 base64.workspace = true
 clap.workspace = true
 ctrlc.workspace = true

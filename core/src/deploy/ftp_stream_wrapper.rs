@@ -18,9 +18,8 @@ use suppaftp::types::FileType;
 
 use crate::Site;
 
+use super::DEFAULT_FTP_PORT;
 use super::SyncError;
-
-const DEFAULT_FTP_PORT: usize = 21;
 
 // TODO: Not the case anymore, we could now access the needed traits
 // (requires reimplementation of a few things here of course)

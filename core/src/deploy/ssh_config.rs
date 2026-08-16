@@ -5,7 +5,7 @@
 pub struct SshConfig {
     pub password: Option<String>,
     pub path: Option<String>,
-    pub port: Option<usize>,
+    pub port: Option<u16>,
     pub server: Option<String>,
     pub user: Option<String>
 }

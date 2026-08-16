@@ -82,7 +82,7 @@ pub use context::{
     VideoParent,
     VideoUpdate
 };
-pub use deploy::{DeploymentProtocol, DeploymentState};
+pub use deploy::{DeploymentCheckStep, DeploymentProtocol, DeploymentState};
 pub use deploy::{check_deployment_config, start_deployment};
 pub use file_meta::FileMeta;
 pub use font::Font;

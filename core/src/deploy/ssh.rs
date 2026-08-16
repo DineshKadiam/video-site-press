@@ -26,14 +26,18 @@ use hyper8_util::{
 
 use crate::{Context, Site, SitePath};
 
-use super::{SyncAction, SyncEntry, SyncError};
+use super::DEFAULT_SSH_PORT;
+use super::{
+    DeploymentCheckStep,
+    SyncAction,
+    SyncEntry,
+    SyncError
+};
 
 /// SSH sync actions and entries represent modified time as 64-bit integers
 /// (seconds since UNIX Epoch)
 type SshSyncAction = SyncAction<u64>;
 type SshSyncEntry = SyncEntry<u64>;
-
-const DEFAULT_SSH_PORT: usize = 22;
 
 const SSH_DEPLOYMENT_CHECK_FILE_NAME: &str = ".hyper8_ssh_deployment_check.txt";
 const SSH_DEPLOYMENT_CHECK_TEXT: &str = indoc!("
@@ -54,26 +58,38 @@ const SSH_DEPLOYMENT_CHECK_TEXT: &str = indoc!("
 pub fn check_deployment_config(
     site: &Site,
     translations: &Translations
-) -> Vec<Result<String, String>> {
+) -> Vec<DeploymentCheckStep> {
     let mut steps = Vec::new();
 
-    let t_login = translations.login;
+    // Login
+
+    let port = site.ssh_config.port.unwrap_or(DEFAULT_SSH_PORT);
+    let server = site.ssh_config.server_unchecked();
+    let user = site.ssh_config.user_unchecked();
+
+    let mut login = DeploymentCheckStep::new(translations.login);
+
+    login.context(format!("{user}@{server}:{port}"));
 
     let (session, sftp) = match connect(site, translations) {
         Ok(session_sftp) => session_sftp,
         Err(err) => {
-            let t_failed = translations.failed;
-            steps.push(Err(format!("{t_login} – {t_failed} ({err})")));
+            login.message(err);
+
+            steps.push(login.fail());
             return steps;
         }
     };
 
-    let t_successful = translations.successful;
-    steps.push(Ok(format!("{t_login} – {t_successful}")));
+    steps.push(login.pass());
+
+    // Open remote directory
 
     let remote_dir = site.ssh_config.path_unchecked();
 
-    let t_remote_directory = translations.remote_directory;
+    let mut open_remote_directory = DeploymentCheckStep::new(translations.open_remote_directory);
+
+    open_remote_directory.context(remote_dir);
 
     // Check if the configured remote directory exists and is a file
     match sftp.stat(Path::new(remote_dir)) {
@@ -81,7 +97,9 @@ pub fn check_deployment_config(
             if !file_stat.is_dir() {
                 let message = translations.remote_dir_xxx_is_not_a_directory(remote_dir);
 
-                steps.push(Err(format!("{t_remote_directory} – {message}")));
+                open_remote_directory.message(message);
+
+                steps.push(open_remote_directory.fail());
                 return steps;
             }
         }
@@ -99,7 +117,9 @@ pub fn check_deployment_config(
                         &remote_dir_err.to_string()
                     );
 
-                    steps.push(Err(format!("{t_remote_directory} – {message}")));
+                    open_remote_directory.message(message);
+
+                    steps.push(open_remote_directory.fail());
                     return steps;
                 }
             }
@@ -109,45 +129,56 @@ pub fn check_deployment_config(
                 &remote_dir_err.to_string()
             );
 
-            steps.push(Err(format!("{t_remote_directory} – {message}")));
+            open_remote_directory.message(message);
+
+            steps.push(open_remote_directory.fail());
             return steps;
         }
     }
 
-    let t_found = translations.found;
-    steps.push(Ok(format!("{t_remote_directory} – {t_found}")));
+    steps.push(open_remote_directory.pass());
+
+    // Create test file
 
     let probe_signature = nanoid();
     let probe_content = format!("{SSH_DEPLOYMENT_CHECK_TEXT}\n\n{probe_signature}");
     let remote_probe_path = Path::new(remote_dir).join(SSH_DEPLOYMENT_CHECK_FILE_NAME);
 
-    // Write probe file
+    let mut create_test_file = DeploymentCheckStep::new(translations.create_test_file);
+
+    create_test_file.context(remote_probe_path.display().to_string());
+
+    // Perform write
     match sftp.create(&remote_probe_path) {
         Ok(mut file) => {
             if let Err(err) = file.write_all(probe_content.as_bytes()) {
-                let message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
-                steps.push(Err(format!("{t_remote_directory} – {message} ({err})")));
+                create_test_file.message(err.to_string());
+                steps.push(create_test_file.fail());
                 return steps;
             }
         }
         Err(err) => {
-            let message = translations.the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed;
-            steps.push(Err(format!("{t_remote_directory} – {message} ({err})")));
+            create_test_file.message(err.to_string());
+            steps.push(create_test_file.fail());
             return steps;
         }
     }
 
-    let t_writeable = translations.writeable;
-    steps.push(Ok(format!("{t_remote_directory} – {t_writeable}")));
-    steps.push(Ok(translations.test_file_created.to_string()));
+    steps.push(create_test_file.pass());
 
-    let t_server_configuration = translations.server_configuration;
+    // Download and compare test file
 
+    let mut download_and_compare_test_file = DeploymentCheckStep::new(translations.download_and_compare_test_file);
+
+    // TODO: Asides the parametrized test file name & content this part of the
+    // check could be 100% reused between FTP and SSH now
     if let Some(base_url) = &site.base_url {
         let public_probe_url = site.absolute_url_file_unchecked(
             SSH_DEPLOYMENT_CHECK_FILE_NAME,
             &SitePath::root_path()
         );
+
+        download_and_compare_test_file.context(&public_probe_url);
 
         // Fetch probe file through public url and return result
         match minreq::get(public_probe_url.clone()).send() {
@@ -159,7 +190,9 @@ pub fn check_deployment_config(
                                 remote_dir,
                                 &base_url.representation
                             );
-                            steps.push(Ok(format!("{t_server_configuration} – {message}")));
+                            download_and_compare_test_file.message(message);
+
+                            steps.push(download_and_compare_test_file.pass());
                         } else {
                             let truncate = |text: &str| -> String {
                                 match text.char_indices().nth(64) {
@@ -179,7 +212,9 @@ pub fn check_deployment_config(
                                 &remote_probe_path.to_string_lossy()
                             );
 
-                            steps.push(Err(format!("{t_server_configuration} – {message}")));
+                            download_and_compare_test_file.message(message);
+
+                            steps.push(download_and_compare_test_file.fail());
                         }
                     }
                     Err(err) => {
@@ -189,7 +224,9 @@ pub fn check_deployment_config(
                             &remote_probe_path.to_string_lossy()
                         );
 
-                        steps.push(Err(format!("{t_server_configuration} – {message}")));
+                        download_and_compare_test_file.message(message);
+
+                        steps.push(download_and_compare_test_file.fail());
                     }
                 }
             }
@@ -200,27 +237,36 @@ pub fn check_deployment_config(
                     &remote_probe_path.to_string_lossy()
                 );
 
-                steps.push(Err(format!("{t_server_configuration} – {message}")));
+                download_and_compare_test_file.message(message);
+
+                steps.push(download_and_compare_test_file.fail());
             }
         }
     } else {
         let message = translations.the_public_site_address_is_not_configured_this_prevents_checking_text;
-        steps.push(Err(format!("{t_server_configuration} – {message}")));
+        download_and_compare_test_file.message(message);
+        steps.push(download_and_compare_test_file.skip());
     }
+
+    // Remove test file
+
+    let mut remove_test_file = DeploymentCheckStep::new(translations.remove_test_file);
+
+    remove_test_file.context(remote_probe_path.display().to_string());
 
     match sftp.unlink(&remote_probe_path) {
         Ok(()) => {
-            steps.push(Ok(translations.test_file_removed.to_string()));
-
             let _ = session.disconnect(
                 Some(DisconnectCode::ByApplication),
                 "",
                 None
             );
+
+            steps.push(remove_test_file.pass());
         }
         Err(err) => {
-            let message = translations.the_test_file_could_not_be_removed_again(&err.to_string());
-            steps.push(Err(message));
+            remove_test_file.message(err.to_string());
+            steps.push(remove_test_file.fail());
         }
     }
 

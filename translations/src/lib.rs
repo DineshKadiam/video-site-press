@@ -80,6 +80,7 @@ pub struct Translations {
     pub create_playlist: &'static str,
     pub create_site: &'static str,
     pub create_subcollection: &'static str,
+    pub create_test_file: &'static str,
     pub create_video: &'static str,
     creating_directory_xxx: &'static str,
     current_video_xxx_of_xxx_in_xxx: &'static str,
@@ -114,6 +115,7 @@ pub struct Translations {
     pub documentation: &'static str,
     pub donate: &'static str,
     pub download: &'static str,
+    pub download_and_compare_test_file: &'static str,
     pub download_only: &'static str,
     pub download_permalink: &'static str,
     pub downloads: &'static str,
@@ -139,7 +141,6 @@ pub struct Translations {
     files_are_being_deployed_to_xxx: &'static str,
     pub filter: &'static str,
     pub focus_search_field: &'static str,
-    pub found: &'static str,
     pub frame_rate: &'static str,
     pub ftp_config_password_label: &'static str,
     pub ftp_config_path_label: &'static str,
@@ -230,6 +231,7 @@ pub struct Translations {
     pub open_browse_panel: &'static str,
     pub open_existing_site: &'static str,
     pub open_in_file_manager: &'static str,
+    pub open_remote_directory: &'static str,
     pub opus_recommended_highest_efficiency: &'static str,
     pub order_in_which_playlists_and_subcollections_appear: &'static str,
     pub original: &'static str,
@@ -269,8 +271,8 @@ pub struct Translations {
     pub release_date_descending: &'static str,
     remote_dir_does_not_exist_ancestor_dir_found: &'static str,
     remote_dir_xxx_is_not_a_directory: &'static str,
-    pub remote_directory: &'static str,
     pub remove_from_list: &'static str,
+    pub remove_test_file: &'static str,
     pub render_format: &'static str,
     pub replay: &'static str,
     pub resolution: &'static str,
@@ -293,6 +295,7 @@ pub struct Translations {
     pub site_setup_change_note: &'static str,
     site_setup_text: &'static str,
     pub skip_to_main_content: &'static str,
+    pub skipped: &'static str,
     pub sort_number: &'static str,
     pub sort_number_ascending: &'static str,
     pub sort_number_descending: &'static str,
@@ -313,8 +316,6 @@ pub struct Translations {
     pub subtitles: &'static str,
     pub successful: &'static str,
     pub synopsis: &'static str,
-    pub test_file_created: &'static str,
-    pub test_file_removed: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
     pub textarea_formatting_hint_text: &'static str,
     the_editor_is_available_at_xxx: &'static str,
@@ -328,8 +329,6 @@ pub struct Translations {
     pub the_subtitle_requested_for_deletion_was_not_found: &'static str,
     pub the_subtitles_to_be_updated_were_not_found: &'static str,
     the_test_file_contains_xxx_but_the_response_contained_xxx: &'static str,
-    the_test_file_could_not_be_removed_again: &'static str,
-    pub the_test_file_upload_for_verifying_your_deployment_configuration_did_not_succeed: &'static str,
     the_xxx_child_process_could_not_be_executed: &'static str,
     the_xxx_child_process_terminated_unsuccessfully: &'static str,
     pub theme: &'static str,
@@ -542,14 +541,6 @@ impl Translations {
             .replace("{expected}", expected)
     }
 
-    pub fn the_test_file_could_not_be_removed_again(
-        &self,
-        error: &str
-    ) -> String {
-        self.the_test_file_could_not_be_removed_again
-            .replace("{error}", error)
-    }
-
     pub fn the_xxx_child_process_could_not_be_executed(&self, command: &str) -> String {
         self.the_xxx_child_process_could_not_be_executed.replace("{command}", command)
     }
@@ -655,7 +646,6 @@ fn check_translations() {
         assert!(&translations.the_subtitle_extension_of_xxx_is_not_supported_please_upload_only_srt_or_vtt_files.contains("{filename}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{encountered}"));
         assert!(&translations.the_test_file_contains_xxx_but_the_response_contained_xxx.contains("{expected}"));
-        assert!(&translations.the_test_file_could_not_be_removed_again.contains("{error}"));
         assert!(&translations.the_xxx_child_process_could_not_be_executed.contains("{command}"));
         assert!(&translations.the_xxx_child_process_terminated_unsuccessfully.contains("{command}"));
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));

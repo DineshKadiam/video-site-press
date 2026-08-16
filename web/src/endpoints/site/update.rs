@@ -85,7 +85,7 @@ pub async fn update(
         None
     } else {
         Some(
-            ftp_config_port_trimmed.parse::<usize>().map_err(|err| err.to_string())
+            ftp_config_port_trimmed.parse::<u16>().map_err(|err| err.to_string())
         )
     };
 
@@ -94,7 +94,7 @@ pub async fn update(
         None
     } else {
         Some(
-            ssh_config_port_trimmed.parse::<usize>().map_err(|err| err.to_string())
+            ssh_config_port_trimmed.parse::<u16>().map_err(|err| err.to_string())
         )
     };
 

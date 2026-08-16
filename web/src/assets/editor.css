@@ -175,6 +175,8 @@ button.big {
     display: flex;
     margin: 1rem 0;
 }
+.check_context { color: var(--f3); }
+.check_subject { color: var(--f1); }
 .collection_title {
     color: var(--b1);
     font-size: 1.17rem;
@@ -448,7 +450,13 @@ main {
 .menu li .section {
     font-size: .9rem;
     font-weight: 600;
-    padding: .3rem .6rem;
+    padding: .6rem;
+}
+.menu li .section span {
+    color: var(--f3);
+    display: block;
+    font-size: .8rem;
+    font-weight: 400;
 }
 .menu ul {
     list-style: none;

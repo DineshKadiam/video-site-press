@@ -14,6 +14,7 @@ mod build;
 mod check;
 mod deploy;
 mod serve;
+mod style;
 
 use args::ArgMode;
 use build::build;
