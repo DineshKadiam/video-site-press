@@ -213,7 +213,6 @@ pub struct Translations {
     pub new_subcollection: &'static str,
     pub new_video: &'static str,
     pub no_audio: &'static str,
-    pub no_complete_deployment_configuration_found: &'static str,
     pub no_jobs_yet: &'static str,
     pub no_language_info: &'static str,
     pub no_sites: &'static str,
@@ -392,7 +391,6 @@ pub struct Translations {
     pub xxx_pending_jobs: &'static str,
     pub xxx_videos: &'static str,
     pub you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: &'static str,
-    pub you_need_to_additionally_pass_ftp_or_ssh_text: &'static str
 }
 
 impl Translations {

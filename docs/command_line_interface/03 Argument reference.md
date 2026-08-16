@@ -1,9 +1,11 @@
 <!--
-    SPDX-FileCopyrightText: 2024-2025 Simon Repp
+    SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
 # Argument reference
+
+**For the latest and most complete information run `hyper8 --help`**
 
 General usage is:
 
@@ -23,7 +25,7 @@ the usage information.
 
 - `--build`, `-b`
 
-  Directly builds the site without starting the editor
+  Directly build the site without starting the editor
 
 - `--build-dir <BUILD_DIR>`
 
@@ -43,29 +45,44 @@ the usage information.
 
   (Default location: .hyper8_cache/ inside the site directory)
 
-- `--deploy`, `-d`
-
-  Directly deploys the site - only applicable in combination with `--build`
-
 - `--ip <IP>`
 
-  Manually sets the ip address used by the editor or preview server (otherwise defaults to localhost)
+  Manually set the ip address used by the editor or preview server (otherwise default to localhost)
 
 - `--port <PORT>`
 
-  Manually sets the port used by the editor or preview server (otherwise chooses an available port on its own)
+  Manually set the port used by the web editor (otherwise automatically choose an available port)
 
 - `--preview`, `-p`
 
-  Use in conjunction with `--build` to immediately open the site in the browser after the build is complete
+  Open the site in the browser after building. Use with `--build`.
 
 - `--workers <COUNT>`
 
   Set how many background workers should be run. The count can be no less than 2 - one worker for fast jobs (video analysis, thumbnails), one worker for slow jobs (audio/video transcoding).
 
-## Note on accuracy
+- `--version`, `-V`
 
-This page will generally be kept up-to-date with Hyper 8's latest CLI usage
-information, but for the most authoritative and up-to-date information it is
-still recommended to just consult `hyper8 --help` for your installed
-version.
+  Print version
+
+## Deployment options
+
+- `--check-ftp`
+
+  Run a check to verify that the FTP/FTPS deployment configuration and server setup is correct.
+
+- `--check-ssh`
+
+  Run a check to verify that the SSH deployment configuration and server setup is correct.
+
+- `--deploy-ftp`
+
+  Deploy the site over FTP/FTPS. Use with `--build`.
+
+- `--deploy-ssh`
+
+  Deploy the site over SSH. Use with `--build`.
+
+- `--simulate`
+
+  Simulate deployment by merely printing, but not executing, file synchronization actions. Use with `--deploy`.

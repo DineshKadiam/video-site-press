@@ -216,7 +216,6 @@ impl Translations {
         new_subcollection: "New Subcollection",
         new_video: "New Video",
         no_audio: "No audio",
-        no_complete_deployment_configuration_found: "No complete deployment configuration found",
         no_jobs_yet: "No jobs yet",
         no_language_info: "No language info",
         no_sites: "No sites",
@@ -401,6 +400,5 @@ impl Translations {
         xxx_pending_jobs: "{count} pending jobs",
         xxx_videos: "{count} videos",
         you_need_not_provide_both_a_title_and_permalink_but_one_of_the_two_must_be_provided: "You need not provide both a title and permalink, but one of the two must be provided.",
-        you_need_to_additionally_pass_ftp_or_ssh_text: "You need to additionally pass --ftp or --ssh to select which protocol should be used for deployment"
     };
 }

@@ -4,7 +4,13 @@
 use std::net::IpAddr;
 use std::path::PathBuf;
 
-use clap::{Arg, ArgAction, ArgMatches, Command};
+use clap::{
+    Arg,
+    ArgAction,
+    ArgGroup,
+    ArgMatches,
+    Command
+};
 use clap::value_parser;
 use indoc::indoc;
 
@@ -24,13 +30,13 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
     match arg_mode {
         ArgMode::CliOnly => {
             about = "A static site generator for video publishing (Command line only edition)";
-            after_help_text = None;
+            after_help_text = "Without specific flags (--build, etc.) the editor is started.";
             site_dir_required = true;
             version = format!("{VERSION_WITH_PATCH_AND_REVISION} (Command line only edition)");
         }
         ArgMode::Desktop => {
             about = "A static site generator for video publishing (Full desktop edition)";
-            after_help_text = Some("To start the graphical launcher pass no arguments at all");
+            after_help_text = "To start the graphical launcher pass no arguments at all.";
             site_dir_required = false;
             version = format!("{VERSION_WITH_PATCH_AND_REVISION} (Full desktop edition)");
         }
@@ -38,7 +44,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
 
     let build = Arg::new("build")
         .action(ArgAction::SetTrue)
-        .help("Directly builds the site without starting the editor")
+        .help("Directly build the site without starting the editor")
         .long("build")
         .short('b');
 
@@ -66,92 +72,91 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .long("cache-dir")
         .value_parser(value_parser!(PathBuf));
 
+    let check = ArgGroup::new("check")
+        .args(["check-ftp", "check-ssh"]);
+
     let check_ftp = Arg::new("check-ftp")
         .action(ArgAction::SetTrue)
-        .help("Run a check to verify that the FTP deployment configuration and server setup is correct")
+        .help("Run a check to verify that the FTP/FTPS deployment configuration and server setup is correct.")
+        .help_heading("Deployment options")
         .long("check-ftp");
 
     let check_ssh = Arg::new("check-ssh")
         .action(ArgAction::SetTrue)
-        .help("Run a check to verify that the SSH deployment configuration and server setup is correct")
+        .help("Run a check to verify that the SSH deployment configuration and server setup is correct.")
+        .help_heading("Deployment options")
         .long("check-ssh");
 
-    let deploy = Arg::new("deploy")
-        .action(ArgAction::SetTrue)
-        .help("Directly deploys the site - only applicable in combination with --build")
-        .long("deploy")
-        .requires("build")
-        .short('d');
+    let deploy = ArgGroup::new("deploy")
+        .args(["deploy-ftp", "deploy-ssh"])
+        .requires("build");
 
-    let ftp = Arg::new("ftp")
+    let deploy_ftp = Arg::new("deploy-ftp")
         .action(ArgAction::SetTrue)
-        .conflicts_with("ssh")
-        .help("Use FTP deployment when both FTP and SSH deployment are configured – use with --deploy")
-        .long("ftp")
-        .requires("deploy");
+        .help("Deploy the site over FTP/FTPS. Use with --build.")
+        .help_heading("Deployment options")
+        .long("deploy-ftp");
+
+    let deploy_ssh = Arg::new("deploy-ssh")
+        .action(ArgAction::SetTrue)
+        .help("Deploy the site over SSH. Use with --build.")
+        .help_heading("Deployment options")
+        .long("deploy-ssh");
 
     let ip = Arg::new("ip")
-        .help("Manually sets the ip address used by the editor or preview server (otherwise defaults to localhost)")
+        .help("Manually set the ip address used by the editor or preview server (otherwise default to localhost)")
         .long("ip")
         .value_parser(value_parser!(IpAddr));
 
     let port = Arg::new("port")
-        .help("Manually sets the port used by the web editor (otherwise chooses an available port on its own)")
+        .help("Manually set the port used by the web editor (otherwise automatically choose an available port)")
         .long("port")
         .value_parser(value_parser!(u16));
 
     let preview = Arg::new("preview")
         .action(ArgAction::SetTrue)
-        .help("Use in conjunction with --build to immediately open the site in the browser after the build is complete")
+        .help("Open the site in the browser after building. Use with --build.")
         .long("preview")
         .requires("build")
         .short('p');
 
     let simulate = Arg::new("simulate")
         .action(ArgAction::SetTrue)
-        .help("Simulate deployment, merely reporting, but not taking, any planned file synchronization actions – use with --deploy")
+        .help("Simulate deployment by merely printing, but not executing, file synchronization actions. Use with --deploy.")
+        .help_heading("Deployment options")
         .long("simulate")
         .requires("deploy");
 
     let site_dir = Arg::new("site-dir")
-        .help("The path at which the site resides (user videos and metadata)")
+        .help("The path at which the site resides (site manifest, videos, etc.)")
         .required(site_dir_required)
         .value_parser(value_parser!(PathBuf));
 
-    let ssh = Arg::new("ssh")
-        .action(ArgAction::SetTrue)
-        .conflicts_with("ftp")
-        .help("Use SSH deployment when both FTP and SSH deployment are configured – use with --deploy")
-        .long("ssh")
-        .requires("deploy");
-
     let workers = Arg::new("workers")
-        .help("The number of threads to run for background processing (metadata computation, image processing, video/audio transcoding, etc.)")
+        .help("Set the number of threads used for background processing (metadata computation, image processing, video/audio transcoding, etc.)")
         .long("workers")
         .value_parser(worker_count);
 
-    let mut command = Command::new("Hyper 8 Video System")
+    let command = Command::new("Hyper 8 Video System")
         .about(about)
+        .after_help(after_help_text)
         .arg(build)
         .arg(build_dir)
         .arg(cache_dir)
+        .group(check)
         .arg(check_ftp)
         .arg(check_ssh)
-        .arg(deploy)
-        .arg(ftp)
+        .group(deploy)
+        .arg(deploy_ftp)
+        .arg(deploy_ssh)
         .arg(ip)
         .arg(port)
         .arg(preview)
         .arg(simulate)
         .arg(site_dir)
-        .arg(ssh)
         .arg(workers)
         .next_line_help(true)
         .version(version);
-
-    if let Some(after_help_text) = after_help_text {
-        command = command.after_help(after_help_text);
-    }
 
     command.get_matches()
 }

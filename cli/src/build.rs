@@ -28,15 +28,13 @@ pub fn build(
         return ExitCode::FAILURE;
     }
 
-    if args.get_flag("deploy") {
+    if args.contains_id("deploy") {
         let site = context.get_site();
 
-        let protocol = if args.get_flag("ftp") {
-            Some(DeploymentProtocol::Ftp)
-        } else if args.get_flag("ssh") {
-            Some(DeploymentProtocol::Ssh)
-        } else {
-            None
+        let protocol = if args.get_flag("deploy-ftp") {
+            DeploymentProtocol::Ftp
+        } else /* if args.get_flag("deploy-ssh") */ {
+            DeploymentProtocol::Ssh
         };
 
         let simulate = args.get_flag("simulate");
