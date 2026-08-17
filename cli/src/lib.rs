@@ -7,7 +7,7 @@ use std::process::ExitCode;
 use clap::ArgMatches;
 use sys_locale::get_locale;
 
-use hyper8_core::{Context, DeploymentProtocol, Language};
+use hyper8_core::{Context, Language, SyncProtocol};
 
 mod args;
 mod build;
@@ -61,9 +61,9 @@ fn handle(args: ArgMatches) -> ExitCode {
     );
 
     if args.get_flag("check-ftp") {
-        check(context, DeploymentProtocol::Ftp, translations)
+        check(context, SyncProtocol::Ftp, translations)
     } else if args.get_flag("check-ssh") {
-        check(context, DeploymentProtocol::Ssh, translations)
+        check(context, SyncProtocol::Ssh, translations)
     } else if args.get_flag("build") {
         build(args, context, translations)
     } else {

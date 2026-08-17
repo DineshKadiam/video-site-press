@@ -50,7 +50,7 @@ pub mod watcher;
 
 use audio_meta::AudioMeta;
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
-use deploy::{FtpConfig, SshConfig};
+use deploy::{FtpConfig, SshConfig, SyncError};
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
 use jobs::{CompletedJob, JobError, QueuedJob, Worker};
@@ -82,8 +82,8 @@ pub use context::{
     VideoParent,
     VideoUpdate
 };
-pub use deploy::{DeploymentCheckStep, DeploymentProtocol, DeploymentState};
-pub use deploy::{check_deployment_config, start_deployment};
+pub use deploy::{SyncConfigCheckStep, SyncProtocol, SyncState};
+pub use deploy::{check_deployment_config, start_sync};
 pub use file_meta::FileMeta;
 pub use font::Font;
 pub use hyper_dir::HyperDir;

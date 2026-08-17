@@ -24,20 +24,20 @@ fn controls(
     translations: &Translations
 ) -> String {
     let deployment_status = {
-        let deployment = &context.deploying.lock().unwrap();
+        let sync_state = &context.sync_state.lock().unwrap();
 
-        if deployment.active() {
+        if sync_state.syncing() {
             let t_deploying  = translations.deploying;
-            let duration = precise_duration(deployment.duration_secs_unchecked());
+            let duration = precise_duration(sync_state.duration_secs_unchecked());
 
             formatdoc!(r#"
                 <a href="/deployment">
                     {t_deploying} ({duration})
                 </a>
             "#)
-        } else if deployment.completed() {
+        } else if sync_state.finished() {
             let t_deployment_finished = translations.deployment_finished;
-            let duration = precise_duration(deployment.duration_secs_unchecked());
+            let duration = precise_duration(sync_state.duration_secs_unchecked());
 
             formatdoc!(r#"
                 <a href="/deployment">
@@ -59,9 +59,9 @@ fn controls(
         let t_really_deploy = translations.really_deploy;
         let t_simulate = translations.simulate;
 
-        let check_deploy_ftp_action = routes::DEPLOY_CHECK_FTP;
-        let execute_deploy_ftp_action = routes::DEPLOY_EXECUTE_FTP;
-        let simulate_deploy_ftp_action = routes::DEPLOY_SIMULATE_FTP;
+        let sync_check_ftp_action = routes::SYNC_CHECK_FTP;
+        let sync_ftp_action = routes::SYNC_FTP;
+        let simulate_sync_ftp_action = routes::SIMULATE_SYNC_FTP;
         let ftp_ftps = if site.ftp_config.secure() { "FTPS" } else { "FTP" };
         let server = site.ftp_config.server_unchecked();
          formatdoc!(r#"
@@ -70,7 +70,7 @@ fn controls(
                 <ul>
                     <li>
                         <form
-                            action="{execute_deploy_ftp_action}"
+                            action="{sync_ftp_action}"
                             data-confirm
                             data-confirm-label="{t_deploy}"
                             data-confirm-text="{t_really_deploy}{base_url}"
@@ -79,12 +79,12 @@ fn controls(
                         </form>
                     </li>
                     <li>
-                        <form action="{simulate_deploy_ftp_action}" method="post">
+                        <form action="{simulate_sync_ftp_action}" method="post">
                             <button>{t_simulate}</button>
                         </form>
                     </li>
                     <li>
-                        <form action="{check_deploy_ftp_action}" method="post">
+                        <form action="{sync_check_ftp_action}" method="post">
                             <button>{t_configuration_check}</button>
                         </form>
                     </li>
@@ -105,9 +105,9 @@ fn controls(
         let t_really_deploy = translations.really_deploy;
         let t_simulate = translations.simulate;
 
-        let check_deploy_ssh_action = routes::DEPLOY_CHECK_SSH;
-        let execute_deploy_ssh_action = routes::DEPLOY_EXECUTE_SSH;
-        let simulate_deploy_ssh_action = routes::DEPLOY_SIMULATE_SSH;
+        let sync_check_ssh_action = routes::SYNC_CHECK_SSH;
+        let sync_ssh_action = routes::SYNC_SSH;
+        let simulate_sync_ssh_action = routes::SIMULATE_SYNC_SSH;
         let server = site.ssh_config.server_unchecked();
         formatdoc!(r#"
             <li>
@@ -115,7 +115,7 @@ fn controls(
                 <ul>
                     <li>
                         <form
-                            action="{execute_deploy_ssh_action}"
+                            action="{sync_ssh_action}"
                             data-confirm
                             data-confirm-label="{t_deploy}"
                             data-confirm-text="{t_really_deploy}{base_url}"
@@ -124,12 +124,12 @@ fn controls(
                         </form>
                     </li>
                     <li>
-                        <form action="{simulate_deploy_ssh_action}" method="post">
+                        <form action="{simulate_sync_ssh_action}" method="post">
                             <button>{t_simulate}</button>
                         </form>
                     </li>
                     <li>
-                        <form action="{check_deploy_ssh_action}" method="post">
+                        <form action="{sync_check_ssh_action}" method="post">
                             <button>{t_configuration_check}</button>
                         </form>
                     </li>

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use actix_web::web::{Data, Json, Path as ActixPath};
 use serde_derive::Serialize;
 
-use hyper8_core::{DeploymentState, JobProgress, SitePath};
+use hyper8_core::{JobProgress, SitePath, SyncState};
 
 use crate::Context;
 
@@ -45,15 +45,15 @@ pub struct Report {
 }
 
 impl DeploymentInfo {
-    pub fn new(deployment_state: &DeploymentState) -> DeploymentInfo {
+    pub fn new(sync_state: &SyncState) -> DeploymentInfo {
         let deployed_in;
         let deploying_since;
 
-        if deployment_state.active() {
+        if sync_state.syncing() {
             deployed_in = None;
-            deploying_since = Some(deployment_state.duration_secs_unchecked());
-        } else if deployment_state.completed() {
-            deployed_in = Some(deployment_state.duration_secs_unchecked());
+            deploying_since = Some(sync_state.duration_secs_unchecked());
+        } else if sync_state.finished() {
+            deployed_in = Some(sync_state.duration_secs_unchecked());
             deploying_since = None;
         } else {
             deployed_in = None;
@@ -63,7 +63,7 @@ impl DeploymentInfo {
         DeploymentInfo {
             deployed_in,
             deploying_since,
-            feedback: deployment_state.feedback.clone()
+            feedback: sync_state.log.clone()
         }
     }
 }
@@ -111,8 +111,8 @@ fn processing(
     site_path: Option<&SitePath>
 ) -> Json<Report> {
     let deployment_info = {
-        let deployment_state = context.deploying.lock().unwrap();
-        DeploymentInfo::new(&deployment_state)
+        let sync_state = context.sync_state.lock().unwrap();
+        DeploymentInfo::new(&sync_state)
     };
 
     let mut global_job_report = JobReport::new();

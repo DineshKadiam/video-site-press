@@ -18,9 +18,9 @@ pub async fn build(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let pending_deployment = context.deploying.lock().unwrap().active();
+    let syncing = context.sync_state.lock().unwrap().syncing();
 
-    if pending_deployment {
+    if syncing {
         let session_state = SessionState::all(&context.server_mode, &session);
         let message = session_state.language.translations.preview_is_only_available_again_after_the_current_deployment_is_finished;
         return Either::Right(error_page(&context, message, &session_state));

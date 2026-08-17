@@ -10,10 +10,10 @@ use anstream::eprintln;
 
 use hyper8_core::{
     Context,
-    DeploymentProtocol,
-    Site
+    Site,
+    SyncProtocol
 };
-use hyper8_core::start_deployment;
+use hyper8_core::start_sync;
 use hyper8_translations::Translations;
 
 use crate::style::{BRIGHT_BLACK, BRIGHT_YELLOW};
@@ -24,7 +24,7 @@ use crate::style::{BRIGHT_BLACK, BRIGHT_YELLOW};
 pub fn perform_deploy_blocking_cli(
     confirm: bool,
     context: &Arc<Context>,
-    protocol: DeploymentProtocol,
+    protocol: SyncProtocol,
     simulate: bool,
     site: &Site,
     translations: &Translations
@@ -51,7 +51,7 @@ pub fn perform_deploy_blocking_cli(
         }
     }
 
-    start_deployment(
+    start_sync(
         context,
         protocol,
         simulate,
@@ -59,20 +59,20 @@ pub fn perform_deploy_blocking_cli(
         translations
     )?;
 
-    let mut seen_feedback = 0;
+    let mut seen_log_range = 0;
 
     loop {
         thread::sleep(Duration::from_secs(1));
 
-        if let Ok(deployment) = context.deploying.lock() {
-            let feedback = &deployment.feedback;
+        if let Ok(sync_state) = context.sync_state.lock() {
+            let log = &sync_state.log;
 
-            if feedback.len() > seen_feedback {
-                eprintln!("{}", &feedback[seen_feedback..]);
-                seen_feedback = feedback.len();
+            if log.len() > seen_log_range {
+                eprintln!("{}", &log[seen_log_range..]);
+                seen_log_range = log.len();
             }
 
-            if !deployment.active() {
+            if !sync_state.syncing() {
                 break;
             }
         }

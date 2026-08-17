@@ -88,12 +88,6 @@ pub fn convert_to_video(site_path: &SitePath) -> String {
 }
 
 pub const DASHBOARD: &str = "/";
-pub const DEPLOY_CHECK_FTP: &str = "/deploy/ftp/check";
-pub const DEPLOY_CHECK_SSH: &str = "/deploy/ssh/check";
-pub const DEPLOY_EXECUTE_FTP: &str = "/deploy/ftp/execute";
-pub const DEPLOY_EXECUTE_SSH: &str = "/deploy/ssh/execute";
-pub const DEPLOY_SIMULATE_FTP: &str = "/deploy/ftp/simulate";
-pub const DEPLOY_SIMULATE_SSH: &str = "/deploy/ssh/simulate";
 pub const JOBS: &str = "/jobs";
 
 pub fn playlist_add_link(playlist: &Playlist) -> String {
@@ -161,8 +155,14 @@ pub fn preview(site_path: &SitePath) -> String {
     format!("/build/{}", site_path.normalized())
 }
 
+pub const SIMULATE_SYNC_FTP: &str = "/sync/ftp/simulate";
+pub const SIMULATE_SYNC_SSH: &str = "/sync/ssh/simulate";
 pub const SITE_EDIT: &str = "/site/edit/";
 pub const SITE_MANIFEST: &str = "/site/manifest/";
+pub const SYNC_CHECK_FTP: &str = "/sync/ftp/check";
+pub const SYNC_CHECK_SSH: &str = "/sync/ssh/check";
+pub const SYNC_FTP: &str = "/sync/ftp";
+pub const SYNC_SSH: &str = "/sync/ssh";
 
 // TODO: This is nested in the video endpoint, but currently this is called
 // from a collection, playlist and video context, so semantically it would

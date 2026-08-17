@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -38,14 +38,14 @@ pub async fn deployment(
         body.push_str(&text);
     }
 
-    if let Ok(deployment) = context.deploying.lock() {
-        let feedback = &deployment.feedback;
+    if let Ok(sync_state) = context.sync_state.lock() {
+        let log = &sync_state.log;
 
-        let ellipsis = if deployment.active() { "\n…" } else { "" };
+        let ellipsis = if sync_state.syncing() { "\n…" } else { "" };
 
         let wrapped = formatdoc!(r#"
             <pre id="deployment_feedback">
-                {feedback}{ellipsis}
+                {log}{ellipsis}
             </pre>
         "#);
 

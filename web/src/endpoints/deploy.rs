@@ -8,11 +8,11 @@ use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Either, Redirect};
 
-use hyper8_core::{DeploymentProtocol, Site};
+use hyper8_core::{Site, SyncProtocol};
 use hyper8_core::{
     check_deployment_config,
     perform_build,
-    start_deployment
+    start_sync
 };
 use hyper8_translations::Translations;
 use hyper8_util::html_escape_outside_attribute;
@@ -22,7 +22,7 @@ use crate::widgets::{error_page, layout};
 
 fn check(
     context: Data<Arc<Context>>,
-    protocol: DeploymentProtocol,
+    protocol: SyncProtocol,
     session: Session
 ) -> HttpResponse {
     let session_state = SessionState::all(&context.server_mode, &session);
@@ -64,9 +64,9 @@ fn check(
                 String::new()
             };
 
-            let subject = &step.subject;
+            let label = &step.label;
 
-            format!(r#"<div>{icon} <span class="check_subject">{subject}</span> {context}</div>{message}"#)
+            format!(r#"<div>{icon} <span class="check_subject">{label}</span> {context}</div>{message}"#)
         })
         .collect::<Vec<_>>()
         .join("");
@@ -91,18 +91,18 @@ pub async fn check_ftp(
     context: Data<Arc<Context>>,
     session: Session
 ) -> HttpResponse {
-    check(context, DeploymentProtocol::Ftp, session)
+    check(context, SyncProtocol::Ftp, session)
 }
 
 pub async fn check_ssh(
     context: Data<Arc<Context>>,
     session: Session
 ) -> HttpResponse {
-    check(context, DeploymentProtocol::Ssh, session)
+    check(context, SyncProtocol::Ssh, session)
 }
 
 fn ensure_config<'a>(
-    protocol: DeploymentProtocol,
+    protocol: SyncProtocol,
     site: &Site,
     translations: &'a Translations
 ) -> Result<(), &'a str> {
@@ -113,9 +113,9 @@ fn ensure_config<'a>(
     }
 }
 
-fn execute(
+fn sync(
     context: Data<Arc<Context>>,
-    protocol: DeploymentProtocol,
+    protocol: SyncProtocol,
     session: Session,
     simulate: bool
 ) -> Either<Redirect, HttpResponse> {
@@ -133,7 +133,7 @@ fn execute(
         return Either::Right(error_page(&context, &message, &session_state));
     }
 
-    let deploy_result = start_deployment(
+    let sync_result = start_sync(
         &context.core_context,
         protocol,
         simulate,
@@ -141,31 +141,31 @@ fn execute(
         translations
     );
 
-    match deploy_result {
+    match sync_result {
         Ok(()) => Either::Left(Redirect::to("/deployment").see_other()),
         Err(err) => Either::Right(error_page(&context, &err, &session_state))
     }
 }
 
-pub async fn execute_ftp(
+pub async fn sync_ftp(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    execute(
+    sync(
         context,
-        DeploymentProtocol::Ftp,
+        SyncProtocol::Ftp,
         session,
         false
     )
 }
 
-pub async fn execute_ssh(
+pub async fn sync_ssh(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    execute(
+    sync(
         context,
-        DeploymentProtocol::Ssh,
+        SyncProtocol::Ssh,
         session,
         false
     )
@@ -175,9 +175,9 @@ pub async fn simulate_ftp(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    execute(
+    sync(
         context,
-        DeploymentProtocol::Ftp,
+        SyncProtocol::Ftp,
         session,
         true
     )
@@ -187,9 +187,9 @@ pub async fn simulate_ssh(
     context: Data<Arc<Context>>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
-    execute(
+    sync(
         context,
-        DeploymentProtocol::Ssh,
+        SyncProtocol::Ssh,
         session,
         true
     )

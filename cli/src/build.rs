@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use clap::ArgMatches;
 
-use hyper8_core::{Context, DeploymentProtocol};
+use hyper8_core::{Context, SyncProtocol};
 use hyper8_core::{perform_build, start_preview_server};
 use hyper8_translations::Translations;
 
@@ -32,9 +32,9 @@ pub fn build(
         let site = context.get_site();
 
         let protocol = if args.get_flag("deploy-ftp") {
-            DeploymentProtocol::Ftp
+            SyncProtocol::Ftp
         } else /* if args.get_flag("deploy-ssh") */ {
-            DeploymentProtocol::Ssh
+            SyncProtocol::Ssh
         };
 
         let confirm = !args.get_flag("no-confirm");

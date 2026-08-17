@@ -6,7 +6,7 @@ use std::process::ExitCode;
 
 use anstream::eprintln;
 
-use hyper8_core::{Context, DeploymentProtocol};
+use hyper8_core::{Context, SyncProtocol};
 use hyper8_core::check_deployment_config;
 use hyper8_translations::Translations;
 
@@ -15,7 +15,7 @@ use crate::style::{BRIGHT_BLACK, BRIGHT_YELLOW, GREEN, RED};
 /// Checks the FTP or SSH deployment and server configuration
 pub fn check(
     context: Arc<Context>,
-    protocol: DeploymentProtocol,
+    protocol: SyncProtocol,
     translations: &Translations
 ) -> ExitCode {
     let site = context.get_site();
@@ -41,16 +41,16 @@ pub fn check(
             String::new()
         };
 
-        let subject = &step.subject;
+        let label = &step.label;
 
         if step.failed() {
             exit_code = ExitCode::FAILURE;
-            eprintln!("{RED}[FAILED]{RED:#} {subject}{BRIGHT_BLACK}{context}{BRIGHT_BLACK:#}");
+            eprintln!("{RED}[FAILED]{RED:#} {label}{BRIGHT_BLACK}{context}{BRIGHT_BLACK:#}");
         } else if step.passed() {
-            eprintln!("{GREEN}[PASSED]{GREEN:#} {subject}{BRIGHT_BLACK}{context}{BRIGHT_BLACK:#}");
+            eprintln!("{GREEN}[PASSED]{GREEN:#} {label}{BRIGHT_BLACK}{context}{BRIGHT_BLACK:#}");
         } else /* if step.skipped() */ {
             exit_code = ExitCode::FAILURE;
-            eprintln!("{BRIGHT_YELLOW}[SKIPPED]{BRIGHT_YELLOW:#} {subject}{BRIGHT_BLACK}{context}{BRIGHT_BLACK:#}");
+            eprintln!("{BRIGHT_YELLOW}[SKIPPED]{BRIGHT_YELLOW:#} {label}{BRIGHT_BLACK}{context}{BRIGHT_BLACK:#}");
         }
 
         if let Some(message) = &step.message {

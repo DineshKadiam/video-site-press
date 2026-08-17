@@ -11,7 +11,6 @@ use crate::{
     AspectRatio,
     Context,
     Collection,
-    DeploymentProtocol,
     Font,
     FtpConfig,
     GetAnyResult,
@@ -22,6 +21,7 @@ use crate::{
     SitePath,
     SiteUrl,
     SshConfig,
+    SyncProtocol,
     Theme,
     Video
 };
@@ -396,10 +396,10 @@ impl Site {
         }
     }
 
-    pub fn complete_deployment_config(&self, protocol: DeploymentProtocol) -> bool {
+    pub fn complete_deployment_config(&self, protocol: SyncProtocol) -> bool {
         match protocol {
-            DeploymentProtocol::Ftp => self.ftp_config.complete(),
-            DeploymentProtocol::Ssh => self.ssh_config.complete()
+            SyncProtocol::Ftp => self.ftp_config.complete(),
+            SyncProtocol::Ssh => self.ssh_config.complete()
         }
     }
 

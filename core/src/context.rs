@@ -18,7 +18,6 @@ use crate::{
     Cache,
     Collection,
     CompletedJob,
-    DeploymentState,
     HyperDir,
     InheritedOptions,
     JobDesc,
@@ -30,6 +29,7 @@ use crate::{
     Site,
     SiteContent,
     SitePath,
+    SyncState,
     Video,
     Worker
 };
@@ -43,10 +43,10 @@ pub struct Context {
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
     pub completed_jobs: Mutex<Vec<CompletedJob>>,
-    pub deploying: Mutex<DeploymentState>,
     pub job_queue: Mutex<Vec<QueuedJob>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
+    pub sync_state: Mutex<SyncState>
 }
 
 pub enum GetAnyResult {
@@ -1284,10 +1284,10 @@ impl Context {
             cache,
             cache_dir,
             completed_jobs: Mutex::new(Vec::new()),
-            deploying: Mutex::new(DeploymentState::new()),
             job_queue: Mutex::new(Vec::new()),
             site: Mutex::new(Arc::new(Site::new())),
-            site_dir: site_dir.clone()
+            site_dir: site_dir.clone(),
+            sync_state: Mutex::new(SyncState::new())
         };
 
         // TODO: Would be great if we could somehow resolve the conundrum that
