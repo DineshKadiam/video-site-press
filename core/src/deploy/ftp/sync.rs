@@ -14,7 +14,12 @@ use suppaftp::{ImplFtpStream, Status, TlsStream};
 use hyper8_translations::Translations;
 use hyper8_util::string_from_os_string;
 
-use crate::{Context, Site, SyncError};
+use crate::{
+    Context,
+    Site,
+    SyncError,
+    SyncState
+};
 
 use super::{FtpSyncAction, FtpSyncEntry};
 
@@ -183,52 +188,30 @@ fn collect_sync_actions<S: TlsStream>(
 /// created before their children, etc.
 fn execute_sync_actions<S: TlsStream>(
     actions: &[FtpSyncAction],
+    context: &Context,
     impl_ftp_stream: &mut ImplFtpStream<S>,
-    log: &mut impl FnMut(&str),
-    simulate: bool,
-    translations: &Translations
+    simulate: bool
 ) -> Result<(), SyncError> {
-    for action in actions {
-        match action {
-            FtpSyncAction::AddFile { local_entry, remote_path } => {
-                let message = translations.adding_file_xxx(&remote_path.to_string_lossy());
-                log(&message);
+    for (sync_action, step) in actions.iter().zip(1..) {
+        context.log_sync_action_event(step, sync_action);
 
-                if !simulate {
+        if !simulate {
+            match sync_action {
+                FtpSyncAction::AddFile { local_entry, remote_path } => {
                     write_entry(impl_ftp_stream, local_entry, remote_path)?;
                 }
-            }
-            FtpSyncAction::CreateDir { remote_path } => {
-                let message = translations.creating_directory_xxx(&remote_path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                FtpSyncAction::CreateDir { remote_path } => {
                     impl_ftp_stream.mkdir(remote_path.to_string_lossy())?;
                 }
-            }
-            FtpSyncAction::DeleteDir { remote_path } |
-            FtpSyncAction::PrereqDeleteDir { remote_path } => {
-                let message = translations.deleting_directory_xxx(&remote_path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                FtpSyncAction::DeleteDir { remote_path } |
+                FtpSyncAction::PrereqDeleteDir { remote_path } => {
                     impl_ftp_stream.rmdir(remote_path.to_string_lossy())?;
                 }
-            }
-            FtpSyncAction::DeleteFile { remote_entry } |
-            FtpSyncAction::PrereqDeleteFile { remote_entry } => {
-                let message = translations.deleting_file_xxx(&remote_entry.path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                FtpSyncAction::DeleteFile { remote_entry } |
+                FtpSyncAction::PrereqDeleteFile { remote_entry } => {
                     impl_ftp_stream.rm(remote_entry.path.to_string_lossy())?;
                 }
-            }
-            FtpSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
-                let message = translations.updating_file_xxx(&remote_entry.path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                FtpSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
                     write_entry(impl_ftp_stream, local_entry, &remote_entry.path)?;
                 }
             }
@@ -381,12 +364,13 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
 ) -> Result<(), String> {
     {
         let mut sync_state = context.sync_state.lock().unwrap();
-        if sync_state.syncing() {
+
+        if let Some(sync_state) = &*sync_state && !sync_state.finished() {
             let message = translations.already_deploying_can_only_deploy_again_when_current_deployment_is_finished;
             return Err(message.to_string());
-        } else {
-            sync_state.set_started();
         }
+
+        *sync_state = Some(SyncState::new(simulate));
     }
 
     let mut impl_ftp_stream = connect(site)?;
@@ -398,20 +382,13 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
     let secure = site.ftp_config.secure();
 
     thread::spawn(move || {
-        let mut log = |message: &str| {
-            if simulate {
-                let message = format!("(simulated) {message}");
-                context.sync_state.lock().unwrap().log(&message)
-            } else {
-                context.sync_state.lock().unwrap().log(message)
-            }
+        let begin_message = if secure {
+            translations.beginning_deployment_over_secure_ftp_tls_ssl
+        } else {
+            translations.beginning_deployment_over_insecure_ftp_unencrypted
         };
 
-        if secure {
-            log(translations.beginning_deployment_over_secure_ftp_tls_ssl);
-        } else {
-            log(translations.beginning_deployment_over_insecure_ftp_unencrypted);
-        }
+        context.log_generic_sync_event(begin_message);
 
         let mut actions = Vec::new();
 
@@ -423,30 +400,29 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
             &remote_path
         ) {
             Ok(()) => {
+                context.log_sync_actions(actions.len() as u32, &translations);
+
                 actions.sort_unstable_by(FtpSyncAction::minimal_service_interruptions_sort);
 
                 // TODO: Implement and make accessible through some option
                 // actions.sort_unstable_by(FtpSyncAction::minimal_storage_peaks_sort);
 
-                log(translations.deployment_steps_successfully_determined_file_synchronization_will_now_commence);
-
                 match execute_sync_actions(
                     &actions,
+                    &context,
                     &mut impl_ftp_stream,
-                    &mut log,
-                    simulate,
-                    &translations
+                    simulate
                 ) {
-                    Ok(()) => log(translations.deployment_completed_successfully),
-                    Err(err) => log(&err.to_string())
+                    Ok(()) => context.log_generic_sync_event(translations.deployment_completed_successfully),
+                    Err(err) => context.log_sync_error_event(err.to_string())
                 }
             }
-            Err(err) => log(&err.to_string())
+            Err(err) => context.log_sync_error_event(err.to_string())
         }
 
         let _ = impl_ftp_stream.quit();
 
-        context.sync_state.lock().unwrap().set_finished();
+        context.sync_state.lock().unwrap().as_mut().unwrap().set_finished();
     });
 
     Ok(())

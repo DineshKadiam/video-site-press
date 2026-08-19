@@ -38,6 +38,9 @@ pub struct ThemeVars {
     pub danger: Color,
     /// Dangerous action hover state
     pub danger_hover: Color,
+    pub f_create: Color,
+    pub f_delete: Color,
+    pub f_update: Color,
     /// Foreground 1 (closest/top layer)
     pub f1: Color,
     /// Foreground 2 (closer)
@@ -108,6 +111,9 @@ impl ThemeVars {
         let d3 = self.d3.hsl();
         let danger = self.danger.hsl();
         let danger_hover = self.danger_hover.hsl();
+        let f_create = self.f_create.hsl();
+        let f_delete = self.f_delete.hsl();
+        let f_update = self.f_update.hsl();
         let f1 = self.f1.hsl();
         let f2 = self.f2.hsl();
         let f3 = self.f3.hsl();
@@ -136,6 +142,9 @@ impl ThemeVars {
             --d3: {d3};
             --danger: {danger};
             --danger-hover: {danger_hover};
+            --f-create: {f_create};
+            --f-delete: {f_delete};
+            --f-update: {f_update};
             --f1: {f1};
             --f2: {f2};
             --f3: {f3};
@@ -166,6 +175,9 @@ impl ThemeVars {
         let d3 = self.d3.oklch();
         let danger = self.danger.oklch();
         let danger_hover = self.danger_hover.oklch();
+        let f_create = self.f_create.oklch();
+        let f_delete = self.f_delete.oklch();
+        let f_update = self.f_update.oklch();
         let f1 = self.f1.oklch();
         let f2 = self.f2.oklch();
         let f3 = self.f3.oklch();
@@ -194,6 +206,9 @@ impl ThemeVars {
             --d3: {d3};
             --danger: {danger};
             --danger-hover: {danger_hover};
+            --f-create: {f_create};
+            --f-delete: {f_delete};
+            --f-update: {f_update};
             --f1: {f1};
             --f2: {f2};
             --f3: {f3};

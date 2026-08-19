@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -16,12 +16,13 @@ use crate::{
     Context,
     Field,
     Input,
+    Layout,
     Location,
     SessionState,
     Textarea
 };
 use crate::routes;
-use crate::widgets::{error_page, layout, not_found};
+use crate::widgets::{error_page, not_found};
 
 pub struct UpdateFormFeedback<'a> {
     pub content: &'a str,
@@ -121,7 +122,10 @@ pub fn edit_subtitles_page(
     "#);
 
     let head_title = &subtitle_file.label;
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::subtitles(&video.site_path),

@@ -18,7 +18,7 @@ pub async fn build(
     session: Session,
     site_path: ActixPath<SitePath>
 ) -> Either<Redirect, HttpResponse> {
-    let syncing = context.sync_state.lock().unwrap().syncing();
+    let syncing = context.sync_state.lock().unwrap().is_some();
 
     if syncing {
         let session_state = SessionState::all(&context.server_mode, &session);

@@ -50,7 +50,12 @@ pub mod watcher;
 
 use audio_meta::AudioMeta;
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
-use deploy::{FtpConfig, SshConfig, SyncError};
+use deploy::{
+    FtpConfig,
+    SshConfig,
+    SyncAction,
+    SyncError
+};
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
 use jobs::{CompletedJob, JobError, QueuedJob, Worker};
@@ -82,7 +87,14 @@ pub use context::{
     VideoParent,
     VideoUpdate
 };
-pub use deploy::{SyncConfigCheckStep, SyncProtocol, SyncState};
+pub use deploy::{
+    SyncConfigCheckStep,
+    SyncEvent,
+    SyncEventActionKind,
+    SyncEventKind,
+    SyncProtocol,
+    SyncState
+};
 pub use deploy::{check_deployment_config, start_sync};
 pub use file_meta::FileMeta;
 pub use font::Font;

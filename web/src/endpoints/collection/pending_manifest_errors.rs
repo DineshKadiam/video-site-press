@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use actix_web::HttpResponse;
@@ -7,10 +7,14 @@ use indoc::formatdoc;
 
 use hyper8_core::Collection;
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    Layout,
+    Location,
+    SessionState
+};
 use crate::actix::html_response;
 use crate::routes;
-use crate::widgets::layout;
 
 pub fn pending_manifest_errors(
     collection: &Collection,
@@ -58,7 +62,9 @@ pub fn pending_manifest_errors(
 
     let site = &context.get_site();
 
-    let html = layout(
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::AuxiliaryPage,

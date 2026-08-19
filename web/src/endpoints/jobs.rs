@@ -17,9 +17,13 @@ use hyper8_util::{
     html_escape_outside_attribute
 };
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    Layout,
+    Location,
+    SessionState
+};
 use crate::routes;
-use crate::widgets::layout;
 
 pub async fn jobs(
     context: Data<Arc<Context>>,
@@ -134,7 +138,9 @@ pub async fn jobs(
         body.push_str(&no_jobs_message);
     }
 
-    let html = layout(
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         &context,
         Location::AuxiliaryPage,

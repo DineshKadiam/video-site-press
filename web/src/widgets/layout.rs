@@ -18,32 +18,139 @@ use crate::routes;
 
 use super::{splash_screen, tree_view};
 
+pub struct Layout {
+    column: bool
+}
+
+impl Layout {
+    pub fn new() -> Layout {
+        Layout {
+            column: true
+        }
+    }
+
+    pub fn render(
+        &self,
+        body: &str,
+        context: &Context,
+        location: Location,
+        session_state: &SessionState,
+        site: &Site,
+        title: &str
+    ) -> String {
+        let translations = &session_state.language.translations;
+        let (breadcrumbs, tree) = tree_view(
+            location,
+            session_state,
+            site,
+            &context.site_dir
+        );
+
+        // TODO: Hash scripts/styles
+        let e_title = html_escape_outside_attribute(title);
+        let head = formatdoc!(r#"
+            <head>
+                <title>{e_title}</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <link href="/favicon.png" rel="icon" type="image/png">
+                <link rel="stylesheet" href="/editor.css">
+                <script defer src="/editor.js" type="module"></script>
+            </head>
+        "#);
+
+
+        let splash_screen_rendered = splash_screen(session_state);
+
+        let r_controls = controls(context, site, translations);
+
+        let tree_view_order_label = session_state.tree_view_order.label(translations);
+
+        // This is used at runtime in client-side js to display the url in a message
+        let data_base_url = match &site.base_url {
+            Some(base_url) => format!(r#"data-base-url="{}""#, base_url.representation),
+            None => String::new()
+        };
+
+        let r_footer = footer(session_state, translations);
+
+        let change_tree_view_order_url = routes::CHANGE_TREE_VIEW_ORDER;
+
+        let class_column = if self.column { r#"class="column""# } else { "" };
+
+        let t_cancel = translations.cancel;
+        let t_filter = translations.filter;
+        formatdoc!(r#"
+            <!doctype html>
+            <html lang="en">
+                {head}
+                <body {data_base_url} data-version="{VERSION_WITH_PATCH}">
+                    <div class="split">
+                        <nav>
+                            <div class="tree_view_options">
+                                <input id="filter_tree" placeholder="{t_filter}" type="search">
+                                <form action="{change_tree_view_order_url}" id="tree-view-order" method="post">
+                                    <input name="redirect" type="hidden">
+                                    <button>{tree_view_order_label} ↓</button>
+                                </form>
+                            </div>
+                            {tree}
+                        </nav>
+                        <div>
+                            {r_controls}
+                            {breadcrumbs}
+                            <main {class_column}>
+                                {body}
+                            </main>
+                        </div>
+                        {r_footer}
+                    </div>
+                    {splash_screen_rendered}
+                    <template id="confirmation_dialog">
+                        <dialog class="confirmation_wrapper">
+                            <div class="text"></div>
+                            <div class="buttons">
+                                <button autofocus class="cancel">{t_cancel}</button>
+                                <button class="confirm danger"></button>
+                            </div>
+                        </dialog>
+                    </template>
+                </body>
+            </html>
+        "#)
+    }
+
+    pub fn wide(&mut self) {
+        self.column = false;
+    }
+}
+
 fn controls(
     context: &Context,
     site: &Site,
     translations: &Translations
 ) -> String {
     let deployment_status = {
-        let sync_state = &context.sync_state.lock().unwrap();
+        if let Some(sync_state) = &*context.sync_state.lock().unwrap() {
+            if sync_state.finished() {
+                let t_deployment_finished = translations.deployment_finished;
+                let duration = precise_duration(sync_state.duration_secs());
 
-        if sync_state.syncing() {
-            let t_deploying  = translations.deploying;
-            let duration = precise_duration(sync_state.duration_secs_unchecked());
+                formatdoc!(r#"
+                    <a href="/deployment">
+                        {t_deployment_finished} {duration}
+                    </a>
+                "#)
+            } else {
+                let duration = precise_duration(sync_state.duration_secs());
 
-            formatdoc!(r#"
-                <a href="/deployment">
-                    {t_deploying} ({duration})
-                </a>
-            "#)
-        } else if sync_state.finished() {
-            let t_deployment_finished = translations.deployment_finished;
-            let duration = precise_duration(sync_state.duration_secs_unchecked());
-
-            formatdoc!(r#"
-                <a href="/deployment">
-                    {t_deployment_finished} {duration}
-                </a>
-            "#)
+                let t_syncing  = translations.syncing;
+                formatdoc!(r#"
+                    <a href="/deployment">
+                        {t_syncing} ({duration})
+                    </a>
+                "#)
+            }
         } else {
             String::new()
         }
@@ -329,93 +436,5 @@ fn footer(
             </div>
             {splash_link}
         </footer>
-    "#)
-}
-
-pub fn layout(
-    body: &str,
-    context: &Context,
-    location: Location,
-    session_state: &SessionState,
-    site: &Site,
-    title: &str
-) -> String {
-    let translations = &session_state.language.translations;
-    let (breadcrumbs, tree) = tree_view(
-        location,
-        session_state,
-        site,
-        &context.site_dir
-    );
-
-    // TODO: Hash scripts/styles
-    let e_title = html_escape_outside_attribute(title);
-    let head = formatdoc!(r#"
-        <head>
-            <title>{e_title}</title>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link href="/favicon.png" rel="icon" type="image/png">
-            <link rel="stylesheet" href="/editor.css">
-            <script defer src="/editor.js" type="module"></script>
-        </head>
-    "#);
-
-
-    let splash_screen_rendered = splash_screen(session_state);
-
-    let r_controls = controls(context, site, translations);
-
-    let tree_view_order_label = session_state.tree_view_order.label(translations);
-
-    // This is used at runtime in client-side js to display the url in a message
-    let data_base_url = match &site.base_url {
-        Some(base_url) => format!(r#"data-base-url="{}""#, base_url.representation),
-        None => String::new()
-    };
-
-    let r_footer = footer(session_state, translations);
-
-    let change_tree_view_order_url = routes::CHANGE_TREE_VIEW_ORDER;
-
-    let t_cancel = translations.cancel;
-    let t_filter = translations.filter;
-    formatdoc!(r#"
-        <!doctype html>
-        <html lang="en">
-            {head}
-            <body {data_base_url} data-version="{VERSION_WITH_PATCH}">
-                <div class="split">
-                    <nav>
-                        <div class="tree_view_options">
-                            <input id="filter_tree" placeholder="{t_filter}" type="search">
-                            <form action="{change_tree_view_order_url}" id="tree-view-order" method="post">
-                                <input name="redirect" type="hidden">
-                                <button>{tree_view_order_label} ↓</button>
-                            </form>
-                        </div>
-                        {tree}
-                    </nav>
-                    <div>
-                        {r_controls}
-                        {breadcrumbs}
-                        <main>
-                            {body}
-                        </main>
-                    </div>
-                    {r_footer}
-                </div>
-                {splash_screen_rendered}
-                <template id="confirmation_dialog">
-                    <dialog class="confirmation_wrapper">
-                        <div class="text"></div>
-                        <div class="buttons">
-                            <button autofocus class="cancel">{t_cancel}</button>
-                            <button class="confirm danger"></button>
-                        </div>
-                    </dialog>
-                </template>
-            </body>
-        </html>
     "#)
 }

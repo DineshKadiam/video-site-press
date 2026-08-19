@@ -18,9 +18,13 @@ use hyper8_core::{
 use hyper8_translations::Translations;
 use hyper8_util::{html_escape_outside_attribute, human_size};
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    Layout,
+    Location,
+    SessionState
+};
 use crate::routes;
-use crate::widgets::layout;
 
 pub async fn index(
     context: Data<Arc<Context>>,
@@ -77,7 +81,9 @@ pub async fn index(
         }
     };
 
-    let html = layout(
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         &context,
         Location::AuxiliaryPage,

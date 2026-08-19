@@ -7,6 +7,7 @@ use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
 use actix_web::web::{Data, Either, Redirect};
+use indoc::formatdoc;
 
 use hyper8_core::{Site, SyncProtocol};
 use hyper8_core::{
@@ -17,8 +18,13 @@ use hyper8_core::{
 use hyper8_translations::Translations;
 use hyper8_util::html_escape_outside_attribute;
 
-use crate::{Context, Location, SessionState};
-use crate::widgets::{error_page, layout};
+use crate::{
+    Context,
+    Layout,
+    Location,
+    SessionState
+};
+use crate::widgets::error_page;
 
 fn check(
     context: Data<Arc<Context>>,
@@ -71,9 +77,17 @@ fn check(
         .collect::<Vec<_>>()
         .join("");
 
-    let body = format!(r#"<div class="check">{r_steps}</div>"#);
+    let t_configuration_check = translations.configuration_check;
+    let body = formatdoc!(r#"
+        <h2>{t_configuration_check}</h2>
+        <div class="check">{r_steps}</div>
+    "#);
 
-    let html = layout(
+    let mut layout = Layout::new();
+
+    layout.wide();
+
+    let html = layout.render(
         &body,
         &context,
         Location::AuxiliaryPage,

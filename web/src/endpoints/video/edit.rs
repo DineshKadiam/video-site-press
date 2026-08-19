@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -20,17 +20,14 @@ use crate::{
     Context,
     Field,
     Input,
+    Layout,
     Location,
     Select,
     SessionState,
     Textarea
 };
 use crate::routes;
-use crate::widgets::{
-    layout,
-    not_found,
-    resource_actions
-};
+use crate::widgets::{not_found, resource_actions};
 
 pub struct UpdateFormFeedback<'a> {
     pub copy_link: Option<bool>,
@@ -286,7 +283,10 @@ pub fn edit_page(
     let t_video_settings = translations.video_settings;
     let video_title = video.title_or_slug_or_generic_label(translations);
     let head_title = format!("{t_video_settings} – {video_title}");
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::edit(&video.site_path),

@@ -12,6 +12,7 @@ use hyper8_core::{Playlist, SitePath};
 
 use crate::{
     Context,
+    Layout,
     Location,
     SessionState,
     Textarea
@@ -19,7 +20,6 @@ use crate::{
 use crate::actix::html_response;
 use crate::routes;
 use crate::widgets::{
-    layout,
     not_found,
     upload_widget
 };
@@ -104,7 +104,10 @@ pub fn edit_banner_page(
 
     let playlist_title = playlist.title_or_slug_or_generic_label(translations);
     let head_title = format!("{t_banner_image} – {playlist_title}");
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::poster(&playlist.site_path),

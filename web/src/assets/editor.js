@@ -1,11 +1,11 @@
 const confirmationDialog = document.querySelector('#confirmation_dialog').content;
-const deploymentFeedback = document.querySelector('#deployment_feedback');
 const deploymentMenu = document.querySelector('#deployment');
 const deploymentStatus = document.querySelector('.deployment_status');
 const processingElement = document.querySelector('.processing');
 const processingIcon = document.querySelector('#processing_icon').content;
 const reloadIcon = document.querySelector('#reload_icon').content;
 const splashWrapper = document.querySelector('.splash_wrapper');
+const syncLog = document.querySelector('#sync_log');
 
 // Memorizes previously seen states for ongoing background processing so we
 // can determine whether to re-render live update widgets.
@@ -74,9 +74,9 @@ function fetchProcessing() {
         .then(response => response.json())
         .then(response => {
             const {
-                deploymentInfo,
                 globalJobReport,
-                localJobReport
+                localJobReport,
+                syncState
             } = response;
 
             if (jobs) {
@@ -87,12 +87,14 @@ function fetchProcessing() {
                 updateMediaJobs(mediaJobs, localJobReport);
             }
 
-            // Update the status line in the deployment menu ("Deploying since/Deployed in")
-            updateDeploymentStatus(deploymentInfo);
+            if (syncState !== null) {
+                // Update the status line in the deployment menu ("Syncing/Deployed in")
+                updateSyncStatus(syncState);
 
-            // Update the live deployment feedback on the deployment page (if we are on it)
-            if (deploymentFeedback) {
-                updateDeploymentPage(deploymentInfo);
+                // Update the sync log on the deployment page (if we are on it)
+                if (syncLog) {
+                    updateSyncLog(syncState);
+                }
             }
 
             // Update the processing information (Idle/Progress/etc.) in the header
@@ -122,56 +124,6 @@ function hyperConfirm(callback, label, text) {
     appendedDialog.showModal();
 
     appendedDialog.querySelector('.confirm').focus();
-}
-
-function updateDeploymentStatus(deploymentInfo) {
-    if (deploymentInfo.deployingSince !== null) {
-        deploymentMenu.classList.add('active');
-
-        const a = document.createElement('a');
-        a.href = '/deployment';
-
-        // TODO: Maybe introduce a progress icon here (spinner, clock, ?)
-        // a.append(deployIcon.cloneNode(true));
-
-        const text = document.createElement('span');
-        text.textContent = t.deploying;
-        a.append(text);
-
-        const durationText = document.createElement('span');
-        durationText.textContent = formatTime(deploymentInfo.deployingSince);
-        a.append(durationText);
-
-        deploymentStatus.replaceChildren(a);
-    } else if (deploymentInfo.deployedIn !== null && deploymentMenu.classList.contains('active')) {
-        const a = document.createElement('a');
-        a.href = '/deployment';
-
-        // TODO: Maybe introduce a success icon here (checkmark)
-        // a.append(deployIcon.cloneNode(true));
-
-        const text = document.createElement('span');
-        text.textContent = t.deploymentFinished;
-        a.append(text);
-
-        const durationText = document.createElement('span');
-        durationText.textContent = formatTime(deploymentInfo.deployedIn);
-        a.append(durationText);
-
-        deploymentStatus.replaceChildren(a);
-
-        deploymentMenu.classList.remove('active')
-    }
-}
-
-function updateDeploymentPage(deploymentInfo) {
-    let feedback = deploymentInfo.feedback;
-
-    if (deploymentInfo.deployingSince !== null) {
-        feedback += '\n…';
-    }
-
-    deploymentFeedback.textContent = feedback;
 }
 
 function updateJobs(jobs, globalJobReport) {
@@ -359,6 +311,149 @@ function updateProcessingWidget(globalJobReport) {
     // TODO: We could make use of globalJobReport.completedCount if we want at some point
 
     processingElement.replaceChildren(...content);
+}
+
+function updateSyncLog(syncState) {
+    const log = syncState.log;
+
+    // We dynamically update the sync log only if the currently open
+    // deployment page was opened with the current sync session.
+    if (syncLog.dataset.sessionId === syncState.sessionId) {
+        const eventsRendered = parseInt(syncLog.dataset.eventsRendered);
+
+        if (eventsRendered < log.length) {
+            for (let index = eventsRendered; index < log.length; index++) {
+                const event = log[index];
+
+                const li = document.createElement('li');
+
+                if (syncState.simulation) {
+                    const span = document.createElement('span');
+                    span.classList.add('simulation');
+                    span.textContent = t.simulation;
+                    li.append(span);
+                }
+
+                const startedAt = document.createElement('span');
+                startedAt.textContent = `[${event.startedAt}]`;
+                li.append(startedAt);
+
+                if (event.step !== null) {
+                    const progress = document.createElement('span');
+                    progress.classList.add('progress');
+                    progress.textContent = `(${event.step}/${syncState.steps})`;
+                    li.append(progress);
+                }
+
+                const message = document.createElement('span');
+
+                if (event.kind === 'add_file') {
+                    message.classList.add('path');
+
+                    const action = document.createElement('span');
+                    action.classList.add('action', 'add_file');
+                    action.textContent = t.addFile;
+                    li.append(action);
+
+                    const size = document.createElement('span');
+                    size.classList.add('size');
+                    size.textContent = event.size;
+                    li.append(size);
+                } else if (event.kind === 'create_dir') {
+                    message.classList.add('path');
+
+                    const action = document.createElement('span');
+                    action.classList.add('action', 'create_dir');
+                    action.textContent = t.createDirectory;
+                    li.append(action);
+                } else if (event.kind === 'delete_dir') {
+                    message.classList.add('path');
+
+                    const action = document.createElement('span');
+                    action.classList.add('action', 'delete_dir');
+                    action.textContent = t.deleteDirectory;
+                    li.append(action);
+                } else if (event.kind === 'delete_file') {
+                    message.classList.add('path');
+
+                    const action = document.createElement('span');
+                    action.classList.add('action', 'delete_file');
+                    action.textContent = t.deleteFile;
+                    li.append(action);
+
+                    const size = document.createElement('span');
+                    size.classList.add('size');
+                    size.textContent = event.size;
+                    li.append(size);
+                } else if (event.kind === 'update_file') {
+                    message.classList.add('path');
+
+                    const action = document.createElement('span');
+                    action.classList.add('action', 'update_file');
+                    action.textContent = t.updateFile;
+                    li.append(action);
+
+                    const size = document.createElement('span');
+                    size.classList.add('size');
+                    size.textContent = event.size;
+                    li.append(size);
+                } else if (event.kind === 'error') {
+                    message.classList.add('err');
+                } else {
+                    message.classList.add('message');
+                }
+
+                message.textContent = event.message;
+                li.append(message);
+
+                syncLog.append(li);
+            }
+
+            syncLog.dataset.eventsRendered = log.length;
+        }
+    }
+}
+
+function updateSyncStatus(syncState) {
+    if (syncState.finished) {
+        if (deploymentMenu.classList.contains('active')) {
+            const a = document.createElement('a');
+            a.href = '/deployment';
+
+            // TODO: Maybe introduce a success icon here (checkmark)
+            // a.append(deployIcon.cloneNode(true));
+
+            const text = document.createElement('span');
+            text.textContent = t.deploymentFinished;
+            a.append(text);
+
+            const durationText = document.createElement('span');
+            durationText.textContent = formatTime(syncState.duration);
+            a.append(durationText);
+
+            deploymentStatus.replaceChildren(a);
+
+            deploymentMenu.classList.remove('active')
+        }
+    } else {
+        deploymentMenu.classList.add('active');
+
+        const a = document.createElement('a');
+        a.href = '/deployment';
+
+        // TODO: Maybe introduce a progress icon here (spinner, clock, ?)
+        // a.append(deployIcon.cloneNode(true));
+
+        const text = document.createElement('span');
+        text.textContent = t.syncing;
+        a.append(text);
+
+        const durationText = document.createElement('span');
+        durationText.textContent = formatTime(syncState.duration);
+        a.append(durationText);
+
+        deploymentStatus.replaceChildren(a);
+    }
 }
 
 for (const form of document.querySelectorAll('form[data-confirm]')) {

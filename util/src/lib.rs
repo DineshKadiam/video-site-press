@@ -72,13 +72,24 @@ pub fn html_escape_outside_attribute(string: &str) -> String {
           .replace('>', "&gt;")
 }
 
-/// Takes bytes, formats them like "313 B", "256 kB", "3.4 MB", "13 MB", "1.4 GB"
+/// Takes a size in bytes, formats it like "313 B", "256 kB", "3.4 MB", "13 MB", "1.4 GB"
 pub fn human_size(bytes: u64) -> String {
     match bytes {
         0..=999 => human_size_bytes(bytes),
         1000..=999999 => human_size_kilobytes(bytes),
         1000000..=999999999 => human_size_megabytes(bytes),
         _ => human_size_gigabytes(bytes)
+    }
+}
+
+/// Takes a +/- size difference in bytes, formats it like "+0 B", +313 B", "-256 kB", "+3.4 MB", "-13 MB", "+1.4 GB"
+pub fn human_size_delta(bytes: i64) -> String {
+    if bytes.is_negative() {
+        let size = human_size(bytes.abs() as u64);
+        format!("-{size}")
+    } else {
+        let size = human_size(bytes as u64);
+        format!("+{size}")
     }
 }
 

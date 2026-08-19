@@ -3,7 +3,21 @@
 
 use anstyle::{AnsiColor, Color, Style};
 
-pub const BRIGHT_BLACK: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightBlack)));
-pub const BRIGHT_YELLOW: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::BrightYellow)));
-pub const GREEN: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green)));
-pub const RED: Style = Style::new().fg_color(Some(Color::Ansi(AnsiColor::Red)));
+const fn bg_fg(bg_color: AnsiColor, fg_color: AnsiColor) -> Style {
+    Style::new()
+        .bg_color(Some(Color::Ansi(bg_color)))
+        .fg_color(Some(Color::Ansi(fg_color)))
+}
+
+const fn fg(ansi_color: AnsiColor) -> Style {
+    Style::new()
+        .fg_color(Some(Color::Ansi(ansi_color)))
+}
+
+pub const BLACK_ON_BRIGHT_YELLOW: Style = bg_fg(AnsiColor::BrightYellow, AnsiColor::Black);
+pub const BRIGHT_BLACK: Style = fg(AnsiColor::BrightBlack);
+pub const BRIGHT_YELLOW: Style = fg(AnsiColor::BrightYellow);
+pub const CYAN: Style = fg(AnsiColor::Cyan);
+pub const GREEN: Style = fg(AnsiColor::Green);
+pub const MAGENTA: Style = fg(AnsiColor::Magenta);
+pub const RED: Style = fg(AnsiColor::Red);

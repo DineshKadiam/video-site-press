@@ -17,7 +17,12 @@ use ssh2::{
 use hyper8_translations::Translations;
 use hyper8_util::{string_from_os_str, string_from_os_string};
 
-use crate::{Context, Site, SyncError};
+use crate::{
+    Context,
+    Site,
+    SyncError,
+    SyncState
+};
 
 use super::{SshSyncAction, SshSyncEntry};
 use super::connect;
@@ -188,55 +193,33 @@ fn collect_sync_actions(
 /// created before their children, etc.
 fn execute_sync_actions(
     actions: &[SshSyncAction],
-    log: &mut impl FnMut(&str),
+    context: &Context,
     sftp: &Sftp,
-    simulate: bool,
-    translations: &Translations
+    simulate: bool
 ) -> Result<(), SyncError> {
-    for action in actions {
-        match action {
-            SshSyncAction::AddFile { local_entry, remote_path } => {
-                let message = translations.adding_file_xxx(&remote_path.to_string_lossy());
-                log(&message);
+    for (sync_action, step) in actions.iter().zip(1..) {
+        context.log_sync_action_event(step, sync_action);
 
-                if !simulate {
+        if !simulate {
+            match sync_action {
+                SshSyncAction::AddFile { local_entry, remote_path } => {
                     write_entry(local_entry, remote_path, sftp)?;
                 }
-            }
-            SshSyncAction::CreateDir { remote_path } => {
-                let message = translations.creating_directory_xxx(&remote_path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                SshSyncAction::CreateDir { remote_path } => {
                     // 775 (octal) = rwxr-xr-x (7 = rwx (owner), 5 = rx (group/others))
                     let mode = 0o755;
 
                     sftp.mkdir(remote_path, mode)?;
                 }
-            }
-            SshSyncAction::DeleteDir { remote_path } |
-            SshSyncAction::PrereqDeleteDir { remote_path } => {
-                let message = translations.deleting_directory_xxx(&remote_path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                SshSyncAction::DeleteDir { remote_path } |
+                SshSyncAction::PrereqDeleteDir { remote_path } => {
                     sftp.rmdir(remote_path)?;
                 }
-            }
-            SshSyncAction::DeleteFile { remote_entry } |
-            SshSyncAction::PrereqDeleteFile { remote_entry } => {
-                let message = translations.deleting_file_xxx(&remote_entry.path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                SshSyncAction::DeleteFile { remote_entry } |
+                SshSyncAction::PrereqDeleteFile { remote_entry } => {
                     sftp.unlink(&remote_entry.path)?;
                 }
-            }
-            SshSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
-                let message = translations.updating_file_xxx(&remote_entry.path.to_string_lossy());
-                log(&message);
-
-                if !simulate {
+                SshSyncAction::UpdateFile { local_entry, remote_entry, .. } => {
                     write_entry(local_entry, &remote_entry.path, sftp)?;
                 }
             }
@@ -336,12 +319,12 @@ pub fn start_sync(
     {
         let mut sync_state = context.sync_state.lock().unwrap();
 
-        if sync_state.syncing() {
+        if let Some(sync_state) = &*sync_state && !sync_state.finished() {
             let message = translations.already_deploying_can_only_deploy_again_when_current_deployment_is_finished;
             return Err(message.to_string());
-        } else {
-            sync_state.set_started();
         }
+
+        *sync_state = Some(SyncState::new(simulate));
     }
 
     let (session, sftp) = connect(site, translations)?;
@@ -351,16 +334,7 @@ pub fn start_sync(
     let translations = translations.clone();
 
     thread::spawn(move || {
-        let mut log = |message: &str| {
-            if simulate {
-                let message = format!("(simulated) {message}");
-                context.sync_state.lock().unwrap().log(&message)
-            } else {
-                context.sync_state.lock().unwrap().log(message)
-            }
-        };
-
-        log(translations.beginning_deployment_over_ssh);
+        context.log_generic_sync_event(translations.beginning_deployment_over_ssh);
 
         let mut actions = Vec::new();
 
@@ -372,25 +346,24 @@ pub fn start_sync(
             &sftp
         ) {
             Ok(()) => {
+                context.log_sync_actions(actions.len() as u32, &translations);
+
                 actions.sort_unstable_by(SshSyncAction::minimal_service_interruptions_sort);
 
                 // TODO: Implement and make accessible through some option
                 // actions.sort_unstable_by(SshSyncAction::minimal_storage_peaks_sort);
 
-                log(translations.deployment_steps_successfully_determined_file_synchronization_will_now_commence);
-
                 match execute_sync_actions(
                     &actions,
-                    &mut log,
+                    &context,
                     &sftp,
-                    simulate,
-                    &translations
+                    simulate
                 ) {
-                    Ok(()) => log(translations.deployment_completed_successfully),
-                    Err(err) => log(&err.to_string())
+                    Ok(()) => context.log_generic_sync_event(translations.deployment_completed_successfully),
+                    Err(err) => context.log_sync_error_event(err.to_string())
                 }
             }
-            Err(err) => log(&err.to_string())
+            Err(err) => context.log_sync_error_event(err.to_string())
         }
 
         let _ = session.disconnect(
@@ -399,7 +372,7 @@ pub fn start_sync(
             None
         );
 
-        context.sync_state.lock().unwrap().set_finished();
+        context.sync_state.lock().unwrap().as_mut().unwrap().set_finished();
     });
 
     Ok(())

@@ -12,9 +12,14 @@ use indoc::formatdoc;
 use hyper8_core::SitePath;
 use hyper8_util::html_escape_outside_attribute;
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    Layout,
+    Location,
+    SessionState
+};
 use crate::routes;
-use crate::widgets::{layout, not_found, upload_widget};
+use crate::widgets::{not_found, upload_widget};
 
 pub async fn subtitles(
     context: Data<Arc<Context>>,
@@ -108,7 +113,9 @@ pub async fn subtitles(
         </div>
     "#);
 
-    let html = layout(
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         &context,
         Location::subtitles(&video.site_path),

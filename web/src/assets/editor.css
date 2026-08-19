@@ -239,7 +239,6 @@ button.big {
     justify-content: center;
     padding: .5rem;
 }
-#deployment { display: flex; }
 .error {
     background: var(--danger);
     border-radius: .2rem;
@@ -428,10 +427,8 @@ input[type="file"] { display: none; }
     text-decoration: underline;
     text-underline-position: under;
 }
-main {
-    margin: 0 3rem 3rem 3rem;
-    max-width: 36rem;
-}
+main { margin: 0 3rem 3rem 3rem; }
+main.column { max-width: 36rem; }
 .menu { position: relative; }
 .menu > div {
     display: none;
@@ -843,6 +840,37 @@ summary {
     margin: -.5rem 0 1rem 0;
 }
 svg { fill: currentColor; }
+#sync_log {
+    font-size: .9rem;
+    list-style: none;
+    padding: 0;
+}
+#sync_log li:not(first-child) { margin-top: .1rem; }
+#sync_log li > *:not(first-child) { margin-left: .3rem; }
+#sync_log .add_file { color: var(--f-create); }
+#sync_log .create_dir { color: var(--f-create); }
+#sync_log .delete_dir { color: var(--f-delete); }
+#sync_log .delete_file { color: var(--f-delete); }
+#sync_log .err {
+    background: var(--danger);
+    border-radius: .2rem;
+    color: var(--l1);
+    padding: .1rem .3rem;
+}
+#sync_log .message { color: var(--f1); }
+#sync_log .path {
+    color: var(--f1);
+    font-family: monospace;
+    font-size: .8rem;
+}
+#sync_log .progress { color: var(--f1); }
+#sync_log .simulation {
+    background: var(--warning-b);
+    color: var(--warning-f);
+    padding-inline: .5rem;
+}
+#sync_log .size { color: var(--f3); }
+#sync_log .update_file { color: var(--f-update); }
 .textarea_with_hint {
     display: flex;
     flex-direction: column-reverse;

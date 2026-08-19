@@ -17,9 +17,9 @@ pub struct Translations {
     pub about: &'static str,
     pub active: &'static str,
     pub adaptive: &'static str,
+    pub add_file: &'static str,
     pub add_link: &'static str,
     pub add_site: &'static str,
-    adding_file_xxx: &'static str,
     pub adjust_playback_speed_cursor_above_playback_speed_indicator: &'static str,
     pub advanced_settings: &'static str,
     pub already_deploying_can_only_deploy_again_when_current_deployment_is_finished: &'static str,
@@ -75,6 +75,7 @@ pub struct Translations {
     pub copy_link: &'static str,
     pub copy_path: &'static str,
     pub copy_url: &'static str,
+    pub create_directory: &'static str,
     pub create_new_site: &'static str,
     pub create_new_site_confirmation_notes: &'static str,
     pub create_playlist: &'static str,
@@ -82,7 +83,6 @@ pub struct Translations {
     pub create_subcollection: &'static str,
     pub create_test_file: &'static str,
     pub create_video: &'static str,
-    creating_directory_xxx: &'static str,
     current_video_xxx_of_xxx_in_xxx: &'static str,
     pub dangerous_actions: &'static str,
     pub dark: &'static str,
@@ -94,16 +94,15 @@ pub struct Translations {
     pub delete: &'static str,
     pub delete_banner: &'static str,
     pub delete_collection: &'static str,
+    pub delete_directory: &'static str,
+    pub delete_file: &'static str,
     pub delete_playlist: &'static str,
     pub delete_poster: &'static str,
     pub delete_video: &'static str,
     pub deleting_the_collection_text: &'static str,
     pub deleting_the_playlist_text: &'static str,
     pub deleting_the_video_text: &'static str,
-    deleting_directory_xxx: &'static str,
-    deleting_file_xxx: &'static str,
     pub deploy: &'static str,
-    pub deploying: &'static str,
     pub deployment: &'static str,
     pub deployment_completed_successfully: &'static str,
     pub deployment_configuration_check: &'static str,
@@ -287,6 +286,7 @@ pub struct Translations {
     pub showing_xxx_results_for_xxx: &'static str,
     pub shut_down_editor_and_quit: &'static str,
     pub simulate: &'static str,
+    pub simulation: &'static str,
     pub site_manifest: &'static str,
     pub site_order: &'static str,
     pub site_settings: &'static str,
@@ -314,6 +314,7 @@ pub struct Translations {
     pub subscribe_permalink: &'static str,
     pub subtitles: &'static str,
     pub successful: &'static str,
+    pub syncing: &'static str,
     pub synopsis: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
     pub textarea_formatting_hint_text: &'static str,
@@ -346,6 +347,7 @@ pub struct Translations {
     unsupported_file_extension_in_xxx: &'static str,
     pub update_collection: &'static str,
     pub update_description: &'static str,
+    pub update_file: &'static str,
     pub update_manifest: &'static str,
     pub update_permalink: &'static str,
     pub update_playlist: &'static str,
@@ -353,7 +355,6 @@ pub struct Translations {
     pub update_subtitles: &'static str,
     pub update_video: &'static str,
     updating_collection_from_editor_currently_not_allowed: &'static str,
-    updating_file_xxx: &'static str,
     updating_playlist_from_editor_currently_not_allowed: &'static str,
     updating_site_from_editor_currently_not_allowed: &'static str,
     updating_video_from_editor_currently_not_allowed: &'static str,
@@ -394,16 +395,8 @@ pub struct Translations {
 }
 
 impl Translations {
-    pub fn adding_file_xxx(&self, path: &str) -> String {
-        self.adding_file_xxx.replace("{path}", path)
-    }
-
     pub fn audio_file_xxx(&self, extension: &str) -> String {
         self.audio_file_xxx.replace("{extension}", extension)
-    }
-
-    pub fn creating_directory_xxx(&self, path: &str) -> String {
-        self.creating_directory_xxx.replace("{path}", path)
     }
 
     pub fn current_video_xxx_of_xxx_in_xxx(
@@ -416,14 +409,6 @@ impl Translations {
             .replace("{current}", &current.to_string())
             .replace("{parent}", parent)
             .replace("{total}", &total.to_string())
-    }
-
-    pub fn deleting_directory_xxx(&self, path: &str) -> String {
-        self.deleting_directory_xxx.replace("{path}", path)
-    }
-
-    pub fn deleting_file_xxx(&self, path: &str) -> String {
-        self.deleting_file_xxx.replace("{path}", path)
     }
 
     pub fn files_are_being_deployed_to_xxx(&self, link: &str) -> String {
@@ -561,10 +546,6 @@ impl Translations {
             .replace("{manifest_path}", manifest_path)
     }
 
-    pub fn updating_file_xxx(&self, path: &str) -> String {
-        self.updating_file_xxx.replace("{path}", path)
-    }
-
     pub fn updating_playlist_from_editor_currently_not_allowed(
         &self,
         playlist_title: &str,
@@ -614,14 +595,10 @@ fn check_translations() {
     ];
 
     for translations in &locales {
-        assert!(&translations.adding_file_xxx.contains("{path}"));
         assert!(&translations.audio_file_xxx.contains("{extension}"));
-        assert!(&translations.creating_directory_xxx.contains("{path}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
-        assert!(&translations.deleting_directory_xxx.contains("{path}"));
-        assert!(&translations.deleting_file_xxx.contains("{path}"));
         assert!(&translations.files_are_being_deployed_to_xxx.contains("{link}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
         assert!(&translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found.contains("{remote_dir}"));
@@ -649,7 +626,6 @@ fn check_translations() {
         assert!(&translations.unsupported_file_extension_in_xxx.contains("{file_name}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{collection_title}"));
         assert!(&translations.updating_collection_from_editor_currently_not_allowed.contains("{manifest_path}"));
-        assert!(&translations.updating_file_xxx.contains("{path}"));
         assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{playlist_title}"));
         assert!(&translations.updating_playlist_from_editor_currently_not_allowed.contains("{manifest_path}"));
         assert!(&translations.updating_site_from_editor_currently_not_allowed.contains("{manifest_path}"));

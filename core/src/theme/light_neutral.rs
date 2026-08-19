@@ -68,6 +68,18 @@ pub const LIGHT_NEUTRAL_VARS: ThemeVars = ThemeVars {
         end_hsl: (352, 0.67, 0.488),
         end_oklch: (0.56, 0.2, 380)
     },
+    f_create: Color::Chromatic {
+        hsl: (173, 1.0, 0.11),
+        oklch: (0.44, 0.11, 179)
+    },
+    f_delete: Color::Chromatic {
+        hsl: (321, 1.0, 0.3),
+        oklch: (0.5, 0.23, 354)
+    },
+    f_update: Color::Chromatic {
+        hsl: (271, 0.62, 0.48),
+        oklch: (0.5, 0.22, 302)
+    },
     f1: D1,
     f2: D2,
     f3: D3,

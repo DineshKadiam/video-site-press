@@ -20,12 +20,13 @@ use hyper8_util::{precise_duration, human_size};
 
 use crate::{
     Context,
+    Layout,
     Location,
     Select,
     SessionState
 };
 use crate::routes;
-use crate::widgets::{layout, not_found, upload_widget};
+use crate::widgets::{not_found, upload_widget};
 
 fn additional_formats_form(translations: &Translations, video: &Video) -> String {
     let video_meta = if let Some(video_file) = video.highest_quality_video_file() {
@@ -565,7 +566,10 @@ pub fn media_page(
     let t_video_files = translations.video_files;
     let video_title = video.title_or_slug_or_generic_label(translations);
     let head_title = format!("{t_video_files} – {video_title}");
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::media(&video.site_path),

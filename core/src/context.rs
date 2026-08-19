@@ -29,6 +29,9 @@ use crate::{
     Site,
     SiteContent,
     SitePath,
+    SyncAction,
+    SyncEventActionKind,
+    SyncEventKind,
     SyncState,
     Video,
     Worker
@@ -46,7 +49,7 @@ pub struct Context {
     pub job_queue: Mutex<Vec<QueuedJob>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
-    pub sync_state: Mutex<SyncState>
+    pub sync_state: Mutex<Option<SyncState>>
 }
 
 pub enum GetAnyResult {
@@ -1251,6 +1254,95 @@ impl Context {
         self.site.lock().unwrap().get_video(site_path)
     }
 
+    /// Requires prior initialization of sync_state, otherwise will panic
+    pub fn log_generic_sync_event(&self, message: impl Into<String>) {
+        let event_kind = SyncEventKind::Generic(message.into());
+
+        let mut sync_state = self.sync_state.lock().unwrap();
+        let sync_state = sync_state.as_mut().unwrap();
+
+        sync_state.log(event_kind);
+    }
+
+    /// Requires prior initialization of sync_state, otherwise will panic
+    pub fn log_sync_action_event<M>(
+        &self,
+        step: u32,
+        sync_action: &SyncAction<M>
+    ) {
+        let kind;
+        let path;
+
+        match sync_action {
+            SyncAction::AddFile { local_entry, remote_path } => {
+                let size_delta = local_entry.size as i64;
+
+                kind = SyncEventActionKind::AddFile { size_delta };
+                path = remote_path;
+            }
+            SyncAction::CreateDir { remote_path } => {
+                kind = SyncEventActionKind::CreateDir;
+                path = remote_path;
+            }
+            SyncAction::DeleteDir { remote_path } |
+            SyncAction::PrereqDeleteDir { remote_path } => {
+                kind = SyncEventActionKind::DeleteDir;
+                path = remote_path;
+            }
+            SyncAction::DeleteFile { remote_entry } |
+            SyncAction::PrereqDeleteFile { remote_entry } => {
+                let size_delta = -(remote_entry.size as i64);
+
+                kind = SyncEventActionKind::DeleteFile { size_delta };
+                path = &remote_entry.path;
+            }
+            SyncAction::UpdateFile { local_entry, remote_entry, .. } => {
+                let size_delta = remote_entry.size as i64 - local_entry.size as i64;
+
+                kind = SyncEventActionKind::UpdateFile { size_delta };
+                path = &remote_entry.path;
+            }
+        }
+
+        let path = path.to_string_lossy().to_string();
+
+        let event_kind = SyncEventKind::Action {
+            kind,
+            path
+        };
+
+        let mut sync_state = self.sync_state.lock().unwrap();
+        let sync_state = sync_state.as_mut().unwrap();
+
+        sync_state.log_step(event_kind, step);
+    }
+
+    /// Requires prior initialization of sync_state, otherwise will panic
+    pub fn log_sync_actions(
+        &self,
+        steps: u32,
+        translations: &Translations
+    ) {
+        let steps_determined_message = translations.deployment_steps_successfully_determined_file_synchronization_will_now_commence;
+        let event_kind = SyncEventKind::Generic(steps_determined_message.to_string());
+
+        let mut sync_state = self.sync_state.lock().unwrap();
+        let sync_state = sync_state.as_mut().unwrap();
+
+        sync_state.log(event_kind);
+        sync_state.set_steps(steps);
+    }
+
+    /// Requires prior initialization of sync_state, otherwise will panic
+    pub fn log_sync_error_event(&self, message: impl Into<String>) {
+        let event_kind = SyncEventKind::Error(message.into());
+
+        let mut sync_state = self.sync_state.lock().unwrap();
+        let sync_state = sync_state.as_mut().unwrap();
+
+        sync_state.log(event_kind);
+    }
+
     /// When calling this the following things must hold true:
     /// - The site dir has been confirmed to exist just beforehand
     /// - If a custom build dir is passed, its parent directory must exist (if it has one)
@@ -1287,7 +1379,7 @@ impl Context {
             job_queue: Mutex::new(Vec::new()),
             site: Mutex::new(Arc::new(Site::new())),
             site_dir: site_dir.clone(),
-            sync_state: Mutex::new(SyncState::new())
+            sync_state: Mutex::new(None)
         };
 
         // TODO: Would be great if we could somehow resolve the conundrum that

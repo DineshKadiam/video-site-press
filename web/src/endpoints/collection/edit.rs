@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -20,6 +20,7 @@ use crate::{
     Context,
     Field,
     Input,
+    Layout,
     Location,
     Select,
     SessionState,
@@ -27,7 +28,6 @@ use crate::{
 };
 use crate::routes;
 use crate::widgets::{
-    layout,
     not_found,
     resource_actions,
     upload_widget
@@ -497,7 +497,10 @@ pub fn edit_page(
     let t_collection_settings = translations.collection_settings;
     let collection_title = collection.title_or_slug_or_generic_label(translations);
     let head_title = format!("{t_collection_settings} – {collection_title}");
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::edit(&collection.site_path),

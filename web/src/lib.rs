@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod actix;
@@ -24,6 +24,7 @@ use field::Field;
 use location::{Location, Subpage};
 use session_state::SessionState;
 use tree_view_order::TreeViewOrder;
+use widgets::Layout;
 
 pub use editor_state::EditorState;
 pub use mode::Mode;

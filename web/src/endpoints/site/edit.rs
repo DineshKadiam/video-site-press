@@ -21,12 +21,12 @@ use crate::{
     Context,
     Field,
     Input,
+    Layout,
     Location,
     Select,
     SessionState
 };
 use crate::routes;
-use crate::widgets::layout;
 
 pub struct UpdateFormFeedback {
     pub base_url: Field,
@@ -196,7 +196,9 @@ pub fn edit_page(
         </div>
     "#);
 
-    let html = layout(
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::site(&SitePath::root_path()),

@@ -16,15 +16,20 @@ mod sync_error;
 mod sync_protocol;
 mod sync_state;
 
-use sync_action::SyncAction;
-use sync_entry::SyncEntry;
 
 pub use ftp::FtpConfig;
 pub use ssh::SshConfig;
+pub use sync_action::SyncAction;
 pub use sync_config_check_step::SyncConfigCheckStep;
+pub use sync_entry::SyncEntry;
 pub use sync_error::SyncError;
 pub use sync_protocol::SyncProtocol;
-pub use sync_state::SyncState;
+pub use sync_state::{
+    SyncEvent,
+    SyncEventActionKind,
+    SyncEventKind,
+    SyncState
+};
 
 pub fn check_deployment_config(
     protocol: SyncProtocol,

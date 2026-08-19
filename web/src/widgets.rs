@@ -11,7 +11,11 @@ use hyper8_core::{Site,SitePath};
 use hyper8_translations::Translations;
 use hyper8_util::{html_escape_outside_attribute, string_from_pathbuf};
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    Location,
+    SessionState
+};
 use crate::routes;
 
 mod layout;
@@ -19,7 +23,7 @@ mod links;
 mod splash_screen;
 mod tree_view;
 
-pub use layout::layout;
+pub use layout::Layout;
 pub use links::{add_link_form, links};
 use splash_screen::splash_screen;
 use tree_view::tree_view;
@@ -42,7 +46,10 @@ pub fn error_page(
     let site = &context.get_site();
 
     let t_error = session_state.language.translations.error;
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::AuxiliaryPage,
@@ -78,7 +85,10 @@ pub fn not_found(
     let site = &context.get_site();
 
     let t_resource_not_found = translations.resource_not_found;
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::AuxiliaryPage,

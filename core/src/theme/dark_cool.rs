@@ -60,6 +60,18 @@ pub const DARK_COOL_VARS: ThemeVars = ThemeVars {
         hsl: (348, 0.43, 0.51),
         oklch: (0.56, 0.14, 370)
     },
+    f_create: Color::Chromatic {
+        hsl: (157, 1.0, 0.36),
+        oklch: (0.88, 0.25, 153)
+    },
+    f_delete: Color::Chromatic {
+        hsl: (12, 1.0, 0.68),
+        oklch: (0.74, 0.2, 35)
+    },
+    f_update: Color::Chromatic {
+        hsl: (64, 0.96, 0.63),
+        oklch: (0.95, 0.19, 123)
+    },
     f1: L1,
     f2: L2,
     f3: L3,

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -17,12 +17,13 @@ use hyper8_core::{
 
 use crate::{
     Context,
+    Layout,
     Location,
     SessionState,
     Textarea
 };
 use crate::routes;
-use crate::widgets::{layout, not_found, upload_widget};
+use crate::widgets::{not_found, upload_widget};
 
 pub struct UploadPosterFormFeedback {
     pub error: String
@@ -229,7 +230,10 @@ pub fn edit_poster_page(
     let t_poster_image = translations.poster_image;
     let video_title = video.title_or_slug_or_generic_label(translations);
     let head_title = format!("{t_poster_image} – {video_title}");
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::poster(&video.site_path),

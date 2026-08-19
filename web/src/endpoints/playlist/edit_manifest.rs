@@ -15,12 +15,13 @@ use hyper8_util::string_from_pathbuf;
 
 use crate::{
     Context,
+    Layout,
     Location,
     SessionState,
     Textarea
 };
 use crate::routes;
-use crate::widgets::{layout, not_found};
+use crate::widgets::not_found;
 
 pub async fn edit_manifest(
     context: Data<Arc<Context>>,
@@ -92,7 +93,9 @@ pub fn edit_manifest_page(
         </div>
     "#);
 
-    let html = layout(
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::manifest(&playlist.site_path),

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::sync::Arc;
@@ -11,11 +11,15 @@ use indoc::formatdoc;
 
 use hyper8_core::{Playlist, SitePath};
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    Layout,
+    Location,
+    SessionState
+};
 use crate::routes;
 use crate::widgets::{
     add_link_form,
-    layout,
     links as links_widget,
     not_found
 };
@@ -52,7 +56,10 @@ pub fn edit_links_page(
     let t_links = translations.links;
     let playlist_title = playlist.title_or_slug_or_generic_label(translations);
     let head_title = format!("{t_links} – {playlist_title}");
-    let html = layout(
+
+    let layout = Layout::new();
+
+    let html = layout.render(
         &body,
         context,
         Location::links(&playlist.site_path),
