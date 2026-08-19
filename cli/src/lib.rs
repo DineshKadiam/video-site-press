@@ -12,15 +12,15 @@ use hyper8_core::{Context, Language, SyncProtocol};
 mod args;
 mod build;
 mod check;
-mod deploy;
 mod serve;
 mod style;
+mod sync;
 
 use args::ArgMode;
 use build::build;
 use check::check;
-use deploy::perform_deploy_blocking_cli;
 use serve::serve;
+use sync::sync;
 
 fn handle(args: ArgMatches) -> ExitCode {
     let language = get_locale()
@@ -66,6 +66,13 @@ fn handle(args: ArgMatches) -> ExitCode {
         check(context, SyncProtocol::Ssh, translations)
     } else if args.get_flag("build") {
         build(args, context, translations)
+    } else if args.contains_id("sync") {
+        if !context.build_dir.exists() {
+            eprintln!("Not performing synchronization because the build directory does not exist. Maybe you wanted to use --build as well?");
+            return ExitCode::FAILURE;
+        }
+
+        sync(args, context, translations)
     } else {
         serve(args, context)
     }

@@ -31,7 +31,7 @@ pub use sync_state::{
     SyncState
 };
 
-pub fn check_deployment_config(
+pub fn check_sync_config(
     protocol: SyncProtocol,
     site: &Site,
     translations: &Translations
@@ -39,13 +39,13 @@ pub fn check_deployment_config(
     match protocol {
         SyncProtocol::Ftp => {
             if site.ftp_config.secure() {
-                ftp::check_deployment_config(
+                ftp::check_sync_config(
                     ftp::connect_secure,
                     site,
                     translations
                 )
             } else {
-                ftp::check_deployment_config(
+                ftp::check_sync_config(
                     ftp::connect_insecure,
                     site,
                     translations
@@ -53,7 +53,7 @@ pub fn check_deployment_config(
             }
         }
         SyncProtocol::Ssh => {
-            ssh::check_deployment_config(
+            ssh::check_sync_config(
                 site,
                 translations
             )

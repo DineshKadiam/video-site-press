@@ -11,7 +11,7 @@ use indoc::formatdoc;
 
 use hyper8_core::{Site, SyncProtocol};
 use hyper8_core::{
-    check_deployment_config,
+    check_sync_config,
     perform_build,
     start_sync
 };
@@ -39,7 +39,7 @@ fn check(
         return error_page(&context, &err, &session_state);
     }
 
-    let steps = check_deployment_config(protocol, &site, translations);
+    let steps = check_sync_config(protocol, &site, translations);
 
     let r_steps = steps
         .iter()
@@ -93,7 +93,7 @@ fn check(
         Location::AuxiliaryPage,
         &session_state,
         &site,
-        translations.deployment_configuration_check
+        translations.sync_configuration_check
     );
 
     HttpResponse::Ok()
@@ -120,10 +120,10 @@ fn ensure_config<'a>(
     site: &Site,
     translations: &'a Translations
 ) -> Result<(), &'a str> {
-    if site.complete_deployment_config(protocol) {
+    if site.complete_sync_config(protocol) {
         Ok(())
     } else {
-        Err(translations.deployment_configuration_is_incomplete_can_not_deploy)
+        Err(translations.sync_configuration_is_incomplete_can_not_synchronize)
     }
 }
 
@@ -156,7 +156,7 @@ fn sync(
     );
 
     match sync_result {
-        Ok(()) => Either::Left(Redirect::to("/deployment").see_other()),
+        Ok(()) => Either::Left(Redirect::to("/sync_log").see_other()),
         Err(err) => Either::Right(error_page(&context, &err, &session_state))
     }
 }

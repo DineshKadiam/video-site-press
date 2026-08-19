@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
-
 mod de;
 mod en;
 
@@ -22,7 +20,7 @@ pub struct Translations {
     pub add_site: &'static str,
     pub adjust_playback_speed_cursor_above_playback_speed_indicator: &'static str,
     pub advanced_settings: &'static str,
-    pub already_deploying_can_only_deploy_again_when_current_deployment_is_finished: &'static str,
+    pub already_syncing_can_only_sync_again_when_current_sync_is_finished: &'static str,
     pub arrow_left_right: &'static str,
     pub atom_description: &'static str,
     pub audio: &'static str,
@@ -41,9 +39,9 @@ pub struct Translations {
     pub background_jobs: &'static str,
     pub banner_image: &'static str,
     pub banner_image_variants: &'static str,
-    pub beginning_deployment_over_insecure_ftp_unencrypted: &'static str,
-    pub beginning_deployment_over_secure_ftp_tls_ssl: &'static str,
-    pub beginning_deployment_over_ssh: &'static str,
+    pub beginning_synchronization_over_insecure_ftp_unencrypted: &'static str,
+    pub beginning_synchronization_over_secure_ftp_tls_ssl: &'static str,
+    pub beginning_synchronization_over_ssh: &'static str,
     pub best: &'static str,
     pub browse: &'static str,
     pub browser_based: &'static str,
@@ -102,13 +100,6 @@ pub struct Translations {
     pub deleting_the_collection_text: &'static str,
     pub deleting_the_playlist_text: &'static str,
     pub deleting_the_video_text: &'static str,
-    pub deploy: &'static str,
-    pub deployment: &'static str,
-    pub deployment_completed_successfully: &'static str,
-    pub deployment_configuration_check: &'static str,
-    pub deployment_configuration_is_incomplete_can_not_deploy: &'static str,
-    pub deployment_finished: &'static str,
-    pub deployment_steps_successfully_determined_file_synchronization_will_now_commence: &'static str,
     pub description: &'static str,
     pub disabled: &'static str,
     pub documentation: &'static str,
@@ -135,9 +126,10 @@ pub struct Translations {
     pub expand: &'static str,
     pub external_link: &'static str,
     pub failed: &'static str,
+    pub failed_to_connect: &'static str,
     pub feed: &'static str,
     pub feeds: &'static str,
-    files_are_being_deployed_to_xxx: &'static str,
+    files_are_being_synchronized_to_xxx: &'static str,
     pub filter: &'static str,
     pub focus_search_field: &'static str,
     pub frame_rate: &'static str,
@@ -147,7 +139,7 @@ pub struct Translations {
     pub ftp_config_secure_label: &'static str,
     pub ftp_config_server_label: &'static str,
     pub ftp_config_user_label: &'static str,
-    pub ftp_deployment: &'static str,
+    pub ftp_sync_settings: &'static str,
     pub general: &'static str,
     pub generally_contains_codecs_supported_in_browsers: &'static str,
     pub generally_supported_in_browsers: &'static str,
@@ -252,16 +244,14 @@ pub struct Translations {
     pub poster_format: &'static str,
     pub poster_image: &'static str,
     pub preview: &'static str,
-    pub preview_is_only_available_again_after_the_current_deployment_is_finished: &'static str,
+    pub preview_is_only_available_again_after_the_current_sync_is_finished: &'static str,
     pub processing: &'static str,
     pub public_address_label: &'static str,
-    pub public_address_must_be_configured_for_deployment_text: &'static str,
-    pub public_address_must_be_configured_for_deployment_text_cli: &'static str,
     pub public_address_not_configured_text: &'static str,
     pub quality: &'static str,
     pub queued: &'static str,
     pub really_delete: &'static str,
-    pub really_deploy: &'static str,
+    pub really_sync: &'static str,
     pub refresh: &'static str,
     pub regular_link: &'static str,
     pub release_date: &'static str,
@@ -278,6 +268,7 @@ pub struct Translations {
     pub resource_not_found: &'static str,
     pub search: &'static str,
     pub sec: &'static str,
+    pub server: &'static str,
     pub server_configuration: &'static str,
     pub set_current_frame_as_poster: &'static str,
     pub sftp_subsystem_could_not_be_initialized: &'static str,
@@ -285,7 +276,7 @@ pub struct Translations {
     pub shortcuts: &'static str,
     pub showing_xxx_results_for_xxx: &'static str,
     pub shut_down_editor_and_quit: &'static str,
-    pub simulate: &'static str,
+    pub simulate_sync: &'static str,
     pub simulation: &'static str,
     pub site_manifest: &'static str,
     pub site_order: &'static str,
@@ -305,8 +296,8 @@ pub struct Translations {
     pub ssh_config_port_label: &'static str,
     pub ssh_config_server_label: &'static str,
     pub ssh_config_user_label: &'static str,
-    pub ssh_deployment: &'static str,
-    pub ssh_deployment_text: &'static str,
+    pub ssh_sync_settings: &'static str,
+    pub ssh_sync_settings_text: &'static str,
     pub standalone: &'static str,
     pub storage_usage: &'static str,
     pub streaming_only: &'static str,
@@ -314,6 +305,12 @@ pub struct Translations {
     pub subscribe_permalink: &'static str,
     pub subtitles: &'static str,
     pub successful: &'static str,
+    pub sync: &'static str,
+    pub sync_configuration_check: &'static str,
+    pub sync_configuration_is_incomplete_can_not_synchronize: &'static str,
+    pub sync_finished: &'static str,
+    pub sync_steps_successfully_determined_file_synchronization_will_now_commence: &'static str,
+    pub synchronization_completed_successfully: &'static str,
     pub syncing: &'static str,
     pub synopsis: &'static str,
     test_file_successfully_uploaded_but_remote_verification_failed_message: &'static str,
@@ -411,8 +408,8 @@ impl Translations {
             .replace("{total}", &total.to_string())
     }
 
-    pub fn files_are_being_deployed_to_xxx(&self, link: &str) -> String {
-        self.files_are_being_deployed_to_xxx.replace("{link}", link)
+    pub fn files_are_being_synchronized_to_xxx(&self, link: &str) -> String {
+        self.files_are_being_synchronized_to_xxx.replace("{link}", link)
     }
 
     pub fn invalid_site_text(&self) -> String {
@@ -427,22 +424,6 @@ impl Translations {
         self.neither_remote_dir_xxx_nor_any_ancestor_dir_found
             .replace("{remote_dir}", remote_dir)
             .replace("{remote_dir_error}", remote_dir_error)
-    }
-
-    pub fn public_address_must_be_configured_for_deployment_text(
-        &self,
-        site_settings_url: &str
-    ) -> String {
-        self.public_address_must_be_configured_for_deployment_text
-            .replace("{site_settings_url}", site_settings_url)
-    }
-
-    pub fn public_address_must_be_configured_for_deployment_text_cli(
-        &self,
-        path: &Path
-    ) -> String {
-        self.public_address_must_be_configured_for_deployment_text_cli
-            .replace("{path}", &path.to_string_lossy())
     }
 
     pub fn remote_dir_does_not_exist_ancestor_dir_found(
@@ -599,12 +580,10 @@ fn check_translations() {
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
-        assert!(&translations.files_are_being_deployed_to_xxx.contains("{link}"));
+        assert!(&translations.files_are_being_synchronized_to_xxx.contains("{link}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
         assert!(&translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found.contains("{remote_dir}"));
         assert!(&translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found.contains("{remote_dir_error}"));
-        assert!(&translations.public_address_must_be_configured_for_deployment_text.contains("{site_settings_url}"));
-        assert!(&translations.public_address_must_be_configured_for_deployment_text_cli.contains("{path}"));
         assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{ancestor_dir}"));
         assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{remote_dir}"));
         assert!(&translations.remote_dir_does_not_exist_ancestor_dir_found.contains("{remote_dir_error}"));

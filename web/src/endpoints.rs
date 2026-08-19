@@ -4,26 +4,26 @@
 use actix_web::HttpResponse;
 
 mod build;
-mod deployment;
 mod jobs;
 mod scripts;
 mod styles;
+mod sync_log;
 
 pub mod collection;
 pub mod convert;
-pub mod deploy;
 pub mod editor;
 pub mod index;
 pub mod playlist;
 pub mod processing;
 pub mod site;
+pub mod sync;
 pub mod video;
 
 pub use build::build;
-pub use deployment::deployment;
 pub use jobs::jobs;
 pub use scripts::scripts;
 pub use styles::styles;
+pub use sync_log::sync_log;
 
 pub async fn favicon() -> HttpResponse {
     HttpResponse::Ok()

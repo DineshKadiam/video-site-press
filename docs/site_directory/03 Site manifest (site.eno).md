@@ -39,7 +39,7 @@ Jump links for all options:
 
 With `base_url` you configure at which (sub)domain (respectively also
 subdirectory if not at the root) your site will be hosted, which is used for
-rendering certain features and for verifying that the deployment settings are
+rendering certain features and for verifying that the server setup is
 correct.
 
 ```eno
@@ -64,15 +64,15 @@ disable_clean_urls
 ## <a name="ftp_config"></a> `ftp_config`
 
 With `ftp_config` you can configure the remote `server`, `path`, `user`,
-`password`, `port` and `mode` for FTP/SFTP deployment.
+`password`, `port` and `mode` for FTP/SFTP-based site synchronization.
 
-The `port` and `mode` fields are optional for FTP deployments – defaults are
-used when they are not provided.
+The `port` and `mode` fields are optional for FTP synchronization – defaults
+are used when they are not provided.
 
 In the CLI you can use the `--check-ftp` flag to safely validate your
-configuration before doing a live deployment. Additionally the `--simulate`
-flag allows running a simulated deployment for gaining extra confidence
-before deployment. In the graphical editor this functionality is also
+configuration before doing a live sync. Additionally the `--simulate`
+flag allows running a simulated synchronization for gaining extra confidence
+before live synchronization. In the graphical editor this functionality is also
 available in the top-right header menu.
 
 ```eno
@@ -91,14 +91,14 @@ your password and all transferred data through the network in plaintext.
 
 The `port` is optional, by default Hyper 8 will use the default FTP port (21).
 
-Note that you should only configure and use FTP deployment through Hyper 8 if
-your local Hyper 8 site directory is accessible only to you or people that
-you 100% trust with the FTP password, as it obviously will be plainly
+Note that you should only configure and use FTP synchronization through Hyper
+8 if your local Hyper 8 site directory is accessible only to you or people
+that you 100% trust with the FTP password, as it obviously will be plainly
 accessible to everyone with access to the `site.eno` file.
 
 An on-demand password prompt option will be implemented in the future to also
-allow deployment in environments where the passwords needs to be kept hidden
-from other people with access to the site directory.
+allow synchronization in environments where the passwords needs to be kept
+hidden from other people with access to the site directory.
 
 ## <a name="language"></a> `language`
 
@@ -130,21 +130,21 @@ poster_aspect: 16:9
 ## <a name="ssh_config"></a> `ssh_config`
 
 With `ssh_config` you can configure the remote `server`, `password`, `path`, `port`
-and `user` for SSH-based deployment.
+and `user` for SSH-based site synchronization.
 
 A complete SSH configuration requires a `server`, `user`, and `path` at least, while
 `password` and `port` are optional.
 
-SSH deployment currently supports two authentication methods: Basic
+SSH synchronization currently supports two authentication methods: Basic
 password-based authentication is performed if you supply a password. If you
 specify no password, authentication is attempted with the first public key
 found in your SSH agent.
 
 In the CLI you can use the `--check-ssh` flag to safely validate your
-configuration before doing a live deployment. Additionally the `--simulate`
-flag allows running a simulated deployment for gaining extra confidence
-before deployment. In the graphical editor this functionality is also
-available in the top-right header menu.
+configuration before doing a live synchronization. Additionally the
+`--simulate` flag allows running a simulated synchronization for gaining
+extra confidence before live synchronization. In the graphical editor this
+functionality is also available in the top-right header menu.
 
 ```eno
 ssh_config:

@@ -34,7 +34,7 @@ pub struct ThemeVars {
     pub d2: Color,
     /// Dark 3 (brightest dark)
     pub d3: Color,
-    /// Dangerous action (like confirming deletion or deployment)
+    /// Dangerous action (like confirming deletion or syncing)
     pub danger: Color,
     /// Dangerous action hover state
     pub danger_hover: Color,

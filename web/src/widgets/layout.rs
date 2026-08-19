@@ -130,41 +130,35 @@ fn controls(
     site: &Site,
     translations: &Translations
 ) -> String {
-    let deployment_status = {
+    let sync_status = {
         if let Some(sync_state) = &*context.sync_state.lock().unwrap() {
-            if sync_state.finished() {
-                let t_deployment_finished = translations.deployment_finished;
-                let duration = precise_duration(sync_state.duration_secs());
+            let duration = precise_duration(sync_state.duration_secs());
 
-                formatdoc!(r#"
-                    <a href="/deployment">
-                        {t_deployment_finished} {duration}
-                    </a>
-                "#)
+            let label = if sync_state.finished() {
+                translations.sync_finished
             } else {
-                let duration = precise_duration(sync_state.duration_secs());
+                translations.syncing
+            };
 
-                let t_syncing  = translations.syncing;
-                formatdoc!(r#"
-                    <a href="/deployment">
-                        {t_syncing} ({duration})
-                    </a>
-                "#)
-            }
+            formatdoc!(r#"
+                <a href="/sync_log">
+                    {label} ({duration})
+                </a>
+            "#)
         } else {
             String::new()
         }
     };
 
-    let ftp_deployment = if site.ftp_config.complete() {
+    let ftp_sync = if site.ftp_config.complete() {
         let base_url = match &site.base_url {
             Some(base_url) => format!(" ({})", base_url.representation),
             None => String::new()
         };
         let t_configuration_check = translations.configuration_check;
-        let t_deploy = translations.deploy;
-        let t_really_deploy = translations.really_deploy;
-        let t_simulate = translations.simulate;
+        let t_really_sync = translations.really_sync;
+        let t_simulate_sync = translations.simulate_sync;
+        let t_sync = translations.sync;
 
         let sync_check_ftp_action = routes::SYNC_CHECK_FTP;
         let sync_ftp_action = routes::SYNC_FTP;
@@ -179,15 +173,15 @@ fn controls(
                         <form
                             action="{sync_ftp_action}"
                             data-confirm
-                            data-confirm-label="{t_deploy}"
-                            data-confirm-text="{t_really_deploy}{base_url}"
+                            data-confirm-label="{t_sync}"
+                            data-confirm-text="{t_really_sync}{base_url}"
                             method="post">
-                            <button>{t_deploy}</button>
+                            <button>{t_sync}</button>
                         </form>
                     </li>
                     <li>
                         <form action="{simulate_sync_ftp_action}" method="post">
-                            <button>{t_simulate}</button>
+                            <button>{t_simulate_sync}</button>
                         </form>
                     </li>
                     <li>
@@ -202,15 +196,15 @@ fn controls(
         String::new()
     };
 
-    let ssh_deployment = if site.ssh_config.complete() {
+    let ssh_sync = if site.ssh_config.complete() {
         let base_url = match &site.base_url {
             Some(base_url) => format!(" ({})", base_url.representation),
             None => String::new()
         };
         let t_configuration_check = translations.configuration_check;
-        let t_deploy = translations.deploy;
-        let t_really_deploy = translations.really_deploy;
-        let t_simulate = translations.simulate;
+        let t_really_sync = translations.really_sync;
+        let t_simulate_sync = translations.simulate_sync;
+        let t_sync = translations.sync;
 
         let sync_check_ssh_action = routes::SYNC_CHECK_SSH;
         let sync_ssh_action = routes::SYNC_SSH;
@@ -224,15 +218,15 @@ fn controls(
                         <form
                             action="{sync_ssh_action}"
                             data-confirm
-                            data-confirm-label="{t_deploy}"
-                            data-confirm-text="{t_really_deploy}{base_url}"
+                            data-confirm-label="{t_sync}"
+                            data-confirm-text="{t_really_sync}{base_url}"
                             method="post">
-                            <button>{t_deploy}</button>
+                            <button>{t_sync}</button>
                         </form>
                     </li>
                     <li>
                         <form action="{simulate_sync_ssh_action}" method="post">
-                            <button>{t_simulate}</button>
+                            <button>{t_simulate_sync}</button>
                         </form>
                     </li>
                     <li>
@@ -247,23 +241,23 @@ fn controls(
         String::new()
     };
 
-    let deploy_icon = hyper8_icons::DEPLOY;
+    let sync_icon = hyper8_icons::SYNC;
     let site_edit_url = routes::SITE_EDIT;
     let t_edit_configuration = translations.edit_configuration;
-    let t_deployment = translations.deployment;
-    let deployment = formatdoc!(r#"
-        <div class="menu" id="deployment">
-            <button>{deploy_icon} {t_deployment}</button>
+    let t_sync = translations.sync;
+    let sync_menu = formatdoc!(r#"
+        <div class="menu" id="sync">
+            <button>{sync_icon} {t_sync}</button>
             <div>
                 <ul>
-                    {ssh_deployment}
-                    {ftp_deployment}
+                    {ssh_sync}
+                    {ftp_sync}
                     <li>
                         <a href="{site_edit_url}">
                             {t_edit_configuration}
                         </a>
                     </li>
-                    <li class="deployment_status">{deployment_status}</li>
+                    <li class="sync_status">{sync_status}</li>
                 </ul>
             </div>
         </div>
@@ -374,7 +368,7 @@ fn controls(
             {processing}
             {storage}
             {preview}
-            {deployment}
+            {sync_menu}
             <template id="processing_icon">{processing_icon}</template>
             <template id="reload_icon">{reload_icon}</template>
         </div>

@@ -13,7 +13,6 @@ mod collection;
 mod container;
 mod container_order;
 mod context;
-mod deploy;
 mod file_meta;
 mod font;
 mod hyper_dir;
@@ -38,6 +37,7 @@ mod site_path;
 mod site_url;
 mod sort;
 mod subtitle_file;
+mod sync;
 mod theme;
 mod video;
 mod video_file;
@@ -50,12 +50,6 @@ pub mod watcher;
 
 use audio_meta::AudioMeta;
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
-use deploy::{
-    FtpConfig,
-    SshConfig,
-    SyncAction,
-    SyncError
-};
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
 use jobs::{CompletedJob, JobError, QueuedJob, Worker};
@@ -66,6 +60,12 @@ use platform_integration::{PlatformIntegrationImage, PlatformIntegrationMeta};
 use poster_assets::{PosterAsset, PosterAssets};
 use poster_meta::PosterMeta;
 use sort::SortDirection;
+use sync::{
+    FtpConfig,
+    SshConfig,
+    SyncAction,
+    SyncError
+};
 use video_format::{Codec, EncodingApproach};
 use video_meta::VideoMeta;
 
@@ -87,15 +87,6 @@ pub use context::{
     VideoParent,
     VideoUpdate
 };
-pub use deploy::{
-    SyncConfigCheckStep,
-    SyncEvent,
-    SyncEventActionKind,
-    SyncEventKind,
-    SyncProtocol,
-    SyncState
-};
-pub use deploy::{check_deployment_config, start_sync};
 pub use file_meta::FileMeta;
 pub use font::Font;
 pub use hyper_dir::HyperDir;
@@ -116,6 +107,15 @@ pub use site_path::SitePath;
 pub use site_url::SiteUrl;
 pub use sort::{Asc, Comparison, Desc};
 pub use subtitle_file::SubtitleFile;
+pub use sync::{
+    SyncConfigCheckStep,
+    SyncEvent,
+    SyncEventActionKind,
+    SyncEventKind,
+    SyncProtocol,
+    SyncState
+};
+pub use sync::{check_sync_config, start_sync};
 pub use theme::SPLASH_SVG;
 pub use theme::{Theme, ThemeKind};
 pub use util::InfallibleResult;

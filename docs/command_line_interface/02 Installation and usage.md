@@ -24,7 +24,7 @@ mkdir my-site-dir
 Simply pass the site directory path to `hyper8` and it will start a web server
 hosting the graphical editor. You can open the displayed address in your
 browser and then perform every action that the desktop application provides
-as well (authoring, previewing, building and deploying your site).
+as well (authoring, previewing, building and syncing your site).
 
 ```bash
 hyper8 my-site-dir
@@ -46,12 +46,14 @@ With the added `--preview` flag (short: `-p`) the site will be opened in the bro
 hyper8 my-site-dir --build --preview
 ```
 
-## Deploying the site
+## Syncing the site
 
-If you've already set up a deployment configuration for your site you can deploy it straight from the command line interface by adding the `--deploy` (short: `-d`) option:
+If you've already set up an FTP/FTPS or SSH sync configuration for your site
+you can sync it straight from the command line interface by adding the
+`--sync-ftp` or `--sync-ssh` option, for instance:
 
 ```bash
-hyper8 my-site-dir --build --deploy
+hyper8 my-site-dir --build --sync-ssh
 ```
 
 ## Manually setting the build directory

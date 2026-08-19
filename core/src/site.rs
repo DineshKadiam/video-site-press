@@ -396,7 +396,7 @@ impl Site {
         }
     }
 
-    pub fn complete_deployment_config(&self, protocol: SyncProtocol) -> bool {
+    pub fn complete_sync_config(&self, protocol: SyncProtocol) -> bool {
         match protocol {
             SyncProtocol::Ftp => self.ftp_config.complete(),
             SyncProtocol::Ssh => self.ssh_config.complete()

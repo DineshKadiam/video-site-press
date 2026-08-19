@@ -147,7 +147,7 @@ verification = rel-me
 ## <a name="offline"></a> `offline`
 
 The `offline` flag, if given, indicates that the collection should not be
-included in the built site, and therefore also not deployed to the server.
+included in the built site, and therefore also not published online.
 
 ```eno
 offline

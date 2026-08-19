@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025-2026 Simon Repp
+// SPDX-FileCopyrightText: 2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::net::TcpStream;
@@ -18,7 +18,7 @@ mod check;
 mod ssh_config;
 mod sync;
 
-pub use check::check_deployment_config;
+pub use check::check_sync_config;
 pub use ssh_config::SshConfig;
 pub use sync::start_sync;
 

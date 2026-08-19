@@ -27,7 +27,7 @@ The command line interface provides the following functionality:
   `--workers` can be used to set the server configuration.
 
 - The options `--build`/`-b` (optionally paired with `--preview`/`-p`) and
-  `--deploy`/`-d` can be used to perform the respective actions directly
+  `--sync-ftp`/`--sync-ssh` can be used to perform the respective actions directly
   from the CLI (without the graphical editor). The optional `--preview`
   flag interacts with the `--ip` and `--port` options to determine the
   preview server configuration.

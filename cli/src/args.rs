@@ -50,7 +50,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
 
     let build_dir = Arg::new("build-dir")
         .help(indoc!("
-            The path to which the deployable, built site is written
+            The path to which the files for the site are written
 
             WARNING: This directory is WIPED during the build process.
             Please pay very close attention where you point this to.
@@ -77,31 +77,15 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
 
     let check_ftp = Arg::new("check-ftp")
         .action(ArgAction::SetTrue)
-        .help("Run a check to verify that the FTP/FTPS deployment configuration and server setup is correct.")
-        .help_heading("Deployment options")
+        .help("Run a check to verify that the FTP/FTPS sync configuration and server setup is correct.")
+        .help_heading("Sync options")
         .long("check-ftp");
 
     let check_ssh = Arg::new("check-ssh")
         .action(ArgAction::SetTrue)
-        .help("Run a check to verify that the SSH deployment configuration and server setup is correct.")
-        .help_heading("Deployment options")
+        .help("Run a check to verify that the SSH sync configuration and server setup is correct.")
+        .help_heading("Sync options")
         .long("check-ssh");
-
-    let deploy = ArgGroup::new("deploy")
-        .args(["deploy-ftp", "deploy-ssh"])
-        .requires("build");
-
-    let deploy_ftp = Arg::new("deploy-ftp")
-        .action(ArgAction::SetTrue)
-        .help("Deploy the site over FTP/FTPS. Use with --build.")
-        .help_heading("Deployment options")
-        .long("deploy-ftp");
-
-    let deploy_ssh = Arg::new("deploy-ssh")
-        .action(ArgAction::SetTrue)
-        .help("Deploy the site over SSH. Use with --build.")
-        .help_heading("Deployment options")
-        .long("deploy-ssh");
 
     let ip = Arg::new("ip")
         .help("Manually set the ip address used by the editor or preview server (otherwise default to localhost)")
@@ -110,7 +94,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
 
     let no_confirm = Arg::new("no-confirm")
         .action(ArgAction::SetTrue)
-        .help(r#"Skip all interactive confirmation prompts ("Really deploy?", etc.). For judicious use in automated pipelines."#)
+        .help(r#"Skip all interactive confirmation prompts ("Really sync?", etc.). For judicious use in automated pipelines."#)
         .long("no-confirm");
 
     let port = Arg::new("port")
@@ -127,15 +111,30 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
 
     let simulate = Arg::new("simulate")
         .action(ArgAction::SetTrue)
-        .help("Simulate deployment by merely printing, but not executing, file synchronization actions. Use with --deploy.")
-        .help_heading("Deployment options")
+        .help("Simulate synchronization by merely printing, but not executing, file synchronization actions. Use with --sync-ftp/--sync-ssh.")
+        .help_heading("Sync options")
         .long("simulate")
-        .requires("deploy");
+        .requires("sync");
 
     let site_dir = Arg::new("site-dir")
         .help("The path at which the site resides (site manifest, videos, etc.)")
         .required(site_dir_required)
         .value_parser(value_parser!(PathBuf));
+
+    let sync = ArgGroup::new("sync")
+        .args(["sync-ftp", "sync-ssh"]);
+
+    let sync_ftp = Arg::new("sync-ftp")
+        .action(ArgAction::SetTrue)
+        .help("Synchronize the build directory to the configured remote server over FTP/FTPS. Use with --build or on its own.")
+        .help_heading("Sync options")
+        .long("sync-ftp");
+
+    let sync_ssh = Arg::new("sync-ssh")
+        .action(ArgAction::SetTrue)
+        .help("Synchronize the build directory to the configured remote server over SSH. Use with --build or on its own.")
+        .help_heading("Sync options")
+        .long("sync-ssh");
 
     let workers = Arg::new("workers")
         .help("Set the number of threads used for background processing (metadata computation, image processing, video/audio transcoding, etc.)")
@@ -151,15 +150,15 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .group(check)
         .arg(check_ftp)
         .arg(check_ssh)
-        .group(deploy)
-        .arg(deploy_ftp)
-        .arg(deploy_ssh)
         .arg(ip)
         .arg(no_confirm)
         .arg(port)
         .arg(preview)
         .arg(simulate)
         .arg(site_dir)
+        .group(sync)
+        .arg(sync_ftp)
+        .arg(sync_ssh)
         .arg(workers)
         .next_line_help(true)
         .version(version);

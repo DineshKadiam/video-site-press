@@ -7,11 +7,11 @@ use std::sync::Arc;
 
 use clap::ArgMatches;
 
-use hyper8_core::{Context, SyncProtocol};
+use hyper8_core::Context;
 use hyper8_core::{perform_build, start_preview_server};
 use hyper8_translations::Translations;
 
-use crate::perform_deploy_blocking_cli;
+use crate::sync;
 
 pub fn build(
     args: ArgMatches,
@@ -28,32 +28,8 @@ pub fn build(
         return ExitCode::FAILURE;
     }
 
-    if args.contains_id("deploy") {
-        let site = context.get_site();
-
-        let protocol = if args.get_flag("deploy-ftp") {
-            SyncProtocol::Ftp
-        } else /* if args.get_flag("deploy-ssh") */ {
-            SyncProtocol::Ssh
-        };
-
-        let confirm = !args.get_flag("no-confirm");
-        let simulate = args.get_flag("simulate");
-
-        match perform_deploy_blocking_cli(
-            confirm,
-            &context,
-            protocol,
-            simulate,
-            &site,
-            &translations
-        ) {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(err) => {
-                eprintln!("{err}");
-                ExitCode::FAILURE
-            }
-        }
+    if args.contains_id("sync") {
+        sync(args, context, translations)
     } else if args.get_flag("preview") {
         let site = context.get_site();
 

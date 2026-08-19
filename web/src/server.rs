@@ -26,8 +26,6 @@ use crate::endpoints::{
     build,
     collection,
     convert,
-    deploy,
-    deployment,
     editor,
     favicon,
     index,
@@ -37,6 +35,8 @@ use crate::endpoints::{
     scripts,
     styles,
     site,
+    sync,
+    sync_log,
     video
 };
 
@@ -112,13 +112,6 @@ pub fn start(
                     .route("/collection/move/{site_path:.*}", post().to(collection::r#move))
                     .route("/collection/update-banner/{site_path:.*}", post().to(collection::update_banner))
                     .route("/collection/upload-banner/{site_path:.*}", post().to(collection::upload_banner))
-                    .route("/sync/ftp", post().to(deploy::sync_ftp))
-                    .route("/sync/ftp/check", post().to(deploy::check_ftp))
-                    .route("/sync/ftp/simulate", post().to(deploy::simulate_ftp))
-                    .route("/sync/ssh", post().to(deploy::sync_ssh))
-                    .route("/sync/ssh/check", post().to(deploy::check_ssh))
-                    .route("/sync/ssh/simulate", post().to(deploy::simulate_ssh))
-                    .route("/deployment", get().to(deployment))
                     .route("/editor.css", get().to(styles))
                     .route("/editor.js", get().to(scripts))
                     .route("/favicon.png", get().to(favicon))
@@ -166,6 +159,13 @@ pub fn start(
                             .route(get().to(site::edit_manifest))
                             .route(post().to(site::update_manifest))
                     )
+                    .route("/sync/ftp", post().to(sync::sync_ftp))
+                    .route("/sync/ftp/check", post().to(sync::check_ftp))
+                    .route("/sync/ftp/simulate", post().to(sync::simulate_ftp))
+                    .route("/sync/ssh", post().to(sync::sync_ssh))
+                    .route("/sync/ssh/check", post().to(sync::check_ssh))
+                    .route("/sync/ssh/simulate", post().to(sync::simulate_ssh))
+                    .route("/sync_log", get().to(sync_log))
                     .route("/video/add-link/{site_path:.*}", post().to(video::add_link))
                     .route("/video/dangerous-actions/{site_path:.*}", get().to(video::dangerous_actions))
                     .route("/video/delete/{site_path:.*}", post().to(video::delete))

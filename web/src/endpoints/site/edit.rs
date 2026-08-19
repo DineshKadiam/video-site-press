@@ -150,11 +150,11 @@ pub fn edit_page(
         String::new()
     };
 
-    let t_ftp_deployment = translations.ftp_deployment;
+    let t_ftp_sync_settings = translations.ftp_sync_settings;
     let t_general = translations.general;
     let t_site_settings = translations.site_settings;
-    let t_ssh_deployment = translations.ssh_deployment;
-    let t_ssh_deployment_text = translations.ssh_deployment_text;
+    let t_ssh_sync_settings = translations.ssh_sync_settings;
+    let t_ssh_sync_settings_text = translations.ssh_sync_settings_text;
     let t_update_site = translations.update_site;
 
     let update_action = routes::SITE_EDIT;
@@ -173,7 +173,7 @@ pub fn edit_page(
                 {select_theme}
                 {checkbox_clean_urls}
 
-                <h3>{t_ftp_deployment}</h3>
+                <h3>{t_ftp_sync_settings}</h3>
                 {input_ftp_config_server}
                 {input_ftp_config_user}
                 {input_ftp_config_password}
@@ -181,8 +181,8 @@ pub fn edit_page(
                 {input_ftp_config_port}
                 {checkbox_ftp_config_secure}
 
-                <h3>{t_ssh_deployment}</h3>
-                <p>{t_ssh_deployment_text}</p>
+                <h3>{t_ssh_sync_settings}</h3>
+                <p>{t_ssh_sync_settings_text}</p>
                 {input_ssh_config_server}
                 {input_ssh_config_user}
                 {input_ssh_config_password}

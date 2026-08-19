@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::io;
+use std::process::ExitCode;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -9,6 +10,7 @@ use std::time::Duration;
 use anstream::eprintln;
 use chrono::DateTime;
 use chrono::offset::Local;
+use clap::ArgMatches;
 
 use hyper8_core::{
     Context,
@@ -30,10 +32,42 @@ use crate::style::{
     RED
 };
 
-/// Performs live or simulated deployment in a synchronous fashion, reporting
+pub fn sync(
+    args: ArgMatches,
+    context: Arc<Context>,
+    translations: &Translations
+) -> ExitCode {
+    let site = context.get_site();
+
+    let protocol = if args.get_flag("sync-ftp") {
+        SyncProtocol::Ftp
+    } else /* if args.get_flag("sync-ssh") */ {
+        SyncProtocol::Ssh
+    };
+
+    let confirm = !args.get_flag("no-confirm");
+    let simulate = args.get_flag("simulate");
+
+    match execute_sync_blocking_cli(
+        confirm,
+        &context,
+        protocol,
+        simulate,
+        &site,
+        &translations
+    ) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{err}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Performs live or simulated sync in a synchronous fashion, reporting
 /// back all messages and errors to the terminal. Asks for explicit
-/// (opt-in) confirmation before performing a live deployment.
-pub fn perform_deploy_blocking_cli(
+/// (opt-in) confirmation before executing a live sync.
+fn execute_sync_blocking_cli(
     confirm: bool,
     context: &Arc<Context>,
     protocol: SyncProtocol,
@@ -41,15 +75,15 @@ pub fn perform_deploy_blocking_cli(
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
-    if !site.complete_deployment_config(protocol) {
-        let message = translations.deployment_configuration_is_incomplete_can_not_deploy.to_string();
-        return Err(message);
+    if !site.complete_sync_config(protocol) {
+        let message = translations.sync_configuration_is_incomplete_can_not_synchronize;
+        return Err(message.to_string());
     }
 
     if !simulate && confirm {
-        let t_really_deploy = translations.really_deploy;
+        let t_really_sync = translations.really_sync;
         let base_url = &site.base_url.as_ref().unwrap().representation;
-        eprintln!("{t_really_deploy} {BRIGHT_BLACK}{base_url}{BRIGHT_BLACK:#}");
+        eprintln!("{t_really_sync} {BRIGHT_BLACK}{base_url}{BRIGHT_BLACK:#}");
         eprintln!("{BRIGHT_YELLOW}{}{BRIGHT_YELLOW:#}", translations.type_y_and_press_enter_to_confirm_anything_else_will_abort);
 
         let mut input = String::new();

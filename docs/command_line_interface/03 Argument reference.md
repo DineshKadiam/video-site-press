@@ -29,7 +29,7 @@ the usage information.
 
 - `--build-dir <BUILD_DIR>`
 
-  The path to which the deployable, built site is written.
+  The path to which the files for the site are written.
 
   **WARNING: This directory is WIPED during the build process.**<br>
   Please pay very close attention where you point this to.
@@ -51,7 +51,7 @@ the usage information.
 
 - `--no-confirm`
 
-  Skip all interactive confirmation prompts (*Really deploy?*, etc.). For judicious use in automated pipelines.
+  Skip all interactive confirmation prompts (*Really sync?*, etc.). For judicious use in automated pipelines.
 
 - `--port <PORT>`
 
@@ -69,24 +69,24 @@ the usage information.
 
   Print version
 
-## Deployment options
+## Sync options
 
 - `--check-ftp`
 
-  Run a check to verify that the FTP/FTPS deployment configuration and server setup is correct.
+  Run a check to verify that the FTP/FTPS sync configuration and server setup is correct.
 
 - `--check-ssh`
 
-  Run a check to verify that the SSH deployment configuration and server setup is correct.
-
-- `--deploy-ftp`
-
-  Deploy the site over FTP/FTPS. Use with `--build`.
-
-- `--deploy-ssh`
-
-  Deploy the site over SSH. Use with `--build`.
+  Run a check to verify that the SSH sync configuration and server setup is correct.
 
 - `--simulate`
 
-  Simulate deployment by merely printing, but not executing, file synchronization actions. Use with `--deploy`.
+  Simulate synchronization by merely printing, but not executing, file synchronization actions. Use with `--sync-ftp`/`--sync-ssh`.
+
+- `--sync-ftp`
+
+  Synchronize the build directory to the configured remote server over FTP/FTPS. Use with `--build` or on its own.
+
+- `--sync-ssh`
+
+  Synchronize the build directory to the configured remote server over SSH. Use with `--build` or on its own.

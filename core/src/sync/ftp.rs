@@ -17,7 +17,7 @@ mod check;
 mod ftp_config;
 mod sync;
 
-pub use check::check_deployment_config;
+pub use check::check_sync_config;
 pub use ftp_config::FtpConfig;
 pub use sync::start_sync;
 

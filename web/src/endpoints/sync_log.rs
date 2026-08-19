@@ -21,9 +21,8 @@ use crate::{
     SessionState
 };
 
-/// Page on which deployment progress is reported (updated in real time via
-/// client scripting)
-pub async fn deployment(
+/// Page to follow the sync progress in real time (updated via client scripting)
+pub async fn sync_log(
     context: Data<Arc<Context>>,
     session: Session
 ) -> HttpResponse {
@@ -34,16 +33,16 @@ pub async fn deployment(
 
     let mut body = String::new();
 
-    let t_deployment = translations.deployment;
-    body.push_str(&format!("<h2>{t_deployment}</h2>"));
+    let t_sync = translations.sync;
+    body.push_str(&format!("<h2>{t_sync}</h2>"));
 
     if let Some(hyper_url) = &site.base_url {
         let url = &hyper_url.representation;
         let link = format!(r#"<a href="{url}" target="_blank">{url}</a>"#);
-        let t_files_are_being_deployed_to_xxx = translations
-            .files_are_being_deployed_to_xxx(&link);
+        let t_files_are_being_synchronized_to_xxx = translations
+            .files_are_being_synchronized_to_xxx(&link);
 
-        let text = format!("<p>{t_files_are_being_deployed_to_xxx}</p>");
+        let text = format!("<p>{t_files_are_being_synchronized_to_xxx}</p>");
         body.push_str(&text);
     }
 

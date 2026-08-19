@@ -13,7 +13,7 @@ application menu and click `Create new site` to get started.
 
 After this you will be in the *graphical editor*, in which you can build your
 entire site structure, add video, audio, image and subtitle files, preview
-the site, deploy the site, etc. (in short - everything is found in there).
+the site, publish the site, etc. (in short - everything is found in there).
 
 The editor is intended to be as self-explanatory as possible, but for some
 guidance on how it is operated (and related topics), have a look at the

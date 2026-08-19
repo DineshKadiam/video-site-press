@@ -22,7 +22,7 @@ pub async fn build(
 
     if syncing {
         let session_state = SessionState::all(&context.server_mode, &session);
-        let message = session_state.language.translations.preview_is_only_available_again_after_the_current_deployment_is_finished;
+        let message = session_state.language.translations.preview_is_only_available_again_after_the_current_sync_is_finished;
         return Either::Right(error_page(&context, message, &session_state));
     }
 

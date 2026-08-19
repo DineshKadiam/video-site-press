@@ -9,7 +9,7 @@ The root directory of your site only has one notable characteristic: It is the
 the only place where the [site manifest](site-manifest-site-eno.html)
 may be placed. The site manifest is a structured plaintext file that contains
 settings which globally apply to your entire site, such as the language,
-theme and deployment configuration. The contents of the site manifest
+theme and server configuration. The contents of the site manifest
 (and also all other manifests in the site directory) use a simple data
 language called [eno](https://simonrepp.com/eno/) - you can read up on the
 syntax at the linked page, but given its simplicity you will likely get the

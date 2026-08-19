@@ -366,14 +366,24 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
         let mut sync_state = context.sync_state.lock().unwrap();
 
         if let Some(sync_state) = &*sync_state && !sync_state.finished() {
-            let message = translations.already_deploying_can_only_deploy_again_when_current_deployment_is_finished;
+            let message = translations.already_syncing_can_only_sync_again_when_current_sync_is_finished;
             return Err(message.to_string());
         }
 
         *sync_state = Some(SyncState::new(simulate));
     }
 
-    let mut impl_ftp_stream = connect(site)?;
+    let mut impl_ftp_stream = match connect(site) {
+        Ok(impl_ftp_stream) => impl_ftp_stream,
+        Err(err) => {
+            let t_failed_to_connect = translations.failed_to_connect;
+            let message = format!("{t_failed_to_connect}\n{err}");
+
+            context.log_sync_error_and_finish(message.clone());
+
+            return Err(message);
+        }
+    };
 
     let context = Arc::clone(context);
     let remote_path = PathBuf::from(site.ftp_config.path_unchecked());
@@ -383,9 +393,9 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
 
     thread::spawn(move || {
         let begin_message = if secure {
-            translations.beginning_deployment_over_secure_ftp_tls_ssl
+            translations.beginning_synchronization_over_secure_ftp_tls_ssl
         } else {
-            translations.beginning_deployment_over_insecure_ftp_unencrypted
+            translations.beginning_synchronization_over_insecure_ftp_unencrypted
         };
 
         context.log_generic_sync_event(begin_message);
@@ -413,7 +423,7 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
                     &mut impl_ftp_stream,
                     simulate
                 ) {
-                    Ok(()) => context.log_generic_sync_event(translations.deployment_completed_successfully),
+                    Ok(()) => context.log_generic_sync_event(translations.synchronization_completed_successfully),
                     Err(err) => context.log_sync_error_event(err.to_string())
                 }
             }

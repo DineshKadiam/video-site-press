@@ -7,12 +7,12 @@ use std::process::ExitCode;
 use anstream::eprintln;
 
 use hyper8_core::{Context, SyncProtocol};
-use hyper8_core::check_deployment_config;
+use hyper8_core::check_sync_config;
 use hyper8_translations::Translations;
 
 use crate::style::{BRIGHT_BLACK, BRIGHT_YELLOW, GREEN, RED};
 
-/// Checks the FTP or SSH deployment and server configuration
+/// Checks the FTP or SSH sync and server configuration
 pub fn check(
     context: Arc<Context>,
     protocol: SyncProtocol,
@@ -20,13 +20,13 @@ pub fn check(
 ) -> ExitCode {
     let site = context.get_site();
 
-    if !site.complete_deployment_config(protocol) {
-        let message = translations.deployment_configuration_is_incomplete_can_not_deploy;
+    if !site.complete_sync_config(protocol) {
+        let message = translations.sync_configuration_is_incomplete_can_not_synchronize;
         eprintln!("{message}");
         return ExitCode::FAILURE
     }
 
-    let steps = check_deployment_config(
+    let steps = check_sync_config(
         protocol,
         &site,
         translations

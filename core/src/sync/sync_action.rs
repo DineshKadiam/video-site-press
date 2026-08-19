@@ -20,7 +20,7 @@ pub enum SyncAction<M> {
     UpdateFile {
         local_entry: SyncEntry<M>,
         remote_entry: SyncEntry<M>,
-        /// During deployment we want some files to be updated later, or even
+        /// During syncing we want some files to be updated later, or even
         /// at the latest possible point. For instance, updating the RSS feed
         /// files should only happen as the very last step, as everything
         /// that the feed points to should be uploaded and in order the
@@ -194,8 +194,8 @@ impl<M> SyncAction<M> {
     }
 
     // TODO: Implement
-    // Tight storage quota strategy (prioritize keeping used storage as low as possible at every point of the deployment)
-    // "Prioritize avoidance of storage quota overflows during deployment"
+    // Tight storage quota strategy (prioritize keeping used storage as low as possible at every point of the sync)
+    // "Prioritize avoidance of storage quota overflows during syncing"
     //
     // 1. Create all missing directories (recursively - going from shallowest to deepest path)
     // 2. Delete all files, from biggest to smallest

@@ -53,7 +53,7 @@ pub struct SyncEventJson {
     pub size: Option<String>
 }
 
-/// Represents the state of a running deployment at request time
+/// Represents the state of a running synchronization at request time
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncStateJson {

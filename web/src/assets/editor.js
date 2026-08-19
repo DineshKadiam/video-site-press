@@ -1,11 +1,11 @@
 const confirmationDialog = document.querySelector('#confirmation_dialog').content;
-const deploymentMenu = document.querySelector('#deployment');
-const deploymentStatus = document.querySelector('.deployment_status');
 const processingElement = document.querySelector('.processing');
 const processingIcon = document.querySelector('#processing_icon').content;
 const reloadIcon = document.querySelector('#reload_icon').content;
 const splashWrapper = document.querySelector('.splash_wrapper');
 const syncLog = document.querySelector('#sync_log');
+const syncMenu = document.querySelector('#sync');
+const syncStatus = document.querySelector('.sync_status');
 
 // Memorizes previously seen states for ongoing background processing so we
 // can determine whether to re-render live update widgets.
@@ -88,10 +88,10 @@ function fetchProcessing() {
             }
 
             if (syncState !== null) {
-                // Update the status line in the deployment menu ("Syncing/Deployed in")
+                // Update the status line in the server menu ("Syncing/Sync finished")
                 updateSyncStatus(syncState);
 
-                // Update the sync log on the deployment page (if we are on it)
+                // Update the sync log (if we are on the sync log page)
                 if (syncLog) {
                     updateSyncLog(syncState);
                 }
@@ -316,8 +316,8 @@ function updateProcessingWidget(globalJobReport) {
 function updateSyncLog(syncState) {
     const log = syncState.log;
 
-    // We dynamically update the sync log only if the currently open
-    // deployment page was opened with the current sync session.
+    // We dynamically update the sync log only if the currently open log was
+    // opened for/with the currently running sync session.
     if (syncLog.dataset.sessionId === syncState.sessionId) {
         const eventsRendered = parseInt(syncLog.dataset.eventsRendered);
 
@@ -416,33 +416,33 @@ function updateSyncLog(syncState) {
 
 function updateSyncStatus(syncState) {
     if (syncState.finished) {
-        if (deploymentMenu.classList.contains('active')) {
+        if (syncMenu.classList.contains('active')) {
             const a = document.createElement('a');
-            a.href = '/deployment';
+            a.href = '/sync_log';
 
             // TODO: Maybe introduce a success icon here (checkmark)
-            // a.append(deployIcon.cloneNode(true));
+            // a.append(successIcon.cloneNode(true));
 
             const text = document.createElement('span');
-            text.textContent = t.deploymentFinished;
+            text.textContent = t.syncFinished;
             a.append(text);
 
             const durationText = document.createElement('span');
             durationText.textContent = formatTime(syncState.duration);
             a.append(durationText);
 
-            deploymentStatus.replaceChildren(a);
+            syncStatus.replaceChildren(a);
 
-            deploymentMenu.classList.remove('active')
+            syncMenu.classList.remove('active')
         }
     } else {
-        deploymentMenu.classList.add('active');
+        syncMenu.classList.add('active');
 
         const a = document.createElement('a');
-        a.href = '/deployment';
+        a.href = '/sync_log';
 
         // TODO: Maybe introduce a progress icon here (spinner, clock, ?)
-        // a.append(deployIcon.cloneNode(true));
+        // a.append(successIcon.cloneNode(true));
 
         const text = document.createElement('span');
         text.textContent = t.syncing;
@@ -452,7 +452,7 @@ function updateSyncStatus(syncState) {
         durationText.textContent = formatTime(syncState.duration);
         a.append(durationText);
 
-        deploymentStatus.replaceChildren(a);
+        syncStatus.replaceChildren(a);
     }
 }
 

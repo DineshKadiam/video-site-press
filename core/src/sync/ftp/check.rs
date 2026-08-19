@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::io::Write;
-use std::path::Path;
+use std::io::Cursor;
+use std::path::{Path};
 
 use indoc::indoc;
-use ssh2::DisconnectCode;
+use suppaftp::{ImplFtpStream, TlsStream};
 
 use hyper8_translations::Translations;
 use hyper8_util::nanoid;
@@ -13,16 +13,16 @@ use hyper8_util::nanoid;
 use crate::{
     Site,
     SitePath,
-    SyncConfigCheckStep
+    SyncConfigCheckStep,
+    SyncError
 };
 
-use super::DEFAULT_SSH_PORT;
-use super::connect;
+use super::DEFAULT_FTP_PORT;
 
-const TEST_FILE_NAME: &str = ".hyper8_ssh_deployment_check.txt";
+const TEST_FILE_NAME: &str = ".hyper8_ftp_sync_config_check.txt";
 const TEST_FILE_TEXT: &str = indoc!("
     This file was created by Hyper 8 (https://hyper8.org) to check if the
-    configured server and path for SSH deployment matches up with the
+    configured server and path for FTP synchronization matches up with the
     configured public website URL. It serves no further purpose anymore and
     may safely be deleted.
 ");
@@ -35,7 +35,8 @@ const TEST_FILE_TEXT: &str = indoc!("
 /// website (or other data) will be wiped due to a wrongly set remote path.
 /// Regardless of failure or success of the check, the test file is removed
 /// from the remote again, leaving a clean state.
-pub fn check_deployment_config(
+pub fn check_sync_config<S: TlsStream>(
+    connect: impl Fn(&Site) -> Result<ImplFtpStream<S>, SyncError>,
     site: &Site,
     translations: &Translations
 ) -> Vec<SyncConfigCheckStep> {
@@ -43,16 +44,16 @@ pub fn check_deployment_config(
 
     // Login
 
-    let port = site.ssh_config.port.unwrap_or(DEFAULT_SSH_PORT);
-    let server = site.ssh_config.server_unchecked();
-    let user = site.ssh_config.user_unchecked();
+    let port = site.ftp_config.port.unwrap_or(DEFAULT_FTP_PORT);
+    let server = site.ftp_config.server_unchecked();
+    let user = site.ftp_config.user_unchecked();
 
     let mut login = SyncConfigCheckStep::new(translations.login);
 
     login.context(format!("{user}@{server}:{port}"));
 
-    let (session, sftp) = match connect(site, translations) {
-        Ok(session_sftp) => session_sftp,
+    let mut impl_ftp_stream = match connect(site) {
+        Ok(impl_ftp_stream) => impl_ftp_stream,
         Err(err) => {
             login.message(err);
 
@@ -65,17 +66,26 @@ pub fn check_deployment_config(
 
     // Open remote directory
 
-    let remote_dir = site.ssh_config.path_unchecked();
+    let remote_dir = site.ftp_config.path_unchecked();
 
     let mut open_remote_directory = SyncConfigCheckStep::new(translations.open_remote_directory);
 
     open_remote_directory.context(remote_dir);
 
-    // Check if the configured remote directory exists and is a file
-    match sftp.stat(Path::new(remote_dir)) {
-        Ok(file_stat) => {
-            if !file_stat.is_dir() {
-                let message = translations.remote_dir_xxx_is_not_a_directory(remote_dir);
+    // Check if the configured remote directory exists (by changing into it)
+    if let Err(remote_dir_err) = impl_ftp_stream.cwd(&remote_dir) {
+        // If the configured remote directory does not exist, try changing
+        // into each of its ancestor directories (going from deepest to
+        // shallowest) in order to determine and report the first existing
+        // directory that is part of the user's configured remote directory
+        // path.
+        while let Some(ancestor_dir) = Path::new(remote_dir).parent() {
+            if impl_ftp_stream.cwd(ancestor_dir.to_string_lossy()).is_ok() {
+                let message = translations.remote_dir_does_not_exist_ancestor_dir_found(
+                    &ancestor_dir.to_string_lossy(),
+                    remote_dir,
+                    &remote_dir_err.to_string()
+                );
 
                 open_remote_directory.message(message);
 
@@ -83,37 +93,16 @@ pub fn check_deployment_config(
                 return steps;
             }
         }
-        Err(remote_dir_err) => {
-            // If the configured remote directory does not exist, try changing
-            // into each of its ancestor directories (going from deepest to
-            // shallowest) in order to determine and report the first existing
-            // directory that is part of the user's configured remote directory
-            // path.
-            while let Some(ancestor_dir) = Path::new(remote_dir).parent() {
-                if sftp.stat(&ancestor_dir).is_ok() {
-                    let message = translations.remote_dir_does_not_exist_ancestor_dir_found(
-                        &ancestor_dir.to_string_lossy(),
-                        remote_dir,
-                        &remote_dir_err.to_string()
-                    );
 
-                    open_remote_directory.message(message);
+        let message = translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found(
+            remote_dir,
+            &remote_dir_err.to_string()
+        );
 
-                    steps.push(open_remote_directory.fail());
-                    return steps;
-                }
-            }
+        open_remote_directory.message(message);
 
-            let message = translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found(
-                remote_dir,
-                &remote_dir_err.to_string()
-            );
-
-            open_remote_directory.message(message);
-
-            steps.push(open_remote_directory.fail());
-            return steps;
-        }
+        steps.push(open_remote_directory.fail());
+        return steps;
     }
 
     steps.push(open_remote_directory.pass());
@@ -128,20 +117,13 @@ pub fn check_deployment_config(
 
     create_test_file.context(remote_probe_path.display().to_string());
 
+    let mut reader = Cursor::new(probe_content.as_bytes());
+
     // Perform write
-    match sftp.create(&remote_probe_path) {
-        Ok(mut file) => {
-            if let Err(err) = file.write_all(probe_content.as_bytes()) {
-                create_test_file.message(err.to_string());
-                steps.push(create_test_file.fail());
-                return steps;
-            }
-        }
-        Err(err) => {
-            create_test_file.message(err.to_string());
-            steps.push(create_test_file.fail());
-            return steps;
-        }
+    if let Err(err) = impl_ftp_stream.put_file(remote_probe_path.to_string_lossy(), &mut reader) {
+        create_test_file.message(err.to_string());
+        steps.push(create_test_file.fail());
+        return steps;
     }
 
     steps.push(create_test_file.pass());
@@ -150,8 +132,6 @@ pub fn check_deployment_config(
 
     let mut download_and_compare_test_file = SyncConfigCheckStep::new(translations.download_and_compare_test_file);
 
-    // TODO: Asides the parametrized test file name & content this part of the
-    // check could be 100% reused between FTP and SSH now
     if let Some(base_url) = &site.base_url {
         let public_probe_url = site.absolute_url_file_unchecked(
             TEST_FILE_NAME,
@@ -170,6 +150,7 @@ pub fn check_deployment_config(
                                 remote_dir,
                                 &base_url.representation
                             );
+
                             download_and_compare_test_file.message(message);
 
                             steps.push(download_and_compare_test_file.pass());
@@ -200,8 +181,8 @@ pub fn check_deployment_config(
                     Err(err) => {
                         let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
                             &err.to_string(),
-                            &public_probe_url,
-                            &remote_probe_path.to_string_lossy()
+                            &remote_probe_path.to_string_lossy(),
+                            &public_probe_url
                         );
 
                         download_and_compare_test_file.message(message);
@@ -213,8 +194,8 @@ pub fn check_deployment_config(
             Err(err) => {
                 let message = translations.test_file_successfully_uploaded_but_remote_verification_failed_message(
                     &err.to_string(),
-                    &public_probe_url,
-                    &remote_probe_path.to_string_lossy()
+                    &remote_probe_path.to_string_lossy(),
+                    &public_probe_url
                 );
 
                 download_and_compare_test_file.message(message);
@@ -234,14 +215,9 @@ pub fn check_deployment_config(
 
     remove_test_file.context(remote_probe_path.display().to_string());
 
-    match sftp.unlink(&remote_probe_path) {
+    match impl_ftp_stream.rm(remote_probe_path.to_string_lossy()) {
         Ok(()) => {
-            let _ = session.disconnect(
-                Some(DisconnectCode::ByApplication),
-                "",
-                None
-            );
-
+            let _ = impl_ftp_stream.quit();
             steps.push(remove_test_file.pass());
         }
         Err(err) => {

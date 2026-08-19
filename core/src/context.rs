@@ -1323,7 +1323,7 @@ impl Context {
         steps: u32,
         translations: &Translations
     ) {
-        let steps_determined_message = translations.deployment_steps_successfully_determined_file_synchronization_will_now_commence;
+        let steps_determined_message = translations.sync_steps_successfully_determined_file_synchronization_will_now_commence;
         let event_kind = SyncEventKind::Generic(steps_determined_message.to_string());
 
         let mut sync_state = self.sync_state.lock().unwrap();
@@ -1331,6 +1331,17 @@ impl Context {
 
         sync_state.log(event_kind);
         sync_state.set_steps(steps);
+    }
+
+    /// Requires prior initialization of sync_state, otherwise will panic
+    pub fn log_sync_error_and_finish(&self, message: impl Into<String>) {
+        let event_kind = SyncEventKind::Error(message.into());
+
+        let mut sync_state = self.sync_state.lock().unwrap();
+        let sync_state = sync_state.as_mut().unwrap();
+
+        sync_state.log(event_kind);
+        sync_state.set_finished();
     }
 
     /// Requires prior initialization of sync_state, otherwise will panic

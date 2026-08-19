@@ -25,12 +25,12 @@ pub async fn scripts(
     let t_create_directory = translations.create_directory;
     let t_delete_directory = translations.delete_directory;
     let t_delete_file = translations.delete_file;
-    let t_deployment_finished = translations.deployment_finished;
     let t_idle = translations.idle;
     let t_new_results_available = translations.new_results_available;
-    let t_really_deploy = translations.really_deploy;
+    let t_really_sync = translations.really_sync;
     let t_refresh = translations.refresh;
     let t_simulation = translations.simulation;
+    let t_sync_finished = translations.sync_finished;
     let t_syncing = translations.syncing;
     let t_update_file = translations.update_file;
     let t_xxx_active_jobs = translations.xxx_active_jobs;
@@ -42,12 +42,12 @@ pub async fn scripts(
             createDirectory: '{t_create_directory}',
             deleteDirectory: '{t_delete_directory}',
             deleteFile: '{t_delete_file}',
-            deploymentFinished: '{t_deployment_finished}',
             idle: '{t_idle}',
             newResultsAvailable: '{t_new_results_available}',
-            reallyDeploy: '{t_really_deploy}',
+            reallySync: '{t_really_sync}',
             refresh: '{t_refresh}',
             simulation: '{t_simulation}',
+            syncFinished: '{t_sync_finished}',
             syncing: '{t_syncing}',
             updateFile: '{t_update_file}',
             xxxActiveJobs: count => '{t_xxx_active_jobs}'.replace('{{count}}', count),
