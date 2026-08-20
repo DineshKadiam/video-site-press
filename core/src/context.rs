@@ -1297,7 +1297,7 @@ impl Context {
                 path = &remote_entry.path;
             }
             SyncAction::UpdateFile { local_entry, remote_entry, .. } => {
-                let size_delta = remote_entry.size as i64 - local_entry.size as i64;
+                let size_delta = local_entry.size as i64 - remote_entry.size as i64;
 
                 kind = SyncEventActionKind::UpdateFile { size_delta };
                 path = &remote_entry.path;
