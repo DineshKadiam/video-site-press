@@ -39,6 +39,8 @@ pub struct UpdateForm {
     ssh_config_password: String,
     ssh_config_path: String,
     ssh_config_port: String,
+    ssh_config_private_key: String,
+    ssh_config_public_key: String,
     ssh_config_server: String,
     ssh_config_user: String,
     theme: String
@@ -60,6 +62,8 @@ pub async fn update(
     let poster_aspect_trimmed = form.poster_aspect.trim();
     let ssh_config_password_trimmed = form.ssh_config_password.trim();
     let ssh_config_path_trimmed = form.ssh_config_path.trim();
+    let ssh_config_private_key_trimmed = form.ssh_config_private_key.trim();
+    let ssh_config_public_key_trimmed = form.ssh_config_public_key.trim();
     let ssh_config_server_trimmed = form.ssh_config_server.trim();
     let ssh_config_user_trimmed = form.ssh_config_user.trim();
     let theme = match Theme::from_key(&form.theme) {
@@ -105,12 +109,16 @@ pub async fn update(
     {
         let site = context.get_site();
 
+        let base_url_err = base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()));
+        let ftp_config_port_err = ftp_config_port.and_then(|ftp_config_port| ftp_config_port.err());
+        let ssh_config_port_err = ssh_config_port.and_then(|ssh_config_port| ssh_config_port.err());
+
         let form_feedback = UpdateFormFeedback {
-            base_url: Field::validated(base_url_trimmed, base_url.and_then(|base_url| base_url.err().map(|err| err.to_string()))),
+            base_url: Field::validated(base_url_trimmed, base_url_err),
             clean_urls,
             ftp_config_password: Field::valid(ftp_config_password_trimmed),
             ftp_config_path: Field::valid(ftp_config_path_trimmed),
-            ftp_config_port: Field::validated(ftp_config_port_trimmed, ftp_config_port.and_then(|ftp_config_port| ftp_config_port.err())),
+            ftp_config_port: Field::validated(ftp_config_port_trimmed, ftp_config_port_err),
             ftp_config_secure,
             ftp_config_server: Field::valid(ftp_config_server_trimmed),
             ftp_config_user: Field::valid(ftp_config_user_trimmed),
@@ -118,7 +126,9 @@ pub async fn update(
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
             ssh_config_password: Field::valid(ssh_config_password_trimmed),
             ssh_config_path: Field::valid(ssh_config_path_trimmed),
-            ssh_config_port: Field::validated(ssh_config_port_trimmed, ssh_config_port.and_then(|ssh_config_port| ssh_config_port.err())),
+            ssh_config_port: Field::validated(ssh_config_port_trimmed, ssh_config_port_err),
+            ssh_config_private_key: Field::valid(ssh_config_private_key_trimmed),
+            ssh_config_public_key: Field::valid(ssh_config_public_key_trimmed),
             ssh_config_server: Field::valid(ssh_config_server_trimmed),
             ssh_config_user: Field::valid(ssh_config_user_trimmed),
             theme
@@ -127,10 +137,10 @@ pub async fn update(
         let session_state = SessionState::all(&context.server_mode, &session);
         Either::Right(edit_page(&context, Some(form_feedback), &session_state, &site))
     } else {
-        fn to_option(trimmed: &str) -> Option<String> {
+        fn to_option<T: for<'a> From<&'a str>>(trimmed: &str) -> Option<T> {
             match trimmed.is_empty() {
                 true => None,
-                false => Some(trimmed.to_string())
+                false => Some(trimmed.into())
             }
         }
 
@@ -154,6 +164,8 @@ pub async fn update(
             site_mut.ssh_config.password = to_option(ssh_config_password_trimmed);
             site_mut.ssh_config.path = to_option(ssh_config_path_trimmed);
             site_mut.ssh_config.port = ssh_config_port.and_then(|ssh_config_port| ssh_config_port.ok());
+            site_mut.ssh_config.private_key = to_option(ssh_config_private_key_trimmed);
+            site_mut.ssh_config.public_key = to_option(ssh_config_public_key_trimmed);
             site_mut.ssh_config.server = to_option(ssh_config_server_trimmed);
             site_mut.ssh_config.user = to_option(ssh_config_user_trimmed);
             site_mut.theme = theme;

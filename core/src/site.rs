@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use indoc::indoc;
@@ -323,6 +323,16 @@ impl Site {
                                                 self.manifest_errors.push(error);
                                             }
                                         }
+                                    }
+                                }
+                                "private_key" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ssh_config.private_key = Some(PathBuf::from(value));
+                                    }
+                                }
+                                "public_key" => {
+                                    if let Some(value) = attribute.value() {
+                                        self.ssh_config.public_key = Some(PathBuf::from(value));
                                     }
                                 }
                                 "server" => {
@@ -687,6 +697,16 @@ impl Site {
 
             if let Some(port) = &self.ssh_config.port {
                 eno.push_str(&format!("port = {port}\n"));
+            }
+
+            if let Some(private_key) = &self.ssh_config.private_key {
+                let private_key_display = private_key.display();
+                eno.push_str(&format!("private_key = {private_key_display}\n"));
+            }
+
+            if let Some(public_key) = &self.ssh_config.public_key {
+                let public_key_display = public_key.display();
+                eno.push_str(&format!("public_key = {public_key_display}\n"));
             }
 
             if let Some(server) = &self.ssh_config.server {

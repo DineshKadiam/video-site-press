@@ -26,6 +26,12 @@ impl From<std::io::Error> for SyncError {
     }
 }
 
+impl From<String> for SyncError {
+    fn from(error: String) -> SyncError {
+        SyncError(error)
+    }
+}
+
 impl From<SyncError> for String {
     fn from(sync_error: SyncError) -> String {
         sync_error.0

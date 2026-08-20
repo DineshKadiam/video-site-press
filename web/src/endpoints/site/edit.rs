@@ -42,6 +42,8 @@ pub struct UpdateFormFeedback {
     pub ssh_config_password: Field,
     pub ssh_config_path: Field,
     pub ssh_config_port: Field,
+    pub ssh_config_private_key: Field,
+    pub ssh_config_public_key: Field,
     pub ssh_config_server: Field,
     pub ssh_config_user: Field,
     pub theme: Theme
@@ -92,6 +94,8 @@ pub fn edit_page(
     let mut input_ssh_config_password = Input::text("ssh_config_password", translations.ssh_config_password_label);
     let mut input_ssh_config_path = Input::text("ssh_config_path", translations.ssh_config_path_label);
     let mut input_ssh_config_port = Input::text("ssh_config_port", translations.ssh_config_port_label);
+    let mut input_ssh_config_private_key = Input::text("ssh_config_private_key", translations.ssh_config_private_key_label);
+    let mut input_ssh_config_public_key = Input::text("ssh_config_public_key", translations.ssh_config_public_key_label);
     let mut input_ssh_config_server = Input::text("ssh_config_server", translations.ssh_config_server_label);
     let mut input_ssh_config_user = Input::text("ssh_config_user", translations.ssh_config_user_label);
 
@@ -115,6 +119,8 @@ pub fn edit_page(
         input_ssh_config_password.validated_value(&unsaved.ssh_config_password);
         input_ssh_config_path.validated_value(&unsaved.ssh_config_path);
         input_ssh_config_port.validated_value(&unsaved.ssh_config_port);
+        input_ssh_config_private_key.validated_value(&unsaved.ssh_config_private_key);
+        input_ssh_config_public_key.validated_value(&unsaved.ssh_config_public_key);
         input_ssh_config_server.validated_value(&unsaved.ssh_config_server);
         input_ssh_config_user.validated_value(&unsaved.ssh_config_user);
         select_theme.selected(unsaved.theme.key());
@@ -143,6 +149,8 @@ pub fn edit_page(
         input_ssh_config_password.value_option(&site.ssh_config.password);
         input_ssh_config_path.value_option(&site.ssh_config.path);
         input_ssh_config_port.value_option(&ssh_config_port);
+        input_ssh_config_private_key.value_option(&site.ssh_config.private_key.as_ref().map(|path| path.display().to_string()));
+        input_ssh_config_public_key.value_option(&site.ssh_config.public_key.as_ref().map(|path| path.display().to_string()));
         input_ssh_config_server.value_option(&site.ssh_config.server);
         input_ssh_config_user.value_option(&site.ssh_config.user);
         select_theme.selected(site.theme.key());
@@ -175,19 +183,21 @@ pub fn edit_page(
 
                 <h3>{t_ftp_sync_settings}</h3>
                 {input_ftp_config_server}
+                {input_ftp_config_port}
+                {input_ftp_config_path}
                 {input_ftp_config_user}
                 {input_ftp_config_password}
-                {input_ftp_config_path}
-                {input_ftp_config_port}
                 {checkbox_ftp_config_secure}
 
                 <h3>{t_ssh_sync_settings}</h3>
                 <p>{t_ssh_sync_settings_text}</p>
                 {input_ssh_config_server}
+                {input_ssh_config_port}
+                {input_ssh_config_path}
                 {input_ssh_config_user}
                 {input_ssh_config_password}
-                {input_ssh_config_path}
-                {input_ssh_config_port}
+                {input_ssh_config_private_key}
+                {input_ssh_config_public_key}
 
                 <div style="align-items: center; column-gap: .5rem; display: flex;">
                     <button class="action">{t_update_site}</button> {feedback}

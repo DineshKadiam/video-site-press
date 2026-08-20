@@ -48,13 +48,32 @@ fn connect(
 
     let user = site.ssh_config.user_unchecked();
 
-    if let Some(password) = &site.ssh_config.password {
-        session.userauth_password(user, password)?;
+    if let Some(private_key) = &site.ssh_config.private_key {
+        if let Err(err) = session.userauth_pubkey_file(
+            user,
+            site.ssh_config.public_key.as_deref(),
+            private_key,
+            site.ssh_config.password.as_deref()
+        ) {
+            let t_keyfile_authentication_failed = translations.keyfile_authentication_failed;
+            let message = format!("{t_keyfile_authentication_failed}\n{err}");
+            return Err(message.into());
+        }
+    } else if let Some(password) = &site.ssh_config.password {
+        if let Err(err) = session.userauth_password(user, password) {
+            let t_password_authentication_failed = translations.password_authentication_failed;
+            let message = format!("{t_password_authentication_failed}\n{err}");
+            return Err(message.into());
+        }
     } else {
         // Without password we fall back to authentication through the primary
         // identity of the system's ssh agent
         // (see https://docs.rs/ssh2/latest/ssh2/struct.Session.html#method.userauth_agent)
-        session.userauth_agent(user)?;
+        if let Err(err) = session.userauth_agent(user) {
+            let t_ssh_agent_authentication_failed = translations.ssh_agent_authentication_failed;
+            let message = format!("{t_ssh_agent_authentication_failed}\n{err}");
+            return Err(message.into());
+        }
     }
 
     if !session.authenticated() {

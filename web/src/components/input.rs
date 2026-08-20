@@ -107,7 +107,10 @@ impl<'a> Input<'a> {
         self.value = format!(r#"value="{value_escaped}""#);
     }
 
-    pub fn value_option<V: AsRef<str>>(&mut self, value_option: &Option<V>) {
+    pub fn value_option(
+        &mut self,
+        value_option: &Option<impl AsRef<str>>
+    ) {
         if let Some(value) = value_option {
             let value_escaped = html_escape_inside_attribute(value.as_ref());
             self.value = format!(r#"value="{value_escaped}""#);
