@@ -138,14 +138,16 @@ if (playerWrapper) {
         document.querySelector('.bar.progress').style.width = `${(time / duration) * 100}%`;
         document.querySelector('#time_current').innerHTML = timeFormatted;
 
-        if (playerControls.dataset.hideBy && (new Date()).getTime() > playerControls.dataset.hideBy) {
-            playerControls.classList.add('hidden');
+        const { hideInterfaceBy } = playerWrapper.dataset;
+
+        if (hideInterfaceBy && (new Date()).getTime() > hideInterfaceBy) {
+            playerWrapper.classList.add('hide_interface');
         }
     }
 
     function revealControls() {
-        playerControls.dataset.hideBy = (new Date()).getTime() + 3000;
-        playerControls.classList.remove('hidden');
+        playerWrapper.dataset.hideInterfaceBy = (new Date()).getTime() + 3000;
+        playerWrapper.classList.remove('hide_interface');
     }
 
     versionSelectorControl.addEventListener('mouseenter', () => {

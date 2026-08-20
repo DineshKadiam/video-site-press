@@ -628,7 +628,8 @@ path.loading_right {
 .player_wrapper > *:not(video) { z-index: 1; }
 .player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
 .player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
-.player_wrapper:not([data-state="outro"]) .player_controls.hidden { display: none; }
+.player_wrapper:not([data-state="outro"]).hide_interface { cursor: none; }
+.player_wrapper:not([data-state="outro"]).hide_interface .player_controls { display: none; }
 .player_wrapper[data-state="outro"] video { opacity: .1; }
 .player_wrapper:not(:fullscreen) video { aspect-ratio: var(--video-aspect); }
 .playlist_context,
