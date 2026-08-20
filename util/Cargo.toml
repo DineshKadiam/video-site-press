@@ -5,6 +5,7 @@
 base64.workspace = true
 hyper8-translations.path = "../translations"
 nanoid.workspace = true
+slug.workspace = true
 
 [package]
 edition.workspace = true

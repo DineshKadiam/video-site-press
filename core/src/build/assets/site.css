@@ -235,6 +235,15 @@ h2 {
     font-size: 1.3rem;
     font-weight: 500;
     margin-top: 3rem;
+    position: relative;
+}
+h2 .anchor {
+    color: var(--bm);
+    font-size: .9em;
+}
+h2 .anchor:focus-visible,
+h2 .anchor:hover {
+    color: var(--f1);
 }
 header {
     align-items: center;
@@ -1230,6 +1239,11 @@ video {
 @media (width >= 100rem) {
     .center { max-width: 80vw; }
     footer { width: 80vw; }
+    h2 .anchor {
+        left: -1.3rem;
+        position: absolute;
+        top: .1rem;
+    }
     .layout_split { gap: 2rem; }
 }
 @media (width >= 110rem) {

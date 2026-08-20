@@ -11,7 +11,10 @@ use nanoid::nanoid;
 
 use hyper8_translations::Translations;
 
+pub mod anchor_id_generator;
 pub mod ffs;
+
+pub use anchor_id_generator::AnchorIdGenerator;
 
 /// Takes seconds, formats it like "25 min", "33 sec", "158 min", "3.6 hrs", "11 hrs"
 pub fn casual_duration(seconds: f32, translations: &Translations) -> String {
@@ -31,6 +34,25 @@ pub fn casual_duration(seconds: f32, translations: &Translations) -> String {
             format!("{hours:.1} {t_hrs}")
         }
     }
+}
+
+/// Takes an existing id (that has elsewhere been identified to collide with
+/// another id) and returns the id, systematically altered as to resolve the
+/// existing collision and ideally avoid further ones.
+///
+/// Some examples:
+/// - "foo"            -> "foo(1)"
+/// - "foo(1)"         -> "foo(2)"
+pub fn deduplicate_id(id: &str) -> String {
+    if id.ends_with(')') {
+        if let Some(index) = id.rfind('(') {
+            if let Ok(number) = &id[(index + 1)..(id.len() - 1)].parse::<usize>() {
+                return format!("{}({})", &id[..index], number + 1);
+            }
+        }
+    }
+
+    format!("{id}(1)")
 }
 
 pub fn hash(input: &str) -> String {

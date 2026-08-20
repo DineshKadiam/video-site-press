@@ -2719,6 +2719,7 @@ dependencies = [
  "base64 0.23.1",
  "hyper8-translations",
  "nanoid",
+ "slug",
 ]
 
 [[package]]

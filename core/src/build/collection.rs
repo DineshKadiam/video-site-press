@@ -5,6 +5,7 @@ use std::fs;
 
 use indoc::formatdoc;
 
+use hyper8_util::AnchorIdGenerator;
 use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
@@ -37,6 +38,7 @@ pub fn collection_html(
     subscribe_permalink: Option<String>,
     traversal: &Traversal
 ) {
+    let mut anchor_id_generator = AnchorIdGenerator::new();
     let mut layout = Layout::new();
 
     let language = &site.language;
@@ -136,10 +138,20 @@ pub fn collection_html(
     for container in &containers {
         let container_rendered = match container {
             Container::Collection(collection) => {
-                render_collection(collection, site, traversal)
+                render_collection(
+                    &mut anchor_id_generator,
+                    collection,
+                    site,
+                    traversal
+                )
             }
             Container::Playlist(playlist) => {
-                render_playlist(playlist, site, traversal)
+                render_playlist(
+                    &mut anchor_id_generator,
+                    playlist,
+                    site,
+                    traversal
+                )
             }
         };
 
@@ -196,6 +208,7 @@ pub fn collection_html(
 }
 
 fn render_collection(
+    anchor_id_generator: &mut AnchorIdGenerator,
     collection: &Collection,
     site: &Site,
     traversal: &Traversal
@@ -266,18 +279,23 @@ fn render_collection(
             format!(r#"<div class="parents">{rendered}</div>"#)
         };
 
+        let slug = collection.slug_unchecked();
+
+        let id = anchor_id_generator.generate_for_slug(slug);
+
         let e_title = match &collection.title {
             Some(title) => html_escape_outside_attribute(title),
-            None => collection.slug_unchecked().to_string()
+            None => slug.to_string()
         };
 
         let video_bubbles = bubbles(&traversal_with_collection_prefix, &videos);
-        let collection_title_and_videos = formatdoc!(r#"
-            <div class="container_title">
+        let collection_title_and_videos = formatdoc!(r##"
+            <div class="container_title" id="{id}">
                 <h2>
                     <a href="{collection_href}">
                         {e_title}
                     </a>
+                    <a class="anchor" href="#{id}">#</a>
                     {breadcrumbs_rendered}
                 </h2>
                 {video_bubbles}
@@ -286,7 +304,7 @@ fn render_collection(
             <div class="videos_grid">
                 {videos_rendered}
             </div>
-        "#);
+        "##);
 
         output.push_str(&collection_title_and_videos);
     }
@@ -296,10 +314,20 @@ fn render_collection(
     for container in &containers {
         let container_rendered = match container {
             Container::Collection(collection) => {
-                render_collection(collection, site, &traversal_with_collection)
+                render_collection(
+                    anchor_id_generator,
+                    collection,
+                    site,
+                    &traversal_with_collection
+                )
             }
             Container::Playlist(playlist) => {
-                render_playlist(playlist, site, &traversal_with_collection)
+                render_playlist(
+                    anchor_id_generator,
+                    playlist,
+                    site,
+                    &traversal_with_collection
+                )
             }
         };
 
@@ -310,6 +338,7 @@ fn render_collection(
 }
 
 fn render_playlist(
+    anchor_id_generator: &mut AnchorIdGenerator,
     playlist: &Playlist,
     site: &Site,
     traversal: &Traversal
@@ -379,25 +408,30 @@ fn render_playlist(
         format!(r#"<div class="parents">{rendered}</div>"#)
     };
 
-    let e_title = match &playlist.title {
-        Some(title) => html_escape_outside_attribute(title),
-        None => playlist.slug_unchecked().to_string()
-    };
-
     let playlist_href = traversal_with_playlist.index_desc(site);
 
+    let slug = playlist.slug_unchecked();
+
+    let id = anchor_id_generator.generate_for_slug(slug);
+
+    let e_title = match &playlist.title {
+        Some(title) => html_escape_outside_attribute(title),
+        None => slug.to_string()
+    };
+
     let video_bubbles = bubbles(&traversal_with_playlist_prefix, &videos);
-    formatdoc!(r#"
-        <div class="container_title">
+    formatdoc!(r##"
+        <div class="container_title" id="{id}">
             <h2>
                 <a href="{playlist_href}">
                     {e_title}
                 </a>
+                <a class="anchor" href="#{id}">#</a>
                 {breadcrumbs_rendered}
             </h2>
             {video_bubbles}
         </div>
         <a href="{playlist_href}">{banner}</a>
         {videos_rendered}
-    "#)
+    "##)
 }
