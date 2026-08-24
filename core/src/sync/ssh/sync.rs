@@ -312,6 +312,7 @@ fn get_remote_entries(
 
 pub fn start_sync(
     context: &Arc<Context>,
+    prompted_password: Option<&str>,
     simulate: bool,
     site: &Site,
     translations: &Translations
@@ -327,7 +328,13 @@ pub fn start_sync(
         *sync_state = Some(SyncState::new(simulate));
     }
 
-    let (session, sftp) = match connect(site, translations) {
+    let password = prompted_password.or(site.ssh_config.password.as_deref());
+
+    let (session, sftp) = match connect(
+        password,
+        site,
+        translations
+    ) {
         Ok(session_sftp) => session_sftp,
         Err(err) => {
             let t_failed_to_connect = translations.failed_to_connect;

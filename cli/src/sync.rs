@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::io;
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::thread;
@@ -10,7 +9,6 @@ use std::time::Duration;
 use anstream::eprintln;
 use chrono::DateTime;
 use chrono::offset::Local;
-use clap::ArgMatches;
 
 use hyper8_core::{
     Context,
@@ -23,6 +21,7 @@ use hyper8_core::start_sync;
 use hyper8_translations::Translations;
 use hyper8_util::human_size_delta;
 
+use crate::prompt;
 use crate::style::{
     BLACK_ON_BRIGHT_YELLOW,
     BRIGHT_BLACK,
@@ -31,26 +30,31 @@ use crate::style::{
     MAGENTA,
     RED
 };
+use crate::sync_config;
 
 pub fn sync(
-    args: ArgMatches,
-    context: Arc<Context>,
+    context: &Arc<Context>,
+    non_interactive: bool,
+    protocol: SyncProtocol,
+    simulate: bool,
     translations: &Translations
 ) -> ExitCode {
     let site = context.get_site();
 
-    let protocol = if args.get_flag("sync-ftp") {
-        SyncProtocol::Ftp
-    } else /* if args.get_flag("sync-ssh") */ {
-        SyncProtocol::Ssh
+    let prompted_password = match sync_config::ensure_config(
+        non_interactive,
+        protocol,
+        &site,
+        translations
+    ) {
+        Ok(prompted_password) => prompted_password,
+        Err(()) => return ExitCode::FAILURE
     };
 
-    let confirm = !args.get_flag("no-confirm");
-    let simulate = args.get_flag("simulate");
-
     match execute_sync_blocking_cli(
-        confirm,
-        &context,
+        context,
+        non_interactive,
+        prompted_password.as_deref(),
         protocol,
         simulate,
         &site,
@@ -68,37 +72,28 @@ pub fn sync(
 /// back all messages and errors to the terminal. Asks for explicit
 /// (opt-in) confirmation before executing a live sync.
 fn execute_sync_blocking_cli(
-    confirm: bool,
     context: &Arc<Context>,
+    non_interactive: bool,
+    prompted_password: Option<&str>,
     protocol: SyncProtocol,
     simulate: bool,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
-    if !site.complete_sync_config(protocol) {
-        let message = translations.sync_configuration_is_incomplete_can_not_synchronize;
-        return Err(message.to_string());
-    }
-
-    if !simulate && confirm {
+    if !simulate && !non_interactive {
         let t_really_sync = translations.really_sync;
         let base_url = &site.base_url.as_ref().unwrap().representation;
         eprintln!("{t_really_sync} {BRIGHT_BLACK}{base_url}{BRIGHT_BLACK:#}");
         eprintln!("{BRIGHT_YELLOW}{}{BRIGHT_YELLOW:#}", translations.type_y_and_press_enter_to_confirm_anything_else_will_abort);
 
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(_) => {
-                if input.trim() != "y" {
-                    return Ok(());
-                }
-            }
-            Err(err) => return Err(err.to_string())
+        if !matches!(prompt::yes_no_confirmation(false), Ok(true)) {
+            return Ok(());
         }
     }
 
     start_sync(
         context,
+        prompted_password,
         protocol,
         simulate,
         site,

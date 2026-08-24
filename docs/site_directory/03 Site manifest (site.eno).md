@@ -63,18 +63,6 @@ disable_clean_urls
 
 ## <a name="ftp_config"></a> `ftp_config`
 
-With `ftp_config` you can configure the remote `server`, `path`, `user`,
-`password`, `port` and `mode` for FTP/SFTP-based site synchronization.
-
-The `port` and `mode` fields are optional for FTP synchronization – defaults
-are used when they are not provided.
-
-In the CLI you can use the `--check-ftp` flag to safely validate your
-configuration before doing a live sync. Additionally the `--simulate`
-flag allows running a simulated synchronization for gaining extra confidence
-before live synchronization. In the graphical editor this functionality is also
-available in the top-right header menu.
-
 ```eno
 ftp_config:
 mode = secure
@@ -85,20 +73,28 @@ server = ftp-user123.example.com
 user = user123
 ```
 
-The `mode` option can be `secure` (also the default) or `insecure`, but the
-latter should only be used in exceptional circumstances, as it will transmit
-your password and all transferred data through the network in plaintext.
+To make FTP/FTPS-based site synchronization available you always need to
+configure the `server`, `path` and `user` fields of `ftp_config`.
 
-The `port` is optional, by default Hyper 8 will use the default FTP port (21).
+Additionally you need to provide a password in one of two ways:
+1. Set `password_prompt = enabled` to be prompted a password on demand each time you
+   sync your site
+2. Store the password in the manifest using the `password` field – but only do
+   this if your local Hyper 8 site directory is accessible only to you or people
+   that you 100% trust with the FTP password, as it obviously will be plainly
+   accessible to everyone with access to the `site.eno` file
 
-Note that you should only configure and use FTP synchronization through Hyper
-8 if your local Hyper 8 site directory is accessible only to you or people
-that you 100% trust with the FTP password, as it obviously will be plainly
-accessible to everyone with access to the `site.eno` file.
+Optionally you can also set these two fields:
+- `port`, which otherwise uses FTP's default port 21 by default
+- `mode`, to change from the default `secure` (encrypted) transmission to `insecure` –
+  this should only be done in exceptional circumstances, as it will transmit
+  your password and data through the network in plaintext.
 
-An on-demand password prompt option will be implemented in the future to also
-allow synchronization in environments where the passwords needs to be kept
-hidden from other people with access to the site directory.
+In the CLI you can use the `--check-ftp` flag to safely validate your
+configuration before doing a live sync. Additionally the `--simulate`
+flag allows running a simulated synchronization for gaining extra confidence
+before live synchronization. In the graphical editor this functionality is also
+available in the top-right header menu.
 
 ## <a name="language"></a> `language`
 
@@ -129,31 +125,45 @@ poster_aspect: 16:9
 
 ## <a name="ssh_config"></a> `ssh_config`
 
-With `ssh_config` you can configure the remote `server`, `password`, `path`, `port`
-and `user` for SSH-based site synchronization.
+```eno
+ssh_config:
+password_prompt = enabled
+path = /data/web/user123/html
+port = 22
+private_key = /home/example/.ssh/id_rsa
+public_key = /home/example/.ssh/id_rsa.pub
+server = ssh-user123.example.com
+user = user123
+```
 
-A complete SSH configuration requires a `server`, `user`, and `path` at least, while
-`password` and `port` are optional.
+To make SSH-based site synchronization available you always need to
+configure the `server`, `path` and `user` fields of `ssh_config`.
 
-SSH synchronization currently supports two authentication methods: Basic
-password-based authentication is performed if you supply a password. If you
-specify no password, authentication is attempted with the first public key
-found in your SSH agent.
+The authentication method for SSH is automatically determined based on the
+credentials you provide:
+- If you provide no extra credentials, authentication is attempted with the
+  first public key found in your SSH agent
+- If you provide just a password, regular password-based authentication is
+  performed. You can provide a password either by setting `password_prompt = enabled`
+  and entering your password in the prompt each time you sync your site, or,
+  you can store your password in your manifest using the `password` field – but only do
+  this if your local Hyper 8 site directory is accessible only to you or people
+  that you 100% trust with this password, as it obviously will be plainly
+  accessible to everyone with access to the `site.eno` file
+- If you provide at least a `private_key` (file path), key file authentication
+  is performed – in this case, if configured, the `password_prompt` or
+  `password` is used for unlocking the key file. A `public_key` file does not
+  have to be provided if the private key file contains the public key as
+  well.
+
+Optionally you can also set the `port`, which otherwise uses SSH's default
+port 22 by default.
 
 In the CLI you can use the `--check-ssh` flag to safely validate your
 configuration before doing a live synchronization. Additionally the
 `--simulate` flag allows running a simulated synchronization for gaining
 extra confidence before live synchronization. In the graphical editor this
 functionality is also available in the top-right header menu.
-
-```eno
-ssh_config:
-password = correcthorsebatterystaple
-path = /data/web/user123/html
-port = 22
-server = ssh-user123.example.com
-user = user123
-```
 
 ## <a name="theme"></a> `theme`
 

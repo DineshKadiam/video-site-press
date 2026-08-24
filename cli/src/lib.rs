@@ -12,9 +12,11 @@ use hyper8_core::{Context, Language, SyncProtocol};
 mod args;
 mod build;
 mod check;
+mod prompt;
 mod serve;
 mod style;
 mod sync;
+mod sync_config;
 
 use args::ArgMode;
 use build::build;
@@ -60,21 +62,50 @@ fn handle(args: ArgMatches) -> ExitCode {
         site_dir
     );
 
-    if args.get_flag("check-ftp") {
-        check(context, SyncProtocol::Ftp, translations)
-    } else if args.get_flag("check-ssh") {
-        check(context, SyncProtocol::Ssh, translations)
-    } else if args.get_flag("build") {
-        build(args, context, translations)
-    } else if args.contains_id("sync") {
-        if !context.build_dir.exists() {
-            eprintln!("Not performing synchronization because the build directory does not exist. Maybe you wanted to use --build as well?");
-            return ExitCode::FAILURE;
-        }
+    let non_interactive = args.get_flag("non-interactive");
 
-        sync(args, context, translations)
+    let delegate_check = |protocol| {
+        check(
+            &context,
+            non_interactive,
+            protocol,
+            translations
+        )
+    };
+
+    let delegate_sync = |protocol| {
+        if context.build_dir.exists() {
+            let simulate = args.get_flag("simulate");
+
+            sync(
+                &context,
+                non_interactive,
+                protocol,
+                simulate,
+                translations
+            )
+        } else {
+            eprintln!("Not performing synchronization because the build directory does not exist. Maybe you wanted to use --build as well?");
+            ExitCode::FAILURE
+        }
+    };
+
+    if args.get_flag("check-ftp") {
+        delegate_check(SyncProtocol::Ftp)
+    } else if args.get_flag("check-ssh") {
+        delegate_check(SyncProtocol::Ssh)
+    } else if args.get_flag("build") {
+        build(
+            args,
+            &context,
+            translations
+        )
+    } else if args.get_flag("sync-ftp") {
+        delegate_sync(SyncProtocol::Ftp)
+    } else if args.get_flag("sync-ssh") {
+        delegate_sync(SyncProtocol::Ssh)
     } else {
-        serve(args, context)
+        serve(args, &context)
     }
 }
 

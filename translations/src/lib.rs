@@ -64,6 +64,7 @@ pub struct Translations {
     pub container: &'static str,
     pub container_order: &'static str,
     pub content: &'static str,
+    pub r#continue: &'static str,
     pub convert_to_collection: &'static str,
     pub convert_to_playlist: &'static str,
     pub convert_to_video: &'static str,
@@ -122,6 +123,8 @@ pub struct Translations {
     pub encoding_a_new_video_file_failed: &'static str,
     pub encoding_approach_label: &'static str,
     pub enter_exit_fullscreen: &'static str,
+    pub enter_password_for_decrypting_the_private_key_in_xxx: &'static str,
+    pub enter_password_for_user_xxx: &'static str,
     pub error: &'static str,
     pub expand: &'static str,
     pub external_link: &'static str,
@@ -134,6 +137,7 @@ pub struct Translations {
     pub focus_search_field: &'static str,
     pub frame_rate: &'static str,
     pub ftp_config_password_label: &'static str,
+    pub ftp_config_password_prompt_label: &'static str,
     pub ftp_config_path_label: &'static str,
     pub ftp_config_port_label: &'static str,
     pub ftp_config_secure_label: &'static str,
@@ -159,6 +163,7 @@ pub struct Translations {
     pub initialize_site_as_a_collection: &'static str,
     pub initialize_site_as_a_playlist: &'static str,
     pub initialize_site_as_a_video: &'static str,
+    pub interactive_password_prompt_required_but_disabled_by_user: &'static str,
     pub invalid_site: &'static str,
     invalid_site_text: &'static str,
     pub invalid_url: &'static str,
@@ -295,6 +300,7 @@ pub struct Translations {
     pub space: &'static str,
     pub ssh_agent_authentication_failed: &'static str,
     pub ssh_config_password_label: &'static str,
+    pub ssh_config_password_prompt_label: &'static str,
     pub ssh_config_path_label: &'static str,
     pub ssh_config_port_label: &'static str,
     pub ssh_config_private_key_label: &'static str,
@@ -413,12 +419,27 @@ impl Translations {
             .replace("{total}", &total.to_string())
     }
 
+    pub fn enter_password_for_decrypting_the_private_key_in_xxx(
+        &self,
+        key_file: &str
+    ) -> String {
+        self.enter_password_for_decrypting_the_private_key_in_xxx
+            .replace("{key_file}", key_file)
+    }
+
+    pub fn enter_password_for_user_xxx(&self, user: &str) -> String {
+        self.enter_password_for_user_xxx
+            .replace("{user}", user)
+    }
+
     pub fn files_are_being_synchronized_to_xxx(&self, link: &str) -> String {
-        self.files_are_being_synchronized_to_xxx.replace("{link}", link)
+        self.files_are_being_synchronized_to_xxx
+            .replace("{link}", link)
     }
 
     pub fn invalid_site_text(&self) -> String {
-        self.invalid_site_text.replace("{docs_link}", DOCS_LINK)
+        self.invalid_site_text
+            .replace("{docs_link}", DOCS_LINK)
     }
 
     pub fn neither_remote_dir_xxx_nor_any_ancestor_dir_found(
@@ -585,6 +606,8 @@ fn check_translations() {
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
         assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
+        assert!(&translations.enter_password_for_decrypting_the_private_key_in_xxx.contains("{key_file}"));
+        assert!(&translations.enter_password_for_user_xxx.contains("{user}"));
         assert!(&translations.files_are_being_synchronized_to_xxx.contains("{link}"));
         assert!(&translations.invalid_site_text.contains("{docs_link}"));
         assert!(&translations.neither_remote_dir_xxx_nor_any_ancestor_dir_found.contains("{remote_dir}"));

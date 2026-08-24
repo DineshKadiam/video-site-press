@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use clap::ArgMatches;
 
-use hyper8_core::Context;
+use hyper8_core::{Context, SyncProtocol};
 use hyper8_core::{perform_build, start_preview_server};
 use hyper8_translations::Translations;
 
@@ -15,7 +15,7 @@ use crate::sync;
 
 pub fn build(
     args: ArgMatches,
-    context: Arc<Context>,
+    context: &Arc<Context>,
     translations: &Translations
 ) -> ExitCode {
     if let Err(err) = context.await_job_queue(translations) {
@@ -23,13 +23,28 @@ pub fn build(
         return ExitCode::FAILURE;
     }
 
-    if let Err(err) = perform_build(&context) {
+    if let Err(err) = perform_build(context) {
         eprintln!("Build failed:\n{err}");
         return ExitCode::FAILURE;
     }
 
-    if args.contains_id("sync") {
-        sync(args, context, translations)
+    let delegate_sync = |protocol| {
+        let non_interactive = args.get_flag("non-interactive");
+        let simulate = args.get_flag("simulate");
+
+        sync(
+            context,
+            non_interactive,
+            protocol,
+            simulate,
+            translations
+        )
+    };
+
+    if args.contains_id("sync-ftp") {
+        delegate_sync(SyncProtocol::Ftp)
+    } else if args.get_flag("sync-ssh") {
+        delegate_sync(SyncProtocol::Ssh)
     } else if args.get_flag("preview") {
         let site = context.get_site();
 

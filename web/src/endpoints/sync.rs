@@ -6,10 +6,16 @@ use std::sync::Arc;
 use actix_session::Session;
 use actix_web::HttpResponse;
 use actix_web::http::header::ContentType;
-use actix_web::web::{Data, Either, Redirect};
+use actix_web::web::{Data, Either, Form, Json, Redirect};
 use indoc::formatdoc;
+use serde_derive::{Deserialize, Serialize};
 
-use hyper8_core::{Site, SyncProtocol};
+use hyper8_core::{
+    FtpConfig,
+    Site,
+    SshConfig,
+    SyncProtocol
+};
 use hyper8_core::{
     check_sync_config,
     perform_build,
@@ -26,8 +32,59 @@ use crate::{
 };
 use crate::widgets::error_page;
 
+/// Returned as (camel-cased) JSON through the /sync/(ftp|ssh)/config endpoint.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigJson {
+    pub password_prompt: bool,
+    pub private_key: Option<String>,
+    pub server: Option<String>,
+    pub user: Option<String>
+}
+
+#[derive(Deserialize)]
+pub struct PromptedPasswordForm {
+    password: Option<String>
+}
+
+impl From<&FtpConfig> for ConfigJson {
+    fn from(ftp_config: &FtpConfig) -> ConfigJson {
+        let password_prompt = ftp_config.password_prompt();
+        let server = ftp_config.server.clone();
+        let user = ftp_config.user.clone();
+
+        ConfigJson {
+            password_prompt,
+            private_key: None,
+            server,
+            user
+        }
+    }
+}
+
+
+impl From<&SshConfig> for ConfigJson {
+    fn from(ssh_config: &SshConfig) -> ConfigJson {
+        let password_prompt = ssh_config.password_prompt();
+        let server = ssh_config.server.clone();
+        let user = ssh_config.user.clone();
+
+        let private_key = ssh_config.private_key
+            .as_ref()
+            .map(|private_key| private_key.display().to_string());
+
+        ConfigJson {
+            password_prompt,
+            private_key,
+            server,
+            user
+        }
+    }
+}
+
 fn check(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     protocol: SyncProtocol,
     session: Session
 ) -> HttpResponse {
@@ -35,11 +92,23 @@ fn check(
     let translations = &session_state.language.translations;
     let site = context.get_site();
 
-    if let Err(err) = ensure_config(protocol, &site, translations) {
+    let prompted_password = &form.password;
+
+    if let Err(err) = ensure_config(
+        prompted_password.is_some(),
+        protocol,
+        &site,
+        translations
+    ) {
         return error_page(&context, &err, &session_state);
     }
 
-    let steps = check_sync_config(protocol, &site, translations);
+    let steps = check_sync_config(
+        prompted_password.as_deref(),
+        protocol,
+        &site,
+        translations
+    );
 
     let r_steps = steps
         .iter()
@@ -103,24 +172,55 @@ fn check(
 
 pub async fn check_ftp(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     session: Session
 ) -> HttpResponse {
-    check(context, SyncProtocol::Ftp, session)
+    check(
+        context,
+        form,
+        SyncProtocol::Ftp,
+        session
+    )
 }
 
 pub async fn check_ssh(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     session: Session
 ) -> HttpResponse {
-    check(context, SyncProtocol::Ssh, session)
+    check(
+        context,
+        form,
+        SyncProtocol::Ssh,
+        session
+    )
+}
+
+pub async fn config_ftp(
+    context: Data<Arc<Context>>
+) -> Json<ConfigJson> {
+    let site = context.get_site();
+    let config_json = ConfigJson::from(&site.ftp_config);
+    Json(config_json)
+}
+
+pub async fn config_ssh(
+    context: Data<Arc<Context>>
+) -> Json<ConfigJson> {
+    let site = context.get_site();
+    let config_json = ConfigJson::from(&site.ssh_config);
+    Json(config_json)
 }
 
 fn ensure_config<'a>(
+    prompted_password_provided: bool,
     protocol: SyncProtocol,
     site: &Site,
     translations: &'a Translations
 ) -> Result<(), &'a str> {
-    if site.complete_sync_config(protocol) {
+    if site.complete_sync_config(protocol) &&
+        !(site.prompt_sync_password(protocol) && !prompted_password_provided)
+    {
         Ok(())
     } else {
         Err(translations.sync_configuration_is_incomplete_can_not_synchronize)
@@ -129,6 +229,7 @@ fn ensure_config<'a>(
 
 fn sync(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     protocol: SyncProtocol,
     session: Session,
     simulate: bool
@@ -137,7 +238,14 @@ fn sync(
     let translations = &session_state.language.translations;
     let site = context.get_site();
 
-    if let Err(err) = ensure_config(protocol, &site, translations) {
+    let prompted_password = &form.password;
+
+    if let Err(err) = ensure_config(
+        prompted_password.is_some(),
+        protocol,
+        &site,
+        translations
+    ) {
         return Either::Right(error_page(&context, &err, &session_state));
     }
 
@@ -149,6 +257,7 @@ fn sync(
 
     let sync_result = start_sync(
         &context.core_context,
+        prompted_password.as_deref(),
         protocol,
         simulate,
         &site,
@@ -163,10 +272,12 @@ fn sync(
 
 pub async fn sync_ftp(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
     sync(
         context,
+        form,
         SyncProtocol::Ftp,
         session,
         false
@@ -175,10 +286,12 @@ pub async fn sync_ftp(
 
 pub async fn sync_ssh(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
     sync(
         context,
+        form,
         SyncProtocol::Ssh,
         session,
         false
@@ -187,10 +300,12 @@ pub async fn sync_ssh(
 
 pub async fn simulate_ftp(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
     sync(
         context,
+        form,
         SyncProtocol::Ftp,
         session,
         true
@@ -199,10 +314,12 @@ pub async fn simulate_ftp(
 
 pub async fn simulate_ssh(
     context: Data<Arc<Context>>,
+    form: Form<PromptedPasswordForm>,
     session: Session
 ) -> Either<Redirect, HttpResponse> {
     sync(
         context,
+        form,
         SyncProtocol::Ssh,
         session,
         true

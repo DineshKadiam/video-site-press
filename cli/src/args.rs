@@ -92,10 +92,10 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .long("ip")
         .value_parser(value_parser!(IpAddr));
 
-    let no_confirm = Arg::new("no-confirm")
+    let non_interactive = Arg::new("non-interactive")
         .action(ArgAction::SetTrue)
-        .help(r#"Skip all interactive confirmation prompts ("Really sync?", etc.). For judicious use in automated pipelines."#)
-        .long("no-confirm");
+        .help(r#"Disable interactive command line prompts (sync confirmations, password prompts)."#)
+        .long("non-interactive");
 
     let port = Arg::new("port")
         .help("Manually set the port used by the web editor (otherwise automatically choose an available port)")
@@ -151,7 +151,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .arg(check_ftp)
         .arg(check_ssh)
         .arg(ip)
-        .arg(no_confirm)
+        .arg(non_interactive)
         .arg(port)
         .arg(preview)
         .arg(simulate)

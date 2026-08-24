@@ -14,11 +14,11 @@ use hyper8_web::{EditorState, ServerMode};
 
 pub fn serve(
     args: ArgMatches,
-    context: Arc<Context>
+    context: &Arc<Context>
 ) -> ExitCode {
     println!("Using site directory: {}", context.site_dir.display());
 
-    watch_site_dir(Arc::clone(&context));
+    watch_site_dir(Arc::clone(context));
 
     let inherited_editor_state = EditorState::retrieve_or_initialize();
     let server_mode = ServerMode::MultipleRemoteUsers { inherited_editor_state };
@@ -27,7 +27,7 @@ pub fn serve(
     let port = args.get_one::<u16>("port");
 
     let result = hyper8_web::start_server(
-        context,
+        Arc::clone(context),
         ip.copied(),
         port.copied(),
         server_mode

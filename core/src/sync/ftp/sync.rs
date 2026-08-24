@@ -356,8 +356,9 @@ pub fn put_with_stream<S: TlsStream>(
 }
 
 pub fn start_sync<S: Send + TlsStream + 'static>(
-    connect: impl Fn(&Site) -> Result<ImplFtpStream<S>, SyncError>,
+    connect: impl Fn(&str, &Site) -> Result<ImplFtpStream<S>, SyncError>,
     context: &Arc<Context>,
+    prompted_password: Option<&str>,
     simulate: bool,
     site: &Site,
     translations: &Translations
@@ -373,7 +374,11 @@ pub fn start_sync<S: Send + TlsStream + 'static>(
         *sync_state = Some(SyncState::new(simulate));
     }
 
-    let mut impl_ftp_stream = match connect(site) {
+    let password = prompted_password
+        .or(site.ftp_config.password.as_deref())
+        .unwrap();
+
+    let mut impl_ftp_stream = match connect(password, site) {
         Ok(impl_ftp_stream) => impl_ftp_stream,
         Err(err) => {
             let t_failed_to_connect = translations.failed_to_connect;

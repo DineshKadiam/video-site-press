@@ -32,6 +32,7 @@ pub struct UpdateFormFeedback {
     pub base_url: Field,
     pub clean_urls: bool,
     pub ftp_config_password: Field,
+    pub ftp_config_password_prompt: bool,
     pub ftp_config_path: Field,
     pub ftp_config_port: Field,
     pub ftp_config_secure: bool,
@@ -40,6 +41,7 @@ pub struct UpdateFormFeedback {
     pub language: Field,
     pub poster_aspect: Field,
     pub ssh_config_password: Field,
+    pub ssh_config_password_prompt: bool,
     pub ssh_config_path: Field,
     pub ssh_config_port: Field,
     pub ssh_config_private_key: Field,
@@ -83,6 +85,8 @@ pub fn edit_page(
 
     let mut checkbox_clean_urls = Checkbox::new("clean_urls", translations.clean_urls_label);
     let mut checkbox_ftp_config_secure = Checkbox::new("ftp_config_secure", translations.ftp_config_secure_label);
+    let mut checkbox_ftp_config_password_prompt = Checkbox::new("ftp_config_password_prompt", translations.ftp_config_password_prompt_label);
+    let mut checkbox_ssh_config_password_prompt = Checkbox::new("ssh_config_password_prompt", translations.ssh_config_password_prompt_label);
     let mut input_base_url = Input::url("base_url", translations.public_address_label);
     let mut input_ftp_config_password = Input::password("ftp_config_password", translations.ftp_config_password_label);
     let mut input_ftp_config_path = Input::text("ftp_config_path", translations.ftp_config_path_label);
@@ -108,6 +112,8 @@ pub fn edit_page(
     let feedback = if let Some(unsaved) = &form_feedback {
         checkbox_clean_urls.checked(unsaved.clean_urls);
         checkbox_ftp_config_secure.checked(unsaved.ftp_config_secure);
+        checkbox_ftp_config_password_prompt.checked(unsaved.ftp_config_password_prompt);
+        checkbox_ssh_config_password_prompt.checked(unsaved.ssh_config_password_prompt);
         input_base_url.validated_value(&unsaved.base_url);
         input_ftp_config_password.validated_value(&unsaved.ftp_config_password);
         input_ftp_config_path.validated_value(&unsaved.ftp_config_path);
@@ -138,6 +144,8 @@ pub fn edit_page(
 
         checkbox_clean_urls.checked(site.clean_urls);
         checkbox_ftp_config_secure.checked(site.ftp_config.secure());
+        checkbox_ftp_config_password_prompt.checked(site.ftp_config.password_prompt());
+        checkbox_ssh_config_password_prompt.checked(site.ssh_config.password_prompt());
         input_base_url.value_option(&site.base_url.as_ref().map(|url| url.representation.clone()));
         input_ftp_config_password.value_option(&site.ftp_config.password);
         input_ftp_config_path.value_option(&site.ftp_config.path);
@@ -187,6 +195,7 @@ pub fn edit_page(
                 {input_ftp_config_path}
                 {input_ftp_config_user}
                 {input_ftp_config_password}
+                {checkbox_ftp_config_password_prompt}
                 {checkbox_ftp_config_secure}
 
                 <h3>{t_ssh_sync_settings}</h3>
@@ -196,6 +205,7 @@ pub fn edit_page(
                 {input_ssh_config_path}
                 {input_ssh_config_user}
                 {input_ssh_config_password}
+                {checkbox_ssh_config_password_prompt}
                 {input_ssh_config_private_key}
                 {input_ssh_config_public_key}
 

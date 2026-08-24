@@ -16,6 +16,7 @@ anstyle.workspace = true
 base64.workspace = true
 chrono.workspace = true
 clap.workspace = true
+crossterm.workspace = true
 ctrlc.workspace = true
 enolib.workspace = true
 env_logger.workspace = true

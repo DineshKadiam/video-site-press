@@ -32,6 +32,7 @@ pub use sync_state::{
 };
 
 pub fn check_sync_config(
+    prompted_password: Option<&str>,
     protocol: SyncProtocol,
     site: &Site,
     translations: &Translations
@@ -41,12 +42,14 @@ pub fn check_sync_config(
             if site.ftp_config.secure() {
                 ftp::check_sync_config(
                     ftp::connect_secure,
+                    prompted_password,
                     site,
                     translations
                 )
             } else {
                 ftp::check_sync_config(
                     ftp::connect_insecure,
+                    prompted_password,
                     site,
                     translations
                 )
@@ -54,6 +57,7 @@ pub fn check_sync_config(
         }
         SyncProtocol::Ssh => {
             ssh::check_sync_config(
+                prompted_password,
                 site,
                 translations
             )
@@ -63,6 +67,7 @@ pub fn check_sync_config(
 
 pub fn start_sync(
     context: &Arc<Context>,
+    prompted_password: Option<&str>,
     protocol: SyncProtocol,
     simulate: bool,
     site: &Site,
@@ -74,6 +79,7 @@ pub fn start_sync(
                 ftp::start_sync(
                     ftp::connect_secure,
                     context,
+                    prompted_password,
                     simulate,
                     site,
                     translations
@@ -82,6 +88,7 @@ pub fn start_sync(
                 ftp::start_sync(
                     ftp::connect_insecure,
                     context,
+                    prompted_password,
                     simulate,
                     site,
                     translations
@@ -91,6 +98,7 @@ pub fn start_sync(
         SyncProtocol::Ssh => {
             ssh::start_sync(
                 context,
+                prompted_password,
                 simulate,
                 site,
                 translations

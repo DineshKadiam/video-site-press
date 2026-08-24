@@ -1,4 +1,4 @@
-const confirmationDialog = document.querySelector('#confirmation_dialog').content;
+const modal = document.querySelector('#modal').content;
 const processingElement = document.querySelector('.processing');
 const processingIcon = document.querySelector('#processing_icon').content;
 const reloadIcon = document.querySelector('#reload_icon').content;
@@ -102,28 +102,78 @@ function fetchProcessing() {
         });
 }
 
-function hyperConfirm(callback, label, text) {
-    const dialog = confirmationDialog.cloneNode(true);
+// Example options:
+// {
+//     callback: () => { ... },   // mandatory
+//     confirmLabel: 'Submit',    // mandatory
+//     text: 'Really do this?',   // mandatory
+//     type: 'password'           // if specified callback receives a prompted password
+// }
+function hyperModal(options) {
+    const {
+        callback,
+        confirmLabel,
+        text,
+        type
+    } = options;
 
-    dialog.querySelector('.confirm').textContent = label;
-    dialog.querySelector('.text').textContent = text;
+    const dialogClone = modal.cloneNode(true);
 
-    document.body.appendChild(dialog);
+    document.body.appendChild(dialogClone);
 
-    // For some reason .showModal and .remove would not work on dialog itself,
+    // For some reason .showModal and .remove would not work on dialogClone itself,
     // so we "re-query" the element from the DOM after having appended it.
     // Possibly follow up at some point why this happens.
-    const appendedDialog = document.querySelector('.confirmation_wrapper')
+    const dialog = document.querySelector('.modal');
 
-    appendedDialog.querySelector('.cancel').addEventListener('click', () => appendedDialog.remove());
-    appendedDialog.querySelector('.confirm').addEventListener('click', () => {
-        appendedDialog.remove();
-        callback();
-    });
+    dialog.querySelector('.confirm').textContent = confirmLabel;
+    dialog.querySelector('.text').textContent = text;
 
-    appendedDialog.showModal();
 
-    appendedDialog.querySelector('.confirm').focus();
+    function cancel() {
+        dialog.remove();
+    }
+
+    function confirm() {
+        dialog.remove();
+
+        if (type === 'password') {
+            const password = dialog.querySelector('input').value;
+
+            callback(password);
+        } else {
+            callback();
+        }
+    }
+
+    if (type === 'password') {
+        const input = document.createElement('input');
+
+        input.type = 'password';
+
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Enter' ) {
+                confirm();
+            }
+        });
+
+        const buttons = dialog.querySelector('.buttons');
+        buttons.parentNode.insertBefore(input, buttons);
+    }
+
+    dialog.querySelector('.cancel').addEventListener('click', cancel);
+    dialog.querySelector('.confirm').addEventListener('click', confirm);
+
+    dialog.addEventListener('close', () => dialog.remove());
+
+    dialog.showModal();
+
+    if (options.type === 'password') {
+        dialog.querySelector('input').focus();
+    } else {
+        // Force an explicit focus on confirm instead of an implicit one on cancel
+        dialog.querySelector('.confirm').focus();
+    }
 }
 
 function updateJobs(jobs, globalJobReport) {
@@ -460,10 +510,86 @@ for (const form of document.querySelectorAll('form[data-confirm]')) {
     form.addEventListener('submit', event => {
         event.preventDefault();
 
-        const label = form.dataset.confirmLabel;
-        const text = form.dataset.confirmText;
+        const modalOptions = {};
 
-        hyperConfirm(() => form.submit(), label, text);
+        modalOptions.callback = () => form.submit();
+        modalOptions.confirmLabel = form.dataset.confirmLabel;
+        modalOptions.text = form.dataset.confirmText;
+
+        hyperModal(modalOptions);
+    });
+}
+
+for (const form of document.querySelectorAll('form[data-sync-precheck]')) {
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const confirm = form.dataset.syncConfirm !== undefined;
+        const protocol = form.dataset.syncProtocol;
+
+        const configUrl = `/sync/${protocol}/config`;
+
+        fetch(configUrl)
+            .then(response => response.json())
+            .then(response => {
+                const {
+                    passwordPrompt,
+                    privateKey,
+                    server,
+                    user
+                } = response;
+
+                if (server === null || user === null) {
+                    // TODO: Rare edge case where the page was rendered while
+                    // the FTP or SSH config was still complete, but was made
+                    // incomplete until this was triggered. Technically we
+                    // should return a proper translated message, but
+                    // realistcally speaking almost will no one will ever see
+                    // it.
+                    return;
+                }
+
+                function delegate() {
+                    if (passwordPrompt) {
+                        const modalOptions = {};
+
+                        modalOptions.callback = password => {
+                            const input = document.createElement('input');
+
+                            input.name = 'password';
+                            input.type = 'hidden';
+                            input.value = password;
+
+                            form.append(input);
+                            form.submit();
+                        };
+
+                        modalOptions.confirmLabel = t.continue;
+
+                        modalOptions.text = privateKey
+                            ? t.enterPasswordForDecryptingThePrivateKeyInXxx(privateKey)
+                            : t.enterPasswordForUserXxx(user);
+
+                        modalOptions.type = 'password';
+
+                        hyperModal(modalOptions)
+                    } else {
+                        form.submit();
+                    }
+                }
+
+                if (confirm) {
+                    const modalOptions = {}
+
+                    modalOptions.callback = delegate;
+                    modalOptions.confirmLabel = t.sync;
+                    modalOptions.text = `${t.reallySync} (${server})`;
+
+                    hyperModal(modalOptions);
+                } else {
+                    delegate();
+                }
+            });
     });
 }
 

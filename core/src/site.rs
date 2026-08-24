@@ -216,6 +216,23 @@ impl Site {
                                         self.ftp_config.password = Some(value.to_string());
                                     }
                                 }
+                                "password_prompt" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "disabled" => {
+                                                self.ftp_config.password_prompt = Some(false);
+                                            }
+                                            "enabled" => {
+                                                self.ftp_config.password_prompt = Some(true);
+                                            }
+                                            other => {
+                                                let message = format!("The password_prompt option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                                let error = element_error(element, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
+                                    }
+                                }
                                 "path" => {
                                     if let Some(value) = attribute.value() {
                                         self.ftp_config.path = Some(value.to_string());
@@ -306,6 +323,23 @@ impl Site {
                                 "password" => {
                                     if let Some(value) = attribute.value() {
                                         self.ssh_config.password = Some(value.to_string());
+                                    }
+                                }
+                                "password_prompt" => {
+                                    if let Some(value) = attribute.value() {
+                                        match value {
+                                            "disabled" => {
+                                                self.ssh_config.password_prompt = Some(false);
+                                            }
+                                            "enabled" => {
+                                                self.ssh_config.password_prompt = Some(true);
+                                            }
+                                            other => {
+                                                let message = format!("The password_prompt option only supports the value 'enabled' or 'disabled'. The given value '{other}' was not recognized.");
+                                                let error = element_error(element, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        }
                                     }
                                 }
                                 "path" => {
@@ -560,6 +594,13 @@ impl Site {
         }
     }
 
+    pub fn prompt_sync_password(&self, protocol: SyncProtocol) -> bool {
+        match protocol {
+            SyncProtocol::Ftp => matches!(self.ftp_config.password_prompt, Some(true)),
+            SyncProtocol::Ssh => matches!(self.ssh_config.password_prompt, Some(true))
+        }
+    }
+
     pub fn read_dir(context: &Context, dir: &Path) -> Site {
         let hyper_dir = HyperDir::read(dir);
 
@@ -665,6 +706,11 @@ impl Site {
                 eno.push_str(&format!("password = {password}\n"));
             }
 
+            if let Some(enabled) = self.ftp_config.password_prompt {
+                let mode = if enabled { "enabled" } else { "disabled" };
+                eno.push_str(&format!("password_prompt = {mode}\n"));
+            }
+
             if let Some(path) = &self.ftp_config.path {
                 eno.push_str(&format!("path = {path}\n"));
             }
@@ -689,6 +735,11 @@ impl Site {
 
             if let Some(password) = &self.ssh_config.password {
                 eno.push_str(&format!("password = {password}\n"));
+            }
+
+            if let Some(enabled) = self.ssh_config.password_prompt {
+                let mode = if enabled { "enabled" } else { "disabled" };
+                eno.push_str(&format!("password_prompt = {mode}\n"));
             }
 
             if let Some(path) = &self.ssh_config.path {

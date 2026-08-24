@@ -36,6 +36,7 @@ const TEST_FILE_TEXT: &str = indoc!("
 /// Regardless of failure or success of the check, the test file is removed
 /// from the remote again, leaving a clean state.
 pub fn check_sync_config(
+    prompted_password: Option<&str>,
     site: &Site,
     translations: &Translations
 ) -> Vec<SyncConfigCheckStep> {
@@ -47,11 +48,17 @@ pub fn check_sync_config(
     let server = site.ssh_config.server_unchecked();
     let user = site.ssh_config.user_unchecked();
 
+    let password = prompted_password.or(site.ssh_config.password.as_deref());
+
     let mut login = SyncConfigCheckStep::new(translations.login);
 
     login.context(format!("{user}@{server}:{port}"));
 
-    let (session, sftp) = match connect(site, translations) {
+    let (session, sftp) = match connect(
+        password,
+        site,
+        translations
+    ) {
         Ok(session_sftp) => session_sftp,
         Err(err) => {
             login.message(err);

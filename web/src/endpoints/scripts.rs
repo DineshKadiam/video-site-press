@@ -22,14 +22,18 @@ pub async fn scripts(
     // We selectively provide only those translations to the runtime js code
     // that are absolutely required, handpicking them here.
     let t_add_file = translations.add_file;
+    let t_continue = translations.r#continue;
     let t_create_directory = translations.create_directory;
     let t_delete_directory = translations.delete_directory;
     let t_delete_file = translations.delete_file;
+    let t_enter_password_for_decrypting_the_private_key_in_xxx = translations.enter_password_for_decrypting_the_private_key_in_xxx;
+    let t_enter_password_for_user_xxx = translations.enter_password_for_user_xxx;
     let t_idle = translations.idle;
     let t_new_results_available = translations.new_results_available;
     let t_really_sync = translations.really_sync;
     let t_refresh = translations.refresh;
     let t_simulation = translations.simulation;
+    let t_sync = translations.sync;
     let t_sync_finished = translations.sync_finished;
     let t_syncing = translations.syncing;
     let t_update_file = translations.update_file;
@@ -39,14 +43,18 @@ pub async fn scripts(
     let js = formatdoc!(r#"
         const t = {{
             addFile: '{t_add_file}',
+            continue: '{t_continue}',
             createDirectory: '{t_create_directory}',
             deleteDirectory: '{t_delete_directory}',
             deleteFile: '{t_delete_file}',
+            enterPasswordForDecryptingThePrivateKeyInXxx: keyFile => '{t_enter_password_for_decrypting_the_private_key_in_xxx}'.replace('{{key_file}}', keyFile),
+            enterPasswordForUserXxx: user => '{t_enter_password_for_user_xxx}'.replace('{{user}}', user),
             idle: '{t_idle}',
             newResultsAvailable: '{t_new_results_available}',
             reallySync: '{t_really_sync}',
             refresh: '{t_refresh}',
             simulation: '{t_simulation}',
+            sync: '{t_sync}',
             syncFinished: '{t_sync_finished}',
             syncing: '{t_syncing}',
             updateFile: '{t_update_file}',

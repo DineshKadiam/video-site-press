@@ -106,11 +106,11 @@ impl Layout {
                         {r_footer}
                     </div>
                     {splash_screen_rendered}
-                    <template id="confirmation_dialog">
-                        <dialog class="confirmation_wrapper">
+                    <template id="modal">
+                        <dialog class="modal">
                             <div class="text"></div>
                             <div class="buttons">
-                                <button autofocus class="cancel">{t_cancel}</button>
+                                <button class="cancel">{t_cancel}</button>
                                 <button class="confirm danger"></button>
                             </div>
                         </dialog>
@@ -151,12 +151,7 @@ fn controls(
     };
 
     let ftp_sync = if site.ftp_config.complete() {
-        let base_url = match &site.base_url {
-            Some(base_url) => format!(" ({})", base_url.representation),
-            None => String::new()
-        };
         let t_configuration_check = translations.configuration_check;
-        let t_really_sync = translations.really_sync;
         let t_simulate_sync = translations.simulate_sync;
         let t_sync = translations.sync;
 
@@ -172,20 +167,28 @@ fn controls(
                     <li>
                         <form
                             action="{sync_ftp_action}"
-                            data-confirm
-                            data-confirm-label="{t_sync}"
-                            data-confirm-text="{t_really_sync}{base_url}"
+                            data-sync-confirm
+                            data-sync-precheck
+                            data-sync-protocol="ftp"
                             method="post">
                             <button>{t_sync}</button>
                         </form>
                     </li>
                     <li>
-                        <form action="{simulate_sync_ftp_action}" method="post">
+                        <form
+                            action="{simulate_sync_ftp_action}"
+                            data-sync-precheck
+                            data-sync-protocol="ftp"
+                            method="post">
                             <button>{t_simulate_sync}</button>
                         </form>
                     </li>
                     <li>
-                        <form action="{sync_check_ftp_action}" method="post">
+                        <form
+                            action="{sync_check_ftp_action}"
+                            data-sync-precheck
+                            data-sync-protocol="ftp"
+                            method="post">
                             <button>{t_configuration_check}</button>
                         </form>
                     </li>
@@ -197,12 +200,7 @@ fn controls(
     };
 
     let ssh_sync = if site.ssh_config.complete() {
-        let base_url = match &site.base_url {
-            Some(base_url) => format!(" ({})", base_url.representation),
-            None => String::new()
-        };
         let t_configuration_check = translations.configuration_check;
-        let t_really_sync = translations.really_sync;
         let t_simulate_sync = translations.simulate_sync;
         let t_sync = translations.sync;
 
@@ -217,20 +215,28 @@ fn controls(
                     <li>
                         <form
                             action="{sync_ssh_action}"
-                            data-confirm
-                            data-confirm-label="{t_sync}"
-                            data-confirm-text="{t_really_sync}{base_url}"
+                            data-sync-confirm
+                            data-sync-precheck
+                            data-sync-protocol="ssh"
                             method="post">
                             <button>{t_sync}</button>
                         </form>
                     </li>
                     <li>
-                        <form action="{simulate_sync_ssh_action}" method="post">
+                        <form
+                            action="{simulate_sync_ssh_action}"
+                            data-sync-precheck
+                            data-sync-protocol="ssh"
+                            method="post">
                             <button>{t_simulate_sync}</button>
                         </form>
                     </li>
                     <li>
-                        <form action="{sync_check_ssh_action}" method="post">
+                        <form
+                            action="{sync_check_ssh_action}"
+                            data-sync-precheck
+                            data-sync-protocol="ssh"
+                            method="post">
                             <button>{t_configuration_check}</button>
                         </form>
                     </li>

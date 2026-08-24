@@ -49,9 +49,9 @@ the usage information.
 
   Manually set the ip address used by the editor or preview server (otherwise default to localhost)
 
-- `--no-confirm`
+- `--non-interactive`
 
-  Skip all interactive confirmation prompts (*Really sync?*, etc.). For judicious use in automated pipelines.
+  Disable interactive command line prompts (sync confirmations, password prompts).
 
 - `--port <PORT>`
 

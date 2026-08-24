@@ -60,12 +60,7 @@ use platform_integration::{PlatformIntegrationImage, PlatformIntegrationMeta};
 use poster_assets::{PosterAsset, PosterAssets};
 use poster_meta::PosterMeta;
 use sort::SortDirection;
-use sync::{
-    FtpConfig,
-    SshConfig,
-    SyncAction,
-    SyncError
-};
+use sync::{SyncAction, SyncError};
 use video_format::{Codec, EncodingApproach};
 use video_meta::VideoMeta;
 
@@ -108,6 +103,8 @@ pub use site_url::SiteUrl;
 pub use sort::{Asc, Comparison, Desc};
 pub use subtitle_file::SubtitleFile;
 pub use sync::{
+    FtpConfig,
+    SshConfig,
     SyncConfigCheckStep,
     SyncEvent,
     SyncEventActionKind,

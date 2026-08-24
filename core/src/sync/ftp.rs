@@ -28,8 +28,10 @@ type FtpSyncEntry = SyncEntry<String>;
 
 const DEFAULT_FTP_PORT: u16 = 21;
 
-pub fn connect_insecure(site: &Site) -> Result<FtpStream, SyncError> {
-    let password = site.ftp_config.password_unchecked();
+pub fn connect_insecure(
+    password: &str,
+    site: &Site
+) -> Result<FtpStream, SyncError> {
     let port = site.ftp_config.port.unwrap_or(DEFAULT_FTP_PORT);
     let server = site.ftp_config.server_unchecked();
     let user = site.ftp_config.user_unchecked();
@@ -44,8 +46,10 @@ pub fn connect_insecure(site: &Site) -> Result<FtpStream, SyncError> {
     Ok(stream)
 }
 
-pub fn connect_secure(site: &Site) -> Result<NativeTlsFtpStream, SyncError> {
-    let password = site.ftp_config.password_unchecked();
+pub fn connect_secure(
+    password: &str,
+    site: &Site
+) -> Result<NativeTlsFtpStream, SyncError> {
     let port = site.ftp_config.port.unwrap_or(DEFAULT_FTP_PORT);
     let server = site.ftp_config.server_unchecked();
     let user = site.ftp_config.user_unchecked();

@@ -36,7 +36,8 @@ const TEST_FILE_TEXT: &str = indoc!("
 /// Regardless of failure or success of the check, the test file is removed
 /// from the remote again, leaving a clean state.
 pub fn check_sync_config<S: TlsStream>(
-    connect: impl Fn(&Site) -> Result<ImplFtpStream<S>, SyncError>,
+    connect: impl Fn(&str, &Site) -> Result<ImplFtpStream<S>, SyncError>,
+    prompted_password: Option<&str>,
     site: &Site,
     translations: &Translations
 ) -> Vec<SyncConfigCheckStep> {
@@ -48,11 +49,15 @@ pub fn check_sync_config<S: TlsStream>(
     let server = site.ftp_config.server_unchecked();
     let user = site.ftp_config.user_unchecked();
 
+    let password = prompted_password
+        .or(site.ftp_config.password.as_deref())
+        .unwrap();
+
     let mut login = SyncConfigCheckStep::new(translations.login);
 
     login.context(format!("{user}@{server}:{port}"));
 
-    let mut impl_ftp_stream = match connect(site) {
+    let mut impl_ftp_stream = match connect(password, site) {
         Ok(impl_ftp_stream) => impl_ftp_stream,
         Err(err) => {
             login.message(err);

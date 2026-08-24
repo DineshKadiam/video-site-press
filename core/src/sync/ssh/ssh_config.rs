@@ -6,6 +6,7 @@ use std::path::PathBuf;
 #[derive(Clone, Debug)]
 pub struct SshConfig {
     pub password: Option<String>,
+    pub password_prompt: Option<bool>,
     pub path: Option<String>,
     pub port: Option<u16>,
     pub private_key: Option<PathBuf>,
@@ -23,6 +24,7 @@ impl SshConfig {
 
     pub fn is_empty(&self) -> bool {
         self.password.is_none() &&
+        self.password_prompt.is_none() &&
         self.path.is_none() &&
         self.port.is_none() &&
         self.private_key.is_none() &&
@@ -34,6 +36,7 @@ impl SshConfig {
     pub fn new() -> SshConfig {
         SshConfig {
             password: None,
+            password_prompt: None,
             path: None,
             port: None,
             private_key: None,
@@ -41,6 +44,10 @@ impl SshConfig {
             server: None,
             user: None
         }
+    }
+
+    pub fn password_prompt(&self) -> bool {
+        self.password_prompt.unwrap_or(false)
     }
 
     pub fn path_unchecked(&self) -> &str {

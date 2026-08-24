@@ -30,6 +30,7 @@ type SshSyncEntry = SyncEntry<u64>;
 const DEFAULT_SSH_PORT: u16 = 22;
 
 fn connect(
+    password: Option<&str>,
     site: &Site,
     translations: &Translations
 ) -> Result<(Session, Sftp), SyncError> {
@@ -53,13 +54,13 @@ fn connect(
             user,
             site.ssh_config.public_key.as_deref(),
             private_key,
-            site.ssh_config.password.as_deref()
+            password
         ) {
             let t_keyfile_authentication_failed = translations.keyfile_authentication_failed;
             let message = format!("{t_keyfile_authentication_failed}\n{err}");
             return Err(message.into());
         }
-    } else if let Some(password) = &site.ssh_config.password {
+    } else if let Some(password) = password {
         if let Err(err) = session.userauth_password(user, password) {
             let t_password_authentication_failed = translations.password_authentication_failed;
             let message = format!("{t_password_authentication_failed}\n{err}");

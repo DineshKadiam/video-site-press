@@ -29,6 +29,7 @@ pub struct UpdateForm {
     base_url: String,
     clean_urls: Option<String>,
     ftp_config_password: String,
+    ftp_config_password_prompt: Option<String>,
     ftp_config_path: String,
     ftp_config_port: String,
     ftp_config_secure: Option<String>,
@@ -37,6 +38,7 @@ pub struct UpdateForm {
     language: String,
     poster_aspect: String,
     ssh_config_password: String,
+    ssh_config_password_prompt: Option<String>,
     ssh_config_path: String,
     ssh_config_port: String,
     ssh_config_private_key: String,
@@ -54,6 +56,7 @@ pub async fn update(
     let base_url_trimmed = form.base_url.trim();
     let clean_urls = form.clean_urls.is_some();
     let ftp_config_password_trimmed = form.ftp_config_password.trim();
+    let ftp_config_password_prompt = form.ftp_config_password_prompt.is_some();
     let ftp_config_path_trimmed = form.ftp_config_path.trim();
     let ftp_config_secure = form.ftp_config_secure.is_some();
     let ftp_config_server_trimmed = form.ftp_config_server.trim();
@@ -61,6 +64,7 @@ pub async fn update(
     let language_trimmed = form.language.trim();
     let poster_aspect_trimmed = form.poster_aspect.trim();
     let ssh_config_password_trimmed = form.ssh_config_password.trim();
+    let ssh_config_password_prompt = form.ssh_config_password_prompt.is_some();
     let ssh_config_path_trimmed = form.ssh_config_path.trim();
     let ssh_config_private_key_trimmed = form.ssh_config_private_key.trim();
     let ssh_config_public_key_trimmed = form.ssh_config_public_key.trim();
@@ -117,6 +121,7 @@ pub async fn update(
             base_url: Field::validated(base_url_trimmed, base_url_err),
             clean_urls,
             ftp_config_password: Field::valid(ftp_config_password_trimmed),
+            ftp_config_password_prompt,
             ftp_config_path: Field::valid(ftp_config_path_trimmed),
             ftp_config_port: Field::validated(ftp_config_port_trimmed, ftp_config_port_err),
             ftp_config_secure,
@@ -125,6 +130,7 @@ pub async fn update(
             language: Field::valid(language_trimmed),
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
             ssh_config_password: Field::valid(ssh_config_password_trimmed),
+            ssh_config_password_prompt,
             ssh_config_path: Field::valid(ssh_config_path_trimmed),
             ssh_config_port: Field::validated(ssh_config_port_trimmed, ssh_config_port_err),
             ssh_config_private_key: Field::valid(ssh_config_private_key_trimmed),
@@ -154,6 +160,7 @@ pub async fn update(
             site_mut.base_url = base_url.map(|base_url| base_url.unwrap());
             site_mut.clean_urls = clean_urls;
             site_mut.ftp_config.password = to_option(ftp_config_password_trimmed);
+            site_mut.ftp_config.password_prompt = Some(ftp_config_password_prompt);
             site_mut.ftp_config.path = to_option(ftp_config_path_trimmed);
             site_mut.ftp_config.port = ftp_config_port.and_then(|ftp_config_port| ftp_config_port.ok());
             site_mut.ftp_config.secure = Some(ftp_config_secure);
@@ -162,6 +169,7 @@ pub async fn update(
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
             site_mut.ssh_config.password = to_option(ssh_config_password_trimmed);
+            site_mut.ssh_config.password_prompt = Some(ssh_config_password_prompt);
             site_mut.ssh_config.path = to_option(ssh_config_path_trimmed);
             site_mut.ssh_config.port = ssh_config_port.and_then(|ssh_config_port| ssh_config_port.ok());
             site_mut.ssh_config.private_key = to_option(ssh_config_private_key_trimmed);
