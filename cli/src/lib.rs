@@ -118,7 +118,12 @@ pub fn handle_desktop() -> Option<ExitCode> {
     let args = args::parse(ArgMode::Desktop);
 
     if args.args_present() {
-        Some(handle(args))
+        if args.contains_id("site-dir") {
+            Some(handle(args))
+        } else {
+            eprintln!("The positional [site-dir] argument is mandatory when passing any command line arguments, you need to provide it.");
+            Some(ExitCode::FAILURE)
+        }
     } else {
         None
     }
