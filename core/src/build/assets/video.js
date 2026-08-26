@@ -1,4 +1,4 @@
-const playerWrapper = document.querySelector('.player_wrapper');
+const player = document.querySelector('.player');
 const togglePlaylistButton = document.querySelector('#toggle_playlist');
 const toggleTranscriptButton = document.querySelector('#toggle_transcript');
 
@@ -6,14 +6,7 @@ const toggleTranscriptButton = document.querySelector('#toggle_transcript');
 // offline usage, we don't have a player on the page (only a video
 // placeholder). In this case we need to skip almost all of the
 // initialization.
-if (playerWrapper) {
-    const loadingIcon = document.querySelector('#loading_icon').content;
-    const maximizeIcon = document.querySelector('#maximize_icon').content;
-    const minimizeIcon = document.querySelector('#minimize_icon').content;
-    const playIcon = document.querySelector('#play_icon').content;
-    const pauseIcon = document.querySelector('#pause_icon').content;
-    const replayIcon = document.querySelector('#replay_icon').content;
-    const subtitlesIcon = document.querySelector('#subtitles_icon').content;
+if (player) {
     const volumeLoudIcon = document.querySelector('#volume_loud_icon').content;
     const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
     const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
@@ -30,7 +23,7 @@ if (playerWrapper) {
     const speedMultiplier = document.querySelector('#speed .multiplier');
     const timeline = document.querySelector('.timeline');
     const timelineInput = document.querySelector('.timeline input');
-    const togglePlaybackButton = document.querySelector('#toggle_playback');
+    const togglePlaybackButton = document.querySelector('.toggle_playback');
     const versionSelectorControl = document.querySelector('.selector_control.version');
     const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
     const versionsRing = document.querySelector('.versions_ring');
@@ -43,7 +36,9 @@ if (playerWrapper) {
     // (see https://developer.mozilla.org/en-US/docs/Web/API/TimeRanges).
     // We use an interlaced array instead ([start, end, start, end]).
     let lastBuffered = [];
-    let bufferedUpdateInterval = null;
+    let bufferedRangesUpdateInterval = null;
+
+    let onPauseStateOverride = null;
 
     let playbackUpdateInterval;
 
@@ -66,12 +61,16 @@ if (playerWrapper) {
         //   (Timeline of apple failing to support requestFullscreen on iOS since 2020)
         // - https://developer.apple.com/documentation/webkitjs/htmlvideoelement/1633500-webkitenterfullscreen
         //   (Apple developer documentation for their non-standard fullscreen API)
-        iPhoneMode: !playerWrapper.requestFullscreen
+        iPhoneMode: !player.requestFullscreen
     };
+
+    const seekState = {};
 
     // We internally manage speed as (integer) percent values to avoid having to
     // deal with float rounding issues.
     let speed = 100;
+
+    let playerInit = false;
 
     const volume = {
         interactive: false,
@@ -128,8 +127,8 @@ if (playerWrapper) {
 
     initializeVolume();
 
-    function playbackUpdate() {
-        const time = video.currentTime;
+    function playbackUpdate(forcedTime = null) {
+        const time = forcedTime ?? currentTime();
         const timeFormatted = formatTime(time);
 
         timelineInput.value = time;
@@ -138,16 +137,16 @@ if (playerWrapper) {
         document.querySelector('.bar.progress').style.width = `${(time / duration) * 100}%`;
         document.querySelector('#time_current').innerHTML = timeFormatted;
 
-        const { hideInterfaceBy } = playerWrapper.dataset;
+        const { hideInterfaceBy } = player.dataset;
 
         if (hideInterfaceBy && (new Date()).getTime() > hideInterfaceBy) {
-            playerWrapper.classList.add('hide_interface');
+            player.classList.add('hide_interface');
         }
     }
 
     function revealControls() {
-        playerWrapper.dataset.hideInterfaceBy = (new Date()).getTime() + 3000;
-        playerWrapper.classList.remove('hide_interface');
+        player.dataset.hideInterfaceBy = (new Date()).getTime() + 3000;
+        player.classList.remove('hide_interface');
     }
 
     versionSelectorControl.addEventListener('mouseenter', () => {
@@ -172,51 +171,120 @@ if (playerWrapper) {
     );
     activeVersionOption.button.classList.add('active');
 
-    // Receives the slice group from the version ring. We always initially pass
-    // through this function when the video is first started, so we also use it
-    // to remove the poster (because this would otherwise briefly flash into
-    // being visible when resolution is changed on-the-go).
+    // Invoked when playback is started from the intro version ring. Receives
+    // the slice group from the version ring.
     function selectVersion(slice) {
-        video.removeAttribute('poster');
-
         const option = versionOptions.find(option => option.slice === slice);
-        activateVersionOption(option);
+
+        // Change active version (to a different format/resolution) if needed
+        if (video.getAttribute('src') !== option.button.dataset.src) {
+            activeVersionOption.button.classList.remove('active');
+
+            video.src = option.button.dataset.src;
+
+            cycleVersionButton.textContent = option.button.dataset.label;
+            activeVersionOption = option;
+            activeVersionOption.button.classList.add('active');
+        }
+
+        play();
     }
 
     function activateVersionOption(option) {
-        if (activeVersionOption !== null) {
+        // If the requested version is already active we can return early
+        if (option === activeVersionOption) {
+            return;
+        }
+
+        if (!playerInit) {
+            // If we haven't played back anything yet, we can simply activate
+            // the requested version, trigger preloading and return early
+
             activeVersionOption.button.classList.remove('active');
+
+            video.src = option.button.dataset.src;
+
+            cycleVersionButton.textContent = option.button.dataset.label;
+            activeVersionOption = option;
+            activeVersionOption.button.classList.add('active');
+
+            ensurePlayerInit();
+        } else {
+            // If we have alrady played back (or are playing back) a different
+            // version, we memorize the current playback state and time, stop
+            // playback (if necessary), switch to the new version, and then
+            // restore the previous playback state and time
+
+            activeVersionOption.button.classList.remove('active');
+
+            const lastPlaying = pause();
+
+            const lastTime = currentTime();
+
+            clearBufferedRanges();
+
+            video.src = option.button.dataset.src;
+
+            // Resets the element and rescans the available resources, thereby
+            // causing the changes [to the src attribute] to take effect.
+            // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/load
+            // Note that things also work without this call, but it probably
+            // doesn't hurt to be explicit about this and give the runtime an
+            // extra nudge.
+            video.load();
+
+            trackBufferedRanges();
+
+            seek(lastTime, lastPlaying);
+
+            cycleVersionButton.textContent = option.button.dataset.label;
+
+            activeVersionOption = option;
+            activeVersionOption.button.classList.add('active');
         }
-
-        if (!video.paused) {
-            togglePlayback();
-        }
-
-        const currentTimeMemorized = video.currentTime;
-        video.src = option.button.dataset.src;
-        video.currentTime = currentTimeMemorized;
-        cycleVersionButton.textContent = option.button.dataset.label;
-
-        togglePlayback();
-
-        option.button.classList.add('active');
-        activeVersionOption = option;
     }
 
     for (const option of versionOptions) {
         option.button.addEventListener('click', () => {
-            if (option !== activeVersionOption) {
-                activateVersionOption(option);
-            }
+            activateVersionOption(option);
             versionSelectorControl.classList.remove('active');
             option.button.blur();
         });
     }
 
+    // Cycling the version through clicking the (e.g.) "1080p" button left to
+    // the fullscreen toggle
     cycleVersionButton.addEventListener('click', () => {
         const activeVersionOptionIndex = versionOptions.indexOf(activeVersionOption);
-        activateVersionOption(versionOptions[(activeVersionOptionIndex + 1) % versionOptions.length]);
+        const option = versionOptions[(activeVersionOptionIndex + 1) % versionOptions.length];
+        activateVersionOption(option);
     });
+
+    // Reset buffered video ranges cache, update interval and timeline markup
+    // to its initial, idle state (without restarting the update interval).
+    function clearBufferedRanges() {
+        if (bufferedRangesUpdateInterval !== null) {
+            clearInterval(bufferedRangesUpdateInterval);
+            bufferedRangesUpdateInterval = null;
+        }
+
+        lastBuffered = [];
+
+        const bufferedBar = document.querySelector('.bar.buffered');
+
+        bufferedBar.replaceChildren();
+    }
+
+    // While we seek we communicate the target time we are seeking to as the
+    // current time, so the user knows their input was registered. Otherwise
+    // our current time is the current time in the video.
+    function currentTime() {
+        if (seekState.seeking) {
+            return seekState.seeking.targetTime;
+        } else {
+            return video.currentTime;
+        }
+    }
 
     function cycleVolume() {
         if (volume.interactive) {
@@ -239,13 +307,59 @@ if (playerWrapper) {
         localStorage.setItem('hyper8Volume', volume.value);
     }
 
+    // Performs global, one-time initialization of various player attributes
+    // (or skips it if already initialized).
+    function ensurePlayerInit() {
+        if (!playerInit) {
+            // We initially render the video element with preload="none" and
+            // only begin any and all preloading once the user explicitly
+            // requests playback.
+            video.preload = 'auto';
+
+            // Probably not needed but we are explicit about it anyway.
+            // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/load
+            video.load();
+
+            // We remove the poster because it would otherwise briefly appear
+            // again as a flicker when we change resolution (i.e. the src
+            // attribute) during playback.
+            video.removeAttribute('poster');
+
+            playerInit = true;
+        }
+    }
+
+    // Pauses the video if it is playing and returns whether the video was
+    // playing.
+    function pause() {
+        if (seekState.seeking) {
+            seekState.seeking.cancel();
+        } else if (!video.paused) {
+            video.pause();
+            return true;
+        }
+
+        return false;
+    }
+
+    function play() {
+        ensurePlayerInit();
+        trackBufferedRanges();
+
+        if (seekState.initialSeek === undefined) {
+            video.play();
+        } else {
+            seek(seekState.initialSeek, true);
+        }
+    }
+
     function toggleFullscreen() {
         if (fullscreen.iPhoneMode) {
             if (video.webkitDisplayingFullscreen) {
                 video.webkitExitFullscreen();
             } else {
                 if (!fullscreen.alreadyPlayed) {
-                    video.play();
+                    play();
                 }
                 video.webkitEnterFullscreen();
             }
@@ -253,43 +367,56 @@ if (playerWrapper) {
             if (document.fullscreenElement) {
                 document.exitFullscreen();
             } else {
-                playerWrapper.requestFullscreen();
+                player.requestFullscreen();
             }
         }
     }
 
     function togglePlayback() {
-        if (video.paused) {
-            video.play();
+        if (seekState.seeking) {
+            seekState.seeking.cancel();
+        } else if (video.paused) {
+            play();
         } else {
             video.pause();
         }
     }
 
+    function trackBufferedRanges() {
+        if (bufferedRangesUpdateInterval === null) {
+            updateBufferedRanges();
+            bufferedRangesUpdateInterval = setInterval(updateBufferedRanges, 500);
+        }
+    }
+
     video.addEventListener('pause', () => {
-        togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+        if (onPauseStateOverride === null) {
+            // Normally we enter paused state on pause
+            player.dataset.state = 'paused';
+        }  else {
+            // If an overide is specified we enter a different state
+            player.dataset.state = onPauseStateOverride;
+            onPauseStateOverride = null;
+        }
+
         clearInterval(playbackUpdateInterval);
     });
 
     video.addEventListener('play', () => {
         fullscreen.alreadyPlayed = true;
-        playerWrapper.dataset.state = 'playing';
-        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+        player.dataset.state = 'playing';
+
         // TODO: Dynamic, small interval when the video is really short, otherwise can be a fixed higher value
         //       Formula should/can take into account width of video on screen vs duration of video.
         playbackUpdateInterval = setInterval(playbackUpdate, 80);
-
-        if (bufferedUpdateInterval === null) {
-            bufferedUpdateInterval = setInterval(updateBuffered, 500);
-        }
     });
 
     video.addEventListener('playing', event => {
-        togglePlaybackButton.replaceChildren(pauseIcon.cloneNode(true));
+        player.dataset.state = 'playing';
     });
 
     video.addEventListener('waiting', event => {
-        togglePlaybackButton.replaceChildren(loadingIcon.cloneNode(true));
+        player.dataset.state = 'loading';
     });
 
     function toggleVolume() {
@@ -307,7 +434,7 @@ if (playerWrapper) {
         localStorage.setItem('hyper8Volume', volume.value);
     }
 
-    function updateBuffered() {
+    function updateBufferedRanges() {
         const buffered = video.buffered;
 
         // Check if the already buffered ranges have changed
@@ -366,7 +493,7 @@ if (playerWrapper) {
             lastBuffered[0] === 0 &&
             Math.abs(duration - lastBuffered[1]) <= 0.1)
         {
-            clearInterval(bufferedUpdateInterval);
+            clearInterval(bufferedRangesUpdateInterval);
         }
     }
 
@@ -435,19 +562,18 @@ if (playerWrapper) {
 
     if (fullscreen.iPhoneMode) {
         video.addEventListener('webkitbeginfullscreen', () => {
-            playbackToggleFullscreenButton.replaceChildren(minimizeIcon.cloneNode(true));
+            player.classList.add('fullscreen');
         });
         video.addEventListener('webkitendfullscreen', () => {
-            playbackToggleFullscreenButton.replaceChildren(maximizeIcon.cloneNode(true));
+            player.classList.remove('fullscreen');
         });
     } else {
-        playerWrapper.addEventListener('fullscreenchange', () => {
-            const fullscreenIcon = document.fullscreenElement ? minimizeIcon : maximizeIcon;
-            playbackToggleFullscreenButton.replaceChildren(fullscreenIcon.cloneNode(true));
+        player.addEventListener('fullscreenchange', () => {
+            player.classList.toggle('fullscreen', document.fullscreenElement !== null);
         });
     }
 
-    playerWrapper.addEventListener('mousemove', revealControls);
+    player.addEventListener('mousemove', revealControls);
 
     // Unlisted videos are not included in the playlist listing in the player
     // outro screen, therefore there is no separate replay button for these
@@ -472,6 +598,7 @@ if (playerWrapper) {
         });
 
         const subtitleOptions = [];
+
         for (const [index, button] of playbackSubtitleButtons.entries()) {
             const option = { button };
 
@@ -630,8 +757,7 @@ if (playerWrapper) {
     }
 
     video.addEventListener('ended', () => {
-        playerWrapper.dataset.state = 'outro';
-        togglePlaybackButton.replaceChildren(replayIcon.cloneNode(true));
+        player.dataset.state = 'outro';
     });
 
     video.addEventListener('click', togglePlayback);
@@ -656,18 +782,21 @@ if (playerWrapper) {
             toggleVolume();
             event.preventDefault();
         } else if (event.key === 'ArrowLeft') {
-            if (video.currentTime - 5 < 0) {
-                seekTo(0);
+            if (currentTime() - 5 < 0) {
+                seek(0);
             } else {
-                seekTo(video.currentTime - 5);
+                seek(currentTime() - 5);
             }
             event.preventDefault();
         } else if (event.key === 'ArrowRight') {
-            if (video.currentTime + 5 > duration) {
-               seekTo(duration);
-            } else {
-                seekTo(video.currentTime + 5);
+            if (player.dataset.state !== 'outro') {
+                if (currentTime() + 5 > duration) {
+                   seek(duration);
+                } else {
+                    seek(currentTime() + 5);
+                }
             }
+
             event.preventDefault();
         }
     });
@@ -676,7 +805,7 @@ if (playerWrapper) {
         const bounds = timeline.getBoundingClientRect();
         const factor = (event.clientX - bounds.x) / bounds.width;
         const newTime = factor * timelineInput.max;
-        seekTo(newTime);
+        seek(newTime);
         timeline.classList.add('focus_from_click');
         timelineInput.focus();
     });
@@ -717,7 +846,7 @@ if (playerWrapper) {
 
     // Trigger version slice backdrop recomputation on resize (this also triggers
     // the first draw after the initial page load).
-    resizeObserver.observe(playerWrapper);
+    resizeObserver.observe(player);
 
     // Parses (and validates) a time parameter from the current url
     // (e.g. https://example.com/#time=4m12s) and returns it within an object
@@ -783,31 +912,132 @@ if (playerWrapper) {
         return result;
     }
 
-    // Seek the video to a new timecode, reflect the change in the
-    // timeline bar, update the playback button icon if needed
-    function seekTo(newTime, andPlay = false) {
-        video.currentTime = newTime;
-        playbackUpdate();
+    // If possible seeks directly to target time and triggers playback if
+    // requested. If we still need to load more metadata to perform the seek,
+    // this enters/registers a seeking state that continously tries to finish
+    // the seek, available through the global `seekState.seeking` property.
+    // After seeking finishes, playback is triggered if requested.
+    function seek(targetTime, playOnComplete = null) {
+        // If a seek is requested before playback we need to ensure we are
+        // actually preloading the video
+        ensurePlayerInit();
 
-        if (andPlay && video.paused) {
-            togglePlayback();
+        // This primarily serves to prevent seeking exactly to the end, and
+        // only secondarily to prevent seeking beyond the end. We adjust the
+        // seek to just before the end of the video, so there can still be a
+        // predictable play->pause->end event cascade, leading to a clean
+        // outro state
+        if (targetTime >= duration) {
+            targetTime = duration - 0.1;
+        }
+
+        // Update timeline progress to immediately reflect the requested
+        // target time, regardless of whether we can instantly seek there or
+        // need to initiate a consecutive asynchronous seeking process.
+        playbackUpdate(targetTime);
+
+        if (seekState.seeking) {
+            seekState.seeking.targetTime = targetTime;
+        } else if (trySeek(targetTime)) {
+            // The seek immediately succeeded, so we don't change state and
+            // just trigger playback right away (if it was requested)
+
+            if (playOnComplete) {
+                video.play();
+            } else if (video.paused) {
+                // If we are not in playback we could be both on the intro or
+                // outro screen when the seek is requested, so we need to
+                // ensure a paused state after seeking in this case
+                player.dataset.state = 'paused';
+            }
         } else {
-            // If we move the playback position backwards while we're on the outro
-            // screen we need to make sure the replay icon gets replaced by a
-            // play icon again.
-            if (playerWrapper.dataset.state === 'outro' &&
-                video.currentTime < duration - Number.EPSILON) {
-                playerWrapper.dataset.state = 'playing';
-                togglePlaybackButton.replaceChildren(playIcon.cloneNode(true));
+            // If the seek did not immediately succeed we enter/register a
+            // seeking state, that can be asynchronously altered/accessed
+            // through its cancel/onComplete/targetTime properties.
+
+            if (playOnComplete === null) {
+                playOnComplete = !video.paused;
+            }
+
+            const seeking = { playOnComplete, targetTime };
+
+            function tryFinishSeeking() {
+                if (trySeek(seeking.targetTime)) {
+                    delete seekState.seeking;
+
+                    clearInterval(seeking.interval);
+
+                    if (playOnComplete) {
+                        video.play();
+                    } else {
+                        player.dataset.state = 'paused';
+                    }
+                }
+            }
+
+            seeking.interval = setInterval(tryFinishSeeking, 30);
+
+            seeking.cancel = () => {
+                clearInterval(seeking.interval);
+                delete seekState.seeking;
+                player.dataset.state = 'paused';
+                playbackUpdate();
+            };
+
+            // We expose `cancel`, `playOnComplete` and `targetTime` so that consecutive
+            // parallel playback/seek requests may either cancel seeking
+            // (by calling `seeking.cancel()`) or reconfigure up to which
+            // time seeking should occur (by setting `seeking.targetTime =
+            // newTargetTime`), or reconfigure what should happen after seeking
+            // completes (by setting `seeking.playOnComplete = true|false).
+            seekState.seeking = seeking;
+
+            if (video.paused) {
+                player.dataset.state = 'loading';
+            } else {
+                onPauseStateOverride = 'loading';
+                video.pause();
             }
         }
+    }
+
+    // Tries to seek directly to targetTime, or otherwise seeks to the
+    // closest point we can currently seek to instead. Returns true if we
+    // could directly seek to targetTime, otherwise false.
+    function trySeek(targetTime) {
+        let closestPossibleSeek = 0;
+
+        const seekable = video.seekable;
+
+        for (let index = 0; index < seekable.length; index++) {
+            if (seekable.start(index) <= targetTime) {
+                if (seekable.end(index) >= targetTime) {
+                    // We can directly seek to targetTime, so we do it and
+                    // return true to signal complete success
+                    video.currentTime = targetTime;
+                    return true;
+                } else {
+                    closestPossibleSeek = seekable.end(index);
+                }
+            } else {
+                break;
+            }
+        }
+
+        // We can not yet seek directly to targetTime, but if we can seek
+        // at least a little closer to the targetTime, we do it here
+        if (video.currentTime !== closestPossibleSeek) {
+            video.currentTime = closestPossibleSeek;
+        }
+
+        return false;
     }
 
     // Seek to a given timecode if it was specified in a hash parameter
     const params = parseHashParams();
     if (params) {
         if (params.time !== undefined) {
-            seekTo(params.time);
+            seekState.initialSeek = params.time;
         }
     }
 
@@ -815,8 +1045,8 @@ if (playerWrapper) {
         const params = parseHashParams();
         if (params) {
             if (params.time !== undefined) {
-                seekTo(params.time, true);
-                playerWrapper.focus();
+                seek(params.time, true);
+                player.focus();
             }
 
             // TODO: This can be observed as a brief flicker in the address bar

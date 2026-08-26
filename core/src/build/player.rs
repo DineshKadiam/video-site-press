@@ -270,7 +270,7 @@ pub fn player(
                     );
 
                     number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
-                    replay_indicator = hyper8_icons::reload(Some(translations.replay));
+                    replay_indicator = hyper8_icons::reload(None, Some(translations.replay));
                     video_iterated_prefix = video_prefix.to_string();
                 } else {
                     current = "";
@@ -323,7 +323,7 @@ pub fn player(
             </div>
         "#)
     } else {
-        let replay_icon = hyper8_icons::reload(Some(translations.replay));
+        let replay_icon = hyper8_icons::reload(None, Some(translations.replay));
         let t_replay = translations.replay;
         formatdoc!(r#"
             <div class="outro_video_context">
@@ -334,7 +334,9 @@ pub fn player(
         "#)
     };
 
-    let maximize_icon = hyper8_icons::maximize(translations.maximize);
+    let toggle_fullscreen_icons = toggle_fullscreen_icons(translations);
+    let toggle_playback_icons = toggle_playback_icons(translations);
+
     let volume_loud_icon = hyper8_icons::volume_loud(translations.loud_volume);
 
     let video_title = video.title_or_slug_or_generic_label(translations);
@@ -389,7 +391,7 @@ pub fn player(
                 <div class="intro_controls">
                     <button class="icon_button cycle_volume">{volume_loud_icon}</button>
                     {intro_subtitle_controls}
-                    <button class="icon_button toggle_fullscreen">{maximize_icon}</button>
+                    <button class="icon_button toggle_fullscreen">{toggle_fullscreen_icons}</button>
                 </div>
             </div>
         "#)
@@ -417,13 +419,12 @@ pub fn player(
 
     let duration_formatted = precise_duration(duration);
 
-    let play_icon = hyper8_icons::play(translations.play);
     let t_playback_position = translations.playback_position;
     formatdoc!(r#"
         <style>
             :root {{ --video-aspect: {aspect_ratio}; }}
         </style>
-        <div class="player_wrapper" data-state="intro">
+        <div class="player" data-state="intro">
             <div class="player_intro">
                 {versions_ring_rendered}
                 {embed_intro_extensions}
@@ -449,7 +450,7 @@ pub fn player(
                 </div>
                 <div class="control_pane">
                     <div class="left_playback_controls">
-                        <button id="toggle_playback">{play_icon}</button>
+                        <button class="toggle_playback">{toggle_playback_icons}</button>
                         <button class="cycle_volume">{volume_loud_icon}</button>
                         <button id="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
                         <div>
@@ -459,7 +460,7 @@ pub fn player(
                     <div class="right_playback_controls">
                         {version_controls}
                         {subtitle_controls}
-                        <button class="toggle_fullscreen">{maximize_icon}</button>
+                        <button class="toggle_fullscreen">{toggle_fullscreen_icons}</button>
                     </div>
                 </div>
             </div>
@@ -484,19 +485,28 @@ pub fn player_icon_templates(translations: &Translations) -> String {
     let template = |id, icon| format!(r#"<template id="{id}">{icon}</template>"#);
 
     let templates = vec![
-        template("loading_icon", hyper8_icons::loading(translations.loading)),
-        template("maximize_icon", hyper8_icons::maximize(translations.maximize)),
-        template("minimize_icon", hyper8_icons::minimize(translations.minimize)),
-        template("pause_icon", hyper8_icons::pause(translations.pause)),
-        template("play_icon", hyper8_icons::play(translations.play)),
-        template("replay_icon", hyper8_icons::reload(Some(translations.replay))),
-        template("subtitles_icon", hyper8_icons::subtitles(Some(translations.subtitles))),
         template("volume_loud_icon", hyper8_icons::volume_loud(translations.loud_volume)),
         template("volume_medium_icon", hyper8_icons::volume_medium(translations.medium_volume)),
         template("volume_muted_icon", hyper8_icons::volume_muted(translations.sound_muted))
     ];
 
     templates.join("")
+}
+
+fn toggle_fullscreen_icons(translations: &Translations) -> String {
+    let maximize_icon = hyper8_icons::maximize(translations.maximize);
+    let minimize_icon = hyper8_icons::minimize(translations.minimize);
+
+    maximize_icon + &minimize_icon
+}
+
+fn toggle_playback_icons(translations: &Translations) -> String {
+    let loading_icon = hyper8_icons::loading(translations.loading);
+    let pause_icon = hyper8_icons::pause(translations.pause);
+    let play_icon = hyper8_icons::play(translations.play);
+    let replay_icon = hyper8_icons::reload(Some("replay"), Some(translations.replay));
+
+    loading_icon + &pause_icon + &play_icon + &replay_icon
 }
 
 /// A ring with slices and a play button in the middle, displayed on

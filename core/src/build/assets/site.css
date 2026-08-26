@@ -604,48 +604,54 @@ path.loading_right {
     transform: translate(-50%, -50%);
     z-index: 1;
 }
-.player_wrapper {
+.player {
     background: #000;
     border-radius: .5rem;
     color: var(--l2);
     position: relative;
 }
-.player_wrapper a,
-.player_wrapper button {
+.player a,
+.player button {
     color: var(--l2);
 }
-.player_wrapper a:hover,
-.player_wrapper button:hover {
+.player a:hover,
+.player button:hover {
     color: var(--l1);
 }
-.player_wrapper button {
+.player button {
     background: none;
     border: none;
     cursor: pointer;
 }
-.player_wrapper button.dimmed { color: var(--m); }
-.player_wrapper button.dimmed:hover { color: var(--l3); }
-.player_wrapper > *:not(video) { z-index: 1; }
-.player_wrapper:not([data-state="intro"]) .player_intro { display: none; }
-.player_wrapper:not([data-state="outro"]) .player_outro { display: none; }
-.player_wrapper:not([data-state="outro"]).hide_interface { cursor: none; }
-.player_wrapper:not([data-state="outro"]).hide_interface .player_controls { display: none; }
-.player_wrapper[data-state="outro"] video { opacity: .1; }
-.player_wrapper:not(:fullscreen) video { aspect-ratio: var(--video-aspect); }
+.player button.dimmed { color: var(--m); }
+.player button.dimmed:hover { color: var(--l3); }
+.player > *:not(video) { z-index: 1; }
+.player:not([data-state="intro"]) .player_intro { display: none; }
+.player:not([data-state="intro"]):not([data-state="paused"]) .toggle_playback .play { display: none; }
+.player:not([data-state="loading"]) .toggle_playback .loading { display: none; }
+.player:not([data-state="loading"]):not([data-state="outro"]).hide_interface { cursor: none; }
+.player:not([data-state="loading"]):not([data-state="outro"]).hide_interface .player_controls { display: none; }
+.player:not([data-state="playing"]) .toggle_playback .pause { display: none; }
+.player[data-state="outro"] video { opacity: .1; }
+.player:not([data-state="outro"]) .player_outro { display: none; }
+.player:not([data-state="outro"]) .toggle_playback .replay { display: none; }
+.player:fullscreen .toggle_fullscreen .maximize { display: none; }
+.player:not(:fullscreen) .toggle_fullscreen .minimize { display: none; }
+.player:not(:fullscreen) video { aspect-ratio: var(--video-aspect); }
 .playlist_context,
-.player_wrapper:not(:fullscreen) video {
+.player:not(:fullscreen) video {
     max-height: 60dvh;
 }
 /* With portrait (tablet/mobile) viewports we allow videos to be taller */
 @media (max-aspect-ratio: 1/1) {
     .playlist_context,
-    .player_wrapper:not(:fullscreen) video {
+    .player:not(:fullscreen) video {
         max-height: 68dvh;
     }
 }
 @media (max-aspect-ratio: 2/3) {
     .playlist_context,
-    .player_wrapper:not(:fullscreen) video {
+    .player:not(:fullscreen) video {
         max-height: 76dvh;
     }
 }
@@ -1197,7 +1203,7 @@ video {
 @media (width < 55rem) {
     .video_layout { grid-template-columns: 1fr; }
     .video_layout .player_placeholder,
-    .video_layout .player_wrapper {
+    .video_layout .player {
         grid-row: 2/3;
     }
     .video_layout .video_footer { grid-row: 3/4; }
@@ -1217,7 +1223,7 @@ video {
         grid-template-rows: auto min-content auto auto;
     }
     .video_layout .player_placeholder,
-    .video_layout .player_wrapper {
+    .video_layout .player {
         grid-area: 2/1/3/2;
     }
     .video_layout .playlist_context,

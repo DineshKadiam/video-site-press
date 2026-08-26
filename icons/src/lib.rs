@@ -236,10 +236,12 @@ pub fn link(label: Option<&str>) -> String {
 }
 
 /// The pause icon, split in two paths and annotated with classes which are
-/// used to animate it with css
+/// used to animate it with css. This has a hardcoded "loading" class baked
+/// into the svg tag attributes because it is currently always used
+/// programmatically on the client side.
 pub fn loading(label: &str) -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg class="loading" height="1em" version="1.1" viewBox="0 0 64 64" width="1em" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path class="loading_left" d="m11.494 56.995v-49.985h15.592v49.985z"/>
             <path class="loading_right" d="m36.915 56.995v-49.985h15.592v49.985z"/>
@@ -309,18 +311,22 @@ pub fn logo_polychrome(label: Option<&str>) -> String {
     "##)
 }
 
+/// This has a hardcoded "maximize" class baked into the svg tag attributes
+/// because it is currently always used programmatically on the client side
 pub fn maximize(label: &str) -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg class="maximize" height="1em" version="1.1" viewBox="0 0 64 64" width="1em" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m4.2695 59.731h17.506v-7.0907h-10.415v-10.415h-7.0907zm55.462 0v-17.506h-7.0907v10.415h-10.415v7.0907zm0-55.462h-17.506v7.0907h10.415v10.415h7.0907zm-55.462 0v17.506h7.0907v-10.415h10.415v-7.0907z"/>
         </svg>
     "#)
 }
 
+/// This has a hardcoded "minimize" class baked into the svg tag attributes
+/// because it is currently always used programmatically on the client side
 pub fn minimize(label: &str) -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg class="minimize" height="1em" version="1.1" viewBox="0 0 64 64" width="1em" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m36.27 27.731h17.506v-7.0907h-10.415v-10.415h-7.0907zm-8.5385 0v-17.506h-7.0907v10.415h-10.415v7.0907zm0 8.5385h-17.506v7.0907h10.415v10.415h7.0907zm8.5385 0v17.506h7.0907v-10.415h10.415v-7.0907z"/>
         </svg>
@@ -336,18 +342,22 @@ pub fn offline(label: &str) -> String {
     "#)
 }
 
+/// This has a hardcoded "pause" class baked into the svg tag attributes
+/// because it is currently always used programmatically on the client side.
 pub fn pause(label: &str) -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg class="pause" height="1em" version="1.1" viewBox="0 0 64 64" width="1em" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m36.915 56.995v-49.985h15.592v49.985zm-25.421 0v-49.985h15.592v49.985z"/>
         </svg>
     "#)
 }
 
+/// This has a hardcoded "play" class baked into the svg tag attributes
+/// because it is currently always used programmatically on the client side.
 pub fn play(label: &str) -> String {
     formatdoc!(r#"
-        <svg width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg class="play" height="1em" version="1.1" viewBox="0 0 64 64" width="1em" xmlns="http://www.w3.org/2000/svg">
             <title>{label}</title>
             <path d="m11.116 59.677 45.476-26.453-45.544-28.093z"/>
         </svg>
@@ -390,14 +400,20 @@ pub fn processing(label: &str) -> String {
 
 /// An arrow marking a clockwise, circular trajectory from "3 o'clock" to "2
 /// o'clock".
-pub fn reload(label: Option<&str>) -> String {
+pub fn reload(class: Option<&str>, label: Option<&str>) -> String {
     let (aria_hidden, title) = match label {
         Some(label) => ("", format!("<title>{label}</title>")),
         None => (r#"aria-hidden="true""#, String::new())
     };
 
+    let class = if let Some(class) = class {
+        format!(r#"class="{class}""#)
+    } else {
+        String::new()
+    };
+
     formatdoc!(r#"
-        <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <svg {aria_hidden} {class} height="1em" version="1.1" viewBox="0 0 64 64" width="1em" xmlns="http://www.w3.org/2000/svg">
             {title}
             <path d="m32.062 8.0329c-13.198 0-23.967 10.769-23.967 23.967 0 13.198 10.769 23.967 23.967 23.967 13.198 0 23.967-10.769 23.967-23.967h-6.4321c0 9.7227-7.8125 17.535-17.535 17.535-9.7224 0-17.535-7.8125-17.535-17.535 0-9.7224 7.8125-17.535 17.535-17.535 4.8936 0 9.2973 1.9849 12.469 5.1913h-4.9652v5.3665h9.4185v0.04908h5.3665v-0.04908h0.03155v-5.3665h-0.03155v-9.4014h-5.3665v4.8179c-4.3409-4.3423-10.325-7.0403-16.923-7.0403z"/>
         </svg>
