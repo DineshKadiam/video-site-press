@@ -41,7 +41,7 @@ pub fn build(
         )
     };
 
-    if args.contains_id("sync-ftp") {
+    if args.get_flag("sync-ftp") {
         delegate_sync(SyncProtocol::Ftp)
     } else if args.get_flag("sync-ssh") {
         delegate_sync(SyncProtocol::Ssh)
