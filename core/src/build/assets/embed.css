@@ -238,13 +238,13 @@ path.loading_right {
 .player_controls .timeline * { cursor: pointer; }
 .player_controls .timeline .bar {
     bottom: 0;
-    height: .3rem;
+    height: .45rem;
     pointer-events: none;
     position: absolute;
 }
-.player_controls .timeline:hover .bar { height: .35rem; }
+.player_controls .timeline:hover .bar { height: .5rem; }
 .player_controls .timeline .bar.backdrop {
-    background: var(--d3);
+    background: var(--d1);
     width: 100%;
     z-index: 1;
 }
@@ -258,12 +258,32 @@ path.loading_right {
     width: 0;
     z-index: 3;
 }
+.player_controls .timeline .bar.progress::after {
+    background:
+        repeating-linear-gradient(
+            135deg,
+            var(--l2),
+            var(--l2) 1rem,
+            transparent 1rem,
+            transparent 2rem
+        );
+    background-size: 200% 200%;
+    content: '';
+    display: block;
+    height: 100%;
+    opacity: 0;
+    transition: opacity .5s ease;
+    width: 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .player_controls .timeline .bar.progress::after { animation: stripes 20s reverse linear infinite; }
+}
 .player_controls .timeline .bar.buffered {
     width: 100%;
     z-index: 2;
 }
 .player_controls .timeline .bar.buffered > div {
-    background: var(--m);
+    background: var(--dm);
     bottom: 0;
     position: absolute;
     top: 0;
@@ -327,6 +347,12 @@ path.loading_right {
 .player:not([data-state="intro"]) .player_intro { display: none; }
 .player:not([data-state="intro"]):not([data-state="paused"]) .toggle_playback .play { display: none; }
 .player:not([data-state="loading"]) .toggle_playback .loading { display: none; }
+.player[data-state="loading"] .player_controls .timeline .bar.progress::after { opacity: 1; }
+@keyframes stripes {
+    100% {
+        background-position: 100% 100%;
+    }
+}
 .player:not([data-state="loading"]):not([data-state="outro"]).hide_interface { cursor: none; }
 .player:not([data-state="loading"]):not([data-state="outro"]).hide_interface .player_controls { display: none; }
 .player:not([data-state="playing"]) .toggle_playback .pause { display: none; }

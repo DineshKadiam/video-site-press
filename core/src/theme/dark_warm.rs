@@ -18,6 +18,11 @@ const D3: Color = Color::Chromatic {
     oklch: (0.32, 0.005, 10)
 };
 
+const DM: Color = Color::Chromatic {
+    hsl: (354, 0.03, 0.27),
+    oklch: (0.387, 0.005, 10)
+};
+
 const L1: Color = Color::Gray {
     hsl_l: 1.0,
     oklch_l: 1.0
@@ -45,10 +50,7 @@ pub const DARK_WARM_VARS: ThemeVars = ThemeVars {
     b1: D1,
     b2: D2,
     b3: D3,
-    bm: Color::Chromatic {
-        hsl: (354, 0.03, 0.27),
-        oklch: (0.387, 0.005, 10)
-    },
+    bm: DM,
     d1: D1,
     d2: D2,
     d3: D3,
@@ -60,6 +62,7 @@ pub const DARK_WARM_VARS: ThemeVars = ThemeVars {
         hsl: (359, 0.57, 0.5),
         oklch: (0.56, 0.18, 24)
     },
+    dm: DM,
     f_create: Color::Chromatic {
         hsl: (157, 1.0, 0.36),
         oklch: (0.88, 0.25, 153)
