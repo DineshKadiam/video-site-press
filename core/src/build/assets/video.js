@@ -335,7 +335,9 @@ if (player) {
         if (seekState.initialSeek === undefined) {
             video.play();
         } else {
-            seek(seekState.initialSeek, true);
+            const initialSeek = seekState.initialSeek;
+            delete seekState.initialSeek;
+            seek(initialSeek, true);
         }
     }
 
@@ -400,6 +402,13 @@ if (player) {
 
     video.addEventListener('progress', () => {
         updateBufferedRange();
+    });
+
+    video.addEventListener('seeked', () => {
+        console.log('on seeked');
+        if (!video.paused) {
+            player.dataset.state = 'playing';
+        }
     });
 
     video.addEventListener('waiting', () => {
@@ -953,33 +962,21 @@ if (player) {
         }
     }
 
-    // Tries to seek directly to targetTime, or otherwise seeks to the
-    // closest point we can currently seek to instead. Returns true if we
-    // could directly seek to targetTime, otherwise false.
+    // Seeks directly to targetTime if it lies within an already seekable
+    // range and then returns true. Otherwise returns false.
     function trySeek(targetTime) {
-        let closestPossibleSeek = 0;
-
         const seekable = video.seekable;
 
         for (let index = 0; index < seekable.length; index++) {
-            if (seekable.start(index) <= targetTime) {
-                if (seekable.end(index) >= targetTime) {
-                    // We can directly seek to targetTime, so we do it and
-                    // return true to signal complete success
+            if (seekable.end(index) >= targetTime) {
+                if (seekable.start(index) <= targetTime) {
+                    console.log('trySeek can do', targetTime)
                     video.currentTime = targetTime;
                     return true;
                 } else {
-                    closestPossibleSeek = seekable.end(index);
+                    break;
                 }
-            } else {
-                break;
             }
-        }
-
-        // We can not yet seek directly to targetTime, but if we can seek
-        // at least a little closer to the targetTime, we do it here
-        if (video.currentTime !== closestPossibleSeek) {
-            video.currentTime = closestPossibleSeek;
         }
 
         return false;
