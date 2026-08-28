@@ -267,7 +267,7 @@ path.loading_right {
             transparent 1rem,
             transparent 2rem
         );
-    background-size: 200% 200%;
+    background-size: 2.8rem 2.8rem;
     content: '';
     display: block;
     height: 100%;
@@ -276,7 +276,10 @@ path.loading_right {
     width: 100%;
 }
 @media (prefers-reduced-motion: no-preference) {
-    .player_controls .timeline .bar.progress::after { animation: stripes 20s reverse linear infinite; }
+    .player_controls .timeline .bar.progress::after { animation: stripes 1s linear infinite; }
+}
+@keyframes stripes {
+    100% { background-position-x: 2.8rem; }
 }
 .player_controls .timeline .bar.buffered {
     width: 100%;
@@ -348,11 +351,6 @@ path.loading_right {
 .player:not([data-state="intro"]):not([data-state="paused"]) .toggle_playback .play { display: none; }
 .player:not([data-state="loading"]) .toggle_playback .loading { display: none; }
 .player[data-state="loading"] .player_controls .timeline .bar.progress::after { opacity: 1; }
-@keyframes stripes {
-    100% {
-        background-position: 100% 100%;
-    }
-}
 .player:not([data-state="loading"]):not([data-state="outro"]).hide_interface { cursor: none; }
 .player:not([data-state="loading"]):not([data-state="outro"]).hide_interface .player_controls { display: none; }
 .player:not([data-state="playing"]) .toggle_playback .pause { display: none; }
