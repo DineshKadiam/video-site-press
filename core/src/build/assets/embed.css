@@ -282,14 +282,9 @@ path.loading_right {
     100% { background-position-x: 2.8rem; }
 }
 .player_controls .timeline .bar.buffered {
-    width: 100%;
-    z-index: 2;
-}
-.player_controls .timeline .bar.buffered > div {
     background: var(--dm);
-    bottom: 0;
-    position: absolute;
-    top: 0;
+    width: 0;
+    z-index: 2;
 }
 .player_controls .timeline input {
     appearance: none;

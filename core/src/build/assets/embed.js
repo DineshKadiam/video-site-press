@@ -25,11 +25,14 @@ const video = document.querySelector('video');
 // Before we even begin playback video.duration is NaN, so we use our own data throughout
 const duration = parseFloat(video.dataset.duration);
 
-// The HTMLMediaElement buffered property is a TimeRanges interface
-// (see https://developer.mozilla.org/en-US/docs/Web/API/TimeRanges).
-// We use an interlaced array instead ([start, end, start, end]).
-let lastBuffered = [];
-let bufferedRangesUpdateInterval = null;
+let bufferedRangeUpdateInterval = null;
+// Although multiple, separate buffered ranges can exist for a video at
+// runtime, we only ever display the buffered range that overlaps and
+// expands rightwards from the current playback point. Leftwards of the
+// current playback point this range is always visually obscured by the
+// progress bar, so we only need to dynamically adjust the end of this
+// buffered range
+let lastBufferedRangeEnd = 0;
 
 let onPauseStateOverride = null;
 
@@ -111,10 +114,9 @@ function initializeVolume() {
         volume.interactive = true;
         updateVolume();
 
-        volumeProbe.removeEventListener('volumechange', volumeProbeHandler);
         volumeProbe = null;
     };
-    volumeProbe.addEventListener('volumechange', volumeProbeHandler);
+    volumeProbe.addEventListener('volumechange', volumeProbeHandler, { once: true });
     volumeProbe.volume = 0.123;
 }
 
@@ -129,6 +131,8 @@ function playbackUpdate(forcedTime = null) {
     timelineInput.setAttribute('aria-valuetext', timeFormatted);
     document.querySelector('.bar.progress').style.width = `${(time / duration) * 100}%`;
     document.querySelector('#time_current').innerHTML = timeFormatted;
+
+    updateBufferedRange();
 
     const { hideInterfaceBy } = player.dataset;
 
@@ -214,8 +218,6 @@ function activateVersionOption(option) {
 
         const lastTime = currentTime();
 
-        clearBufferedRanges();
-
         video.src = option.button.dataset.src;
 
         // Resets the element and rescans the available resources, thereby
@@ -225,8 +227,6 @@ function activateVersionOption(option) {
         // doesn't hurt to be explicit about this and give the runtime an
         // extra nudge.
         video.load();
-
-        trackBufferedRanges();
 
         seek(lastTime, lastPlaying);
 
@@ -252,21 +252,6 @@ cycleVersionButton.addEventListener('click', () => {
     const option = versionOptions[(activeVersionOptionIndex + 1) % versionOptions.length];
     activateVersionOption(option);
 });
-
-// Reset buffered video ranges cache, update interval and timeline markup
-// to its initial, idle state (without restarting the update interval).
-function clearBufferedRanges() {
-    if (bufferedRangesUpdateInterval !== null) {
-        clearInterval(bufferedRangesUpdateInterval);
-        bufferedRangesUpdateInterval = null;
-    }
-
-    lastBuffered = [];
-
-    const bufferedBar = document.querySelector('.bar.buffered');
-
-    bufferedBar.replaceChildren();
-}
 
 // While we seek we communicate the target time we are seeking to as the
 // current time, so the user knows their input was registered. Otherwise
@@ -318,6 +303,8 @@ function ensurePlayerInit() {
         // attribute) during playback.
         video.removeAttribute('poster');
 
+        bufferedRangeUpdateInterval = setInterval(updateBufferedRange, 500);
+
         playerInit = true;
     }
 }
@@ -337,7 +324,6 @@ function pause() {
 
 function play() {
     ensurePlayerInit();
-    trackBufferedRanges();
 
     if (seekState.seekTo === undefined) {
         video.play();
@@ -375,12 +361,9 @@ function togglePlayback() {
     }
 }
 
-function trackBufferedRanges() {
-    if (bufferedRangesUpdateInterval === null) {
-        updateBufferedRanges();
-        bufferedRangesUpdateInterval = setInterval(updateBufferedRanges, 500);
-    }
-}
+video.addEventListener('ended', () => {
+    player.dataset.state = 'outro';
+});
 
 video.addEventListener('pause', () => {
     if (onPauseStateOverride === null) {
@@ -404,11 +387,15 @@ video.addEventListener('play', () => {
     playbackUpdateInterval = setInterval(playbackUpdate, 80);
 });
 
-video.addEventListener('playing', event => {
+video.addEventListener('playing', () => {
     player.dataset.state = 'playing';
 });
 
-video.addEventListener('waiting', event => {
+video.addEventListener('progress', () => {
+    updateBufferedRange();
+});
+
+video.addEventListener('waiting', () => {
     player.dataset.state = 'loading';
 });
 
@@ -427,66 +414,35 @@ function toggleVolume() {
     localStorage.setItem('hyper8Volume', volume.value);
 }
 
-function updateBufferedRanges() {
+// Check if the end of the single buffered range we display¹ has
+// shifted, and if so update it in the DOM.
+//
+// ¹ The range that overlaps and expands rightwards from the current
+// playback point
+function updateBufferedRange() {
     const buffered = video.buffered;
 
-    // Check if the already buffered ranges have changed
+    let currentBufferedRangeEnd = 0;
 
-    let needsUpdate = false;
+    const current = currentTime();
 
-    if (buffered.length * 2 !== lastBuffered.length) {
-        needsUpdate = true;
-    } else {
-        for (let index = 0; index < buffered.length; index++) {
-            if (buffered.start(index) !== lastBuffered[index * 2] ||
-                buffered.end(index) !== lastBuffered[index * 2 + 1])
-            {
-                needsUpdate = true;
+    for (let index = 0; index < buffered.length; index++) {
+        const end = buffered.end(index);
+
+        if (end >= current) {
+            if (buffered.start(index) <= current) {
+                currentBufferedRangeEnd = end;
+            } else {
+                // This range already starts after the current video time,
+                // the others will too, we can return early
                 break;
             }
         }
     }
 
-    if (!needsUpdate) return;
-
-    // Perform an update if something has changed
-
-    lastBuffered = [];
-
-    const bufferedBar = document.querySelector('.bar.buffered');
-
-    for (let index = 0; index < buffered.length; index++) {
-        const start = buffered.start(index);
-        const end = buffered.end(index);
-
-        lastBuffered.push(start);
-        lastBuffered.push(end);
-
-        if (index >= bufferedBar.children.length) {
-            bufferedBar.appendChild(document.createElement('div'));
-        }
-
-        bufferedBar.children[index].style.left = `${(start / duration) * 100}%`;
-        bufferedBar.children[index].style.right = `${((duration - end) / duration) * 100}%`;
-    }
-
-    while (bufferedBar.children.length > buffered.length) {
-        bufferedBar.children[bufferedBar.children.length - 1].remove();
-    }
-
-    // If we have loaded practically the entire video, we stop the
-    // interval that updates the buffered areas. The final buffered area
-    // should always start at 0, but it will often (always?) end before
-    // the actual end of the video (likely at the last available frame).
-    // To account for this we grant 100ms leeway, which is more than
-    // the length of a sample in a 12fps video and yet so small that it
-    // will likely not visually register as a gap, even if we end our
-    // updates prematurely before even the last frame is buffered.
-    if (lastBuffered.length === 2 &&
-        lastBuffered[0] === 0 &&
-        Math.abs(duration - lastBuffered[1]) <= 0.1)
-    {
-        clearInterval(bufferedRangesUpdateInterval);
+    if (currentBufferedRangeEnd !== lastBufferedRangeEnd) {
+        document.querySelector('.bar.buffered').style.width = `${(currentBufferedRangeEnd / duration) * 100}%`;
+        lastBufferedRangeEnd = currentBufferedRangeEnd;
     }
 }
 
@@ -739,10 +695,6 @@ speedControl.addEventListener('wheel', event => {
 });
 
 togglePlaybackButton.addEventListener('click', togglePlayback);
-
-video.addEventListener('ended', () => {
-    player.dataset.state = 'outro';
-});
 
 video.addEventListener('click', togglePlayback);
 
