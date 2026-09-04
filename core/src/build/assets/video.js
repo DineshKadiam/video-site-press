@@ -370,6 +370,21 @@ if (player) {
         }
     }
 
+    video.addEventListener('click', () => {
+        revealControls();
+
+        // On touch devices the first touch event registered while the
+        // interface is hidden only serves to unhide the interface. The touch
+        // handler sets a flag in this case which we check and consume in the
+        // click handler, informing us to skip the playback toggle this one
+        // time.
+        if (window.inhibitPlaybackToggle) {
+            delete window.inhibitPlaybackToggle;
+        } else {
+            togglePlayback();
+        }
+    });
+
     video.addEventListener('ended', () => {
         player.dataset.state = 'outro';
     });
@@ -408,6 +423,20 @@ if (player) {
         console.log('on seeked');
         if (!video.paused) {
             player.dataset.state = 'playing';
+        }
+    });
+
+    video.addEventListener('touchstart', () => {
+        if (player.classList.contains('hide_interface')) {
+            // On touch devices the interface can not be unhidden by moving
+            // the mouse cursor (there is none), therefore the first touch
+            // event occuring while the interface is hidden is used as the
+            // trigger for unhiding the interface instead. To prevent this
+            // from additionally toggling video playback (which is otherwise
+            // the primary function of clicking) we register a one-shot
+            // override that is consumed by the click handler and tells it to
+            // not toggle playback this one time.
+            window.inhibitPlaybackToggle = true;
         }
     });
 
@@ -538,7 +567,9 @@ if (player) {
         });
     }
 
-    player.addEventListener('mousemove', revealControls);
+    player.addEventListener('mousemove', () => {
+        revealControls();
+    });
 
     // Unlisted videos are not included in the playlist listing in the player
     // outro screen, therefore there is no separate replay button for these
@@ -720,8 +751,6 @@ if (player) {
 
         toggleTranscriptButton.addEventListener('click', toggleTranscript);
     }
-
-    video.addEventListener('click', togglePlayback);
 
     window.addEventListener('keydown', event => {
         if (
