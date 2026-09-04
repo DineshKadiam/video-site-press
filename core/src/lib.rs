@@ -101,7 +101,11 @@ pub use site::{Site, SiteContent};
 pub use site_path::SitePath;
 pub use site_url::SiteUrl;
 pub use sort::{Asc, Comparison, Desc};
-pub use subtitle_file::SubtitleFile;
+pub use subtitle_file::{
+    SubtitleFile,
+    SubtitleFormat,
+    Subtitles
+};
 pub use sync::{
     FtpConfig,
     SshConfig,

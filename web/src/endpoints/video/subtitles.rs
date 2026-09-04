@@ -72,8 +72,8 @@ pub async fn subtitles(
 
             let attachment;
             let attachment_class;
-            if let Err(err) = &subtitle_file.subtitles {
-                attachment = format!(r#"<div>{err}</div>"#);
+            if let Some(error) = subtitle_file.subtitles.error() {
+                attachment = format!(r#"<div>{error}</div>"#);
                 attachment_class = "attachment attached_error";
             } else {
                 attachment = String::new();

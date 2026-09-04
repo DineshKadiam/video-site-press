@@ -100,12 +100,9 @@ pub async fn update_subtitles(
 
                     fs::write(&subtitle_file_path, content).unwrap();
 
-                    // TODO: Optimize by not reading the content back in from the file,
-                    //       instead using the in-memory content variable (needs some
-                    //       light refactoring).
                     subtitle_file.subtitles = SubtitleFile::parse_subtitles(
-                        &subtitle_file.file_name,
-                        &subtitle_file_path
+                        content,
+                        subtitle_file.format
                     );
 
                     video_mut.write_manifest(&context);

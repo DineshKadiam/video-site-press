@@ -31,6 +31,7 @@ use crate::{
     SitePath,
     SortDirection,
     SubtitleFile,
+    SubtitleFormat,
     VideoFile,
     VideoOrder
 };
@@ -502,6 +503,7 @@ impl Video {
                 "subtitle_file" |
                 "subtitles" => {
                     if let Some(attributes) = element.attributes() {
+                        let mut format = None;
                         let mut label = None;
                         let mut language = None;
                         let mut path = None;
@@ -513,7 +515,10 @@ impl Video {
                                         let absolute_path = manifest_path.parent().unwrap().join(value);
 
                                         if absolute_path.exists() {
-                                            if SubtitleFile::supported_extension(value) {
+                                            if let Some(extension) = Path::new(value).extension() &&
+                                                let Ok(derived_format) = SubtitleFormat::try_from(extension)
+                                            {
+                                                format = Some(derived_format);
                                                 path = Some(absolute_path);
                                             } else {
                                                 let message = format!("Please supply subtitles in .srt or .vtt format, other formats are not (yet) supported ({value}).");
@@ -564,7 +569,13 @@ impl Video {
                         }
 
                         if let Some(path) = path {
-                            let subtitles = SubtitleFile::from_manifest(label, language, path);
+                            let subtitles = SubtitleFile::from_manifest(
+                                format.unwrap(),
+                                label,
+                                language,
+                                path
+                            );
+
                             self.subtitle_files.push(subtitles);
                         } else {
                             let message = indoc!("
@@ -1280,11 +1291,17 @@ impl Video {
             video.poster = Some(poster_file);
         }
 
-        for path in &hyper_dir.subtitle_files {
+        for hyper_subtitle_file in &hyper_dir.subtitle_files {
+            let path = &hyper_subtitle_file.path;
+
             if !video.subtitle_files
                 .iter()
                 .any(|subtitle_file| *subtitle_file.file_name == *path.file_name().unwrap()) {
-                video.subtitle_files.push(SubtitleFile::from_path(path));
+                let format = hyper_subtitle_file.format;
+
+                let subtitle_file = SubtitleFile::from_path(format, path);
+
+                video.subtitle_files.push(subtitle_file);
             }
         }
 
@@ -1415,7 +1432,9 @@ impl Video {
     }
 
     pub fn valid_subtitles(&self) -> impl Iterator<Item = &SubtitleFile> {
-        self.subtitle_files.iter().filter(|subtitle_file| subtitle_file.subtitles.is_ok())
+        self.subtitle_files
+            .iter()
+            .filter(|subtitle_file| subtitle_file.subtitles.is_valid())
     }
 
     pub fn video_files_sorted_by_fidelity(&self, direction: SortDirection) -> Vec<VideoFile> {

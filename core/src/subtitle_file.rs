@@ -1,16 +1,18 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::ffi::OsStr;
 use std::fs;
+use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
 use language_tags::LanguageTag;
 use rsubs_lib::{SRT, VTT};
 
-use hyper8_util::nanoid;
+use hyper8_util::hash_closure;
 
 /// Represents a single "line" in a subtitles file
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Subtitle {
     pub start: Timecode,
     pub text: String,
@@ -20,19 +22,35 @@ pub struct Subtitle {
 pub struct SubtitleFile {
     pub explicitly_defined: bool,
     pub file_name: String,
-    /// Just a randomly generated unique id that is interpolated into the
-    /// target filenames during build.
-    pub id: String,
+    pub format: SubtitleFormat,
     pub label: String,
     /// Specified as BCP 47 code (e.g. 'en')
     /// (see e.g. https://www.rfc-editor.org/info/bcp47)
     pub language: Option<String>,
-    // Err() represents that the content of the subtitles file
-    // could not be parsed by us (including why).
-    pub subtitles: Result<Vec<Subtitle>, String>
+    pub subtitles: Subtitles
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum SubtitleFormat {
+    Srt,
+    Vtt
 }
 
 #[derive(Clone, Debug)]
+pub enum Subtitles {
+    Invalid {
+        // Why the subtitles file could not be parsed by us
+        error: String
+    },
+    Valid {
+        /// The hash of the adjacent Vec<Subtitle> representation of the
+        /// subtitles that were parsed from the file.
+        hash: String,
+        subtitles: Vec<Subtitle>
+    }
+}
+
+#[derive(Clone, Debug, Hash)]
 pub struct Timecode {
     pub hour: u8,
     pub millisecond: u16,
@@ -50,10 +68,9 @@ impl Subtitle {
 }
 
 impl SubtitleFile {
-    pub const SUPPORTED_EXTENSIONS: [&str; 2] = ["srt", "vtt"];
-
     /// Ensure the language is already validated when passing it here.
     pub fn from_manifest(
+        format: SubtitleFormat,
         label_option: Option<String>,
         language: Option<String>,
         path: PathBuf
@@ -64,18 +81,24 @@ impl SubtitleFile {
             path.file_stem().unwrap().to_string_lossy().to_string()
         );
 
-        let subtitles = SubtitleFile::parse_subtitles(&file_name, &path);
+        let content = fs::read_to_string(path).unwrap();
+
+        let subtitles = SubtitleFile::parse_subtitles(&content, format);
 
         SubtitleFile::new(
             true,
             file_name,
+            format,
             label,
             language,
             subtitles
         )
     }
 
-    pub fn from_path(path: &Path) -> SubtitleFile {
+    pub fn from_path(
+        format: SubtitleFormat,
+        path: &Path
+    ) -> SubtitleFile {
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
         let file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
@@ -87,11 +110,14 @@ impl SubtitleFile {
             false => None
         };
 
-        let subtitles = SubtitleFile::parse_subtitles(&file_name, &path);
+        let content = fs::read_to_string(path).unwrap();
+
+        let subtitles = SubtitleFile::parse_subtitles(&content, format);
 
         SubtitleFile::new(
             false,
             file_name,
+            format,
             file_stem,
             language,
             subtitles
@@ -101,86 +127,136 @@ impl SubtitleFile {
     pub fn new(
         explicitly_defined: bool,
         file_name: String,
+        format: SubtitleFormat,
         label: String,
         language: Option<String>,
-        subtitles: Result<Vec<Subtitle>, String>
+        subtitles: Subtitles
     ) -> SubtitleFile {
-        let id = nanoid();
-
         SubtitleFile {
             explicitly_defined,
             file_name,
-            id,
+            format,
             label,
             language,
             subtitles
         }
     }
 
-    pub fn parse_subtitles(file_name: &str, path: &Path) -> Result<Vec<Subtitle>, String> {
-        let content = fs::read_to_string(path).unwrap();
+    pub fn parse_subtitles(
+        content: &str,
+        format: SubtitleFormat
+    ) -> Subtitles {
+        match format {
+            SubtitleFormat::Srt => {
+                match SRT::parse(content) {
+                    Ok(srt) => {
+                        let subtitles = srt
+                            .lines
+                            .iter()
+                            .map(|srt_line| {
+                                let start = Timecode::new(
+                                    srt_line.start.hour(),
+                                    srt_line.start.millisecond(),
+                                    srt_line.start.minute(),
+                                    srt_line.start.second()
+                                );
 
-        if file_name.ends_with(".vtt") {
-            match VTT::parse(content) {
-                Ok(vtt) => {
-                    let subtitles = vtt
-                        .lines
-                        .iter()
-                        .map(|vtt_line| {
-                            let start = Timecode::new(
-                                vtt_line.start.hour(),
-                                vtt_line.start.millisecond(),
-                                vtt_line.start.minute(),
-                                vtt_line.start.second()
-                            );
+                                let text = srt_line.text.clone();
 
-                            let text = vtt_line.text.clone();
+                                Subtitle::new(start, text)
+                            })
+                            .collect::<Vec<Subtitle>>();
 
-                            Subtitle::new(start, text)
-                        })
-                        .collect::<Vec<Subtitle>>();
-
-                    Ok(subtitles)
+                        Subtitles::valid(subtitles)
+                    }
+                    Err(err) => {
+                        Subtitles::invalid(err)
+                    }
                 }
-                Err(err) => Err(err.to_string())
             }
-        } else if file_name.ends_with(".srt") {
-            match SRT::parse(content) {
-                Ok(srt) => {
-                    let subtitles = srt
-                        .lines
-                        .iter()
-                        .map(|srt_line| {
-                            let start = Timecode::new(
-                                srt_line.start.hour(),
-                                srt_line.start.millisecond(),
-                                srt_line.start.minute(),
-                                srt_line.start.second()
-                            );
+            SubtitleFormat::Vtt => {
+                match VTT::parse(content) {
+                    Ok(vtt) => {
+                        let subtitles = vtt
+                            .lines
+                            .iter()
+                            .map(|vtt_line| {
+                                let start = Timecode::new(
+                                    vtt_line.start.hour(),
+                                    vtt_line.start.millisecond(),
+                                    vtt_line.start.minute(),
+                                    vtt_line.start.second()
+                                );
 
-                            let text = srt_line.text.clone();
+                                let text = vtt_line.text.clone();
 
-                            Subtitle::new(start, text)
-                        })
-                        .collect::<Vec<Subtitle>>();
+                                Subtitle::new(start, text)
+                            })
+                            .collect::<Vec<Subtitle>>();
 
-                    Ok(subtitles)
+                        Subtitles::valid(subtitles)
+                    }
+                    Err(err) => {
+                        Subtitles::invalid(err)
+                    }
                 }
-                Err(err) => Err(err.to_string())
             }
+        }
+    }
+}
+
+impl TryFrom<&OsStr> for SubtitleFormat {
+    type Error = ();
+
+    fn try_from(extension: &OsStr) -> Result<SubtitleFormat, ()> {
+        if extension.eq_ignore_ascii_case("srt") {
+            Ok(SubtitleFormat::Srt)
+        } else if extension.eq_ignore_ascii_case("vtt") {
+            Ok(SubtitleFormat::Vtt)
         } else {
-            unreachable!()
+            Err(())
+        }
+    }
+}
+
+impl Subtitles {
+    pub fn error(&self) -> Option<&str> {
+        match self {
+            Subtitles::Invalid { error } => Some(error),
+            Subtitles::Valid { .. } => None
         }
     }
 
-    pub fn supported_extension(filename: &str) -> bool {
-        Path::new(filename).extension().is_some_and(|extension| {
-            SubtitleFile::SUPPORTED_EXTENSIONS
-                .iter()
-                .any(|supported_extension| {
-                    extension.eq_ignore_ascii_case(supported_extension)
-                })
-        })
+    /// Only call this on Subtitles::Valid { .. } instances, otherwise panics
+    pub fn hash_unchecked(&self) -> &str {
+        match self {
+            Subtitles::Invalid { .. } => unimplemented!(),
+            Subtitles::Valid { hash, .. } => hash
+        }
+    }
+
+    pub fn invalid(error: impl ToString) -> Subtitles {
+        let error = error.to_string();
+
+        Subtitles::Invalid {
+            error
+        }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        match self {
+            Subtitles::Invalid { .. } => false,
+            Subtitles::Valid { .. } => true
+        }
+    }
+
+    pub fn valid(subtitles: Vec<Subtitle>) -> Subtitles {
+        let hash = hash_closure(|hasher| subtitles.hash(hasher));
+
+        Subtitles::Valid {
+            hash,
+            subtitles
+        }
     }
 }
 

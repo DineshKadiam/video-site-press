@@ -13,6 +13,7 @@ use crate::{
     PlatformIntegrationMeta,
     Playlist,
     Site,
+    Subtitles,
     Video
 };
 use crate::build::{AssetHashes, Layout};
@@ -215,7 +216,7 @@ pub fn video_html(
         let mut content = String::new();
 
         for subtitle_file in video.valid_subtitles() {
-            if let Ok(subtitles) = &subtitle_file.subtitles {
+            if let Subtitles::Valid { subtitles, .. } = &subtitle_file.subtitles {
                 for subtitle in subtitles.iter() {
                     let start_display = subtitle.start.format_display();
                     let start_link = subtitle.start.format_link();

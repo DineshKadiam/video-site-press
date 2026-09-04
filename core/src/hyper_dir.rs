@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ use crate::{
     AudioFile,
     Context,
     SitePath,
-    SubtitleFile,
+    SubtitleFormat,
     VideoFile
 };
 use crate::util::{
@@ -31,9 +31,15 @@ pub struct HyperDir {
     pub path: PathBuf,
     pub playlist_manifest: Option<PathBuf>,
     pub site_manifest: Option<PathBuf>,
-    pub subtitle_files: Vec<PathBuf>,
+    pub subtitle_files: Vec<HyperSubtitleFile>,
     pub video_files: Vec<PathBuf>,
     pub video_manifest: Option<PathBuf>
+}
+
+#[derive(Debug)]
+pub struct HyperSubtitleFile {
+    pub format: SubtitleFormat,
+    pub path: PathBuf
 }
 
 impl HyperDir {
@@ -88,22 +94,40 @@ impl HyperDir {
                                     hyper_dir.video_manifest = Some(path.join("video.eno"));
                                 }
                                 file_name => {
-                                    if VideoFile::supported_extension(file_name) {
-                                        hyper_dir.video_files.push(dir_entry.path());
-                                    } else if supported_image_extension(file_name) {
-                                        hyper_dir.image_files.push(dir_entry.path());
-                                    } else if AudioFile::supported_extension(file_name) {
-                                        hyper_dir.audio_files.push(dir_entry.path());
-                                    } else if SubtitleFile::supported_extension(file_name) {
-                                        hyper_dir.subtitle_files.push(dir_entry.path());
-                                    } else if supported_font_extension(file_name) {
-                                        hyper_dir.font_files.push(dir_entry.path());
-                                    } else if file_name.ends_with(".eno") {
-                                        let error = format!("Ignoring unknown manifest type {} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)", file_name);
-                                        hyper_dir.errors.push(error);
-                                    } else {
-                                        let error = format!("Ignoring unsupported file {} (unsupported extension)", file_name);
-                                        hyper_dir.errors.push(error);
+                                    match Path::new(file_name).extension() {
+                                        Some(extension) => {
+                                            // TODO: Further refactor to directly check against
+                                            // extension everywhere instead of passing and
+                                            // disassembling filenames again and again?
+                                            if VideoFile::supported_extension(file_name) {
+                                                hyper_dir.video_files.push(dir_entry.path());
+                                            } else if supported_image_extension(file_name) {
+                                                hyper_dir.image_files.push(dir_entry.path());
+                                            } else if AudioFile::supported_extension(file_name) {
+                                                hyper_dir.audio_files.push(dir_entry.path());
+                                            } else if let Ok(format) = SubtitleFormat::try_from(extension) {
+                                                let path = dir_entry.path();
+
+                                                let subtitle_file = HyperSubtitleFile {
+                                                    format,
+                                                    path
+                                                };
+
+                                                hyper_dir.subtitle_files.push(subtitle_file);
+                                            } else if supported_font_extension(file_name) {
+                                                hyper_dir.font_files.push(dir_entry.path());
+                                            } else if extension.eq_ignore_ascii_case("eno") {
+                                                let error = format!("Ignoring unknown manifest type {file_name} (known manifests are collection.eno, playlist.eno, site.eno, video.eno)");
+                                                hyper_dir.errors.push(error);
+                                            } else {
+                                                let error = format!("Ignoring unsupported file {file_name} (unsupported extension {extension:?})");
+                                                hyper_dir.errors.push(error);
+                                            }
+                                        }
+                                        None => {
+                                            let error = format!("Ignoring file {file_name} without extension");
+                                            hyper_dir.errors.push(error);
+                                        }
                                     }
                                 }
                             }

@@ -106,7 +106,7 @@ pub fn player(
         subtitle_tracks = video
             .valid_subtitles()
             .map(|subtitle_file| {
-                let id = &subtitle_file.id;
+                let hash = subtitle_file.subtitles.hash_unchecked();
                 let label = html_escape_inside_attribute(&subtitle_file.label);
 
                 let srclang = match &subtitle_file.language {
@@ -119,7 +119,7 @@ pub fn player(
                     <track
                         kind="subtitles"
                         label="{label}"
-                        src="{video_prefix}{id}.vtt"
+                        src="{video_prefix}{hash}.vtt"
                         {srclang}/>
                 "#)
             })

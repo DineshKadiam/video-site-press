@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 use std::sync::Arc;
 
 use actix_session::Session;
@@ -16,6 +17,7 @@ use hyper8_core::{
     InfallibleResult,
     SitePath,
     SubtitleFile,
+    SubtitleFormat,
     Video,
     VideoUpdate
 };
@@ -47,7 +49,9 @@ pub async fn upload_subtitles(
     while let Some(mut field) = payload.try_next().await? {
         if let Some(content_disposition) = field.content_disposition() {
             if let Some(filename) = content_disposition.get_filename() {
-                if SubtitleFile::supported_extension(filename) {
+                if let Some(extension) = Path::new(filename).extension() &&
+                    let Ok(format) = SubtitleFormat::try_from(extension)
+                {
                     let mut candidate_filename = filename.to_string();
                     let mut storage_path = context.site_dir
                         .join(video.site_path.filesystem_relative())
@@ -71,7 +75,7 @@ pub async fn upload_subtitles(
                     }
 
                     let mutation = |video: &mut Video| -> InfallibleResult {
-                        video.subtitle_files.push(SubtitleFile::from_path(&storage_path));
+                        video.subtitle_files.push(SubtitleFile::from_path(format, &storage_path));
                         Ok(())
                     };
 

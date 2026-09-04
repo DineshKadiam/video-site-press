@@ -115,16 +115,17 @@ pub fn download_html(
         .valid_subtitles()
         .map(|subtitle_file| {
             let file_name = &subtitle_file.file_name;
-            let id = &subtitle_file.id;
+            let hash = subtitle_file.subtitles.hash_unchecked();
+
             let language = match &subtitle_file.language {
                 Some(language_code) => format!(r#"<div class="large_font">{language_code}</div>"#),
                 None => String::new()
             };
 
             let href = if subtitle_file.file_name.ends_with(".vtt") {
-                format!("../{id}.vtt")
+                format!("../{hash}.vtt")
             } else /* if subtitle_file.file_name.ends_with(".srt") */ {
-                format!("../{id}.srt")
+                format!("../{hash}.srt")
             };
 
             formatdoc!(r#"

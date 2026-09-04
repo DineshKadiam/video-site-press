@@ -100,9 +100,10 @@ pub fn edit_subtitles_page(
 
     let update_action = routes::video_edit_subtitles(file_name, video);
 
-    let error = match &subtitle_file.subtitles {
-        Ok(_) => String::new(),
-        Err(err) => format!(r#"<div class="error">{err}</div><br>"#)
+    let error = if let Some(error) = subtitle_file.subtitles.error() {
+        format!(r#"<div class="error">{error}</div><br>"#)
+    } else {
+        String::new()
     };
 
     let body = formatdoc!(r#"
