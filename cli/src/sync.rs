@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::io;
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use anstream::eprintln;
+use anstream::{eprint, eprintln};
 use chrono::DateTime;
 use chrono::offset::Local;
 
@@ -21,7 +22,6 @@ use hyper8_core::start_sync;
 use hyper8_translations::Translations;
 use hyper8_util::human_size_delta;
 
-use crate::prompt;
 use crate::style::{
     BLACK_ON_BRIGHT_YELLOW,
     BRIGHT_BLACK,
@@ -41,6 +41,26 @@ pub fn sync(
 ) -> ExitCode {
     let site = context.get_site();
 
+    if !simulate && !non_interactive {
+        let t_really_sync = translations.really_sync;
+        let base_url = &site.base_url.as_ref().unwrap().representation;
+        eprintln!("{t_really_sync} {BRIGHT_BLACK}{base_url}{BRIGHT_BLACK:#}");
+        eprint!("{BRIGHT_YELLOW}{}{BRIGHT_YELLOW:#} ", translations.type_y_and_press_enter_to_confirm_anything_else_will_abort);
+
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => {
+                if input.trim() != "y" {
+                    return ExitCode::SUCCESS;
+                }
+            }
+            Err(err) => {
+                eprintln!("{RED}{err}{RED:#}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+
     let prompted_password = match sync_config::ensure_config(
         non_interactive,
         protocol,
@@ -53,7 +73,6 @@ pub fn sync(
 
     match execute_sync_blocking_cli(
         context,
-        non_interactive,
         prompted_password.as_deref(),
         protocol,
         simulate,
@@ -73,24 +92,12 @@ pub fn sync(
 /// (opt-in) confirmation before executing a live sync.
 fn execute_sync_blocking_cli(
     context: &Arc<Context>,
-    non_interactive: bool,
     prompted_password: Option<&str>,
     protocol: SyncProtocol,
     simulate: bool,
     site: &Site,
     translations: &Translations
 ) -> Result<(), String> {
-    if !simulate && !non_interactive {
-        let t_really_sync = translations.really_sync;
-        let base_url = &site.base_url.as_ref().unwrap().representation;
-        eprintln!("{t_really_sync} {BRIGHT_BLACK}{base_url}{BRIGHT_BLACK:#}");
-        eprintln!("{BRIGHT_YELLOW}{}{BRIGHT_YELLOW:#}", translations.type_y_and_press_enter_to_confirm_anything_else_will_abort);
-
-        if !matches!(prompt::yes_no_confirmation(false), Ok(true)) {
-            return Ok(());
-        }
-    }
-
     start_sync(
         context,
         prompted_password,

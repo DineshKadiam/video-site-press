@@ -374,10 +374,10 @@ if (player) {
         revealControls();
 
         // On touch devices the first touch event registered while the
-        // interface is hidden only serves to unhide the interface. The touch
-        // handler sets a flag in this case which we check and consume in the
-        // click handler, informing us to skip the playback toggle this one
-        // time.
+        // interface is hidden only serves to unhide the interface. The
+        // touchstart handler sets a flag in this case which we check and
+        // consume in the click handler, informing us to skip the playback
+        // toggle this one time.
         if (window.inhibitPlaybackToggle) {
             delete window.inhibitPlaybackToggle;
         } else {
