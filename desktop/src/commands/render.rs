@@ -39,7 +39,7 @@ pub fn render(
         </button>
     "#);
 
-    let browse_icon = hyper8_icons::BROWSE;
+    let browse_icon = hyper8_icons::browse(None);
 
     let t_open_existing_site = translations.open_existing_site;
     let open_existing_site = formatdoc!(r#"

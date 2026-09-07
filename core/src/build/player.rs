@@ -130,10 +130,11 @@ pub fn player(
         let selector_options = video
             .valid_subtitles()
             .map(|subtitle_file| {
+                let hash = subtitle_file.subtitles.hash_unchecked();
                 let label = html_escape_outside_attribute(&subtitle_file.label);
 
                 formatdoc!(r#"
-                    <button>
+                    <button data-hash="{hash}">
                         <span class="active_marker_container">{active_marker_icon}</span> {label}
                     </button>
                 "#)

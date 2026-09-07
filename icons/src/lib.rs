@@ -20,12 +20,20 @@ pub const ATOM: &str = indoc!(r#"
     </svg>
 "#);
 
-/// A hierarchy graph, visualizing a root (circle) on the top, with a line going down and fanning out to the right for two children (also circles)
-pub const BROWSE: &str = indoc!(r#"
-    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-        <path d="m7.9572 9.8008c-3.0105 1.526e-4 -5.451 2.4406-5.4512 5.4512v16.641a1.4677 1.4677 0 0 0 2.8594 0.4668l3.4375-8.9434c1.5085-3.9238 5.2786-6.5117 9.4824-6.5117h32.555a1.1621 1.1621 0 0 0 1.1621-1.1621c-3.72e-4 -3.282-2.6614-5.9421-5.9434-5.9414zm13.41 13.488c-4.2038-1e-6 -7.9739 2.5879-9.4824 6.5117l-3.4375 8.9434-2.3496 6.9355a6.4491 6.4491 0 0 0 6.1074 8.5195h33.328c3.8963 0 7.3909-2.4004 8.7891-6.0371l6.8164-17.729c1.3241-3.4441-1.2184-7.1445-4.9082-7.1445z"/>
-    </svg>
-"#);
+/// An open folder
+pub fn browse(label: Option<&str>) -> String {
+    let (aria_hidden, title) = match label {
+        Some(label) => ("", format!("<title>{label}</title>")),
+        None => (r#"aria-hidden="true""#, String::new())
+    };
+
+    formatdoc!(r#"
+        <svg {aria_hidden} width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            {title}
+            <path d="m7.9572 9.8008c-3.0105 1.526e-4 -5.451 2.4406-5.4512 5.4512v16.641a1.4677 1.4677 0 0 0 2.8594 0.4668l3.4375-8.9434c1.5085-3.9238 5.2786-6.5117 9.4824-6.5117h32.555a1.1621 1.1621 0 0 0 1.1621-1.1621c-3.72e-4 -3.282-2.6614-5.9421-5.9434-5.9414zm13.41 13.488c-4.2038-1e-6 -7.9739 2.5879-9.4824 6.5117l-3.4375 8.9434-2.3496 6.9355a6.4491 6.4491 0 0 0 6.1074 8.5195h33.328c3.8963 0 7.3909-2.4004 8.7891-6.0371l6.8164-17.729c1.3241-3.4441-1.2184-7.1445-4.9082-7.1445z"/>
+        </svg>
+    "#)
+}
 
 /// A rightwards-facing, perfectly perpendicular chevron (like a closing angled bracket with a 90 degrees angle)
 pub const CHEVRON_RIGHT: &str = indoc!(r#"

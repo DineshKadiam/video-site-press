@@ -100,7 +100,7 @@ impl Layout {
         let navigation;
 
         if let Some(navigation_js_asset_hash) = &asset_hashes.navigation_js {
-            let browse_icon = hyper8_icons::BROWSE;
+            let browse_icon = hyper8_icons::browse(None);
             let close_icon = hyper8_icons::failure(translations.close);
             let search_icon = hyper8_icons::search(translations.search);
             let t_browse = translations.browse;

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
+use std::ptr;
 
 use indoc::formatdoc;
 
@@ -123,7 +124,9 @@ pub fn video_html(
         actions.push(toggle_playlist);
     }
 
-    if video.valid_subtitles().count() > 0 {
+    let valid_subtitles = video.valid_subtitles().collect::<Vec<_>>();
+
+    if !valid_subtitles.is_empty() {
         let t_transcript = translations.transcript;
         let subtitles_icon = hyper8_icons::subtitles(None);
         let toggle_transcript = formatdoc!(r#"
@@ -212,34 +215,83 @@ pub fn video_html(
         "#);
     }
 
-    if video.valid_subtitles().count() > 0 {
+    if !valid_subtitles.is_empty() {
         let mut content = String::new();
 
-        for subtitle_file in video.valid_subtitles() {
-            if let Subtitles::Valid { subtitles, .. } = &subtitle_file.subtitles {
-                for subtitle in subtitles.iter() {
-                    let start_display = subtitle.start.format_display();
-                    let start_link = subtitle.start.format_link();
-                    let text_escaped = html_escape_outside_attribute(&subtitle.text);
-                    let subtitle_html = formatdoc!(r#"
-                        <div>
-                            <span>{text_escaped}</span>
-                            <a href="{start_link}">{start_display}</a>
-                        </div>
-                    "#);
+        let active_subtitle = &valid_subtitles[0];
 
-                    content.push_str(&subtitle_html);
-                }
+        for subtitle_file in &valid_subtitles {
+            let mut file_subtitles = String::new();
+
+            let subtitles = match &subtitle_file.subtitles {
+                Subtitles::Invalid { .. } => unreachable!(),
+                Subtitles::Valid { subtitles, .. } => subtitles
+            };
+
+            for subtitle in subtitles.iter() {
+                let start_display = subtitle.start.format_display();
+                let start_link = subtitle.start.format_link();
+                let text_escaped = html_escape_outside_attribute(&subtitle.text);
+                let subtitle_html = formatdoc!(r#"
+                    <li>
+                        <a href="{start_link}">
+                            <span>{start_display}</span>
+                            <span>{text_escaped}</span>
+                        </a>
+                    </li>
+                "#);
+
+                file_subtitles.push_str(&subtitle_html);
             }
+
+            let class_active = if ptr::eq(subtitle_file, active_subtitle) {
+                r#"class="active""#
+            } else {
+                ""
+            };
+
+            let hash = subtitle_file.subtitles.hash_unchecked();
+
+            let file_subtitles = format!(
+                r#"<ul {class_active} data-hash="{hash}">{file_subtitles}</ul>"#
+            );
+
+            content.push_str(&file_subtitles);
         }
+
+        let track_switcher_button;
+        let track_switcher_choices;
+
+        if valid_subtitles.len() > 1 {
+            let choices = valid_subtitles
+                .iter()
+                .map(|subtitle_file| {
+                    let hash = subtitle_file.subtitles.hash_unchecked();
+                    let label = html_escape_outside_attribute(&subtitle_file.label);
+
+                    format!(r#"<button data-hash="{hash}">{label}</button>"#)
+                })
+                .collect::<Vec<_>>()
+                .join("");
+
+            let active_label = &active_subtitle.label;
+
+            track_switcher_button = format!(r#"<button class="switch">{active_label}</button>"#);
+            track_switcher_choices = format!(r#"<div class="switcher">{choices}</div>"#);
+        } else {
+            track_switcher_button = String::new();
+            track_switcher_choices = String::new();
+        };
 
         let t_filter = translations.filter;
         let transcript = formatdoc!(r#"
             <div class="transcript">
-                <input autocomplete="off" placeholder="{t_filter}" type="search">
-                <div class="entries">
-                    {content}
+                <div class="controls">
+                    <input autocomplete="off" placeholder="{t_filter}" type="search">
+                    {track_switcher_button}
                 </div>
+                {track_switcher_choices}
+                {content}
             </div>
         "#);
 

@@ -289,6 +289,7 @@ img {
     display: block;
     max-width: 100%;
 }
+input { font-size: inherit; }
 input[type="search"]::-webkit-search-cancel-button { display: none; }
 .large_font { font-size: 1.6rem; }
 .layout {
@@ -788,7 +789,6 @@ path.loading_right {
     bottom: 0;
     color: var(--f3);
     cursor: pointer;
-    font-size: 1em;
     left: 0;
     outline: none;
     position: absolute;
@@ -982,9 +982,23 @@ svg {
     container-type: size;
     display: flex;
     flex-direction: column;
-    font-size: .8rem;
+    font-size: .9rem;
     min-height: 25dvh;
     row-gap: 1.5em;
+}
+.transcript button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding-inline: .5em;
+}
+.transcript button:focus-visible,
+.transcript button:hover {
+    color: var(--f3);
+}
+.transcript .controls {
+    display: flex;
+    column-gap: .2rem;
 }
 .transcript input {
     background: var(--b2);
@@ -996,24 +1010,33 @@ svg {
     width: 100%;
 }
 .transcript input:focus { background: var(--b3); }
-.transcript > :nth-child(2) {
-    display: flex;
-    flex-direction: column;
+.transcript .switcher { text-align: center; }
+.transcript .switcher:not(.active) { display: none; }
+.transcript ul {
+    font-size: .8rem;
+    list-style: none;
+    margin: 0;
     max-height: 100%;
     overflow-y: auto;
-    row-gap: .3em;
+    padding: 0;
 }
-.transcript > :nth-child(2) > * {
-    align-items: center;
-    column-gap: .5em;
-    display: flex;
-    justify-content: space-between;
+.transcript ul:not(.active) { display: none; }
+.transcript a {
+    display: block;
+    padding: .3em .5em;
 }
-.transcript > :nth-child(2) a {
-    border-radius: .2rem;
+.transcript a:focus-visible,
+.transcript a:hover {
+    background: var(--b2);
+}
+.transcript a > span:nth-child(1) {
+    color: var(--f1);
     font-family: monospace;
-    font-size: .95em;
-    padding: .2em;
+    font-size: .9em;
+}
+.transcript a > span:nth-child(2) {
+    color: var(--f3);
+    margin-left: .3rem;
 }
 .thumbnail {
     aspect-ratio: var(--poster-aspect);

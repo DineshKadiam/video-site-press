@@ -1,6 +1,8 @@
 const player = document.querySelector('.player');
 const togglePlaylistButton = document.querySelector('#toggle_playlist');
-const toggleTranscriptButton = document.querySelector('#toggle_transcript');
+
+const transcriptContainer = document.querySelector('.transcript');
+const transcript = transcriptContainer ? {} : null;
 
 // If there are no media files, or if all of them have been restricted for
 // offline usage, we don't have a player on the page (only a video
@@ -418,7 +420,6 @@ if (player) {
     });
 
     video.addEventListener('seeked', () => {
-        console.log('on seeked');
         if (!video.paused) {
             player.dataset.state = 'playing';
         }
@@ -620,6 +621,12 @@ if (player) {
                 option.track.mode = 'showing';
             }
             activeSubtitleOption = option;
+
+            // Switch active transcript if there are multiple transcripts
+            // (and therefore a switch function present)
+            if (option.track && transcript?.switch) {
+                transcript.switch(option.button.dataset.hash);
+            }
         }
 
         for (const option of subtitleOptions) {
@@ -707,53 +714,96 @@ if (player) {
 
     togglePlaybackButton.addEventListener('click', togglePlayback);
 
-    // This signals that transcripts are present in general, in this case we
-    // register all connected handlers here
-    if (toggleTranscriptButton) {
+    // Register all transcript specific handlers
+    if (transcript) {
+        transcript.toggleButton = document.querySelector('#toggle_transcript');
+
+        const filterInput = transcriptContainer.querySelector('input');
+
         // Toggle transcript handler
 
         const videoLayout = document.querySelector('.video_layout');
 
         function toggleTranscript() {
             if (videoLayout.dataset.panel === 'transcript') {
-                toggleTranscriptButton.classList.remove('active');
+                transcript.toggleButton.classList.remove('active');
                 delete videoLayout.dataset.panel;
             } else {
                 if (togglePlaylistButton) {
                     togglePlaylistButton.classList.remove('active');
                 }
 
-                toggleTranscriptButton.classList.add('active');
+                transcript.toggleButton.classList.add('active');
                 videoLayout.dataset.panel = 'transcript';
             }
         }
 
-        toggleTranscriptButton.addEventListener('click', toggleTranscript);
+        transcript.toggleButton.addEventListener('click', toggleTranscript);
 
         // Filter transcript handler
 
-        const filterTranscriptInput = document.querySelector('.transcript input');
-
-        // Prevent this from being picked up by other, global keydown handlers
-        filterTranscriptInput.addEventListener('keydown', event => event.stopPropagation());
-        filterTranscriptInput.addEventListener('input', () => {
-            const query = filterTranscriptInput.value.trim();
-
-            const entries = document.querySelector('.transcript .entries')
+        function filter(ul) {
+            const query = filterInput.value.trim();
 
             if (query.length) {
                 const regexp = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 
-                for (const entry of entries.children) {
-                    const display = regexp.test(entry.children[0].textContent);
-                    entry.style.setProperty('display', display ? null : 'none');
+                for (const li of ul.children) {
+                    const textSpan = li.children[0].children[1];
+                    const display = regexp.test(textSpan.textContent);
+                    li.style.setProperty('display', display ? null : 'none');
                 }
             } else {
-                for (const entry of entries.children) {
-                    entry.style.setProperty('display', null);
+                for (const li of ul.children) {
+                    li.style.setProperty('display', null);
                 }
             }
+        }
+
+        // Prevent this from being picked up by other, global keydown handlers
+        filterInput.addEventListener('keydown', event => event.stopPropagation());
+        filterInput.addEventListener('input', () => {
+            filter(transcriptContainer.querySelector('ul.active'));
         });
+
+        // Switch transcript handlers (only if there are multiple )
+
+        const switcher = transcriptContainer.querySelector('.switcher');
+
+        if (switcher) {
+            transcript.switch = hash => {
+                for (const ul of transcriptContainer.querySelectorAll('ul')) {
+                    if (ul.dataset.hash === hash) {
+                        if (!ul.classList.contains('active')) {
+                            filter(ul);
+                            ul.classList.add('active');
+                        }
+                    } else {
+                        ul.classList.remove('active');
+                    }
+                }
+
+                for (const button of switcher.querySelectorAll('button')) {
+                    if (button.dataset.hash === hash) {
+                        switchButton.innerText = button.innerText;
+                        break;
+                    }
+                }
+            };
+
+            const switchButton = transcriptContainer.querySelector('button.switch');
+
+            switchButton.addEventListener('click', () => {
+                switcher.classList.toggle('active');
+            });
+
+            for (const button of switcher.querySelectorAll('button')) {
+                button.addEventListener('click', () => {
+                    switcher.classList.remove('active');
+                    transcript.switch(button.dataset.hash);
+                });
+            }
+        }
     }
 
     // Register global keyboard shortcut handlers:
@@ -1005,7 +1055,6 @@ if (player) {
         for (let index = 0; index < seekable.length; index++) {
             if (seekable.end(index) >= targetTime) {
                 if (seekable.start(index) <= targetTime) {
-                    console.log('trySeek can do', targetTime)
                     video.currentTime = targetTime;
                     return true;
                 } else {
@@ -1027,8 +1076,10 @@ if (player) {
 
     window.addEventListener('hashchange', event => {
         const params = parseHashParams();
+
         if (params) {
             if (params.time !== undefined) {
+                revealControls();
                 seek(params.time, true);
                 player.focus();
             }
@@ -1052,8 +1103,8 @@ if (togglePlaylistButton) {
             togglePlaylistButton.classList.remove('active');
             delete videoLayout.dataset.panel;
         } else {
-            if (toggleTranscriptButton) {
-                toggleTranscriptButton.classList.remove('active');
+            if (transcript) {
+                transcript.toggleButton.classList.remove('active');
             }
 
             sessionStorage.removeItem(hidePlaylistStorageKey);
