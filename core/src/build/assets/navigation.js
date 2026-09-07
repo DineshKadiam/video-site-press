@@ -1,7 +1,6 @@
 const chevronRightIcon = document.querySelector('#chevron_right_icon').content;
 
 const browseButton = document.querySelector('button.browse');
-const filterTranscriptInput = document.querySelector('.transcript input');
 
 const navigation = document.querySelector('header .navigation');
 
@@ -310,7 +309,7 @@ searchInput.addEventListener('input', () => {
     accessSiteTree(updateSearch);
 });
 
-function handleNavigationKeyInput() {
+function handleNavigationKeydown(event) {
     if (event.key === 'ArrowUp') {
         if (siteTree.classList.contains('open')) {
             const visibleResults = [...siteTreeElements.querySelectorAll('a.visible')];
@@ -359,6 +358,7 @@ function handleNavigationKeyInput() {
             siteTree.classList.remove('open');
             delete siteTreeElements.dataset.mode;
             browseButton.focus();
+            event.preventDefault();
         }
     } else if (event.key === ' ') {
         if (event.target.classList.contains('container')) {
@@ -379,10 +379,13 @@ function handleNavigationKeyInput() {
             event.preventDefault();
         }
     }
+
+    // Prevent this from being picked up by other, global keydown handlers
+    event.stopPropagation();
 }
 
-navigation.addEventListener('keydown', handleNavigationKeyInput);
-siteTree.addEventListener('keydown', handleNavigationKeyInput);
+navigation.addEventListener('keydown', handleNavigationKeydown);
+siteTree.addEventListener('keydown', handleNavigationKeydown);
 
 // siteTreeElement is usually a collection or playlist that is to be collapsed
 // or expanded, but can also be a video if the intent is to collapse its
@@ -430,9 +433,14 @@ function collapseExpand(siteTreeElement, expand = undefined) {
     visitContainer(siteContent);
 }
 
+// Register global keyboard shortcut handlers:
+// - [b] Browse
+// - [s] Search
 window.addEventListener('keydown', event => {
-    if (event.target === searchInput ||
-        event.target === filterTranscriptInput) return;
+    // Avoid conflicts with browser/system shortcuts where possible
+    if (event.altKey || event.ctrlKey) {
+        return;
+    }
 
     if (event.key === 'b' || event.key === 'B') {
         browseButton.focus();

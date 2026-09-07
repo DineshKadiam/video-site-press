@@ -12,13 +12,11 @@ if (player) {
     const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
 
     const cycleVersionButton = document.querySelector('#cycle_versions');
-    const filterTranscriptInput = document.querySelector('.transcript input');
     const playbackCycleVolumeButton = document.querySelector('.left_playback_controls .cycle_volume');
     const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
     const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
     const playerControls = document.querySelector('.player_controls');
     const replayButton = document.querySelector('#replay');
-    const searchContainer = document.querySelector('.search');
     const speedControl = document.querySelector('#speed');
     const speedMultiplier = document.querySelector('#speed .multiplier');
     const timeline = document.querySelector('.timeline');
@@ -642,29 +640,6 @@ if (player) {
         playbackCycleSubtitlesButton.addEventListener('click', cycleSubtitles);
     }
 
-    // Filter transcript handler
-
-    if (filterTranscriptInput) {
-        filterTranscriptInput.addEventListener('input', () => {
-            const query = filterTranscriptInput.value.trim();
-
-            const entries = document.querySelector('.transcript .entries')
-
-            if (query.length) {
-                const regexp = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-
-                for (const entry of entries.children) {
-                    const display = regexp.test(entry.children[0].textContent);
-                    entry.style.setProperty('display', display ? null : 'none');
-                }
-            } else {
-                for (const entry of entries.children) {
-                    entry.style.setProperty('display', null);
-                }
-            }
-        });
-    }
-
     // Speed button handlers
 
     function updateSpeed() {
@@ -732,7 +707,11 @@ if (player) {
 
     togglePlaybackButton.addEventListener('click', togglePlayback);
 
+    // This signals that transcripts are present in general, in this case we
+    // register all connected handlers here
     if (toggleTranscriptButton) {
+        // Toggle transcript handler
+
         const videoLayout = document.querySelector('.video_layout');
 
         function toggleTranscript() {
@@ -750,15 +729,42 @@ if (player) {
         }
 
         toggleTranscriptButton.addEventListener('click', toggleTranscript);
+
+        // Filter transcript handler
+
+        const filterTranscriptInput = document.querySelector('.transcript input');
+
+        // Prevent this from being picked up by other, global keydown handlers
+        filterTranscriptInput.addEventListener('keydown', event => event.stopPropagation());
+        filterTranscriptInput.addEventListener('input', () => {
+            const query = filterTranscriptInput.value.trim();
+
+            const entries = document.querySelector('.transcript .entries')
+
+            if (query.length) {
+                const regexp = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+                for (const entry of entries.children) {
+                    const display = regexp.test(entry.children[0].textContent);
+                    entry.style.setProperty('display', display ? null : 'none');
+                }
+            } else {
+                for (const entry of entries.children) {
+                    entry.style.setProperty('display', null);
+                }
+            }
+        });
     }
 
+    // Register global keyboard shortcut handlers:
+    // - [arrow left] Seek backwards
+    // - [arrow right] Seek forwards
+    // - [f] Toggle fullscreen
+    // - [m] Mute/unmute
+    // - [space] Play/pause
     window.addEventListener('keydown', event => {
-        if (
-            searchContainer?.contains(event.target) ||
-            event.target === filterTranscriptInput ||
-            event.altKey ||
-            event.ctrlKey
-        ) {
+        // Avoid conflicts with browser/system shortcuts where possible
+        if (event.altKey || event.ctrlKey) {
             return;
         }
 
