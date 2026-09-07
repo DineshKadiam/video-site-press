@@ -21,6 +21,7 @@ Thanks everyone for your support!
 [Camille](https://social.praxis.nyc/@camille)<br>
 [Christian Pacaud](https://www.christianpacaud.com/)<br>
 [Dave Riedstra](https://daveriedstra.com/)<br>
+[Deborah Pickett](https://icemoonprison.com)<br>
 [dec23k](https://mastodon.ie/@dec23k)<br>
 [dérive](https://derive.at)<br>
 [DURAD](https://durad.xyz)<br>
