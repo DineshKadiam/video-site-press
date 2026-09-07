@@ -1066,7 +1066,7 @@ impl Playlist {
         if let Some(description) = &self.description {
             if !eno.is_empty() { eno.push('\n'); }
             let embed_sequence = enolib::escaped_embed_sequence("description", description);
-            eno.push_str(&format!("-- {embed_sequence}\n{description}\n-- {embed_sequence}\n"));
+            eno.push_str(&format!("{embed_sequence}\n{description}\n{embed_sequence}\n"));
         }
 
         let path = context.site_dir
