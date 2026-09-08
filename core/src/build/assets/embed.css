@@ -69,7 +69,7 @@ img {
 .outro_playlist_context > a,
 .outro_playlist_context > button {
     align-items: center;
-    border-radius: .3rem;
+    border-radius: calc(var(--r) * .35rem);
     column-gap: 1rem;
     display: flex;
     min-height: 2rem;
@@ -108,7 +108,7 @@ img {
 .outro_playlist_context img {
     aspect-ratio: var(--poster-aspect);
     background: var(--d1);
-    border-radius: .3rem;
+    border-radius: calc(var(--r) * .35rem);
     display: block;
     flex-shrink: 0;
     height: 4rem;
@@ -321,7 +321,7 @@ path.loading_right {
 }
 .player {
     background: #000;
-    border-radius: .5rem;
+    border-radius: calc(var(--r) * .6rem);
     color: var(--l2);
     position: relative;
 }
@@ -459,7 +459,7 @@ svg {
 }
 .versions_ring.interacting g:not(:focus-visible):not(:hover) { opacity: .5; }
 video {
-    border-radius: .5rem;
+    border-radius: calc(var(--r) * .6rem);
     display: block;
     height: 100%;
     width: 100%;

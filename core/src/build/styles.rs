@@ -95,9 +95,12 @@ pub fn generate_embed_css(asset_hashes: &mut AssetHashes, context: &Context, sit
 
     let poster_aspect = site.poster_aspect.numeric();
 
+    let r = site.roundness();
+
     let css = formatdoc!(r#"
-        :root {{
+        body {{
             --poster-aspect: {poster_aspect};
+            --r: {r};
         }}
         {fonts_css}
         {theme_vars}
@@ -193,9 +196,12 @@ pub fn generate_site_css(asset_hashes: &mut AssetHashes, context: &Context, site
 
     let poster_aspect = site.poster_aspect.numeric();
 
+    let r = site.roundness();
+
     let css = formatdoc!(r#"
-        :root {{
+        body {{
             --poster-aspect: {poster_aspect};
+            --r: {r};
         }}
         {fonts_css}
         {theme_vars}

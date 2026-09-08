@@ -17,6 +17,7 @@ use crate::{
     HyperDir,
     InheritedOptions,
     Language,
+    Percent,
     Playlist,
     SitePath,
     SiteUrl,
@@ -35,6 +36,7 @@ const SITE_OPTIONS: &[&str] = &[
     "ftp_config",
     "language",
     "poster_aspect",
+    "roundness",
     "ssh_config",
     "theme"
 ];
@@ -52,6 +54,7 @@ pub struct Site {
     /// its manifest while such errors are present.
     pub manifest_errors: Vec<String>,
     pub poster_aspect: AspectRatio,
+    pub roundness: Option<Percent>,
     pub ssh_config: SshConfig,
     pub theme: Theme
 }
@@ -304,6 +307,24 @@ impl Site {
                         }
                     } else {
                         let message = "poster_aspect needs to be provided as a field with a value, e.g.: 'poster_aspect: 16:9'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "roundness" => {
+                    if let Some(value) = element.field_value() {
+                        match Percent::try_from(value) {
+                            Ok(percent) => {
+                                self.roundness = Some(percent);
+                            }
+                            Err(()) => {
+                                let message = format!("The roundness value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        };
+                    } else {
+                        let message = "roundness needs to be provided as a field with a value, e.g.: 'roundness: 100%'";
                         let error = element_error(element, manifest_path, message);
                         self.manifest_errors.push(error);
                     }
@@ -575,6 +596,7 @@ impl Site {
             language: Language::default(),
             manifest_errors: Vec::new(),
             poster_aspect: AspectRatio::Default,
+            roundness: None,
             ssh_config: SshConfig::new(),
             theme: Theme::default()
         }
@@ -652,6 +674,13 @@ impl Site {
         }
     }
 
+    /// Default roundness is 80% (0.8)
+    pub fn roundness(&self) -> f32 {
+        self.roundness
+            .map(|roundness| roundness.as_factor())
+            .unwrap_or(0.8)
+    }
+
     pub fn title(&self) -> &str {
         match &self.content {
             SiteContent::Collection(collection) => collection.title.as_deref().unwrap_or("Hyper 8"),
@@ -688,6 +717,11 @@ impl Site {
 
         if let AspectRatio::Custom { representation, .. } = &self.poster_aspect {
             eno.push_str(&format!("poster_aspect: {}\n", representation));
+        }
+
+        if let Some(roundness) = &self.roundness {
+            let roundness: String = roundness.into();
+            eno.push_str(&format!("roundness: {roundness}\n"));
         }
 
         eno.push_str(&format!("theme: {}\n", self.theme.key()));

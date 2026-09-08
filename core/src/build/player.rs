@@ -225,6 +225,7 @@ pub fn player(
     let versions_ring_rendered = versions_ring(
         default_streamable_audio_file,
         default_streamable_video_file,
+        site.roundness(),
         translations,
         video,
         video_prefix
@@ -517,6 +518,7 @@ fn toggle_playback_icons(translations: &Translations) -> String {
 fn versions_ring(
     default_streamable_audio_file: Option<&AudioFile>,
     default_streamable_video_file: Option<&VideoFile>,
+    roundness: f32,
     translations: &Translations,
     video: &Video,
     video_prefix: &str
@@ -640,6 +642,8 @@ fn versions_ring(
             String::new()
         };
 
+        let rx = roundness * 6.0;
+
         formatdoc!(r#"
             <g
                 data-label="{label}"
@@ -648,7 +652,7 @@ fn versions_ring(
                 <title>{label} {size}</title>
                 {play_button}
                 {slice}
-                <rect class="backdrop" filter="url(#text_shadow)" rx="5"/>
+                <rect class="backdrop" filter="url(#text_shadow)" rx="{rx}"/>
                 <text text-anchor="middle" x="{text_x}" y="{text_label_y}">
                     {label}
                 </text>

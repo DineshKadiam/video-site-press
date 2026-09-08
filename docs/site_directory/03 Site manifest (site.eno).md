@@ -32,6 +32,7 @@ Jump links for all options:
 - [ftp_config](#ftp_config)
 - [language](#language)
 - [poster_aspect](#poster_aspect)
+- [roundness](#roundness)
 - [ssh_config](#ssh_config)
 - [theme](#theme)
 
@@ -122,6 +123,23 @@ for instance `9:16` for exclusively mobile video content.
 ```eno
 poster_aspect: 16:9
 ```
+
+## <a name="roundness"></a> `roundness` **EXPERIMENTAL**
+
+*This feature is experimental – feel free to try it out, but keep in mind that
+it might get changed, renamed or removed without notice in any upcoming
+release, until stabilized*
+
+```eno
+roundness: 16%
+```
+
+Roundness controls how rounded or angular your site looks and feels. It rounds
+or sharpens corners on various interface elements, most notably the video
+player, video thumbnails and buttons.
+
+`roundness` accepts a percent value between `0%` and `100%` (the percent sign
+is optional), and its default is `80%`.
 
 ## <a name="ssh_config"></a> `ssh_config`
 
