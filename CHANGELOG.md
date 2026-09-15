@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024-2025 Simon Repp
+    SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -7,6 +7,93 @@
 
 Rich release notes including screenshots, videos and detailed commit information are also available at:
 https://hyper8.org/changes/
+
+## 1.1.0
+
+Released September 15, 2026
+
+### Communicate video load state in player
+
+- Indicate video loading state through the playback button/icon ([`404efe3`](https://codeberg.org/simonrepp/hyper8/commit/404efe366a24d328451b218516ae58955af17175))
+- Visualize buffered time ranges in player timeline ([`f2f20ab`](https://codeberg.org/simonrepp/hyper8/commit/f2f20ab3473ceab4fe90eaf91754b79c91c5151e))
+- Implement proper, predictable and async-capable seek interaction handling ([`7a30194`](https://codeberg.org/simonrepp/hyper8/commit/7a30194ebf30e4576f256f759b552d706cca3007))
+- Indicate loading through animated progress bar, refine timeline look and feel ([`8355be2`](https://codeberg.org/simonrepp/hyper8/commit/8355be22784e163cb608bd282ba318a03ced4200))
+- Do not perform intermediate seeks, resume playing state after waiting on seek ([`dbfa469`](https://codeberg.org/simonrepp/hyper8/commit/dbfa469ef01165f986043df743e8d5edc40ca632))
+- Only visualize the buffered range directly ahead of the playback head ([`ddf76ef`](https://codeberg.org/simonrepp/hyper8/commit/ddf76ef81cbed181f365ef9e672ca09d608f771e))
+- Prevent animation jitter when hovering the timeline in loading state ([`c6d6d31`](https://codeberg.org/simonrepp/hyper8/commit/c6d6d318a4e8e86e9f2f6a735926833c57cf6082))
+
+### Introduce bespoke, built-in SSH-based deployment
+
+- Introduce bespoke, built-in SSH-based deployment ([`0b67442`](https://codeberg.org/simonrepp/hyper8/commit/0b67442e948227335a22bd86266ffd156cd5e9ed))
+- Support simple SSH agent authentication for deployment, extend deployment docs ([`2586836`](https://codeberg.org/simonrepp/hyper8/commit/2586836c81ee2fa9094fa4d58c8b873929a87f4f))
+- Support SSH keyfile-based authentication ([`b8649b7`](https://codeberg.org/simonrepp/hyper8/commit/b8649b787871c3d1d504c7626e1162a1c5612269))
+- Support on-demand password provision for SSH sync
+  * Support on-demand password provision for sync, adopt --non-interactive flag ([`6add5d3`](https://codeberg.org/simonrepp/hyper8/commit/6add5d3ef8eface7cc1f3181a1d4e5b76b776a45))
+
+### Deployment UX improvements
+
+- Support on-demand password provision for FTP/FTPS sync
+  * Support on-demand password provision for sync, adopt --non-interactive flag ([`6add5d3`](https://codeberg.org/simonrepp/hyper8/commit/6add5d3ef8eface7cc1f3181a1d4e5b76b776a45))
+- Allow user to choose between FTP and SSH for each deployment in editor and CLI ([`f161302`](https://codeberg.org/simonrepp/hyper8/commit/f16130229a4a51f794df70366ae0f72587f43d08))
+- Enable users to run simulated deployments from editor and CLI ([`44d8535`](https://codeberg.org/simonrepp/hyper8/commit/44d8535c04b3363d7339fcd7653efc9851827048))
+- Enable users to run on-demand deployment/server configuration checks ([`d0adad1`](https://codeberg.org/simonrepp/hyper8/commit/d0adad1250a33db2d38edbd98c064f7f31b8d34c))
+- Improve and refine deployment design/layout, info and localized messages ([`99ac9f3`](https://codeberg.org/simonrepp/hyper8/commit/99ac9f3727643137b1c98b5eb0f0c0435d2bcd37))
+- Use unambiguous --sync-ftp/-ssh flags and flow, update/improve CLI docs
+  * Use unambiguous --deploy-ftp/-ssh flags and flow, update/improve CLI docs ([`e6abd9b`](https://codeberg.org/simonrepp/hyper8/commit/e6abd9be151036c73506fb77fa535432bc0b8f4f))
+  * Decouple build and sync in CLI, fully adopt new sync terminology/naming ([`99d0db4`](https://codeberg.org/simonrepp/hyper8/commit/99d0db4bd1147be049fa56e86369b253503d65c8))
+  * Replace wrong argument presence check method ([`22067f3`](https://codeberg.org/simonrepp/hyper8/commit/22067f3e1c57d074682b004a2073539903ad4a48))
+- Add --non-interactive option for disabling confirmations in script-based sync invocations
+  * Add --no-confirm option for non-interactive live deployment in scripted flows ([`3ace97d`](https://codeberg.org/simonrepp/hyper8/commit/3ace97d276b870581161a36adf43633efee3da66))
+  * Support on-demand password provision for sync, adopt --non-interactive flag ([`6add5d3`](https://codeberg.org/simonrepp/hyper8/commit/6add5d3ef8eface7cc1f3181a1d4e5b76b776a45))
+- Extend live deployment feedback with detailed event info and clearer visuals
+  * Extend live deployment feedback with detailed event info and clearer visuals ([`ba863da`](https://codeberg.org/simonrepp/hyper8/commit/ba863da737cf8c14b4985cff6b6228ca817984e9))
+  * Fix flipped sync action size delta computation ([`05a920f`](https://codeberg.org/simonrepp/hyper8/commit/05a920fe628177fb47e7703bd9b854d0ece982a2))
+- Decouple build and sync in CLI
+  * Decouple build and sync in CLI, fully adopt new sync terminology/naming ([`99d0db4`](https://codeberg.org/simonrepp/hyper8/commit/99d0db4bd1147be049fa56e86369b253503d65c8))
+- Prompt sync confirmation before password, use less accident-prone confirmation ([`bdf405f`](https://codeberg.org/simonrepp/hyper8/commit/bdf405ff9ead2ac68247616240b80f9adb533a29))
+
+### Linkable anchors for playlists/subcollections
+
+- Provide discoverable anchors for playlists/subcollections on collection pages ([`f29d750`](https://codeberg.org/simonrepp/hyper8/commit/f29d7501e1a789f28d6c19781ba3f2336b1cf808))
+
+### Video player improvements
+
+- Allow unhiding the interface by touch without invoking pause on touch devices ([`32f5c8c`](https://codeberg.org/simonrepp/hyper8/commit/32f5c8c8ded5e165ae8f3d00054bdcd46e1abca7))
+- Explicitly hide cursor over player after idle timeout, also outside fullscreen ([`8694e72`](https://codeberg.org/simonrepp/hyper8/commit/8694e72fe9a4663b06311a4dcb8e418fe096c1eb)) (with [Kristoffer Lislegaard](https://kristofferlislegaard.com/))
+- Request lazy loading and high fetch priority for video posters ([`ed52375`](https://codeberg.org/simonrepp/hyper8/commit/ed52375b6c59d045a35cbc7391aae7f6934775c6))
+
+### Misc
+
+- Use stable hashes as generated subtitle filenames
+  * Use stable hashes as generated subtitle filenames, partially refactor/optimize ([`d169c02`](https://codeberg.org/simonrepp/hyper8/commit/d169c0251c066f0e07f3c99b704479027fd49353))
+- Ensure all read bits are set when linking/copying files to build on unix ([`57df44f`](https://codeberg.org/simonrepp/hyper8/commit/57df44fd399271910cc9a98aaa6d6d2b24311e2b)) (with [Kristoffer Lislegaard](https://kristofferlislegaard.com/))
+- Integrate fallback range for port auto-selection (with [jowerner](https://codeberg.org/jowerner), [Groza Dănuț](https://grozadanut.eu/))
+  * Integrate fallback range for port auto-selection, encapsulate/reuse defaults ([`6817a68`](https://codeberg.org/simonrepp/hyper8/commit/6817a686c1252f2f703d23415b4071dae7fcf5fb))
+- Migrate to hyper8.org ([`0b97ca9`](https://codeberg.org/simonrepp/hyper8/commit/0b97ca995f8e7481f5fdc8315d250504b6f7f935))
+- Gracefully handle filesystem-related errors during build instead of panicking ([`43a80d5`](https://codeberg.org/simonrepp/hyper8/commit/43a80d5613e24a199dc0f00f35aef6c563ad34e7))
+- Ensure version information only uses unambiguously interpretable source data
+  * Switch to unambiguous version detection, refine release notes link derivation ([`d58f7e3`](https://codeberg.org/simonrepp/hyper8/commit/d58f7e3342ffde170cba19d78b4f8633b860d8c4))
+  * Trim retrieved git output in version build script ([`06be9ae`](https://codeberg.org/simonrepp/hyper8/commit/06be9ae91946c081db4e92a6db616bf0616a56d1))
+- Update dependencies, raise MSRV to 1.88
+  * Switch to Rust 2024 edition, raise MSRV to 1.86, update most dependencies ([`4818e48`](https://codeberg.org/simonrepp/hyper8/commit/4818e482d4bc540612055bab9654ad0e8fb0f381))
+  * Update all dependencies to latest, adapt enolib interactions for latest api ([`0ab9766`](https://codeberg.org/simonrepp/hyper8/commit/0ab97669d805b7bc21117d04827b5f952b7999fd))
+  * Add missing enolib api adaptations for desktop crate target ([`96c56d6`](https://codeberg.org/simonrepp/hyper8/commit/96c56d665f8c10239d03b62ff545eba9cc8cc37a))
+- Make desktop application the default run target ([`66c75ce`](https://codeberg.org/simonrepp/hyper8/commit/66c75ce62cbe1e9c91655dc09e61bdca802bd8f8))
+
+### Fixes
+
+- Manually ensure site-dir argument when using the CLI from the desktop edition ([`e166c95`](https://codeberg.org/simonrepp/hyper8/commit/e166c959733729ad2ca27844f51c1e2a386f114d))
+- Fix and improve error messages returned by config probe routine (with [Dave Riedstra](https://daveriedstra.com))
+  * Escape arbitrary error page messages in editor, introduce util crate ([`a65cf53`](https://codeberg.org/simonrepp/hyper8/commit/a65cf535ec9cbd2f2c24aae36f65a8afd1d1e44d))
+  * Fix flipped arguments in config probe verification failure message ([`f0e82dc`](https://codeberg.org/simonrepp/hyper8/commit/f0e82dcfb9b5bf6d663d7d2649ebe4767f8cb480))
+  * Provide longer context on config probe errors, fix remaining flipped arguments ([`b88e805`](https://codeberg.org/simonrepp/hyper8/commit/b88e805922cd3280548532539691285201682355))
+- Fix inactive shortcuts help link on sites built without navigation
+  * Extract and unconditionally include shortcuts script as stand-alone asset ([`46dbd44`](https://codeberg.org/simonrepp/hyper8/commit/46dbd4472bfe1c03f5b6b2cb2b1c989ab74a19a7))
+- Gracefully propagate port auto-selection failures in desktop application ([`db389bd`](https://codeberg.org/simonrepp/hyper8/commit/db389bd45900715af3cf65128619795ffd3237ae)) (with [jowerner](https://codeberg.org/jowerner), [Groza Dănuț](https://grozadanut.eu/))
+- Remove outdated pre-1.0 notices in video manifest docs ([`f48631e`](https://codeberg.org/simonrepp/hyper8/commit/f48631ec70a2f542eaee331b8a36bef900960933)) (with [Kristoffer Lislegaard](https://kristofferlislegaard.com/))
+- Escape embed keys when writing manifests
+  * Escape embed keys when writing manifests ([`b6ba170`](https://codeberg.org/simonrepp/hyper8/commit/b6ba17019f39879fa94c46624a674c76eeb07b7c))
+  * Fix accidentally introduced double dash sequence when writing embeds ([`a768b89`](https://codeberg.org/simonrepp/hyper8/commit/a768b89af21dac917f427cdbb5865e5f45d85985))
 
 ## 1.0.1
 

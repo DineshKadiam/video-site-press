@@ -13,7 +13,7 @@
     "bundle": {
         "active": true,
         "category": "Video",
-        "copyright": "2025 Simon Repp and contributors",
+        "copyright": "2026 Simon Repp and contributors",
         "homepage": "https://hyper8.org",
         "icon": [
             "icons/128x128.png",
@@ -27,7 +27,7 @@
         "shortDescription": "A static site generator for video publishing",
         "targets": "all"
     },
-    "identifier": "com.simonrepp.hyper8",
+    "identifier": "org.hyper8",
     "mainBinaryName": "hyper8",
     "productName": "Hyper 8"
 }
