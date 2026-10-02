@@ -4,6 +4,10 @@ body:
   - type: markdown
     attributes:
       value: |
+        ### Feature Requests
+
+        If you have a feature request please visit the [Feature suggestions thread](https://codeberg.org/simonrepp/hyper8/issues/1).
+
         ### LLM Policy
 
         Please make sure to follow the [LLM policy](https://codeberg.org/simonrepp/hyper8/src/branch/main/CONTRIBUTING.md#llm-policy).
