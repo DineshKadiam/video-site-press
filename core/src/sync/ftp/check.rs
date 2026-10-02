@@ -145,8 +145,15 @@ pub fn check_sync_config<S: TlsStream>(
 
         download_and_compare_test_file.context(&public_probe_url);
 
+        // Prepare GET request for the test file through its public address,
+        // passing http headers to explicitly request a non-cached response.
+        let public_probe_request = minreq::get(public_probe_url.clone())
+            .with_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            .with_header("Pragma", "no-cache")
+            .with_header("Expires", "0");
+
         // Fetch probe file through public url and return result
-        match minreq::get(public_probe_url.clone()).send() {
+        match public_probe_request.send() {
             Ok(response) => {
                 match response.as_str() {
                     Ok(body) => {
