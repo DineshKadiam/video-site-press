@@ -167,8 +167,16 @@ pub fn check_sync_config<S: TlsStream>(
 
                             steps.push(download_and_compare_test_file.pass());
                         } else {
+                            // When printing the mismatched probe content next
+                            // to each other for the user to troubleshoot we
+                            // truncate each to the length of the probe
+                            // content plus some overhead, because this is
+                            // usually the range in which the essential
+                            // insights for troubleshooting lie.
+                            let truncate_len = probe_content.chars().count() + 64;
+
                             let truncate = |text: &str| -> String {
-                                match text.char_indices().nth(64) {
+                                match text.char_indices().nth(truncate_len) {
                                     Some((index, _)) => format!("{}…", &text[..index]),
                                     None => text.to_string()
                                 }
