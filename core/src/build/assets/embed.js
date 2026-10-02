@@ -707,7 +707,7 @@ togglePlaybackButton.addEventListener('click', togglePlayback);
 video.addEventListener('click', togglePlayback);
 
 window.addEventListener('keydown', event => {
-    if (event.altKey || event.ctrlKey) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
         return;
     }
 

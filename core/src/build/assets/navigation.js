@@ -438,7 +438,7 @@ function collapseExpand(siteTreeElement, expand = undefined) {
 // - [s] Search
 window.addEventListener('keydown', event => {
     // Avoid conflicts with browser/system shortcuts where possible
-    if (event.altKey || event.ctrlKey) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
         return;
     }
 
