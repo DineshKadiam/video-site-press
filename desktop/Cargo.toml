@@ -26,6 +26,9 @@ tauri.workspace = true
 tauri-plugin-dialog.workspace = true
 tauri-plugin-opener.workspace = true
 
+[features]
+vendored-openssl = ["hyper8-core/vendored-openssl"]
+
 [lib]
 crate-type = ["cdylib", "rlib", "staticlib"]
 name = "hyper8_desktop_lib"

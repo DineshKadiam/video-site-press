@@ -40,6 +40,9 @@ url.workspace = true
 urlencoding.workspace = true
 webbrowser.workspace = true
 
+[features]
+vendored-openssl = ["ssh2/vendored-openssl"]
+
 [package]
 edition.workspace = true
 name = "hyper8-core"

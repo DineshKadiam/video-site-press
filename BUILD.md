@@ -93,7 +93,7 @@ cargo uninstall hyper8-cli
 
 ## Additional build options
 
-You can use environment variables to adjust the build outcome:
+You can use features and environment variables to adjust the build outcome:
 
 - Pass `HYPER8_VERSION` to override the version that is displayed throughout
   Hyper 8 (e.g. in the launcher, editor and under `--help`), for instance:
@@ -107,3 +107,8 @@ You can use environment variables to adjust the build outcome:
   run a `hyper8` binary built with `HYPER8_BUNDLED_FFMPEG`). This exists for
   building and packaging on platforms that require bundling of ffmpeg and
   ffprobe binaries for distribution (Windows, macOS).
+
+- Build with `--features vendored-openssl` to statically link openssl into the
+  produced `hyper8` binary. We currently use this for our officially
+  distributed macOS builds, which would otherwise dynamically link to a
+  homebrew-provided openssl installation that is not present on every system.
