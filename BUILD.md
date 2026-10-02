@@ -93,22 +93,46 @@ cargo uninstall hyper8-cli
 
 ## Additional build options
 
-You can use features and environment variables to adjust the build outcome:
+### Bundled ffmpeg
 
-- Pass `HYPER8_VERSION` to override the version that is displayed throughout
-  Hyper 8 (e.g. in the launcher, editor and under `--help`), for instance:
-  `HYPER8_VERSION=2.0.0~preview cargo ...` (by default the version is taken
-  from the package version specified in the root `Cargo.toml`).
+By default, Hyper 8 only uses the system ffmpeg installation, i.e.
+ffmpeg (including ffprobe) must be installed and available in one of the
+directories in the system's `PATH` environment variable.
 
-- Pass `HYPER8_BUNDLED_FFMPEG` (e.g. `HYPER8_BUNDLED_FFMPEG=true cargo ...`)
-  to produce a Hyper 8 binary that will always and only execute `ffmpeg` and
-  `ffprobe` binaries that were placed adjacent to itself (i.e. the `hyper8`,
-  `ffmpeg` and `ffprobe` binaries all need to be in the same folder when you
-  run a `hyper8` binary built with `HYPER8_BUNDLED_FFMPEG`). This exists for
-  building and packaging on platforms that require bundling of ffmpeg and
-  ffprobe binaries for distribution (Windows, macOS).
+For distribution of Hyper 8 on (e.g.) Windows and macOS it is usually easier
+to bundle ffmpeg with a release rather than ensuring its installation at the
+system level. To facilitate this, two different build options exist:
 
-- Build with `--features vendored-openssl` to statically link openssl into the
-  produced `hyper8` binary. We currently use this for our officially
-  distributed macOS builds, which would otherwise dynamically link to a
-  homebrew-provided openssl installation that is not present on every system.
+- Use `cargo [build|install|run] --features use-bundled-ffmpeg ...` to produce
+  a `hyper8` binary that will preferably use an `ffmpeg` and `ffprobe`
+  binary placed right next to it in the same folder, but will otherwise try
+  to locate and use a system-wide install of ffmpeg.
+
+- Use `cargo [build|install|run] --features force-bundled-ffmpeg ...` to to
+  produce a `hyper8` binary that will only use an `ffmpeg` and `ffprobe`
+  binary placed right next to it in the same folder, and will never try to
+  locate and use any other ffmpeg installed on the system.
+
+Recap: Without either of these options, only the system ffmpeg is used.
+
+### Vendored OpenSSL
+
+Build with `--features vendored-openssl` to statically link openssl into the
+produced `hyper8` binary. We currently use this for our officially
+distributed macOS builds, which would otherwise dynamically link to a
+homebrew-provided openssl installation that is not present on every system.
+
+#### Version override
+
+All main build targets (desktop application, command line interface, docs) can
+be built with a version override, which is primarily used to distribute
+pre-release builds and documentation for testing with a temporary updated
+version such as `3.0~pre1`:
+
+```
+HYPER8_VERSION=3.0~pre1 cargo build
+```
+
+The version is displayed throughout Hyper 8 (e.g. in the launcher, editor and
+under `--help`). By default the version is taken from the package version
+specified in the root `Cargo.toml`.

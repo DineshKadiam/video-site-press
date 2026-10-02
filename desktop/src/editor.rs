@@ -47,6 +47,27 @@ pub fn start_editor(
         site_dir
     );
 
+    if context.ffmpeg.is_none() {
+        let message = formatdoc!("
+            FFmpeg could not be found. This is likely a problem with your
+            installation. If you built Hyper 8 yourself, make sure to
+            install ffmpeg (including ffprobe) on your system. You can also compile hyper8 with
+            --features use-bundled-ffmpeg and place an ffmpeg and ffprobe
+            executable next to the hyper8 executable if you prefer not to
+            install ffmpeg system-wide.
+        ");
+
+        app
+            .dialog()
+            .message(message)
+            .kind(MessageDialogKind::Info)
+            .title(translations.error)
+            .buttons(MessageDialogButtons::Ok)
+            .show(move |_| { });
+
+        return;
+    }
+
     watch_site_dir(Arc::clone(&context));
 
     let ip = if editor_mode == EditorMode::Collaborative {

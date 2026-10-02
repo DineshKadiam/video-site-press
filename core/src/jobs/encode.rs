@@ -1,10 +1,8 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::thread;
@@ -26,18 +24,6 @@ use crate::{
 use crate::util::{collect_output_stderr_stdout, deduplicate_filename};
 
 use super::JobError;
-
-fn ffmpeg_executable() -> PathBuf {
-    // If the HYPER8_BUNDLED_FFMPEG environment variable is specified at build
-    // time, ffmpeg is expected to be a binary adjacent to the hyper8 binary
-    // itself. We use this for building and packaging on platforms that
-    // require bundled versions of ffmpeg to be shipped with Hyper 8.
-    if option_env!("HYPER8_BUNDLED_FFMPEG").is_some() {
-        env::current_exe().unwrap().parent().unwrap().join("ffmpeg")
-    } else {
-        PathBuf::from("ffmpeg")
-    }
-}
 
 // We could also (but currently don't) use the following progress fields that
 // ffmpeg reports: fps, q, size, bitrate, speed
@@ -65,7 +51,7 @@ pub fn compute_poster(
         }
     };
 
-    let mut command = Command::new(ffmpeg_executable());
+    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
 
     let input_path = context.site_dir
         .join(video.site_path.filesystem_relative())
@@ -130,7 +116,7 @@ pub fn encode_audio(
     job_id: String,
     video: &Video
 ) -> Result<AudioFile, JobError> {
-    let mut command = Command::new(ffmpeg_executable());
+    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
 
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");
@@ -295,7 +281,7 @@ pub fn encode_video(
     video: &Video,
     video_format: VideoFormat
 ) -> Result<VideoFile, JobError> {
-    let mut command = Command::new(ffmpeg_executable());
+    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
 
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");

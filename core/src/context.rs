@@ -18,6 +18,7 @@ use crate::{
     Cache,
     Collection,
     CompletedJob,
+    FFmpeg,
     HyperDir,
     InheritedOptions,
     JobDesc,
@@ -46,6 +47,7 @@ pub struct Context {
     pub cache: Mutex<Cache>,
     pub cache_dir: PathBuf,
     pub completed_jobs: Mutex<Vec<CompletedJob>>,
+    pub ffmpeg: Option<FFmpeg>,
     pub job_queue: Mutex<Vec<QueuedJob>>,
     pub site: Mutex<Arc<Site>>,
     pub site_dir: PathBuf,
@@ -1382,11 +1384,14 @@ impl Context {
 
         let cache = Mutex::new(Cache::retrieve(&cache_dir));
 
+        let ffmpeg = FFmpeg::locate();
+
         let context = Context {
             build_dir,
             cache,
             cache_dir,
             completed_jobs: Mutex::new(Vec::new()),
+            ffmpeg,
             job_queue: Mutex::new(Vec::new()),
             site: Mutex::new(Arc::new(Site::new())),
             site_dir: site_dir.clone(),

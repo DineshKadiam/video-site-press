@@ -14,6 +14,7 @@ mod container;
 mod container_order;
 mod context;
 mod file_meta;
+mod ffmpeg;
 mod font;
 mod hyper_dir;
 mod image_processor;
@@ -51,6 +52,7 @@ pub mod watcher;
 
 use audio_meta::AudioMeta;
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
+use ffmpeg::FFmpeg;
 use image_processor::{ImageProcessor, ResizeMode};
 use inherited_options::InheritedOptions;
 use jobs::{CompletedJob, JobError, QueuedJob, Worker};

@@ -31,4 +31,6 @@ sys-locale.workspace = true
 webbrowser.workspace = true
 
 [features]
+force-bundled-ffmpeg = ["hyper8-core/force-bundled-ffmpeg"]
+use-bundled-ffmpeg = ["hyper8-core/use-bundled-ffmpeg"]
 vendored-openssl = ["hyper8-core/vendored-openssl"]

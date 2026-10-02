@@ -4,10 +4,14 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+use anstream::eprintln;
 use clap::ArgMatches;
+use indoc::formatdoc;
 use sys_locale::get_locale;
 
 use hyper8_core::{Context, Language, SyncProtocol};
+
+use crate::style::RED;
 
 mod args;
 mod build;
@@ -90,11 +94,31 @@ fn handle(args: ArgMatches) -> ExitCode {
         }
     };
 
+    fn print_ffmpeg_not_found() {
+        let message = formatdoc!("
+            {RED}ffmpeg could not be found{RED:#}
+
+            This is likely a problem with your installation. If you built
+            Hyper 8 yourself, make sure to install ffmpeg (including ffprobe)
+            on your system. You can also compile hyper8 with --features
+            use-bundled-ffmpeg and place an ffmpeg and ffprobe executable
+            next to the hyper8 executable if you prefer not to install
+            ffmpeg system-wide.
+        ");
+
+        eprintln!("{message}");
+    }
+
     if args.get_flag("check-ftp") {
         delegate_check(SyncProtocol::Ftp)
     } else if args.get_flag("check-ssh") {
         delegate_check(SyncProtocol::Ssh)
     } else if args.get_flag("build") {
+        if context.ffmpeg.is_none() {
+            print_ffmpeg_not_found();
+            return ExitCode::FAILURE;
+        }
+
         build(
             args,
             &context,
@@ -105,6 +129,11 @@ fn handle(args: ArgMatches) -> ExitCode {
     } else if args.get_flag("sync-ssh") {
         delegate_sync(SyncProtocol::Ssh)
     } else {
+        if context.ffmpeg.is_none() {
+            print_ffmpeg_not_found();
+            return ExitCode::FAILURE;
+        }
+
         serve(args, &context)
     }
 }

@@ -41,6 +41,8 @@ urlencoding.workspace = true
 webbrowser.workspace = true
 
 [features]
+force-bundled-ffmpeg = []
+use-bundled-ffmpeg = []
 vendored-openssl = ["ssh2/vendored-openssl"]
 
 [package]

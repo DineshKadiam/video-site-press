@@ -53,7 +53,7 @@ impl Worker {
                 .join(video.site_path.filesystem_relative())
                 .join(&audio_file.file_name);
 
-            let audio_meta = probe::probe_audio(audio_file_path)?;
+            let audio_meta = probe::probe_audio(context, audio_file_path)?;
 
             audio_meta.write_cache_manifest(
                 context,
@@ -670,7 +670,7 @@ impl Worker {
                 .join(video.site_path.filesystem_relative())
                 .join(&video_file.file_name);
 
-            let video_meta = probe::probe_video(&video_file_path)?;
+            let video_meta = probe::probe_video(context, &video_file_path)?;
 
             video_meta.write_cache_manifest(
                 context,
