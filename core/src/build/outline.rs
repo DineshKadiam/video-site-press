@@ -278,7 +278,7 @@ impl TraversalStep<'_> {
         //     String::from(r#"<div class="placeholder"></div>"#)
         // };
 
-        if let Some(video) = video {
+        if let Some(video_active) = video {
             let index_suffix = site.index_suffix();
 
             let videos = playlist.public_videos_in_playlist_order(language);
@@ -290,7 +290,7 @@ impl TraversalStep<'_> {
                     let label = video_iterated.title_or_slug_or_generic_label(translations);
                     let slug = video_iterated.slug_unchecked();
 
-                    let video_prefix = if video_iterated.site_path == video.site_path {
+                    let video_prefix = if video_iterated.site_path == video_active.site_path {
                         String::new()
                     } else {
                         format!("../{slug}/")
@@ -301,7 +301,7 @@ impl TraversalStep<'_> {
                     let current;
                     let href;
                     let number_context;
-                    if video_iterated.site_path == video.site_path {
+                    if video_iterated.site_path == video_active.site_path {
                         current = "current";
                         href = String::new();
                         let count = videos.len();
@@ -318,7 +318,7 @@ impl TraversalStep<'_> {
 
                     let mut details = Vec::new();
 
-                    if let Some(release_date) = video.release_date {
+                    if let Some(release_date) = video_iterated.release_date {
                         let date = localized_date_d_mmm_yyyy(release_date, language.chrono_locale);
                         details.push(date);
                     }

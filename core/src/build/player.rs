@@ -287,7 +287,7 @@ pub fn player(
 
                 let mut details = Vec::new();
 
-                if let Some(release_date) = video.release_date {
+                if let Some(release_date) = video_iterated.release_date {
                     let date = localized_date_d_mmm_yyyy(release_date, site.language.chrono_locale);
                     details.push(date);
                 }
