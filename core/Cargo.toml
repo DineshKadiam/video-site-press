@@ -39,6 +39,7 @@ uuid.workspace = true
 url.workspace = true
 urlencoding.workspace = true
 webbrowser.workspace = true
+winapi.workspace = true
 
 [features]
 force-bundled-ffmpeg = []

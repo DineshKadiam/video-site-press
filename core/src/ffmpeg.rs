@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+
+use crate::HyperCommand;
 
 pub struct FFmpeg {
     pub bundled: bool,
@@ -67,7 +68,7 @@ fn probe_ffmpeg_executable(
     executable: PathBuf,
     executable_name: &str
 ) -> Option<FFmpegExecutable> {
-    let mut executable_version = Command::new(&executable);
+    let mut executable_version = HyperCommand::new(&executable);
 
     executable_version.arg("-version");
 

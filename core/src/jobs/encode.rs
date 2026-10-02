@@ -3,7 +3,7 @@
 
 use std::fs;
 use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
@@ -16,6 +16,7 @@ use crate::{
     Codec,
     Context,
     EncodingApproach,
+    HyperCommand,
     JobProgress,
     Video,
     VideoFile,
@@ -51,7 +52,7 @@ pub fn compute_poster(
         }
     };
 
-    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
+    let mut command = HyperCommand::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
 
     let input_path = context.site_dir
         .join(video.site_path.filesystem_relative())
@@ -116,7 +117,7 @@ pub fn encode_audio(
     job_id: String,
     video: &Video
 ) -> Result<AudioFile, JobError> {
-    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
+    let mut command = HyperCommand::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
 
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");
@@ -281,7 +282,7 @@ pub fn encode_video(
     video: &Video,
     video_format: VideoFormat
 ) -> Result<VideoFile, JobError> {
-    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
+    let mut command = HyperCommand::new(&context.ffmpeg.as_ref().unwrap().ffmpeg.executable);
 
     // Prevent ffmpeg from prompting about overwriting files
     command.arg("-y");

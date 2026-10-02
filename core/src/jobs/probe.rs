@@ -3,11 +3,15 @@
 
 use std::mem;
 use std::path::Path;
-use std::process::Command;
 
 use serde_derive::Deserialize;
 
-use crate::{AudioMeta, Context, VideoMeta};
+use crate::{
+    AudioMeta,
+    Context,
+    HyperCommand,
+    VideoMeta
+};
 use crate::util::collect_output_stderr_stdout;
 
 use super::JobError;
@@ -71,7 +75,7 @@ pub fn probe_audio(
     context: &Context,
     path: &Path
 ) -> Result<AudioMeta, JobError> {
-    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffprobe.executable);
+    let mut command = HyperCommand::new(&context.ffmpeg.as_ref().unwrap().ffprobe.executable);
 
     command
         .arg("-v")
@@ -152,7 +156,7 @@ pub fn probe_video(
     context: &Context,
     path: &Path
 ) -> Result<VideoMeta, JobError> {
-    let mut command = Command::new(&context.ffmpeg.as_ref().unwrap().ffprobe.executable);
+    let mut command = HyperCommand::new(&context.ffmpeg.as_ref().unwrap().ffprobe.executable);
 
     command
         .arg("-v")
