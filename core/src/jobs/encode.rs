@@ -516,7 +516,7 @@ pub fn encode_video(
 
     let file_stem = input_path.file_stem().unwrap().to_string_lossy().to_string();
     let format_suffix = video_format.file_name_suffix();
-    let base_name = format!("{file_stem}_{format_suffix}");
+    let base_name = format!("{file_stem}{format_suffix}");
 
     let mut iteration = 0;
     let output_path = loop {
