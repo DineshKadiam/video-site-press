@@ -33,8 +33,8 @@ a {
 .actionable_item > :last-child a:hover,
 .actionable_item > :last-child button:focus-visible,
 .actionable_item > :last-child button:hover {
-    background: var(--action-hover);
-    color: var(--l1);
+    background: var(--d2);
+    color: var(--l1-mono);
 }
 .actionable_item.attachment {
     border-bottom-left-radius: 0;
@@ -48,7 +48,7 @@ a {
 }
 .actionable_item.attached_error + div {
     background: var(--danger);
-    color: var(--l1);
+    color: var(--l1-mono);
 }
 .actionable_item.attached_info + div {
     background: var(--b3);
@@ -143,14 +143,14 @@ button.cancel:hover {
 }
 a.action,
 button.action {
-    background: var(--action);
-    color: var(--l1);
+    background: var(--f2);
+    color: var(--b1);
 }
 a.action:focus-visible,
 a.action:hover,
 button.action:focus-visible,
 button.action:hover {
-    background: var(--action-hover);
+    background: var(--f3);
 }
 a.action.disabled,
 button.action[disabled] {
@@ -160,7 +160,7 @@ button.action[disabled] {
 }
 button.danger {
     background: var(--danger);
-    color: var(--l1);
+    color: var(--l1-mono);
 }
 button.danger:focus-visible,
 button.danger:hover {
@@ -225,7 +225,7 @@ button.big {
 .error {
     background: var(--danger);
     border-radius: .2rem;
-    color: var(--l1);
+    color: var(--l1-mono);
     padding: .5rem;
 }
 .errors_badge {
@@ -280,6 +280,13 @@ footer > * {
     row-gap: .1rem;
 }
 .form_field label { margin-bottom: .2rem; }
+.form_field.slider > div {
+    align-content: center;
+    display: flex;
+    column-gap: 1rem;
+}
+.form_field.slider label { flex-grow: 1; }
+.form_field.slider input[type="range"] { flex-grow: 1; }
 .form_group { margin-bottom: 4rem; }
 .form_split {
     display: flex;
@@ -518,44 +525,13 @@ nav a .title {
 nav .active { background: var(--b3); }
 nav li { margin-top: .1rem; }
 .no_title { color: var(--m); }
-p a {
-    text-decoration: underline;
-}
+p a { text-decoration: underline; }
 .path_extension {
     background: var(--b2);
     border-radius: .3rem;
     padding: .2rem;
 }
-.path_widget {
-    background: var(--action);
-    border: 1px solid transparent;
-    border-radius: .3rem;
-    margin-bottom: 1rem;
-    margin-top: 1rem;
-}
-.path_widget > * {
-    align-items: center;
-    background: var(--b1);
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem;
-}
-.path_widget > *:first-child {
-    border-top-left-radius: .3rem;
-    border-top-right-radius: .3rem;
-    margin-bottom: 1px;
-}
-.path_widget > :last-child {
-    border-bottom-left-radius: .3rem;
-    border-bottom-right-radius: .3rem;
-}
-.path_widget button {
-    flex-shrink: 0;
-    padding: .3rem;
-}
-.permalink_split {
-    display: flex;
-}
+.permalink_split { display: flex; }
 .poster_preview_outer {
     aspect-ratio: 1.78;
     background: top left/1rem var(--checkerboard);
@@ -636,7 +612,7 @@ p a {
 pre.error {
     background: var(--danger);
     border-radius: .2rem;
-    color: var(--l1);
+    color: var(--l1-mono);
     padding: 1rem;
     white-space: normal;
 }
@@ -645,7 +621,7 @@ pre.error {
     background: var(--danger);
     border: 1px solid var(--f1);
     border-radius: .2rem;
-    color: var(--l1);
+    color: var(--l1-mono);
     display: flex;
     font-size: .8rem;
 }
@@ -827,8 +803,8 @@ select {
     padding-block: .3rem;
 }
 .subpage.active {
-    background: var(--action);
-    color: var(--l1);
+    background: var(--b2);
+    color: var(--f1);
 }
 .subpages { padding-block: .7rem; }
 .subpages .errors_badge {
@@ -855,7 +831,7 @@ svg { fill: currentColor; }
 #sync_log .err {
     background: var(--danger);
     border-radius: .2rem;
-    color: var(--l1);
+    color: var(--l1-mono);
     padding: .1rem .3rem;
 }
 #sync_log .message { color: var(--f1); }
@@ -898,6 +874,7 @@ svg { fill: currentColor; }
     border-radius: .1rem;
     padding-inline: .2em;
 }
+.theme_settings:not(.active) { display: none; }
 #toggle-splash svg { pointer-events: none; }
 .tree_view_options {
     align-items: center;

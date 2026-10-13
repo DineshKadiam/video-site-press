@@ -9,6 +9,7 @@ use indoc::formatdoc;
 use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
+    Build,
     Context,
     MarkdownSubset,
     PlatformIntegrationMeta,
@@ -17,7 +18,7 @@ use crate::{
     Subtitles,
     Video
 };
-use crate::build::{AssetHashes, Layout};
+use crate::build::Layout;
 use crate::build::outline::{Traversal, TraversalStep};
 use crate::build::player::player;
 use crate::build::widgets::{copy_button, links, unlisted_badge};
@@ -27,7 +28,7 @@ use crate::util::localized_date_d_mmmm_yyyy;
 /// split in two columns (respectively rows, on mobile), to additionally
 /// display the playlist sidebar.
 pub fn video_html(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     playlist: Option<&Playlist>,
     site: &Site,
@@ -379,7 +380,7 @@ pub fn video_html(
     }
 
     let html = layout.render(
-        asset_hashes,
+        build,
         &body,
         site,
         title,

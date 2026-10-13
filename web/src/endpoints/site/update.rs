@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use std::fmt::Debug;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use actix_session::Session;
@@ -10,11 +12,14 @@ use serde_derive::Deserialize;
 
 use hyper8_core::{
     AspectRatio,
+    Degrees,
     Language,
+    Percent,
     Site,
     SiteUpdate,
     SiteUrl,
-    Theme
+    Theme,
+    ThemePaint
 };
 
 use crate::{Context, Field, SessionState};
@@ -26,6 +31,21 @@ use super::pending_manifest_errors;
 
 #[derive(Deserialize)]
 pub struct UpdateForm {
+    dark_theme_accent_brightening_enabled: Option<String>,
+    dark_theme_accent_brightening_value: Option<String>,
+    dark_theme_accent_chroma_enabled: Option<String>,
+    dark_theme_accent_chroma_value: Option<String>,
+    dark_theme_accent_hue_enabled: Option<String>,
+    dark_theme_accent_hue_value: Option<String>,
+    dark_theme_base_chroma_enabled: Option<String>,
+    dark_theme_base_chroma_value: Option<String>,
+    dark_theme_base_hue_enabled: Option<String>,
+    dark_theme_base_hue_value: Option<String>,
+    dark_theme_contrast_enabled: Option<String>,
+    dark_theme_contrast_value: Option<String>,
+    dark_theme_layered_chroma_enabled: Option<String>,
+    dark_theme_layered_chroma_value: Option<String>,
+    dark_theme_set: Option<String>,
     base_url: String,
     clean_urls: Option<String>,
     ftp_config_password: String,
@@ -36,7 +56,24 @@ pub struct UpdateForm {
     ftp_config_server: String,
     ftp_config_user: String,
     language: String,
+    light_theme_accent_brightening_enabled: Option<String>,
+    light_theme_accent_brightening_value: Option<String>,
+    light_theme_accent_chroma_enabled: Option<String>,
+    light_theme_accent_chroma_value: Option<String>,
+    light_theme_accent_hue_enabled: Option<String>,
+    light_theme_accent_hue_value: Option<String>,
+    light_theme_base_chroma_enabled: Option<String>,
+    light_theme_base_chroma_value: Option<String>,
+    light_theme_base_hue_enabled: Option<String>,
+    light_theme_base_hue_value: Option<String>,
+    light_theme_contrast_enabled: Option<String>,
+    light_theme_contrast_value: Option<String>,
+    light_theme_layered_chroma_enabled: Option<String>,
+    light_theme_layered_chroma_value: Option<String>,
+    light_theme_set: Option<String>,
     poster_aspect: String,
+    roundness_enabled: Option<String>,
+    roundness_value: Option<String>,
     ssh_config_password: String,
     ssh_config_password_prompt: Option<String>,
     ssh_config_path: String,
@@ -75,6 +112,34 @@ pub async fn update(
         Err(_) => Theme::default()
     };
 
+    fn unwrap_theme_setting<T>(
+        enabled: &Option<String>,
+        value: &Option<String>
+    ) -> Option<T> where
+        T: FromStr,
+        <T as FromStr>::Err: Debug
+    {
+        enabled.as_ref().map(|_| value.as_ref().unwrap().parse::<T>().unwrap())
+    }
+
+    let dark_theme_accent_brightening = unwrap_theme_setting(&form.dark_theme_accent_brightening_enabled, &form.dark_theme_accent_brightening_value);
+    let dark_theme_accent_chroma = unwrap_theme_setting(&form.dark_theme_accent_chroma_enabled, &form.dark_theme_accent_chroma_value);
+    let dark_theme_accent_hue = unwrap_theme_setting(&form.dark_theme_accent_hue_enabled, &form.dark_theme_accent_hue_value);
+    let dark_theme_base_chroma = unwrap_theme_setting(&form.dark_theme_base_chroma_enabled, &form.dark_theme_base_chroma_value);
+    let dark_theme_base_hue = unwrap_theme_setting(&form.dark_theme_base_hue_enabled, &form.dark_theme_base_hue_value);
+    let dark_theme_contrast = unwrap_theme_setting(&form.dark_theme_contrast_enabled, &form.dark_theme_contrast_value);
+    let dark_theme_layered_chroma = unwrap_theme_setting(&form.dark_theme_layered_chroma_enabled, &form.dark_theme_layered_chroma_value);
+    let dark_theme_set = form.dark_theme_set.is_some();
+
+    let light_theme_accent_brightening = unwrap_theme_setting(&form.light_theme_accent_brightening_enabled, &form.light_theme_accent_brightening_value);
+    let light_theme_accent_chroma = unwrap_theme_setting(&form.light_theme_accent_chroma_enabled, &form.light_theme_accent_chroma_value);
+    let light_theme_accent_hue = unwrap_theme_setting(&form.light_theme_accent_hue_enabled, &form.light_theme_accent_hue_value);
+    let light_theme_base_chroma = unwrap_theme_setting(&form.light_theme_base_chroma_enabled, &form.light_theme_base_chroma_value);
+    let light_theme_base_hue = unwrap_theme_setting(&form.light_theme_base_hue_enabled, &form.light_theme_base_hue_value);
+    let light_theme_contrast = unwrap_theme_setting(&form.light_theme_contrast_enabled, &form.light_theme_contrast_value);
+    let light_theme_layered_chroma = unwrap_theme_setting(&form.light_theme_layered_chroma_enabled, &form.light_theme_layered_chroma_value);
+    let light_theme_set = form.light_theme_set.is_some();
+
     let base_url = if base_url_trimmed.is_empty() {
         None
     } else {
@@ -87,6 +152,15 @@ pub async fn update(
         AspectRatio::from_representation(poster_aspect_trimmed)
             .map_err(|err| err.to_string())
     };
+
+    let roundness = form.roundness_enabled
+        .as_ref()
+        .map(|_| {
+            form.roundness_value
+                .as_ref()
+                .unwrap()
+                .parse::<u8>().unwrap()
+        });
 
     let ftp_config_port_trimmed = form.ftp_config_port.trim();
     let ftp_config_port = if ftp_config_port_trimmed.is_empty() {
@@ -120,6 +194,14 @@ pub async fn update(
         let form_feedback = UpdateFormFeedback {
             base_url: Field::validated(base_url_trimmed, base_url_err),
             clean_urls,
+            dark_theme_accent_brightening,
+            dark_theme_accent_chroma,
+            dark_theme_accent_hue,
+            dark_theme_base_chroma,
+            dark_theme_base_hue,
+            dark_theme_contrast,
+            dark_theme_layered_chroma,
+            dark_theme_set,
             ftp_config_password: Field::valid(ftp_config_password_trimmed),
             ftp_config_password_prompt,
             ftp_config_path: Field::valid(ftp_config_path_trimmed),
@@ -128,7 +210,16 @@ pub async fn update(
             ftp_config_server: Field::valid(ftp_config_server_trimmed),
             ftp_config_user: Field::valid(ftp_config_user_trimmed),
             language: Field::valid(language_trimmed),
+            light_theme_accent_brightening,
+            light_theme_accent_chroma,
+            light_theme_accent_hue,
+            light_theme_base_chroma,
+            light_theme_base_hue,
+            light_theme_contrast,
+            light_theme_layered_chroma,
+            light_theme_set,
             poster_aspect: Field::validated(poster_aspect_trimmed, poster_aspect.err()),
+            roundness,
             ssh_config_password: Field::valid(ssh_config_password_trimmed),
             ssh_config_password_prompt,
             ssh_config_path: Field::valid(ssh_config_path_trimmed),
@@ -157,6 +248,54 @@ pub async fn update(
         };
 
         let mutation = |site_mut: &mut Site| {
+            if dark_theme_set {
+                let accent_brightening = dark_theme_accent_brightening.map(|accent_brightening| Percent::new(true, accent_brightening));
+                let accent_chroma = dark_theme_accent_chroma.map(|accent_chroma| Percent::new(true, accent_chroma));
+                let accent_hue = dark_theme_accent_hue.map(|accent_hue| Degrees::new(Some("deg"), accent_hue));
+                let base_chroma = dark_theme_base_chroma.map(|base_chroma| Percent::new(true, base_chroma));
+                let base_hue = dark_theme_base_hue.map(|base_hue| Degrees::new(Some("deg"), base_hue));
+                let contrast = dark_theme_contrast.map(|contrast| Percent::new(true, contrast));
+                let layered_chroma = dark_theme_layered_chroma.map(|layered_chroma| Percent::new(true, layered_chroma));
+
+                let dark_theme = ThemePaint {
+                    accent_brightening,
+                    accent_chroma,
+                    accent_hue,
+                    base_chroma,
+                    base_hue,
+                    contrast,
+                    layered_chroma
+                };
+
+                site_mut.dark_theme = Some(dark_theme);
+            } else {
+                site_mut.dark_theme = None;
+            }
+
+            if light_theme_set {
+                let accent_brightening = light_theme_accent_brightening.map(|accent_brightening| Percent::new(true, accent_brightening));
+                let accent_chroma = light_theme_accent_chroma.map(|accent_chroma| Percent::new(true, accent_chroma));
+                let accent_hue = light_theme_accent_hue.map(|accent_hue| Degrees::new(Some("deg"), accent_hue));
+                let base_chroma = light_theme_base_chroma.map(|base_chroma| Percent::new(true, base_chroma));
+                let base_hue = light_theme_base_hue.map(|base_hue| Degrees::new(Some("deg"), base_hue));
+                let contrast = light_theme_contrast.map(|contrast| Percent::new(true, contrast));
+                let layered_chroma = light_theme_layered_chroma.map(|layered_chroma| Percent::new(true, layered_chroma));
+
+                let light_theme = ThemePaint {
+                    accent_brightening,
+                    accent_chroma,
+                    accent_hue,
+                    base_chroma,
+                    base_hue,
+                    contrast,
+                    layered_chroma
+                };
+
+                site_mut.light_theme = Some(light_theme);
+            } else {
+                site_mut.light_theme = None;
+            }
+
             site_mut.base_url = base_url.map(|base_url| base_url.unwrap());
             site_mut.clean_urls = clean_urls;
             site_mut.ftp_config.password = to_option(ftp_config_password_trimmed);
@@ -168,6 +307,7 @@ pub async fn update(
             site_mut.ftp_config.user = to_option(ftp_config_user_trimmed);
             site_mut.language = language;
             site_mut.poster_aspect = poster_aspect.unwrap();
+            site_mut.roundness = roundness.map(|roundness| Percent::new(true, roundness));
             site_mut.ssh_config.password = to_option(ssh_config_password_trimmed);
             site_mut.ssh_config.password_prompt = Some(ssh_config_password_prompt);
             site_mut.ssh_config.path = to_option(ssh_config_path_trimmed);
@@ -176,7 +316,10 @@ pub async fn update(
             site_mut.ssh_config.public_key = to_option(ssh_config_public_key_trimmed);
             site_mut.ssh_config.server = to_option(ssh_config_server_trimmed);
             site_mut.ssh_config.user = to_option(ssh_config_user_trimmed);
-            site_mut.theme = theme;
+
+            // TODO: No way to unset (or not at all set) this right now, but
+            // as it's going away anyway ...
+            site_mut.theme = Some(theme);
         };
 
         match context.update_site(mutation) {

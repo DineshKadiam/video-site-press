@@ -28,13 +28,16 @@ user = user123
 Jump links for all options:
 
 - [base_url](#base_url)
+- [dark_theme](#dark_theme)
 - [disable_clean_urls](#disable_clean_urls)
 - [ftp_config](#ftp_config)
 - [language](#language)
+- [light_theme](#light_theme)
 - [poster_aspect](#poster_aspect)
 - [roundness](#roundness)
 - [ssh_config](#ssh_config)
 - [theme](#theme)
+- [theme_mode](#theme_mode)
 
 ## <a name="base_url"></a> `base_url`
 
@@ -46,6 +49,57 @@ correct.
 ```eno
 base_url: https://example.com
 ```
+
+## <a name="dark_theme"></a> `dark_theme` **EXPERIMENTAL**
+
+*This feature is experimental – feel free to try it out, but keep in mind that
+it might get changed, renamed or removed without notice in any upcoming
+release, until stabilized*
+
+Adjusts the colors of the dark theme. Note that `theme_mode` needs to be
+either `adaptive` or `dark` for this to have any effect, otherwise the dark
+theme is never displayed.
+
+### Contrast
+
+```eno
+dark_theme:
+contrast = 24
+```
+
+At the highest `contrast` (100%) the dark theme is darkest and the least
+colorful (depending on chroma settings, see below). The lower the
+`contrast` (0% being the default) the more it will have a differentiated
+dark grey feeling and become more colorfully tinted with rising `base_chroma`
+levels.
+
+Tip: By interatively exploring different values with the design overlay you
+can get a good feeling of what this does and how you want to set it.
+
+### Base, layered and accent colors
+
+```eno
+dark_theme:
+base_chroma = 34
+base_hue = 180
+layered_chroma = 66
+accent_brightening = 85
+accent_chroma = 50
+accent_hue = 23
+```
+
+The theme is initially monochromatic (without color).
+
+With `base_chroma` (0-100 (%)) you control the colorfulness of the theme,
+while the `base_hue` (0-360 (degrees)) setting sets the shade of the color.
+
+Some elements on the page are accentuated (currently only the "timeline" of
+the video player). The colorfulness of the accentuation is customized with
+the `accent_chroma` (0-100 (%)) setting, while the
+`accent_hue` (0-360 (degrees)) setting adjusts its shade. The
+`accent_brightening` (0-100 (%)) setting allows you to brighten or darken
+this color accent (it's at 50% by default), which allows for stronger and
+deeper colors still.
 
 ## <a name="disable_clean_urls"></a> `disable_clean_urls`
 
@@ -110,6 +164,57 @@ documentation.
 ```eno
 language: es
 ```
+
+## <a name="light_theme"></a> `light_theme` **EXPERIMENTAL**
+
+*This feature is experimental – feel free to try it out, but keep in mind that
+it might get changed, renamed or removed without notice in any upcoming
+release, until stabilized*
+
+Adjusts the colors of the dark theme. Note that `theme_mode` needs to be
+either `adaptive` or `dark` for this to have any effect, otherwise the dark
+theme is never displayed.
+
+### Contrast
+
+```eno
+light_theme:
+contrast = 24
+```
+
+At the highest `contrast` (100%) the light theme is brightest and the least
+colorful (depending on chroma settings, see below). The lower the
+`contrast` (0% being the default) the more it will have a differentiated
+light grey feeling and become more colorfully tinted with rising `base_chroma`
+levels.
+
+Tip: By interatively exploring different values with the design overlay you
+can get a good feeling of what this does and how you want to set it.
+
+### Base, layered and accent colors
+
+```eno
+light_theme:
+base_chroma = 34
+base_hue = 180
+layered_chroma = 66
+accent_brightening = 85
+accent_chroma = 50
+accent_hue = 23
+```
+
+The theme is initially monochromatic (without color).
+
+With `base_chroma` (0-100 (%)) you control the colorfulness of the theme,
+while the `base_hue` (0-360 (degrees)) setting sets the shade of the color.
+
+Some elements on the page are accentuated (currently only the "timeline" of
+the video player). The colorfulness of the accentuation is customized with
+the `accent_chroma` (0-100 (%)) setting, while the
+`accent_hue` (0-360 (degrees)) setting adjusts its shade. The
+`accent_brightening` (0-100 (%)) setting allows you to brighten or darken
+this color accent (it's at 50% by default), which allows for stronger and
+deeper colors still.
 
 ## <a name="poster_aspect"></a> `poster_aspect`
 
@@ -185,6 +290,11 @@ functionality is also available in the top-right header menu.
 
 ## <a name="theme"></a> `theme`
 
+*Heads up: The `experimental` option for this setting can be used to enable the
+experimental `theme_mode`, `dark_theme` and `light_theme` settings. Keep in
+mind that it might get changed, renamed or removed without notice in any
+upcoming release, until stabilized*
+
 ```eno
 theme: adaptive_cool
 ```
@@ -198,6 +308,7 @@ The `theme` option can be set to any of these:
 - `dark_deep`
 - `dark_neutral`
 - `dark_warm`
+- `experimental`
 - `light_cool`
 - `light_deep`
 - `light_neutral`
@@ -212,3 +323,23 @@ needs, but of course for specific usecases this can be weighed off - e.g. it
 might still make sense to configure a trailer page for a horror movie with a
 dark theme only, as the imagery might be dark itself and a light theme would
 potentially collide with the desired aesthetics and visual impression intended.
+
+
+## <a name="theme_mode"></a> `theme_mode` **EXPERIMENTAL**
+
+*This feature is experimental – feel free to try it out, but keep in mind that
+it might get changed, renamed or removed without notice in any upcoming
+release, until stabilized*
+
+```eno
+theme_mode: light
+```
+
+This controls the overall theme appearance – `dark`, `light` or `adaptive`.
+
+The default setting is `adaptive`, which means that a dark or
+light theme will be displayed automatically, based on browser/system
+preferences of each site visitor.
+
+With `dark` and `light` you can instead opt for a fixed dark or light
+appearance for all visitors.

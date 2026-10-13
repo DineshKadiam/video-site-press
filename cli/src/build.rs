@@ -16,6 +16,7 @@ use crate::sync;
 pub fn build(
     args: ArgMatches,
     context: &Arc<Context>,
+    design_overlay: bool,
     translations: &Translations
 ) -> ExitCode {
     if let Err(err) = context.await_job_queue(translations) {
@@ -23,7 +24,7 @@ pub fn build(
         return ExitCode::FAILURE;
     }
 
-    if let Err(err) = perform_build(context) {
+    if let Err(err) = perform_build(context, design_overlay) {
         eprintln!("Build failed:\n{err}");
         return ExitCode::FAILURE;
     }

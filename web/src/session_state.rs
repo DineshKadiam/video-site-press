@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use actix_session::Session;
 
-use hyper8_core::{Language, Theme};
+use hyper8_core::Language;
 
-use crate::{ServerMode, TreeViewOrder};
+use crate::{EditorTheme, ServerMode, TreeViewOrder};
 
 /// An abstraction for editor settings like the current language, theme and
 /// tree view order that conditionally obtains its data from one of two
@@ -28,7 +28,7 @@ pub struct SessionState {
     /// these things)
     pub automatic_splash: bool,
     pub language: Language,
-    pub theme: Theme,
+    pub theme: EditorTheme,
     pub tree_view_order: TreeViewOrder
 }
 
@@ -45,7 +45,9 @@ impl SessionState {
                 };
 
                 let theme = match session.get::<String>("theme_key") {
-                    Ok(Some(key)) => Theme::from_key(&key).unwrap_or(Theme::default()),
+                    Ok(Some(key)) => {
+                        EditorTheme::try_from(key.as_str()).unwrap_or(EditorTheme::default())
+                    }
                     _ => inherited_editor_state.theme.clone()
                 };
 
@@ -97,11 +99,13 @@ impl SessionState {
     pub fn theme(
         server_mode: &ServerMode,
         session: &Session
-    ) -> Theme {
+    ) -> EditorTheme {
         match server_mode {
             ServerMode::MultipleRemoteUsers { inherited_editor_state } => {
                 match session.get::<String>("theme_key") {
-                    Ok(Some(key)) => Theme::from_key(&key).unwrap_or(Theme::default()),
+                    Ok(Some(key)) => {
+                        EditorTheme::try_from(key.as_str()).unwrap_or(EditorTheme::default())
+                    }
                     _ => inherited_editor_state.theme.clone()
                 }
             }

@@ -6,6 +6,7 @@
 /// the file content of the asset. We do this in order to prompt browsers to
 /// fetch new, uncached assets when their content has changed. This struct
 /// groups together those hashes for all assets we use.
+#[derive(Debug)]
 pub struct AssetHashes {
     pub embed_css: Option<String>,
     pub navigation_js: Option<String>,

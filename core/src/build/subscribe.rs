@@ -9,11 +9,12 @@ use hyper8_translations::Translations;
 use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
+    Build,
     Context,
     Site,
     SitePath
 };
-use crate::build::{AssetHashes, Layout};
+use crate::build::Layout;
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, unlisted_badge};
 
@@ -56,7 +57,7 @@ pub fn feed_choice(
 /// Writes the page on which various feed subscription choices for a playlist
 /// are made available.
 pub fn subscribe_html(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     site: &Site,
     site_path: &SitePath,
@@ -134,7 +135,7 @@ pub fn subscribe_html(
     "#);
 
     let html = layout.render(
-        asset_hashes,
+        build,
         &body,
         site,
         &subscribe_title,

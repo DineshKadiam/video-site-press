@@ -9,19 +9,20 @@ use indoc::formatdoc;
 use hyper8_util::{html_escape_outside_attribute, human_size};
 
 use crate::{
+    Build,
     Context,
     Desc,
     Site,
     Video
 };
-use crate::build::{AssetHashes, Layout};
+use crate::build::Layout;
 use crate::build::outline::Traversal;
 use crate::build::widgets::unlisted_badge;
 
 /// Writes the page on which various downloads for a video are made available
 /// (video, audio and subtitle assets)
 pub fn download_html(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     site: &Site,
     video: &Video,
@@ -151,7 +152,7 @@ pub fn download_html(
     "#);
 
     let html = layout.render(
-        asset_hashes,
+        build,
         &body,
         site,
         &title,

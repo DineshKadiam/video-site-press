@@ -8,6 +8,7 @@ use indoc::formatdoc;
 use hyper8_util::{casual_duration, url_safe_hash_base64};
 
 use crate::{
+    Build,
     Collection,
     Container,
     Context,
@@ -18,8 +19,6 @@ use crate::{
     Video
 };
 use crate::util::localized_date_d_mmm_yyyy;
-
-use super::AssetHashes;
 
 pub fn generate_adaptive_theme_js(context: &Context) {
     let js = scope_js(include_str!("assets/adaptive_theme.js"));
@@ -43,7 +42,7 @@ pub fn generate_embed_js(context: &Context) {
 }
 
 pub fn generate_navigation_js(
-    asset_hashes: &mut AssetHashes,
+    build: &mut Build,
     context: &Context,
     site: &Site
 ) {
@@ -174,7 +173,7 @@ pub fn generate_navigation_js(
 
         js.push_str(&scope_js(include_str!("assets/navigation.js")));
 
-        asset_hashes.navigation_js = Some(url_safe_hash_base64(js.as_bytes()));
+        build.asset_hashes.navigation_js = Some(url_safe_hash_base64(js.as_bytes()));
 
         let path = context.build_dir.join("navigation.js");
 

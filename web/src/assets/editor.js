@@ -1,7 +1,7 @@
 const modal = document.querySelector('#modal').content;
 const processingElement = document.querySelector('.processing');
-const processingIcon = document.querySelector('#processing_icon').content;
-const reloadIcon = document.querySelector('#reload_icon').content;
+const processingIcon = document.querySelector('template[data-processing-icon]').content;
+const reloadIcon = document.querySelector('template[data-reload-icon]').content;
 const splashWrapper = document.querySelector('.splash_wrapper');
 const syncLog = document.querySelector('#sync_log');
 const syncMenu = document.querySelector('#sync');
@@ -14,9 +14,9 @@ const processing = {};
 const copyButtons = document.querySelectorAll('button[data-copy]');
 const copyNotificationTimeouts = {};
 if (copyButtons.length) {
-    const copyIcon = document.querySelector('#copy_icon').content;
-    const failureIcon = document.querySelector('#failure_icon').content;
-    const successIcon = document.querySelector('#success_icon').content;
+    const copyIcon = document.querySelector('template[data-copy-icon]').content;
+    const failedIcon = document.querySelector('template[data-failed-icon]').content;
+    const successIcon = document.querySelector('template[data-success-icon]').content;
 
     function copyToClipboard(button) {
         const notify = (success, content) => {
@@ -504,6 +504,49 @@ function updateSyncStatus(syncState) {
 
         syncStatus.replaceChildren(a);
     }
+}
+
+for (const sliderContainer of document.querySelectorAll('.form_field.slider')) {
+    const enabled = sliderContainer.querySelector('input[type="checkbox"]');
+    const slider = sliderContainer.querySelector('input[type="range"]');
+    const value = sliderContainer.querySelector('input[type="number"]');
+
+    enabled.addEventListener('input', event => {
+        if (enabled.checked) {
+            slider.removeAttribute('disabled');
+            value.removeAttribute('disabled');
+        } else {
+            slider.setAttribute('disabled', '');
+            value.setAttribute('disabled', '');
+        }
+    });
+
+    slider.addEventListener('input', event => {
+        value.value = slider.value;
+    });
+
+    value.addEventListener('input', event => {
+        slider.value = value.value;
+    });
+}
+
+const darkTheme = document.querySelector('[data-dark-theme]');
+const lightTheme = document.querySelector('[data-light-theme]');
+
+if (darkTheme) {
+    const darkThemeToggle = document.querySelector('input[name="dark_theme_set"]');
+
+    darkThemeToggle.addEventListener('change', () => {
+        darkTheme.classList.toggle('active');
+    });
+}
+
+if (lightTheme) {
+    const lightThemeToggle = document.querySelector('input[name="light_theme_set"]');
+
+    lightThemeToggle.addEventListener('change', () => {
+        lightTheme.classList.toggle('active');
+    });
 }
 
 for (const form of document.querySelectorAll('form[data-confirm]')) {

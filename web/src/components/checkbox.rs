@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fmt::{Display, Formatter};
@@ -14,6 +14,10 @@ pub struct Checkbox<'a> {
 impl<'a> Checkbox<'a> {
     pub fn checked(&mut self, checked: bool) {
         self.checked = checked;
+    }
+
+    pub fn is_checked(&self) -> bool {
+        self.checked
     }
 
     pub fn new(key: &'a str, label: &'a str) -> Checkbox<'a> {

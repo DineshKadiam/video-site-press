@@ -518,7 +518,7 @@ fn toggle_playback_icons(translations: &Translations) -> String {
 fn versions_ring(
     default_streamable_audio_file: Option<&AudioFile>,
     default_streamable_video_file: Option<&VideoFile>,
-    roundness: f32,
+    roundness: u8,
     translations: &Translations,
     video: &Video,
     video_prefix: &str
@@ -642,7 +642,7 @@ fn versions_ring(
             String::new()
         };
 
-        let rx = roundness * 6.0;
+        let rx = (roundness as f32 / 100.0) * 6.0;
 
         formatdoc!(r#"
             <g

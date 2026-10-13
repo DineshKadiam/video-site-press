@@ -1,0 +1,190 @@
+@media (prefers-color-scheme: dark) {
+    body:not([data-pinned-theme]) { --beam-direction: to top; }
+}
+@media (prefers-color-scheme: light) {
+    body:not([data-pinned-theme]) { --beam-direction: to bottom; }
+}
+body[data-pinned-theme="dark"] { --beam-direction: to top; }
+body[data-pinned-theme="light"] { --beam-direction: to bottom; }
+body { --overlay-padding: 2.5rem; }
+.design_overlay {
+    backdrop-filter: blur(1rem);
+    background: var(--b1-80-mono);
+    border-radius: calc(var(--r) * .6rem);
+    border: 1px solid var(--b3-mono);
+    box-shadow: 0 0 1rem var(--d1-15);
+    color: var(--f1-mono);
+    display: grid;
+    font-size: .9rem;
+    gap: var(--overlay-padding);
+    padding: var(--overlay-padding);
+    position: fixed;
+    transition: filter 500ms ease, opacity 500ms ease;
+    z-index: 9;
+}
+.design_overlay:not(:focus-visible):not(:focus-within):not(:hover) {
+    filter: blur(.6rem);
+    opacity: .1;
+}
+.design_overlay[data-placement="nw"] {
+    left: var(--overlay-padding);
+    top: var(--overlay-padding);
+}
+.design_overlay[data-placement="n"] {
+    left: 50%;
+    top: var(--overlay-padding);
+    transform: translateX(-50%);
+}
+.design_overlay[data-placement="ne"] {
+    right: var(--overlay-padding);
+    top: var(--overlay-padding);
+}
+.design_overlay[data-placement="w"] {
+    left: var(--overlay-padding);
+    top: 50%;
+    transform: translateY(-50%);
+}
+.design_overlay[data-placement="c"] {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.design_overlay[data-placement="e"] {
+    right: var(--overlay-padding);
+    top: 50%;
+    transform: translateY(-50%);
+}
+.design_overlay[data-placement="sw"] {
+    bottom: var(--overlay-padding);
+    left: var(--overlay-padding);
+}
+.design_overlay[data-placement="s"] {
+    bottom: var(--overlay-padding);
+    left: 50%;
+    transform: translateX(-50%);
+}
+.design_overlay[data-placement="se"] {
+    bottom: var(--overlay-padding);
+    right: var(--overlay-padding);
+}
+.design_overlay .controls {
+    align-items: center;
+    column-gap: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+.design_overlay .controls > button {
+    align-items: center;
+    background: var(--b2-mono);
+    border-radius: calc(var(--r) * .25rem);
+    border: none;
+    color: var(--f1-mono);
+    column-gap: .3rem;
+    display: flex;
+    flex-grow: 1;
+    justify-content: center;
+    padding: .3rem .6rem;
+}
+.design_overlay .controls > button:focus-visible,
+.design_overlay .controls > button:hover {
+    background: var(--b3-mono);
+}
+.design_overlay .levels {
+    font-size: .8rem;
+    grid-area: 1/3/4/3;
+    width: 1rem;
+    position: relative;
+}
+.design_overlay .levels .beam {
+    background: linear-gradient(var(--beam-direction), oklch(0% 0 0), oklch(100% 0 0));
+    border: 1px solid var(--m-mono);
+    box-sizing: border-box;
+    width: .4rem;
+    height: 100%;
+}
+.design_overlay .levels .level {
+    border-top: 1px solid;
+    position: absolute;
+    top: -.6rem;
+    width: .8rem;
+}
+.design_overlay .levels .level > div {
+    padding: .2rem;
+    position: relative;
+    right: -120%;
+    top: -0.75rem;
+}
+.design_overlay .manifest {
+    background: var(--b1-80-mono);
+    border: 1px solid var(--m-mono);
+    border-radius: calc(var(--r) * .25rem);
+    box-sizing: border-box;
+    color: var(--f2-mono);
+    grid-area: 1/4/4/4;
+    min-width: 18rem;
+    padding: .3rem;
+    width: 100%;
+}
+.design_overlay > :not(.levels):not(.manifest):not(.palette) { grid-column: 1; }
+.design_overlay .manifest:not(.active) { display: none; }
+.design_overlay .palette {
+    display: flex;
+    flex-direction: column;
+    font-size: .8rem;
+    grid-area: 1/2/4/2;
+}
+.design_overlay .palette .tone {
+    display: flex;
+    flex-grow: 1;
+    position: relative;
+}
+.design_overlay .palette .tone:first-child div:first-of-type { border-top-left-radius: calc(var(--r) * .25rem); }
+.design_overlay .palette .tone:first-child div:last-child { border-top-right-radius: calc(var(--r) * .25rem); }
+.design_overlay .palette .tone:last-child div:first-of-type { border-bottom-left-radius: calc(var(--r) * .25rem); }
+.design_overlay .palette .tone:last-child div:last-child { border-bottom-right-radius: calc(var(--r) * .25rem); }
+.design_overlay .palette .tone > div { width: 2rem; }
+.design_overlay .palette .tone > span {
+    background: var(--b1-80-mono);
+    border-radius: calc(var(--r) * .25rem);
+    left: 50%;
+    padding: .2rem;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.design_overlay .placement {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    height: 2.2rem;
+    width: 2.2rem;
+}
+.design_overlay .placement button {
+    background: var(--b3-mono);
+    border: none;
+    padding: 0;
+}
+.design_overlay .placement button:focus-visible,
+.design_overlay .placement button:hover {
+    background: var(--m-mono);
+}
+.design_overlay .setting:not(:first-child) { margin-top: .5rem; }
+.design_overlay .setting > :nth-child(1) {
+    column-gap: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+.design_overlay .setting input { width: 100%; }
+.design_overlay .settings {
+    min-width: 18rem;
+}
+.design_overlay[data-placement="nw"] .placement button[data-placement="nw"] { background: var(--f3-mono); }
+.design_overlay[data-placement="n"] .placement button[data-placement="n"] { background: var(--f3-mono); }
+.design_overlay[data-placement="ne"] .placement button[data-placement="ne"] { background: var(--f3-mono); }
+.design_overlay[data-placement="w"] .placement button[data-placement="w"] { background: var(--f3-mono); }
+.design_overlay[data-placement="c"] .placement button[data-placement="c"] { background: var(--f3-mono); }
+.design_overlay[data-placement="e"] .placement button[data-placement="e"] { background: var(--f3-mono); }
+.design_overlay[data-placement="sw"] .placement button[data-placement="sw"] { background: var(--f3-mono); }
+.design_overlay[data-placement="s"] .placement button[data-placement="s"] { background: var(--f3-mono); }
+.design_overlay[data-placement="se"] .placement button[data-placement="se"] { background: var(--f3-mono); }

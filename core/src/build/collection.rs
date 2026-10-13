@@ -9,6 +9,7 @@ use hyper8_util::AnchorIdGenerator;
 use hyper8_util::html_escape_outside_attribute;
 
 use crate::{
+    Build,
     Collection,
     Container,
     Context,
@@ -18,7 +19,7 @@ use crate::{
     Site
 };
 use crate::build::outline::Traversal;
-use crate::build::{AssetHashes, Layout};
+use crate::build::Layout;
 use crate::build::widgets::{
     banner_html,
     bubbles,
@@ -31,7 +32,7 @@ use crate::util::localized_date_d_mmmm_yyyy;
 
 /// Generates and writes a collection index page to the build directory.
 pub fn collection_html(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     collection: &Collection,
     site: &Site,
@@ -194,7 +195,7 @@ pub fn collection_html(
     }
 
     let html = layout.render(
-        asset_hashes,
+        build,
         &body,
         site,
         title,

@@ -13,6 +13,7 @@ mod collection;
 mod container;
 mod container_order;
 mod context;
+mod degrees;
 mod file_meta;
 mod ffmpeg;
 mod font;
@@ -52,6 +53,7 @@ pub mod util;
 pub mod watcher;
 
 use audio_meta::AudioMeta;
+use build::{AssetHashes, Build};
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
 use ffmpeg::FFmpeg;
 use hyper_command::HyperCommand;
@@ -66,6 +68,13 @@ use poster_assets::{PosterAsset, PosterAssets};
 use poster_meta::PosterMeta;
 use sort::SortDirection;
 use sync::{SyncAction, SyncError};
+use theme::{
+    OkaPercent,
+    OkcPercent,
+    OkhDegrees,
+    OklPercent,
+    ThemeOklch
+};
 use video_format::{Codec, EncodingApproach};
 use video_meta::VideoMeta;
 
@@ -87,6 +96,7 @@ pub use context::{
     VideoParent,
     VideoUpdate
 };
+pub use degrees::Degrees;
 pub use file_meta::FileMeta;
 pub use font::Font;
 pub use hyper_dir::HyperDir;
@@ -103,6 +113,7 @@ pub use poster_file::PosterFile;
 pub use preview_server::start as start_preview_server;
 pub use server_defaults::DEFAULT_IP;
 pub use server_defaults::{default_ports_display, default_ports_iter};
+pub use site::DEFAULT_ROUNDNESS;
 pub use site::{Site, SiteContent};
 pub use site_path::SitePath;
 pub use site_url::SiteUrl;
@@ -123,8 +134,24 @@ pub use sync::{
     SyncState
 };
 pub use sync::{check_sync_config, start_sync};
-pub use theme::SPLASH_SVG;
-pub use theme::{Theme, ThemeKind};
+pub use theme::{
+    Oklch,
+    Theme,
+    ThemeKind,
+    ThemeMode,
+    ThemePaint,
+    ThemeParams
+};
+pub use theme::{
+    DEFAULT_ACCENT_BRIGHTENING,
+    DEFAULT_ACCENT_CHROMA,
+    DEFAULT_ACCENT_HUE,
+    DEFAULT_BASE_CHROMA,
+    DEFAULT_BASE_HUE,
+    DEFAULT_CONTRAST,
+    DEFAULT_LAYERED_CHROMA,
+    SPLASH_SVG
+};
 pub use util::InfallibleResult;
 pub use video::Video;
 pub use video_file::VideoFile;

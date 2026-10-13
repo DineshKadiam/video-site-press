@@ -7,9 +7,14 @@ use actix_session::Session;
 use actix_web::web::{Data, Form, Redirect};
 use serde_derive::Deserialize;
 
-use hyper8_core::{Language, Theme};
+use hyper8_core::Language;
 
-use crate::{Context, ServerMode, SessionState};
+use crate::{
+    Context,
+    EditorTheme,
+    ServerMode,
+    SessionState
+};
 
 #[derive(Deserialize)]
 pub struct LanguageForm {
@@ -56,7 +61,7 @@ pub async fn change_theme(
             let _ = session.insert("theme_key", &form.theme_key);
         }
         ServerMode::SingleLocalUser { synced_editor_state } => {
-            let theme = Theme::from_key(&form.theme_key).unwrap();
+            let theme = EditorTheme::try_from(form.theme_key.as_str()).unwrap();
             synced_editor_state.lock().unwrap().set_theme(theme);
         }
     }

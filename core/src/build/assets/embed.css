@@ -30,9 +30,9 @@ img {
 }
 .intro_controls .icon_button {
     align-items: center;
-    background: var(--d1-85);
+    background: var(--d1-85-mono);
     border-radius: 50%;
-    color: var(--l2);
+    color: var(--l2-mono);
     display: flex;
     height: 2.2em;
     justify-content: center;
@@ -40,7 +40,7 @@ img {
     width: 2.2em;
 }
 .intro_controls .icon_button:hover {
-    color: var(--l1);
+    color: var(--l1-mono);
     opacity: .9;
 }
 .intro_controls .selector_options {
@@ -53,7 +53,7 @@ img {
 }
 .intro_controls .selector_control.active:hover .selector_options button:focus,
 .intro_controls .selector_control.active:hover .selector_options button:hover {
-    color: var(--l1);
+    color: var(--l1-mono);
     opacity: .9;
 }
 .intro_controls .selector_options:focus-within,
@@ -81,11 +81,11 @@ img {
 .outro_playlist_context > a:hover,
 .outro_playlist_context > button:focus-visible,
 .outro_playlist_context > button:hover {
-    background: var(--l1-10);
+    background: var(--l1-10-mono);
 }
 .outro_playlist_context .description {
     align-items: flex-start;
-    color: var(--l1);
+    color: var(--l1-mono);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -93,12 +93,12 @@ img {
     margin-right: 1rem;
 }
 .outro_playlist_context .details {
-    color: var(--l3);
+    color: var(--l3-mono);
     font-size: .8rem;
 }
 .outro_playlist_context .label { font-size: .9rem;  }
 .outro_playlist_context .number_context {
-    background: var(--l3);
+    background: var(--l3-mono);
     border-radius: .2rem;
     color: var(--d1);
     font-size: .8rem;
@@ -208,7 +208,7 @@ path.loading_right {
 .player_controls .right_playback_controls button:last-child { padding-right: .9rem; }
 .player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
-    background: var(--d1-85);
+    background: var(--d1-85-mono);
     border-bottom-left-radius: .5rem;
     border-bottom-right-radius: .5rem;
     display: flex;
@@ -244,7 +244,7 @@ path.loading_right {
 }
 .player_controls .timeline:hover .bar { height: .5rem; }
 .player_controls .timeline .bar.backdrop {
-    background: var(--d1);
+    background: var(--d1-mono);
     width: 100%;
     z-index: 1;
 }
@@ -252,9 +252,9 @@ path.loading_right {
     width: 100%;
     z-index: 4;
 }
-.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1); }
+.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1-mono); }
 .player_controls .timeline .bar.progress {
-    background: var(--l1);
+    background: var(--acc);
     width: 0;
     z-index: 3;
 }
@@ -262,8 +262,8 @@ path.loading_right {
     background:
         repeating-linear-gradient(
             135deg,
-            var(--l2),
-            var(--l2) 1rem,
+            var(--l2-mono),
+            var(--l2-mono) 1rem,
             transparent 1rem,
             transparent 2rem
         );
@@ -282,7 +282,7 @@ path.loading_right {
     100% { background-position-x: 2.8rem; }
 }
 .player_controls .timeline .bar.buffered {
-    background: var(--dm);
+    background: var(--d3-mono);
     width: 0;
     z-index: 2;
 }
@@ -322,24 +322,24 @@ path.loading_right {
 .player {
     background: #000;
     border-radius: calc(var(--r) * .6rem);
-    color: var(--l2);
+    color: var(--l2-mono);
     position: relative;
 }
 .player a,
 .player button {
-    color: var(--l2);
+    color: var(--l2-mono);
 }
 .player a:hover,
 .player button:hover {
-    color: var(--l1);
+    color: var(--l1-mono);
 }
 .player button {
     background: none;
     border: none;
     cursor: pointer;
 }
-.player button.dimmed { color: var(--m); }
-.player button.dimmed:hover { color: var(--l3); }
+.player button.dimmed { opacity: .6; }
+.player button.dimmed:hover { opacity: .8; }
 .player > *:not(video) { z-index: 1; }
 .player[data-state="intro"] .player_controls { display: none; }
 .player:not([data-state="intro"]) .player_intro { display: none; }
@@ -357,7 +357,7 @@ path.loading_right {
 .player:not(:fullscreen) video { aspect-ratio: var(--video-aspect); }
 .player .intro_heading {
     align-items: center;
-    background: var(--l1);
+    background: var(--l1-mono);
     border-bottom-left-radius: .5rem;
     border-top-right-radius: .5rem;
     bottom: 0;
@@ -404,7 +404,7 @@ path.loading_right {
 }
 .selector_options button {
     align-items: center;
-    background: var(--d1-85);
+    background: var(--d1-85-mono);
     display: flex;
     white-space: nowrap;
 }
@@ -435,10 +435,10 @@ svg {
     width: auto;
 }
 .versions_ring circle.backdrop {
-    fill: var(--d1);
+    fill: var(--d1-mono);
     opacity: .9;
 }
-.versions_ring path { fill: var(--l1); }
+.versions_ring path { fill: var(--l1-mono); }
 .versions_ring g {
     cursor: pointer;
     opacity: .9;
@@ -452,7 +452,7 @@ svg {
     fill: var(--d1);
     font-size: 1.3rem;
 }
-.versions_ring rect.backdrop { fill: var(--l1); }
+.versions_ring rect.backdrop { fill: var(--l1-mono); }
 .versions_ring text.size {
     fill: var(--d3);
     font-size: 1rem;

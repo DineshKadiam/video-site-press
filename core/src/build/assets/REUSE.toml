@@ -5,6 +5,8 @@ path = [
 	"adaptive_theme.css",
 	"adaptive_theme.js",
 	"clipboard.js",
+	"design_overlay.css",
+	"design_overlay.js",
 	"embed.css",
 	"embed.js",
 	"favicon.png",

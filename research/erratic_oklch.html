@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { margin: 0; }
+            .tiles {
+                display: grid;
+                grid-template-columns: repeat(72, 1fr);
+            }
+            .tiles > div { height: 2rem; }
+        </style>
+    </head>
+    <body>
+        <main>
+            <div>
+                <p>
+                    This was created to study erratic behavior in OKLCH at
+                    high chroma values. For instance between 40-100% chroma,
+                    an OKLCH color with 0-20% lightness and a hue somewhere
+                    in the nominal red-yellow spectrum (e.g. at 85deg hue)
+                    starts to produce saturated mid-tone greens, which is
+                    erratic both in terms of hue and lightness.
+                    <br><br>
+                    Usage: Move the slider to raise/lower chroma and see what
+                    outputs appear across the spectrum.
+                </p>
+                <input max="100" min="0" type="range">
+                <span></span>
+            </div>
+            <p>
+                <strong>Raw OKLCH</strong>
+            </p>
+            <div class="tiles">
+            </div>
+            <p>
+                <strong>Compensated</strong>
+            </p>
+            <div class="tiles compensated">
+            </div>
+        </main>
+        <script>
+            const chromaDisplay = document.querySelector('span');
+            const slider = document.querySelector('input');
+            const tiles = document.querySelector('.tiles:not(.compensated)');
+            const tilesCompensated = document.querySelector('.tiles.compensated');
+
+            function compensateLightness(lightness, chroma, hue) {
+                // Significant shifts occur only when chroma > 40% and lightness < 20%
+                if (chroma > 40 && lightness < 20) {
+                    const compensationFactor = (chroma - 40) / 60;
+                    const overshoot = 20 - lightness;
+
+                    // We raise lightness back up towards 20 – at just over
+                    // 40% chroma just a little bit, at 100% chroma all the
+                    // way (gradual compensation).
+                    return lightness + overshoot * compensationFactor;
+                }
+
+                return lightness;
+            }
+
+            function renderTiles(chroma) {
+                chromaDisplay.innerText = chroma;
+
+                tiles.replaceChildren();
+                tilesCompensated.replaceChildren();
+
+                for (let lightness = 0; lightness <= 100; lightness += 5) {
+                    for (let hue = 0; hue < 360; hue += 5) {
+                        const tile = document.createElement('div');
+
+                        tile.style = `background: oklch(${lightness}% ${chroma}% ${hue});`;
+                        tiles.appendChild(tile);
+
+                        const tileCompensated = document.createElement('div');
+
+                        const lightnessCompensated = compensateLightness(lightness, chroma, hue);
+
+                        tileCompensated.style = `background: oklch(${lightnessCompensated}% ${chroma}% ${hue});`;
+                        tilesCompensated.appendChild(tileCompensated);
+                    }
+                }
+            }
+
+            renderTiles(50);
+
+            slider.addEventListener('input', () => {
+                renderTiles(slider.valueAsNumber);
+            });
+        </script>
+    </body>
+</html>

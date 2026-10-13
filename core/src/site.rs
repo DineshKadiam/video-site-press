@@ -11,6 +11,7 @@ use crate::{
     AspectRatio,
     Context,
     Collection,
+    Degrees,
     Font,
     FtpConfig,
     GetAnyResult,
@@ -24,10 +25,14 @@ use crate::{
     SshConfig,
     SyncProtocol,
     Theme,
+    ThemeMode,
+    ThemePaint,
     Video
 };
 use crate::manifest::{attribute_error, element_error, not_supported_error};
 use crate::util::supported_font_extension;
+
+pub const DEFAULT_ROUNDNESS: u8 = 80;
 
 const SITE_OPTIONS: &[&str] = &[
     "base_url",
@@ -38,7 +43,10 @@ const SITE_OPTIONS: &[&str] = &[
     "poster_aspect",
     "roundness",
     "ssh_config",
-    "theme"
+    "theme",
+    "theme_mode",
+    "theme.dark",
+    "theme.light"
 ];
 
 #[derive(Clone, Debug)]
@@ -46,9 +54,11 @@ pub struct Site {
     pub base_url: Option<SiteUrl>,
     pub clean_urls: bool,
     pub content: SiteContent,
+    pub dark_theme: Option<ThemePaint>,
     pub font: Font,
     pub ftp_config: FtpConfig,
     pub language: Language,
+    pub light_theme: Option<ThemePaint>,
     /// Syntactical and semantic errors inside the manifest for displaying to
     /// the user as well as to prevent programmatic updates to the site and
     /// its manifest while such errors are present.
@@ -56,7 +66,8 @@ pub struct Site {
     pub poster_aspect: AspectRatio,
     pub roundness: Option<Percent>,
     pub ssh_config: SshConfig,
-    pub theme: Theme
+    pub theme: Option<Theme>,
+    pub theme_mode: Option<ThemeMode>
 }
 
 #[derive(Clone, Debug)]
@@ -158,6 +169,176 @@ impl Site {
                         }
                     } else {
                         let message = "base_url needs to be provided as a field with a value, e.g.: 'base_url: https://example.com'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "dark_theme" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut theme_paint = ThemePaint::default();
+
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "accent_brightening" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.accent_brightening = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The accent_brightening value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "accent_brightening needs to be provided as a field with a value, e.g.: 'accent_brightening: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "accent_chroma" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.accent_chroma = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The accent_chroma value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "accent_chroma needs to be provided as a field with a value, e.g.: 'accent_chroma: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "accent_hue" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Degrees::try_from(value) {
+                                            Ok(degrees) => {
+                                                theme_paint.accent_hue = Some(degrees);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The accent_hue value {value} was not recognized, only degree values from 0-360 degrees (with or without ° or deg as unit) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "accent_hue needs to be provided as a field with a value, e.g.: 'accent_hue: 90deg'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "base_chroma" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.base_chroma = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The base_chroma value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "base_chroma needs to be provided as a field with a value, e.g.: 'base_chroma: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "base_hue" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Degrees::try_from(value) {
+                                            Ok(degrees) => {
+                                                theme_paint.base_hue = Some(degrees);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The base_hue value {value} was not recognized, only degree values from 0-360 degrees (with or without ° or deg as unit) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "base_hue needs to be provided as a field with a value, e.g.: 'base_hue: 90deg'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "contrast" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.contrast = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The contrast value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "contrast needs to be provided as a field with a value, e.g.: 'contrast: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "layered_chroma" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.layered_chroma = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The layered_chroma value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "layered_chroma needs to be provided as a field with a value, e.g.: 'layered_chroma: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                _ => {
+                                    let recognized_keys = [
+                                        "accent_brightening",
+                                        "accent_chroma",
+                                        "accent_hue",
+                                        "base_chroma",
+                                        "base_hue",
+                                        "contrast",
+                                        "layered_chroma"
+                                    ];
+
+                                    let recognized_keys = recognized_keys
+                                        .iter()
+                                        .map(|key| format!("'{key}'"))
+                                        .collect::<Vec<_>>()
+                                        .join(", ");
+
+                                    let message = format!("The key/name of this attribute was not recognized, only {recognized_keys} are recognized inside a dark_theme field");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
+                                }
+                            }
+                        }
+
+                        self.dark_theme = Some(theme_paint);
+                    } else {
+                        let message = indoc!("
+                            dark_theme needs to be provided as a field with attributes, e.g.:
+
+                            dark_theme:
+                            base_chroma = 20
+                            base_hue = 90
+                        ");
+
                         let error = element_error(element, manifest_path, message);
                         self.manifest_errors.push(error);
                     }
@@ -293,6 +474,176 @@ impl Site {
                         self.manifest_errors.push(error);
                     }
                 }
+                "light_theme" => {
+                    if let Some(attributes) = element.attributes() {
+                        let mut theme_paint = ThemePaint::default();
+
+                        for attribute in attributes {
+                            match attribute.key() {
+                                "accent_brightening" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.accent_brightening = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The accent_brightening value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "accent_brightening needs to be provided as a field with a value, e.g.: 'accent_brightening: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "accent_chroma" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.accent_chroma = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The accent_chroma value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "accent_chroma needs to be provided as a field with a value, e.g.: 'accent_chroma: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "accent_hue" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Degrees::try_from(value) {
+                                            Ok(degrees) => {
+                                                theme_paint.accent_hue = Some(degrees);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The accent_hue value {value} was not recognized, only degree values from 0-360 degrees (with or without ° or deg as unit) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "accent_hue needs to be provided as a field with a value, e.g.: 'accent_hue: 90deg'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "base_chroma" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.base_chroma = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The base_chroma value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "base_chroma needs to be provided as a field with a value, e.g.: 'base_chroma: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "base_hue" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Degrees::try_from(value) {
+                                            Ok(degrees) => {
+                                                theme_paint.base_hue = Some(degrees);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The base_hue value {value} was not recognized, only degree values from 0-360 degrees (with or without ° or deg as unit) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "base_hue needs to be provided as a field with a value, e.g.: 'base_hue: 90deg'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "contrast" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.contrast = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The contrast value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "contrast needs to be provided as a field with a value, e.g.: 'contrast: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                "layered_chroma" => {
+                                    if let Some(value) = attribute.value() {
+                                        match Percent::try_from(value) {
+                                            Ok(percent) => {
+                                                theme_paint.layered_chroma = Some(percent);
+                                            }
+                                            Err(()) => {
+                                                let message = format!("The layered_chroma value {value} was not recognized, only integer percent values from 0-100% (with or without sign) are recognized");
+                                                let error = attribute_error(attribute, manifest_path, &message);
+                                                self.manifest_errors.push(error);
+                                            }
+                                        };
+                                    } else {
+                                        let message = "layered_chroma needs to be provided as a field with a value, e.g.: 'layered_chroma: 100%'";
+                                        let error = attribute_error(attribute, manifest_path, message);
+                                        self.manifest_errors.push(error);
+                                    }
+                                }
+                                _ => {
+                                    let recognized_keys = [
+                                        "accent_brightening",
+                                        "accent_chroma",
+                                        "accent_hue",
+                                        "base_chroma",
+                                        "base_hue",
+                                        "contrast",
+                                        "layered_chroma"
+                                    ];
+
+                                    let recognized_keys = recognized_keys
+                                        .iter()
+                                        .map(|key| format!("'{key}'"))
+                                        .collect::<Vec<_>>()
+                                        .join(", ");
+
+                                    let message = format!("The key/name of this attribute was not recognized, only {recognized_keys} are recognized inside a light_theme field");
+                                    let error = attribute_error(attribute, manifest_path, &message);
+                                    self.manifest_errors.push(error);
+                                }
+                            }
+                        }
+
+                        self.light_theme = Some(theme_paint);
+                    } else {
+                        let message = indoc!("
+                            light_theme needs to be provided as a field with attributes, e.g.:
+
+                            light_theme:
+                            base_chroma = 20
+                            base_hue = 90
+                        ");
+
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
                 "poster_aspect" => {
                     if let Some(value) = element.field_value() {
                         match AspectRatio::from_representation(value) {
@@ -424,7 +775,7 @@ impl Site {
                     if let Some(value) = element.field_value() {
                         match Theme::from_key(value) {
                             Ok(theme) => {
-                                self.theme = theme;
+                                self.theme = Some(theme);
                             }
                             Err(err) => {
                                 let message = format!("The supplied theme key was no recognized ({err})");
@@ -438,12 +789,40 @@ impl Site {
                         self.manifest_errors.push(error);
                     }
                 }
+                "theme_mode" => {
+                    if let Some(value) = element.field_value() {
+                        match ThemeMode::try_from(value) {
+                            Ok(theme_mode) => {
+                                self.theme_mode = Some(theme_mode);
+                            }
+                            Err(()) => {
+                                let message = format!("The supplied theme mode was not recognized ('adaptive', 'dark' and 'light' are supported)");
+                                let error = element_error(element, manifest_path, &message);
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = "theme_mode needs to be provided as a field with a value, e.g.: 'theme_mode: dark'";
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
                 other => {
                     let message = not_supported_error("site.eno", other, &[SITE_OPTIONS]);
                     let error = element_error(element, manifest_path, &message);
                     self.manifest_errors.push(error);
                 }
             }
+        }
+    }
+
+    /// Returns storage used in bytes for the built site
+    pub fn build_storage_usage(&self) -> u64 {
+        match &self.content {
+            SiteContent::Collection(collection) => collection.build_storage_usage(),
+            SiteContent::Playlist(playlist) => playlist.build_storage_usage(),
+            SiteContent::Video(video) => video.build_storage_usage(),
+            _ => 0
         }
     }
 
@@ -591,14 +970,17 @@ impl Site {
             base_url: None,
             content: SiteContent::Empty,
             clean_urls: true,
+            dark_theme: None,
             ftp_config: FtpConfig::new(),
             font: Font::Default,
             language: Language::default(),
+            light_theme: None,
             manifest_errors: Vec::new(),
             poster_aspect: AspectRatio::Default,
             roundness: None,
             ssh_config: SshConfig::new(),
-            theme: Theme::default()
+            theme: None,
+            theme_mode: None
         }
     }
 
@@ -664,21 +1046,32 @@ impl Site {
         site
     }
 
-    /// Returns storage used in bytes for the built site
-    pub fn build_storage_usage(&self) -> u64 {
-        match &self.content {
-            SiteContent::Collection(collection) => collection.build_storage_usage(),
-            SiteContent::Playlist(playlist) => playlist.build_storage_usage(),
-            SiteContent::Video(video) => video.build_storage_usage(),
-            _ => 0
-        }
+    pub fn roundness(&self) -> u8 {
+        self.roundness
+            .map(|roundness| roundness.value())
+            .unwrap_or(DEFAULT_ROUNDNESS)
     }
 
-    /// Default roundness is 80% (0.8)
-    pub fn roundness(&self) -> f32 {
-        self.roundness
-            .map(|roundness| roundness.as_factor())
-            .unwrap_or(0.8)
+    pub fn theme(&self) -> Theme {
+        self.theme.unwrap_or(Theme::default())
+    }
+
+    pub fn theme_mode(&self) -> ThemeMode {
+        match self.theme() {
+            Theme::AdaptiveCool => ThemeMode::Adaptive,
+            Theme::AdaptiveDeep => ThemeMode::Adaptive,
+            Theme::AdaptiveNeutral => ThemeMode::Adaptive,
+            Theme::AdaptiveWarm => ThemeMode::Adaptive,
+            Theme::DarkCool => ThemeMode::Dark,
+            Theme::DarkDeep => ThemeMode::Dark,
+            Theme::DarkNeutral => ThemeMode::Dark,
+            Theme::DarkWarm => ThemeMode::Dark,
+            Theme::Experimental => self.theme_mode.unwrap_or(ThemeMode::default()),
+            Theme::LightCool => ThemeMode::Light,
+            Theme::LightDeep => ThemeMode::Light,
+            Theme::LightNeutral => ThemeMode::Light,
+            Theme::LightWarm => ThemeMode::Light
+        }
     }
 
     pub fn title(&self) -> &str {
@@ -724,7 +1117,54 @@ impl Site {
             eno.push_str(&format!("roundness: {roundness}\n"));
         }
 
-        eno.push_str(&format!("theme: {}\n", self.theme.key()));
+        if let Some(theme) = &self.theme {
+            eno.push_str(&format!("theme: {}\n", theme.key()));
+        }
+
+        if let Some(theme_mode) = &self.theme_mode {
+            eno.push_str(&format!("theme_mode: {}\n", theme_mode.key()));
+        }
+
+        if let Some(dark_paint) = &self.dark_theme {
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str(&format!("dark_theme:\n"));
+
+            if let Some(accent_brightening) = &dark_paint.accent_brightening {
+                let accent_brightening: String = accent_brightening.into();
+                eno.push_str(&format!("accent_brightening = {accent_brightening}\n"));
+            }
+
+            if let Some(accent_chroma) = &dark_paint.accent_chroma {
+                let accent_chroma: String = accent_chroma.into();
+                eno.push_str(&format!("accent_chroma = {accent_chroma}\n"));
+            }
+
+            if let Some(accent_hue) = &dark_paint.accent_hue {
+                let accent_hue: String = accent_hue.into();
+                eno.push_str(&format!("accent_hue = {accent_hue}\n"));
+            }
+
+            if let Some(base_chroma) = &dark_paint.base_chroma {
+                let base_chroma: String = base_chroma.into();
+                eno.push_str(&format!("base_chroma = {base_chroma}\n"));
+            }
+
+            if let Some(base_hue) = &dark_paint.base_hue {
+                let base_hue: String = base_hue.into();
+                eno.push_str(&format!("base_hue = {base_hue}\n"));
+            }
+
+            if let Some(contrast) = &dark_paint.contrast {
+                let contrast: String = contrast.into();
+                eno.push_str(&format!("contrast = {contrast}\n"));
+            }
+
+            if let Some(layered_chroma) = &dark_paint.layered_chroma {
+                let layered_chroma: String = layered_chroma.into();
+                eno.push_str(&format!("layered_chroma = {layered_chroma}\n"));
+            }
+        }
 
         if !self.ftp_config.is_empty() {
             if !eno.is_empty() { eno.push('\n'); }
@@ -759,6 +1199,47 @@ impl Site {
 
             if let Some(user) = &self.ftp_config.user {
                 eno.push_str(&format!("user = {user}\n"));
+            }
+        }
+
+        if let Some(light_paint) = &self.light_theme {
+            if !eno.is_empty() { eno.push('\n'); }
+
+            eno.push_str(&format!("light_theme:\n"));
+
+            if let Some(accent_brightening) = &light_paint.accent_brightening {
+                let accent_brightening: String = accent_brightening.into();
+                eno.push_str(&format!("accent_brightening = {accent_brightening}\n"));
+            }
+
+            if let Some(accent_chroma) = &light_paint.accent_chroma {
+                let accent_chroma: String = accent_chroma.into();
+                eno.push_str(&format!("accent_chroma = {accent_chroma}\n"));
+            }
+
+            if let Some(accent_hue) = &light_paint.accent_hue {
+                let accent_hue: String = accent_hue.into();
+                eno.push_str(&format!("accent_hue = {accent_hue}\n"));
+            }
+
+            if let Some(base_chroma) = &light_paint.base_chroma {
+                let base_chroma: String = base_chroma.into();
+                eno.push_str(&format!("base_chroma = {base_chroma}\n"));
+            }
+
+            if let Some(base_hue) = &light_paint.base_hue {
+                let base_hue: String = base_hue.into();
+                eno.push_str(&format!("base_hue = {base_hue}\n"));
+            }
+
+            if let Some(contrast) = &light_paint.contrast {
+                let contrast: String = contrast.into();
+                eno.push_str(&format!("contrast = {contrast}\n"));
+            }
+
+            if let Some(layered_chroma) = &light_paint.layered_chroma {
+                let layered_chroma: String = layered_chroma.into();
+                eno.push_str(&format!("layered_chroma = {layered_chroma}\n"));
             }
         }
 

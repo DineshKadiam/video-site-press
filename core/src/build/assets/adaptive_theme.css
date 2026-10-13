@@ -1,7 +1,20 @@
-body.light #toggle-light,
-body:not(.light) #toggle-dark {
-    display: none;
+@media (prefers-color-scheme: dark) {
+    body:not([data-pinned-theme]) {
+        .toggle_dark { display: none; }
+    }
 }
+@media (prefers-color-scheme: light) {
+    body:not([data-pinned-theme]) {
+        .toggle_light { display: none; }
+    }
+}
+body[data-pinned-theme="dark"] {
+    .toggle_dark { display: none; }
+}
+body[data-pinned-theme="light"] {
+    .toggle_light { display: none; }
+}
+
 .theme_toggle {
     align-items: center;
     background: none;

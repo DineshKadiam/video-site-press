@@ -11,8 +11,13 @@ use hyper8_util::{
     html_escape_outside_attribute
 };
 
-use crate::{Context, Site, Video};
-use crate::build::{AssetHashes, Layout};
+use crate::{
+    Build,
+    Context,
+    Site,
+    Video
+};
+use crate::build::Layout;
 use crate::build::outline::Traversal;
 use crate::build::widgets::{copy_button, unlisted_badge};
 
@@ -49,7 +54,7 @@ fn embed_code(aspect_ratio: f32, embed_url: &str, title: &str) -> (String, Strin
 
 /// Writes the page on which the embed html code can be viewed and copied.
 pub fn embed_codes_html(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     site: &Site,
     video: &Video,
@@ -102,7 +107,7 @@ pub fn embed_codes_html(
     "#);
 
     let html = layout.render(
-        asset_hashes,
+        build,
         &body,
         site,
         &title,

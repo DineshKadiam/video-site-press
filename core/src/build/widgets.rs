@@ -82,19 +82,13 @@ pub fn copy_button(
 /// layouts.
 pub fn copy_button_icon_templates(translations: &Translations) -> String {
     let copy_icon = hyper8_icons::copy(None);
-    let failure_icon = hyper8_icons::failure(translations.failed);
+    let failed_icon = hyper8_icons::failure(translations.failed);
     let success_icon = hyper8_icons::success(translations.copied);
 
     formatdoc!(r#"
-        <template id="copy_icon">
-            {copy_icon}
-        </template>
-        <template id="failure_icon">
-            {failure_icon}
-        </template>
-        <template id="success_icon">
-            {success_icon}
-        </template>
+        <template data-copy-icon>{copy_icon}</template>
+        <template data-failed-icon>{failed_icon}</template>
+        <template data-success-icon>{success_icon}</template>
     "#)
 }
 

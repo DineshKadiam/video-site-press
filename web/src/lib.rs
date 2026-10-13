@@ -5,6 +5,7 @@ mod actix;
 mod components;
 mod context;
 mod editor_state;
+mod editor_theme;
 mod endpoints;
 mod field;
 mod location;
@@ -15,10 +16,13 @@ mod session_state;
 mod tree_view_order;
 mod widgets;
 
-use components::Checkbox;
-use components::Input;
-use components::Select;
-use components::Textarea;
+use components::{
+	Checkbox,
+	Input,
+	Select,
+	Slider,
+	Textarea
+};
 use context::Context;
 use field::Field;
 use location::{Location, Subpage};
@@ -27,6 +31,7 @@ use tree_view_order::TreeViewOrder;
 use widgets::Layout;
 
 pub use editor_state::EditorState;
+pub use editor_theme::EditorTheme;
 pub use mode::Mode;
 pub use server::ServerMode;
 pub use server::start as start_server;

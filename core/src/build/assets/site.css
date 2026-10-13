@@ -31,7 +31,6 @@ a:hover { color: var(--f3); }
          layout questions around banner. */
 .banner { display: none; }
 body {
-    background: var(--b1);
     color: var(--f2);
     margin: 0;
 }
@@ -104,7 +103,8 @@ button {
 #copy-link.confirmed::after { content: var(--t-copied); }
 #copy-link.failed::after { content: var(--t-failed); }
 dialog.shortcuts {
-    background: var(--b1);
+    backdrop-filter: blur(1rem);
+    background: var(--b1-92);
     border-radius: calc(var(--r) * .6rem);
     border: 1px solid var(--b3);
     box-shadow: 0 0 1rem var(--d1-15);
@@ -121,20 +121,24 @@ dialog.shortcuts {
 }
 dialog.shortcuts[open] { display: flex; }
 dialog.shortcuts button {
-    background: var(--action);
+    background: var(--b2);
     border: none;
     border-radius: calc(var(--r) * .25rem);
-    color: var(--l1);
+    color: var(--f1);
     cursor: pointer;
     font-size: .9rem;
     padding: .3rem .4rem;
 }
-dialog.shortcuts button:hover { background: var(--action-hover); }
+dialog.shortcuts button:focus-visible,
+dialog.shortcuts button:hover {
+    background: var(--b3);
+}
 dialog.shortcuts form {
     margin-top: 1rem;
     text-align: center;
 }
 dialog.shortcuts h3 {
+    color: var(--f1);
     font-size: 1.1rem;
     font-weight: 400;
     margin: 0;
@@ -150,7 +154,8 @@ dialog.shortcuts li {
 }
 dialog.shortcuts li > span {
     align-items: center;
-    background: var(--b2);
+    background: var(--b1);
+    border: 1px solid var(--b3);
     border-radius: .3rem;
     box-sizing: border-box;
     display: flex;
@@ -345,11 +350,11 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .outro_playlist_context > a:hover,
 .outro_playlist_context > button:focus-visible,
 .outro_playlist_context > button:hover {
-    background: var(--l1-10);
+    background: var(--l1-10-mono);
 }
 .outro_playlist_context .description {
     align-items: flex-start;
-    color: var(--l1);
+    color: var(--l1-mono);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -357,12 +362,12 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
     margin-right: 1rem;
 }
 .outro_playlist_context .details {
-    color: var(--l3);
+    color: var(--l3-mono);
     font-size: .8rem;
 }
 .outro_playlist_context .label { font-size: .9rem;  }
 .outro_playlist_context .number_context {
-    background: var(--l3);
+    background: var(--l3-mono);
     border-radius: .2rem;
     color: var(--d1);
     font-size: .8rem;
@@ -487,7 +492,7 @@ path.loading_right {
 .player_controls button { padding: .9rem .7rem; }
 .player_controls button svg { font-size: 1.4rem; }
 .player_controls .control_pane {
-    background: var(--d1-85);
+    background: var(--d1-85-mono);
     border-bottom-left-radius: calc(var(--r) * .6rem);
     border-bottom-right-radius: calc(var(--r) * .6rem);
     display: flex;
@@ -525,7 +530,7 @@ path.loading_right {
 }
 .player_controls .timeline:hover .bar { height: .5rem; }
 .player_controls .timeline .bar.backdrop {
-    background: var(--d1);
+    background: var(--d1-mono);
     width: 100%;
     z-index: 1;
 }
@@ -533,9 +538,9 @@ path.loading_right {
     width: 100%;
     z-index: 4;
 }
-.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1); }
+.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1-mono); }
 .player_controls .timeline .bar.progress {
-    background: var(--l1);
+    background: var(--acc);
     width: 0;
     z-index: 3;
 }
@@ -543,8 +548,8 @@ path.loading_right {
     background:
         repeating-linear-gradient(
             135deg,
-            var(--l2),
-            var(--l2) 1rem,
+            var(--l2-mono),
+            var(--l2-mono) 1rem,
             transparent 1rem,
             transparent 2rem
         );
@@ -563,7 +568,7 @@ path.loading_right {
     100% { background-position-x: 2.8rem; }
 }
 .player_controls .timeline .bar.buffered {
-    background: var(--dm);
+    background: var(--d3-mono);
     width: 0;
     z-index: 2;
 }
@@ -626,24 +631,24 @@ path.loading_right {
 .player {
     background: #000;
     border-radius: calc(var(--r) * .6rem);
-    color: var(--l2);
+    color: var(--l2-mono);
     position: relative;
 }
 .player a,
 .player button {
-    color: var(--l2);
+    color: var(--l2-mono);
 }
 .player a:hover,
 .player button:hover {
-    color: var(--l1);
+    color: var(--l1-mono);
 }
 .player button {
     background: none;
     border: none;
     cursor: pointer;
 }
-.player button.dimmed { color: var(--m); }
-.player button.dimmed:hover { color: var(--l3); }
+.player button.dimmed { opacity: .6; }
+.player button.dimmed:hover { opacity: .8; }
 .player > *:not(video) { z-index: 1; }
 .player:not([data-state="intro"]) .player_intro { display: none; }
 .player:not([data-state="intro"]):not([data-state="paused"]) .toggle_playback .play { display: none; }
@@ -683,12 +688,14 @@ path.loading_right {
     position: relative;
 }
 .playlist_context > a:focus-visible,
-.playlist_context > a:hover { background: var(--b2); }
+.playlist_context > a:hover {
+    background: var(--f1-5);
+}
 .playlist_context > a:not(:last-child) {
     margin-bottom: .5rem;
 }
 .playlist_context .current::after {
-    background: var(--action);
+    background: var(--f2);
     border-radius: .1rem;
     content: '';
     height: 3rem;
@@ -811,7 +818,8 @@ path.loading_right {
     font-size: 1.17rem;
 }
 .site_tree {
-    background: var(--b1);
+    backdrop-filter: blur(1rem);
+    background: var(--b1-92);
     border: 1px solid var(--b3);
     border-radius: calc(var(--r) * .6rem);
     box-shadow: 0 0 2rem var(--d1-15);
@@ -840,7 +848,7 @@ path.loading_right {
     display: flex;
 }
 .site_tree .elements a.current::before {
-    background: var(--action);
+    background: var(--f2);
     border-radius: .1rem;
     content: '';
     height: 1rem;
@@ -850,7 +858,7 @@ path.loading_right {
 }
 .site_tree .elements a:focus-visible,
 .site_tree .elements a:hover {
-    background: var(--b2);
+    background: var(--f1-5);
     color: var(--f1);
     outline: none;
 }
@@ -936,7 +944,7 @@ path.loading_right {
 }
 .selector_options button {
     align-items: center;
-    background: var(--d1-85);
+    background: var(--d1-85-mono);
     display: flex;
     white-space: nowrap;
 }
@@ -1045,10 +1053,10 @@ svg {
 }
 .thumbnail_wrapper { position: relative; }
 .thumbnail_wrapper .duration {
-    background: var(--b1-85);
+    background: var(--d1-85-mono);
     border-radius: calc(var(--r) * .25rem);
     bottom: calc(var(--poster-aspect) * 3%);
-    color: var(--f1);
+    color: var(--l1-mono);
     font-size: .8rem;
     padding: .1rem .3rem;
     position: absolute;
@@ -1066,10 +1074,10 @@ svg {
     width: auto;
 }
 .versions_ring circle.backdrop {
-    fill: var(--d1);
+    fill: var(--d1-mono);
     opacity: .9;
 }
-.versions_ring path { fill: var(--l1); }
+.versions_ring path { fill: var(--l1-mono); }
 .versions_ring g {
     cursor: pointer;
     opacity: .9;
@@ -1083,7 +1091,7 @@ svg {
     fill: var(--d1);
     font-size: 1.3rem;
 }
-.versions_ring rect.backdrop { fill: var(--l1); }
+.versions_ring rect.backdrop { fill: var(--l1-mono); }
 .versions_ring text.size {
     fill: var(--d3);
     font-size: 1rem;

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use actix_web::HttpResponse;
@@ -19,7 +19,10 @@ pub mod site;
 pub mod sync;
 pub mod video;
 
-pub use build::build;
+pub use build::{
+    build_with_design_overlay,
+    build_without_design_overlay
+};
 pub use jobs::jobs;
 pub use scripts::scripts;
 pub use styles::styles;

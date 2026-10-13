@@ -23,7 +23,8 @@ use hyper8_core::util::ensure_dir;
 
 use crate::{Context, EditorState};
 use crate::endpoints::{
-    build,
+    build_with_design_overlay,
+    build_without_design_overlay,
     collection,
     convert,
     editor,
@@ -82,7 +83,8 @@ pub fn start(
                     )
                     .app_data(data_moving.clone())
                     .route("/", get().to(index::index))
-                    .route("/build/{site_path:.*}", get().to(build))
+                    .route("/build/{site_path:.*}", get().to(build_without_design_overlay))
+                    .route("/build-design", get().to(build_with_design_overlay))
                     .route("/convert-to-collection/{site_path:.*}", post().to(convert::to_collection))
                     .route("/convert-to-playlist/{site_path:.*}", post().to(convert::to_playlist))
                     .route("/convert-to-video/{site_path:.*}", post().to(convert::to_video))

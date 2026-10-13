@@ -5,14 +5,14 @@ use std::fs;
 
 use serde_derive::{Deserialize, Serialize};
 
-use hyper8_core::{Language, Theme};
+use hyper8_core::Language;
 
-use crate::TreeViewOrder;
+use crate::{EditorTheme, TreeViewOrder};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EditorState {
     pub language: Language,
-    pub theme: Theme,
+    pub theme: EditorTheme,
     pub tree_view_order: TreeViewOrder
 }
 
@@ -41,7 +41,7 @@ impl EditorState {
         }
 
         let language = Language::default();
-        let theme = Theme::default();
+        let theme = EditorTheme::default();
         let tree_view_order = TreeViewOrder::Default;
 
         EditorState {
@@ -70,7 +70,7 @@ impl EditorState {
         self.persist();
     }
 
-    pub fn set_theme(&mut self, theme: Theme) {
+    pub fn set_theme(&mut self, theme: EditorTheme) {
         self.theme = theme;
         self.persist();
     }

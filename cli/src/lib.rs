@@ -114,6 +114,8 @@ fn handle(args: ArgMatches) -> ExitCode {
     } else if args.get_flag("check-ssh") {
         delegate_check(SyncProtocol::Ssh)
     } else if args.get_flag("build") {
+        let design_overlay = args.get_flag("design");
+
         if context.ffmpeg.is_none() {
             print_ffmpeg_not_found();
             return ExitCode::FAILURE;
@@ -122,6 +124,7 @@ fn handle(args: ArgMatches) -> ExitCode {
         build(
             args,
             &context,
+            design_overlay,
             translations
         )
     } else if args.get_flag("sync-ftp") {

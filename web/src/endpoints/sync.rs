@@ -249,7 +249,7 @@ fn sync(
         return Either::Right(error_page(&context, &err, &session_state));
     }
 
-    if let Err(err) = perform_build(&context) {
+    if let Err(err) = perform_build(&context, false) {
         let t_build_failed = translations.build_failed;
         let message = format!("{t_build_failed}\n{err}");
         return Either::Right(error_page(&context, &message, &session_state));

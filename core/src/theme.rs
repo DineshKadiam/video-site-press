@@ -1,12 +1,10 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use indoc::indoc;
-use serde_derive::{Deserialize, Serialize};
 
 use hyper8_translations::Translations;
 
-mod color;
 mod dark_cool;
 mod dark_deep;
 mod dark_neutral;
@@ -15,18 +13,34 @@ mod light_cool;
 mod light_deep;
 mod light_neutral;
 mod light_warm;
-mod theme_vars;
+mod theme_hsl;
+mod theme_mode;
+mod theme_oklch;
+mod theme_paint;
+mod theme_params;
 
-use color::Color;
-use dark_cool::DARK_COOL_VARS;
-use dark_deep::DARK_DEEP_VARS;
-use dark_neutral::DARK_NEUTRAL_VARS;
-use dark_warm::DARK_WARM_VARS;
-use light_cool::LIGHT_COOL_VARS;
-use light_deep::LIGHT_DEEP_VARS;
-use light_neutral::LIGHT_NEUTRAL_VARS;
-use light_warm::LIGHT_WARM_VARS;
-use theme_vars::ThemeVars;
+use crate::Site;
+
+pub use theme_mode::ThemeMode;
+pub use theme_oklch::{
+    OkaPercent,
+    OkcPercent,
+    OkhDegrees,
+    OklPercent,
+    Oklch,
+    ThemeOklch
+};
+pub use theme_paint::ThemePaint;
+pub use theme_paint::{
+    DEFAULT_ACCENT_BRIGHTENING,
+    DEFAULT_ACCENT_CHROMA,
+    DEFAULT_ACCENT_HUE,
+    DEFAULT_BASE_CHROMA,
+    DEFAULT_BASE_HUE,
+    DEFAULT_CONTRAST,
+    DEFAULT_LAYERED_CHROMA
+};
+pub use theme_params::ThemeParams;
 
 pub const SPLASH_SVG: &str = indoc!(r##"
     <svg version="1.1" viewBox="0 0 476.25 476.25" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
@@ -39,7 +53,7 @@ pub const SPLASH_SVG: &str = indoc!(r##"
     </svg>
 "##);
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug)]
 pub enum Theme {
     AdaptiveCool,
     AdaptiveDeep,
@@ -49,6 +63,7 @@ pub enum Theme {
     DarkDeep,
     DarkNeutral,
     DarkWarm,
+    Experimental,
     LightCool,
     LightDeep,
     LightNeutral,
@@ -58,59 +73,13 @@ pub enum Theme {
 #[derive(Clone, Debug)]
 pub enum ThemeKind {
     Adaptive {
-        dark: ThemeVars,
-        light: ThemeVars
+        dark_theme: ThemeOklch,
+        light_theme: ThemeOklch
     },
-    Static(ThemeVars)
+    Static(ThemeOklch)
 }
 
 impl Theme {
-    pub fn key(&self) -> &'static str {
-        match self {
-            Theme::AdaptiveCool => "adaptive_cool",
-            Theme::AdaptiveDeep => "adaptive_deep",
-            Theme::AdaptiveNeutral => "adaptive_neutral",
-            Theme::AdaptiveWarm => "adaptive_warm",
-            Theme::DarkCool => "dark_cool",
-            Theme::DarkDeep => "dark_deep",
-            Theme::DarkNeutral => "dark_neutral",
-            Theme::DarkWarm => "dark_warm",
-            Theme::LightCool => "light_cool",
-            Theme::LightDeep => "light_deep",
-            Theme::LightNeutral => "light_neutral",
-            Theme::LightWarm => "light_warm"
-        }
-    }
-
-    pub fn kind(&self) -> ThemeKind {
-        match self {
-            Theme::AdaptiveCool => ThemeKind::Adaptive {
-                dark: DARK_COOL_VARS,
-                light: LIGHT_COOL_VARS
-            },
-            Theme::AdaptiveDeep => ThemeKind::Adaptive {
-                dark: DARK_DEEP_VARS,
-                light: LIGHT_DEEP_VARS
-            },
-            Theme::AdaptiveNeutral => ThemeKind::Adaptive {
-                dark: DARK_NEUTRAL_VARS,
-                light: LIGHT_NEUTRAL_VARS
-            },
-            Theme::AdaptiveWarm => ThemeKind::Adaptive {
-                dark: DARK_WARM_VARS,
-                light: LIGHT_WARM_VARS
-            },
-            Theme::DarkCool => ThemeKind::Static(DARK_COOL_VARS),
-            Theme::DarkDeep => ThemeKind::Static(DARK_DEEP_VARS),
-            Theme::DarkNeutral => ThemeKind::Static(DARK_NEUTRAL_VARS),
-            Theme::DarkWarm => ThemeKind::Static(DARK_WARM_VARS),
-            Theme::LightCool => ThemeKind::Static(LIGHT_COOL_VARS),
-            Theme::LightDeep => ThemeKind::Static(LIGHT_DEEP_VARS),
-            Theme::LightNeutral => ThemeKind::Static(LIGHT_NEUTRAL_VARS),
-            Theme::LightWarm => ThemeKind::Static(LIGHT_WARM_VARS)
-        }
-    }
-
     pub fn from_key(key: &str) -> Result<Theme, String> {
         match key {
             "adaptive_cool" => Ok(Theme::AdaptiveCool),
@@ -121,36 +90,124 @@ impl Theme {
             "dark_deep" => Ok(Theme::DarkDeep),
             "dark_neutral" => Ok(Theme::DarkNeutral),
             "dark_warm" => Ok(Theme::DarkWarm),
+            "experimental" => Ok(Theme::Experimental),
             "light_cool" => Ok(Theme::LightCool),
             "light_deep" => Ok(Theme::LightDeep),
             "light_neutral" => Ok(Theme::LightNeutral),
             "light_warm" => Ok(Theme::LightWarm),
-            _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_cool', 'adaptive_deep', 'adaptive_neutral', 'adaptive_warm', 'dark_cool', 'dark_deep', 'dark_neutral', 'dark_warm', 'light_cool', 'light_neutral' and 'light_warm')"))
+            _ => Err(format!("Unknown theme key '{key}' (known keys are 'adaptive_cool', 'adaptive_deep', 'adaptive_neutral', 'adaptive_warm', 'dark_cool', 'dark_deep', 'dark_neutral', 'dark_warm', 'experimental', 'light_cool', 'light_neutral' and 'light_warm')"))
         }
     }
 
-    /// Renders an html and inline-css based icon that roughly indicates the
-    /// color tone(s) of the theme
-    pub fn icon(&self) -> String {
-        match self.kind() {
-            ThemeKind::Adaptive { dark, light } => {
-                let dark_inline_vars = dark.preview_gradient_vars("d-");
-                let light_inline_vars = light.preview_gradient_vars("l-");
+    pub fn key(&self) -> &'static str {
+        match self {
+            Theme::AdaptiveCool => "adaptive_cool",
+            Theme::AdaptiveDeep => "adaptive_deep",
+            Theme::AdaptiveNeutral => "adaptive_neutral",
+            Theme::AdaptiveWarm => "adaptive_warm",
+            Theme::DarkCool => "dark_cool",
+            Theme::DarkDeep => "dark_deep",
+            Theme::DarkNeutral => "dark_neutral",
+            Theme::DarkWarm => "dark_warm",
+            Theme::Experimental => "experimental",
+            Theme::LightCool => "light_cool",
+            Theme::LightDeep => "light_deep",
+            Theme::LightNeutral => "light_neutral",
+            Theme::LightWarm => "light_warm"
+        }
+    }
 
-                format!(r#"
-                    <div style="{dark_inline_vars}{light_inline_vars}background: linear-gradient(45deg, var(--l-a), var(--l-b) 49.999%, var(--d-a) 50%, var(--d-b)); border-radius: .2rem; height: 1em; width: 1em;"></div>
-                "#)
+    pub fn kind(&self, site: &Site) -> ThemeKind {
+        match self {
+            Theme::AdaptiveCool => {
+                ThemeKind::Adaptive {
+                    dark_theme: ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_cool_vars())),
+                    light_theme: ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_cool_vars()))
+                }
             }
-            ThemeKind::Static(vars) => {
-                let inline_vars = vars.preview_gradient_vars("");
+            Theme::AdaptiveDeep => {
+                ThemeKind::Adaptive {
+                    dark_theme: ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_deep_vars())),
+                    light_theme: ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_deep_vars()))
+                }
+            }
+            Theme::AdaptiveNeutral => {
+                ThemeKind::Adaptive {
+                    dark_theme: ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_neutral_vars())),
+                    light_theme: ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_neutral_vars()))
+                }
+            }
+            Theme::AdaptiveWarm => {
+                ThemeKind::Adaptive {
+                    dark_theme: ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_warm_vars())),
+                    light_theme: ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_warm_vars()))
+                }
+            }
+            Theme::DarkCool => {
+                ThemeKind::Static(ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_cool_vars())))
+            }
+            Theme::DarkDeep => {
+                ThemeKind::Static(ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_deep_vars())))
+            }
+            Theme::DarkNeutral => {
+                ThemeKind::Static(ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_neutral_vars())))
+            }
+            Theme::DarkWarm => {
+                ThemeKind::Static(ThemeParams::DARK.compute_theme(&Some(ThemePaint::dark_warm_vars())))
+            }
+            Theme::Experimental => {
+                let theme_mode = site.theme_mode.unwrap_or(ThemeMode::Adaptive);
 
-                format!(r#"
-                    <div style="{inline_vars}background: linear-gradient(45deg, var(--a), var(--b)); border-radius: .2rem; height: 1em; width: 1em;"></div>
-                "#)
+                match theme_mode {
+                    ThemeMode::Adaptive => {
+                        ThemeKind::Adaptive {
+                            dark_theme: ThemeParams::DARK.compute_theme(&site.dark_theme),
+                            light_theme: ThemeParams::LIGHT.compute_theme(&site.light_theme)
+                        }
+                    }
+                    ThemeMode::Dark => {
+                        ThemeKind::Static(ThemeParams::DARK.compute_theme(&site.dark_theme))
+                    }
+                    ThemeMode::Light => {
+                        ThemeKind::Static(ThemeParams::LIGHT.compute_theme(&site.light_theme))
+                    }
+                }
+            }
+            Theme::LightCool => {
+                ThemeKind::Static(ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_cool_vars())))
+            }
+            Theme::LightDeep => {
+                ThemeKind::Static(ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_deep_vars())))
+            }
+            Theme::LightNeutral => {
+                ThemeKind::Static(ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_neutral_vars())))
+            }
+            Theme::LightWarm => {
+                ThemeKind::Static(ThemeParams::LIGHT.compute_theme(&Some(ThemePaint::light_warm_vars())))
             }
         }
     }
 
+    pub fn mode(&self, site: &Site) -> ThemeMode {
+        match self {
+            Theme::AdaptiveCool => ThemeMode::Adaptive,
+            Theme::AdaptiveDeep => ThemeMode::Adaptive,
+            Theme::AdaptiveNeutral => ThemeMode::Adaptive,
+            Theme::AdaptiveWarm => ThemeMode::Adaptive,
+            Theme::DarkCool => ThemeMode::Dark,
+            Theme::DarkDeep => ThemeMode::Dark,
+            Theme::DarkNeutral => ThemeMode::Dark,
+            Theme::DarkWarm => ThemeMode::Dark,
+            Theme::Experimental => site.theme_mode.unwrap_or(ThemeMode::Adaptive),
+            Theme::LightCool => ThemeMode::Light,
+            Theme::LightDeep => ThemeMode::Light,
+            Theme::LightNeutral => ThemeMode::Light,
+            Theme::LightWarm => ThemeMode::Light
+        }
+    }
+
+    // TODO: Re-add experimental option (or probably rather retire/replace the
+    // whole thing as soon as the new theming becomes non-experimental)
     pub fn variants(translations: &Translations) -> [(Theme, String); 12] {
         let t_adaptive = translations.adaptive;
         let t_cool = translations.cool;
@@ -169,6 +226,7 @@ impl Theme {
             (Theme::DarkDeep, format!("{t_dark} {t_deep}")),
             (Theme::DarkNeutral, format!("{t_dark} {t_neutral}")),
             (Theme::DarkWarm, format!("{t_dark} {t_warm}")),
+            // (Theme::Experimental, format!("Experimental")),
             (Theme::LightCool, format!("{t_light} {t_cool}")),
             (Theme::LightDeep, format!("{t_light} {t_deep}")),
             (Theme::LightNeutral, format!("{t_light} {t_neutral}")),

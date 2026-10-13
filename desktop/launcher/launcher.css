@@ -244,15 +244,15 @@ main > button:not(:first-child) { margin-top: .1rem; }
     padding: .8rem;
 }
 .overlay > :nth-child(3) {
-    background: var(--action);
+    background: var(--f2);
     border-radius: .2rem;
-    color: var(--l1);
+    color: var(--b1);
     margin: .5rem 0 .5rem .5rem;
     padding: .3rem .8rem;
 }
 .overlay > :nth-child(3):focus-visible,
 .overlay > :nth-child(3):hover {
-    background: var(--action-hover);
+    background: var(--f3);
 }
 .pane {
     align-items: center;

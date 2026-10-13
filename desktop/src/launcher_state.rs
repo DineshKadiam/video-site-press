@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 
 use serde_derive::{Deserialize, Serialize};
 
-use hyper8_core::{Language, Theme};
+use hyper8_core::Language;
 use hyper8_translations::Translations;
-use hyper8_web::EditorState;
+use hyper8_web::{EditorState, EditorTheme};
 
 use crate::{EditorMode, SiteBookmark};
 
@@ -34,7 +34,7 @@ impl LauncherState {
         self.editor_state.lock().unwrap().language.code.clone()
     }
 
-    pub fn get_theme(&self) -> Theme {
+    pub fn get_theme(&self) -> EditorTheme {
         self.editor_state.lock().unwrap().theme.clone()
     }
 
@@ -89,7 +89,7 @@ impl LauncherState {
         self.editor_state.lock().unwrap().set_language(language);
     }
 
-    pub fn set_theme(&mut self, theme: Theme) {
+    pub fn set_theme(&mut self, theme: EditorTheme) {
         self.editor_state.lock().unwrap().set_theme(theme);
     }
 }

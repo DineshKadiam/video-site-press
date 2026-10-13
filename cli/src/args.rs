@@ -87,6 +87,12 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .help_heading("Sync options")
         .long("check-ssh");
 
+    let design = Arg::new("design")
+        .action(ArgAction::SetTrue)
+        .help("Include the design overlay on the site, allowing live exploration of different design settings.")
+        .long("design")
+        .requires("build");
+
     let ip = Arg::new("ip")
         .help("Manually set the ip address used by the editor or preview server (otherwise default to localhost)")
         .long("ip")
@@ -150,6 +156,7 @@ pub fn parse(arg_mode: ArgMode) -> ArgMatches {
         .group(check)
         .arg(check_ftp)
         .arg(check_ssh)
+        .arg(design)
         .arg(ip)
         .arg(non_interactive)
         .arg(port)

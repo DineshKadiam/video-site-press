@@ -1,34 +1,39 @@
-const themeToggles = document.querySelector('#theme-toggles');
-const toggleDark = document.querySelector('#toggle-dark');
-const toggleLight = document.querySelector('#toggle-light');
+const themeToggles = document.querySelector('.theme_toggles');
+const toggleDark = document.querySelector('.toggle_dark');
+const toggleLight = document.querySelector('.toggle_light');
 
-const prefersDarkColorSchemeMediaQuery = matchMedia('(prefers-color-scheme: dark)');
+const PREFERS_DARK_COLOR_SCHEME = matchMedia('(prefers-color-scheme: dark)');
 
-let deviceColorScheme = prefersDarkColorSchemeMediaQuery.matches ? 'dark' : 'light';
-let pinnedColorScheme = localStorage.getItem('HYPER8_PINNED_COLOR_SCHEME');
-
-if ((pinnedColorScheme ?? deviceColorScheme) === 'light') {
-    document.body.classList.add('light');
+function preferredColorScheme() {
+    return PREFERS_DARK_COLOR_SCHEME.matches ? 'dark' : 'light';
 }
 
-prefersDarkColorSchemeMediaQuery.addEventListener('change', ({ matches }) => {
-    if (pinnedColorScheme === null) {
-        deviceColorScheme = matches ? 'dark' : 'light';
-        document.body.classList.toggle('light', deviceColorScheme === 'light');
-    }
-});
+let pinnedTheme = localStorage.getItem('HYPER8_PINNED_THEME');
 
-function toggleColorScheme(clickedColorScheme) {
-    if (pinnedColorScheme === null) {
-        document.body.classList.toggle('light', clickedColorScheme === 'light');
-        localStorage.setItem('HYPER8_PINNED_COLOR_SCHEME', clickedColorScheme);
-        pinnedColorScheme = clickedColorScheme;
+if (pinnedTheme && pinnedTheme !== preferredColorScheme()) {
+    document.querySelector('body').dataset.pinnedTheme = pinnedTheme;
+}
+
+function toggleTheme(clickedTheme) {
+    if (clickedTheme === preferredColorScheme()) {
+        delete document.querySelector('body').dataset.pinnedTheme;
+
+        if (pinnedTheme !== null) {
+            pinnedTheme = null;
+            localStorage.removeItem('HYPER8_PINNED_THEME');
+        }
     } else {
-        document.body.classList.toggle('light', clickedColorScheme === 'light');
-        localStorage.removeItem('HYPER8_PINNED_COLOR_SCHEME');
-        pinnedColorScheme = null;
+        document.querySelector('body').dataset.pinnedTheme = clickedTheme;
+        pinnedTheme = clickedTheme;
+        localStorage.setItem('HYPER8_PINNED_THEME', clickedTheme);
+    }
+
+    // This interacts with the design overlay (when is is enabled). Make sure to
+    // keep this in sync with the design_overlay.js implementation
+    if (window.designOverlayNotifyPinned) {
+        window.designOverlayNotifyPinned(pinnedTheme);
     }
 }
 
-toggleDark.addEventListener('click', () => toggleColorScheme('dark'));
-toggleLight.addEventListener('click', () => toggleColorScheme('light'));
+toggleDark.addEventListener('click', () => toggleTheme('dark'));
+toggleLight.addEventListener('click', () => toggleTheme('light'));

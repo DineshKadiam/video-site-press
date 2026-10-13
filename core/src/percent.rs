@@ -11,16 +11,16 @@ pub struct Percent {
 }
 
 impl Percent {
-    /// Convert from 0-100% to a factor of 0-1
-    pub fn as_factor(&self) -> f32 {
-        self.value as f32 / 100.0
-    }
-
     pub fn new(signed: bool, value: u8) -> Percent {
         Percent {
             signed,
             value
         }
+    }
+
+    /// Returns the underlying percent value
+    pub fn value(&self) -> u8 {
+        self.value
     }
 }
 

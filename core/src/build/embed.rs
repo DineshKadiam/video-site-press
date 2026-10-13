@@ -1,11 +1,17 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::fs;
 
 use indoc::formatdoc;
 
-use crate::{Context, Playlist, Site, Video};
+use crate::{
+    Build,
+    Context,
+    Playlist,
+    Site,
+    Video
+};
 use crate::build::{META_ROBOTS_NOINDEX_NOFOLLOW};
 use crate::build::AssetHashes;
 use crate::build::outline::Traversal;
@@ -16,7 +22,7 @@ use super::meta_generator;
 /// Writes html for the embed itself, i.e. what is pulled in from external
 /// site B through an iframe when they embed a video from site A.
 pub fn embed_html(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     playlist: Option<&Playlist>,
     site: &Site,
@@ -36,7 +42,7 @@ pub fn embed_html(
         {player_rendered}
     "#);
 
-    let html = embed_layout(asset_hashes, &body, site, traversal);
+    let html = embed_layout(build, &body, site, traversal);
 
     let embed_dir = context.build_dir
         .join(video.site_path.filesystem_relative())
@@ -48,7 +54,7 @@ pub fn embed_html(
 }
 
 pub fn embed_layout(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     body: &str,
     site: &Site,
     traversal: &Traversal
@@ -56,7 +62,7 @@ pub fn embed_layout(
     let meta_generator = meta_generator();
     let meta_robots_noindex_nofollow = META_ROBOTS_NOINDEX_NOFOLLOW;
 
-    let embed_css_asset_hash = asset_hashes.embed_css.as_ref().unwrap();
+    let embed_css_asset_hash = build.asset_hashes.embed_css.as_ref().unwrap();
     let embed_js_asset_hash = AssetHashes::EMBED_JS;
     let root_prefix = traversal.prefix_asc();
     let head = formatdoc!(r#"

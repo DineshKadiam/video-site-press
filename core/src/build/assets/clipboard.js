@@ -1,16 +1,16 @@
-const copyIcon = document.querySelector('#copy_icon');
-const failedIcon = document.querySelector('#failed_icon');
-const successIcon = document.querySelector('#success_icon');
+const copyIcon = document.querySelector('template[data-copy-icon]').content;
+const failedIcon = document.querySelector('template[data-failed-icon]').content;
+const successIcon = document.querySelector('template[data-success-icon]').content;
 
 let endFeedbackEarly = null;
 
-function copyFeedback(content, feedbackIcon, iconContainer) {
+function copyFeedback(feedbackIcon, iconContainer) {
     if (endFeedbackEarly) { endFeedbackEarly(); }
 
-    iconContainer.replaceChildren(feedbackIcon.content.cloneNode(true));
+    iconContainer.replaceChildren(feedbackIcon.cloneNode(true));
 
     function endFeedback() {
-        iconContainer.replaceChildren(copyIcon.content.cloneNode(true));
+        iconContainer.replaceChildren(copyIcon.cloneNode(true));
         endFeedbackEarly = null;
     }
 
@@ -28,8 +28,8 @@ function copyToClipboard(button) {
 
     navigator.clipboard
         .writeText(content)
-        .then(() => copyFeedback(content, successIcon, iconContainer))
-        .catch(_err => copyFeedback(content, failedIcon, iconContainer));
+        .then(() => copyFeedback(successIcon, iconContainer))
+        .catch(_err => copyFeedback(failedIcon, iconContainer));
 };
 
 if (navigator.clipboard) {

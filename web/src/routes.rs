@@ -155,6 +155,7 @@ pub fn preview(site_path: &SitePath) -> String {
     format!("/build/{}", site_path.normalized())
 }
 
+pub const PREVIEW_WITH_DESIGN_OVERLAY: &str = "/build-design";
 pub const SIMULATE_SYNC_FTP: &str = "/sync/ftp/simulate";
 pub const SIMULATE_SYNC_SSH: &str = "/sync/ssh/simulate";
 pub const SITE_EDIT: &str = "/site/edit/";

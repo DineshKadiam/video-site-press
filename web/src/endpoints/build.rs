@@ -13,10 +13,36 @@ use hyper8_core::perform_build;
 use crate::{Context, SessionState};
 use crate::widgets::error_page;
 
-pub async fn build(
+pub async fn build_with_design_overlay(
+    context: Data<Arc<Context>>,
+    session: Session
+) -> Either<Redirect, HttpResponse> {
+    build(
+        context,
+        true,
+        session,
+        None
+    )
+}
+
+pub async fn build_without_design_overlay(
     context: Data<Arc<Context>>,
     session: Session,
     site_path: ActixPath<SitePath>
+) -> Either<Redirect, HttpResponse> {
+    build(
+        context,
+        false,
+        session,
+        Some(site_path)
+    )
+}
+
+fn build(
+    context: Data<Arc<Context>>,
+    design_overlay: bool,
+    session: Session,
+    site_path: Option<ActixPath<SitePath>>
 ) -> Either<Redirect, HttpResponse> {
     let syncing = context.sync_state
         .lock()
@@ -30,13 +56,18 @@ pub async fn build(
         return Either::Right(error_page(&context, message, &session_state));
     }
 
-    if let Err(err) = perform_build(&context) {
+    if let Err(err) = perform_build(&context, design_overlay) {
         let session_state = SessionState::all(&context.server_mode, &session);
         let t_build_failed = session_state.language.translations.build_failed;
         let message = format!("{t_build_failed}\n{err}");
         return Either::Right(error_page(&context, &message, &session_state));
     }
 
-    let redirect_url = format!("/preview/{}", site_path.normalized());
+    let redirect_url = if let Some(site_path) = site_path {
+        format!("/preview/{}", site_path.normalized())
+    } else {
+        String::from("/preview/")
+    };
+
     Either::Left(Redirect::to(redirect_url).see_other())
 }

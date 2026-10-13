@@ -48,12 +48,12 @@ pub fn start_editor(
     );
 
     if context.ffmpeg.is_none() {
-        let message = formatdoc!("
-            FFmpeg could not be found. This is likely a problem with your
-            installation. If you built Hyper 8 yourself, make sure to
-            install ffmpeg (including ffprobe) on your system. You can also compile hyper8 with
-            --features use-bundled-ffmpeg and place an ffmpeg and ffprobe
-            executable next to the hyper8 executable if you prefer not to
+        let message = format!("\
+            FFmpeg could not be found. This is likely a problem with your \
+            installation. If you built Hyper 8 yourself, make sure to \
+            install ffmpeg (including ffprobe) on your system. You can also compile hyper8 with \
+            --features use-bundled-ffmpeg and place an ffmpeg and ffprobe \
+            executable next to the hyper8 executable if you prefer not to \
             install ffmpeg system-wide.
         ");
 
@@ -155,15 +155,9 @@ pub fn start_editor(
                         {editor_note}
                     </div>
                     <button class="quit">{t_shut_down_editor_and_quit}</button>
-                    <template id="copy_icon">
-                        {copy_icon}
-                    </template>
-                    <template id="failed_icon">
-                        {failure_icon}
-                    </template>
-                    <template id="success_icon">
-                        {success_icon}
-                    </template>
+                    <template data-copy-icon>{copy_icon}</template>
+                    <template data-failed-icon>{failure_icon}</template>
+                    <template data-success-icon>{success_icon}</template>
                 "#);
 
                 let _ = app.emit("show-overlay", content);

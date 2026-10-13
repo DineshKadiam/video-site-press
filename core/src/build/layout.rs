@@ -6,8 +6,15 @@ use indoc::formatdoc;
 use hyper8_util::html_escape_outside_attribute;
 use hyper8_version::VERSION_WITHOUT_PATCH;
 
-use crate::{PlatformIntegrationMeta, Site, ThemeKind};
-use crate::build::{AssetHashes, Traversal};
+use crate::{
+    AssetHashes,
+    Build,
+    PlatformIntegrationMeta,
+    Site,
+    ThemeMode
+};
+use crate::build::Traversal;
+use crate::build::design_overlay;
 use crate::build::feeds::meta_link_tags;
 use crate::build::player::player_icon_templates;
 use crate::build::widgets::copy_button_icon_templates;
@@ -57,7 +64,7 @@ impl Layout {
 
     pub fn render(
         &self,
-        asset_hashes: &AssetHashes,
+        build: &Build,
         body: &str,
         site: &Site,
         title: &str,
@@ -79,7 +86,7 @@ impl Layout {
             extra_meta.push_str(&meta_link_tags(translations));
         }
 
-        if let ThemeKind::Adaptive { .. } = site.theme.kind() {
+        if matches!(site.theme_mode(), ThemeMode::Adaptive) {
             let adaptive_theme_js_asset_hash = AssetHashes::ADAPTIVE_THEME_JS;
             let adaptive_theme_script = format!(r#"<script defer src="{root_prefix}adaptive_theme.js?{adaptive_theme_js_asset_hash}"></script>"#);
             scripts.push(adaptive_theme_script);
@@ -99,7 +106,7 @@ impl Layout {
 
         let navigation;
 
-        if let Some(navigation_js_asset_hash) = &asset_hashes.navigation_js {
+        if let Some(navigation_js_asset_hash) = &build.asset_hashes.navigation_js {
             let browse_icon = hyper8_icons::browse(None);
             let close_icon = hyper8_icons::failure(translations.close);
             let search_icon = hyper8_icons::search(translations.search);
@@ -153,16 +160,48 @@ impl Layout {
         }
 
         let favicon_png_asset_hash = AssetHashes::FAVICON_PNG;
-        let site_css_asset_hash = asset_hashes.site_css.as_ref().unwrap();
+        let site_css_asset_hash = build.asset_hashes.site_css.as_ref().unwrap();
 
         let meta_generator = meta_generator();
 
         let scripts = scripts.join("");
 
+        let supported_color_schemes;
+        let theme_toggle;
+
+        match site.theme_mode() {
+            ThemeMode::Adaptive => {
+                // Technically the order indicates a preference - which we don't
+                // have/don't know about - but the user's preference (where available)
+                // overrides that anyway.
+                // (see https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/color-scheme#light)
+                supported_color_schemes = "light dark";
+
+                let dark_icon = hyper8_icons::dark(translations.dark_color_scheme);
+                let light_icon = hyper8_icons::light(translations.light_color_scheme);
+
+                theme_toggle = formatdoc!(r#"
+                    <div class="theme_toggles">
+                        <button class="theme_toggle toggle_dark">{dark_icon}</button>
+                        <button class="theme_toggle toggle_light">{light_icon}</button>
+                    </div>
+                "#);
+            }
+            ThemeMode::Dark => {
+                supported_color_schemes = "dark";
+                theme_toggle = String::new();
+            }
+            ThemeMode::Light => {
+                supported_color_schemes = "light";
+                theme_toggle = String::new();
+            }
+        }
+
         let head = formatdoc!(r#"
             <head>
                 <title>{title}</title>
                 <meta charset="utf-8">
+                <meta name="color-scheme" content="{supported_color_schemes}">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 {meta_generator}
                 {extra_meta}
@@ -172,19 +211,7 @@ impl Layout {
             </head>
         "#);
 
-        let dark_icon = hyper8_icons::dark(translations.dark_color_scheme);
-        let light_icon = hyper8_icons::light(translations.light_color_scheme);
-        let theme_toggle = match &site.theme.kind() {
-            ThemeKind::Adaptive { .. } => formatdoc!(r#"
-                <div id="theme-toggles">
-                    <button class="theme_toggle" id="toggle-dark">{dark_icon}</button>
-                    <button class="theme_toggle" id="toggle-light">{light_icon}</button>
-                </div>
-            "#),
-            ThemeKind::Static(_) => String::new()
-        };
-
-        if self.clipboard_script {
+        if self.clipboard_script || build.design_overlay {
             templates.push_str(&copy_button_icon_templates(translations));
         }
 
@@ -194,6 +221,12 @@ impl Layout {
 
         let root_url = traversal.index_asc(site);
         let site_path = traversal.site_path().normalized();
+
+        let design_overlay = if build.design_overlay {
+            design_overlay(build, site)
+        } else {
+            String::new()
+        };
 
         let key_icon = hyper8_icons::KEY;
         let logo_monochrome_icon = hyper8_icons::logo_monochrome(None);
@@ -266,6 +299,7 @@ impl Layout {
                     </form>
                 </dialog>
                 {templates}
+                {design_overlay}
             </body>
         "##);
 

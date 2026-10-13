@@ -51,9 +51,9 @@ function showOverlay(content) {
     const quitButton = overlay.querySelector('button.quit');
     quitButton.addEventListener('click', close);
 
-    const copyIcon = document.querySelector('#copy_icon').content;
-    const failedIcon = document.querySelector('#failed_icon').content;
-    const successIcon = document.querySelector('#success_icon').content;
+    const copyIcon = document.querySelector('template[data-copy-icon]').content;
+    const failedIcon = document.querySelector('template[data-failed-icon]').content;
+    const successIcon = document.querySelector('template[data-success-icon]').content;
 
     let endFeedbackEarly = null;
 

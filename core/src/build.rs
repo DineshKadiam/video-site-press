@@ -5,6 +5,7 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
+use chrono::{DateTime, Utc};
 use rsubs_lib::SRT;
 
 use hyper8_util::ffs;
@@ -24,6 +25,7 @@ use crate::util::{ensure_empty_dir, hard_link_or_copy_readable};
 
 mod asset_hashes;
 mod collection;
+mod design_overlay;
 mod download;
 mod embed;
 mod embed_codes;
@@ -39,6 +41,7 @@ mod video;
 mod widgets;
 
 use collection::collection_html;
+use design_overlay::design_overlay;
 use download::download_html;
 use embed::embed_html;
 use embed_codes::embed_codes_html;
@@ -48,7 +51,7 @@ use playlist::playlist_html;
 use subscribe::subscribe_html;
 use video::video_html;
 
-use asset_hashes::AssetHashes;
+pub use asset_hashes::AssetHashes;
 
 const META_ROBOTS_NOINDEX_NOFOLLOW: &str = r#"<meta name="robots" content="noindex, nofollow">"#;
 
@@ -56,7 +59,17 @@ pub fn meta_generator() -> String {
     format!(r#"<meta name="generator" content="Hyper 8 Video System {VERSION_WITH_PATCH_AND_REVISION}">"#)
 }
 
-pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
+#[derive(Debug)]
+pub struct Build {
+    pub asset_hashes: AssetHashes,
+    pub design_overlay: bool,
+    pub invocation_time: DateTime<Utc>
+}
+
+pub fn perform_build(
+    context: &Context,
+    design_overlay: bool
+) -> Result<(), ffs::Error> {
     let mut site = context.get_site();
 
     while !site.all_metadata_computed() {
@@ -67,7 +80,15 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
 
     ensure_empty_dir(&context.build_dir);
 
-    let mut asset_hashes = AssetHashes::new();
+    let asset_hashes = AssetHashes::new();
+
+    let invocation_time = Utc::now();
+
+    let mut build = Build {
+        asset_hashes,
+        design_overlay,
+        invocation_time
+    };
 
     let traversal = Traversal::new();
 
@@ -81,10 +102,10 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
         include_bytes!("build/assets/shortcuts.js")
     )?;
 
-    styles::generate_site_css(&mut asset_hashes, context, &site);
+    styles::generate_site_css(&mut build, context, &site);
     scripts::generate_video_js(context);
 
-    if let ThemeKind::Adaptive { .. } = site.theme.kind() {
+    if let ThemeKind::Adaptive { .. } = site.theme().kind(&site) {
         scripts::generate_adaptive_theme_js(context);
     }
 
@@ -92,12 +113,12 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
         scripts::generate_clipboard_js(context);
     }
 
-    scripts::generate_navigation_js(&mut asset_hashes, context, &site);
+    scripts::generate_navigation_js(&mut build, context, &site);
 
     if site.base_url.is_some() {
         if site.embeds_requested() {
             scripts::generate_embed_js(context);
-            styles::generate_embed_css(&mut asset_hashes, context, &site);
+            styles::generate_embed_css(&mut build, context, &site);
         }
     } else {
         if site.embeds_requested() {
@@ -117,7 +138,7 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
         SiteContent::Collection(collection) => {
             if !collection.offline() {
                 build_collection(
-                    &asset_hashes,
+                    &build,
                     context,
                     collection,
                     &site,
@@ -130,7 +151,7 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
         SiteContent::Playlist(playlist) => {
             if !playlist.offline() {
                 build_playlist(
-                    &asset_hashes,
+                    &build,
                     context,
                     playlist,
                     &site,
@@ -141,7 +162,7 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
         SiteContent::Video(video) => {
             if !video.offline() {
                 build_video(
-                    &asset_hashes,
+                    &build,
                     context,
                     None,
                     &site,
@@ -156,7 +177,7 @@ pub fn perform_build(context: &Context) -> Result<(), ffs::Error> {
 }
 
 fn build_collection(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     collection: &Collection,
     site: &Site,
@@ -204,7 +225,7 @@ fn build_collection(
         let traversal_subscribe = traversal.with_virtual(translations.subscribe);
 
         subscribe_html(
-            asset_hashes,
+            build,
             context,
             site,
             &collection.site_path,
@@ -220,7 +241,7 @@ fn build_collection(
     };
 
     collection_html(
-        asset_hashes,
+        build,
         context,
         collection,
         site,
@@ -231,7 +252,7 @@ fn build_collection(
     for subcollection in &collection.subcollections {
         if !subcollection.offline() {
             build_collection(
-                asset_hashes,
+                build,
                 context,
                 subcollection,
                 site,
@@ -243,7 +264,7 @@ fn build_collection(
     for playlist in &collection.playlists {
         if !playlist.offline() {
             build_playlist(
-                asset_hashes,
+                build,
                 context,
                 playlist,
                 site,
@@ -255,7 +276,7 @@ fn build_collection(
     for video in &collection.videos {
         if !video.offline() {
             build_video(
-                asset_hashes,
+                build,
                 context,
                 None,
                 site,
@@ -269,7 +290,7 @@ fn build_collection(
 }
 
 fn build_playlist(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     playlist: &Playlist,
     site: &Site,
@@ -317,7 +338,7 @@ fn build_playlist(
         let traversal_subscribe = traversal.with_virtual(translations.subscribe);
 
         subscribe_html(
-            asset_hashes,
+            build,
             context,
             site,
             &playlist.site_path,
@@ -333,7 +354,7 @@ fn build_playlist(
     };
 
     playlist_html(
-        asset_hashes,
+        build,
         context,
         playlist,
         site,
@@ -344,7 +365,7 @@ fn build_playlist(
     for video in &playlist.videos {
         if !video.offline() {
             build_video(
-                asset_hashes,
+                build,
                 context,
                 Some(playlist),
                 site,
@@ -358,7 +379,7 @@ fn build_playlist(
 }
 
 fn build_video(
-    asset_hashes: &AssetHashes,
+    build: &Build,
     context: &Context,
     playlist: Option<&Playlist>,
     site: &Site,
@@ -482,7 +503,7 @@ fn build_video(
         let traversal_download = traversal.with_virtual(translations.download);
 
         download_html(
-            asset_hashes,
+            build,
             context,
             site,
             video,
@@ -495,7 +516,7 @@ fn build_video(
             let traversal_embed_codes = traversal.with_virtual(translations.embed);
 
             embed_codes_html(
-                asset_hashes,
+                build,
                 context,
                 site,
                 video,
@@ -507,7 +528,7 @@ fn build_video(
             let traversal_embed = traversal.with_virtual(translations.embed);
 
             embed_html(
-                asset_hashes,
+                build,
                 context,
                 playlist,
                 site,
@@ -518,7 +539,7 @@ fn build_video(
     }
 
     video_html(
-        asset_hashes,
+        build,
         context,
         playlist,
         site,

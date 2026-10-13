@@ -4,7 +4,7 @@
 
 use indoc::formatdoc;
 
-use hyper8_core::{Site, SitePath, Theme};
+use hyper8_core::{Site, SitePath};
 use hyper8_translations::Translations;
 use hyper8_util::{
     html_escape_outside_attribute,
@@ -13,7 +13,12 @@ use hyper8_util::{
 };
 use hyper8_version::{VERSION_ADAPTIVE_PATCH, VERSION_WITH_PATCH};
 
-use crate::{Context, Location, SessionState};
+use crate::{
+    Context,
+    EditorTheme,
+    Location,
+    SessionState
+};
 use crate::routes;
 
 use super::{splash_screen, tree_view};
@@ -375,8 +380,8 @@ fn controls(
             {storage}
             {preview}
             {sync_menu}
-            <template id="processing_icon">{processing_icon}</template>
-            <template id="reload_icon">{reload_icon}</template>
+            <template data-processing-icon>{processing_icon}</template>
+            <template data-reload-icon>{reload_icon}</template>
         </div>
     "#)
 }
@@ -398,7 +403,7 @@ fn footer(
 
     let theme_icon = session_state.theme.icon();
     let mut theme_options = String::new();
-    for (theme, label) in Theme::variants(translations) {
+    for (theme, label) in EditorTheme::variants(translations) {
         let key = theme.key();
         let selected = if key == session_state.theme.key() { "selected" } else { "" };
         let option = format!(r#"<option {selected} value="{key}">{label}</option>"#);
