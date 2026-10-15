@@ -87,6 +87,25 @@ button {
     text-underline-offset: .3rem;
 }
 .center .description a:hover { text-decoration: none; }
+.chapters ul {
+    margin: 0;
+    list-style: none;
+    padding: 0;
+}
+.chapters a {
+    border-radius: calc(var(--r) * .25rem);
+    display: block;
+    padding: .5rem;
+}
+.chapters a:focus-visible,
+.chapters a:hover {
+    background: var(--f1-5);
+    color: var(--f1);
+}
+.chapters a > :nth-child(2) {
+    color: var(--f3);
+    font-size: .8rem;
+}
 .container_title {
     align-items: center;
     display: flex;
@@ -1109,11 +1128,13 @@ video {
     gap: 2rem;
     margin-block: 2rem;
 }
+.video_layout .chapters,
 .video_layout .playlist_context,
 .video_layout .transcript {
     overflow-x: hidden;
     overflow-y: auto;
 }
+.video_layout:not([data-panel="chapters"]) .chapters { display: none; }
 .video_layout:not([data-panel="playlist"]) .playlist_context { display: none; }
 .video_layout:not([data-panel="transcript"]) .transcript { display: none; }
 .video_layout .video_footer {
@@ -1257,6 +1278,7 @@ video {
     .video_layout .video_footer { grid-row: 3/4; }
     .video_layout .video_header { grid-row: 1/2; }
     .video_layout:not([data-panel]) .video_info { grid-row: 4/5; }
+    .video_layout[data-panel] .chapters,
     .video_layout[data-panel] .playlist_context,
     .video_layout[data-panel] .transcript {
         grid-row: 4/5;
@@ -1274,6 +1296,7 @@ video {
     .video_layout .player {
         grid-area: 2/1/3/2;
     }
+    .video_layout .chapters,
     .video_layout .playlist_context,
     .video_layout .transcript {
         grid-area: 2/2/3/3;

@@ -1,5 +1,8 @@
+// Sidepanels register their toggle button here, so each sidepanel can
+// deactivate the 'active' class on other toggle buttons when it is
+// triggered
+const panelToggleButtons = [];
 const player = document.querySelector('.player');
-const togglePlaylistButton = document.querySelector('#toggle_playlist');
 
 const transcriptContainer = document.querySelector('.transcript');
 const transcript = transcriptContainer ? {} : null;
@@ -714,9 +717,36 @@ if (player) {
 
     togglePlaybackButton.addEventListener('click', togglePlayback);
 
+    // Register all chapters specific handlers
+
+    const toggleChaptersButton = document.querySelector('button[data-toggle-chapters]');
+
+    if (toggleChaptersButton) {
+        // Toggle chapters handler
+
+        const videoLayout = document.querySelector('.video_layout');
+
+        function toggleChapters() {
+            if (videoLayout.dataset.panel === 'chapters') {
+                delete videoLayout.dataset.panel;
+                toggleChaptersButton.classList.remove('active');
+            } else {
+                videoLayout.dataset.panel = 'chapters';
+
+                for (const panelToggleButton of panelToggleButtons) {
+                    panelToggleButton.classList.toggle('active', toggleChaptersButton === panelToggleButton);
+                }
+            }
+        }
+
+        toggleChaptersButton.addEventListener('click', toggleChapters);
+
+        panelToggleButtons.push(toggleChaptersButton);
+    }
+
     // Register all transcript specific handlers
     if (transcript) {
-        transcript.toggleButton = document.querySelector('#toggle_transcript');
+        const toggleTranscriptButton = document.querySelector('button[data-toggle-transcript]');
 
         const filterInput = transcriptContainer.querySelector('input');
 
@@ -726,19 +756,20 @@ if (player) {
 
         function toggleTranscript() {
             if (videoLayout.dataset.panel === 'transcript') {
-                transcript.toggleButton.classList.remove('active');
                 delete videoLayout.dataset.panel;
+                toggleTranscriptButton.classList.remove('active');
             } else {
-                if (togglePlaylistButton) {
-                    togglePlaylistButton.classList.remove('active');
-                }
-
-                transcript.toggleButton.classList.add('active');
                 videoLayout.dataset.panel = 'transcript';
+
+                for (const panelToggleButton of panelToggleButtons) {
+                    panelToggleButton.classList.toggle('active', toggleTranscriptButton === panelToggleButton);
+                }
             }
         }
 
-        transcript.toggleButton.addEventListener('click', toggleTranscript);
+        toggleTranscriptButton.addEventListener('click', toggleTranscript);
+
+        panelToggleButtons.push(toggleTranscriptButton);
 
         // Filter transcript handler
 
@@ -1093,25 +1124,29 @@ if (player) {
     });
 }
 
+const togglePlaylistButton = document.querySelector('button[data-toggle-playlist]');
+
 if (togglePlaylistButton) {
     const videoLayout = document.querySelector('.video_layout');
     const hidePlaylistStorageKey = `hyper8HidePlaylist:${togglePlaylistButton.dataset.sitePath}`;
 
     function togglePlaylist() {
         if (videoLayout.dataset.panel === 'playlist') {
-            sessionStorage.setItem(hidePlaylistStorageKey, '')
-            togglePlaylistButton.classList.remove('active');
             delete videoLayout.dataset.panel;
+            togglePlaylistButton.classList.remove('active');
+            sessionStorage.setItem(hidePlaylistStorageKey, '')
         } else {
-            if (transcript) {
-                transcript.toggleButton.classList.remove('active');
+            videoLayout.dataset.panel = 'playlist';
+
+            for (const panelToggleButton of panelToggleButtons) {
+                panelToggleButton.classList.toggle('active', togglePlaylistButton === panelToggleButton);
             }
 
             sessionStorage.removeItem(hidePlaylistStorageKey);
-            togglePlaylistButton.classList.add('active');
-            videoLayout.dataset.panel = 'playlist';
         }
     }
 
     togglePlaylistButton.addEventListener('click', togglePlaylist);
+
+    panelToggleButtons.push(togglePlaylistButton);
 }

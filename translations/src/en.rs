@@ -52,6 +52,7 @@ impl Translations {
         browser_support_unclear: "Browser support unclear",
         build_failed: "Build failed",
         cancel: "Cancel",
+        chapters: "Chapters",
         clean_urls_label: "Clean URLs (example.com/xyz/ instead of example.com/xyz/index.html)",
         clear_search_or_close_browse_panel: "Clear search or close browse panel",
         close: "Close",

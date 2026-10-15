@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2025 Simon Repp
+    SPDX-FileCopyrightText: 2025-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -70,6 +70,43 @@ system that are not necessarily obvious or trivial to arrive at, so they
 don't have to be asked or thought through over and over again. Also if
 changes becomes necessary the thinking process can start from an already
 documented thought process, instead of starting at zero.
+
+### Native time notation
+
+For linking to timecodes (e.g. `https://example.com/video#time=30s400ms`) as
+well as for specifying chapter begin/end timecodes in manifests (`- 1h4m30s Credit roll`),
+Hyper 8 supports a native time notation nicknamed *Hypertime*:
+
+- `30s` (30 seconds)
+- `30s400ms` (30 seconds, 400 milliseconds)
+- `2m` (2 minutes)
+- `2m30s` (2 minutes, 30 seconds)
+- `1h` (1 hour)
+- `1h30s` (1 hour, 30 seconds)
+- `1h2m` (1 hour, 2 minutes)
+- `1h2m30s` (1 hour, 2 minutes, 30 seconds)
+- `1h2m30s400ms` (1 hour, 2 minutes, 30 seconds, 400 milliseconds)
+- `377` (raw, unit-less form for 377 seconds)
+
+Thinking and current decisions regarding edge cases:
+- Consider the possible declarations `90m` (useful and completely reasonable),
+  `90m30s` (useful and reasonable enough), `1h90m` (odd and probably
+  accidental) or even `1h121m` (just weird). While the latter ones are not
+  desired usage forms, they are nontheless permitted to keep the notation
+  simple and predictable. For instance if we just were to allow `90m` but not
+  `1h90m` this already implies somewhat complex rules. Likewise error
+  handling would become more complex, whereas treating `1h90m` as either
+  intended or erroneous still allows authors to spot and correct the error
+  later, as it would be the case with any other typo.
+- The mixing of unit-based and unit-less numbers – e.g. `1h30`, `2m30`,
+  `30s20` is currently allowed in the implementation, resolving to the
+  unit-less number being interpreted as the one following the former unit,
+  i.e.: `1h30` = `1h30m`, `2m30` = `2m30s`, `30s20` = `30s20ms`, which
+  roughly follows how it would be interpreted in colloquial parlance ("One
+  hour thirty" for instance). `200ms40` is considered an error though.
+- There is currently no implementation (nor written spec/documentation) for a
+  raw, unit-less form like `377.14` or `377,14`, although this might be added
+  in the future.
 
 ### Permalinks
 

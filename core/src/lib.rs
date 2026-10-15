@@ -9,6 +9,7 @@ mod banner;
 mod browser_support;
 mod build;
 mod cache;
+mod chapter;
 mod collection;
 mod container;
 mod container_order;
@@ -43,6 +44,7 @@ mod sort;
 mod subtitle_file;
 mod sync;
 mod theme;
+mod timecode;
 mod video;
 mod video_file;
 mod video_format;
@@ -55,6 +57,7 @@ pub mod watcher;
 use audio_meta::AudioMeta;
 use build::{AssetHashes, Build};
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
+use chapter::Chapter;
 use ffmpeg::FFmpeg;
 use hyper_command::HyperCommand;
 use image_processor::{ImageProcessor, ResizeMode};
@@ -75,6 +78,7 @@ use theme::{
     OklPercent,
     ThemeOklch
 };
+use timecode::Timecode;
 use video_format::{Codec, EncodingApproach};
 use video_meta::VideoMeta;
 

@@ -53,6 +53,7 @@ pub struct Translations {
     pub browser_support_unclear: &'static str,
     pub build_failed: &'static str,
     pub cancel: &'static str,
+    pub chapters: &'static str,
     pub clean_urls_label: &'static str,
     pub clear_search_or_close_browse_panel: &'static str,
     pub close: &'static str,

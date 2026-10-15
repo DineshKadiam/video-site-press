@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2025 Simon Repp
+    SPDX-FileCopyrightText: 2025-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -53,5 +53,6 @@ Timecodes are flexible, but keep the order **h**ours -> **m**inutes -> **s**econ
 - `#time=1h2m` (1 hour, 2 minutes)
 - `#time=1h2m30s` (1 hour, 2 minutes, 30 seconds)
 - `#time=1h2m30s400ms` (1 hour, 2 minutes, 30 seconds, 400 milliseconds)
+- `#time=377` (raw, unit-less form for 377 seconds)
 
 - **Not allowed**: `#time=30s2m1h`

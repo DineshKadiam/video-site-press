@@ -35,6 +35,15 @@ pub fn browse(label: Option<&str>) -> String {
     "#)
 }
 
+/// A vertical sequence of three rectangular bars, the middle one being much taller
+pub const CHAPTERS: &str = indoc!(r#"
+    <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <path d="m15.502 17.5c-1.8558 2e-6 -3.3624 1.5043-3.3624 3.3601v22.278c0 0.92794 0.37558 1.7683 0.98368 2.3764 0.15202 0.15202 0.31779 0.29066 0.49657 0.41144 0.53661 0.36295 1.1856 0.5746 1.8822 0.5746h32.996c0.92794 0 1.7683-0.37794 2.3764-0.98604 0.15253-0.15238 0.28796-0.31729 0.40908-0.49657 0.36233-0.53632 0.57696-1.1839 0.57696-1.8798v-22.278c0-1.8558-1.5066-3.3601-3.3624-3.3601z"/>
+        <path d="m15.561 1.5801c-1.8558 2e-6 -3.3613 1.5035-3.3613 3.3594v7.254h39.479v-7.254c0-1.8559-1.5055-3.3594-3.3613-3.3594h-20.527z" opacity=".666"/>
+        <path d="m15.561 62.42c-1.8558 0-3.3613-1.5035-3.3613-3.3594v-7.254h39.479v7.254c0 1.8559-1.5055 3.3594-3.3613 3.3594h-20.527z" opacity=".33"/>
+    </svg>
+"#);
+
 /// A rightwards-facing, perfectly perpendicular chevron (like a closing angled bracket with a 90 degrees angle)
 pub const CHEVRON_RIGHT: &str = indoc!(r#"
     <svg aria-hidden="true" width="1em" height="1em" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

@@ -1,5 +1,5 @@
 <!--
-    SPDX-FileCopyrightText: 2024-2025 Simon Repp
+    SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
 -->
 
@@ -15,6 +15,12 @@ An example manifest:
 poster:
 description = Confused looking people in an office
 file = episode_1.jpg
+
+chapters:
+- 0m Intro
+- 1m23s Begin
+- 51m Finale
+- 1h20m8s Outro
 
 download: enabled
 offline
@@ -72,6 +78,7 @@ reunite at an unexpected gathering.
 Jump links for all options:
 
 - [audio_file](#audio_file)
+- [chapters](#chapters)
 - [copy_link](#copy_link)
 - [description](#description)
 - [download](#download)
@@ -113,6 +120,51 @@ usage = offline
 
 To remove usage restrictions for an audio file simply remove the entire
 `audio_file: ...` option (or just the `usage = ...` line).
+
+## <a name="chapters"></a> `chapters`
+
+```eno
+chapters:
+- 00:00.000 Intro
+- 03:18.000 Finale
+- 04:02.000 Outro
+```
+
+With `chapters` you can provide timecodes and labels that allow your visitors
+to quickly find and jump to specific sections of a video.
+
+To specify timecodes you can use the [SubRip (srt)](https://en.wikipedia.org/wiki/SubRip)
+and [WebVTT](https://developer.mozilla.org/en-US/docs/Web/API/WebVTT_API/Web_Video_Text_Tracks_Format#cue_timings) formats:
+- `00:03:18,608` (hh:mm:ss,fff)
+- `00:03:18.608` (hh:mm:ss.fff)
+- `03:18.608` (mm:ss,fff)
+
+You can also use Hyper 8's native timecode format:
+- `30s` (30 seconds)
+- `30s400ms` (30 seconds, 400 milliseconds)
+- `2m` (2 minutes)
+- `2m30s` (2 minutes, 30 seconds)
+- `1h` (1 hour)
+- `1h30s` (1 hour, 30 seconds)
+- `1h2m` (1 hour, 2 minutes)
+- `1h2m30s` (1 hour, 2 minutes, 30 seconds)
+- `1h2m30s400ms` (1 hour, 2 minutes, 30 seconds, 400 milliseconds)
+- `413` (raw, unit-less form for 413 seconds)
+
+Important here is that the order
+**h**ours -> **m**inutes -> **s**econds -> **m**illi**s**econds
+must be kept (`30s2m1h` is **not allowed**).
+
+Chapters only require a begin timecode. An end timecode can optionally be
+supplied in the form `00:03:18,608 --> 00:03:20,371`, `2m30s --> 4m59s`, etc.
+Note that the space before and after the `-->` is mandatory.
+
+```eno
+chapters:
+- 00:00.000 --> 03:18.000 Intro
+- 03:18.000 --> 04:02.000 Finale
+- 04:02.000 --> 06:30.000 Outro
+```
 
 ## <a name="copy_link"></a> `copy_link`
 

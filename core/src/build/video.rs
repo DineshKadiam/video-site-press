@@ -6,7 +6,7 @@ use std::ptr;
 
 use indoc::formatdoc;
 
-use hyper8_util::html_escape_outside_attribute;
+use hyper8_util::{html_escape_outside_attribute, precise_duration};
 
 use crate::{
     Build,
@@ -117,7 +117,7 @@ pub fn video_html(
         let playlist_icon = hyper8_icons::playlist(None);
         let playlist_site_path = playlist.site_path.normalized();
         let toggle_playlist = formatdoc!(r#"
-            <button class="active" data-site-path="{playlist_site_path}" id="toggle_playlist">
+            <button class="active" data-site-path="{playlist_site_path}" data-toggle-playlist>
                 {playlist_icon} {t_playlist}
             </button>
         "#);
@@ -131,12 +131,24 @@ pub fn video_html(
         let t_transcript = translations.transcript;
         let subtitles_icon = hyper8_icons::subtitles(None);
         let toggle_transcript = formatdoc!(r#"
-            <button id="toggle_transcript">
+            <button data-toggle-transcript>
                 {subtitles_icon} {t_transcript}
             </button>
         "#);
 
         actions.push(toggle_transcript);
+    }
+
+    if let Some(chapters) = &video.chapters && !chapters.is_empty() {
+        let t_chapters = translations.chapters;
+        let chapters_icon = hyper8_icons::CHAPTERS;
+        let toggle_chapters = formatdoc!(r#"
+            <button data-toggle-chapters>
+                {chapters_icon} {t_chapters}
+            </button>
+        "#);
+
+        actions.push(toggle_chapters);
     }
 
     let release_date = match video.release_date {
@@ -298,6 +310,28 @@ pub fn video_html(
 
         panels.push(transcript);
     }
+
+    if let Some(chapters) = &video.chapters && !chapters.is_empty() {
+        let chapters = chapters
+            .iter()
+            .map(|chapter| {
+                let seconds = chapter.begin.seconds;
+                let time_range = precise_duration(seconds);
+                let title = &chapter.title;
+
+                format!(r##"<li><a href="#t={seconds}"><div>{title}</div><div>{time_range}</div></a></li>"##)
+            })
+            .collect::<Vec<_>>()
+            .join("");
+
+        let chapters = formatdoc!(r#"
+            <div class="chapters">
+                <ul>{chapters}</ul>
+            </div>
+        "#);
+
+        panels.push(chapters);
+    };
 
     let panels = panels.join("\n");
 

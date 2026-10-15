@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use std::cmp::Ordering;
@@ -17,6 +17,7 @@ use hyper8_translations::Translations;
 use crate::{
     Asc,
     AudioFile,
+    Chapter,
     Comparison,
     Context,
     Desc,
@@ -36,11 +37,16 @@ use crate::{
     VideoOrder
 };
 use crate::manifest::MAX_SYNOPSIS_CHARS;
-use crate::manifest::{attribute_error, element_error, not_supported_error};
+use crate::manifest::{
+    attribute_error,
+    element_error,
+    not_supported_error
+};
 use crate::util::checked_remove_dir_all;
 
 const VIDEO_OPTIONS: &[&str] = &[
     "audio_file",
+    "chapters",
     "copy_link",
     "description",
     "download",
@@ -61,6 +67,7 @@ const VIDEO_OPTIONS: &[&str] = &[
 #[derive(Clone, Debug)]
 pub struct Video {
     pub audio_files: Vec<AudioFile>,
+    pub chapters: Option<Vec<Chapter>>,
     copy_link: Option<bool>,
     pub description: Option<String>,
     /// Errors related to files within the video directory, outside of
@@ -205,6 +212,44 @@ impl Video {
                             file = example.mp3
                             usage = download
                         ");
+                        let error = element_error(element, manifest_path, message);
+                        self.manifest_errors.push(error);
+                    }
+                }
+                "chapters" => {
+                    if let Some(items) = element.item_values() {
+                        let chapters = items
+                            .map(|value| {
+                                match Chapter::try_from(value) {
+                                    Ok(chapter) => Ok(chapter),
+                                    Err(err) => {
+                                        let error = element_error(element, manifest_path, &err);
+                                        Err(error)
+                                    }
+                                }
+                            })
+                            .collect::<Result<Vec<Chapter>, String>>();
+
+                        match chapters {
+                            Ok(chapters) => {
+                                self.chapters = Some(chapters);
+                            }
+                            Err(error) => {
+                                self.manifest_errors.push(error);
+                            }
+                        }
+                    } else {
+                        let message = indoc!("
+                            chapters needs to be provided as a field with timecode items, e.g.:
+
+                            chapters:
+                            - 13s Intro
+                            - 20m7s Outro
+                            - 1h42s Outro
+
+                            The timecodes can use SRT, WebVTT or Hyper 8 Hypertime syntax
+                        ");
+
                         let error = element_error(element, manifest_path, message);
                         self.manifest_errors.push(error);
                     }
@@ -1139,6 +1184,7 @@ impl Video {
     pub fn new(inherited_options: InheritedOptions, site_path: SitePath) -> Video {
         Video {
             audio_files: Vec::new(),
+            chapters: None,
             copy_link: None,
             description: None,
             dir_errors: Vec::new(),
