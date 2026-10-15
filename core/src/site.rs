@@ -192,7 +192,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "accent_brightening needs to be provided as a field with a value, e.g.: 'accent_brightening: 100%'";
+                                        let message = "accent_brightening needs to be provided as a field with a value, e.g.: 'accent_brightening = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -210,7 +210,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "accent_chroma needs to be provided as a field with a value, e.g.: 'accent_chroma: 100%'";
+                                        let message = "accent_chroma needs to be provided as a field with a value, e.g.: 'accent_chroma = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -228,7 +228,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "accent_hue needs to be provided as a field with a value, e.g.: 'accent_hue: 90deg'";
+                                        let message = "accent_hue needs to be provided as a field with a value, e.g.: 'accent_hue = 90deg'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -246,7 +246,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "base_chroma needs to be provided as a field with a value, e.g.: 'base_chroma: 100%'";
+                                        let message = "base_chroma needs to be provided as a field with a value, e.g.: 'base_chroma = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -264,7 +264,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "base_hue needs to be provided as a field with a value, e.g.: 'base_hue: 90deg'";
+                                        let message = "base_hue needs to be provided as a field with a value, e.g.: 'base_hue = 90deg'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -282,7 +282,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "contrast needs to be provided as a field with a value, e.g.: 'contrast: 100%'";
+                                        let message = "contrast needs to be provided as a field with a value, e.g.: 'contrast = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -300,7 +300,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "layered_chroma needs to be provided as a field with a value, e.g.: 'layered_chroma: 100%'";
+                                        let message = "layered_chroma needs to be provided as a field with a value, e.g.: 'layered_chroma = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -493,7 +493,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "accent_brightening needs to be provided as a field with a value, e.g.: 'accent_brightening: 100%'";
+                                        let message = "accent_brightening needs to be provided as a field with a value, e.g.: 'accent_brightening = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -511,7 +511,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "accent_chroma needs to be provided as a field with a value, e.g.: 'accent_chroma: 100%'";
+                                        let message = "accent_chroma needs to be provided as a field with a value, e.g.: 'accent_chroma = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -529,7 +529,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "accent_hue needs to be provided as a field with a value, e.g.: 'accent_hue: 90deg'";
+                                        let message = "accent_hue needs to be provided as a field with a value, e.g.: 'accent_hue = 90deg'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -547,7 +547,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "base_chroma needs to be provided as a field with a value, e.g.: 'base_chroma: 100%'";
+                                        let message = "base_chroma needs to be provided as a field with a value, e.g.: 'base_chroma = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -565,7 +565,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "base_hue needs to be provided as a field with a value, e.g.: 'base_hue: 90deg'";
+                                        let message = "base_hue needs to be provided as a field with a value, e.g.: 'base_hue = 90deg'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -583,7 +583,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "contrast needs to be provided as a field with a value, e.g.: 'contrast: 100%'";
+                                        let message = "contrast needs to be provided as a field with a value, e.g.: 'contrast = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
@@ -601,7 +601,7 @@ impl Site {
                                             }
                                         };
                                     } else {
-                                        let message = "layered_chroma needs to be provided as a field with a value, e.g.: 'layered_chroma: 100%'";
+                                        let message = "layered_chroma needs to be provided as a field with a value, e.g.: 'layered_chroma = 100%'";
                                         let error = attribute_error(attribute, manifest_path, message);
                                         self.manifest_errors.push(error);
                                     }
