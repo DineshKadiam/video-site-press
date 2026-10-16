@@ -12,18 +12,19 @@ const transcript = transcriptContainer ? {} : null;
 // placeholder). In this case we need to skip almost all of the
 // initialization.
 if (player) {
-    const volumeLoudIcon = document.querySelector('#volume_loud_icon').content;
-    const volumeMediumIcon = document.querySelector('#volume_medium_icon').content;
-    const volumeMutedIcon = document.querySelector('#volume_muted_icon').content;
+    const volumeLoudIcon = document.querySelector('template[data-volume-loud-icon]').content;
+    const volumeMediumIcon = document.querySelector('template[data-volume-medium-icon]').content;
+    const volumeMutedIcon = document.querySelector('template[data-volume-muted-icon]').content;
 
     const cycleVersionButton = document.querySelector('#cycle_versions');
     const playbackCycleVolumeButton = document.querySelector('.left_playback_controls .cycle_volume');
     const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
     const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
     const playerControls = document.querySelector('.player_controls');
-    const replayButton = document.querySelector('#replay');
-    const speedControl = document.querySelector('#speed');
-    const speedMultiplier = document.querySelector('#speed .multiplier');
+    const replayButton = document.querySelector('.replay');
+    const seekOverlay = document.querySelector('.seek_overlay');
+    const speedControl = document.querySelector('.speed');
+    const speedMultiplier = document.querySelector('.speed .multiplier');
     const timeline = document.querySelector('.timeline');
     const timelineInput = document.querySelector('.timeline input');
     const togglePlaybackButton = document.querySelector('.toggle_playback');
@@ -33,7 +34,7 @@ if (player) {
     const video = document.querySelector('video');
 
     // Before we even begin playback video.duration is NaN, so we use our own data throughout.
-    const duration = parseFloat(video.dataset.duration);
+    const videoDuration = parseFloat(video.dataset.duration);
 
     let bufferedRangeUpdateInterval = null;
     // Although multiple, separate buffered ranges can exist for a video at
@@ -132,17 +133,145 @@ if (player) {
 
     initializeVolume();
 
+    const timelineSegments = [];
+
+    let chapterNumber = 1;
+    for (const element of document.querySelectorAll('.timeline .segments > *')) {
+        const begin = parseFloat(element.dataset.begin);
+        const end = parseFloat(element.dataset.end);
+        const share = (end - begin) / videoDuration;
+        const title = element.dataset.title;
+
+        const segment = {
+            begin,
+            element,
+            end,
+            share
+        };
+
+        if (title) {
+            const number = chapterNumber;
+
+            segment.chapter = {
+                number,
+                title
+            };
+
+            chapterNumber += 1;
+        }
+
+        timelineSegments.push(segment);
+    }
+
+    function redrawTimelineSegments(timelineWidth) {
+        const SEGMENT_PADDING = 2; // pixels
+
+        if (timelineSegments.length === 0) {
+            timelineSegments[0].element.style.left = '0';
+            timelineSegments[0].element.style.right = '0';
+        } else {
+            for (let index = 0; index < timelineSegments.length; index++) {
+                const segment = timelineSegments[index];
+
+                let left = index === 0
+                    ? 0
+                    : ((segment.begin / videoDuration) * timelineWidth);
+                let right = index === timelineSegments.length - 1
+                    ? 0
+                    : timelineWidth - ((segment.end / videoDuration) * timelineWidth);
+
+                let leftPadding;
+                let rightPadding;
+
+                if (index === 0) {
+                    leftPadding = 0;
+
+                    // At segmentWidth === SEGMENT_PADDING there is 0 padding.
+                    // At segmentWidth >= 2 * SEGMENT_PADDING there is SEGMENT_PADDING padding.
+                    // Between the two padding increases proportionally width segmentWidth.
+                    rightPadding = Math.min(SEGMENT_PADDING, Math.max(0, segment.share * timelineWidth - SEGMENT_PADDING));
+                } else if (index === timelineSegments.length - 1) {
+                    rightPadding = 0;
+
+                    // At segmentWidth === SEGMENT_PADDING there is 0 padding.
+                    // At segmentWidth >= 2 * SEGMENT_PADDING there is SEGMENT_PADDING padding.
+                    // Between the two padding increases proportionally width segmentWidth.
+                    leftPadding = Math.min(SEGMENT_PADDING, Math.max(0, segment.share * timelineWidth - SEGMENT_PADDING));
+                } else {
+                    // At segmentWidth === 2 * SEGMENT_PADDING there is 0 padding.
+                    // At segmentWidth >= 3 * SEGMENT_PADDING there is SEGMENT_PADDING padding.
+                    // Between the two padding increases proportionally width segmentWidth.
+                    const padding = Math.min(SEGMENT_PADDING, Math.max(0, segment.share * timelineWidth - 2 * SEGMENT_PADDING));
+
+                    leftPadding = padding;
+                    rightPadding = padding;
+                }
+
+                segment.element.style.setProperty('--gap-begin', `${leftPadding}px`);
+                segment.element.style.setProperty('--gap-end', `${rightPadding}px`);
+                segment.element.style.setProperty('left', `${left}px`);
+                segment.element.style.setProperty('right', `${right}px`);
+            }
+        }
+    }
+
+    const timelineResizeObserver = new ResizeObserver(entries => {
+        const minWidth = entries.reduce(
+            (minWidth, entry) => Math.min(entry.contentRect.width, minWidth),
+            Infinity
+        );
+
+        redrawTimelineSegments(minWidth);
+        playbackUpdate();
+    });
+
+    // Trigger timeline segments recomputation on resize (this also triggers the
+    // first draw after the initial page load).
+    timelineResizeObserver.observe(timeline);
+
     function playbackUpdate(forcedTime = null) {
         const time = forcedTime ?? currentTime();
         const timeFormatted = formatTime(time);
 
+        const bufferedEnd = currentBufferedRangeEnd(time);
+
         timelineInput.value = time;
         timelineInput.setAttribute('aria-valuenow', time);
         timelineInput.setAttribute('aria-valuetext', timeFormatted);
-        document.querySelector('.bar.progress').style.width = `${(time / duration) * 100}%`;
-        document.querySelector('#time_current').innerHTML = timeFormatted;
 
-        updateBufferedRange();
+        for (const segment of timelineSegments) {
+            const BUFFERED_COLOR = 'var(--d3-mono)';
+            const PLAYED_COLOR = 'var(--acc)';
+            const UNBUFFERED_COLOR = 'var(--d1-mono)';
+
+            if (time < segment.begin) {
+                if (bufferedEnd < segment.begin) {
+                    background = UNBUFFERED_COLOR;
+                } else if (bufferedEnd > segment.end) {
+                    background = BUFFERED_COLOR;
+                } else {
+                    const bufferedProgress = (bufferedEnd - segment.begin) / (segment.end - segment.begin) * 100;
+                    background = `linear-gradient(to right, ${BUFFERED_COLOR} ${bufferedProgress}%,${UNBUFFERED_COLOR} ${bufferedProgress}%)`;
+                }
+            } else if (time > segment.end) {
+                background = PLAYED_COLOR;
+            } else {
+                const progress = (time - segment.begin) / (segment.end - segment.begin) * 100;
+
+                if (bufferedEnd < time) {
+                    background = `linear-gradient(to right, ${PLAYED_COLOR} ${progress}%, ${UNBUFFERED_COLOR} ${progress}%)`;
+                } else if (bufferedEnd > segment.end) {
+                    background = `linear-gradient(to right, ${PLAYED_COLOR} ${progress}%, ${BUFFERED_COLOR} ${progress}%)`;
+                } else {
+                    const bufferedProgress = (bufferedEnd - segment.begin) / (segment.end - segment.begin) * 100;
+                    background = `linear-gradient(to right, ${PLAYED_COLOR} ${progress}%, ${BUFFERED_COLOR} ${progress}%, ${BUFFERED_COLOR} ${bufferedProgress}%, ${UNBUFFERED_COLOR} ${bufferedProgress}%)`;
+                }
+            }
+
+            segment.element.children[0].style.setProperty('background', background);
+        }
+
+        document.querySelector('#time_current').innerHTML = timeFormatted;
 
         const { hideInterfaceBy } = player.dataset;
 
@@ -263,6 +392,30 @@ if (player) {
         activateVersionOption(option);
     });
 
+    // Get the end of the buffered range that overlaps and expands rightwards from the current
+    // playback point
+    function currentBufferedRangeEnd(currentTime) {
+        const buffered = video.buffered;
+
+        let currentBufferedRangeEnd = 0;
+
+        for (let index = 0; index < buffered.length; index++) {
+            const end = buffered.end(index);
+
+            if (end >= currentTime) {
+                if (buffered.start(index) <= currentTime) {
+                    currentBufferedRangeEnd = end;
+                } else {
+                    // This range already starts after the current video time,
+                    // the others will too, we can return early
+                    break;
+                }
+            }
+        }
+
+        return currentBufferedRangeEnd;
+    }
+
     // While we seek we communicate the target time we are seeking to as the
     // current time, so the user knows their input was registered. Otherwise
     // our current time is the current time in the video.
@@ -313,7 +466,10 @@ if (player) {
             // attribute) during playback.
             video.removeAttribute('poster');
 
-            bufferedRangeUpdateInterval = setInterval(updateBufferedRange, 500);
+            // TODO: This now overlaps with the regular playback update
+            // interval during playback, follow up at some point to optimize
+            // this.
+            bufferedRangeUpdateInterval = setInterval(playbackUpdate, 500);
 
             playerInit = true;
         }
@@ -419,7 +575,7 @@ if (player) {
     });
 
     video.addEventListener('progress', () => {
-        updateBufferedRange();
+        playbackUpdate();
     });
 
     video.addEventListener('seeked', () => {
@@ -461,36 +617,40 @@ if (player) {
         localStorage.setItem('hyper8Volume', volume.value);
     }
 
-    // Check if the end of the single buffered range we display¹ has
-    // shifted, and if so update it in the DOM.
-    //
-    // ¹ The range that overlaps and expands rightwards from the current
-    // playback point
-    function updateBufferedRange() {
-        const buffered = video.buffered;
+    // Pass a mouseenter/mousemove event to update and place the seek overlay
+    // in the right spot
+    function updateSeekOverlay(event) {
+        const timelineBounds = timeline.getBoundingClientRect();
+        const position = event.clientX - timelineBounds.x;
+        const factor = position / timelineBounds.width;
+        const time = factor * timelineInput.max;
+        const seekOverlayBounds = seekOverlay.getBoundingClientRect();
 
-        let currentBufferedRangeEnd = 0;
+        const EDGE_PADDING = 2;
+        const left = Math.min(
+            timelineBounds.width - seekOverlayBounds.width - EDGE_PADDING,
+            Math.max(
+                EDGE_PADDING,
+                position - seekOverlayBounds.width / 2
+            )
+        );
 
-        const current = currentTime();
+        let label = '';
 
-        for (let index = 0; index < buffered.length; index++) {
-            const end = buffered.end(index);
-
-            if (end >= current) {
-                if (buffered.start(index) <= current) {
-                    currentBufferedRangeEnd = end;
-                } else {
-                    // This range already starts after the current video time,
-                    // the others will too, we can return early
-                    break;
+        for (const segment of timelineSegments) {
+            if (time >= segment.begin && time <= segment.end) {
+                if (segment.chapter) {
+                    const { number, title } = segment.chapter;
+                    label = `<strong>${number}.</strong> ${title}<br>${label}`;
                 }
+
+                break;
             }
         }
 
-        if (currentBufferedRangeEnd !== lastBufferedRangeEnd) {
-            document.querySelector('.bar.buffered').style.width = `${(currentBufferedRangeEnd / duration) * 100}%`;
-            lastBufferedRangeEnd = currentBufferedRangeEnd;
-        }
+        seekOverlay.style.left = `${left}px`;
+        seekOverlay.children[0].innerHTML = label;
+        seekOverlay.children[1].textContent = formatTime(time);
     }
 
     function updateVolume() {
@@ -859,18 +1019,23 @@ if (player) {
             toggleVolume();
             event.preventDefault();
         } else if (event.key === 'ArrowLeft') {
-            if (currentTime() - 5 < 0) {
+            const time = currentTime();
+
+            if (time - 5 < 0) {
                 seek(0);
             } else {
-                seek(currentTime() - 5);
+                seek(time - 5);
             }
+
             event.preventDefault();
         } else if (event.key === 'ArrowRight') {
             if (player.dataset.state !== 'outro') {
-                if (currentTime() + 5 > duration) {
-                   seek(duration);
+                const time = currentTime();
+
+                if (time + 5 > videoDuration) {
+                    seek(videoDuration);
                 } else {
-                    seek(currentTime() + 5);
+                    seek(time + 5);
                 }
             }
 
@@ -887,6 +1052,19 @@ if (player) {
         timelineInput.focus();
     });
 
+    timeline.addEventListener('mouseenter', event => {
+        updateSeekOverlay(event);
+        seekOverlay.classList.add('active');
+    });
+
+    timeline.addEventListener('mouseleave', event => {
+        seekOverlay.classList.remove('active');
+    });
+
+    timeline.addEventListener('mousemove', event => {
+        updateSeekOverlay(event);
+    });
+
     timelineInput.addEventListener('blur', () => {
         timeline.classList.remove('focus', 'focus_from_click');
     });
@@ -895,7 +1073,7 @@ if (player) {
         timeline.classList.add('focus');
     });
 
-    const resizeObserver = new ResizeObserver(() => {
+    const playerResizeObserver = new ResizeObserver(() => {
         const BACKDROP_PADDING = 5;
 
         for (const slice of versionSlices) {
@@ -923,7 +1101,7 @@ if (player) {
 
     // Trigger version slice backdrop recomputation on resize (this also triggers
     // the first draw after the initial page load).
-    resizeObserver.observe(player);
+    playerResizeObserver.observe(player);
 
     // Parses (and validates) a time parameter from the current url
     // (e.g. https://example.com/#time=4m12s) and returns it within an object
@@ -979,7 +1157,7 @@ if (player) {
                 }
             }
 
-            if (result.time > duration) {
+            if (result.time > videoDuration) {
                 return null;
             }
         } else {
@@ -1004,8 +1182,8 @@ if (player) {
         // seek to just before the end of the video, so there can still be a
         // predictable play->pause->end event cascade, leading to a clean
         // outro state
-        if (targetTime >= duration) {
-            targetTime = duration - 0.1;
+        if (targetTime >= videoDuration) {
+            targetTime = videoDuration - 0.1;
         }
 
         // Update timeline progress to immediately reflect the requested

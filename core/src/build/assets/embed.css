@@ -238,54 +238,21 @@ path.loading_right {
 .player_controls .timeline * { cursor: pointer; }
 .player_controls .timeline .bar {
     bottom: 0;
-    height: .45rem;
+    height: .5rem;
     pointer-events: none;
     position: absolute;
 }
 .player_controls .timeline:hover .bar { height: .5rem; }
 .player_controls .timeline .bar.backdrop {
-    background: var(--d1-mono);
+    background: var(--m);
     width: 100%;
     z-index: 1;
 }
 .player_controls .timeline .bar.outline {
     width: 100%;
-    z-index: 4;
-}
-.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1-mono); }
-.player_controls .timeline .bar.progress {
-    background: var(--acc);
-    width: 0;
     z-index: 3;
 }
-.player_controls .timeline .bar.progress::after {
-    background:
-        repeating-linear-gradient(
-            135deg,
-            var(--l2-mono),
-            var(--l2-mono) 1rem,
-            transparent 1rem,
-            transparent 2rem
-        );
-    background-size: 2.8rem 2.8rem;
-    content: '';
-    display: block;
-    height: 100%;
-    opacity: 0;
-    transition: opacity .5s ease;
-    width: 100%;
-}
-@media (prefers-reduced-motion: no-preference) {
-    .player_controls .timeline .bar.progress::after { animation: stripes 1s linear infinite; }
-}
-@keyframes stripes {
-    100% { background-position-x: 2.8rem; }
-}
-.player_controls .timeline .bar.buffered {
-    background: var(--d3-mono);
-    width: 0;
-    z-index: 2;
-}
+.player_controls .timeline.focus:not(.focus_from_click) .bar.outline { outline: 1px solid var(--l1-mono); }
 .player_controls .timeline input {
     appearance: none;
     bottom: 0;
@@ -345,7 +312,12 @@ path.loading_right {
 .player:not([data-state="intro"]) .player_intro { display: none; }
 .player:not([data-state="intro"]):not([data-state="paused"]) .toggle_playback .play { display: none; }
 .player:not([data-state="loading"]) .toggle_playback .loading { display: none; }
-.player[data-state="loading"] .player_controls .timeline .bar.progress::after { opacity: 1; }
+.player[data-state="loading"] .player_controls .timeline { animation: loading-pulse 1600ms cubic-bezier(.65, .05, .36, 1) 2000ms infinite; }
+@keyframes loading-pulse {
+    0% { opacity: 1; }
+    50% { opacity: .7; }
+    100% { opacity: 1; }
+}
 .player:not([data-state="loading"]):not([data-state="outro"]).hide_interface { cursor: none; }
 .player:not([data-state="loading"]):not([data-state="outro"]).hide_interface .player_controls { display: none; }
 .player:not([data-state="playing"]) .toggle_playback .pause { display: none; }
@@ -380,7 +352,23 @@ path.loading_right {
 .player .intro_heading svg { flex-shrink: 0; }
 .reading_width { max-width: 32rem; }
 .right_playback_controls { position: relative; }
-#speed .x { font-size: .8em; }
+.seek_overlay {
+    align-items: center;
+    background: var(--d1-70-mono);
+    border-radius: calc(var(--r) * .25rem);
+    bottom: 4.2rem;
+    color: var(--l1-mono);
+    display: flex;
+    flex-direction: column;
+    font-size: .8rem;
+    max-width: 10rem;
+    min-width: 4rem;
+    padding: .8rem;
+    position: absolute;
+    row-gap: .5rem;
+    text-align: center;
+}
+.seek_overlay:not(.active) { display: none; }
 .selector_control {
     align-items: center;
     display: flex;
@@ -424,9 +412,29 @@ path.loading_right {
 .selector_options button:not(.active) svg { display: none; }
 .selector_options button:not(:first-child) { padding-top: .5rem; }
 .selector_options button:not(:last-child) { padding-bottom: .5rem; }
+.speed .x { font-size: .8em; }
 svg {
     fill: currentColor;
     display: block;
+}
+.timeline .segments > div {
+    height: 100%;
+    padding-left: var(--gap-begin);
+    padding-right: var(--gap-end);
+    position: absolute;
+    transition: border-radius 50ms linear, padding 50ms linear;
+    z-index: 2;
+}
+.timeline .segments > div:hover { padding-inline: 0; }
+.timeline .segments > div > div {
+    height: .5rem;
+    margin-top: .3rem;
+}
+.timeline .segments > div:hover > div {
+    border-top-left-radius: .2rem;
+    border-top-right-radius: .2rem;
+    height: .6rem;
+    margin-top: .2rem;
 }
 .versions_ring {
     aspect-ratio: 1;

@@ -162,7 +162,7 @@ pub fn player(
 
     let default_streamable_audio_file = video.default_streamable_audio_file();
 
-    let duration = match video.highest_quality_video_file() {
+    let video_duration = match video.highest_quality_video_file() {
         Some(video_file) => video_file.video_meta_unchecked().duration,
         None => default_streamable_audio_file.unwrap().audio_meta_unchecked().duration
     };
@@ -180,7 +180,7 @@ pub fn player(
             let height = video_meta.height;
 
             let size_humanized = human_size(video_file.file_meta.size);
-            let size_per_hour_humanized = human_size((video_file.file_meta.size as f32 / duration * 3600.0) as u64);
+            let size_per_hour_humanized = human_size((video_file.file_meta.size as f32 / video_duration * 3600.0) as u64);
 
             formatdoc!(r#"
                 <button data-label="{height}p" data-src="{video_prefix}{file_name_escaped}">
@@ -193,7 +193,7 @@ pub fn player(
     if let Some(audio_file) = default_streamable_audio_file {
         let file_name_escaped = urlencoding::encode(&audio_file.file_name);
         let size_humanized = human_size(audio_file.file_meta.size);
-        let size_per_hour_humanized = human_size((audio_file.file_meta.size as f32 / duration * 3600.0) as u64);
+        let size_per_hour_humanized = human_size((audio_file.file_meta.size as f32 / video_duration * 3600.0) as u64);
 
         let t_audio = translations.audio;
         let audio_option = formatdoc!(r#"
@@ -261,7 +261,7 @@ pub fn player(
                 if video_iterated.site_path == video.site_path {
                     current = "current";
                     href = format!("{video_prefix}{href_suffix}");
-                    id_replay = r#"id="replay""#;
+                    id_replay = r#"class="replay""#;
 
                     let count = videos.len();
                     let number = index + 1;
@@ -329,7 +329,7 @@ pub fn player(
         let t_replay = translations.replay;
         formatdoc!(r#"
             <div class="outro_video_context">
-                <button id="replay">
+                <button class="replay">
                     {replay_icon} {t_replay}
                 </a>
             </div>
@@ -402,24 +402,26 @@ pub fn player(
     };
 
     let aspect_ratio;
-    let duration;
+    let video_duration;
     let src_escaped;
     if let Some(video_file) = default_streamable_video_file {
         let video_file_meta = video_file.video_meta.as_ref().unwrap();
 
         aspect_ratio = video_file_meta.aspect_ratio();
-        duration = video_file_meta.duration;
+        video_duration = video_file_meta.duration;
         src_escaped = urlencoding::encode(&video_file.file_name);
     } else {
         let audio_file = default_streamable_audio_file.unwrap();
         let audio_file_meta = audio_file.audio_meta.as_ref().unwrap();
 
         aspect_ratio = site.poster_aspect.numeric();
-        duration = audio_file_meta.duration;
+        video_duration = audio_file_meta.duration;
         src_escaped = urlencoding::encode(&audio_file.file_name);
     }
 
-    let duration_formatted = precise_duration(duration);
+    let video_duration_formatted = precise_duration(video_duration);
+
+    let timeline_segments = timeline_segments(video, video_duration);
 
     let t_playback_position = translations.playback_position;
     formatdoc!(r#"
@@ -427,6 +429,10 @@ pub fn player(
             :root {{ --video-aspect: {aspect_ratio}; }}
         </style>
         <div class="player" data-state="intro">
+            <div class="seek_overlay">
+                <div></div>
+                <div></div>
+            </div>
             <div class="player_intro">
                 {versions_ring_rendered}
                 {embed_intro_extensions}
@@ -437,13 +443,12 @@ pub fn player(
             <div class="player_controls">
                 <div class="timeline">
                     <div class="bar backdrop"></div>
-                    <div class="bar progress"></div>
-                    <div class="bar buffered"></div>
+                    <div class="segments">{timeline_segments}</div>
                     <input
                         aria-label="{t_playback_position}"
                         aria-valuenow="0"
                         aria-valuetext="00:00"
-                        max="{duration}"
+                        max="{video_duration}"
                         min="0"
                         step="any"
                         type="range"
@@ -454,9 +459,9 @@ pub fn player(
                     <div class="left_playback_controls">
                         <button class="toggle_playback">{toggle_playback_icons}</button>
                         <button class="cycle_volume">{volume_loud_icon}</button>
-                        <button id="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
+                        <button class="speed"><span class="multiplier">1.0</span><span class="x">x</span></button>
                         <div>
-                            <span id="time_current">00:00</span> / <span id="time_total">{duration_formatted}</span>
+                            <span id="time_current">00:00</span> / <span id="time_total">{video_duration_formatted}</span>
                         </div>
                     </div>
                     <div class="right_playback_controls">
@@ -468,7 +473,7 @@ pub fn player(
             </div>
             {poster_preload}
             <video
-                data-duration="{duration}"
+                data-duration="{video_duration}"
                 playsinline
                 loading="lazy"
                 {poster}
@@ -484,15 +489,79 @@ pub fn player(
 /// these are injected to the end of the body in the regular page and embed
 /// layouts.
 pub fn player_icon_templates(translations: &Translations) -> String {
-    let template = |id, icon| format!(r#"<template id="{id}">{icon}</template>"#);
+    let template = |name, icon| format!(r#"<template data-{name}>{icon}</template>"#);
 
     let templates = vec![
-        template("volume_loud_icon", hyper8_icons::volume_loud(translations.loud_volume)),
-        template("volume_medium_icon", hyper8_icons::volume_medium(translations.medium_volume)),
-        template("volume_muted_icon", hyper8_icons::volume_muted(translations.sound_muted))
+        template("volume-loud-icon", hyper8_icons::volume_loud(translations.loud_volume)),
+        template("volume-medium-icon", hyper8_icons::volume_medium(translations.medium_volume)),
+        template("volume-muted-icon", hyper8_icons::volume_muted(translations.sound_muted))
     ];
 
     templates.join("")
+}
+
+/// Renders distinct segments of the timeline that are based on the (if
+/// available) specified chapters and/or the spaces before, between and after
+/// chapters.
+fn timeline_segments(video: &Video, video_duration: f32) -> String {
+    let mut segments = Vec::new();
+
+    let mut segment = |begin, end, title| {
+        let data_title = match title {
+            Some(title) => {
+                let title_escaped = html_escape_inside_attribute(title);
+                format!(r#"data-title="{title_escaped}""#)
+            }
+            None => String::new()
+        };
+
+        let segment = format!(r#"<div data-begin="{begin}" data-end="{end}" {data_title}><div></div></div>"#);
+
+        segments.push(segment);
+    };
+
+    if let Some(chapters) = &video.chapters && !chapters.is_empty() {
+        let mut chapter_iter = chapters.iter().peekable();
+
+        let first_chapter = chapter_iter.peek().unwrap();
+
+        if first_chapter.begin.seconds > 0.0 {
+            if first_chapter.begin.seconds < video_duration {
+                segment(0.0, first_chapter.begin.seconds, None);
+            } else {
+                segment(0.0, video_duration, None);
+            }
+        }
+
+        while let Some(chapter) = chapter_iter.next() {
+            if chapter.begin.seconds > video_duration {
+                // Discard chapters that begin after the video ends
+                continue;
+            }
+
+            if let Some(next_chapter) = chapter_iter.peek() &&
+                next_chapter.begin.seconds < video_duration
+            {
+                if let Some(end) = &chapter.end && end.seconds < next_chapter.begin.seconds {
+                    segment(chapter.begin.seconds, end.seconds, Some(&chapter.title));
+                    segment(end.seconds, next_chapter.begin.seconds, None);
+                } else {
+                    segment(chapter.begin.seconds, next_chapter.begin.seconds, Some(&chapter.title));
+                }
+            } else {
+                if let Some(end) = &chapter.end && end.seconds < video_duration {
+                    segment(chapter.begin.seconds, end.seconds, Some(&chapter.title));
+                    segment(end.seconds, video_duration, None);
+                } else {
+                    segment(chapter.begin.seconds, video_duration, Some(&chapter.title));
+                }
+            }
+        }
+    } else {
+        segment(0.0, video_duration, None);
+    }
+
+    segments.join("")
 }
 
 fn toggle_fullscreen_icons(translations: &Translations) -> String {
