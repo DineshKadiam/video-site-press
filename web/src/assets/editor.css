@@ -175,6 +175,31 @@ button.big {
     display: flex;
     margin: 1rem 0;
 }
+.chapter {
+    display: flex;
+    flex-flow: row wrap;
+    column-gap: .5rem;
+}
+.chapter > button {
+    align-items: center;
+    background: var(--b2);
+    border-radius: .2rem;
+    column-gap: .3rem;
+    display: flex;
+    padding: .3rem .3rem;
+}
+.chapter > button:focus-visible,
+.chapter > button:hover {
+    background: var(--b3);
+}
+.chapter > input { font-size: .8rem; }
+.chapter > input.invalid { border: 2px solid var(--danger-hover); }
+.chapter > .timecode {
+    font-family: monospace;
+    width: 7rem;
+}
+.chapters { margin-block: 1rem; }
+.chapters > :not(:first-child) { margin-top: .5rem; }
 .check_context { color: var(--f3); }
 .check_subject { color: var(--f1); }
 .collection_title {

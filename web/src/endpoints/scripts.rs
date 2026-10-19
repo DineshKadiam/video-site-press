@@ -22,10 +22,12 @@ pub async fn scripts(
     // We selectively provide only those translations to the runtime js code
     // that are absolutely required, handpicking them here.
     let t_add_file = translations.add_file;
+    let t_begin = translations.begin;
     let t_continue = translations.r#continue;
     let t_create_directory = translations.create_directory;
     let t_delete_directory = translations.delete_directory;
     let t_delete_file = translations.delete_file;
+    let t_end = translations.end;
     let t_enter_password_for_decrypting_the_private_key_in_xxx = translations.enter_password_for_decrypting_the_private_key_in_xxx;
     let t_enter_password_for_user_xxx = translations.enter_password_for_user_xxx;
     let t_idle = translations.idle;
@@ -36,6 +38,7 @@ pub async fn scripts(
     let t_sync = translations.sync;
     let t_sync_finished = translations.sync_finished;
     let t_syncing = translations.syncing;
+    let t_title = translations.title;
     let t_update_file = translations.update_file;
     let t_xxx_active_jobs = translations.xxx_active_jobs;
     let t_xxx_pending_jobs = translations.xxx_pending_jobs;
@@ -43,10 +46,12 @@ pub async fn scripts(
     let js = formatdoc!(r#"
         const t = {{
             addFile: '{t_add_file}',
+            begin: '{t_begin}',
             continue: '{t_continue}',
             createDirectory: '{t_create_directory}',
             deleteDirectory: '{t_delete_directory}',
             deleteFile: '{t_delete_file}',
+            end: '{t_end}',
             enterPasswordForDecryptingThePrivateKeyInXxx: keyFile => '{t_enter_password_for_decrypting_the_private_key_in_xxx}'.replace('{{key_file}}', keyFile),
             enterPasswordForUserXxx: user => '{t_enter_password_for_user_xxx}'.replace('{{user}}', user),
             idle: '{t_idle}',
@@ -57,6 +62,7 @@ pub async fn scripts(
             sync: '{t_sync}',
             syncFinished: '{t_sync_finished}',
             syncing: '{t_syncing}',
+            title: '{t_title}',
             updateFile: '{t_update_file}',
             xxxActiveJobs: count => '{t_xxx_active_jobs}'.replace('{{count}}', count),
             xxxPendingJobs: count => '{t_xxx_pending_jobs}'.replace('{{count}}', count)

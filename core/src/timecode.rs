@@ -48,37 +48,38 @@ pub struct Timecode {
 }
 
 impl<'a> Component<'a> {
-    /// Takes a string value like "14m3s Chapter title", a byte offset into
-    /// that string at which it should begin processing, and one or more
-    /// separator patterns. At the given offset it begins to parse a
-    /// number (e.g. 14 or 3) followed by one of the separators. "" is a
-    /// special case separator (no separator), in which case the matching
-    /// happens against one or more mandatory whitespace characters following
-    /// the number. Note that separators such as "ms" and "m" must be passed
-    /// in exactly that order as otherwise the "m" will match before
-    /// the "ms".
+    /// Takes a string value like "14m3s", a byte offset into that string at
+    /// which it should begin processing, and one or more separator patterns.
+    /// At the given offset it begins to parse a number (e.g. 14 or 3)
+    /// followed by one of the separators. "" is a special case separator (no
+    /// separator), in which case the matching happens against the end of the
+    /// string. Note that separators such as "ms" and "m" must be passed in
+    /// exactly that order as otherwise the "m" will match before the "ms".
     pub fn parse(
         offset: usize,
         separators: &'a[&str],
         value: &'a str
-    ) -> Option<Component<'a>> {
+    ) -> Result<Component<'a>, ()> {
         // Determine number of leading digits
-        let number_len = value[offset..].find(|c: char| !c.is_ascii_digit())?;
+        let number_len = value[offset..]
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(value[offset..].len());
 
         // No leading digits
-        if number_len == 0 { return None; }
+        if number_len == 0 { return Err(()); }
 
         // Parse leading digits into number
-        let number = value[offset..(offset + number_len)].parse::<u16>().ok()?;
+        let number = match value[offset..(offset + number_len)].parse::<u16>() {
+            Ok(number) => number,
+            Err(_) => return Err(())
+        };
+
+        let remainder = &value[(offset + number_len)..];
 
         for separator in separators {
             if *separator == "" {
-                if !value[(offset + number_len)..].starts_with(|c: char| !c.is_whitespace()) {
-                    let whitespace_len = value[(offset + number_len)..]
-                        .find(|c: char| !c.is_ascii_whitespace())
-                        .unwrap_or(value[(offset + number_len)..].len());
-
-                    let remainder_offset = offset + number_len + whitespace_len;
+                if remainder.is_empty() {
+                    let remainder_offset = offset + number_len;
 
                     let component = Component {
                         number,
@@ -87,9 +88,9 @@ impl<'a> Component<'a> {
                         separator
                     };
 
-                    return Some(component);
+                    return Ok(component);
                 }
-            } else if value[(offset + number_len)..].starts_with(separator) {
+            } else if remainder.starts_with(separator) {
                 let remainder_offset = offset + number_len + separator.len();
 
                 let component = Component {
@@ -99,11 +100,11 @@ impl<'a> Component<'a> {
                     separator
                 };
 
-                return Some(component);
+                return Ok(component);
             }
         }
 
-        None
+        Err(())
     }
 }
 
@@ -116,12 +117,15 @@ impl Timecode {
             seconds
         }
     }
+}
 
-    /// Parses and returns the timecode and remainder of the string (separated
-    /// by one or more whitespace characters)
-    pub fn parse(value: &str) -> Option<(Timecode, &str)> {
+impl TryFrom<&str> for Timecode {
+    type Error = ();
+
+    /// Parses and returns the timecode if recognized
+    fn try_from(value: &str) -> Result<Timecode, ()> {
         // "XX:" (SRT/WebVTT)
-        // "Xh" | "Xm" | "Xs" | "Xms" | "X " (Hypertime)
+        // "Xh" | "Xm" | "Xs" | "Xms" | "X" (Hypertime)
         let first_component = Component::parse(0, &[":", "ms", "h", "m", "s", ""], value)?;
 
         if first_component.number_len == 2 && first_component.separator == ":" {
@@ -130,7 +134,7 @@ impl Timecode {
             let second_component = Component::parse(first_component.remainder_offset, &[":", "."], value)?;
 
             // Too few/many digits
-            if second_component.number_len != 2 { return None; }
+            if second_component.number_len != 2 { return Err(()); }
 
             if second_component.separator == ":" {
                 // "XX:XX:XX," (SRT)
@@ -138,18 +142,18 @@ impl Timecode {
                 let third_component = Component::parse(second_component.remainder_offset, &[",", "."], value)?;
 
                 // Too few/many digits
-                if third_component.number_len != 2 { return None; }
+                if third_component.number_len != 2 { return Err(()); }
 
-                // "XX:XX:XX,XXX " (SRT)
-                // "XX:XX:XX.XXX " (WebVTT)
+                // "XX:XX:XX,XXX" (SRT)
+                // "XX:XX:XX.XXX" (WebVTT)
                 let fourth_component = Component::parse(third_component.remainder_offset, &[""], value)?;
 
                 // Too few/many digits
-                if fourth_component.number_len != 3 { return None; }
+                if fourth_component.number_len != 3 { return Err(()); }
 
                 // Invalid minute/second components
                 if second_component.number > 59 || third_component.number > 59 {
-                    return None;
+                    return Err(());
                 }
 
                 let seconds =
@@ -160,17 +164,17 @@ impl Timecode {
 
                 let timecode = Timecode::new(&value[..fourth_component.remainder_offset], seconds);
 
-                Some((timecode, &value[fourth_component.remainder_offset..]))
+                Ok(timecode)
             } else /* if second_component.separator == "." */ {
                 // "XX:XX.XXX " (WebVTT)
                 let third_component = Component::parse(second_component.remainder_offset, &[""], value)?;
 
                 // Too few/many digits
-                if third_component.number_len != 3 { return None; }
+                if third_component.number_len != 3 { return Err(()); }
 
                 // Invalid minute/second components
                 if first_component.number > 59 || second_component.number > 59 {
-                    return None;
+                    return Err(());
                 }
 
                 let seconds =
@@ -180,14 +184,9 @@ impl Timecode {
 
                 let timecode = Timecode::new(&value[..third_component.remainder_offset], seconds);
 
-                Some((timecode, &value[third_component.remainder_offset..]))
+                Ok(timecode)
             }
         } else {
-            // TODO: Unclarity in the specification for "Hypertime" – should such values be allowed?
-            // - 90m (quite reasonable)
-            // - 90m30s (slightly suspicious)
-            // - 1h90m (very odd)
-
             enum LastHandled {
                 Hours,
                 Minutes,
@@ -198,7 +197,7 @@ impl Timecode {
             fn handle_hours_or_next<'a>(
                 component: Component,
                 value: &'a str
-            ) -> Option<(Timecode, &'a str)> {
+            ) -> Result<Timecode, ()> {
                 if component.separator == "h" {
                     let seconds = component.number as f32 * 3600.0;
 
@@ -208,10 +207,9 @@ impl Timecode {
 
                         handle_minutes_or_next(LastHandled::Hours, seconds, next_component, value)
                     } else {
-                        let remainder = value[component.remainder_offset..].trim_start();
                         let timecode = Timecode::new(&value[..component.remainder_offset], seconds);
 
-                        Some((timecode, remainder))
+                        Ok(timecode)
                     }
                 } else {
                     handle_minutes_or_next(LastHandled::None, 0.0, component, value)
@@ -223,7 +221,7 @@ impl Timecode {
                 previous_seconds: f32,
                 component: Component,
                 value: &'a str
-            ) -> Option<(Timecode, &'a str)> {
+            ) -> Result<Timecode, ()> {
                 if component.separator == "m" {
                     let seconds = previous_seconds + component.number as f32 * 60.0;
 
@@ -233,10 +231,9 @@ impl Timecode {
 
                         handle_seconds_or_next(LastHandled::Minutes, seconds, next_component, value)
                     } else {
-                        let remainder = value[component.remainder_offset..].trim_start();
                         let timecode = Timecode::new(&value[..component.remainder_offset], seconds);
 
-                        Some((timecode, remainder))
+                        Ok(timecode)
                     }
                 } else {
                     handle_seconds_or_next(last_handled, previous_seconds, component, value)
@@ -248,7 +245,7 @@ impl Timecode {
                 previous_seconds: f32,
                 component: Component,
                 value: &'a str
-            ) -> Option<(Timecode, &'a str)> {
+            ) -> Result<Timecode, ()> {
                 if component.separator == "s" {
                     let seconds = previous_seconds + component.number as f32;
 
@@ -258,10 +255,9 @@ impl Timecode {
 
                         handle_millis_or_implicit_seconds(LastHandled::Seconds, seconds, next_component, value)
                     } else {
-                        let remainder = value[component.remainder_offset..].trim_start();
                         let timecode = Timecode::new(&value[..component.remainder_offset], seconds);
 
-                        Some((timecode, remainder))
+                        Ok(timecode)
                     }
                 } else {
                     handle_millis_or_implicit_seconds(last_handled, previous_seconds, component, value)
@@ -273,18 +269,17 @@ impl Timecode {
                 previous_seconds: f32,
                 component: Component,
                 value: &'a str
-            ) -> Option<(Timecode, &'a str)> {
+            ) -> Result<Timecode, ()> {
                 if component.separator == "ms" {
                     let seconds = previous_seconds + component.number as f32 * 0.001;
 
                     if value[component.remainder_offset..].starts_with(|c: char| !c.is_whitespace()) {
                         // Nothing may follow after "…Xms"
-                        None
+                        Err(())
                     } else {
-                        let remainder = value[component.remainder_offset..].trim_start();
                         let timecode = Timecode::new(&value[..component.remainder_offset], seconds);
 
-                        Some((timecode, remainder))
+                        Ok(timecode)
                     }
                 } else /* if component.separator == " " */ {
                     let seconds = match last_handled {
@@ -299,11 +294,81 @@ impl Timecode {
                     };
 
                     let timecode = Timecode::new(&value[..component.remainder_offset], seconds);
-                    Some((timecode, &value[component.remainder_offset..]))
+                    Ok(timecode)
                 }
             }
 
             handle_hours_or_next(first_component, value)
         }
     }
+}
+
+#[test]
+fn check_hypertime_h() {
+    let input = "1h";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 3600.0);
+}
+
+#[test]
+fn check_hypertime_m() {
+    let input = "1m";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 60.0);
+}
+
+#[test]
+fn check_hypertime_raw() {
+    let input = "1";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 1.0);
+}
+
+#[test]
+fn check_hypertime_s() {
+    let input = "1s";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 1.0);
+}
+
+#[test]
+fn check_subrip() {
+    let input = "00:03:18,608";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 198.608);
+}
+
+#[test]
+fn check_webvtt_with_hours() {
+    let input = "00:03:18.608";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 198.608);
+}
+
+#[test]
+fn check_webvtt_without_hours() {
+    let input = "03:18.608";
+
+    let timecode = Timecode::try_from(input).unwrap();
+
+    assert_eq!(timecode.representation, input);
+    assert_eq!(timecode.seconds, 198.608);
 }

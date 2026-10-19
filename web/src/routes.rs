@@ -177,6 +177,10 @@ pub fn video_add_link(video: &Video) -> String {
     format!("/video/add-link/{}", video.site_path.normalized())
 }
 
+pub fn video_chapters(video: &Video) -> String {
+    format!("/video/chapters/{}", video.site_path.normalized())
+}
+
 pub fn video_dangerous_actions(video: &Video) -> String {
     format!("/video/dangerous-actions/{}", video.site_path.normalized())
 }
@@ -255,6 +259,10 @@ pub fn video_subtitles(video: &Video) -> String {
 
 pub fn video_update_audio_file_usage(video: &Video) -> String {
     format!("/video/update-audio-file-usage/{}", video.site_path.normalized())
+}
+
+pub fn video_update_chapters(video: &Video) -> String {
+    format!("/video/update-chapters/{}", video.site_path.normalized())
 }
 
 pub fn video_update_poster(video: &Video) -> String {

@@ -771,3 +771,246 @@ if (splashWrapper) {
         localStorage.setItem('hyper8SplashSeen', version);
     }
 }
+
+const chaptersContainer = document.querySelector('div[data-chapters]');
+
+if (chaptersContainer) {
+    function validateTimecode(input, allowEmpty = true) {
+        let valid = false;
+
+        const value = input.value.trim();
+
+        // 00:00.000 | 00:00:00[.,]000
+        const SUBRIP_WEBVTT_REGEX = /^(?:[0-5]\d:[0-5]\d\.\d\d\d|\d\d:[0-5]\d:[0-5]\d[,.]\d\d\d)$/;
+
+        if (value === '') {
+            valid = allowEmpty;
+        } else if (SUBRIP_WEBVTT_REGEX.test(input.value)) {
+            valid = true;
+        } else {
+            // Match all of "", "1", "1ms", "1s", "1m" "1h" "1m1s", "1h1m1s", "1h1s", "1h1m", etc.
+            const match = input.value.match(/^(?:([0-9]+)h)?(?:([0-9]+)m)?(?:([0-9]+)s)?(?:([0-9]+)ms?)?(?:([0-9]+))?$/);
+
+            if (match) {
+                // (h)our
+                // (m)inute
+                // (s)econd
+                // (m…)illi(…s)econds
+                // (u)nit-less
+                const [_, h, m, s, ms, u] = match;
+
+                // A unit-less number given after milliseconds is not valid
+                if (!(ms && u)) {
+                    valid = true;
+                }
+            }
+        }
+
+        input.classList.toggle('invalid', !valid);
+
+        return valid;
+    }
+
+    const deleteIcon = document.querySelector('template[data-delete-icon]').content;
+    const downIcon = document.querySelector('template[data-down-icon]').content;
+    const upIcon = document.querySelector('template[data-up-icon]').content;
+
+    let chapters = [];
+
+    const saveButton = document.querySelector('button[data-save-chapters]');
+
+    function ensureTrailingEmptyChapter() {
+        let trailingEmpty =
+            chapters.length > 0 &&
+            (
+                chapters[chapters.length - 1].begin.trim() === '' &&
+                chapters[chapters.length - 1].end.trim() === '' &&
+                chapters[chapters.length - 1].title.trim() === ''
+            );
+
+        if (!trailingEmpty) {
+            addChapter();
+        }
+    }
+
+    saveButton.addEventListener('click', event => {
+        const finalChapters = [];
+
+        let valid = true;
+
+        for (const chapter of chapters) {
+            if (chapter.begin !== '' || chapter.end !== '' || chapter.title !== '') {
+                const finalChapter = {};
+
+                if (validateTimecode(chapter.beginInput, false)) {
+                    finalChapter.begin = chapter.begin;
+                } else {
+                    valid = false;
+                }
+
+                if (validateTimecode(chapter.endInput)) {
+                    if (chapter.end !== '') {
+                        finalChapter.end = chapter.end;
+                    }
+                } else {
+                    valid = false;
+                }
+
+                if (chapter.title === '') {
+                    valid = false
+                    chapter.titleInput.classList.add('invalid');
+                } else {
+                    finalChapter.title = chapter.title;
+                    chapter.titleInput.classList.remove('invalid');
+                }
+
+                if (valid) {
+                    finalChapters.push(finalChapter);
+                }
+            }
+        }
+
+        if (valid) {
+            saveButton.form.data.value = JSON.stringify(finalChapters);
+        } else {
+            event.preventDefault();
+        }
+    });
+
+    function addChapter(begin = '', end = '', title = '') {
+        const element = document.createElement('div');
+
+        element.classList.add('chapter');
+
+        const chapter = {
+            begin,
+            element,
+            end,
+            title
+        };
+
+        const beginInput = document.createElement('input');
+
+        beginInput.classList.add('timecode');
+        beginInput.placeholder = t.begin;
+        beginInput.setAttribute('aria-label', t.begin);
+        beginInput.value = begin;
+
+        beginInput.addEventListener('input', () => {
+            chapter.begin = beginInput.value.trim();
+        });
+
+        beginInput.addEventListener('blur', () => {
+            ensureTrailingEmptyChapter(element);
+            validateTimecode(beginInput);
+        });
+
+        chapter.beginInput = beginInput;
+
+        const endInput = document.createElement('input');
+        const label = `(${t.end})`;
+
+        endInput.classList.add('timecode');
+        endInput.placeholder = label;
+        endInput.setAttribute('aria-label', label);
+        endInput.value = end;
+
+        endInput.addEventListener('input', () => {
+            chapter.end = endInput.value.trim();
+        });
+
+        endInput.addEventListener('blur', () => {
+            ensureTrailingEmptyChapter(element);
+            validateTimecode(endInput);
+        });
+
+        chapter.endInput = endInput;
+
+        const titleInput = document.createElement('input');
+        titleInput.classList.add('title');
+        titleInput.placeholder = t.title;
+        titleInput.setAttribute('aria-label', t.title);
+        titleInput.value = title;
+
+        titleInput.addEventListener('input', () => {
+            chapter.title = titleInput.value.trim();
+        });
+
+        titleInput.addEventListener('blur', () => {
+            ensureTrailingEmptyChapter(element);
+        });
+
+        chapter.titleInput = titleInput;
+
+        const downButton = document.createElement('button');
+
+        downButton.append(downIcon.cloneNode(true));
+
+        downButton.addEventListener('click', () => {
+            for (let index = 0; index < chapters.length; index++) {
+                if (chapters[index] === chapter) {
+                    // Already at the bottom
+                    if (index === chapters.length - 1) return;
+
+                    chapters[index + 1].element.insertAdjacentElement('afterend', element);
+
+                    const memo = chapters[index + 1];
+                    chapters[index + 1] = chapters[index];
+                    chapters[index] = memo;
+
+                    return;
+                }
+            }
+        });
+
+        const upButton = document.createElement('button');
+
+        upButton.append(upIcon.cloneNode(true));
+
+        upButton.addEventListener('click', () => {
+            for (let index = 0; index < chapters.length; index++) {
+                if (chapters[index] === chapter) {
+                    // Already at the top
+                    if (index === 0) return;
+
+                    chapters[index - 1].element.insertAdjacentElement('beforebegin', element);
+
+                    const memo = chapters[index - 1];
+                    chapters[index - 1] = chapters[index];
+                    chapters[index] = memo;
+
+                    return;
+                }
+            }
+        });
+
+        const deleteButton = document.createElement('button');
+
+        deleteButton.append(deleteIcon.cloneNode(true));
+
+        deleteButton.addEventListener('click', () => {
+            element.remove();
+            chapters = chapters.filter(iteratedChapter => iteratedChapter !== chapter);
+        });
+
+        element.append(beginInput);
+        element.append(endInput);
+        element.append(titleInput);
+        element.append(downButton);
+        element.append(upButton);
+        element.append(deleteButton);
+
+        chapters.push(chapter);
+
+        chaptersContainer.append(element);
+    }
+
+    for (const chapter of JSON.parse(chaptersContainer.dataset.chapters)) {
+        const { begin, end, title } = chapter;
+
+        addChapter(begin, end, title);
+    }
+
+    // Automatic empty chapter
+    addChapter();
+}

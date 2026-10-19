@@ -5,7 +5,11 @@ use std::fs;
 
 use indoc::formatdoc;
 
-use hyper8_util::{casual_duration, url_safe_hash_base64};
+use hyper8_util::{
+    casual_duration,
+    js_escape_inside_single_quoted_string,
+    url_safe_hash_base64
+};
 
 use crate::{
     Build,
@@ -186,13 +190,6 @@ pub fn generate_video_js(context: &Context) {
     let path = context.build_dir.join("video.js");
 
     fs::write(path, js).unwrap();
-}
-
-/// Escapes `'` as `\'` and `\` as `\\`
-fn js_escape_inside_single_quoted_string(string: &str) -> String {
-    string
-        .replace('\\', "\\\\")
-        .replace('\'', "\\'")
 }
 
 /// We do not use ESM (modules) on generated Hyper 8 sites for any of

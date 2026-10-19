@@ -1560,6 +1560,29 @@ impl Video {
             eno.push_str(&format!("file = {}\n", poster.file_name));
         }
 
+        if let Some(chapters) = &self.chapters && !chapters.is_empty() {
+            if !eno.is_empty() { eno.push('\n'); }
+
+            let chapters = chapters
+                .iter()
+                .map(|chapter| {
+                    let begin = &chapter.begin.representation;
+                    let title = &chapter.title;
+
+                    if let Some(end) = &chapter.end {
+                        let end = &end.representation;
+
+                        format!("- {begin} --> {end} {title}")
+                    } else {
+                        format!("- {begin} {title}")
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            eno.push_str(&format!("chapters:\n{chapters}\n"));
+        }
+
         for audio_file in &self.audio_files {
             if audio_file.skip_manifest_entry() { continue; }
 

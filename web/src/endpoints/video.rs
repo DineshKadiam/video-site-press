@@ -1,7 +1,8 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod add_link;
+mod chapters;
 mod dangerous_actions;
 mod delete;
 mod delete_audio_file;
@@ -25,6 +26,7 @@ mod stream;
 mod subtitles;
 mod update;
 mod update_audio_file_usage;
+mod update_chapters;
 mod update_manifest;
 mod update_poster;
 mod update_subtitles;
@@ -34,6 +36,7 @@ mod upload_poster;
 mod upload_subtitles;
 
 pub use add_link::add_link;
+pub use chapters::chapters;
 pub use dangerous_actions::dangerous_actions;
 pub use delete::delete;
 pub use delete_audio_file::delete_audio_file;
@@ -58,6 +61,7 @@ pub use subtitles::subtitles;
 pub use update::update;
 pub use upload_audio_video::upload_audio_video;
 pub use update_audio_file_usage::update_audio_file_usage;
+pub use update_chapters::update_chapters;
 pub use update_manifest::update_manifest;
 pub use update_poster::update_poster;
 pub use update_subtitles::update_subtitles;

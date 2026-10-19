@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024-2025 Simon Repp
+// SPDX-FileCopyrightText: 2024-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use hyper8_core::SitePath;
@@ -15,6 +15,7 @@ pub enum Location<'a> {
 
 #[derive(PartialEq)]
 pub enum Subpage {
+    Chapters,
     DangerousActions,
     Edit,
     Links,
@@ -36,6 +37,13 @@ impl<'a> Location<'a> {
                     false => None
                 }
             }
+        }
+    }
+
+    pub fn chapters(site_path: &SitePath) -> Location<'_> {
+        Location::SiteTree {
+            site_path,
+            subpage: Subpage::Chapters
         }
     }
 

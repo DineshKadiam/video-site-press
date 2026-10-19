@@ -57,7 +57,6 @@ pub mod watcher;
 use audio_meta::AudioMeta;
 use build::{AssetHashes, Build};
 use cache::{AudioMetaCached, Cache, PosterAssetsCached, PosterSourceCached, VideoMetaCached};
-use chapter::Chapter;
 use ffmpeg::FFmpeg;
 use hyper_command::HyperCommand;
 use image_processor::{ImageProcessor, ResizeMode};
@@ -78,7 +77,6 @@ use theme::{
     OklPercent,
     ThemeOklch
 };
-use timecode::Timecode;
 use video_format::{Codec, EncodingApproach};
 use video_meta::VideoMeta;
 
@@ -88,6 +86,7 @@ pub use audio_format::AudioFormat;
 pub use banner::Banner;
 pub use browser_support::BrowserSupport;
 pub use build::perform_build;
+pub use chapter::Chapter;
 pub use collection::Collection;
 pub use container::Container;
 pub use container_order::ContainerOrder;
@@ -156,6 +155,7 @@ pub use theme::{
     DEFAULT_LAYERED_CHROMA,
     SPLASH_SVG
 };
+pub use timecode::Timecode;
 pub use util::InfallibleResult;
 pub use video::Video;
 pub use video_file::VideoFile;

@@ -764,11 +764,23 @@ fn video_node(
             "#);
             subpages.push(video_audio_files);
 
+            let chapters_active = if *subpage == Subpage::Chapters { "active" } else { "" };
+            let chapters_count = video.chapters.as_ref().map(|chapters| chapters.len()).unwrap_or(0);
+            let chapters_icon = hyper8_icons::CHAPTERS;
+            let chapters_url = routes::video_chapters(video);
+            let t_chapters = translations.chapters;
+            let chapters = formatdoc!(r#"
+                <a class="{chapters_active} subpage" href="{chapters_url}" style="padding-left: {padding_left};">
+                    {chapters_icon} {t_chapters} ({chapters_count})
+                </a>
+            "#);
+            subpages.push(chapters);
+
             let subtitles_active = if *subpage == Subpage::Subtitles { "active" } else { "" };
             let subtitles_count = video.subtitle_files.len();
             let subtitles_icon = hyper8_icons::subtitles(None);
             let subtitles_url = routes::video_subtitles(video);
-             let t_subtitles = translations.subtitles;
+            let t_subtitles = translations.subtitles;
             let subtitles = formatdoc!(r#"
                 <a class="{subtitles_active} subpage" href="{subtitles_url}" style="padding-left: {padding_left};">
                     {subtitles_icon} {t_subtitles} ({subtitles_count})

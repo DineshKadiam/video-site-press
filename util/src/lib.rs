@@ -147,6 +147,20 @@ fn human_size_megabytes(bytes: u64) -> String {
     }
 }
 
+/// Escapes `"` as `\"` and `\` as `\\`
+pub fn js_escape_inside_double_quoted_string(string: &str) -> String {
+    string
+        .replace('\\', "\\\\")
+        .replace('"', r#"\""#)
+}
+
+/// Escapes `'` as `\'` and `\` as `\\`
+pub fn js_escape_inside_single_quoted_string(string: &str) -> String {
+    string
+        .replace('\\', "\\\\")
+        .replace('\'', "\\'")
+}
+
 pub fn nanoid() -> String {
     nanoid!(8)
 }
