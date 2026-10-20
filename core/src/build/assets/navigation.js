@@ -70,6 +70,24 @@ function initializeSiteTree() {
         let image;
         if (video.image) {
             image = document.createElement('img');
+
+            // Thumbnails in the site navigation tree are currently treated as
+            // decorative elements (hidden from screen readers). Some not yet
+            // conclusive considerations for this:
+            // - The navigation serves primarily as a quick way to navigate
+            //   the page, putting thumbnails out of the way for screeen
+            //   readers might better fulfill that purpose (?)
+            // - For sighted users thumbnails are shown at a very small size,
+            //   which also already goes into decorative usage rather than
+            //   conveying actual detailed insights into the content, so this
+            //   possibly mirrors that well for screen readers
+            // - It could as well be argued that for screen reader users we
+            //   could provide a better experience by actually including the
+            //   image descriptions here, providing additional insight that
+            //   sighted users can not get due to the requirement for very
+            //   small thumbnails in the limited navigation space – this can
+            //   absolutely be re-evaluated
+            image.ariaHidden = 'true';
             image.src = window.hyper8.rootPrefix + video.sitePath + video.image;
 
             if (video.lqip) {
