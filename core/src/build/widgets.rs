@@ -7,6 +7,7 @@ use std::sync::Arc;
 use indoc::formatdoc;
 
 use hyper8_translations::Translations;
+use hyper8_util::Attributes;
 use hyper8_util::{casual_duration, html_escape_outside_attribute};
 
 use crate::{
@@ -18,22 +19,28 @@ use crate::{
 };
 
 pub fn banner_html(banner: &Banner, prefix: &str) -> String {
-    let alt = if let Some(description) = &banner.description {
-        format!(r#"alt="{description}""#)
-    } else {
-        String::new()
-    };
+    let mut attributes = Attributes::new();
+
+    if let Some(description) = &banner.description {
+        attributes.add_escaped("alt", description);
+    }
+
+    attributes.add_raw("class", "banner");
 
     if let Some(poster_assets) = &banner.assets {
         // TODO: Adjust up_to_xxx (depends on final content width we're using)
         let image_attributes = poster_assets.img_attributes_up_to_1280("banner", prefix);
-        let src = image_attributes.src;
-        let srcset = image_attributes.srcset;
 
-        formatdoc!(r#"<img {alt} class="banner" src="{src}" srcset="{srcset}">"#)
+        attributes.add_raw("src", image_attributes.src);
+        attributes.add_raw("srcset", image_attributes.srcset);
     } else {
-        formatdoc!(r#"<img {alt} class="banner" src="{prefix}banner.jpg">"#)
+        attributes.add_raw("src", format!("{prefix}banner.jpg"));
     }
+
+    // TODO: height="..." and width="..." so the browser can layout with the
+    // intrinsic size before the image has loaded
+
+    format!("<img {attributes}>")
 }
 
 /// Renders a list of "bubbles" (circles with a mesh gradient type background) that are
@@ -43,8 +50,9 @@ pub fn bubbles(prefix: &str, videos: &[Arc<Video>]) -> String {
         .iter()
         .map(|video| {
             if let Some(poster_meta) = &video.poster.as_ref().and_then(|poster| poster.poster_meta.as_ref()) {
-                let background = poster_meta.lqip.gradient_radial();
+                let background = poster_meta.lqip.background_css();
                 let video_slug = video.slug_unchecked();
+
                 formatdoc!(r#"
                     <li>
                         <a href="{prefix}{video_slug}/" style="{background}" tabindex="-1"></a>
@@ -147,55 +155,57 @@ pub fn thumbnail(
     video_prefix: &str,
     with_duration: bool
 ) -> String {
-    match &video.poster {
-        Some(poster) => {
-            let alt = if let Some(description) = &poster.description {
-                format!(r#"alt="{description}""#)
-            } else {
-                String::new()
-            };
+    if let Some(poster) = &video.poster {
+        let mut attributes = Attributes::new();
 
-            let lqip_style = match &poster.poster_meta {
-                Some(poster_meta) => {
-                    let background = poster_meta.lqip.gradient_radial();
-                    formatdoc!(r#"style="{background}""#)
-                }
-                None => String::new()
-            };
+        // alt
+        if let Some(description) = &poster.description {
+            attributes.add_escaped("alt", description);
+        }
 
-            let img = match &poster.assets {
-                Some(poster_assets) => {
-                    let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
-                    let src = image_attributes.src;
-                    let srcset = image_attributes.srcset;
+        // class
+        attributes.add_raw("class", "thumbnail");
 
-                    format!(r#"<img {alt} class="thumbnail" src="{src}" srcset="{srcset}" {lqip_style}>"#)
-                }
-                None => {
-                    format!(r#"<img {alt} class="thumbnail" src="{video_prefix}poster.jpg" {lqip_style}>"#)
-                }
-            };
+        // loading
+        attributes.add_raw("loading", "lazy");
 
-            if !with_duration {
-                return img;
-            }
+        // src, srcset
 
+        if let Some(poster_assets) = &poster.assets {
+            let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);
+
+            attributes.add_raw("sizes", image_attributes.sizes);
+            attributes.add_raw("src", image_attributes.src);
+            attributes.add_raw("srcset", image_attributes.srcset);
+        } else {
+            attributes.add_raw("src", format!("{video_prefix}poster.jpg"));
+        }
+
+        // height, style, width
+
+        if let Some(poster_meta) = &poster.poster_meta {
+            attributes.add_raw("height", poster_meta.height.to_string());
+            attributes.add_raw("style", poster_meta.lqip.background_css());
+            attributes.add_raw("width", poster_meta.width.to_string());
+        }
+
+        let img = format!("<img {attributes}>");
+
+        if with_duration {
             let duration = match video.duration_public() {
                 Some(duration) => {
                     let duration_formatted = casual_duration(duration, translations);
-                    formatdoc!(r#"<span class="duration">{duration_formatted}</span>"#)
+                    format!(r#"<span class="duration">{duration_formatted}</span>"#)
                 }
                 None => String::new()
             };
 
-            formatdoc!(r#"
-                <div class="thumbnail_wrapper">
-                    {img}
-                    {duration}
-                </div>
-            "#)
-        },
-        None => String::new()
+            format!(r#"<div class="thumbnail_wrapper">{img}{duration}</div>"#)
+        } else {
+            img
+        }
+    } else {
+        String::new()
     }
 }
 

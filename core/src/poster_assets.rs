@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub struct ImgAttributes {
+    pub sizes: String,
     pub src: String,
     pub srcset: String
 }
@@ -50,25 +51,36 @@ impl ImgAttributes {
         base_name: &str,
         prefix: &str
     ) -> ImgAttributes {
+        let mut sizes = Vec::new();
         let mut src = String::new();
         let mut srcset = Vec::new();
 
         let mut asset_peek_iter = assets_ascending_by_size.iter().peekable();
 
+        sizes.push(String::from("auto"));
+
         while let Some(asset) = asset_peek_iter.next() {
             let target_filename = asset.target_filename(base_name);
 
             let width = asset.width;
+
             srcset.push(format!("{prefix}{target_filename} {width}w"));
 
             if asset_peek_iter.peek().is_none() {
+                sizes.push(format!("{width}px"));
                 src = format!("{prefix}{target_filename}");
+            } else {
+                sizes.push(format!("(max-width: {width}px) {width}px"));
             }
         }
 
+        let sizes = sizes.join(",");
+        let srcset = srcset.join(",");
+
         ImgAttributes {
+            sizes,
             src,
-            srcset: srcset.join(",")
+            srcset
         }
     }
 }

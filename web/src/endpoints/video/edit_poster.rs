@@ -105,7 +105,7 @@ pub fn edit_poster_page(
             let video_aspect_representation = AspectRatio::approximate_representation(video_aspect_numeric);
 
             let poster_format = if let Some(poster_meta) = &poster.poster_meta {
-                let background = poster_meta.lqip.gradient_radial();
+                let background = poster_meta.lqip.background_css();
                 let poster_aspect_numeric = poster_meta.aspect_ratio();
                 let poster_aspect_representation = AspectRatio::approximate_representation(poster_aspect_numeric);
 

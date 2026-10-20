@@ -12,9 +12,11 @@ use nanoid::nanoid;
 use hyper8_translations::Translations;
 
 pub mod anchor_id_generator;
+pub mod attributes;
 pub mod ffs;
 
 pub use anchor_id_generator::AnchorIdGenerator;
+pub use attributes::Attributes;
 
 /// Takes seconds, formats it like "25 min", "33 sec", "158 min", "3.6 hrs", "11 hrs"
 pub fn casual_duration(seconds: f32, translations: &Translations) -> String {

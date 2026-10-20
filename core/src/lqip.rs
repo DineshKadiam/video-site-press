@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Simon Repp
+// SPDX-FileCopyrightText: 2025-2026 Simon Repp
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use serde_derive::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ impl Lqip {
     //     format!("background: {ne}, {nw}, {se}, {sw};")
     // }
 
-    pub fn gradient_radial(&self) -> String {
+    pub fn background_css(&self) -> String {
         let ne = format!("radial-gradient(ellipse at top right, {}, transparent)", Lqip::rgb(self.ne));
         let nw = format!("radial-gradient(ellipse at top left, {}, transparent)", Lqip::rgb(self.nw));
         let se = format!("radial-gradient(ellipse at bottom right, {}, transparent)", Lqip::rgb(self.se));
