@@ -169,7 +169,7 @@ pub fn thumbnail(
         // loading
         attributes.add_raw("loading", "lazy");
 
-        // src, srcset
+        // sizes, src, srcset
 
         if let Some(poster_assets) = &poster.assets {
             let image_attributes = poster_assets.img_attributes_up_to_480("poster", video_prefix);

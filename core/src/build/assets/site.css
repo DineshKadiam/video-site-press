@@ -506,7 +506,6 @@ path.loading_right {
     bottom: 0;
     display: flex;
     flex-direction: column;
-    position: absolute;
     width: 100%;
 }
 .player_controls button { padding: .9rem .7rem; }
@@ -581,7 +580,6 @@ path.loading_right {
 .player_outro {
     bottom: 2.9rem;
     left: 0;
-    position: absolute;
     right: 0;
     top: 0;
 }
@@ -636,7 +634,10 @@ path.loading_right {
 }
 .player button.dimmed { opacity: .6; }
 .player button.dimmed:hover { opacity: .8; }
-.player > *:not(video) { z-index: 1; }
+.player > *:not(.poster):not(video) {
+    position: absolute;
+    z-index: 2;
+}
 .player:not([data-state="intro"]) .player_intro { display: none; }
 .player:not([data-state="intro"]):not([data-state="paused"]) .toggle_playback .play { display: none; }
 .player:not([data-state="loading"]) .toggle_playback .loading { display: none; }
@@ -746,6 +747,14 @@ path.loading_right {
     color: var(--f1);
     display: flex;
     flex-grow: 1;
+}
+.poster {
+    border-radius: calc(var(--r) * .6rem);
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    width: 100%;
+    z-index: 1;
 }
 .reading_width { max-width: 32rem; }
 .release_date {

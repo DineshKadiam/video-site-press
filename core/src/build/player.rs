@@ -2,11 +2,10 @@
 // SPDX-FileCopyrightText: 2024 Walter Ebert
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use std::path::Path;
-
 use indoc::formatdoc;
 
 use hyper8_translations::Translations;
+use hyper8_util::Attributes;
 use hyper8_util::{
     casual_duration,
     human_size,
@@ -41,61 +40,44 @@ pub fn player(
     let language = &site.language;
     let translations = &language.translations;
 
+    let poster = if let Some(poster_file) = &video.poster {
+        let mut attributes = Attributes::new();
+
+        // alt
+        if let Some(description) = &poster_file.description {
+            attributes.add_escaped("alt", description);
+        }
+
+        // class
+        attributes.add_raw("class", "poster");
+
+        // loading
+        attributes.add_raw("loading", "lazy");
+
+        // sizes, src, srcset
+        if let Some(poster_assets) = &poster_file.assets {
+            let image_attributes = poster_assets.attributes_up_to_1280("poster", video_prefix);
+
+            attributes.add_raw("sizes", image_attributes.sizes);
+            attributes.add_raw("src", image_attributes.src);
+            attributes.add_raw("srcset", image_attributes.srcset);
+        } else {
+            attributes.add_raw("src", format!("{video_prefix}poster.jpg"));
+        }
+
+        format!(r#"<img {attributes}>"#)
+    } else {
+        String::new()
+    };
+
     if !video.has_streamable_media() {
-        // TODO: Should use poster assets (different sizes)
-        let poster = match &video.poster {
-            Some(poster) => {
-                let alt = if let Some(description) = &poster.description {
-                    format!(r#"alt="{description}""#)
-                } else {
-                    String::new()
-                };
-
-                // TODO: Compute, cache and use a compressed/normalized (high-res, but
-                // still constrained to a maximum resolution) version of the poster
-                // for use here
-                let original_extension = Path::new(&poster.file_name)
-                    .extension()
-                    .unwrap()
-                    .to_string_lossy();
-
-                format!(r#"<img {alt} class="thumbnail" src="{video_prefix}poster.{original_extension}">"#)
-            }
-            None => String::new()
-        };
-
         let t_video_not_or_not_yet_available = translations.video_not_or_not_yet_available;
-
-        // TODO: Technically wrong to do an early return here - after all the video could have
-        //       a description, downloadable files, etc. - so we should really be rendering the
-        //       full page here, just with the player replaced with this teaser text/image widget
         return formatdoc!(r#"
             <div class="player_placeholder">
                 {poster}
                 <span>{t_video_not_or_not_yet_available}</span>
             </div>
         "#);
-    }
-
-    let poster;
-    let poster_preload;
-
-    if let Some(poster_file) = &video.poster {
-        // TODO: Compute, cache and use a compressed/normalized (high-res, but
-        // still constrained to a maximum resolution) version of the poster
-        // for use here
-        let original_extension = Path::new(&poster_file.file_name)
-            .extension()
-            .unwrap()
-            .to_string_lossy();
-
-        let href = format!("{video_prefix}poster.{original_extension}");
-
-        poster = format!(r#"poster="{href}""#);
-        poster_preload = format!(r#"<link rel="preload" href="{href}" as="image" fetchpriority="high">"#);
-    } else {
-        poster = String::new();
-        poster_preload = String::new();
     }
 
     let active_marker_icon = hyper8_icons::active_marker(translations.active);
@@ -423,12 +405,16 @@ pub fn player(
 
     let timeline_segments = timeline_segments(video, video_duration);
 
+    let mut video_attributes = Attributes::new();
+
+    video_attributes.add_raw("data-duration", video_duration.to_string());
+    video_attributes.add_key("playsinline");
+    video_attributes.add_raw("preload", "none");
+    video_attributes.add_raw("src", format!("{video_prefix}{src_escaped}"));
+
     let t_playback_position = translations.playback_position;
     formatdoc!(r#"
-        <style>
-            :root {{ --video-aspect: {aspect_ratio}; }}
-        </style>
-        <div class="player" data-state="intro">
+        <div class="player" data-state="intro" style="--video-aspect: {aspect_ratio};">
             <div class="seek_overlay">
                 <div></div>
                 <div></div>
@@ -471,16 +457,8 @@ pub fn player(
                     </div>
                 </div>
             </div>
-            {poster_preload}
-            <video
-                data-duration="{video_duration}"
-                playsinline
-                loading="lazy"
-                {poster}
-                preload="none"
-                src="{video_prefix}{src_escaped}">
-                {subtitle_tracks}
-            </video>
+            {poster}
+            <video {video_attributes}>{subtitle_tracks}</video>
         </div>
     "#)
 }

@@ -71,6 +71,23 @@ don't have to be asked or thought through over and over again. Also if
 changes becomes necessary the thinking process can start from an already
 documented thought process, instead of starting at zero.
 
+### Eager and lazy image loading
+
+#### Poster images
+
+The poster image in the player uses an overlaid `img` instead of the `poster`
+attribute on `video` because the latter only supports a single resolution/src.
+This `img` currently uses `loading="lazy"` combined with `sizes="auto, ..."`
+to ensure the most fitting resolution is picked. Technically the image
+could be considered as [LCP](https://web.dev/articles/lcp) which speaks against
+lazy loading, but at the same time the video itself (including the play button)
+also does qualify for LCP, maybe even more so, and lazy loading the poster
+might therefore even benefit the fast availability of the video interface itself.
+Note that lazy loading in this context means that the poster is loaded as soon as
+the browser can determine its exact size and location in the layout – given that
+the poster is practically always above the fold, it does not mean that the poster
+is loaded at a significantly later point.
+
 ### Native time notation
 
 For linking to timecodes (e.g. `https://example.com/video#time=30s400ms`) as

@@ -26,15 +26,27 @@ impl Attributes {
         self.string.push('"');
     }
 
+    /// Add a key="value" attribute and escape the value
     pub fn add_escaped(&mut self, key: &str, value: impl AsRef<str>) {
         let value_escaped = html_escape_inside_attribute(value.as_ref());
         self.add(key, &value_escaped);
     }
 
+    /// Add a key-only attribute such as "disabled", "data-something", etc.
+    pub fn add_key(&mut self, key: &str) {
+        if !self.string.is_empty() {
+            self.string.push(' ');
+        }
+
+        self.string.push_str(key);
+    }
+
+    /// Add a key="value" attribute without escaping the value
     pub fn add_raw(&mut self, key: &str, value: impl AsRef<str>) {
         self.add(key, value.as_ref());
     }
 
+    /// Initialize an empty attributes string
     pub fn new() -> Attributes {
         Attributes {
             string: String::new()
