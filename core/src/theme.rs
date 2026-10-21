@@ -23,7 +23,6 @@ use crate::Site;
 
 pub use theme_mode::ThemeMode;
 pub use theme_oklch::{
-    OkaPercent,
     OkcPercent,
     OkhDegrees,
     OklPercent,

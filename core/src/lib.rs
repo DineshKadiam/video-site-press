@@ -71,7 +71,6 @@ use poster_meta::PosterMeta;
 use sort::SortDirection;
 use sync::{SyncAction, SyncError};
 use theme::{
-    OkaPercent,
     OkcPercent,
     OkhDegrees,
     OklPercent,
