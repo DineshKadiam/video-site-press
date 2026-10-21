@@ -162,12 +162,28 @@ impl Worker {
                 None
             };
 
+            let max_1600 = if source_processor.source_width as f32 > 1280.0 * min_overshoot {
+                let cover_rectangle_1600 = ResizeMode::CoverCroppedRectangle { max_width: 1600, min_aspect: 2.39 };
+                Some(Worker::compute_poster_asset(context, &source_processor, cover_rectangle_1600)?)
+            } else {
+                None
+            };
+
+            let max_1920 = if source_processor.source_width as f32 > 1600.0 * min_overshoot {
+                let cover_rectangle_1920 = ResizeMode::CoverCroppedRectangle { max_width: 1920, min_aspect: 2.39 };
+                Some(Worker::compute_poster_asset(context, &source_processor, cover_rectangle_1920)?)
+            } else {
+                None
+            };
+
             let banner_assets = PosterAssets {
                 max_160,
                 max_320,
                 max_480,
                 max_800,
                 max_1280,
+                max_1600,
+                max_1920,
                 // TODO: For banners there is no configurable aspect, we could/should model this
                 //       more cleanly in the future by using separate types for banner/poster assets
                 poster_aspect: 0.0
@@ -285,12 +301,28 @@ impl Worker {
                 None
             };
 
+            let max_1600 = if source_processor.source_width as f32 > 1280.0 * min_overshoot {
+                let cover_rectangle_1600 = ResizeMode::CoverCroppedRectangle { max_width: 1600, min_aspect: 2.39 };
+                Some(Worker::compute_poster_asset(context, &source_processor, cover_rectangle_1600)?)
+            } else {
+                None
+            };
+
+            let max_1920 = if source_processor.source_width as f32 > 1600.0 * min_overshoot {
+                let cover_rectangle_1920 = ResizeMode::CoverCroppedRectangle { max_width: 1920, min_aspect: 2.39 };
+                Some(Worker::compute_poster_asset(context, &source_processor, cover_rectangle_1920)?)
+            } else {
+                None
+            };
+
             let banner_assets = PosterAssets {
                 max_160,
                 max_320,
                 max_480,
                 max_800,
                 max_1280,
+                max_1600,
+                max_1920,
                 // TODO: For banners there is no configurable aspect, we could/should model this
                 //       more cleanly in the future by using separate types for banner/poster assets
                 poster_aspect: 0.0
@@ -470,12 +502,28 @@ impl Worker {
                 None
             };
 
+            let max_1600 = if source_processor.source_width as f32 > 1280.0 * min_overshoot {
+                let cover_rectangle_1600 = ResizeMode::CoverCroppedRectangle { max_width: 1600, min_aspect: 2.39 };
+                Some(Worker::compute_poster_asset(context, &source_processor, cover_rectangle_1600)?)
+            } else {
+                None
+            };
+
+            let max_1920 = if source_processor.source_width as f32 > 1600.0 * min_overshoot {
+                let cover_rectangle_1920 = ResizeMode::CoverCroppedRectangle { max_width: 1920, min_aspect: 2.39 };
+                Some(Worker::compute_poster_asset(context, &source_processor, cover_rectangle_1920)?)
+            } else {
+                None
+            };
+
             let poster_assets = PosterAssets {
                 max_160,
                 max_320,
                 max_480,
                 max_800,
                 max_1280,
+                max_1600,
+                max_1920,
                 poster_aspect
             };
 

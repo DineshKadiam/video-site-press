@@ -41,6 +41,8 @@ pub struct PosterAssets {
     pub max_480: Option<PosterAsset>,
     pub max_800: Option<PosterAsset>,
     pub max_1280: Option<PosterAsset>,
+    pub max_1600: Option<PosterAsset>,
+    pub max_1920: Option<PosterAsset>,
     pub poster_aspect: f32
 }
 
@@ -102,16 +104,18 @@ impl PosterAssets {
     ///
     /// This automatically lets the cache discard poster assets manifests that
     /// hold incorrect, incompatible or outdated data.
-    pub const CACHE_SERIALIZATION_KEY: &'static str = "poster_assets1";
+    pub const CACHE_SERIALIZATION_KEY: &'static str = "poster_assets2";
 
     pub fn all(&self) -> Vec<&PosterAsset> {
-        let mut result = Vec::with_capacity(4);
+        let mut result = Vec::with_capacity(7);
 
         result.push(&self.max_160);
         if let Some(asset) = &self.max_320 { result.push(asset); }
         if let Some(asset) = &self.max_480 { result.push(asset); }
         if let Some(asset) = &self.max_800 { result.push(asset); }
         if let Some(asset) = &self.max_1280 { result.push(asset); }
+        if let Some(asset) = &self.max_1600 { result.push(asset); }
+        if let Some(asset) = &self.max_1920 { result.push(asset); }
 
         result
     }
@@ -147,8 +151,26 @@ impl PosterAssets {
         ImgAttributes::new(assets, base_name, prefix)
     }
 
+    pub fn img_attributes_up_to_1920(&self, base_name: &str, prefix: &str) -> ImgAttributes {
+        let mut assets = Vec::with_capacity(7);
+
+        assets.push(&self.max_160);
+        if let Some(asset) = &self.max_320 { assets.push(asset); }
+        if let Some(asset) = &self.max_480 { assets.push(asset); }
+        if let Some(asset) = &self.max_800 { assets.push(asset); }
+        if let Some(asset) = &self.max_1280 { assets.push(asset); }
+        if let Some(asset) = &self.max_1600 { assets.push(asset); }
+        if let Some(asset) = &self.max_1920 { assets.push(asset); }
+
+        ImgAttributes::new(assets, base_name, prefix)
+    }
+
     pub fn largest(&self) -> &PosterAsset {
-        if let Some(max_1280) = &self.max_1280 {
+        if let Some(max_1920) = &self.max_1920 {
+            max_1920
+        } else if let Some(max_1600) = &self.max_1600 {
+            max_1600
+        } else if let Some(max_1280) = &self.max_1280 {
             max_1280
         } else if let Some(max_800) = &self.max_800 {
             max_800
