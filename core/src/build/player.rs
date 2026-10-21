@@ -56,7 +56,7 @@ pub fn player(
 
         // sizes, src, srcset
         if let Some(poster_assets) = &poster_file.assets {
-            let image_attributes = poster_assets.attributes_up_to_1280("poster", video_prefix);
+            let image_attributes = poster_assets.img_attributes_up_to_1280("poster", video_prefix);
 
             attributes.add_raw("sizes", image_attributes.sizes);
             attributes.add_raw("src", image_attributes.src);

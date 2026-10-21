@@ -88,6 +88,8 @@ function initializeSiteTree() {
             //   small thumbnails in the limited navigation space – this can
             //   absolutely be re-evaluated
             image.ariaHidden = 'true';
+
+            image.loading = 'lazy';
             image.src = window.hyper8.rootPrefix + video.sitePath + video.image;
 
             if (video.lqip) {

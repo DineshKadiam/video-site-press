@@ -2,26 +2,28 @@ const volumeLoudIcon = document.querySelector('template[data-volume-loud-icon]')
 const volumeMediumIcon = document.querySelector('template[data-volume-medium-icon]').content;
 const volumeMutedIcon = document.querySelector('template[data-volume-muted-icon]').content;
 
-const cycleVersionButton = document.querySelector('#cycle_versions');
-const introSubtitlesSelectorControl = document.querySelector('.intro_controls .selector_control.subtitles');
-const introCycleVolumeButton = document.querySelector('.intro_controls .cycle_volume');
-const introToggleFullscreenButton = document.querySelector('.intro_controls .toggle_fullscreen');
-const playbackCycleVolumeButton = document.querySelector('.left_playback_controls .cycle_volume');
-const playbackSubtitlesSelectorControl = document.querySelector('.right_playback_controls .selector_control.subtitles');
-const playbackToggleFullscreenButton = document.querySelector('.right_playback_controls .toggle_fullscreen');
 const player = document.querySelector('.player');
-const playerControls = document.querySelector('.player_controls');
-const replayButton = document.querySelector('.replay');
-const seekOverlay = document.querySelector('.seek_overlay');
-const speedControl = document.querySelector('.speed');
-const speedMultiplier = document.querySelector('.speed .multiplier');
-const timeline = document.querySelector('.timeline');
-const timelineInput = document.querySelector('.timeline input');
-const togglePlaybackButton = document.querySelector('.toggle_playback');
-const versionSelectorControl = document.querySelector('.selector_control.version');
-const versionSlices = document.querySelectorAll('.versions_ring g[data-src]');
-const versionsRing = document.querySelector('.versions_ring');
-const video = document.querySelector('video');
+
+const cycleVersionButton = player.querySelector('#cycle_versions');
+const introSubtitlesSelectorControl = player.querySelector('.intro_controls .selector_control.subtitles');
+const introCycleVolumeButton = player.querySelector('.intro_controls .cycle_volume');
+const introToggleFullscreenButton = player.querySelector('.intro_controls .toggle_fullscreen');
+const playbackCycleVolumeButton = player.querySelector('.left_playback_controls .cycle_volume');
+const playbackSubtitlesSelectorControl = player.querySelector('.right_playback_controls .selector_control.subtitles');
+const playbackToggleFullscreenButton = player.querySelector('.right_playback_controls .toggle_fullscreen');
+const playerControls = player.querySelector('.player_controls');
+const poster = player.querySelector('.poster');
+const replayButton = player.querySelector('.replay');
+const seekOverlay = player.querySelector('.seek_overlay');
+const speedControl = player.querySelector('.speed');
+const speedMultiplier = player.querySelector('.speed .multiplier');
+const timeline = player.querySelector('.timeline');
+const timelineInput = player.querySelector('.timeline input');
+const togglePlaybackButton = player.querySelector('.toggle_playback');
+const versionSelectorControl = player.querySelector('.selector_control.version');
+const versionSlices = player.querySelectorAll('.versions_ring g[data-src]');
+const versionsRing = player.querySelector('.versions_ring');
+const video = player.querySelector('video');
 
 // Before we even begin playback video.duration is NaN, so we use our own data throughout
 const videoDuration = parseFloat(video.dataset.duration);
@@ -451,10 +453,10 @@ function ensurePlayerInit() {
         // https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/load
         video.load();
 
-        // We remove the poster because it would otherwise briefly appear
-        // again as a flicker when we change resolution (i.e. the src
-        // attribute) during playback.
-        video.removeAttribute('poster');
+        if (poster) {
+            // Once the video plays back we don't need the poster anymore
+            poster.remove();
+        }
 
         // TODO: This now overlaps with the regular playback update
         // interval during playback, follow up at some point to optimize

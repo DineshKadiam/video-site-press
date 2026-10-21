@@ -73,20 +73,46 @@ documented thought process, instead of starting at zero.
 
 ### Eager and lazy image loading
 
-#### Poster images
+#### Poster images in the player
 
 The poster image in the player uses an overlaid `img` instead of the `poster`
 attribute on `video` because the latter only supports a single resolution/src.
 This `img` currently uses `loading="lazy"` combined with `sizes="auto, ..."`
 to ensure the most fitting resolution is picked. Technically the image
-could be considered as [LCP](https://web.dev/articles/lcp) which speaks against
+can be considered an [LCP](https://web.dev/articles/lcp) which speaks against
 lazy loading, but at the same time the video itself (including the play button)
-also does qualify for LCP, maybe even more so, and lazy loading the poster
-might therefore even benefit the fast availability of the video interface itself.
-Note that lazy loading in this context means that the poster is loaded as soon as
-the browser can determine its exact size and location in the layout – given that
-the poster is practically always above the fold, it does not mean that the poster
-is loaded at a significantly later point.
+also does qualify as LCP, maybe even more so, and lazy loading the poster
+might therefore even benefit the fast availability of the video *interface* itself.
+Unlike all thumbnails, full-size poster images currently do not use an LQIP (see
+paragraph below). Note that lazy loading in the context above means that the
+poster is loaded as soon as the browser can determine its exact size and
+location in the layout – given that the poster is practically always above
+the fold, it does not mean that the poster is loaded at a significantly later
+point.
+
+#### Video thumbnails in listings
+
+Inside listings such as collection pages, playlist sidebars, etc. video
+thumbnails use `loading="lazy"` combined with `sizes="auto, ..."` to ensure
+that the browser picks the smallest image assest based on actual size in the
+layout, at the expense of images only loading once their exact location and
+size in the layout is determined. In addition to that, all thumbnails use an
+LQIP (Low Quality Image Preview), which means that they instantly display
+with a gradient background that is based on four dominant colors in the
+poster image until the final image assets is loaded. This is also why lazy
+loading is used even for thumbnail images that are likely above the fold.
+
+#### Video thumbnails in navigation (browse/search)
+
+These thumbnails use only a fixed low resolution asset as `src` because they
+are statically rendered in a very small size. They are also lazy loaded and
+use an LQIP (see paragraph above) to bridge the gap between initial display
+and loading of the actual image asset.
+
+#### References and additional resources
+
+- https://web.dev/articles/browser-level-image-lazy-loading
+- https://web.dev/articles/lcp-lazy-loading
 
 ### Native time notation
 
