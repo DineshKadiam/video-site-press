@@ -90,7 +90,7 @@ pub struct Translations {
     pub create_subcollection: &'static str,
     pub create_test_file: &'static str,
     pub create_video: &'static str,
-    current_video_xxx_of_xxx_in_xxx: &'static str,
+    current_video_xxx_of_xxx: &'static str,
     pub customize: &'static str,
     pub dangerous_actions: &'static str,
     pub dark: &'static str,
@@ -425,15 +425,13 @@ impl Translations {
         self.audio_file_xxx.replace("{extension}", extension)
     }
 
-    pub fn current_video_xxx_of_xxx_in_xxx(
+    pub fn current_video_xxx_of_xxx(
         &self,
         current: usize,
-        parent: &str,
         total: usize
     ) -> String {
-        self.current_video_xxx_of_xxx_in_xxx
+        self.current_video_xxx_of_xxx
             .replace("{current}", &current.to_string())
-            .replace("{parent}", parent)
             .replace("{total}", &total.to_string())
     }
 
@@ -621,9 +619,8 @@ fn check_translations() {
 
     for translations in &locales {
         assert!(&translations.audio_file_xxx.contains("{extension}"));
-        assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{current}"));
-        assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{parent}"));
-        assert!(&translations.current_video_xxx_of_xxx_in_xxx.contains("{total}"));
+        assert!(&translations.current_video_xxx_of_xxx.contains("{current}"));
+        assert!(&translations.current_video_xxx_of_xxx.contains("{total}"));
         assert!(&translations.enter_password_for_decrypting_the_private_key_in_xxx.contains("{key_file}"));
         assert!(&translations.enter_password_for_user_xxx.contains("{user}"));
         assert!(&translations.files_are_being_synchronized_to_xxx.contains("{link}"));

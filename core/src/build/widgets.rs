@@ -12,7 +12,7 @@ use hyper8_util::{casual_duration, html_escape_outside_attribute};
 
 use crate::{
     Banner,
-    Language,
+    Collection,
     Link,
     Site,
     Video
@@ -68,6 +68,30 @@ pub fn bubbles(prefix: &str, videos: &[Arc<Video>]) -> String {
     format!(r#"<ul aria-hidden="true" class="bubbles">{bubbles}</ul>"#)
 }
 
+pub fn collection_context(
+    collection: &Collection,
+    site: &Site
+) -> String {
+    let index_suffix_file_only = site.index_suffix_file_only();
+    let prefix = "../";
+
+    let language = &site.language;
+    let translations = &language.translations;
+
+    let label = collection.title_or_slug_or_generic_label(translations);
+    let label_escaped = html_escape_outside_attribute(label);
+
+    let videos = collection.public_videos_in_collection_video_order(language);
+    let video_bubbles = bubbles(prefix, &videos);
+
+    format!(r#"
+        <div class="parent_context" style="margin-top: 1rem;">
+            <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
+            {video_bubbles}
+        </div>
+    "#)
+}
+
 /// A button enriched with data attributes that client scripting can use to
 /// copy the content (embed code or link) to clipboard and display
 /// success/failure state.
@@ -100,33 +124,30 @@ pub fn copy_button_icon_templates(translations: &Translations) -> String {
     "#)
 }
 
-pub fn links(language: &Language, links: &[Link]) -> String {
-    if links.is_empty() {
-        return String::new();
+pub fn link_button(link: &Link, translations: &Translations) -> String {
+    let mut attributes = Attributes::new();
+
+    attributes.add_raw("href", &link.url);
+
+    if link.rel_me {
+        attributes.add_raw("rel", "me");
     }
 
-    let link_icon = hyper8_icons::link(Some(language.translations.external_link));
+    let content = if link.hidden {
+        attributes.add_raw("style", "display: none;");
 
-    let items = links
-        .iter()
-        .map(|link| {
-            let rel_me = if link.rel_me { r#"rel="me""# } else { "" };
-            let url = &link.url;
+        String::from("hidden")
+    } else {
+        attributes.add_raw("target", "_blank");
 
-            if link.hidden {
-                format!(r#"<a href="{url}" {rel_me} style="display: none;">hidden</a>"#)
-            } else {
-                let label = link.pretty_label();
-                let e_label = html_escape_outside_attribute(&label);
-                formatdoc!(r#"
-                    <a href="{url}" {rel_me} target="_blank">{link_icon} <span>{e_label}</span></a>
-                "#)
-            }
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+        let label = link.pretty_label();
+        let link_icon = hyper8_icons::link(Some(translations.external_link));
+        let escaped_label = html_escape_outside_attribute(&label);
 
-    format!(r#"<div class="links">{items}</div>"#)
+        format!("{link_icon} <span>{escaped_label}</span>")
+    };
+
+    format!("<a {attributes}>{content}</a>")
 }
 
 /// Assumes that subscribe_permalink is a subfolder of the current location,
@@ -140,13 +161,7 @@ pub fn subscribe_button(
     let feed_icon = hyper8_icons::rss(Some(site.language.translations.feed));
     let t_subscribe = site.language.translations.subscribe;
 
-    formatdoc!(r#"
-        <div class="actions flex">
-            <a href="{subscribe_permalink}{index_suffix}">
-                {feed_icon} {t_subscribe}
-            </a>
-        </div>
-    "#)
+    format!(r#"<a href="{subscribe_permalink}{index_suffix}">{feed_icon} {t_subscribe}</a>"#)
 }
 
 pub fn thumbnail(

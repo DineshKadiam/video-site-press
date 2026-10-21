@@ -213,53 +213,6 @@ impl TraversalStep<'_> {
         }
     }
 
-    pub fn context_with_bubbles(
-        &self,
-        prefix: &str,
-        site: &Site
-    ) -> String {
-        let index_suffix_file_only = site.index_suffix_file_only();
-        let language = &site.language;
-        let translations = &language.translations;
-
-        match self {
-            TraversalStep::Collection(collection) => {
-                let label = collection.title_or_slug_or_generic_label(translations);
-                let label_escaped = html_escape_outside_attribute(label);
-
-                let videos = collection.public_videos_in_collection_video_order(language);
-                let video_bubbles = bubbles(prefix, &videos);
-
-                let inline = if videos.len() > 3 { "" } else { "inline" };
-
-                format!(r#"
-                    <div class="parent_context {inline}">
-                        <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
-                        {video_bubbles}
-                    </div>
-                "#)
-            }
-            TraversalStep::Playlist(playlist) => {
-                let label = playlist.title_or_slug_or_generic_label(translations);
-                let label_escaped = html_escape_outside_attribute(label);
-
-                let videos = playlist.public_videos_in_playlist_order(language);
-                let video_bubbles = bubbles(prefix, &videos);
-
-                let inline = if videos.len() > 3 { "" } else { "inline" };
-
-                format!(r#"
-                    <div class="parent_context {inline}">
-                        <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
-                        {video_bubbles}
-                    </div>
-                "#)
-            }
-            TraversalStep::Video(_) => unimplemented!(),
-            TraversalStep::Virtual { .. } => unimplemented!()
-        }
-    }
-
     pub fn crumb_playlist(
         playlist: &Playlist,
         site: &Site,
@@ -280,13 +233,28 @@ impl TraversalStep<'_> {
 
         if let Some(video_active) = video {
             let index_suffix = site.index_suffix();
-
             let videos = playlist.public_videos_in_playlist_order(language);
+
+            let header = {
+                let index_suffix_file_only = site.index_suffix_file_only();
+                let label = playlist.title_or_slug_or_generic_label(translations);
+                let label_escaped = html_escape_outside_attribute(label);
+                let prefix = "../";
+
+                let video_bubbles = bubbles(prefix, &videos);
+
+                format!(r#"
+                    <div class="parent_context">
+                        <a href="{prefix}{index_suffix_file_only}">{label_escaped}</a>
+                        {video_bubbles}
+                    </div>
+                "#)
+            };
 
             let items = videos
                 .iter()
-                .enumerate()
-                .map(|(index, video_iterated)| {
+                .zip(1..)
+                .map(|(video_iterated, number)| {
                     let label = video_iterated.title_or_slug_or_generic_label(translations);
                     let slug = video_iterated.slug_unchecked();
 
@@ -304,12 +272,8 @@ impl TraversalStep<'_> {
                     if video_iterated.site_path == video_active.site_path {
                         current = "current";
                         href = String::new();
-                        let count = videos.len();
-                        let number = index + 1;
-                        let playlist_label = playlist.title_or_slug_or_generic_label(translations);
-                        let playlist_label_escaped = html_escape_outside_attribute(playlist_label);
-                        let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(number, &playlist_label_escaped, count);
-                        number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
+                        let t_current_video_xxx_of_xxx = translations.current_video_xxx_of_xxx(number, videos.len());
+                        number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx}</span>"#);
                     } else {
                         current = "";
                         href = format!("../{slug}{index_suffix}");
@@ -346,11 +310,7 @@ impl TraversalStep<'_> {
                 .collect::<Vec<String>>()
                 .join("\n");
 
-            formatdoc!(r#"
-                <div class="playlist_context">
-                    {items}
-                </div>
-            "#)
+            format!(r#"<div class="playlist_context">{header}{items}</div>"#)
         } else {
             String::new()
         }

@@ -95,7 +95,7 @@ impl Translations {
         create_subcollection: "Create Subcollection",
         create_test_file: "Create test file",
         create_video: "Create Video",
-        current_video_xxx_of_xxx_in_xxx: "Current video ({current} of {total}) in {parent}",
+        current_video_xxx_of_xxx: "Current video ({current} of {total})",
         customize: "Customize",
         dangerous_actions: "Dangerous actions",
         dark: "Dark",

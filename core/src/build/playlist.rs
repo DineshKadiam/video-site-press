@@ -20,7 +20,7 @@ use crate::build::outline::Traversal;
 use crate::build::widgets::{
     banner_html,
     bubbles,
-    links,
+    link_button,
     subscribe_button,
     thumbnail,
     unlisted_badge
@@ -77,14 +77,23 @@ pub fn playlist_html(
         body.push_str(&format!(r#"<div class="description">{description_html}</div>"#));
     }
 
+    let mut actions = Vec::new();
+
     if let Some(subscribe_permalink) = &subscribe_permalink {
-        body.push_str(&subscribe_button(subscribe_permalink, site));
+        let subscribe_button = subscribe_button(subscribe_permalink, site);
+
+        actions.push(subscribe_button);
         layout.add_feed_links();
     }
 
-    if !playlist.links.is_empty() {
-        let links_rendered = links(&site.language, &playlist.links);
-        body.push_str(&links_rendered);
+    for link in &playlist.links {
+        let link_button = link_button(link, translations);
+        actions.push(link_button);
+    }
+
+    if !actions.is_empty() {
+        let actions = actions.join("");
+        body.push_str(&format!(r#"<div class="actions pad">{actions}</div>"#));
     }
 
     if !videos.is_empty() {

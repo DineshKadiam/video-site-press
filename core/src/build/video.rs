@@ -10,6 +10,7 @@ use hyper8_util::{html_escape_outside_attribute, precise_duration};
 
 use crate::{
     Build,
+    Collection,
     Context,
     MarkdownSubset,
     PlatformIntegrationMeta,
@@ -21,7 +22,12 @@ use crate::{
 use crate::build::Layout;
 use crate::build::outline::{Traversal, TraversalStep};
 use crate::build::player::player;
-use crate::build::widgets::{copy_button, links, unlisted_badge};
+use crate::build::widgets::{
+    collection_context,
+    copy_button,
+    link_button,
+    unlisted_badge
+};
 use crate::util::localized_date_d_mmmm_yyyy;
 
 /// Renders a video page. If the video is part of a playlist, the layout is
@@ -29,6 +35,7 @@ use crate::util::localized_date_d_mmmm_yyyy;
 /// display the playlist sidebar.
 pub fn video_html(
     build: &Build,
+    collection: Option<&Collection>,
     context: &Context,
     playlist: Option<&Playlist>,
     site: &Site,
@@ -42,25 +49,11 @@ pub fn video_html(
 
     let index_suffix = site.index_suffix();
 
-    let description = if let Some(description) = &video.description {
-        let description_html = MarkdownSubset::to_html(description);
-        format!(r#"<div class="description reading_width">{description_html}</div>"#)
-    } else {
-        String::new()
-    };
-
     let title = video.title_or_slug_or_generic_label(translations);
     let e_title = html_escape_outside_attribute(title);
 
-    let parent_context = if traversal.steps.len() > 1 {
-        let parent_step = &traversal.steps[traversal.steps.len() - 2];
-        parent_step.context_with_bubbles("../", site)
-    } else {
-        String::new()
-    };
-
     let video_prefix = "";
-    let player_rendered = player(
+    let player = player(
         false,
         playlist,
         site,
@@ -166,8 +159,6 @@ pub fn video_html(
         String::new()
     };
 
-    let links_rendered = links(&site.language, &video.links);
-
     // TODO: Expose/unhide synopsis if and when it makes sense again
     // let synopsis = if let Some(synopsis) = &video.synopsis {
     //     let synopsis_escaped = html_escape_outside_attribute(synopsis);
@@ -181,7 +172,7 @@ pub fn video_html(
     } else {
         let actions_joined = actions.join("\n");
         formatdoc!(r#"
-            <div class="actions align flex space">
+            <div class="actions">
                 {actions_joined}
             </div>
         "#)
@@ -335,24 +326,52 @@ pub fn video_html(
 
     let panels = panels.join("\n");
 
+    let mut video_info = Vec::new();
+
+    if !video.links.is_empty() {
+        let mut links = Vec::new();
+
+        for link in &video.links {
+            let link_button = link_button(link, translations);
+            links.push(link_button);
+        }
+
+        let links = links.join("");
+        let links = format!(r#"<div class="actions">{links}</div>"#);
+
+        video_info.push(links);
+    }
+
+    if let Some(description) = &video.description {
+        let description_html = MarkdownSubset::to_html(description);
+        let description = format!(r#"<div class="description reading_width">{description_html}</div>"#);
+
+        video_info.push(description);
+    }
+
+    if let Some(collection) = collection {
+        video_info.push(collection_context(collection, site));
+    }
+
+    let video_info = if !video_info.is_empty() {
+        let video_info = video_info.join("");
+        format!(r#"<div class="video_info">{video_info}</div>"#)
+    } else {
+        String::new()
+    };
+
     let body = formatdoc!(r#"
         <div class="video_layout" {active_panel}>
-            <div class="video_header">
-                <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
-                {parent_context}
-            </div>
-            {player_rendered}
+            {player}
             {panels}
             <div class="video_footer">
                 <div>
+                    <h1 class="video_title">{e_title} {r_unlisted_badge}</h1>
                     {release_date}
                 </div>
                 {actions}
             </div>
-            <div class="video_info">
-                {links_rendered}
-                {description}
-            </div>
+            {video_info}
         </div>
         {panel_postscript}
     "#);

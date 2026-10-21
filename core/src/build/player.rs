@@ -223,8 +223,8 @@ pub fn player(
 
         let items = videos
             .iter()
-            .enumerate()
-            .map(|(index, video_iterated)| {
+            .zip(1..)
+            .map(|(video_iterated, number)| {
                 let label = video_iterated.title_or_slug_or_generic_label(translations);
                 let slug = video_iterated.slug_unchecked();
 
@@ -245,15 +245,9 @@ pub fn player(
                     href = format!("{video_prefix}{href_suffix}");
                     id_replay = r#"class="replay""#;
 
-                    let count = videos.len();
-                    let number = index + 1;
-                    let t_current_video_xxx_of_xxx_in_xxx = translations.current_video_xxx_of_xxx_in_xxx(
-                        number,
-                        &playlist_label_escaped,
-                        count
-                    );
+                    let t_current_video_xxx_of_xxx = translations.current_video_xxx_of_xxx(number, videos.len());
 
-                    number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx_in_xxx}</span>"#);
+                    number_context = format!(r#"<span class="number_context">{t_current_video_xxx_of_xxx}</span>"#);
                     replay_indicator = hyper8_icons::reload(None, Some(translations.replay));
                     video_iterated_prefix = video_prefix.to_string();
                 } else {

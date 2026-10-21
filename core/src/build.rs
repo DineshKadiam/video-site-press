@@ -163,6 +163,7 @@ pub fn perform_build(
             if !video.offline() {
                 build_video(
                     &build,
+                    None,
                     context,
                     None,
                     &site,
@@ -277,6 +278,7 @@ fn build_collection(
         if !video.offline() {
             build_video(
                 build,
+                Some(collection),
                 context,
                 None,
                 site,
@@ -366,6 +368,7 @@ fn build_playlist(
         if !video.offline() {
             build_video(
                 build,
+                None,
                 context,
                 Some(playlist),
                 site,
@@ -380,6 +383,7 @@ fn build_playlist(
 
 fn build_video(
     build: &Build,
+    collection: Option<&Collection>,
     context: &Context,
     playlist: Option<&Playlist>,
     site: &Site,
@@ -540,6 +544,7 @@ fn build_video(
 
     video_html(
         build,
+        collection,
         context,
         playlist,
         site,
