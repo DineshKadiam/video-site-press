@@ -1,3 +1,5 @@
+> Originally developed at [codeberg.org/simonrepp/hyper8](https://codeberg.org/simonrepp/hyper8) · AGPL-3.0-or-later
+
 <!--
     SPDX-FileCopyrightText: 2024-2026 Simon Repp
     SPDX-License-Identifier: CC0-1.0
